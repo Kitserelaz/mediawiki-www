@@ -4,7 +4,6 @@ $cfg = require __DIR__ . '/../vendor/mediawiki/mediawiki-phan-config/src/config.
 
 $cfg['file_list'] = array_merge(
 	$cfg['file_list'],
-	class_exists( OpenSSLAsymmetricKey::class ) ? [] : [ '.phan/stubs/OpenSSLAsymmetricKey.php' ],
 	[
 		'SecurePoll.constants.php'
 	]
@@ -15,6 +14,7 @@ $cfg['directory_list'] = array_merge(
 	[
 		'cli',
 		'../../extensions/CentralAuth',
+		'../../extensions/CodeMirror',
 		'../../extensions/Flow',
 	]
 );
@@ -23,6 +23,7 @@ $cfg['exclude_analysis_directory_list'] = array_merge(
 	$cfg['exclude_analysis_directory_list'],
 	[
 		'../../extensions/CentralAuth',
+		'../../extensions/CodeMirror',
 		'../../extensions/Flow',
 	]
 );

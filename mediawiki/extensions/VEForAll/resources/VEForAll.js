@@ -1,5 +1,5 @@
 /*
- * VEForAll initialization
+ * VEForAll initialization and validation
  *
  * @author Pierre Boutet
  * @author Clement Flipo
@@ -10,28 +10,15 @@
 
 ( function ( $, mw ) {
 
-	/**
-	 * What this file does:
-	 * - Loads VisualEditor library
-	 * - Watch click on save buttons, to defer the save request after all visualEditor
-	 *   requests are done.
-	 */
-
-	var veInstances = [];
+	const veInstances = [];
 
 	function initVisualEditor() {
-
-		var config = mw.config.get( 'VEForAll' );
-		if ( !config.VisualEditorEnable ) {
-			return;
-		}
-
 		// Init VisualEditor platform
 		new ve.init.mw.Platform().initialize()
-			.fail( function () {
+			.fail( () => {
 				// $( editor ).text( 'Sorry, this browser is not supported.' );
 			} )
-			.done( function () {
+			.done( () => {
 				// Add i18n messages to VE
 				ve.init.platform.addMessages( mw.messages.get() );
 			} );
@@ -41,19 +28,14 @@
 	}
 
 	/**
-	 * Being called by PageForms on textareas with 'visualeditor' class present
+	 * The main function called by outside extensions - applies VisualEditor
+	 * onto any jQuery group of textareas.
 	 *
 	 * @return {boolean}
 	 */
 	jQuery.fn.applyVisualEditor = function () {
-
-		var config = mw.config.get( 'VEForAll' );
-		if ( !config.VisualEditorEnable ) {
-			return false;
-		}
-
 		return this.each( function () {
-			var veEditor = new mw.veForAll.Editor( this, $( this ).val() );
+			const veEditor = new mw.veForAll.Editor( this, $( this ).val() );
 			veInstances.push( veEditor );
 		} );
 	};
@@ -66,20 +48,20 @@
 	};
 
 	if ( mw.hook( 'pf.formSetupAfter' ) ) {
-		// This hook was added in Page Forms 4.7 - it helps to ensure that the VEForAll
-		// init code does not get called too soon.
-		mw.hook( 'pf.formSetupAfter' ).add( function () {
+		// If this is being called from within the Page Forms extension,
+		// make sure that the init code is called after the form has
+		// already been created.
+		mw.hook( 'pf.formSetupAfter' ).add( () => {
 			initVisualEditor();
 		} );
 	} else {
 		initVisualEditor();
 	}
 
-	// This hook was added in Page Forms 5.0.
-	mw.hook( 'pf.formValidation' ).add( function ( args ) {
-		var hasMinimizedPlainVETextarea = false;
+	mw.hook( 'pf.formValidation' ).add( ( args ) => {
+		let hasMinimizedPlainVETextarea = false;
 		$( '.minimized' ).each( function () {
-			var instanceDiv = $( this );
+			const instanceDiv = $( this );
 			instanceDiv.find( 'textarea.vePartOfTemplate' ).each( function () {
 				if ( $( this ).css( 'display' ) !== 'none' ) {
 					instanceDiv.removeClass( 'minimized' );

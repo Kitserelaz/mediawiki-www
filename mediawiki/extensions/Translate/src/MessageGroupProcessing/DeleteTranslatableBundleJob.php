@@ -3,15 +3,17 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
-use Job;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\Translate\PageTranslation\Hooks;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePage;
 use MediaWiki\Extension\Translate\Services;
 use MediaWiki\Extension\Translate\SystemUsers\FuzzyBot;
+use MediaWiki\JobQueue\Job;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
+use Wikimedia\ScopedCallback;
 
 /**
  * Job for deleting translatable bundles and translation pages.
@@ -26,14 +28,16 @@ class DeleteTranslatableBundleJob extends Job {
 		string $bundleType,
 		bool $isTranslationPage,
 		UserIdentity $performer,
-		string $reason
+		string $reason,
+		?array $userSessionInfo
 	): self {
 		$params = [
 			'translation' => $isTranslationPage,
 			'base' => $base,
 			'bundleType' => $bundleType,
 			'performer' => $performer->getName(),
-			'reason' => $reason
+			'reason' => $reason,
+			'session' => $userSessionInfo
 		];
 
 		return new self( $target, $params );
@@ -43,6 +47,7 @@ class DeleteTranslatableBundleJob extends Job {
 		parent::__construct( 'DeleteTranslatableBundleJob', $title, $params );
 	}
 
+	/** @inheritDoc */
 	public function run() {
 		$title = $this->title;
 		$fuzzyBot = FuzzyBot::getUser();
@@ -50,6 +55,15 @@ class DeleteTranslatableBundleJob extends Job {
 		$base = $this->getBase();
 		$performer = $this->getPerformer();
 		$reason = $this->getReason();
+
+		// Restore the session information if present
+		if ( isset( $this->params[ 'session' ] ) ) {
+			$scope = RequestContext::importScopedSession( $this->params['session'] );
+			$this->addTeardownCallback( static function () use ( &$scope ) {
+				ScopedCallback::consume( $scope );
+			} );
+		}
+
 		$mwInstance = MediaWikiServices::getInstance();
 
 		// Allows regular user to delete pages that are normally protected from direct editing

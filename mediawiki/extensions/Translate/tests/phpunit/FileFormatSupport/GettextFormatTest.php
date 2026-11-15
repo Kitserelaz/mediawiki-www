@@ -16,7 +16,7 @@ use ReflectionObject;
  * @author Niklas Laxström
  * @copyright Copyright © 2012-2013, Niklas Laxström
  * @license GPL-2.0-or-later
- * @covers MediaWiki\Extension\Translate\FileFormatSupport\GettextFormat
+ * @covers \MediaWiki\Extension\Translate\FileFormatSupport\GettextFormat
  */
 class GettextFormatTest extends MediaWikiIntegrationTestCase {
 	private array $groupConfiguration;
@@ -112,7 +112,6 @@ class GettextFormatTest extends MediaWikiIntegrationTestCase {
 		$gettextFormat = $this->getGettextInstance();
 		$object = new ReflectionObject( $gettextFormat );
 		$method = $object->getMethod( 'formatMessageBlock' );
-		$method->setAccessible( true );
 
 		$key = 'key';
 		$m = new FatMessage( 'key', 'definition' );
@@ -263,6 +262,78 @@ class GettextFormatTest extends MediaWikiIntegrationTestCase {
 		$this->assertFalse( $gettextFormat->isContentEqual(
 			'The bunnies stole {{PLURAL:GETTEXT|one banana|%{count} carrots}}.',
 			'{{PLURAL:GETTEXT|The bunnies stole one carrot.|The bunnies stole %{count} carrots.}}' ) );
+	}
+
+	public function testReadFromVariableRejectsInvalidUtf8(): void {
+		$gettextFormat = $this->getGettextInstance();
+
+		// Create a minimal valid PO file structure but with invalid UTF-8 in a msgstr
+		// 0x92 is a Windows-1252 right single quotation mark, invalid in UTF-8
+		$invalidUtf8Char = "\x92";
+		$poContent = <<<PO
+		msgid ""
+		msgstr ""
+		"Content-Type: text/plain; charset=UTF-8\\n"
+		"X-Language-Code: nl\\n"
+		"X-Message-Group: test-group\\n"
+
+		msgctxt "context"
+		msgid "Hello"
+		msgstr "Hallo{$invalidUtf8Char}"
+		PO;
+
+		$this->expectException( GettextParseException::class );
+		$this->expectExceptionMessage( 'invalid-utf8' );
+		$gettextFormat->readFromVariable( $poContent );
+	}
+
+	public function testReadFromVariableAcceptsValidUtf8(): void {
+		$gettextFormat = $this->getGettextInstance();
+
+		$poContent = <<<'PO'
+		msgid ""
+		msgstr ""
+		"Content-Type: text/plain; charset=UTF-8\n"
+		"X-Language-Code: nl\n"
+		"X-Message-Group: test-group\n"
+
+		msgctxt "context"
+		msgid "Hello"
+		msgstr "Héllo wörld"
+		PO;
+
+		$result = $gettextFormat->readFromVariable( $poContent );
+		$this->assertArrayHasKey( 'MESSAGES', $result );
+		$this->assertNotEmpty( $result['MESSAGES'] );
+	}
+
+	public function testReadFromVariableNormalizesUnicode(): void {
+		$gettextFormat = $this->getGettextInstance();
+
+		// U+0065 (e) + U+0301 (combining acute accent) = NFD form of é
+		$nfdE = "e\xCC\x81";
+		// U+00E9 = NFC form of é
+		$nfcE = "\xC3\xA9";
+
+		$poContent = <<<PO
+		msgid ""
+		msgstr ""
+		"Content-Type: text/plain; charset=UTF-8\\n"
+		"X-Language-Code: nl\\n"
+		"X-Message-Group: test-group\\n"
+
+		msgctxt "context"
+		msgid "Hello"
+		msgstr "H{$nfdE}llo"
+		PO;
+
+		$result = $gettextFormat->readFromVariable( $poContent );
+		$messages = $result['MESSAGES'];
+		$translation = reset( $messages );
+		$this->assertStringContainsString( $nfcE, $translation,
+			'NFD input should be normalized to NFC' );
+		$this->assertStringNotContainsString( $nfdE, $translation,
+			'NFD sequences should not remain after normalization' );
 	}
 
 	private function getGettextInstance(): GettextFormat {

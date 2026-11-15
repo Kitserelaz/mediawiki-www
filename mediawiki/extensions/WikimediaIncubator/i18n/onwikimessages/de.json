@@ -3,8 +3,11 @@
 		"authors": [
 			"Kghbln",
 			"King Muli 12",
+			"MoritzMT20",
+			"PretzelRocky",
 			"TMg",
-			"ThisCarthing"
+			"ThisCarthing",
+			"MF-Warburg"
 		]
 	},
 	"wminc-code-macrolanguage": "Die [[wikipedia:$2 language|Sprache „$3“]] ist eine [[wikipedia:de:Makrosprache_(ISO_639)|Makrosprache]], welche die folgenden Einzelsprachen enthält:",
@@ -20,6 +23,7 @@
 	"wminc-custom-tb-invalid-code-text": "Dieser Code ist entweder ungültig oder wird nicht für neue Wikimedia-Projekte akzeptiert.\n\nWenn dich ein Link von einer anderen Seite hierhin geführt hat, gehe bitte zurück und berichtige den Link.\n\nFalls diese Sperre dich davon abhält, eine Seite anzulegen, die deiner Meinung nach einen gültigen ISO-639-1 oder -3-Code hat oder zu einer akzeptierten Sprache gehört, wende dich bitte an die [[$1|Administratoren]].",
 	"wminc-custom-tb-space-colon": "Aus technischen Gründen können Artikelnamen nicht mit Leerzeichen oder Doppelpunkten beginnen.",
 	"gadget-addprefix": "<strong>AddPrefix:</strong> Fügt beim Erstellen von Seiten automatisch den Links Präfixe hinzu.",
+	"wminc-gadget-addprefix-toggle": "Zeige/Verstecke das Präfix",
 	"wminc-gadget-iw-add-wikidata": "Wikidata-Link hinzufügen",
 	"wminc-gadget-iw-dialog-cancel": "Abbrechen",
 	"wminc-gadget-iw-dialog-publish": "Veröffentlichen",
@@ -33,6 +37,7 @@
 	"wminc-infopage-title-status-imported": "Dies ist ein importiertes Testwiki von Wikimedia Incubator.",
 	"wminc-infopage-title-status-invalidcode": "Dieses Testwiki hat keinen gültigen [[$1|ISO-639]]-Code und wurde deshalb gelöscht.",
 	"wminc-infopage-title-status-open": "Dies ist ein offenes Testwiki von Wikimedia Incubator.",
+	"wminc-infopage-title-status-tocreate": "Dieses Test-Wiki wurde noch nicht gestartet.",
 	"wminc-infopage-text-approved": "Dieses Test-Wiki ist vom [[$2|Sprachkomitee]] genehmigt worden (betrachte auch das [[$1|Seitenerstellungslogbuch]]).",
 	"wminc-infopage-text-default": "Parameter \"$4\" fehlt oder ist nicht korrekt angegeben. [[$5|Hier]] finden Sie weitere Informationen.",
 	"wminc-infopage-text-imported": "Dieses Wiki wurde [[$6|importiert]], nachdem es geschlossen wurde. Wenn Sie es (wieder)starten möchten, können Sie diese Seiten als Startpunkt nehmen.",
@@ -43,6 +48,7 @@
 	"wminc-infopage-language-header": "Sprache",
 	"wminc-infopage-language-directionality-ltr": "links nach rechts",
 	"wminc-infopage-language-directionality-rtl": "rechts nach links",
+	"wminc-infopage-content-main-category": "Hauptkategorie",
 	"wminc-infopage-content-contributors": "Autoren",
 	"wminc-infopage-content-administroters": "Administratoren:",
 	"wminc-infopage-content-project": "Projekt: $1",

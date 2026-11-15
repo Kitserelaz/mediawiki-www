@@ -13,7 +13,7 @@
 	"messagesenttitle": "Page title of Special:SendBoardBlast special page when a board blast has successfully been sent out; a board blast is a private user board message sent to a larger group of recipients at one and these recipients must be friends or foes of the sender. See also {{msg-mw|messagesentsuccess}}",
 	"boardblasttitle": "Page title of Special:SendBoardBlast; a board blast is a private user board message sent to a larger group of recipients at one and these recipients must be friends or foes of the sender",
 	"boardblaststep1": "Help message displayed on Special:SendBoardBlast",
-	"boardblastprivatenote": "Note displayed on Special:SendBoardBlast reminding users that board blasts will be sent as private board messages to the intended recipient(s)",
+	"boardblast-message-type-note": "Note displayed on Special:SendBoardBlast informing users that board blasts will be sent as public messages because privates ones are disabled.",
 	"boardblaststep2": "Help message displayed on Special:SendBoardBlast; below this message is a grid containing the names of your friends and foes (potential board blast recipients which you can click on to add them as a recipient)",
 	"boardlinkselectall": "Link text, shown on Special:SendBoardBlast; clicking on this link selects all displayed users as the recipients of the board blast",
 	"boardlinkunselectall": "Link text, shown on Special:SendBoardBlast; clicking on this link removes selection from all selected users",
@@ -62,10 +62,13 @@
 	"echo-pref-tooltip-social-msg": "{{doc-echo-pref-tooltip|title=echo-category-title-social-msg}}",
 	"notification-social-msg-send": "[[mw:Extension:Echo|Echo]] notification title\nParameters:\n* $1 is the user name of the person who sent you a board message\n* $2 is the message they left you, or at least a part of it",
 	"notification-social-msg-send-bundle": "[[mw:Extension:Echo|Echo]] notification when multiple users have sent you board messages.\n$1 is the amount of users who sent you board messages.",
+	"apierror-socialprofile-send-message-nosend": "{{doc-apierror}}",
 	"apihelp-socialprofile-send-message-summary": "{{doc-apihelp-summary|socialprofile-send-message}}",
 	"apihelp-socialprofile-send-message-param-username": "{{doc-apihelp-param|socialprofile-send-message|username}}",
 	"apihelp-socialprofile-send-message-param-message": "{{doc-apihelp-param|socialprofile-send-message|message}}",
 	"apihelp-socialprofile-send-message-param-type": "{{doc-apihelp-param|socialprofile-send-message|type}}",
 	"apihelp-socialprofile-delete-message-summary": "{{doc-apihelp-summary|socialprofile-delete-message}}",
-	"apihelp-socialprofile-delete-message-param-id": "{{doc-apihelp-param|socialprofile-delete-message|id}}"
+	"apihelp-socialprofile-delete-message-param-id": "{{doc-apihelp-param|socialprofile-delete-message|id}}",
+	"userboard-private-messages-disabled": "Error that shows if a feature is unavailable because private messages are disabled.",
+	"userboard-private-messages-disabled-title": "Title of the error page that is shown if a feature is unavailable because private messages are disabled."
 }

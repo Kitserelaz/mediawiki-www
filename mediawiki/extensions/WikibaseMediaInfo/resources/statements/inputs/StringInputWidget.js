@@ -1,14 +1,13 @@
 'use strict';
 
-var ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget,
-	AbstractInputWidget = require( './AbstractInputWidget.js' ),
-	StringInputWidget;
+const ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget,
+	AbstractInputWidget = require( './AbstractInputWidget.js' );
 
 /**
  * @param {Object} config Configuration options
  * @param {boolean} [config.isQualifier]
  */
-StringInputWidget = function MediaInfoStatementsStringInputWidget( config ) {
+const StringInputWidget = function MediaInfoStatementsStringInputWidget( config ) {
 	config = config || {};
 
 	this.state = {
@@ -39,7 +38,7 @@ OO.mixinClass( StringInputWidget, ComponentWidget );
  * @inheritDoc
  */
 StringInputWidget.prototype.getTemplateData = function () {
-	var button = new OO.ui.ButtonWidget( {
+	const button = new OO.ui.ButtonWidget( {
 		classes: [ 'wbmi-input-widget__button' ],
 		label: mw.msg( 'wikibasemediainfo-string-input-button-text' ),
 		flags: [ 'progressive' ],

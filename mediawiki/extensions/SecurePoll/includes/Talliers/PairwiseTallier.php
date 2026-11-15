@@ -2,7 +2,7 @@
 
 namespace MediaWiki\Extension\SecurePoll\Talliers;
 
-use MediaWiki\Xml\Xml;
+use MediaWiki\Html\Html;
 
 /**
  * Generic functionality for Condorcet-style pairwise methods.
@@ -18,6 +18,7 @@ abstract class PairwiseTallier extends Tallier {
 	/** @var array */
 	public $rowLabels = [];
 
+	/** @inheritDoc */
 	public function __construct( $context, $electionTallier, $question ) {
 		parent::__construct( $context, $electionTallier, $question );
 		$this->optionIds = [];
@@ -35,7 +36,6 @@ abstract class PairwiseTallier extends Tallier {
 
 	/**
 	 * @inheritDoc
-	 *
 	 */
 	public function addVote( $ranks ) {
 		foreach ( $this->optionIds as $oid1 ) {
@@ -55,6 +55,9 @@ abstract class PairwiseTallier extends Tallier {
 		return true;
 	}
 
+	/**
+	 * @return array
+	 */
 	public function getOptionAbbreviations() {
 		if ( $this->abbrevs === null ) {
 			$abbrevs = [];
@@ -84,6 +87,10 @@ abstract class PairwiseTallier extends Tallier {
 		return $this->abbrevs;
 	}
 
+	/**
+	 * @param string $format
+	 * @return string[]
+	 */
 	public function getRowLabels( $format = 'html' ) {
 		if ( !isset( $this->rowLabels[$format] ) ) {
 			$rowLabels = [];
@@ -105,6 +112,11 @@ abstract class PairwiseTallier extends Tallier {
 		return $this->rowLabels[$format];
 	}
 
+	/**
+	 * @param array $matrix
+	 * @param int[] $rankedIds
+	 * @return string
+	 */
 	public function convertMatrixToHtml( $matrix, $rankedIds ) {
 		$abbrevs = $this->getOptionAbbreviations();
 		$rowLabels = $this->getRowLabels( 'html' );
@@ -116,14 +128,14 @@ abstract class PairwiseTallier extends Tallier {
 
 		# Header row
 		foreach ( $rankedIds as $oid ) {
-			$s .= Xml::tags( 'th', [], $abbrevs[$oid] ) . "\n";
+			$s .= Html::rawElement( 'th', [], $abbrevs[$oid] ) . "\n";
 		}
 		$s .= "</tr>\n";
 
 		foreach ( $rankedIds as $oid1 ) {
 			# Header column
 			$s .= "<tr>\n";
-			$s .= Xml::tags(
+			$s .= Html::rawElement(
 				'td',
 				[ 'class' => 'securepoll-results-row-heading' ],
 				$rowLabels[$oid1]
@@ -134,7 +146,7 @@ abstract class PairwiseTallier extends Tallier {
 				if ( is_array( $value ) ) {
 					$value = '(' . implode( ', ', $value ) . ')';
 				}
-				$s .= Xml::element( 'td', [], $value ) . "\n";
+				$s .= Html::element( 'td', [], $value ) . "\n";
 			}
 			$s .= "</tr>\n";
 		}
@@ -143,6 +155,11 @@ abstract class PairwiseTallier extends Tallier {
 		return $s;
 	}
 
+	/**
+	 * @param array $matrix
+	 * @param int[] $rankedIds
+	 * @return string
+	 */
 	public function convertMatrixToText( $matrix, $rankedIds ) {
 		$abbrevs = $this->getOptionAbbreviations();
 		$minWidth = 15;

@@ -17,7 +17,7 @@
 	"timedmedia-ogg-long-video": "Ogg $1 videobestand, lengte $2, $4×$5 pixels, $3, bestandsgrootte: $6",
 	"timedmedia-ogg-long-multiplexed": "Ogg gemultiplexed geluids/videobestand, $1, lengte $2, $4×$5 pixels, $3 totaal, bestandsgrootte: $6",
 	"timedmedia-ogg-long-general": "Ogg mediabestand, lengte $2, $3, bestandsgrootte: $6",
-	"timedmedia-ogg-long-error": "Ongeldig Ogg-bestand: $1, bestandsgrootte: $2",
+	"timedmedia-ogg-long-error": "Onjuist Ogg-bestand: $1, bestandsgrootte: $2",
 	"timedmedia-ogg-long-no-streams": "Ogg-mediabestand, bestandsgrootte: $1. Waarschuwing: Geen van de codecs die in dit bestand worden gebruikt, wordt herkend.",
 	"timedmedia-webm-short-video": "WebM $1 videobestand, $2",
 	"timedmedia-webm-long-video": "WebM audio/videobestand, $1, lengte $2, $4x$5 pixels, $3 totaal, bestandsgrootte: $6",
@@ -173,5 +173,13 @@
 	"timedmedia-timedtext-title-create-subtitles": "Er zijn geen ondertitels in het $1 gevonden voor de video: $2",
 	"m3u8-error-create-temp": "Het is niet gelukt een tijdelijk bestand voor $1 te maken",
 	"m3u8-error-write-temp": "Het is niet gelukt naar het tijdelijke bestand voor $1 te schrijven",
-	"m3u8-error-save-playlist": "Fouten bij het opslaan van HLS-afspeellijst $1"
+	"m3u8-error-save-playlist": "Fouten bij het opslaan van HLS-afspeellijst $1",
+	"videojs-endcard-share-title": "Koppeling naar dit bestand",
+	"videojs-endcard-copy-link": "Koppeling kopiëren",
+	"videojs-endcard-share": "Delen",
+	"videojs-endcard-share-not-possible": "Delen is niet mogelijk",
+	"videojs-endcard-embed-title": "Dit bestand op uw website invoegen",
+	"videojs-endcard-embed-copy": "Kopiëren",
+	"videojs-endcard-copied": "Naar klembord gekopieerd!",
+	"videojs-endcard-copy-failed": "Kon niet naar het klembord kopiëren"
 }

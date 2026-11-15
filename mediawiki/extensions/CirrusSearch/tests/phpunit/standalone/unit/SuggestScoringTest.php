@@ -9,20 +9,7 @@ use CirrusSearch\BuildDocument\Completion\QualityScore;
 /**
  * test suggest scoring functions.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  *
  * @group CirrusSearch
  * @group Standalone
@@ -303,7 +290,8 @@ class SuggestScoringTest extends CirrusTestCase {
 		$qs = new QualityScore( [] );
 		$qs->setMaxDocs( 1 );
 		$page = [
-			'incoming_links' => 1,
+			# for small wikis (<1000) we clamp the incoming links feature to 100 not 10% of the max docs
+			'incoming_links' => 100,
 			'external_link' => array_fill( 0, QualityScore::EXTERNAL_LINKS_NORM, null ),
 			'text_bytes' => QualityScore::PAGE_SIZE_NORM,
 			'heading' => array_fill( 0, QualityScore::HEADING_NORM, null ),
@@ -341,22 +329,26 @@ class SuggestScoringTest extends CirrusTestCase {
 		$all_templates = array_keys( $templates );
 		$all_templates += [ 'Foo', 'Bar' ];
 		for ( $i = 0; $i < 50; $i++ ) {
-			$scorers = [];
-			$scorers[] = new PQScore( [ 'Good' => 2, 'Bad' => 0.5 ] );
-			$scorers[] = new QualityScore( [ 'Good' => 2, 'Bad' => 0.5 ] );
-			$scorers[] = new IncomingLinksScoringMethod();
+			$scorers = [
+				new PQScore( [ 'Good' => 2, 'Bad' => 0.5 ] ),
+				new QualityScore( [ 'Good' => 2, 'Bad' => 0.5 ] ),
+				new IncomingLinksScoringMethod(),
+			];
+
 			$tmpl = [];
 			for ( $j = mt_rand( 0, count( $all_templates ) - 1 ); $j >= 0; $j-- ) {
 				$tmpl[] = $all_templates[$j];
 			}
-			$page = [];
-			$page['incoming_links'] = mt_rand( 0, 1 ) ? mt_rand( 0, 200 ) : null;
-			$page['external_link'] = $this->randomArray( 200 );
-			$page['text_bytes'] = mt_rand( 0, 1 ) ? (string)mt_rand( 0, 230000 ) : null;
-			$page['heading'] = $this->randomArray( 30 );
-			$page['redirect'] = $this->randomArray( 100 );
-			$page['popularity_score'] = mt_rand( 0, 1 ) ? 1 / mt_rand( 1, 1800000 ) : null;
-			$page['templates'] = mt_rand( 0, 1 ) ? $tmpl : null;
+
+			$page = [
+				'incoming_links' => mt_rand( 0, 1 ) ? mt_rand( 0, 200 ) : null,
+				'external_link' => $this->randomArray( 200 ),
+				'text_bytes' => mt_rand( 0, 1 ) ? (string)mt_rand( 0, 230000 ) : null,
+				'heading' => $this->randomArray( 30 ),
+				'redirect' => $this->randomArray( 100 ),
+				'popularity_score' => mt_rand( 0, 1 ) ? 1 / mt_rand( 1, 1800000 ) : null,
+				'templates' => mt_rand( 0, 1 ) ? $tmpl : null,
+			];
 
 			$maxDocs = mt_rand( 0, 100 );
 			foreach ( $scorers as $scorer ) {
@@ -383,11 +375,7 @@ class SuggestScoringTest extends CirrusTestCase {
 	 */
 	private function randomArray( $max ) {
 		if ( mt_rand( 0, 1 ) ) {
-			$size = mt_rand( 0, $max );
-			if ( $size === 0 ) {
-				return [];
-			}
-			return array_fill( 0, $size, null );
+			return array_fill( 0, mt_rand( 0, $max ), null );
 		}
 		return null;
 	}

@@ -13,6 +13,7 @@ class ConstantAssignment implements ClusterAssignment {
 		$this->servers = $servers;
 	}
 
+	/** @inheritDoc */
 	public function uniqueId( $cluster ) {
 		return 'default';
 	}
@@ -25,26 +26,39 @@ class ConstantAssignment implements ClusterAssignment {
 		return $this->servers;
 	}
 
+	/** @inheritDoc */
 	public function getSearchCluster() {
 		return 'default';
 	}
 
+	public function getManagedClusters(): array {
+		return [ 'default' ];
+	}
+
+	/** @inheritDoc */
 	public function getWritableClusters( string $updateGroup ): array {
 		return [ 'default' ];
 	}
 
-	public function getAllKnownClusters(): array {
-		return [ 'default' ];
-	}
-
+	/** @inheritDoc */
 	public function hasCluster( string $clusterName ): bool {
 		return true;
 	}
 
+	/**
+	 * @param string $clusterName
+	 * @return bool True when the named cluster is in the set of managable clusters.
+	 */
+	public function canManageCluster( $clusterName ): bool {
+		return true;
+	}
+
+	/** @inheritDoc */
 	public function canWriteToCluster( $clusterName, $updateGroup ) {
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function getCrossClusterName() {
 		return null;
 	}

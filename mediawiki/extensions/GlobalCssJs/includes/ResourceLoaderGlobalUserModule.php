@@ -24,6 +24,7 @@
 
 namespace MediaWiki\GlobalCssJs;
 
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\ResourceLoader\Context;
 
@@ -45,7 +46,7 @@ class ResourceLoaderGlobalUserModule extends ResourceLoaderGlobalModule {
 		// foreign/central wiki. Use this object very carefully.
 		$user = $context->getUserIdentity();
 		$tempUserConfig = MediaWikiServices::getInstance()->getTempUserConfig();
-		if ( !$user || !$user->isRegistered() || $tempUserConfig->isTempName( $user->getName() ) ) {
+		if ( !$user || $tempUserConfig->isTempName( $user->getName() ) || !$user->isRegistered() ) {
 			return [];
 		}
 
@@ -61,9 +62,9 @@ class ResourceLoaderGlobalUserModule extends ResourceLoaderGlobalModule {
 		// being returned on both the local and remote wiki. This matters because
 		// this method informs getVersionHash() which is used by the browser in the
 		// request URI for the central wiki, where it should match its version hash.
-		if ( $this->type === 'style' && $config->get( 'AllowUserCss' ) ) {
+		if ( $this->type === 'style' && $config->get( MainConfigNames::AllowUserCss ) ) {
 			$pages["User:$userpage/global.css"] = [ 'type' => 'style' ];
-		} elseif ( $this->type === 'script' && $config->get( 'AllowUserJs' ) ) {
+		} elseif ( $this->type === 'script' && $config->get( MainConfigNames::AllowUserJs ) ) {
 			$pages["User:$userpage/global.js"] = [ 'type' => 'script' ];
 		}
 
@@ -74,6 +75,6 @@ class ResourceLoaderGlobalUserModule extends ResourceLoaderGlobalModule {
 	 * @return string
 	 */
 	public function getGroup() {
-		return 'user';
+		return self::GROUP_USER;
 	}
 }

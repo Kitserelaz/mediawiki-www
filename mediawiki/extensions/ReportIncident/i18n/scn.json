@@ -3,5 +3,7 @@
 		"authors": [
 			"Gmelfi"
 		]
-	}
+	},
+	"reportincident-submit-behavior-notice": "L'amministratura ponnu aiutari cu [[ $1 |incidenti urgenti e prubblemi ‘n cursu]] cû cumpurtamentu di l'utenti.",
+	"reportincident-submit-behavior-section-support-item-info-is-public": "Tutti li cunvirsazzioni ntê wiki sunnu pùbbrichi, nun spàrtiri nfurmazzioni pirsunali."
 }

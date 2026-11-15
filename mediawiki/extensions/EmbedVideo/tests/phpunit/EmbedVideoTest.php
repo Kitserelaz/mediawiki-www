@@ -6,11 +6,11 @@ namespace MediaWiki\Extension\EmbedVideo\Tests;
 
 use Exception;
 use MediaWiki\Extension\EmbedVideo\EmbedVideo;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\PPCustomFrame_Hash;
+use MediaWiki\Parser\PPFrame_Hash;
 use MediaWikiIntegrationTestCase;
-use Parser;
-use ParserOptions;
-use PPCustomFrame_Hash;
-use PPFrame_Hash;
 
 /**
  * @group EmbedVideo
@@ -51,8 +51,11 @@ class EmbedVideoTest extends MediaWikiIntegrationTestCase {
 		);
 
 		$this->assertIsArray( $output );
-		$this->assertCount( 3, $output );
-		$this->assertStringContainsString( '<figure class="embedvideo" data-service="youtube"', $output[0] );
+		$this->assertCount( 2, $output );
+		$this->assertStringContainsString(
+			'<figure class="embedvideo" data-service="youtube"',
+			$this->resolveHtml( $parser, $output )
+		);
 	}
 
 	/**
@@ -134,9 +137,9 @@ class EmbedVideoTest extends MediaWikiIntegrationTestCase {
 		);
 
 		$this->assertIsArray( $output );
-		$this->assertCount( 3, $output );
+		$this->assertCount( 2, $output );
         // phpcs:ignore Generic.Files.LineLength.TooLong
-		$this->assertStringContainsString( '<figure class="embedvideo" data-service="youtube" data-iframeconfig=\'{"src":"//www.youtube-nocookie.com/embed/foobar?autoplay=1"}\' style="width:640px">', $output[0] );
+		$this->assertStringContainsString( '<figure class="embedvideo" data-service="youtube" data-mw-iframeconfig="{&quot;src&quot;:&quot;https://www.youtube-nocookie.com/embed/foobar?autoplay=1&quot;}" style="width:640px">', $this->resolveHtml( $parser, $output ) );
 	}
 
 	/**
@@ -167,8 +170,11 @@ class EmbedVideoTest extends MediaWikiIntegrationTestCase {
 		);
 
 		$this->assertIsArray( $output );
-		$this->assertCount( 3, $output );
-		$this->assertStringContainsString( '"width":200,"height":200', $output[0] );
+		$this->assertCount( 2, $output );
+		$this->assertStringContainsString(
+			'"width":200,"height":200',
+			htmlspecialchars_decode( $this->resolveHtml( $parser, $output ) )
+		);
 	}
 
 	/**
@@ -195,8 +201,11 @@ class EmbedVideoTest extends MediaWikiIntegrationTestCase {
 		);
 
 		$this->assertIsArray( $output );
-		$this->assertCount( 3, $output );
-		$this->assertStringContainsString( '"height":200', $output[0] );
+		$this->assertCount( 2, $output );
+		$this->assertStringContainsString(
+			'"height":200',
+			htmlspecialchars_decode( $this->resolveHtml( $parser, $output ) )
+		);
 	}
 
 	/**
@@ -223,8 +232,11 @@ class EmbedVideoTest extends MediaWikiIntegrationTestCase {
 		);
 
 		$this->assertIsArray( $output );
-		$this->assertCount( 3, $output );
-		$this->assertStringContainsString( '"width":200', $output[0] );
+		$this->assertCount( 2, $output );
+		$this->assertStringContainsString(
+			'"width":200',
+			htmlspecialchars_decode( $this->resolveHtml( $parser, $output ) )
+		);
 	}
 
 	/**
@@ -251,7 +263,7 @@ class EmbedVideoTest extends MediaWikiIntegrationTestCase {
 		);
 
 		$this->assertIsArray( $output );
-		$this->assertCount( 3, $output );
+		$this->assertCount( 2, $output );
 	}
 
 	/**
@@ -306,10 +318,10 @@ class EmbedVideoTest extends MediaWikiIntegrationTestCase {
 		);
 
 		$this->assertIsArray( $output );
-		$this->assertCount( 3, $output );
+		$this->assertCount( 2, $output );
 		$this->assertStringContainsString(
-			'<figure class="embedvideo" data-service="youtube" data-iframeconfig',
-			$output[0]
+			'<figure class="embedvideo" data-service="youtube" data-mw-iframeconfig',
+			$this->resolveHtml( $parser, $output )
 		);
 	}
 
@@ -337,10 +349,10 @@ class EmbedVideoTest extends MediaWikiIntegrationTestCase {
 		);
 
 		$this->assertIsArray( $output );
-		$this->assertCount( 3, $output );
+		$this->assertCount( 2, $output );
 		$this->assertStringContainsString(
-			'<figure class="embedvideo" data-service="youtube" data-iframeconfig',
-			$output[0]
+			'<figure class="embedvideo" data-service="youtube" data-mw-iframeconfig',
+			$this->resolveHtml( $parser, $output )
 		);
 	}
 
@@ -373,10 +385,11 @@ class EmbedVideoTest extends MediaWikiIntegrationTestCase {
 		);
 
 		$this->assertIsArray( $output );
-		$this->assertCount( 3, $output );
-		$this->assertStringContainsString( '"width":1000', $output[0] );
-		$this->assertStringContainsString( '<figcaption>Example description</figcaption>', $output[0] );
-		$this->assertStringContainsString( 'mw-halign-right', $output[0] );
+		$this->assertCount( 2, $output );
+		$html = $this->resolveHtml( $parser, $output );
+		$this->assertStringContainsString( '"width":1000', htmlspecialchars_decode( $html ) );
+		$this->assertStringContainsString( '<figcaption>Example description</figcaption>', $html );
+		$this->assertStringContainsString( 'mw-halign-right', $html );
 	}
 
 	/**
@@ -391,6 +404,11 @@ class EmbedVideoTest extends MediaWikiIntegrationTestCase {
 	 * @throws Exception
 	 */
 	public function testParseArgsExample6() {
+		$this->overrideConfigValues( [
+			'EmbedVideoRequireConsent' => true,
+			'EmbedVideoShowPrivacyNotice' => true,
+		] );
+
 		$parser = $this->getParser();
 
 		$output = EmbedVideo::parseEV(
@@ -406,12 +424,14 @@ class EmbedVideoTest extends MediaWikiIntegrationTestCase {
 		);
 
 		$this->assertIsArray( $output );
-		$this->assertCount( 3, $output );
-		$this->assertStringContainsString( '"width":320,"height":320', $output[0] );
+		$this->assertCount( 2, $output );
+		$html = $this->resolveHtml( $parser, $output );
+		$this->assertStringContainsString( '"width":320,"height":320', htmlspecialchars_decode( $html ) );
 		$this->assertStringContainsString(
-			'<div class="embedvideo-loader__title embedvideo-loader__title--manual"><a',
-			$output[0]
+			'<div class="embedvideo-loader__title embedvideo-loader__title--manual">Title of the Embed</div>',
+			$html
 		);
+		$this->assertStringContainsString( 'class="embedvideo-privacyNotice__link"', $html );
 	}
 
 	/**
@@ -438,8 +458,85 @@ class EmbedVideoTest extends MediaWikiIntegrationTestCase {
 		$this->assertIsArray( $output );
 		$this->assertCount( 3, $output );
         // phpcs:ignore Generic.Files.LineLength.TooLong
-		$this->assertStringContainsString( '<a data-iframeconfig="', $output[0] );
+		$this->assertStringContainsString( '<a data-mw-iframeconfig="', $output[0] );
 		$this->assertStringContainsString( 'Test Text', $output[0] );
+	}
+
+	/**
+	 * Ensure <evlplayer> without defaultid renders a visible placeholder container
+	 * using the videolink service and the correct player class.
+	 *
+	 * @covers \MediaWiki\Extension\EmbedVideo\EmbedVideo::parseEVLTag
+	 * @covers \MediaWiki\Extension\EmbedVideo\EmbedVideo::parseEV
+	 * @covers \MediaWiki\Extension\EmbedVideo\EmbedVideo::output
+	 * @return void
+	 * @throws Exception
+	 */
+	public function testParseEVLTagPlaceholderWithoutDefaultId() {
+		$parser = $this->getParser();
+
+		$output = EmbedVideo::parseEVLTag(
+			'',
+			[
+				'id' => 'p1',
+				'w' => '400',
+				'h' => '200',
+			],
+			$parser,
+			$this->getFrame( $parser ),
+		);
+
+		$this->assertIsArray( $output );
+		$this->assertCount( 2, $output );
+		$html = $this->resolveHtml( $parser, $output );
+		$this->assertStringContainsString( 'class="embedvideo evlplayer evlplayer-p1"', $html );
+		$this->assertStringContainsString( 'data-service="videolink"', $html );
+	}
+
+	/**
+	 * Ensure the explicit 'player' attribute on <evlplayer> overrides the legacy 'id'
+	 * attribute as the player name, preserving backwards compatibility.
+	 *
+	 * @covers \MediaWiki\Extension\EmbedVideo\EmbedVideo::parseEVLTag
+	 * @covers \MediaWiki\Extension\EmbedVideo\EmbedVideo::parseEV
+	 * @return void
+	 * @throws Exception
+	 */
+	public function testParseEVLTagPlayerAttributeOverridesId() {
+		$parser = $this->getParser();
+
+		$output = EmbedVideo::parseEVLTag(
+			'',
+			[
+				'id' => 'legacy-id',
+				'player' => 'explicit-player',
+				'defaultid' => 'pSsYTj9kCHE',
+				'service' => 'youtube',
+				'w' => '400',
+				'h' => '200',
+			],
+			$parser,
+			$this->getFrame( $parser ),
+		);
+
+		$this->assertIsArray( $output );
+		$this->assertCount( 2, $output );
+		$this->assertStringContainsString(
+			'class="embedvideo evlplayer evlplayer-explicit-player"',
+			$this->resolveHtml( $parser, $output )
+		);
+	}
+
+	/**
+	 * Resolve a nowiki strip marker returned by parseEV/parseEVU/parseEVTag in $output[0]
+	 * back to the HTML it represents.
+	 *
+	 * @param Parser $parser
+	 * @param array $output Parser function return array
+	 * @return string Resolved HTML
+	 */
+	private function resolveHtml( Parser $parser, array $output ): string {
+		return $parser->getStripState()->unstripNoWiki( $output[0] );
 	}
 
 	/**

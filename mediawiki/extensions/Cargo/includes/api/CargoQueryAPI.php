@@ -35,19 +35,19 @@ class CargoQueryAPI extends ApiBase {
 			$this->dieWithError( 'apierror-ratelimited' );
 		}
 
-		$sqlQuery = CargoSQLQuery::newFromValues( $tablesStr, $fieldsStr, $whereStr, $joinOnStr,
-				$groupByStr, $havingStr, $orderByStr, $limitStr, $offsetStr );
-
-		foreach ( $sqlQuery->mFieldStringAliases as $fieldStrAlias ) {
-			if ( $fieldStrAlias[0] == '_' ) {
-				$this->dieWithError( [ 'apierror-cargoquery-invalidfieldalias', $fieldStrAlias ] );
-			}
-		}
-
 		try {
+			$sqlQuery = CargoSQLQuery::newFromValues( $tablesStr, $fieldsStr, $whereStr, $joinOnStr,
+					$groupByStr, $havingStr, $orderByStr, $limitStr, $offsetStr );
+
+			foreach ( $sqlQuery->mFieldStringAliases as $fieldStrAlias ) {
+				if ( $fieldStrAlias[0] == '_' ) {
+					$this->dieWithError( [ 'apierror-cargoquery-invalidfieldalias', $fieldStrAlias ] );
+				}
+			}
+
 			$queryResults = $sqlQuery->run();
 		} catch ( Exception $e ) {
-			$this->dieWithError( $e, 'db_error' );
+			$this->dieWithError( $e->getMessage(), 'db_error' );
 		}
 
 		// Format data as the API requires it.

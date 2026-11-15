@@ -32,20 +32,7 @@ use WikiMedia\ParamValidator\TypeDef\IntegerDef;
  * ensure changes to how pages are rendered make it into the search indexes
  * within an expected timeframe.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class CheckSanity extends ApiBase {
 	use ApiTrait;
@@ -86,7 +73,7 @@ class CheckSanity extends ApiBase {
 		);
 	}
 
-	private function makeIsOldClosure() {
+	private function makeIsOldClosure(): ?\Closure {
 		$sequenceId = $this->getParameter( 'sequenceid' );
 		if ( $sequenceId === null ) {
 			return null;
@@ -128,18 +115,23 @@ class CheckSanity extends ApiBase {
 				case 'redirectInIndex':
 					[ $docId, $page, $indexSuffix ] = $args;
 					$target = $page->getRedirectTarget();
-					$targetIndexSuffix = $connection->getIndexSuffixForNamespace( $target->getNamespace() );
-					$clean[] = [
+					$problem = [
 						'indexName' => $connection->getIndexName( $indexBaseName, $indexSuffix ),
 						'errorType' => $problem,
 						'pageId' => $page->getId(),
 						'namespaceId' => $page->getNamespace(),
-						'target' => [
+					];
+					// Page could redirect to a Special page or even another wiki,
+					// target information is only useful on pages that exist locally.
+					if ( $target != null && $target->canExist() ) {
+						$targetIndexSuffix = $connection->getIndexSuffixForNamespace( $target->getNamespace() );
+						$problem['target'] = [
 							'pageId' => $target->getId(),
 							'namespaceId' => $target->getNamespace(),
 							'indexName' => $connection->getIndexName( $indexBaseName, $targetIndexSuffix ),
-						],
-					];
+						];
+					}
+					$clean[] = $problem;
 					break;
 
 				case 'pageNotInIndex':
@@ -196,12 +188,13 @@ class CheckSanity extends ApiBase {
 		return $clean;
 	}
 
+	/** @inheritDoc */
 	public function getAllowedParams() {
 		$assignment = $this->getSearchConfig()->getClusterAssignment();
 		return [
 			'cluster' => [
-				ParamValidator::PARAM_DEFAULT => $assignment->getSearchCluster(),
-				ParamValidator::PARAM_TYPE => $assignment->getAllKnownClusters(),
+				ParamValidator::PARAM_REQUIRED => true,
+				ParamValidator::PARAM_TYPE => $assignment->getManagedClusters(),
 			],
 			'from' => [
 				ParamValidator::PARAM_TYPE => 'integer',
@@ -245,17 +238,6 @@ class CheckSanity extends ApiBase {
 	 */
 	public function isInternal() {
 		return true;
-	}
-
-	/**
-	 * @see ApiBase::getExamplesMessages
-	 * @return array
-	 */
-	protected function getExamplesMessages() {
-		return [
-			'action=cirrus-sanity-check&from=0&limit=100' =>
-				'apihelp-cirrus-check-sanity-example',
-		];
 	}
 
 }

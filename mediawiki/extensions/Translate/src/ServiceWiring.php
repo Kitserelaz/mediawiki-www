@@ -12,6 +12,8 @@ use MediaWiki\Extension\Translate\Cache\PersistentCache;
 use MediaWiki\Extension\Translate\Cache\PersistentDatabaseCache;
 use MediaWiki\Extension\Translate\FileFormatSupport\FileFormatFactory;
 use MediaWiki\Extension\Translate\HookRunner;
+use MediaWiki\Extension\Translate\LogNames;
+use MediaWiki\Extension\Translate\MessageBundleTranslation\MessageBundleDependencyPurger;
 use MediaWiki\Extension\Translate\MessageBundleTranslation\MessageBundleMessageGroupFactory;
 use MediaWiki\Extension\Translate\MessageBundleTranslation\MessageBundleStore;
 use MediaWiki\Extension\Translate\MessageBundleTranslation\MessageBundleTranslationLoader;
@@ -33,6 +35,7 @@ use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundleFacto
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundleImporter;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundleStatusStore;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatablePageStore;
+use MediaWiki\Extension\Translate\MessageGroupProcessing\WorkflowStatesMessageGroupLoader;
 use MediaWiki\Extension\Translate\MessageLoading\CDBMessageIndex;
 use MediaWiki\Extension\Translate\MessageLoading\DatabaseMessageIndex;
 use MediaWiki\Extension\Translate\MessageLoading\HashMessageIndex;
@@ -72,7 +75,10 @@ return [
 	'Translate:AggregateGroupManager' => static function (
 		MediaWikiServices $services
 	): AggregateGroupManager {
-		return new AggregateGroupManager( $services->getTitleFactory() );
+		return new AggregateGroupManager(
+			$services->getTitleFactory(),
+			$services->get( 'Translate:MessageGroupMetadata' )
+		);
 	},
 
 	'Translate:AggregateGroupMessageGroupFactory' => static function (
@@ -119,7 +125,7 @@ return [
 		return new ExternalMessageSourceStateImporter(
 			$services->get( 'Translate:GroupSynchronizationCache' ),
 			$services->getJobQueueGroup(),
-			LoggerFactory::getInstance( 'Translate.GroupSynchronization' ),
+			LoggerFactory::getInstance( LogNames::GROUP_SYNCHRONIZATION ),
 			$services->get( 'Translate:MessageIndex' ),
 			$services->getTitleFactory(),
 			$services->get( 'Translate:MessageGroupSubscription' ),
@@ -135,6 +141,7 @@ return [
 	): FileBasedMessageGroupFactory {
 		return new FileBasedMessageGroupFactory(
 			new MessageGroupConfigurationParser(),
+			$services->getContentLanguageCode()->toString(),
 			new ServiceOptions(
 				FileBasedMessageGroupFactory::SERVICE_OPTIONS,
 				$services->getMainConfig()
@@ -162,6 +169,12 @@ return [
 		MediaWikiServices $services
 	): HookRunner {
 		return new HookRunner( $services->getHookContainer() );
+	},
+
+	'Translate:MessageBundleDependencyPurger' => static function (
+		MediaWikiServices $services
+	): MessageBundleDependencyPurger {
+		return new MessageBundleDependencyPurger( $services->get( 'Translate:TranslatableBundleFactory' ) );
 	},
 
 	'Translate:MessageBundleMessageGroupFactory' => static function (
@@ -222,7 +235,7 @@ return [
 			$services->get( 'Translate:MessageGroupSubscriptionStore' ),
 			$services->getJobQueueGroup(),
 			$services->getUserIdentityLookup(),
-			LoggerFactory::getInstance( 'Translate.MessageGroupSubscription' ),
+			LoggerFactory::getInstance( LogNames::GROUP_SUBSCRIPTION ),
 			new ServiceOptions(
 				MessageGroupSubscription::CONSTRUCTOR_OPTIONS,
 				$services->getMainConfig()
@@ -232,7 +245,10 @@ return [
 
 	'Translate:MessageGroupSubscriptionHookHandler' => static function (
 		MediaWikiServices $services
-	): MessageGroupSubscriptionHookHandler {
+	): ?MessageGroupSubscriptionHookHandler {
+		if ( !$services->getExtensionRegistry()->isLoaded( 'Echo' ) ) {
+			return null;
+		}
 		return new MessageGroupSubscriptionHookHandler(
 			$services->get( 'Translate:MessageGroupSubscription' ),
 			$services->getUserFactory()
@@ -267,7 +283,7 @@ return [
 			$services->getMainWANObjectCache(),
 			$services->getJobQueueGroup(),
 			$services->get( 'Translate:HookRunner' ),
-			LoggerFactory::getInstance( 'Translate' ),
+			LoggerFactory::getInstance( LogNames::MAIN ),
 			$services->getMainObjectStash(),
 			$services->getConnectionProvider(),
 			new ServiceOptions( MessageIndex::SERVICE_OPTIONS, $services->getMainConfig() ),
@@ -346,7 +362,8 @@ return [
 			$services->get( 'Translate:TranslatablePageParser' ),
 			$services->getRevisionLookup(),
 			$services->getNamespaceInfo(),
-			$services->getTitleFactory()
+			$services->getTitleFactory(),
+			$services->getFormatterFactory()
 		);
 	},
 
@@ -389,7 +406,9 @@ return [
 			$services->get( 'Translate:MessageGroupMetadata' ),
 			$services->getWikiPageFactory(),
 			$services->get( 'Translate:TranslatablePageView' ),
-			$services->get( 'Translate:MessageGroupSubscription' )
+			$services->get( 'Translate:MessageGroupSubscription' ),
+			$services->getFormatterFactory(),
+			$services->get( 'Translate:HookRunner' ),
 		);
 	},
 
@@ -490,7 +509,7 @@ return [
 	'Translate:TranslatorActivity' => static function ( MediaWikiServices $services ): TranslatorActivity {
 		$query = new TranslatorActivityQuery(
 			$services->getMainConfig(),
-			$services->getDBLoadBalancer()
+			$services->getConnectionProvider()
 		);
 
 		return new TranslatorActivity(
@@ -509,5 +528,16 @@ return [
 		}
 
 		return new TtmServerFactory( $config->get( 'TranslateTranslationServices' ), $default );
-	}
+	},
+
+	'Translate:WorkflowStatesMessageGroupLoader' => static function (
+		MediaWikiServices $services
+	): WorkflowStatesMessageGroupLoader {
+		return new WorkflowStatesMessageGroupLoader(
+			new ServiceOptions(
+				WorkflowStatesMessageGroupLoader::CONSTRUCTOR_OPTIONS,
+				$services->getMainConfig()
+			),
+		);
+	},
 ];

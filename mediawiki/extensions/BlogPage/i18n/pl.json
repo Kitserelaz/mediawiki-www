@@ -2,6 +2,7 @@
 	"@metadata": {
 		"authors": [
 			"Msz2001",
+			"PanWor",
 			"Rail"
 		]
 	},
@@ -28,7 +29,7 @@
 	"blog-recent-editors": "Inni ostatni edytorzy",
 	"blog-recent-editors-message": "Ulepsz tę stronę edytując ją.",
 	"blog-recent-voters": "Ostatni głosujący",
-	"blog-recent-voters-message": "Jeśli spodobał ci się artykuł, zagłosuj na niego.",
+	"blog-recent-voters-message": "Jeśli spodobał Ci się artykuł, zagłosuj na niego.",
 	"blog-view-archive-link": "Zobacz wszystkie",
 	"articlelists": "Nowe wpisy na blogach",
 	"blog-ah-no-results": "Nie znaleziono stron.",
@@ -49,7 +50,7 @@
 	"blog-create-error-need-content": "'''Błąd:''' Wpis na blogu musi zawierać jakąkolwiek zawartość!",
 	"blog-create-error-need-title": "'''Błąd:''' Musisz podać tytuł wpisu na blogu!",
 	"blog-create-error-page-exists": "'''Błąd:''' Istnieje już wpis na blogu o takim tytule. Wybierz inny tytuł dla swojego bloga.",
-	"blog-js-create-error-need-content": "Twój wpis na blogu musi posiadać zawartość!",
+	"blog-js-create-error-need-content": "Twój wpis na blogu musi zawierać jakąś treść!",
 	"blog-js-create-error-need-title": "Musisz podać tytuł wpisu na blogu!",
 	"blog-js-create-error-page-exists": "Istnieje już wpis na blogu o takim tytule. Wybierz inny tytuł dla swojego bloga.",
 	"blog-more": "więcej",

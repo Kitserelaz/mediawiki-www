@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"AhmedG612"
+		]
+	},
+	"eventstreamconfig-desc": "Waxay ku soo bandhigtaa habaynta qulqulka dhacdooyinka barta API-ga. Waxa kale oo loo isticmaali karaa in habaynta lagu soo bandhigo ResourceLoader",
+	"apihelp-streamconfigs-summary": "Waxay soo bandhigtaa habaynta qulqulka dhacdooyinka. Waxay soo celisaa oo keliya format=json iyadoo la adeegsanayo formatversion=2.",
+	"apihelp-streamconfigs-param-streams": "Liiska qulqulka xogta ee habayntooda la soo helayo",
+	"apihelp-streamconfigs-param-all_settings": "Ku dar dhammaan dejimaha natiijooyinka habaynta qulqulka xogta. Waxaa la joojiyay tan iyo 1.41. Dhammaan dejimaha si caadi ah ayaa loogu daraa.",
+	"apihelp-streamconfigs-param-constraints": "Kala shaandhee natiijooyinka gelinnada habaynta qulqulka xogta ee leh dejimadan",
+	"apihelp-streamconfigs-example-1": "Soo hel habaynta qulqulka xogta ee liiska qulqulka xogta",
+	"apihelp-streamconfigs-example-2": "Soo hel habaynta qulqulka xogta ee qulqulka xogta leh dhammaan dejimaha",
+	"apihelp-streamconfigs-example-3": "Soo hel habaynta qulqulka xogta ee qulqulka xogta leh dejimo u dhigma xadidaadahan"
+}

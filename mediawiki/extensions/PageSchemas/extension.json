@@ -1,6 +1,6 @@
 {
 	"name": "Page Schemas",
-	"version": "0.9.2",
+	"version": "1.2.2",
 	"author": [
 		"Yaron Koren",
 		"Ankit Garg",
@@ -23,7 +23,14 @@
 		"generatepages": "PSGeneratePagesAction"
 	},
 	"SpecialPages": {
-		"EditSchema": "PSEditSchema",
+		"EditSchema": {
+			"class": "PSEditSchema",
+			"services": [
+				"ContentLanguage",
+				"PermissionManager",
+				"WikiPageFactory"
+			]
+		},
 		"GeneratePages": "PSGeneratePages"
 	},
 	"JobClasses": {
@@ -68,8 +75,17 @@
 		"localBasePath": "",
 		"remoteExtPath": "PageSchemas"
 	},
+	"HookHandlers": {
+		"main": {
+			"class": "PageSchemasHooks",
+			"services": [
+				"MainConfig",
+				"HookContainer"
+			]
+		}
+	},
 	"Hooks": {
-		"ParserFirstCallInit": "PageSchemasHooks::register",
+		"ParserFirstCallInit": "main",
 		"SkinTemplateNavigation::Universal": [
 			"PSEditSchemaAction::displayTab",
 			"PSGeneratePagesAction::displayTab"
@@ -81,6 +97,6 @@
 	},
 	"manifest_version": 1,
 	"requires": {
-		"MediaWiki": ">= 1.36"
+		"MediaWiki": ">= 1.41"
 	}
 }

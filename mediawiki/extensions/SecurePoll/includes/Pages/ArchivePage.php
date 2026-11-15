@@ -2,9 +2,9 @@
 
 namespace MediaWiki\Extension\SecurePoll\Pages;
 
-use JobQueueGroup;
-use JobSpecification;
 use MediaWiki\Extension\SecurePoll\SpecialSecurePoll;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\SpecialPage\SpecialPage;
 use OOUI\MessageWidget;
 
@@ -12,19 +12,12 @@ use OOUI\MessageWidget;
  * SecurePoll subpage for archiving past elections
  */
 class ArchivePage extends ActionPage {
-	/** @var JobQueueGroup */
-	private $jobQueueGroup;
 
-	/**
-	 * @param SpecialSecurePoll $specialPage
-	 * @param JobQueueGroup $jobQueueGroup
-	 */
 	public function __construct(
 		SpecialSecurePoll $specialPage,
-		JobQueueGroup $jobQueueGroup
+		private readonly JobQueueGroup $jobQueueGroup,
 	) {
 		parent::__construct( $specialPage );
-		$this->jobQueueGroup = $jobQueueGroup;
 	}
 
 	/**
@@ -54,7 +47,7 @@ class ArchivePage extends ActionPage {
 		$isAdmin = $this->election->isAdmin( $this->specialPage->getUser() );
 
 		if ( !$isAdmin ) {
-			$out->prependHTML( ( new MessageWidget( [
+			$out->prependHTML( (string)( new MessageWidget( [
 				'label' => $this->msg( 'securepoll-archive-private' )->text(),
 				'type' => 'error',
 			] ) ) );
@@ -62,8 +55,19 @@ class ArchivePage extends ActionPage {
 		}
 
 		if ( !$this->election->isFinished() ) {
-			$out->prependHTML( ( new MessageWidget( [
+			$out->prependHTML( (string)( new MessageWidget( [
 				'label' => $this->msg( 'securepoll-archive-not-finished' )->text(),
+				'type' => 'error',
+			] ) ) );
+			return;
+		}
+
+		$token = $this->specialPage->getContext()->getCsrfTokenSet()->getToken();
+		$request = $this->specialPage->getRequest();
+		$tokenMatch = $token->match( $request->getVal( 'token' ) );
+		if ( !$tokenMatch ) {
+			$out->prependHTML( (string)( new MessageWidget( [
+				'label' => $this->msg( 'securepoll-archive-token-error' )->text(),
 				'type' => 'error',
 			] ) ) );
 			return;
@@ -90,13 +94,13 @@ class ArchivePage extends ActionPage {
 					[]
 				)
 			);
-			$out->prependHTML( ( new MessageWidget( [
+			$out->prependHTML( (string)( new MessageWidget( [
 				'label' => $this->msg( 'securepoll-archive-in-progress' )->text(),
 				'type' => 'success',
 			] ) ) );
 		} else {
 			// Already archived
-			$out->prependHTML( ( new MessageWidget( [
+			$out->prependHTML( (string)( new MessageWidget( [
 				'label' => $this->msg( 'securepoll-already-archived-error' )->text(),
 				'type' => 'error',
 			] ) ) );

@@ -6,7 +6,7 @@
 			"פעמי-עליון"
 		]
 	},
-	"cirrussearch-desc": "חיפוש במדיה־ויקי באמצעות Elasticsearch",
+	"cirrussearch-desc": "חיפוש במדיה־ויקי באמצעות OpenSearch",
 	"cirrussearch-backend-error": "לא הצלחנו להשלים את החיפוש שלך בשל בעיה זמנית. נא לנסות שוב מאוחר יותר.",
 	"cirrussearch-parse-error": "השאילתה לא הובנה. נא לפשט אותה. השאילתה נרשמה ביומן כדי לשפר את מערכת החיפוש.",
 	"cirrussearch-too-busy-error": "החיפוש עמוס מדי כרגע. נא לנסות שוב מאוחר יותר.",
@@ -61,9 +61,10 @@
 	"cirrussearch-feature-deepcat-endpoint": "<span dir=\"ltr\">$wgCirrusSearchCategoryEndpoint</span> צריך להיות מוגדר לנקודת סיום תקינה של SPARQL כדי שניתן יהיה לבצע חיפוש עמוק בקטגוריה.",
 	"cirrussearch-feature-deepcat-exception": "שאילתת ה־SPARQL לחיפוש עמוק בקטגוריה נכשלה",
 	"cirrussearch-feature-deepcat-timeout": "הזמן הקצוב לחיפוש הקטגוריות העמוק פג. סביר להניח שלקטגוריה יש יותר מדי קטגוריות־משנה",
-	"cirrussearch-feature-deepcat-toomany": "שאילתת החיפוש העמוק בקטגוריה החזירה יותר מדי קטגוריות",
+	"cirrussearch-feature-deepcat-toomany": "שאילתת החיפוש העמוק בקטגוריה החזירה יותר מדי קטגוריות. הוחלה רק תת־קבוצה.",
 	"cirrussearch-feature-deepcat-invalid-title": "הקטגוריה שניתנה אינה תקינה.",
 	"cirrussearch-feature-pageid-invalid-id": "{{PLURAL:$2|מזהה דף בלתי־תקין|מזהי דף בלתי־תקינים}}: $1",
+	"cirrussearch-feature-invalid-date-range": "התאריך שסופק אינו כתוב בתסדיר תקין. נא להשתמש בתסדירים המוכרים עבור שנה (<code>YYYY</code>), חודש (<code>YYYY-MM</code>), יום (<code>YYYY-MM-DD</code>), או ביטויי זמן יחסיים כגון <code>now-2d</code> או <code>today-1y</code> .",
 	"cirrussearch-incategory-feature-no-valid-categories": "לא ניתנו קטגוריות תקינות לפקודה \"$1\".",
 	"cirrussearch-mlt-feature-no-valid-titles": "לא ניתנו כותרת תקינות לפקודה \"$1\".",
 	"cirrussearch-mlt-not-configured": "האפשרות \"$1\" אינה מוגדרת באופן תקין. נא לבקש ממנהל האתר לתקן את $wgCirrusSearchMoreLikeThisFields",
@@ -73,6 +74,10 @@
 	"cirrussearch-autoselect-profile": "לתת למנוע החיפוש לבחור את הפרופיל הטוב ביותר לשימוש.",
 	"cirrussearch-offset-too-large": "לא היה אפשר לאחזר את התוצאות. נתמכות עד $1 תוצאות חיפוש, אבל התבקשו תוצאות שמתחילות ב־$2.",
 	"cirrussearch-offset-not-allowed-with-random-sort": "אין התייחסות לבקשה לחלק לדפים תוצאות ממוינות אקראית.",
-	"cirrussearch-articletopic-invalid-topic": "{{PLURAL:$2|שם נושא|שמות נושאים}} עבור מילת המפתח <kbd>articletopic:</kbd> {{PLURAL:$2|אינו מוכר|אינם מוכר}}: $1",
-	"cirrussearch-inlanguage-deprecate-comma": "שימוש בפסיק בתור מפריד למילת המפתח inlanguage הוכרז בתור מיושן. נא להשתמש בתו | (קו ניצב) להפרדת שפות."
+	"cirrussearch-articleprediction-invalid-keyword": "למילת המפתח <kbd>$3:</kbd> נכתבו {{PLURAL:$2|ערך לא מזוהה|ערכים לא מזוהים}}: $1",
+	"cirrussearch-inlanguage-deprecate-comma": "שימוש בפסיק בתור מפריד למילת המפתח inlanguage הוכרז בתור מיושן. נא להשתמש בתו | (קו ניצב) להפרדת שפות.",
+	"cirrussearch-invalid-keyword-boost": "סופק ערך הגברה בלתי־תקין \"$1\". מצופה מספר עשרוני חיובי.",
+	"cirrussearch-invalid-keyword-threshold": "סופק ערך סף בלתי־תקין \"$1\". מצופה מספר עשרוני בין 0 ל־1.",
+	"cirrussearch-semantic-empty-query": "חיפוש סמנטי דורש מונח חיפוש שאינו ריק.",
+	"cirrussearch-semantic-too-many-results": "התבקשו יותר מדי תוצאות מחיפוש סמנטי. רק {{PLURAL:$1|התוצאה המובילה תדורג כראוי|רק $1 התוצאות המובילות ידורגו כראוי}}."
 }

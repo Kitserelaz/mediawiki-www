@@ -10,11 +10,13 @@
  */
 
 use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\ContentHandler;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\SystemUsers\FuzzyBot;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
 
@@ -24,10 +26,12 @@ class WorkflowStatesMessageGroup extends WikiMessageGroup {
 	public function __construct() {
 	}
 
+	/** @inheritDoc */
 	public function getId() {
 		return 'translate-workflow-states';
 	}
 
+	/** @inheritDoc */
 	public function getLabel( ?IContextSource $context = null ) {
 		$msg = wfMessage( 'translate-workflowgroup-label' );
 		$msg = self::addContext( $msg, $context );
@@ -35,6 +39,7 @@ class WorkflowStatesMessageGroup extends WikiMessageGroup {
 		return $msg->plain();
 	}
 
+	/** @inheritDoc */
 	public function getDescription( ?IContextSource $context = null ) {
 		$msg = wfMessage( 'translate-workflowgroup-desc' );
 		$msg = self::addContext( $msg, $context );
@@ -42,15 +47,17 @@ class WorkflowStatesMessageGroup extends WikiMessageGroup {
 		return $msg->plain();
 	}
 
+	/** @inheritDoc */
 	public function getDefinitions() {
 		$groups = MessageGroups::getAllGroups();
 		$keys = [];
 
-		/** @var $g MessageGroup */
 		foreach ( $groups as $g ) {
 			$states = $g->getMessageGroupStates()->getStates();
-			foreach ( array_keys( $states ) as $state ) {
-				$keys["Translate-workflow-state-$state"] = $state;
+			if ( $states !== null ) {
+				foreach ( $states as $state => $_ ) {
+					$keys["Translate-workflow-state-$state"] = $state;
+				}
 			}
 		}
 

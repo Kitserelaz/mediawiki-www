@@ -4,12 +4,14 @@ namespace CirrusSearch;
 
 use MediaWiki\Extension\EventBus\Serializers\EventSerializer;
 use MediaWiki\Extension\EventBus\Serializers\MediaWiki\PageEntitySerializer;
+use MediaWiki\Http\Telemetry;
+use MediaWiki\Page\ProperPageIdentity;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\WikiMap\WikiMap;
-use WikiPage;
 
 class EventBusWeightedTagSerializer {
-	public const SCHEMA = '/development/cirrussearch/page_weighted_tags_change/1.0.0';
-	public const STREAM = 'mediawiki.cirrussearch.page_weighted_tags_change.rc0';
+	public const SCHEMA = '/mediawiki/cirrussearch/page_weighted_tags_change/1.0.0';
+	public const STREAM = 'mediawiki.cirrussearch.page_weighted_tags_change.v1';
 
 	private EventSerializer $eventSerializer;
 	private PageEntitySerializer $pageEntitySerializer;
@@ -55,15 +57,22 @@ class EventBusWeightedTagSerializer {
 			$uri,
 			array_merge( $revBased === null ? [] : [ 'rev_based' => $revBased ], [
 				'dt' => EventSerializer::timestampToDt( $dt ),
-				'wiki_id' => WikiMap::getCurrentWikiId(),
+				'wiki_id' => self::getWikiId( $wikiPage ),
 				'page' => $page,
 				'weighted_tags' => $weightedTags
-			] ) );
+			] ),
+			self::getWikiId( $wikiPage ),
+			null,
+			// NOTE: This is using a global Telemetry instance, and it might be better to
+			// pass $requestId here as a parameter (obtaining the value of it in
+			// this method's caller instead of here in the serializer).
+			Telemetry::getInstance()->getRequestId(),
+		);
 	}
 
 	/**
 	 * @param WikiPage $wikiPage
-	 * @param int[][] $set prefix => [ name => weight ] map
+	 * @param array[] $set prefix => [ [ 'tag' => string ] | [ 'tag' => string, 'score' => int ] ] map
 	 * @param bool|null $revBased `rev_based` flag
 	 * @param string|null $dt event timestamp
 	 * @return array
@@ -82,4 +91,18 @@ class EventBusWeightedTagSerializer {
 	public function toClearEvent( WikiPage $wikiPage, array $clear, ?bool $revBased = null, ?string $dt = null ): array {
 		return $this->toArray( $wikiPage, [ 'clear' => $clear ], $revBased, $dt );
 	}
+
+	/**
+	 * Return the page's wikiId, or if that returns false,
+	 * return WikiMap::getCurrentWikiId.
+	 *
+	 * @param ProperPageIdentity $page
+	 * @return string
+	 */
+	private static function getWikiId( ProperPageIdentity $page ): string {
+		// Get the wikiId.  page's getWikiId can return false.
+		// Fallback to global WikiMap.
+		return $page->getWikiId() ?: WikiMap::getCurrentWikiId();
+	}
+
 }

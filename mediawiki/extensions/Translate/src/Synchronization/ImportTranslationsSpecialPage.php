@@ -3,15 +3,16 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Synchronization;
 
-use BagOStuff;
 use FileBasedMessageGroup;
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\Extension\Translate\FileFormatSupport\GettextFormat;
 use MediaWiki\Extension\Translate\FileFormatSupport\GettextParseException;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Html\Html;
+use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
 use MessageGroupBase;
-use Xml;
+use Wikimedia\ObjectCache\BagOStuff;
 
 /**
  * Special page to import Gettext (.po) files exported using Translate extension.
@@ -23,28 +24,35 @@ use Xml;
  * @ingroup SpecialPage TranslateSpecialPage
  */
 class ImportTranslationsSpecialPage extends SpecialPage {
-	private BagOStuff $cache;
 
-	public function __construct( BagOStuff $cache ) {
-		parent::__construct( 'ImportTranslations', 'translate-import' );
-		$this->cache = $cache;
+	public function __construct(
+		private readonly BagOStuff $cache,
+	) {
+		parent::__construct( 'ImportTranslations' );
 	}
 
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'translate-import';
+	}
+
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
 
-	protected function getGroupName() {
+	protected function getGroupName(): string {
 		return 'translation';
 	}
 
 	/**
 	 * Special page entry point.
 	 * @param null|string $parameters
-	 * @throws \PermissionsError
+	 * @throws PermissionsError
 	 */
 	public function execute( $parameters ) {
 		$this->setHeaders();
+		$this->getOutput()->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
 
 		// Security and validity checks
 		if ( !$this->userCanExecute( $this->getUser() ) ) {
@@ -98,13 +106,14 @@ class ImportTranslationsSpecialPage extends SpecialPage {
 		$code = $data['EXTRA']['METADATA']['code'];
 
 		if ( !MessageGroups::exists( $groupId ) ) {
-			$errorWrap = "<div class='error'>\n$1\n</div>";
-			$this->getOutput()->wrapWikiMsg( $errorWrap, 'translate-import-err-stale-group' );
+			$this->getOutput()->addHTML(
+				Html::errorBox( $this->msg( 'translate-import-err-stale-group' )->parse() )
+			);
 
 			return;
 		}
 
-		$importer = new MessageWebImporter( $this->getPageTitle(), $this->getUser(), $groupId, $code );
+		$importer = new MessageWebImporter( $this->getPageTitle(), $this->getContext(), $groupId, $code );
 		$allDone = $importer->execute( $messages );
 
 		$out = $this->getOutput();
@@ -128,8 +137,10 @@ class ImportTranslationsSpecialPage extends SpecialPage {
 		// translate-import-err-dl-failed, translate-import-err-ul-failed,
 		// translate-import-err-invalid-title, translate-import-err-no-such-file,
 		// translate-import-err-stale-group, translate-import-err-no-headers,
+		// translate-import-err-gettext-parse-failed,
+		// translate-import-err-invalid-encoding,
 		if ( $msg[0] !== 'ok' ) {
-			$errorWrap = "<div class='error'>\n$1\n</div>";
+			$errorWrap = Html::errorBox( '$1' );
 			$msg[0] = 'translate-import-err-' . $msg[0];
 			$this->getOutput()->wrapWikiMsg( $errorWrap, $msg );
 			$this->outputForm();
@@ -146,7 +157,7 @@ class ImportTranslationsSpecialPage extends SpecialPage {
 		$this->getOutput()->addHelpLink( 'Help:Extension:Translate/Off-line_translation' );
 		/** Ugly but necessary form building ahead, ohoy */
 		$this->getOutput()->addHTML(
-			Xml::openElement( 'form', [
+			Html::openElement( 'form', [
 				'action' => $this->getPageTitle()->getLocalURL(),
 				'method' => 'post',
 				'enctype' => 'multipart/form-data',
@@ -154,16 +165,20 @@ class ImportTranslationsSpecialPage extends SpecialPage {
 			] ) .
 				Html::hidden( 'token', $this->getContext()->getCsrfTokenSet()->getToken() ) .
 				Html::hidden( 'title', $this->getPageTitle()->getPrefixedText() ) .
-				Xml::inputLabel(
-					$this->msg( 'translate-import-from-local' )->text(),
-					'upload-local', // name
-					'mw-translate-up-local-input', // id
-					50, // size
-					$this->getRequest()->getText( 'upload-local' ),
-					[ 'type' => 'file' ]
+				Html::rawElement(
+					'label',
+					[],
+					$this->msg( 'translate-import-from-local' )->escaped() .
+					"\u{00A0}" .
+					Html::input(
+						'upload-local',
+						$this->getRequest()->getText( 'upload-local' ),
+						'file',
+						[ 'id' => 'mw-translate-up-local-input' ]
+					)
 				) .
 				Html::submitButton( $this->msg( 'translate-import-load' )->text() ) .
-				Xml::closeElement( 'form' )
+				Html::closeElement( 'form' )
 		);
 	}
 
@@ -203,7 +218,13 @@ class ImportTranslationsSpecialPage extends SpecialPage {
 		try {
 			$parseOutput = $ffs->readFromVariable( $data );
 		} catch ( GettextParseException $e ) {
-			return [ 'no-headers' ];
+			if ( $e->getMessage() === 'invalid-utf8' ) {
+				return [ 'invalid-encoding' ];
+			}
+			return [
+				'gettext-parse-failed',
+				Message::rawParam( Html::element( 'pre', [], $e->getMessage() ) )
+			];
 		}
 
 		// Special data added by GettextFormat
@@ -217,11 +238,12 @@ class ImportTranslationsSpecialPage extends SpecialPage {
 		return [ 'ok', $parseOutput ];
 	}
 
-	private function setCachedData( $data ): void {
+	private function setCachedData( array $data ): void {
 		$key = $this->cache->makeKey( 'translate', 'webimport', $this->getUser()->getId() );
 		$this->cache->set( $key, $data, 60 * 30 );
 	}
 
+	/** @return array|false */
 	private function getCachedData() {
 		$key = $this->cache->makeKey( 'translate', 'webimport', $this->getUser()->getId() );
 

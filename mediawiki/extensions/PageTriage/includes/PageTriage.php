@@ -2,10 +2,10 @@
 
 namespace MediaWiki\Extension\PageTriage;
 
+use MediaWiki\Logging\PatrolLog;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\User\UserIdentity;
-use PatrolLog;
-use RecentChange;
 
 /**
  * TODO: This class does too much. Refactoring into services and classes with single responsibility
@@ -149,7 +149,7 @@ class PageTriage {
 			if ( !$fromRc && $newReviewStatus && $user ) {
 				$rc = RecentChange::newFromConds( [
 					'rc_cur_id' => $this->mPageId,
-					'rc_new' => '1'
+					'rc_source' => RecentChange::SRC_NEW,
 				], __METHOD__ );
 				if ( $rc && !$rc->getAttribute( 'rc_patrolled' ) ) {
 					$rc->reallyMarkPatrolled();

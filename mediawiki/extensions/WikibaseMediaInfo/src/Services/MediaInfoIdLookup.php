@@ -18,21 +18,19 @@ use Wikimedia\Assert\Assert;
  */
 class MediaInfoIdLookup implements EntityIdLookup {
 
-	private EntityIdComposer $entityIdComposer;
-	private int $mediaInfoNamespace;
-
 	/**
 	 * @param EntityIdComposer $entityIdComposer
 	 * @param int $mediaInfoNamespace numeric namespace ID of the namespace in which MediaInfo
 	 * entities reside.
 	 */
-	public function __construct( EntityIdComposer $entityIdComposer, int $mediaInfoNamespace ) {
+	public function __construct(
+		private readonly EntityIdComposer $entityIdComposer,
+		private readonly int $mediaInfoNamespace,
+	) {
 		Assert::parameter( $mediaInfoNamespace >= 0, '$mediaInfoNamespace', 'Must not be negative' );
-
-		$this->entityIdComposer = $entityIdComposer;
-		$this->mediaInfoNamespace = $mediaInfoNamespace;
 	}
 
+	/** @inheritDoc */
 	public function getEntityIds( array $titles ) {
 		$results = [];
 		foreach ( $titles as $title ) {
@@ -41,6 +39,7 @@ class MediaInfoIdLookup implements EntityIdLookup {
 		return array_filter( $results );
 	}
 
+	/** @inheritDoc */
 	public function getEntityIdForTitle( Title $title ) {
 		if ( !$title->inNamespace( $this->mediaInfoNamespace ) ) {
 			return null;
@@ -53,7 +52,7 @@ class MediaInfoIdLookup implements EntityIdLookup {
 				MediaInfo::ENTITY_TYPE,
 				$title->getArticleID()
 			);
-		} catch ( InvalidArgumentException | UnexpectedValueException $e ) {
+		} catch ( InvalidArgumentException | UnexpectedValueException ) {
 			return null;
 		}
 	}

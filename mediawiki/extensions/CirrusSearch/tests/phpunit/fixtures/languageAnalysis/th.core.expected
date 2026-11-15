@@ -20,6 +20,7 @@
                 "near_space_flattener"
             ],
             "filter": [
+                "truncate_keyword",
                 "lowercase"
             ],
             "tokenizer": "no_splitting",
@@ -144,8 +145,8 @@
                 "thai_charfilter"
             ],
             "filter": [
-                "lowercase",
                 "decimal_digit",
+                "lowercase",
                 "thai_stop",
                 "asciifolding"
             ],
@@ -162,8 +163,8 @@
                 "thai_charfilter"
             ],
             "filter": [
-                "lowercase",
                 "decimal_digit",
+                "lowercase",
                 "thai_stop",
                 "asciifolding"
             ],
@@ -178,6 +179,16 @@
             "type": "custom"
         },
         "trigram": {
+            "filter": [
+                "lowercase"
+            ],
+            "tokenizer": "trigram",
+            "type": "custom"
+        },
+        "trigram_anchored": {
+            "char_filter": [
+                "add_regex_start_end_anchors"
+            ],
             "filter": [
                 "lowercase"
             ],
@@ -276,7 +287,14 @@
                 "\\u05F1=>\\u05D5\\u05D9",
                 "\\u05F2=>\\u05D9\\u05D9",
                 "\\uFB1F=>\\u05D9\\u05D9\\u05B7",
-                "\\u05D9\\u05B7\\u05D9=>\\u05D9\\u05D9\\u05B7"
+                "\\u05D9\\u05B7\\u05D9=>\\u05D9\\u05D9\\u05B7",
+                "\u0d23\u0d4d\\u200D=>\u0d7a",
+                "\u0d28\u0d4d\\u200D=>\u0d7b",
+                "\u0d30\u0d4d\\u200D=>\u0d7c",
+                "\u0d32\u0d4d\\u200D=>\u0d7d",
+                "\u0d33\u0d4d\\u200D=>\u0d7e",
+                "\u09a4\u09cd\\u200D=>\u09ce",
+                "\\u061C=>"
             ]
         },
         "near_space_flattener": {
@@ -322,15 +340,26 @@
                 "\\u0e33\\u0e49=>\\u0e49\\u0e33",
                 "\\u0E34\\u0E4D=>\\u0E36",
                 "\\u0E4D\\u0E34=>\\u0E36",
-                "\\u200B=>",
+                "\\u200B=>\\u0020",
                 "-=>\\u0020",
                 "\u2010=>\\u0020",
+                "\u2011=>\\u0020",
+                "\u2012=>\\u0020",
                 "\u2013=>\\u0020",
                 "\u2014=>\\u0020",
                 "\u2015=>\\u0020",
+                "\u2e40=>\\u0020",
+                "\u30a0=>\\u0020",
+                "\ufe63=>\\u0020",
                 "\uff0d=>\\u0020",
-                "\"=>\\u0020"
+                "\"=>\\u0020",
+                "\\udb40\\uddef=>"
             ]
+        },
+        "truncate_keyword": {
+            "type": "pattern_replace",
+            "pattern": "(?s)(?<=^.{5000}).*",
+            "replacement": ""
         },
         "word_break_helper": {
             "type": "mapping",
@@ -375,7 +404,7 @@
             "type": "lowercase"
         },
         "prefix_ngram_filter": {
-            "type": "edgeNGram",
+            "type": "edge_ngram",
             "max_gram": 255
         },
         "remove_empty": {
@@ -397,12 +426,29 @@
             "length": 5000
         }
     },
+    "normalizer": {
+        "keyword": {
+            "type": "custom",
+            "char_filter": [
+                "truncate_keyword"
+            ]
+        },
+        "lowercase_keyword": {
+            "type": "custom",
+            "char_filter": [
+                "truncate_keyword"
+            ],
+            "filter": [
+                "lowercase"
+            ]
+        }
+    },
     "tokenizer": {
         "no_splitting": {
             "type": "keyword"
         },
         "prefix": {
-            "type": "edgeNGram",
+            "type": "edge_ngram",
             "max_gram": 255
         },
         "trigram": {

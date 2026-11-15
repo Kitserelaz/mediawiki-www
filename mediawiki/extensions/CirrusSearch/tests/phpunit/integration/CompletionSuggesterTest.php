@@ -7,27 +7,17 @@ use CirrusSearch\Profile\SearchProfileService;
 use CirrusSearch\Query\CompSuggestQueryBuilder;
 use CirrusSearch\Search\CompletionResultsCollector;
 use CirrusSearch\Search\SearchContext;
+use CirrusSearch\SecondTry\SecondTryRunner;
+use CirrusSearch\SecondTry\SecondTrySearch;
 use Elastica\Query;
 use Elastica\Response;
 use Elastica\ResultSet;
+use MediaWiki\Search\SearchSuggestionSet;
 
 /**
  * Completion Suggester Tests
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  *
  * @group CirrusSearch
  * @covers \CirrusSearch\Search\CompletionResultsCollector
@@ -40,6 +30,21 @@ class CompletionSuggesterTest extends CirrusIntegrationTestCase {
 	 */
 	public function testQueries( $config, $limit, $search, $variants, $expectedProfiles, $expectedQueries ) {
 		$config = new HashSearchConfig( $config );
+		$secondTryRunner = new SecondTryRunner( [
+				'my_second_try' => new class( $variants ) implements SecondTrySearch {
+					private ?array $variants;
+
+					public function __construct( ?array $variants ) {
+						$this->variants = $variants;
+					}
+
+					public function candidates( string $searchQuery ): array {
+						return $this->variants ?: [];
+					}
+				},
+			],
+			[ 'my_second_try' => 0.8 ]
+		);
 		$compSuggestBuilder = new CompSuggestQueryBuilder(
 			new SearchContext( $config ),
 			// Need to explicitly access the profile like that
@@ -48,10 +53,11 @@ class CompletionSuggesterTest extends CirrusIntegrationTestCase {
 			$config->getProfileService()
 				->loadProfileByName( SearchProfileService::COMPLETION,
 					$config->get( 'CirrusSearchCompletionSettings' ) ),
+			$secondTryRunner,
 			$limit
 		);
 
-		$suggest = $compSuggestBuilder->build( $search, $variants );
+		$suggest = $compSuggestBuilder->build( $search, $secondTryRunner->candidates( $search ) );
 		$profiles = $compSuggestBuilder->getMergedProfiles();
 		$this->assertEquals( $expectedProfiles, $profiles );
 		$this->assertEquals( $expectedQueries, $suggest->toArray()['suggest'] );
@@ -134,7 +140,7 @@ class CompletionSuggesterTest extends CirrusIntegrationTestCase {
 							'size' => 15.0, // effect of fetch_limit_factor
 							// fuzzy config is simply copied from the profile
 							'fuzzy' => [
-								'fuzziness' => 'AUTO',
+								'fuzziness' => 2,
 								'prefix_length' => 1,
 								'unicode_aware' => true,
 							],
@@ -154,17 +160,17 @@ class CompletionSuggesterTest extends CirrusIntegrationTestCase {
 				// to include an extra discount
 				// ' complete me ' variant duplicate will be ignored
 				$simpleProfile + [
-					'plain-variant-1' => [
+					'plain-second-try-my_second_try-1' => [
 						'field' => 'suggest',
 						'min_query_len' => 0,
-						'discount' => 1.0 * CompSuggestQueryBuilder::VARIANT_EXTRA_DISCOUNT,
+						'discount' => 1.0 * 0.8 * CompSuggestQueryBuilder::VARIANT_EXTRA_DISCOUNT,
 						'fetch_limit_factor' => 2,
 						'fallback' => true, // extra key added, not used for now
 					],
-					'plain-variant-2' => [
+					'plain-second-try-my_second_try-2' => [
 						'field' => 'suggest',
 						'min_query_len' => 0,
-						'discount' => 1.0 * ( CompSuggestQueryBuilder::VARIANT_EXTRA_DISCOUNT / 2 ),
+						'discount' => 1.0 * ( 0.8 * CompSuggestQueryBuilder::VARIANT_EXTRA_DISCOUNT / 2 ),
 						'fetch_limit_factor' => 2,
 						'fallback' => true, // extra key added, not used for now
 					]
@@ -177,14 +183,14 @@ class CompletionSuggesterTest extends CirrusIntegrationTestCase {
 							'size' => 20, // effect of fetch_limit_factor
 						],
 					],
-					'plain-variant-1' => [
+					'plain-second-try-my_second_try-1' => [
 						'prefix' => 'variant1 ',
 						'completion' => [
 							'field' => 'suggest',
 							'size' => 20, // effect of fetch_limit_factor
 						],
 					],
-					'plain-variant-2' => [
+					'plain-second-try-my_second_try-2' => [
 						'prefix' => 'variant2 ',
 						'completion' => [
 							'field' => 'suggest',
@@ -204,11 +210,14 @@ class CompletionSuggesterTest extends CirrusIntegrationTestCase {
 			'CirrusSearchCompletionSettings' => 'fuzzy',
 		], [ HashSearchConfig::FLAG_INHERIT ] );
 		// Test that we generate at most 4 profiles
+		$secondTry = new SecondTryRunner( [], [] );
 		$completion = new CompSuggestQueryBuilder(
 			new SearchContext( $config ),
 			$config->getProfileService()
-				->loadProfile( SearchProfileService::COMPLETION ),
-		1 );
+				->loadProfile( SearchProfileService::COMPLETION, SearchProfileService::COMPLETION ),
+			$secondTry,
+			1
+		);
 		$suggest = $completion->build( $query, [] )->toArray()['suggest'];
 		$profiles = $completion->getMergedProfiles();
 		// Unused profiles are kept
@@ -251,18 +260,20 @@ class CompletionSuggesterTest extends CirrusIntegrationTestCase {
 			'CirrusSearchCompletionSuggesterHardLimit' => $hardLimit,
 			'CirrusSearchCompletionSettings' => 'fuzzy',
 		] );
+		$secondTryRunner = new SecondTryRunner( [], [] );
 		$builder = new CompSuggestQueryBuilder(
 			new SearchContext( $config ),
 			$config->getProfileService()->loadProfileByName( SearchProfileService::COMPLETION, 'fuzzy' ),
+			$secondTryRunner,
 			$limit, $offset );
-		$builder->build( "ignored", null );
+		$builder->build( "ignored", [] );
 		$log = $this->createMock( CompletionRequestLog::class );
 		if ( $builder->areResultsPossible() ) {
 			$collector = new CompletionResultsCollector( $builder->getLimit(), $offset );
 			$builder->postProcess( $collector, $results, "wiki_titlesuggest" );
 			$suggestions = $collector->logAndGetSet( $log );
 		} else {
-			$suggestions = \SearchSuggestionSet::emptySuggestionSet();
+			$suggestions = SearchSuggestionSet::emptySuggestionSet();
 		}
 		$this->assertEquals( $size, $suggestions->getSize() );
 		if ( $size > 0 ) {
@@ -364,10 +375,11 @@ class CompletionSuggesterTest extends CirrusIntegrationTestCase {
 		$config = new HashSearchConfig( [
 			'CirrusSearchCompletionSettings' => 'fuzzy',
 		] );
+		$secondTryRunner = new SecondTryRunner( [], [] );
 		$builder =
 			new CompSuggestQueryBuilder( new SearchContext( $config ), $config->getProfileService()
-				->loadProfileByName( SearchProfileService::COMPLETION, 'fuzzy' ), 10, 0 );
-		$builder->build( "ignored", null );
+				->loadProfileByName( SearchProfileService::COMPLETION, 'fuzzy' ), $secondTryRunner, 10, 0 );
+		$builder->build( "ignored", [] );
 		$collector = new CompletionResultsCollector( $builder->getLimit(), 0 );
 		try {
 			$builder->postProcess( $collector, $resp, "wiki_titlesuggest" );

@@ -19,7 +19,10 @@
 	"mediasearch-filter-file-type-any": "Tipo di arkivo",
 	"mediasearch-filter-file-type-unset": "Omna",
 	"mediasearch-filter-sort-default": "Konveno",
+	"mediasearch-filter-license-cc-by-sa": "Uzado kun atribuo e sama licenco",
+	"mediasearch-filter-license-attribution-same-license": "Uzado kun atribuo e sama licenco",
 	"mediasearch-filter-license-unrestricted": "Sen restrikti",
+	"mediasearch-filter-namespace-label": "Nomaro (''namespace''): $1",
 	"mediasearch-no-results": "Nula rezulti trovita",
 	"mediasearch-no-results-tips": "Probez uzar ordinara vorti, o voluntez verifikar quale vu skriptis",
 	"mediasearch-end-of-results": "Nula plusa rezulti trovesis",
@@ -34,5 +37,6 @@
 	"mediasearch-filter-assessment-menu-label": "Evalui de la komunitato",
 	"mediasearch-filter-assessment-unset": "Omna",
 	"mediasearch-filter-file-type": "Tipo di arkivo",
+	"mediasearch-filter-assessment": "Evalui de la komunitato",
 	"mediasearch-filter-license-unset": "Omna"
 }

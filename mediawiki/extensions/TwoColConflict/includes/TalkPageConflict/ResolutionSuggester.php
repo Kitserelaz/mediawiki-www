@@ -52,7 +52,7 @@ class ResolutionSuggester {
 			// TODO: preSaveTransform $yourLines, but not $storedLines
 			$diffYourLines = $formatter->format( $baseLines, $yourLines, $yourLines );
 			$diffStoredLines = $formatter->format( $baseLines, $storedLines, $storedLines );
-		} catch ( ComplexityException $ex ) {
+		} catch ( ComplexityException ) {
 			return null;
 		}
 
@@ -111,7 +111,6 @@ class ResolutionSuggester {
 			return null;
 		}
 
-		// @phan-suppress-next-line SecurityCheck-DoubleEscaped
 		return new TalkPageResolution( $diff, $spliceIndex, $spliceIndex + 1 );
 	}
 

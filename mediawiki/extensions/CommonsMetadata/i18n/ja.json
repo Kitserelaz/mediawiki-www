@@ -2,11 +2,11 @@
 	"@metadata": {
 		"authors": [
 			"Ant176",
+			"Foomin10",
 			"Fryed-peach",
 			"Shirayuki",
 			"Yusuke1109",
-			"おはぐろ蜻蛉",
-			"Foomin10"
+			"おはぐろ蜻蛉"
 		]
 	},
 	"commonsmetadata-desc": "ウィキメディア・コモンズでよく使用されるテンプレートを使用している画像説明ページ内に格納されている情報を含められるように、画像情報 API モジュールのプロパティ「extmetadata」を拡張する",

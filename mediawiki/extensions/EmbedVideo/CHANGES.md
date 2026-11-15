@@ -1,4 +1,36 @@
 ## Patch Notes
+### v4.2.0
+* Removed the KakaoTV service. KakaoTV shut down in 2021 and its content is no longer retrievable. Existing `{{#ev:kakaotv|...}}` calls and `<kakaotv>` tags will now render an "unrecognized service" error and should be removed from your wiki.
+* SECURITY: Special:RefreshEmbedVideoMetadata did not enforce the `embedvideo-refreshmetadata` right that it declares, so any visitor able to reach the page, including anonymous users, could trigger a metadata refresh on a local audio or video file. See [GHSA-hfqr-7c3c-qpmj](https://github.com/StarCitizenWiki/mediawiki-extensions-EmbedVideo/security/advisories/GHSA-hfqr-7c3c-qpmj).
+* Fixed local audio and video files failing to render on MediaWiki 1.46 with "Error creating thumbnail: Unable to save thumbnail to destination".
+* Fixed a fatal error in the BackfillLocalMediaMetadata maintenance script on MediaWiki 1.43.
+* Fixed MediaWiki 1.46 deprecation notices from the special page constructor and from audio and video file description pages.
+* Reddit, SharePoint, Substack and VK are now treated as "content" rather than "video", which changes the type shown in the consent overlay.
+* Added new CSP URLs for various services.
+* Fixed a misspelled CSP URL for nicovideo.jp.
+* Updated privacy policy URLs for services whose policies have moved.
+* Added missing service labels to i18n, documented every service in qqq.json, and removed English strings that were duplicated into translation files.
+* Alphabetised the service table in README.md and refreshed example URLs and IDs that no longer worked.
+
+### v4.1.0
+* Added the Alugha video and audio hosting service.
+* Added the Apple music streaming service.
+* Added the Qobuz music streaming service.
+* Added support for Spotify playlists.
+* Rewrite EmbedHtmlFormatter to use mustache templates and escape properly
+* Updating test files for MediaWiki 1.43+, fixing ci issues, and correcting linter errors and issues
+* Fixing an issue where Archive.org video URLs with forward-slashes (/) were not embedding.
+* Removing FFProbe from the render path, instaed of probing for metadata on render time, it now only runs on upload/reupload.
+* Removing deprecated keys from extension.json
+* Apply embed styles to local videos consistently
+
+### v4.0.0
+* Added the Tidal music streaming service.
+* Making the extension compatible with MediaWiki 1.43+
+
+### v3.4.2
+* Added the Deezer music streaming service.
+
 ### v3.0.0
 * Added explicit consent setting
 * Code Cleanup

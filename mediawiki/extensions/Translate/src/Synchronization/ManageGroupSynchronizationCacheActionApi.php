@@ -3,11 +3,12 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Synchronization;
 
-use ApiBase;
-use ApiMain;
 use Exception;
-use FormatJson;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
+use MediaWiki\Json\FormatJson;
 use MediaWiki\Logger\LoggerFactory;
 use Psr\Log\LoggerInterface;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -22,13 +23,16 @@ use Wikimedia\ParamValidator\ParamValidator;
 class ManageGroupSynchronizationCacheActionApi extends ApiBase {
 	private const RIGHT = 'translate-manage';
 	private const VALID_OPS = [ 'resolveMessage', 'resolveGroup' ];
-	private GroupSynchronizationCache $groupSyncCache;
+
 	private LoggerInterface $groupSyncLog;
 
-	public function __construct( ApiMain $mainModule, $moduleName, GroupSynchronizationCache $groupSyncCache ) {
+	public function __construct(
+		ApiMain $mainModule,
+		string $moduleName,
+		private readonly GroupSynchronizationCache $groupSyncCache,
+	) {
 		parent::__construct( $mainModule, $moduleName );
-		$this->groupSyncCache = $groupSyncCache;
-		$this->groupSyncLog = LoggerFactory::getInstance( 'Translate.GroupSynchronization' );
+		$this->groupSyncLog = LoggerFactory::getInstance( LogNames::GROUP_SYNCHRONIZATION );
 	}
 
 	public function execute() {
@@ -108,7 +112,7 @@ class ManageGroupSynchronizationCacheActionApi extends ApiBase {
 		] );
 	}
 
-	protected function getAllowedParams() {
+	protected function getAllowedParams(): array {
 		return [
 			'operation' => [
 				ParamValidator::PARAM_TYPE => self::VALID_OPS,
@@ -126,10 +130,12 @@ class ManageGroupSynchronizationCacheActionApi extends ApiBase {
 		];
 	}
 
+	/** @inheritDoc */
 	public function isInternal() {
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function needsToken() {
 		return 'csrf';
 	}

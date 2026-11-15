@@ -3,16 +3,16 @@
 namespace MediaWiki\Extension\SecurePoll\Entities;
 
 use InvalidArgumentException;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\SecurePoll\Ballots\Ballot;
 use MediaWiki\Extension\SecurePoll\Context;
 use MediaWiki\Extension\SecurePoll\Crypt\Crypt;
 use MediaWiki\Extension\SecurePoll\Exceptions\InvalidDataException;
-use MediaWiki\Extension\SecurePoll\Talliers\ElectionTallier;
 use MediaWiki\Extension\SecurePoll\User\Auth;
 use MediaWiki\Extension\SecurePoll\User\Voter;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Permissions\Authority;
 use MediaWiki\Status\Status;
-use MediaWiki\User\User;
+use MediaWiki\Utils\MWTimestamp;
 use MediaWiki\Xml\Xml;
 use Wikimedia\Rdbms\IDatabase;
 
@@ -42,12 +42,13 @@ use Wikimedia\Rdbms\IDatabase;
  *          not-bot
  *              True if voters need to not have the bot permission
  *          need-group
- *              The name of an MW group voters need to be in
+ *              The name of the MW group(s) voters need to be in
  *          need-list
- *              The name of a SecurePoll list voters need to be in
+ *              The name of a SecurePoll list voters need to be in. If used with
+ *              need-central-list, voters must be in both lists.
  *          need-central-list
  *              The name of a list in the CentralAuth database which is linked
- *              to globaluser.gu_id
+ *              to globaluser.gu_id. If used with need-list, voters must be in both lists.
  *          include-list
  *              The name of a SecurePoll list of voters who can vote regardless of the above
  *          exclude-list
@@ -75,11 +76,6 @@ use Wikimedia\Rdbms\IDatabase;
  *      Ballot
  *          shuffle-questions
  *          shuffle-options
- *
- *      GpgCrypt
- *          gpg-encrypt-key
- *          gpg-sign-key
- *          gpg-decrypt-key
  *
  *      OpenSslCrypt
  *          openssl-encrypt-key
@@ -252,7 +248,7 @@ class Election extends Entity {
 	 * @return Status
 	 */
 	public function getQualifiedStatus( $params ) {
-		global $wgLang;
+		$lang = RequestContext::getMain()->getLanguage();
 		$props = $params['properties'];
 		$status = Status::newGood();
 
@@ -276,8 +272,8 @@ class Election extends Entity {
 			if ( $minEdits && $edits < $minEdits ) {
 				$status->fatal(
 					'securepoll-too-few-edits',
-					$wgLang->formatNum( $minEdits ),
-					$wgLang->formatNum( $edits )
+					$lang->formatNum( $minEdits ),
+					$lang->formatNum( $edits )
 				);
 			}
 
@@ -287,10 +283,10 @@ class Election extends Entity {
 			if ( $maxDate && $date > $maxDate ) {
 				$status->fatal(
 					'securepoll-too-new',
-					$wgLang->date( $maxDate ),
-					$wgLang->date( $date ),
-					$wgLang->time( $maxDate ),
-					$wgLang->time( $date )
+					$lang->date( $maxDate ),
+					$lang->date( $date ),
+					$lang->time( $maxDate ),
+					$lang->time( $date )
 				);
 			}
 
@@ -298,7 +294,7 @@ class Election extends Entity {
 			$notAllowedSitewideBlocked = $this->getProperty( 'not-sitewide-blocked' );
 			$notPartialBlocked = $this->getProperty( 'not-partial-blocked' );
 			$isBlocked = !empty( $props['blocked'] );
-			$isSitewideBlocked = $props['isSitewideBlocked'];
+			$isSitewideBlocked = $props['isSitewideBlocked'] ?? false;
 			if ( $notAllowedSitewideBlocked && $isBlocked && $isSitewideBlocked ) {
 				$status->fatal( 'securepoll-blocked' );
 			} elseif ( $notPartialBlocked && $isBlocked && !$isSitewideBlocked ) {
@@ -307,12 +303,16 @@ class Election extends Entity {
 
 			// Centrally blocked on more than X projects
 			$notCentrallyBlocked = $this->getProperty( 'not-centrally-blocked' );
-			$centralBlockCount = $props['central-block-count'] ?? 0;
+			if ( $notPartialBlocked ) {
+				$centralBlockCount = $props['central-block-count'] ?? 0;
+			} else {
+				$centralBlockCount = $props['central-sitewide-block-count'] ?? 0;
+			}
 			$centralBlockThreshold = $this->getProperty( 'central-block-threshold', 1 );
 			if ( $notCentrallyBlocked && $centralBlockCount >= $centralBlockThreshold ) {
 				$status->fatal(
 					'securepoll-blocked-centrally',
-					$wgLang->formatNum( $centralBlockThreshold )
+					$lang->formatNum( $centralBlockThreshold )
 				);
 			}
 
@@ -324,10 +324,17 @@ class Election extends Entity {
 			}
 
 			// Groups
-			$needGroup = $this->getProperty( 'need-group' );
-			$groups = $props['groups'] ?? [];
-			if ( $needGroup && !in_array( $needGroup, $groups ) ) {
-				$status->fatal( 'securepoll-not-in-group', $needGroup );
+			if ( $this->getProperty( 'need-group' ) ) {
+				$neededGroups = explode( '|', $this->getProperty( 'need-group' ) );
+				$groups = $props['groups'] ?? [];
+				$lang = RequestContext::getMain()->getLanguage();
+				if ( !array_intersect( $neededGroups, $groups ) ) {
+					$groupNames = array_map(
+						$lang->getGroupName( ... ),
+						$neededGroups
+					);
+					$status->fatal( 'securepoll-not-in-group', $lang->commaList( $groupNames ) );
+				}
 			}
 
 			// Lists
@@ -358,15 +365,14 @@ class Election extends Entity {
 
 	/**
 	 * Returns true if the user is an admin of the current election.
-	 * @param User $user
+	 * @param Authority $authority
 	 * @return bool
 	 */
-	public function isAdmin( $user ) {
+	public function isAdmin( Authority $authority ) {
 		$admins = array_map( 'trim', explode( '|', $this->getProperty( 'admins' ) ) );
 
-		$userGroupManager = MediaWikiServices::getInstance()->getUserGroupManager();
-		return in_array( $user->getName(), $admins )
-			&& in_array( 'electionadmin', $userGroupManager->getUserEffectiveGroups( $user ) );
+		return in_array( $authority->getUser()->getName(), $admins )
+			&& $authority->isAllowed( 'securepoll-edit-poll' );
 	}
 
 	/**
@@ -404,10 +410,14 @@ class Election extends Entity {
 	 */
 	public function getQuestions() {
 		if ( $this->questions === null ) {
-			$info = $this->context->getStore()->getQuestionInfo( $this->getId() );
 			$this->questions = [];
-			foreach ( $info as $questionInfo ) {
-				$this->questions[] = $this->context->newQuestion( $questionInfo );
+			// T400907: If this is a jump poll, avoid lookup of securepoll_questions and securepoll_options.
+			// These tables may not exist on wikis which only have jump polls (T395928).
+			if ( !$this->getProperty( 'jump-url' ) ) {
+				$info = $this->context->getStore()->getQuestionInfo( $this->getId() );
+				foreach ( $info as $questionInfo ) {
+					$this->questions[] = $this->context->newQuestion( $questionInfo );
+				}
 			}
 		}
 
@@ -445,7 +455,7 @@ class Election extends Entity {
 		$type = $this->getProperty( 'encrypt-type', 'none' );
 		try {
 			return $this->context->newCrypt( $type, $this );
-		} catch ( InvalidArgumentException $e ) {
+		} catch ( InvalidArgumentException ) {
 			throw new InvalidDataException( 'Invalid encryption type' );
 		}
 	}
@@ -484,7 +494,7 @@ class Election extends Entity {
 			$order = $random->shuffle( range( 0, $res->numRows() - 1 ) );
 			foreach ( $order as $i ) {
 				$res->seek( $i );
-				call_user_func( $callback, $this, $res->fetchObject() );
+				$callback( $this, $res->fetchObject() );
 			}
 		}
 		$random->close();
@@ -577,19 +587,125 @@ class Election extends Entity {
 	}
 
 	/**
-	 * Get the stored tally results for this election. The caller can use the
-	 * returned tallier to format the results in the desired way.
+	 * Get all stored tally results for the election.
 	 *
 	 * @param IDatabase $dbr
-	 * @return ElectionTallier|bool
+	 * @return array
 	 */
-	public function getTallyFromDb( $dbr ) {
+	public function getTalliesFromDb( $dbr ) {
+		$result = $dbr->newSelectQueryBuilder()
+			->select( 'pr_value' )
+			->from( 'securepoll_properties' )
+			->where( [ 'pr_entity' => $this->getId(), 'pr_key' => 'tally-result' ] )
+			->caller( __METHOD__ )
+			->fetchField();
+		if ( !$result ) {
+			return [];
+		}
+
+		$tallies = json_decode( $result, true );
+		if ( !array_is_list( $tallies ) ) {
+			// Pretend like we didn't find anything as anything hitting this will have been a tally
+			// created pre-migration (see T387701). Creating a new tally through the new workflow will
+			// overwrite this old value and migrate this election to the new system.
+			return [];
+		}
+
+		return $tallies;
+	}
+
+	/**
+	 * Get the stored tally results for the requested tally. The caller can use
+	 * the returned tallier to format the results in the desired way.
+	 *
+	 * @param IDatabase $dbr
+	 * @param int $tallyId
+	 * @return array|bool
+	 */
+	public function getTallyFromDb( $dbr, $tallyId ) {
+		foreach ( $this->getTalliesFromDb( $dbr ) as $tally ) {
+			if ( isset( $tally['tallyId'] ) && $tally['tallyId'] === $tallyId ) {
+				return $tally;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Saves the result of a tally to the database.
+	 *
+	 * @param IDatabase $dbw
+	 * @param array $result
+	 */
+	public function saveTallyResult( $dbw, $result ) {
+		$tallies = $this->getTalliesFromDb( $dbw );
+
+		$highestTallyId = 0;
+		foreach ( $tallies as $tally ) {
+			$highestTallyId = max( $highestTallyId, $tally['tallyId'] );
+		}
+
+		$tallies[] = [
+			'tallyId' => $highestTallyId + 1,
+			'resultTime' => MWTimestamp::now( TS_MW ),
+			'result' => $result,
+		];
+
+		$dbw->newReplaceQueryBuilder()
+			->replaceInto( 'securepoll_properties' )
+			->uniqueIndexFields( [ 'pr_entity', 'pr_key' ] )
+			->row( [
+				'pr_entity' => $this->getId(),
+				'pr_key' => 'tally-result',
+				'pr_value' => json_encode( $tallies ),
+			] )
+			->caller( __METHOD__ )
+			->execute();
+	}
+
+	/**
+	 * Deletes an election's tally result from the database.
+	 *
+	 * @param IDatabase $dbw
+	 * @param int $tallyId
+	 */
+	public function deleteTallyResult( $dbw, $tallyId ) {
+		$tallies = array_values(
+			array_filter(
+				$this->getTalliesFromDb( $dbw ),
+				static function ( $tally ) use ( $tallyId ) {
+					return $tally['tallyId'] !== $tallyId;
+				}
+			)
+		);
+
+		$dbw->newReplaceQueryBuilder()
+			->replaceInto( 'securepoll_properties' )
+			->uniqueIndexFields( [ 'pr_entity', 'pr_key' ] )
+			->row( [
+				'pr_entity' => $this->getId(),
+				'pr_key' => 'tally-result',
+				'pr_value' => json_encode( $tallies ),
+			] )
+			->caller( __METHOD__ )
+			->execute();
+	}
+
+	/**
+	 * Checks if any tallies have been completed for an election yet. If a
+	 * tally has not been done yet then this function will return 'false'.
+	 *
+	 * @param IDatabase $dbr
+	 * @return bool
+	 */
+	public function isTallied( $dbr ) {
 		$result = $dbr->newSelectQueryBuilder()
 			->select( 'pr_value' )
 			->from( 'securepoll_properties' )
 			->where( [
-				'pr_entity' => $this->getId(),
 				'pr_key' => 'tally-result',
+				'pr_entity' => $this->getId(),
 			] )
 			->caller( __METHOD__ )
 			->fetchField();
@@ -597,8 +713,8 @@ class Election extends Entity {
 			return false;
 		}
 
-		$tallier = $this->context->newElectionTallier( $this );
-		$tallier->loadJSONResult( json_decode( $result, true ) );
-		return $tallier;
+		$tallies = json_decode( $result, true );
+
+		return count( $tallies ) > 0;
 	}
 }

@@ -72,15 +72,11 @@
 	"tpt-aggregategroup-add": "Dobei donn",
 	"tpt-aggregategroup-save": "Faßhalde",
 	"tpt-aggregategroup-add-new": "Donn en neu Sammeljropp derbei",
-	"tpt-aggregategroup-new-name": "Dä Nahme vun dä Jropp:",
-	"tpt-aggregategroup-new-description": "Wat en dä Sammeljrobb es (kann läddesch blieve):",
 	"tpt-aggregategroup-remove-confirm": "Wells De di Sammeljropp verhaftesch fott schmiiße?",
 	"tpt-aggregategroup-invalid-group": "Di Jropp jidd_et nit",
 	"tpt-aggregategroup-edit-name": "Nahme:",
 	"tpt-aggregategroup-edit-description": "Beschrevve als:",
-	"tpt-aggregategroup-update": "Faßhalde",
 	"tpt-aggregategroup-update-cancel": "Ophüre!",
-	"tpt-invalid-group": "Onjöltejje Jropp",
 	"pt-parse-open": "En &lt;translate&gt; es ohne Jääjeshtöck.\nDe Siggeschabloon för ze övversäze: <pre>$1</pre>",
 	"pt-parse-close": "En &lt;/translate&gt; es ohne Jääjeshtöck.\nDe Siggeschabloon för ze övversäze: <pre>$1</pre>",
 	"pt-parse-nested": "En einem &lt;translate> Övversäzongsaffschned kann nit noch eine su ene Affschned dren schteische.\nDä Täx vun dä Makkehrong es: <pre>$1</pre>",
@@ -168,7 +164,6 @@
 	"pm-add-icon-hover-text": "Jivv onge en Einheid en",
 	"pm-swap-icon-hover-text": "Met dämm dronger tuusche",
 	"pm-delete-icon-hover-text": "Schmiiß de Eijnheit fott",
-	"pm-pagetitle-placeholder": "Jivv de Övverschreff fun dä Sigg aan",
 	"pm-pagetitle-invalid": "Bes esu johd un jivv en jöltejje Övverschreff för en Sigg aan.",
 	"pm-langcode-missing": "Bes esu johd un donn et Köözel för di Schprohch enjävve.",
 	"pm-summary-import": "Heh di Övversäzong wohd övver de {{int:specialpage}} „[[Special:PageMigration|{{int:Pagemigration}}]]“ automattesch udder hallefautomattesch aanjelaht.",
@@ -187,6 +182,6 @@
 	"pp-diff-new-header": "Vörbereidt Täx",
 	"tpt-unlink-confirm": "Wells De heh di Sigg verhaftesch vum Övversäze ußschlehße?\nDe Ußwahl vun de Schprohche un de Nahme vun övversaz Sigge wähde et dernoh nit mih donn, un de Övversäzongssigge wähde nommal veränderbaa wääde.",
 	"tpt-unlink-button": "Schmiiß fott",
-	"tpt-unlink-summary": "Di Sigg wood vum Övversäzze ußjeschloße.",
-	"tpt-generic-button": "Beschtähtejje"
+	"tpt-generic-button": "Beschtähtejje",
+	"tpt-unlink-summary": "Di Sigg wood vum Övversäzze ußjeschloße."
 }

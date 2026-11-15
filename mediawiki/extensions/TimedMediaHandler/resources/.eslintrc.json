@@ -1,0 +1,32 @@
+{
+	"root": true,
+	"plugins": [
+		"no-jquery"
+	],
+	"extends": [
+		"plugin:no-jquery/deprecated",
+		"plugin:no-jquery/slim",
+		"wikimedia/client",
+		"wikimedia/jquery",
+		"wikimedia/mediawiki"
+	],
+	"env": {
+		"browser": true
+	},
+	"globals": {
+		"videojs": true
+	},
+	"parserOptions": {
+		"sourceType": "module"
+	},
+	"overrides": [
+		{
+			"files": [
+				"lib/foreign-resources.yaml"
+			],
+			"rules": {
+				"yml/no-empty-mapping-value": "off"
+			}
+		}
+	]
+}

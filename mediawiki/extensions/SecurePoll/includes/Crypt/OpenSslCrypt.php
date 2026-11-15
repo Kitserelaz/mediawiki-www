@@ -5,6 +5,7 @@ namespace MediaWiki\Extension\SecurePoll\Crypt;
 use JsonException;
 use MediaWiki\Extension\SecurePoll\Context;
 use MediaWiki\Extension\SecurePoll\Entities\Election;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
@@ -302,13 +303,12 @@ class OpenSslCrypt extends Crypt {
 	 * @return Status
 	 */
 	private function getErrorStatus( string $prefix, ?string $error = null ): Status {
-		global $wgSecurePollShowErrorDetail;
-
+		$config = MediaWikiServices::getInstance()->getMainConfig();
 		$error ??= openssl_error_string();
 		$this->cleanup();
 		wfDebug( "$prefix:$error" );
 
-		if ( $wgSecurePollShowErrorDetail ) {
+		if ( $config->get( 'SecurePollShowErrorDetail' ) ) {
 			return Status::newFatal( 'securepoll-full-openssl-error', "$prefix:$error" );
 		} else {
 			return Status::newFatal( 'securepoll-secret-openssl-error' );
@@ -483,6 +483,7 @@ class OpenSslCrypt extends Crypt {
 		$this->clearErrors();
 	}
 
+	/** @inheritDoc */
 	public function canDecrypt() {
 		$decryptKey = strval( $this->election->getProperty( 'openssl-decrypt-key' ) );
 
@@ -502,7 +503,10 @@ class OpenSslCrypt extends Crypt {
 	 * @return array
 	 */
 	public static function getCreateDescriptors() {
-		global $wgSecurePollOpenSslSignKey;
+		$config = MediaWikiServices::getInstance()->getMainConfig();
+		$openSslSignKey = $config->has( 'SecurePollOpenSslSignKey' )
+			? $config->get( 'SecurePollOpenSslSignKey' )
+			: false;
 
 		$ret = parent::getCreateDescriptors();
 
@@ -515,14 +519,15 @@ class OpenSslCrypt extends Crypt {
 				'validation-callback' => static function ( string $key ) {
 					return self::checkPublicKey( $key );
 				},
+				'help-message' => 'securepoll-create-label-openssl_encrypt_key-help',
 			]
 		];
 
-		if ( $wgSecurePollOpenSslSignKey ) {
+		if ( $openSslSignKey ) {
 			$ret['election'] += [
 				'openssl-sign-key' => [
 					'type' => 'api',
-					'default' => $wgSecurePollOpenSslSignKey,
+					'default' => $openSslSignKey,
 					'SecurePoll_type' => 'property',
 				]
 			];
@@ -536,6 +541,7 @@ class OpenSslCrypt extends Crypt {
 					'validation-callback' => static function ( string $key ) {
 						return self::checkPrivateKey( $key );
 					},
+					'help-message' => 'securepoll-create-label-openssl_sign_key-help',
 				]
 			];
 		}
@@ -555,6 +561,7 @@ class OpenSslCrypt extends Crypt {
 				'validation-callback' => static function ( string $key ) {
 					return self::checkPrivateKey( $key );
 				},
+				'help-message' => 'securepoll-tally-openssl-decrypt-key-help',
 			],
 			'openssl-verify-key' => [
 				'label-message' => 'securepoll-tally-openssl-verify-key',
@@ -564,6 +571,7 @@ class OpenSslCrypt extends Crypt {
 				'validation-callback' => static function ( string $key ) use ( $verifyKeyRequired ) {
 					return self::checkPublicKey( $key, $verifyKeyRequired );
 				},
+				'help-message' => 'securepoll-tally-openssl-verify-key-help',
 			],
 		];
 	}
@@ -618,10 +626,6 @@ class OpenSslCrypt extends Crypt {
 		}
 
 		return true;
-	}
-
-	public function updateTallyContext( Context $context, array $data ): void {
-		// no-op
 	}
 
 	public function updateDbForTallyJob( int $electionId, IDatabase $dbw, array $data ): void {

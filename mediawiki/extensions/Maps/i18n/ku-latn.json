@@ -4,7 +4,8 @@
 			"Cûndûllah el-Kurdî",
 			"George Animal",
 			"Ghybu",
-			"Gomada"
+			"Gomada",
+			"Guherto"
 		]
 	},
 	"maps_map": "Nexşe",
@@ -15,13 +16,14 @@
 	"maps-abb-east": "Rojhilat",
 	"maps-abb-south": "Başûr",
 	"maps-abb-west": "Rojava",
-	"mapeditor-link-title-switcher-link-text": "Girêdan",
-	"mapeditor-form-field-title": "Sernav",
-	"mapeditor-form-field-link": "Girêdan",
-	"mapeditor-form-field-group": "Kom",
-	"mapeditor-form-field-image": "Wêne",
 	"semanticmaps-latitude": "Hêlîpan: $1",
 	"semanticmaps-longitude": "Hêlîlar: $1",
 	"semanticmaps-forminput-locations": "Cih",
-	"semanticmaps-kml-title": "Sernavê standart ê ji bo encaman"
+	"semanticmaps-kml-title": "Sernavê standard ê ji bo encaman",
+	"maps-validator-type-string": "nivîs",
+	"maps-validator-type-boolean": "erê/na",
+	"maps-validator-describe-header-parameter": "Parametre",
+	"maps-validator-describe-header-type": "Cure",
+	"maps-validator-describe-header-description": "Danasîn",
+	"maps-validator-describe-empty": "vala"
 }

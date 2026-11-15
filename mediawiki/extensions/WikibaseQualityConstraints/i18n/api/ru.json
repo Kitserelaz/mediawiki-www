@@ -1,11 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
+			"Amire80",
 			"DDPAT",
 			"Ice bulldog",
 			"Kaganer",
-			"Movses",
-			"Amire80"
+			"Movses"
 		]
 	},
 	"apihelp-wbcheckconstraints-summary": "Выполняет проверки ограничений для любой требуемой сущности и возвращает результат.",

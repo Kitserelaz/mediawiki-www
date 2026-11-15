@@ -2,8 +2,6 @@
 
 $cfg = require __DIR__ . '/../vendor/mediawiki/mediawiki-phan-config/src/config.php';
 
-$cfg['minimum_target_php_version'] = '8.1';
-
 $cfg['directory_list'] = array_merge(
 	$cfg['directory_list'], [
 		'../../extensions/AbuseFilter',
@@ -14,6 +12,7 @@ $cfg['directory_list'] = array_merge(
 		'../../extensions/GlobalUserPage',
 		'../../extensions/ImportDump',
 		'../../extensions/ManageWiki',
+		'../../extensions/MatomoAnalytics',
 	]
 );
 
@@ -27,6 +26,7 @@ $cfg['exclude_analysis_directory_list'] = array_merge(
 		'../../extensions/GlobalUserPage',
 		'../../extensions/ImportDump',
 		'../../extensions/ManageWiki',
+		'../../extensions/MatomoAnalytics',
 	]
 );
 
@@ -34,5 +34,8 @@ $cfg['suppress_issue_types'] = [
 	'PhanAccessMethodInternal',
 	'SecurityCheck-LikelyFalsePositive',
 ];
+
+// Disable after MirahezeMagic requires 1.47
+$cfg['enable_class_alias_support'] = true;
 
 return $cfg;

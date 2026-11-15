@@ -35,6 +35,16 @@ ve.ce.TableRowNode.static.tagName = 'tr';
 /**
  * @inheritdoc
  */
+ve.ce.TableRowNode.prototype.initialize = function () {
+	// Parent method
+	ve.ce.TableRowNode.super.prototype.initialize.call( this );
+
+	ve.ce.TableCellNode.static.updateStyles( this.$element, this.model );
+};
+
+/**
+ * @inheritdoc
+ */
 ve.ce.TableRowNode.prototype.onSetup = function () {
 	// Parent method
 	ve.ce.TableRowNode.super.prototype.onSetup.apply( this, arguments );
@@ -71,7 +81,7 @@ ve.ce.TableRowNode.prototype.setupMissingCell = function () {
 		if ( !this.$missingCell ) {
 			this.$missingCell = $( '<td>' )
 				.prop( 'contentEditable', 'false' )
-				.addClass( 've-ce-branchNode-slug ve-ce-branchNode-blockSlug ve-ce-tableNode-missingCell' );
+				.addClass( 've-ce-branchNode-slug ve-ce-branchNode-blockSlug ve-ce-tableNode-missingCell ve-ce-surface-interface' );
 			const slugButton = new ve.ui.NoFocusButtonWidget( {
 				icon: 'add',
 				framed: false

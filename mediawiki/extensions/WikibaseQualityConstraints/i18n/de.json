@@ -1,7 +1,6 @@
 {
 	"@metadata": {
 		"authors": [
-			"Amire80",
 			"Brettchenweber",
 			"Inkowik",
 			"Metalhead64",
@@ -37,14 +36,18 @@
 	"wbqc-constraintreport-result-link-to-claim": "gehe zu Behauptung",
 	"wbqc-constraintreport-result-link-to-constraint": "gehe zu Beschränkung",
 	"wbqc-constraintreport-no-parameter": "keine",
-	"wbqc-issues-short": "Probleme",
+	"wbqc-issue-heading": "Problem",
+	"wbqc-issues-short": "Problem",
 	"wbqc-issues-long": "Diese Aussage hat einige Probleme.",
+	"wbqc-potentialissue-heading": "Potentielles Problem",
 	"wbqc-potentialissues-short": "Potenzielle Probleme",
 	"wbqc-potentialissues-long": "Diese Aussage hat einige potenzielle Probleme.",
+	"wbqc-suggestion-heading": "Vorschlag",
 	"wbqc-suggestions-short": "Vorschläge",
 	"wbqc-suggestions-long": "Für die Verbesserung dieser Aussage gibt es einige Vorschläge.",
 	"wbqc-badparameters-short": "Ungültige Parameter",
 	"wbqc-badparameters-long": "Diese Beschränkungsaussage hat einige ungültige Parameter.",
+	"wbqc-parameterissue-heading": "Erweitertes Problem",
 	"wbqc-parameterissues-short": "Erweiterte Probleme",
 	"wbqc-parameterissues-long": "Dies sind Probleme mit der Beschränkungsdefinition zu der Eigenschaft, nicht mit dieser Aussage.",
 	"wbqc-constrainttypehelp-short": "Hilfe",
@@ -147,5 +150,9 @@
 	"wbqc-violation-message-language": "Aussagen für $1 sollten nur auf Lexemen mit {{PLURAL:$2|1=der Spracheinstellung $4.|2=den Spracheinstellungen $4 oder $5.|eine der folgenden Spracheinstellungen: $3}}",
 	"wbqc-violation-message-label-lacking": "Objekte mit Aussagen für $1 sollten auch eine Bezeichnung mindestens in {{PLURAL:$2|1=der Sprache $4 haben|einer der folgenden Sprachen haben: $3}}.",
 	"wbqc-violation-message-property-scope": "Die Eigenschaft $1 sollte nicht an diesem Ort verwendet werden ($2). {{PLURAL:$3|Der einzig gültige Ort|Die einzig gültigen Orte}} für diese Eigenschaft {{PLURAL:$3|ist $5.|sind: $4}}",
-	"wbqc-violation-message-exception": "Diese Entität ist eine bekannte Ausnahme für diese Beschränkung und wurde als solche markiert."
+	"wbqc-violation-message-exception": "Diese Entität ist eine bekannte Ausnahme für diese Beschränkung und wurde als solche markiert.",
+	"right-wbqc-check-constraints": "Beschränkungs-Prüfungen für Entitäten durchführen",
+	"action-wbqc-check-constraints": "Beschränkungs-Prüfungen für Entitäten durchzuführen",
+	"right-wbqc-check-constraints-uncached": "Verwenden von Special:ConstraintReport für Beschränkungs-Prüfungen für Entitäten",
+	"action-wbqc-check-constraints-uncached": "Special:ConstraintReport für Beschränkungs-Prüfungen für Entitäten zu verwenden"
 }

@@ -3,9 +3,9 @@ namespace Wikibase\Search\Elastic;
 
 use CirrusSearch\Search\Result;
 use CirrusSearch\Searcher;
-use HtmlArmor;
 use Wikibase\Lib\TermLanguageFallbackChain;
 use Wikibase\Repo\Search\ExtendedResult;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * Single result for entity search.
@@ -54,28 +54,20 @@ class EntityResult extends Result implements ExtendedResult {
 	 */
 	private $extraDisplay;
 	/**
-	 * Display language
-	 * @var string
-	 */
-	private $displayLanguage;
-	/**
 	 * Original source data
 	 * @var array
 	 */
 	private $sourceData;
 
-	/**
-	 * @param string $displayLanguage
-	 * @param TermLanguageFallbackChain $displayFallbackChain
-	 * @param \Elastica\Result $result
-	 */
-	public function __construct( $displayLanguage, TermLanguageFallbackChain $displayFallbackChain,
-									$result ) {
+	public function __construct(
+		private readonly string $displayLanguage,
+		TermLanguageFallbackChain $displayFallbackChain,
+		\Elastica\Result $result,
+	) {
 		// Let Cirrus\Result class handle the boring stuff
 		parent::__construct( null, $result );
 		// FIXME: null is not nice, but Result doesn't really need it...
 		// Think how to fix this.
-		$this->displayLanguage = $displayLanguage;
 
 		$this->sourceData = $result->getSource();
 		$highlightData = $result->getHighlights();
@@ -117,6 +109,7 @@ class EntityResult extends Result implements ExtendedResult {
 			if ( $key && preg_match( '/^(\w+)\.([^.]+)\.plain$/', $key, $match ) ) {
 				$this->extraDisplay = [
 					'language' => $match[2],
+					// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
 					'value' => new HtmlArmor( $this->processHighlighting( $highlightData[$key][0],
 						$match[1] === 'labels' ) )
 				];
@@ -154,6 +147,7 @@ class EntityResult extends Result implements ExtendedResult {
 			$this->haveMatch = true;
 			return [
 				'language' => $source['language'],
+				// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
 				'value' => new HtmlArmor( $this->processHighlighting( $highlightData["{$field}.{$source['language']}.plain"][0],
 					$useOffsets ) )
 			];

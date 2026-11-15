@@ -5,6 +5,7 @@ namespace WikibaseQuality\ConstraintReport;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\WikiMap\WikiMap;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Wikibase\DataModel\Entity\Property;
 use Wikibase\Repo\WikibaseRepo;
@@ -34,9 +35,13 @@ return [
 		return new ExpiryLock( $services->getObjectCacheFactory()->getInstance( CACHE_ANYTHING ) );
 	},
 
+	ConstraintsServices::LOGGER => static function ( MediaWikiServices $services ): LoggerInterface {
+		return LoggerFactory::getInstance( 'WikibaseQualityConstraints' );
+	},
+
 	ConstraintsServices::LOGGING_HELPER => static function ( MediaWikiServices $services ): LoggingHelper {
 		return new LoggingHelper(
-			$services->getStatsdDataFactory(),
+			$services->getStatsFactory()->withComponent( 'WikibaseQualityConstraints' ),
 			LoggerFactory::getInstance( 'WikibaseQualityConstraints' ),
 			$services->getMainConfig()
 		);
@@ -71,7 +76,8 @@ return [
 		$dbName = $propertySource->getDatabaseName();
 		$rawLookup = new ConstraintRepositoryLookup(
 			$services->getDBLoadBalancerFactory()->getMainLB( $dbName ),
-			$dbName
+			$dbName,
+			ConstraintsServices::getLogger( $services )
 		);
 		return new CachingConstraintLookup( $rawLookup );
 	},
@@ -151,18 +157,20 @@ return [
 		}
 
 		$rdfVocabulary = WikibaseRepo::getRdfVocabulary( $services );
+		$valueSnakRdfBuilderFactory = WikibaseRepo::getValueSnakRdfBuilderFactory( $services );
 		$entityIdParser = WikibaseRepo::getEntityIdParser( $services );
 		$propertyDataTypeLookup = WikibaseRepo::getPropertyDataTypeLookup( $services );
 
 		return new SparqlHelper(
 			$services->getMainConfig(),
 			$rdfVocabulary,
+			$valueSnakRdfBuilderFactory,
 			$entityIdParser,
 			$propertyDataTypeLookup,
 			$services->getMainWANObjectCache(),
 			ConstraintsServices::getViolationMessageSerializer( $services ),
 			ConstraintsServices::getViolationMessageDeserializer( $services ),
-			$services->getStatsdDataFactory(),
+			$services->getStatsFactory()->withComponent( 'WikibaseQualityConstraints' ),
 			ConstraintsServices::getExpiryLock( $services ),
 			ConstraintsServices::getLoggingHelper( $services ),
 			WikiMap::getCurrentWikiId() . ' WikibaseQualityConstraints ' . $services->getHttpRequestFactory()->getUserAgent(),
@@ -280,7 +288,7 @@ return [
 
 			foreach ( $entitySources as $entitySource ) {
 				if ( $entitySource->getSourceName() !== $localEntitySourceName ) {
-					LoggerFactory::getInstance( 'WikibaseQualityConstraints' )->warning(
+					ConstraintsServices::getLogger( $services )->warning(
 						'Cannot cache constraint check results for non-local source: ' .
 						$entitySource->getSourceName()
 					);

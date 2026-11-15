@@ -1,6 +1,6 @@
 <?php
 
-namespace extensions\CirrusSearch\tests\phpunit\integration\Api;
+namespace CirrusSearch\Tests\Api;
 
 use CirrusSearch\CirrusIntegrationTestCaseTrait;
 use CirrusSearch\CirrusSearch;
@@ -58,6 +58,7 @@ class QueryBuildDocumentTest extends ApiTestCase {
 	 * @covers \CirrusSearch\Api\QueryBuildDocument
 	 */
 	public function test_content_extraction() {
+		$this->overrideConfigValues( [ 'CapitalLinks' => true ] );
 		$expectedMetadata = [
 			'cluster_group' => 'my_group',
 			'noop_hints' => [

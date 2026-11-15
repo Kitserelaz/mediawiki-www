@@ -12,9 +12,9 @@ use MessageGroupBase;
  * files, which are used in many iOS and macOS projects.
  * These tests check that the message keys are loaded, mangled and unmangled
  * correctly.
- * @author Brion Vibber
+ * @author Brooke Vibber
  * @author Niklas Laxström
- * @covers MediaWiki\Extension\Translate\FileFormatSupport\AppleFormat
+ * @covers \MediaWiki\Extension\Translate\FileFormatSupport\AppleFormat
  */
 class AppleFormatTest extends MediaWikiIntegrationTestCase {
 
@@ -98,7 +98,7 @@ class AppleFormatTest extends MediaWikiIntegrationTestCase {
 			'Messages survive roundtrip through write and read' );
 	}
 
-	public function rowValuesProvider(): array {
+	public static function rowValuesProvider(): array {
 		return [
 			[ 'key', 'value', 'simple row' ],
 			[ 'key', 'value', 'row with different sep' ],

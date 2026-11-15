@@ -4,6 +4,7 @@ namespace Wikibase\MediaInfo\Content;
 
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Linker\LinkTarget;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Title\Title;
 use Wikibase\Lib\Store\EntityRevision;
 use Wikibase\MediaInfo\DataModel\MediaInfo;
@@ -91,18 +92,21 @@ class MissingMediaInfoHandler {
 	 *        by $context->getLanguage().
 	 */
 	public function showVirtualMediaInfo( MediaInfoId $mediaInfoId, IContextSource $context ) {
-		$userLanguage = $context->getLanguage();
 		$outputPage = $context->getOutput();
 
+		$parserOptions = ParserOptions::newFromContext( $context );
 		// show an empty MediaInfo
 		$outputGenerator = $this->outputGeneratorFactory->
-			getEntityParserOutputGenerator( $userLanguage );
+			getEntityParserOutputGeneratorForParserOptions( $parserOptions );
 
 		$mediaInfo = new MediaInfo( $mediaInfoId );
 
 		$parserOutput = $outputGenerator->getParserOutput( new EntityRevision( $mediaInfo ), true );
 
-		$outputPage->addParserOutput( $parserOutput );
+		$outputPage->addParserOutput(
+			$parserOutput,
+			$parserOptions,
+		);
 	}
 
 }

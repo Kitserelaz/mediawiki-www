@@ -83,7 +83,7 @@
 	"discussiontools-replywidget-mode-visual": "Vizualno",
 	"discussiontools-replywidget-newtopic": "{{GENDER:|Započni}} temu",
 	"discussiontools-replywidget-placeholder-newtopic": "Opis teme",
-	"discussiontools-replywidget-placeholder-reply": "{{GENDER:|Odgovor}} korisniku/korisnici {{BIDI:$1}}",
+	"discussiontools-replywidget-placeholder-reply": "{{GENDER:|Odgovorite}} korisniku/korisnici {{BIDI:$1}}",
 	"discussiontools-replywidget-preview": "Pregled",
 	"discussiontools-replywidget-reply": "{{GENDER:|Odgovori}}",
 	"discussiontools-replywidget-summary": "Sažetak",

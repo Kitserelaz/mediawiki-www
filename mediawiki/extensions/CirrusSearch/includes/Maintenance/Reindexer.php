@@ -6,6 +6,7 @@ use CirrusSearch\Connection;
 use CirrusSearch\Elastica\ReindexRequest;
 use CirrusSearch\Elastica\ReindexResponse;
 use CirrusSearch\Elastica\ReindexTask;
+use CirrusSearch\Query\ArticlePredictionKeyword;
 use CirrusSearch\SearchConfig;
 use Elastica\Client;
 use Elastica\Exception\Connection\HttpException;
@@ -14,22 +15,10 @@ use Elastica\Request;
 use Elastica\Transport\Http;
 use Elastica\Transport\Https;
 use MediaWiki\Utils\MWTimestamp;
+use StatusValue;
 
 /**
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class Reindexer {
 	private const MAX_CONSECUTIVE_ERRORS = 5;
@@ -66,7 +55,7 @@ class Reindexer {
 	private $connection;
 
 	/**
-	 * @var Printer
+	 * @var ?Printer
 	 */
 	private $out;
 
@@ -76,6 +65,11 @@ class Reindexer {
 	private $fieldsToDelete;
 
 	/**
+	 * @var string[] list of weighted tag prefixes to rename (old prefix => new prefix)
+	 */
+	private $weightedTagsPrefixMap;
+
+	/**
 	 * @param SearchConfig $searchConfig
 	 * @param Connection $source
 	 * @param Connection $target
@@ -83,6 +77,7 @@ class Reindexer {
 	 * @param Index $oldIndex
 	 * @param Printer|null $out
 	 * @param string[] $fieldsToDelete
+	 * @param string[] $weightedTagsPrefixMap
 	 */
 	public function __construct(
 		SearchConfig $searchConfig,
@@ -91,7 +86,8 @@ class Reindexer {
 		Index $index,
 		Index $oldIndex,
 		?Printer $out = null,
-		$fieldsToDelete = []
+		array $fieldsToDelete = [],
+		array $weightedTagsPrefixMap = []
 	) {
 		// @todo: this constructor has too many arguments - refactor!
 		$this->searchConfig = $searchConfig;
@@ -101,6 +97,7 @@ class Reindexer {
 		$this->index = $index;
 		$this->out = $out;
 		$this->fieldsToDelete = $fieldsToDelete;
+		$this->weightedTagsPrefixMap = $weightedTagsPrefixMap;
 	}
 
 	/**
@@ -189,19 +186,16 @@ class Reindexer {
 		$settings->set( $newSettings );
 	}
 
-	/**
-	 * @param float $acceptableCountDeviation
-	 */
 	private function waitForCounts( float $acceptableCountDeviation ) {
-		$oldCount = (float)$this->oldIndex->count();
-		$this->index->refresh();
+		$oldCount = (float)$this->safeCount( $this->oldIndex );
+		$this->safeRefresh( $this->index );
 		// While elasticsearch should be ready immediately after a refresh, we have seen this return
 		// exceptionally low values in 2% of reindex attempts. Wait around a bit and hope the refresh
 		// becomes available
 		$start = microtime( true );
 		$timeoutAfter = $start + self::MAX_WAIT_FOR_COUNT_SEC;
 		while ( true ) {
-			$newCount = (float)$this->index->count();
+			$newCount = (float)$this->safeCount( $this->index );
 			$difference = $oldCount > 0 ? abs( $oldCount - $newCount ) / $oldCount : 0;
 			if ( $difference <= $acceptableCountDeviation ) {
 				break;
@@ -293,7 +287,7 @@ class Reindexer {
 
 	/**
 	 * @param string $message
-	 * @param mixed|null $channel
+	 * @param string|null $channel
 	 */
 	protected function output( $message, $channel = null ) {
 		if ( $this->out ) {
@@ -313,7 +307,7 @@ class Reindexer {
 	}
 
 	/**
-	 * @param string $message
+	 * @param string|StatusValue $message
 	 */
 	private function error( $message ) {
 		if ( $this->out ) {
@@ -322,7 +316,7 @@ class Reindexer {
 	}
 
 	/**
-	 * @param string $message
+	 * @param string|StatusValue $message
 	 * @param int $exitCode
 	 * @return never
 	 */
@@ -347,6 +341,9 @@ class Reindexer {
 				$script['source'] .= "ctx._source.remove('$field');";
 			}
 		}
+		$script['source'] .= $this->makeWeightedTagsPrefixReplaceScript();
+		$script['source'] .= $this->pruneWeightedTagsDeleteMarkersScript();
+		$script['source'] .= $this->migrateArticleTopicUnderscoresScript();
 		// Populate the page_id if it's the first time we add the page_id field to the mapping
 		if ( !isset( $this->oldIndex->getMapping()['properties']['page_id'] )
 				 && isset( $this->index->getMapping()['properties']['page_id'] ) ) {
@@ -359,6 +356,47 @@ class Reindexer {
 		}
 
 		return $script;
+	}
+
+	private function makeWeightedTagsPrefixReplaceScript(): string {
+		if ( count( $this->weightedTagsPrefixMap ) === 0 ) {
+			return '';
+		}
+		$scriptSource = "if (ctx._source.containsKey('weighted_tags')) {";
+		foreach ( $this->weightedTagsPrefixMap as $oldPrefix => $newPrefix ) {
+			$scriptSource .= "
+            for (int i = 0; i < ctx._source.weighted_tags.length; i++) {
+                if (ctx._source.weighted_tags[i].startsWith('$oldPrefix/')) {
+                    ctx._source.weighted_tags[i] = ctx._source.weighted_tags[i].replace('$oldPrefix/', '$newPrefix/');
+                }
+            }";
+		}
+		$scriptSource .= "}";
+		return $scriptSource;
+	}
+
+	private function pruneWeightedTagsDeleteMarkersScript(): string {
+		// There was at one point a bug that inserted these tags directly, instead of interpreting them
+		// as markers. Prune them back out.
+		return "
+            if (ctx._source.containsKey('weighted_tags') && ctx._source.weighted_tags instanceof List) {
+                ctx._source.weighted_tags.removeIf(item -> item != null && item.endsWith('/__DELETE_GROUPING__'));
+            }";
+	}
+
+	private function migrateArticleTopicUnderscoresScript(): string {
+		// At some point the data source for article topics changed from
+		// providing the values with spaces to providing them with underscores.
+		// Normalize the previously indexed data to match.
+		$prefix = ArticlePredictionKeyword::ARTICLE_TOPIC_TAG_PREFIX;
+		return "
+            if (ctx._source.containsKey('weighted_tags') && ctx._source.weighted_tags instanceof List) {
+                for (int i = 0; i < ctx._source.weighted_tags.length; i++) {
+                    if (ctx._source.weighted_tags[i].startsWith('$prefix/')) {
+                        ctx._source.weighted_tags[i] = ctx._source.weighted_tags[i].replace(' ', '_');
+                    }
+                }
+            }";
 	}
 
 	/**
@@ -468,7 +506,7 @@ class Reindexer {
 		return $task->getResponse();
 	}
 
-	private static function monitorSleepSeconds( $base, $ratio, $max ) {
+	private static function monitorSleepSeconds( int $base, int $ratio, int $max ): \Generator {
 		$val = $base;
 		// @phan-suppress-next-line PhanInfiniteLoop https://github.com/phan/phan/issues/3545
 		while ( true ) {
@@ -517,7 +555,7 @@ class Reindexer {
 	 * @param Index $index The index the estimate a slice count for
 	 * @return int The number of slices to reindex with
 	 */
-	private function estimateSlices( Index $index ) {
+	private function estimateSlices( Index $index ): int {
 		return min(
 			$this->getNumberOfNodes( $index->getClient() ),
 			$this->getNumberOfShards( $index ),
@@ -525,13 +563,13 @@ class Reindexer {
 		);
 	}
 
-	private function getNumberOfNodes( Client $client ) {
+	private function getNumberOfNodes( Client $client ): int {
 		$endpoint = ( new \Elasticsearch\Endpoints\Cat\Nodes() )
 			->setParams( [ 'format' => 'json' ] );
 		return count( $client->requestEndpoint( $endpoint )->getData() );
 	}
 
-	private function getNumberOfShards( Index $index ) {
+	private function getNumberOfShards( Index $index ): int {
 		$response = $index->request( '_settings/index.number_of_shards', Request::GET );
 		$data = $response->getData();
 		// Can't use $index->getName() because that is probably an alias
@@ -543,6 +581,26 @@ class Reindexer {
 				"Couldn't detect number of shards in {$index->getName()}"
 			);
 		}
-		return $data[$realIndexName]['settings']['index']['number_of_shards'];
+		return (int)$data[$realIndexName]['settings']['index']['number_of_shards'];
+	}
+
+	private function safeCount( Index $index, int $attempts = 3 ): int {
+		return ConfigUtils::safeCountOrFail(
+			$index,
+			function ( StatusValue $error ): never {
+				$this->fatalError( $error );
+			},
+			$attempts
+		);
+	}
+
+	private function safeRefresh( Index $index, int $attempts = 3 ): void {
+		ConfigUtils::safeRefreshOrFail(
+			$index,
+			function ( StatusValue $error ): never {
+				$this->fatalError( $error );
+			},
+			$attempts
+		);
 	}
 }

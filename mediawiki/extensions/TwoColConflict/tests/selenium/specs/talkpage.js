@@ -1,10 +1,7 @@
-'use strict';
-
-const assert = require( 'assert' ),
-	EditConflictPage = require( '../pageobjects/editconflict.page' ),
-	FinishedConflictPage = require( '../pageobjects/finishedconflict.page' ),
-	TalkConflictPage = require( '../pageobjects/talkconflict.page' ),
-	Util = require( 'wdio-mediawiki/Util' );
+import EditConflictPage from '../pageobjects/editconflict.page.js';
+import FinishedConflictPage from '../pageobjects/finishedconflict.page.js';
+import TalkConflictPage from '../pageobjects/talkconflict.page.js';
+import { getTestString } from 'wdio-mediawiki/Util';
 
 describe( 'TwoColConflict', () => {
 	before( async () => {
@@ -18,33 +15,33 @@ describe( 'TwoColConflict', () => {
 		} );
 
 		it( 'shows the talk page screen correctly', async () => {
-			assert( !( await TalkConflictPage.splitColumn.isExisting() ) );
+			expect( await TalkConflictPage.splitColumn.isExisting() ).toBe( false );
 
-			assert( await EditConflictPage.getParagraph( 'other' ) );
-			assert( await EditConflictPage.getParagraph( 'your' ) );
-			assert( await EditConflictPage.getParagraph( 'copy' ) );
+			await expect( await EditConflictPage.getParagraph( 'other' ) ).toExist();
+			await expect( await EditConflictPage.getParagraph( 'your' ) ).toExist();
+			await expect( await EditConflictPage.getParagraph( 'copy' ) ).toExist();
 
 			// Only "your" block is editable
-			assert( await EditConflictPage.getEditButton( 'your' ).isExisting() );
-			assert( !( await EditConflictPage.getEditButton( 'other' ).isExisting() ) );
-			assert( !( await EditConflictPage.getEditButton( 'copy' ).isExisting() ) );
+			await expect( await EditConflictPage.getEditButton( 'your' ) ).toExist();
+			expect( await EditConflictPage.getEditButton( 'other' ).isExisting() ).toBe( false );
+			expect( await EditConflictPage.getEditButton( 'copy' ).isExisting() ).toBe( false );
 
-			assert( await TalkConflictPage.isOtherBlockFirst() );
+			await expect( await TalkConflictPage.isOtherBlockFirst() ).toBeTruthy();
 		} );
 
 		it( 'swaps blocks when switch button is clicked', async () => {
 			await TalkConflictPage.swapButton.click();
 
-			assert( await TalkConflictPage.isYourBlockFirst() );
+			await expect( await TalkConflictPage.isYourBlockFirst() ).toBeTruthy();
 		} );
 
 		it( 'shows correct preview when swapped', async () => {
 			await EditConflictPage.previewButton.click();
 
-			assert( await EditConflictPage.previewView.waitForDisplayed() );
+			await expect( EditConflictPage.previewView ).toBeDisplayed();
 
-			assert.strictEqual(
-				await EditConflictPage.previewText.getText(),
+			await expect(
+				await EditConflictPage.previewText.getText() ).toBe(
 				'Line1 Line2 Line3 Comment B Comment A'
 			);
 		} );
@@ -54,8 +51,8 @@ describe( 'TwoColConflict', () => {
 
 			await EditConflictPage.submitButton.click();
 
-			assert.strictEqual(
-				await FinishedConflictPage.pageWikitext(),
+			await expect(
+				await FinishedConflictPage.pageWikitext() ).toBe(
 				'Line1\nLine2\nLine3\nComment B edited\nComment <span lang="de">A</span>'
 			);
 		} );
@@ -66,11 +63,11 @@ describe( 'TwoColConflict', () => {
 			'Line1\n\nLine2',
 			'Line1\nComment <span lang="de">A</span>\nLine2',
 			'Line1\nComment <span lang="en">B</span>\n\nLine2',
-			Util.getTestString( 'Talk:Test-conflict-' )
+			getTestString( 'Talk:Test-conflict-' )
 		);
 		await TalkConflictPage.talkRow.waitForDisplayed();
 
-		assert( !( await TalkConflictPage.splitColumn.isExisting() ) );
+		expect( await TalkConflictPage.splitColumn.isExisting() ).toBe( false );
 	} );
 
 	// TODO: test for double-conflict, all text should be restored even if edited.

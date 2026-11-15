@@ -7,12 +7,12 @@ use MediaWiki\Extension\Translate\MessageLoading\Message;
 use MediaWiki\Extension\Translate\Validation\MessageValidator;
 use MediaWiki\Extension\Translate\Validation\ValidationIssue;
 use MediaWiki\Extension\Translate\Validation\ValidationIssues;
-use MediaWiki\Languages\LanguageFactory;
+use MediaWiki\Language\LanguageFactory;
 use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserFactory;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\PPFrame;
 use MediaWiki\User\UserFactory;
-use ParserFactory;
-use ParserOptions;
-use PPFrame;
 
 /**
  * Handles plural validation for MediaWiki inline plural syntax.
@@ -21,21 +21,12 @@ use PPFrame;
  * @since 2019.06
  */
 class MediaWikiPluralValidator implements MessageValidator {
-	/** @var LanguageFactory */
-	private $languageFactory;
-	/** @var ParserFactory */
-	private $parserFactory;
-	/** @var UserFactory */
-	private $userFactory;
 
 	public function __construct(
-		LanguageFactory $languageFactory,
-		ParserFactory $parserFactory,
-		UserFactory $userFactory
+		private readonly LanguageFactory $languageFactory,
+		private readonly ParserFactory $parserFactory,
+		private readonly UserFactory $userFactory,
 	) {
-		$this->languageFactory = $languageFactory;
-		$this->parserFactory = $parserFactory;
-		$this->userFactory = $userFactory;
 	}
 
 	public function getIssues( Message $message, string $targetLanguage ): ValidationIssues {

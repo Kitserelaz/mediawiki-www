@@ -15,15 +15,16 @@ namespace MediaWiki\Extension\NewUserMessage;
 
 use MediaWiki\Auth\Hook\LocalUserCreatedHook;
 use MediaWiki\Content\ContentHandler;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Hook\UserGetReservedNamesHook;
 use MediaWiki\User\User;
-use WikiPage;
 
 class NewUserMessage implements
 	LocalUserCreatedHook,
@@ -39,7 +40,8 @@ class NewUserMessage implements
 		$editor = User::newFromName( self::getMsg( 'newusermessage-editor' )->text() );
 
 		if ( !$editor ) {
-			return false; // Invalid username
+			// Invalid username
+			return false;
 		}
 
 		if ( !$editor->isRegistered() ) {
@@ -216,14 +218,16 @@ class NewUserMessage implements
 		global $wgNewUserMessageOnAutoCreate;
 
 		if ( $user->isTemp() ) {
-			return; // not a new registered user
+			// not a new registered user
+			return;
 		}
 
 		if ( !$autocreated ) {
 			DeferredUpdates::addCallableUpdate(
 				static function () use ( $user ) {
 					if ( $user->isBot() ) {
-						return; // not a human
+						// not a human
+						return;
 					}
 
 					NewUserMessage::createNewUserMessage( $user );
@@ -267,8 +271,8 @@ class NewUserMessage implements
 
 		if ( $flags & EDIT_UPDATE ) {
 			$content = $wikiPage->getContent( RevisionRecord::RAW );
-			if ( $content !== null ) {
-				$text = $content->getNativeData() . "\n" . $text;
+			if ( $content !== null && $content instanceof TextContent ) {
+				$text = $content->getText() . "\n" . $text;
 			}
 		}
 

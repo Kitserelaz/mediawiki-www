@@ -4,7 +4,12 @@ declare( strict_types = 1 );
 
 namespace Maps\Tests\Util;
 
+use MediaWiki\Content\WikitextContent;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Title\Title;
+use SMWQueryProcessor;
 use User;
 
 /**
@@ -12,6 +17,8 @@ use User;
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
 class TestFactory {
+
+	public const PAGE_NAME = 'Maps test page';
 
 	public static function newInstance(): self {
 		return new self();
@@ -25,9 +32,33 @@ class TestFactory {
 		return MediaWikiServices::getInstance()->getParser()
 			->parse(
 				$textToParse,
-				\Title::newMainPage(),
+				Title::newMainPage(),
 				new \ParserOptions( User::newSystemUser( 'TestUser' ) )
-			)->getText();
+			)
+			->getContentHolderText();
+	}
+
+	public function renderPage( string $wikitext, ParserOptions $options ): ParserOutput {
+		return MediaWikiServices::getInstance()->getContentRenderer()->getParserOutput(
+			new WikitextContent( $wikitext ),
+			Title::newFromText( self::PAGE_NAME ),
+			null,
+			$options
+		);
+	}
+
+	/**
+	 * @param string[] $queryParameters
+	 */
+	public function renderOnSpecialAsk( array $queryParameters, int $outputMode ): string {
+		[ $query, $params ] = SMWQueryProcessor::getQueryAndParamsFromFunctionParams(
+			$queryParameters,
+			$outputMode,
+			SMWQueryProcessor::SPECIAL_PAGE,
+			false
+		);
+
+		return SMWQueryProcessor::getResultFromQuery( $query, $params, $outputMode, SMWQueryProcessor::SPECIAL_PAGE );
 	}
 
 }

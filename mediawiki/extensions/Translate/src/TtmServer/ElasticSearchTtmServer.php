@@ -18,6 +18,7 @@ use Elastica\ResultSet;
 use Elastica\Search;
 use Exception;
 use MediaWiki\Extension\Elastica\MWElasticUtils;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Extension\Translate\TranslatorInterface\TranslationHelperException;
 use MediaWiki\Logger\LoggerFactory;
@@ -299,7 +300,7 @@ class ElasticSearchTtmServer
 			'group' => $handle->getGroupIds(),
 		];
 
-		return new Document( $globalid, $data, '_doc' );
+		return new Document( $globalid, $data );
 	}
 
 	/** @param bool $rebuild Deletes index first if already exists */
@@ -331,7 +332,9 @@ class ElasticSearchTtmServer
 			],
 		];
 		$replicas = $this->getReplicaCount();
-		$key = str_contains( $replicas, '-' ) ? 'auto_expand_replicas' : 'number_of_replicas';
+		$key = is_string( $replicas ) && str_contains( $replicas, '-' )
+			? 'auto_expand_replicas'
+			: 'number_of_replicas';
 		$indexSettings['settings']['index'][$key] = $replicas;
 
 		$this->getIndex()->create( $indexSettings, $rebuild );
@@ -386,7 +389,7 @@ class ElasticSearchTtmServer
 		];
 
 		$mapping = new Mapping( $properties );
-		$mapping->send( $index, [ 'include_type_name' => 'false' ] );
+		$mapping->send( $index );
 
 		$this->waitUntilReady();
 	}
@@ -410,8 +413,7 @@ class ElasticSearchTtmServer
 
 	public function batchInsertTranslations( array $batch ): void {
 		$docs = [];
-		foreach ( $batch as $data ) {
-			[ $handle, $sourceLanguage, $text ] = $data;
+		foreach ( $batch as [ $handle, $sourceLanguage, $text ] ) {
 			$revId = $handle->getTitleForLanguage( $sourceLanguage )->getLatestRevID();
 			$docs[] = $this->createDocument( $handle, $text, $revId );
 		}
@@ -440,7 +442,7 @@ class ElasticSearchTtmServer
 	}
 
 	public function getClient(): Client {
-		if ( !isset( $this->client ) ) {
+		if ( $this->client === null ) {
 			if ( isset( $this->config['config'] ) ) {
 				$this->client = new Client( $this->config['config'] );
 			} else {
@@ -468,7 +470,7 @@ class ElasticSearchTtmServer
 		return $this->config['shards'] ?? 1;
 	}
 
-	private function getReplicaCount(): string {
+	private function getReplicaCount(): int|string {
 		return $this->config['replicas'] ?? '0-2';
 	}
 
@@ -493,7 +495,7 @@ class ElasticSearchTtmServer
 
 	// Can it get any uglier?
 	private function logOutput( string $text ): void {
-		if ( isset( $this->logger ) ) {
+		if ( $this->logger !== null ) {
 			$this->logger->statusLine( "$text\n" );
 		}
 	}
@@ -699,7 +701,7 @@ class ElasticSearchTtmServer
 		try {
 			MWElasticUtils::deleteByQuery( $sourceIndex, $query, /* $allowConflicts = */ true );
 		} catch ( Exception $e ) {
-			LoggerFactory::getInstance( 'ElasticSearchTtmServer' )->error(
+			LoggerFactory::getInstance( LogNames::ELASTIC_SEARCH_TTMSERVER )->error(
 				'Problem encountered during deletion.',
 				[ 'exception' => $e ]
 			);
@@ -720,13 +722,20 @@ class ElasticSearchTtmServer
 			throw new RuntimeException( 'Unable to determine elasticsearch version, aborting.' );
 		}
 
-		return $result[ 'version' ][ 'number' ];
+		$distribution = $result['version']['distribution'] ?? 'elasticsearch';
+
+		return $distribution . '-' . $result[ 'version' ][ 'number' ];
 	}
 
 	private function checkElasticsearchVersion(): void {
 		$version = $this->getElasticsearchVersion();
-		if ( !str_starts_with( $version, '6.8' ) && !str_starts_with( $version, '7.' ) ) {
-			throw new RuntimeException( "Only Elasticsearch 6.8.x and 7.x are supported. Your version: $version." );
+		if ( !str_starts_with( $version, 'elasticsearch-6.8' )
+			&& !str_starts_with( $version, 'elasticsearch-7.' )
+			&& !str_starts_with( $version, 'opensearch-1.' )
+			&& !str_starts_with( $version, 'opensearch-2.' ) ) {
+			throw new RuntimeException(
+				'Only OpenSearch 1.x and 2.x, Elasticsearch 6.8.x and 7.x are supported. ' .
+				"Your version: $version." );
 		}
 	}
 

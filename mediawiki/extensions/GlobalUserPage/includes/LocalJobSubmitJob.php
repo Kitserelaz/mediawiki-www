@@ -16,26 +16,38 @@
 
 namespace MediaWiki\GlobalUserPage;
 
-use Job;
-use MediaWiki\MediaWikiServices;
-use MediaWiki\Title\Title;
+use LogicException;
+use MediaWiki\JobQueue\Job;
+use MediaWiki\JobQueue\JobQueueGroupFactory;
+use MediaWiki\JobQueue\JobSpecification;
+use MediaWiki\User\CentralId\CentralIdLookup;
+use MediaWiki\User\UserFactory;
 
 /**
  * Job class that submits LocalCacheUpdateJob jobs
  */
 class LocalJobSubmitJob extends Job {
-	public function __construct( Title $title, array $params ) {
-		parent::__construct( 'GlobalUserPageLocalJobSubmitJob', $title, $params );
+	public function __construct(
+		array $params,
+		private readonly CentralIdLookup $centralIdLookup,
+		private readonly JobQueueGroupFactory $jobQueueGroupFactory,
+		private readonly UserFactory $userFactory,
+		private readonly GlobalUserPageManager $globalUserPageManager,
+	) {
+		parent::__construct( 'GlobalUserPageLocalJobSubmitJob', $params );
 	}
 
+	/** @inheritDoc */
 	public function run() {
-		$job = new LocalCacheUpdateJob(
-			Title::newFromText( 'User:' . $this->params['username'] ),
-			$this->params
-		);
-		$jobQueueGroupFactory = MediaWikiServices::getInstance()->getJobQueueGroupFactory();
-		foreach ( GlobalUserPage::getEnabledWikis() as $wiki ) {
-			$jobQueueGroupFactory->makeJobQueueGroup( $wiki )->push( $job );
+		$job = new JobSpecification( 'LocalGlobalUserPageCacheUpdateJob', $this->params );
+		$wikis = $this->globalUserPageManager->getEnabledWikis();
+		$user = $this->userFactory->newFromName( $this->params['username'] );
+		if ( $user === null ) {
+			throw new LogicException( 'User instance could not be created for ' . $this->params['username'] );
+		}
+		$wikis = array_filter( $wikis, fn ( $wiki ) => $this->centralIdLookup->isAttached( $user, $wiki ) );
+		foreach ( $wikis as $wiki ) {
+			$this->jobQueueGroupFactory->makeJobQueueGroup( $wiki )->push( $job );
 		}
 		return true;
 	}

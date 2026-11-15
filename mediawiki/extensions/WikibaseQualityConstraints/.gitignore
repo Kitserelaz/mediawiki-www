@@ -43,3 +43,11 @@ Thumbs.db
 /build/logs
 /node_modules
 /.eslintcache
+/.stylelintcache
+
+# Cypress artefacts #
+#####################
+cypress/.cache
+cypress/screenshots
+cypress/videos
+cypress/downloads

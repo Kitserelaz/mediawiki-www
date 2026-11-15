@@ -6,25 +6,13 @@ use CirrusSearch\Connection;
 use CirrusSearch\Maintenance\AnalysisConfigBuilder;
 use CirrusSearch\Maintenance\AnalysisFilter;
 use CirrusSearch\Maintenance\ConfigUtils;
+use CirrusSearch\Maintenance\Plugins;
 use CirrusSearch\Maintenance\Printer;
 use CirrusSearch\SearchConfig;
 use MediaWiki\Status\Status;
 
 /**
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
 /**
@@ -102,13 +90,6 @@ class MetaStoreIndex {
 	}
 
 	/**
-	 * @return MetaNamespaceStore
-	 */
-	public function namespaceStore() {
-		return new MetaNamespaceStore( $this->elasticaIndex(), $this->config->getWikiId() );
-	}
-
-	/**
 	 * @return MetaSaneitizeJobStore
 	 */
 	public function saneitizeJobStore() {
@@ -121,7 +102,6 @@ class MetaStoreIndex {
 	public function stores() {
 		return [
 			'version' => $this->versionStore(),
-			'namespace' => $this->namespaceStore(),
 			'saneitize' => $this->saneitizeJobStore(),
 		];
 	}
@@ -162,7 +142,7 @@ class MetaStoreIndex {
 		return Status::newGood();
 	}
 
-	private function buildIndexConfiguration() {
+	private function buildIndexConfiguration(): array {
 		$pluginsStatus = $this->configUtils->scanAvailablePlugins(
 			$this->config->get( 'CirrusSearchBannedPlugins' ) );
 		if ( !$pluginsStatus->isGood() ) {
@@ -320,7 +300,7 @@ class MetaStoreIndex {
 		if ( !$pluginsStatus->isGood() ) {
 			throw new \RuntimeException( (string)$pluginsStatus );
 		}
-		if ( !array_search( 'reindex', $pluginsStatus->getValue() ) ) {
+		if ( !Plugins::contains( 'reindex', $pluginsStatus->getValue() ) ) {
 			throw new \RuntimeException( "The reindex module is mandatory to upgrade the metastore" );
 		}
 		$index = $this->createNewIndex( (string)time() );
@@ -403,7 +383,7 @@ class MetaStoreIndex {
 	public function metastoreVersion() {
 		try {
 			$doc = $this->elasticaIndex()->getDocument( self::METASTORE_VERSION_DOCID );
-		} catch ( \Elastica\Exception\NotFoundException $e ) {
+		} catch ( \Elastica\Exception\NotFoundException ) {
 			return 0;
 		} catch ( \Elastica\Exception\ResponseException $e ) {
 			// BC code in case the metastore alias does not exist yet
@@ -420,7 +400,7 @@ class MetaStoreIndex {
 		return (int)$doc->get( 'metastore_major_version' );
 	}
 
-	private function getMasterTimeout() {
+	private function getMasterTimeout(): string {
 		return $this->config->get( 'CirrusSearchMasterTimeout' );
 	}
 }

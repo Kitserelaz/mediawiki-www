@@ -1,0 +1,2 @@
+<includeonly>{{#if:{{{1|}}}|<div class="hatnote">''Main article: [[{{{1}}}{{!}}{{{l1|{{{1}}}}}}]]{{#if:{{{2|}}}|, [[{{{2}}}{{!}}{{{l2|{{{2}}}}}}]]}}{{#if:{{{3|}}}|, [[{{{3}}}{{!}}{{{l3|{{{3}}}}}}]]}}''</div>}}</includeonly>
+<noinclude>{{Documentation|:Template:Hatnote/doc}}</noinclude>

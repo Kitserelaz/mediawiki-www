@@ -4,18 +4,19 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\FileFormatSupport;
 
 use InvalidArgumentException;
-use LanguageCode;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Extension\Translate\MessageGroupConfiguration\MetaYamlSchemaExtender;
 use MediaWiki\Extension\Translate\MessageLoading\Message;
 use MediaWiki\Extension\Translate\MessageLoading\MessageCollection;
 use MediaWiki\Extension\Translate\Services;
 use MediaWiki\Extension\Translate\Utilities\GettextPlural;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
+use MediaWiki\Language\LanguageCode;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Specials\SpecialVersion;
 use MediaWiki\Title\Title;
-use RuntimeException;
+use UtfNormal\Validator;
 
 /**
  * FileFormat class that implements support for gettext file format.
@@ -55,7 +56,14 @@ class GettextFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 		}
 	}
 
+	/** @throws GettextParseException */
 	public function readFromVariable( string $data ): array {
+		if ( !mb_check_encoding( $data, 'UTF-8' ) ) {
+			throw new GettextParseException( 'invalid-utf8' );
+		}
+
+		$data = Validator::cleanUp( $data );
+
 		# Authors first
 		$matches = [];
 		preg_match_all( '/^#\s*Author:\s*(.*)$/m', $data, $matches );
@@ -74,6 +82,7 @@ class GettextFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 		return $parsedData;
 	}
 
+	/** @throws GettextParseException */
 	private function parseGettext( string $data ): array {
 		$mangler = $this->group->getMangler();
 		$useCtxtAsKey = $this->extra['CtxtAsKey'] ?? false;
@@ -108,7 +117,7 @@ class GettextFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 				$potmode = $this->allowPotMode;
 			}
 		} else {
-			$message = "Gettext file header was not found:\n\n$data";
+			$message = "Gettext file header was not found:\n\n$headerSection";
 			throw new GettextParseException( $message );
 		}
 
@@ -144,7 +153,7 @@ class GettextFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 			}
 
 			if ( $useCtxtAsKey ) {
-				if ( !isset( $item['ctxt'] ) ) {
+				if ( $item['ctxt'] === false ) {
 					error_log( "ctxt missing for: $section" );
 					continue;
 				}
@@ -168,6 +177,7 @@ class GettextFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 		];
 	}
 
+	/** @throws GettextParseException */
 	private function parseGettextSection( string $section, ?int $pluralCount ): ?array {
 		if ( trim( $section ) === '' ) {
 			return null;
@@ -193,7 +203,7 @@ class GettextFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 		if ( $match !== null ) {
 			$item['id'] = $this->formatForWiki( $match );
 		} else {
-			throw new RuntimeException( "Unable to parse msgid:\n\n$section" );
+			throw new GettextParseException( "Unable to parse msgid:\n\n$section" );
 		}
 
 		$match = $this->expectKeyword( 'msgctxt', $section );
@@ -221,7 +231,7 @@ class GettextFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 			if ( $match !== null ) {
 				$item['str'] = $this->formatForWiki( $match );
 			} else {
-				throw new RuntimeException( "Unable to parse msgstr:\n\n$section" );
+				throw new GettextParseException( "Unable to parse msgstr:\n\n$section" );
 			}
 		}
 
@@ -318,7 +328,7 @@ class GettextFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 			$legalChars = Title::legalChars();
 			$snippet = $item['id'];
 			$snippet = preg_replace( "/[^$legalChars]/", ' ', $snippet );
-			$snippet = preg_replace( "/[:&%\/_]/", ' ', $snippet );
+			$snippet = preg_replace( '/[:&%\/_]/', ' ', $snippet );
 			$snippet = preg_replace( '/ {2,}/', ' ', $snippet );
 			$snippet = $lang->truncateForDatabase( $snippet, 30, '' );
 			$snippet = str_replace( ' ', '_', trim( $snippet ) );
@@ -389,7 +399,7 @@ class GettextFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 		$pluralRule = GettextPlural::getPluralRule( $code );
 		if ( !$pluralRule ) {
 			$pluralRule = GettextPlural::getPluralRule( 'en' );
-			LoggerFactory::getInstance( 'Translate' )->warning(
+			LoggerFactory::getInstance( LogNames::MAIN )->warning(
 				"T235180: Missing Gettext plural rule for '{languagecode}'",
 				[ 'languagecode' => $code ]
 			);
@@ -541,7 +551,7 @@ class GettextFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 
 		$msgid = $message->definition();
 		$msgstr = $message->translation() ?? '';
-		if ( strpos( $msgstr, TRANSLATE_FUZZY ) !== false ) {
+		if ( str_contains( $msgstr, TRANSLATE_FUZZY ) ) {
 			$msgstr = str_replace( TRANSLATE_FUZZY, '', $msgstr );
 			// Might be fuzzy infile
 			$flags[] = 'fuzzy';
@@ -557,7 +567,7 @@ class GettextFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 				foreach ( $forms as $index => $form ) {
 					$content .= "msgstr[$index] " . $this->escape( $form ) . "\n";
 				}
-			} catch ( GettextPluralException $e ) {
+			} catch ( GettextPluralException ) {
 				$flags[] = 'invalid-plural';
 				for ( $i = 0; $i < $pluralCount; $i++ ) {
 					$content .= "msgstr[$i] \"\"\n";
@@ -669,7 +679,7 @@ class GettextFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 				return false;
 			}
 
-		} catch ( GettextPluralException $e ) {
+		} catch ( GettextPluralException ) {
 			// Something failed, invalid syntax?
 			return false;
 		}

@@ -4,6 +4,7 @@ use GlobalPreferences\SpecialGlobalPreferences;
 use MediaWiki\Exception\ErrorPageError;
 use MediaWiki\Exception\UserNotLoggedIn;
 use MediaWiki\Permissions\SimpleAuthority;
+use MediaWiki\Tests\Specials\SpecialPageExecutor;
 use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentityValue;
@@ -15,9 +16,7 @@ use MediaWiki\User\UserIdentityValue;
 class SpecialGlobalPreferencesTest extends MediaWikiIntegrationTestCase {
 	protected function setUp(): void {
 		$this->overrideMwServices( null, [
-			'CentralIdLookup' => function () {
-				return $this->getMockCentralLookup();
-			}
+			'CentralIdLookup' => $this->getMockCentralLookup( ... )
 		] );
 		parent::setUp();
 	}

@@ -5,6 +5,7 @@ namespace CirrusSearch;
 use Exception;
 use LogicException;
 use MediaWiki\Extension\Elastica\ElasticaConnection;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use Wikimedia\Assert\Assert;
 
@@ -12,20 +13,7 @@ use Wikimedia\Assert\Assert;
  * Forms and caches connection to Elasticsearch as well as client objects
  * that contain connection information like \Elastica\Index and \Elastica\Type.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class Connection extends ElasticaConnection {
 
@@ -55,14 +43,14 @@ class Connection extends ElasticaConnection {
 	public const PAGE_DOC_TYPE = 'page';
 
 	/**
-	 * Name of the title suggest document type
-	 */
-	public const TITLE_SUGGEST_DOC_TYPE = 'titlesuggest';
-
-	/**
 	 * Name of the archive document type
 	 */
 	public const ARCHIVE_DOC_TYPE = 'archive';
+
+	/**
+	 * "Alternative" index suffix
+	 */
+	public const ALT_SUFFIX = 'alt';
 
 	/**
 	 * Map of index types (suffix names) indexed by mapping type.
@@ -93,16 +81,16 @@ class Connection extends ElasticaConnection {
 	private $clusterSettings;
 
 	/**
-	 * @var Connection[][]
+	 * @var self[][]
 	 */
 	private static $pool = [];
 
 	/**
 	 * @param SearchConfig $config
 	 * @param string|null $cluster
-	 * @return Connection
+	 * @return self
 	 */
-	public static function getPool( SearchConfig $config, $cluster = null ) {
+	public static function getPool( SearchConfig $config, $cluster = null ): self {
 		$assignment = $config->getClusterAssignment();
 		$cluster ??= $assignment->getSearchCluster();
 		$wiki = $config->getWikiId();
@@ -140,7 +128,7 @@ class Connection extends ElasticaConnection {
 	/**
 	 * @return never
 	 */
-	public function __sleep() {
+	public function __serialize() {
 		throw new \RuntimeException( 'Attempting to serialize ES connection' );
 	}
 
@@ -255,23 +243,13 @@ class Connection extends ElasticaConnection {
 		if ( isset( $mappings[$namespace] ) ) {
 			return $mappings[$namespace];
 		}
-		$defaultSearch = $this->config->get( 'NamespacesToBeSearchedDefault' );
+		$defaultSearch = $this->config->get( MainConfigNames::NamespacesToBeSearchedDefault );
 		if ( isset( $defaultSearch[$namespace] ) && $defaultSearch[$namespace] ) {
 			return self::CONTENT_INDEX_SUFFIX;
 		}
 
 		return MediaWikiServices::getInstance()->getNamespaceInfo()->isContent( $namespace ) ?
 			self::CONTENT_INDEX_SUFFIX : self::GENERAL_INDEX_SUFFIX;
-	}
-
-	/**
-	 * @param int[]|null $namespaces List of namespaces to check
-	 * @return string|false The suffix to use (e.g. content or general) to
-	 *  query the namespaces, or false if both need to be queried.
-	 * @deprecated 1.38 Use self::pickIndexSuffixForNamespaces
-	 */
-	public function pickIndexTypeForNamespaces( ?array $namespaces = null ) {
-		return $this->pickIndexSuffixForNamespaces( $namespaces );
 	}
 
 	/**
@@ -320,7 +298,7 @@ class Connection extends ElasticaConnection {
 	/**
 	 * @param string[] $clusters array of cluster names
 	 * @param SearchConfig $config the search config
-	 * @return Connection[] array of connection indexed by cluster name
+	 * @return self[] array of connection indexed by cluster name
 	 */
 	public static function getClusterConnections( array $clusters, SearchConfig $config ) {
 		$connections = [];

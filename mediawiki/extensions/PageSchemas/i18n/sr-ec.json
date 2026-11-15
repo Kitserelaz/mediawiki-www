@@ -1,9 +1,9 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"BadDog",
-			"Rancher",
-			"Aca"
+			"Rancher"
 		]
 	},
 	"ps-desc": "Одређује структуру података за све странице у категорији користећи XML",

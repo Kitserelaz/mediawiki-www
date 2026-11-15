@@ -16,7 +16,7 @@ class SpecialGenerateRandomHash extends FormSpecialPage {
 	 * @param ConfigFactory $configFactory
 	 */
 	public function __construct( ConfigFactory $configFactory ) {
-		parent::__construct( 'GenerateRandomHash', 'generate-random-hash' );
+		parent::__construct( 'GenerateRandomHash' );
 
 		$this->config = $configFactory->makeConfig( 'RemovePII' );
 	}
@@ -82,5 +82,10 @@ class SpecialGenerateRandomHash extends FormSpecialPage {
 	 */
 	protected function getDisplayFormat() {
 		return 'ooui';
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'generate-random-hash';
 	}
 }

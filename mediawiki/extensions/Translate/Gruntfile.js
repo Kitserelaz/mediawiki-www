@@ -13,16 +13,16 @@ module.exports = function ( grunt ) {
 				cache: true,
 				fix: grunt.option( 'fix' )
 			},
-			all: [
-				'**/*.{js,json}',
-				'!resources/lib/**',
-				'!{vendor,node_modules}/**'
-			]
+			all: [ '.' ]
 		},
 		stylelint: {
+			options: {
+				cache: true
+			},
 			all: [
 				'**/*.css',
 				'**/*.less',
+				'**/*.vue',
 				'!node_modules/**',
 				'!vendor/**',
 				'!resources/lib/**'

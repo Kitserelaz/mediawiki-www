@@ -4,10 +4,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Synchronization;
 
-use JsonSerializable;
-use MediaWiki\Json\JsonUnserializable;
-use MediaWiki\Json\JsonUnserializableTrait;
-use MediaWiki\Json\JsonUnserializer;
+use Wikimedia\JsonCodec\JsonCodecable;
+use Wikimedia\JsonCodec\JsonCodecableTrait;
 
 /**
  * Class encapsulating the response returned by the GroupSynchronizationCache
@@ -16,20 +14,19 @@ use MediaWiki\Json\JsonUnserializer;
  * @license GPL-2.0-or-later
  * @since 2020.06
  */
-class GroupSynchronizationResponse implements JsonSerializable, JsonUnserializable {
-	use JsonUnserializableTrait;
+class GroupSynchronizationResponse implements JsonCodecable {
+	use JsonCodecableTrait;
 
-	/** @var MessageUpdateParameter[] */
-	private array $remainingMessages;
-	private string $groupId;
-	private bool $timeout;
-
+	/**
+	 * @param string $groupId
+	 * @param MessageUpdateParameter[] $remainingMessages
+	 * @param bool $timeout
+	 */
 	public function __construct(
-		string $groupId, array $remainingMessages, bool $hasTimedOut
+		private readonly string $groupId,
+		private readonly array $remainingMessages,
+		private readonly bool $timeout,
 	) {
-		$this->groupId = $groupId;
-		$this->remainingMessages = $remainingMessages;
-		$this->timeout = $hasTimedOut;
 	}
 
 	public function isDone(): bool {
@@ -50,12 +47,16 @@ class GroupSynchronizationResponse implements JsonSerializable, JsonUnserializab
 	}
 
 	/** @return mixed[] */
-	protected function toJsonArray(): array {
-		return get_object_vars( $this );
+	public function toJsonArray(): array {
+		return [
+			'groupId' => $this->groupId,
+			'remainingMessages' => $this->remainingMessages,
+			'timeout' => $this->timeout,
+		];
 	}
 
-	public static function newFromJsonArray( JsonUnserializer $unserializer, array $params ) {
-		return new self(
+	public static function newFromJsonArray( array $params ): self {
+		return new static(
 			$params['groupId'],
 			$params['remainingMessages'],
 			$params['timeout']

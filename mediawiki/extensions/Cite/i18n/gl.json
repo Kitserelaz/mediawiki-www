@@ -76,6 +76,5 @@
 	"cite-configuration-backlink-marker-label": "Conxunto de símbolos da ligazón de retroceso",
 	"cite-configuration-backlink-marker-description": "Os caracteres de abaixo utilizaranse para as ligazóns de retroceso do teu wiki.",
 	"cite-configuration-backlink-marker-help": "Introduce o teu conxunto de caracteres personalizado, cun espazo entre cada carácter. Asegúrate de que o recipiente conteña caracteres XX.",
-	"cite-configuration-submit": "Gardar os cambios",
-	"cite_warning": "Advertencia da cita: $1"
+	"cite-configuration-submit": "Gardar os cambios"
 }

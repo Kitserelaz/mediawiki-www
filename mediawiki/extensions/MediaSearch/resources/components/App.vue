@@ -33,6 +33,9 @@
 				<search-filters :media-type="tab" @filter-change="onFilterChange">
 				</search-filters>
 
+				<search-warnings>
+				</search-warnings>
+
 				<did-you-mean>
 				</did-you-mean>
 
@@ -77,7 +80,7 @@
  * request and this component passes an array of string lookup results to the
  * AutocompleteSearchInput for display.
  */
-var MEDIASEARCH_TABS = mw.config.get( 'sdmsInitialSearchResults' ).tabs,
+const MEDIASEARCH_TABS = mw.config.get( 'sdmsInitialSearchResults' ).tabs,
 	mapState = require( 'vuex' ).mapState,
 	mapGetters = require( 'vuex' ).mapGetters,
 	mapMutations = require( 'vuex' ).mapMutations,
@@ -85,6 +88,7 @@ var MEDIASEARCH_TABS = mw.config.get( 'sdmsInitialSearchResults' ).tabs,
 	SdAutocompleteSearchInput = require( './base/AutocompleteSearchInput.vue' ),
 	SearchResults = require( './SearchResults.vue' ),
 	SearchFilters = require( './SearchFilters.vue' ),
+	SearchWarnings = require( './SearchWarnings.vue' ),
 	DidYouMean = require( './DidYouMean.vue' ),
 	Observer = require( './base/Observer.vue' ),
 	UserNotice = require( './UserNotice.vue' ),
@@ -103,6 +107,7 @@ module.exports = exports = {
 		'sd-autocomplete-search-input': SdAutocompleteSearchInput,
 		'search-results': SearchResults,
 		'search-filters': SearchFilters,
+		'search-warnings': SearchWarnings,
 		'did-you-mean': DidYouMean,
 		'search-user-notice': UserNotice,
 		observer: Observer
@@ -143,7 +148,7 @@ module.exports = exports = {
 		 * @return {Object} { image: 'Images', video: 'Video', page: 'Categories and Pages'... }
 		 */
 		tabNames: function () {
-			var names = {},
+			const names = {},
 				prefix = 'mediasearch-tab-';
 
 			// Get the i18n message for each tab title and assign to appropriate
@@ -166,6 +171,7 @@ module.exports = exports = {
 
 	methods: Object.assign( {}, mapMutations( [
 		'clearDidYouMean',
+		'clearSearchWarnings',
 		'resetResults',
 		'resetAutoLoadForAllMediaType',
 		'setHasError',
@@ -280,6 +286,7 @@ module.exports = exports = {
 		onTermOrFilterChange: function ( mediaType ) {
 			this.resetResults( mediaType );
 			this.clearDidYouMean();
+			this.clearSearchWarnings();
 			this.resetAutoLoadForAllMediaType();
 
 			// Clear any delayed/debounced lookup requests that may still be
@@ -377,9 +384,9 @@ module.exports = exports = {
 
 	mounted: function () {
 		// eslint-disable-next-line no-jquery/no-global-selector
-		var $container = $( '#sdms-app' );
+		const $container = $( '#sdms-app' );
 		this.$nextTick( () => {
-			var readyDeferred = $.Deferred(),
+			const readyDeferred = $.Deferred(),
 				promises = $container.find( 'img' ).get().map( ( image ) => {
 					// We start out with an initial serverside DOM that we'll swap out as
 					// soon as the Vue components are mounted
@@ -403,12 +410,12 @@ module.exports = exports = {
 						return $.Deferred().resolve().promise();
 					}
 
-					return image.decode().then( null, () =>
+					return image.decode().then( null,
 						// turn rejected promises into successful resolves, so that below
 						// $.when can act as `allSettled` (it otherwise short-circuits as
 						// as soon as one of the promises fails)
-						 $.Deferred().resolve().promise()
-					 );
+						() => $.Deferred().resolve().promise()
+					);
 				} );
 
 			// When above image-loading has completed, we're allowed to proceed & swap out

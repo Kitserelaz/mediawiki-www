@@ -33,7 +33,7 @@
 	"ipinfo-property-label-connectiontypes": "Типы подключения",
 	"ipinfo-property-label-tunneloperators": "Оператор туннеля",
 	"ipinfo-property-label-proxies": "Прокси",
-	"ipinfo-property-label-usercount": "Пользователи на этом IP-адресе",
+	"ipinfo-property-label-usercount": "Уникальные устройства в интернете",
 	"ipinfo-property-value-connectiontype-cableordsl": "Кабель/DSL",
 	"ipinfo-property-value-connectiontype-cellular": "Мобильный",
 	"ipinfo-property-value-connectiontype-corporate": "Корпоративный",

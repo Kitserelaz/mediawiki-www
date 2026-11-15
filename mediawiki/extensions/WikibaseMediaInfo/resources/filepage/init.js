@@ -2,18 +2,18 @@
 
 	'use strict';
 
-	var StatementListDeserializer = require( 'wikibase.serialization' ).StatementListDeserializer,
+	const StatementListDeserializer = require( 'wikibase.serialization' ).StatementListDeserializer,
 		AddPropertyWidget = require( 'wikibase.mediainfo.statements' ).AddPropertyWidget,
 		CaptionsPanel = require( './CaptionsPanel.js' ),
 		LinkNoticeWidget = require( 'wikibase.mediainfo.statements' ).LinkNoticeWidget,
 		ProtectionMsgWidget = require( './ProtectionMsgWidget.js' ),
 		StatementPanel = require( './StatementPanel.js' ),
-		addPropertyWidget,
 		defaultProperties = mw.config.get( 'wbmiDefaultProperties' ) || [],
 		propertyTypes = mw.config.get( 'wbmiPropertyTypes' ) || {},
 		mediaInfoEntity = mw.config.get( 'wbEntity' ) || {},
-		statementPanels = {},
-		captionsPanel;
+		statementPanels = {};
+
+	let addPropertyWidget;
 
 	Object.freeze( defaultProperties );
 
@@ -28,11 +28,11 @@
 	 * @return {OO.ui.IndexLayout}
 	 */
 	function infuseTabs( $content ) {
-		var $tabs = $content.find( '.wbmi-tabs' );
+		const $tabs = $content.find( '.wbmi-tabs' );
 		if ( $tabs.length === 0 ) {
 			throw new Error( 'Missing MediaInfo tabs' );
 		}
-		var tabs = OO.ui.infuse( $tabs );
+		const tabs = OO.ui.infuse( $tabs );
 		// This shouldn't be needed, as this is the first tab, but it is (T340803)
 		tabs.setTabPanel( 'wikiTextPlusCaptions' );
 		return tabs;
@@ -47,7 +47,7 @@
 	 */
 	function isEditable() {
 		/* eslint-disable no-jquery/no-global-selector */
-		var userCanEdit = mw.config.get( 'wgIsProbablyEditable' ),
+		const userCanEdit = mw.config.get( 'wgIsProbablyEditable' ),
 			onDiffPage = $( '.diff-currentversion-title' ).length !== 0,
 			onRevisionPage = $( '.mw-revision' ).length !== 0;
 		/* eslint-enable no-jquery/no-global-selector */
@@ -84,7 +84,7 @@
 	}
 
 	function checkConstraints() {
-		var api = new mw.Api(),
+		const api = new mw.Api(),
 			lang = mw.config.get( 'wgUserLanguage' );
 		if (
 			mw.user.isNamed() &&
@@ -97,8 +97,8 @@
 				uselang: lang,
 				id: mw.config.get( 'wbEntityId' ),
 				status: 'violation|warning|suggestion|bad-parameters'
-			} ).then( function ( result ) {
-				Object.keys( statementPanels ).forEach( function ( key ) {
+			} ).then( ( result ) => {
+				Object.keys( statementPanels ).forEach( ( key ) => {
 					statementPanels[ key ].handleConstraintsResponse( result );
 				} );
 			} );
@@ -116,14 +116,13 @@
 	 * @return {StatementPanel}
 	 */
 	function createStatementsPanel( $el, propId, propertyType ) {
-		var sp,
-			editable = isEditable();
+		const editable = isEditable();
 
-		sp = new StatementPanel( {
+		const sp = new StatementPanel( {
 			$element: $el,
 			entityId: mw.config.get( 'wbEntityId' ),
 			helpUrls: mw.config.get( 'wbmiHelpUrls' ) || {},
-			isDefaultProperty: defaultProperties.indexOf( propId ) >= 0,
+			isDefaultProperty: defaultProperties.includes( propId ),
 			propertyId: propId,
 			propertyType: propertyType,
 			showControls: editable,
@@ -143,8 +142,8 @@
 	 */
 	function scrollToCurrentAnchor( tabs ) {
 		if ( location.hash && location.hash.slice( 1 ) in statementPanels ) {
-			Object.keys( tabs.tabPanels ).some( function ( name ) {
-				var panel = tabs.getTabPanel( name ),
+			Object.keys( tabs.tabPanels ).some( ( name ) => {
+				const panel = tabs.getTabPanel( name ),
 					$node = panel.$element.find( location.hash );
 
 				if ( $node.length === 0 ) {
@@ -172,15 +171,14 @@
 	 *
 	 * @param {jQuery} content
 	 */
-	mw.hook( 'wikipage.content' ).add( function ( $content ) {
-		var linkNoticeWidget = new LinkNoticeWidget(),
-			protectionMsgWidget = new ProtectionMsgWidget(),
-			$statements = $content.find( '.wbmi-structured-data-header ~ .wbmi-entityview-statementsGroup' ),
-			existingProperties = defaultProperties.concat( Object.keys( mediaInfoEntity.statements || {} ) ),
-			deserializer = new StatementListDeserializer(),
-			tabs,
-			existingStatementPanels;
+	mw.hook( 'wikipage.content' ).add( ( $content ) => {
+		const linkNoticeWidget = new LinkNoticeWidget();
+		const protectionMsgWidget = new ProtectionMsgWidget();
+		const $statements = $content.find( '.wbmi-structured-data-header ~ .wbmi-entityview-statementsGroup' );
+		const existingProperties = defaultProperties.concat( Object.keys( mediaInfoEntity.statements || {} ) );
+		const deserializer = new StatementListDeserializer();
 
+		let tabs;
 		// Try to infuse the mediainfo tabs.
 		// https://phabricator.wikimedia.org/T262470.
 		try {
@@ -198,7 +196,7 @@
 
 		// Create non-statement JS elements
 		$content.find( '.wbmi-tabs-container' ).first().before( protectionMsgWidget.$element );
-		captionsPanel = createCaptionsPanel();
+		const captionsPanel = createCaptionsPanel();
 		// eslint-disable-next-line no-jquery/no-global-selector
 		$( '.wbmi-captions-header ~ .wbmi-entityview-captionsPanel' ).replaceWith( captionsPanel.$element );
 
@@ -212,8 +210,8 @@
 		}
 
 		// Set up existing statement panels
-		existingStatementPanels = $statements.get().map( function ( element ) {
-			var $statement = $( element ),
+		const existingStatementPanels = $statements.get().map( ( element ) => {
+			const $statement = $( element ),
 				propId = $statement.data( 'mw-property' ) ||
 					// Fallback for when this attribute was named differently
 					// @see https://phabricator.wikimedia.org/T387691
@@ -238,8 +236,8 @@
 		} );
 
 		// Create panels statements added by user
-		addPropertyWidget.on( 'choose', function ( input, data ) {
-			var $el = $( '<div>' ).addClass( 'wbmi-entityview-statementsGroup' ).attr( 'id', data.id );
+		addPropertyWidget.on( 'choose', ( input, data ) => {
+			const $el = $( '<div>' ).addClass( 'wbmi-entityview-statementsGroup' ).attr( 'id', data.id );
 
 			$el.insertBefore( addPropertyWidget.$element );
 			createStatementsPanel( $el, data.id, data.datatype );

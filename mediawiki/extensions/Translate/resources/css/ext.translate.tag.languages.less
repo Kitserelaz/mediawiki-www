@@ -18,8 +18,9 @@
 	}
 }
 
-/* Visually merge languages box border into translate box where available */
-.mw-pt-translate-header ~ .mw-parser-output .mw-pt-languages {
+// Visually merge languages box border into translate box where available
+// T428096: Only when it is the first child, don't eat into other content.
+.mw-pt-translate-header ~ .mw-parser-output .mw-pt-languages:first-child {
 	margin-top: -1px;
 }
 
@@ -54,7 +55,8 @@
 	height: 0.7em;
 	width: 0.7em;
 	border-radius: 50%;
-	border: 2px solid #a2a9b1;
+	border: 0;
+	outline: @border-width-base @border-style-base @color-progressive;
 	box-sizing: border-box;
 	margin-left: 3px;
 	flex-shrink: 0;
@@ -76,39 +78,34 @@
 
 /* Need very high specificity to override skin styles in the sidebar */
 #mw-panel .portal .body .mw-pt-progress--none a,
-.interwiki-x-pagetranslation.mw-pt-progress--none a {
-	color: #ba0000;
+.interwiki-pagetranslation.mw-pt-progress--none a {
+	color: @color-link-red;
 }
 
 #mw-panel .portal .body .mw-pt-progress--none a:visited,
-.interwiki-x-pagetranslation.mw-pt-progress--none a:visited {
-	color: #a55858;
+.interwiki-pagetranslation.mw-pt-progress--none a:visited {
+	color: @color-link-red--visited;
 }
 
-/* @noflip */
 .mw-pt-progress--low::after {
-	background: conic-gradient( #36c 0%, #fff 0% 100% );
+	border: @border-width-thick @border-style-base @color-placeholder;
+	outline: 0;
+	background: conic-gradient( @color-progressive 0deg, @background-color-transparent 0deg );
 }
 
-/* @noflip */
 .mw-pt-progress--med::after {
-	border: 1px solid #36c;
-	/* Blue filling up to a half. Adding 0.1% for white to reduce jagged edges. */
-	background: conic-gradient( #36c 0% 50%, #fff 50.1% 100% );
+	/* Blue filling up to a half. */
+	background: conic-gradient( @color-progressive 180deg, @background-color-transparent 0deg );
 }
 
-/* @noflip */
 .mw-pt-progress--high::after {
-	border: 1px solid #36c;
-	/* Blue filling almost the full circle. Adding 0.1% for white to reduce jagged edges. */
-	background: conic-gradient( #36c 0% 70%, #fff 70.1% 100% );
+	/* Blue filling almost the full circle. */
+	background: conic-gradient( @color-progressive 252deg, @background-color-transparent 0deg );
 }
 
-/* @noflip */
 .mw-pt-progress--complete::after {
 	/* Fully blue */
-	border: 1px solid #36c;
-	background: conic-gradient( #fff 0, #36c 0 );
+	background: conic-gradient( @background-color-transparent 0, @color-progressive 0 );
 }
 
 @media screen and ( min-width: @min-width-breakpoint-tablet ) {

@@ -76,7 +76,7 @@ QUnit.test( 'constructor', ( assert ) => {
 	doc = new ve.dm.Document( [ ...'abcd' ], htmlDoc );
 	assert.strictEqual( doc.getHtmlDocument(), htmlDoc, 'Provided HTML document is used' );
 
-	const data = new ve.dm.ElementLinearData(
+	const data = new ve.dm.LinearData(
 		new ve.dm.HashValueStore(),
 		[ { type: 'paragraph' }, { type: '/paragraph' } ]
 	);
@@ -162,6 +162,21 @@ QUnit.test( 'cloneFromRange', ( assert ) => {
 		assert.strictEqual( doc2.getStorage(), doc1.getStorage(),
 			caseItem.msg + ': persistentStorage is copied' );
 	} );
+} );
+
+QUnit.test( 'cloneFromRange and rebuildTree (InternalList)', ( assert ) => {
+	const doc = ve.dm.example.createExampleDocument( 'references' );
+
+	// Validate the test setup
+	assert.deepEqual( doc.getInternalList().keyIndexes, {}, '`keyIndexes` of original InternalList is empty' );
+
+	const docClone = doc.cloneFromRange();
+
+	assert.deepEqual( docClone.getInternalList().keyIndexes, {}, '`keyIndexes` of clone is empty' );
+
+	docClone.rebuildTree();
+
+	assert.deepEqual( docClone.getInternalList().keyIndexes, {}, '`keyIndexes` is empty after rebuilding the tree' );
 } );
 
 QUnit.test( 'getRelativeOffset', ( assert ) => {
@@ -416,7 +431,7 @@ QUnit.test( 'getRelativeRange', ( assert ) => {
 				),
 				caseItem.expected,
 				'Test document ' + i +
-				', range ' + caseItem.given.toJSON() +
+				', range (' + caseItem.given.from + ', ' + caseItem.given.to + ')' +
 				', direction ' + caseItem.direction
 			);
 		} );
@@ -978,13 +993,13 @@ QUnit.test( 'getNearestCursorOffset', ( assert ) => {
 
 	cases.forEach( ( caseItem ) => {
 		for ( let dir = -1; dir <= 1; dir += 2 ) {
-			for ( let i = 0; i < caseItem.doc.data.getLength(); i++ ) {
+			caseItem.doc.data.getRange().forEach( ( i ) => {
 				assert.strictEqual(
 					caseItem.doc.getNearestCursorOffset( i, dir ),
 					caseItem.expected[ dir ][ i ],
 					'Document "' + caseItem.name + '" - Direction: ' + dir + ' Offset: ' + i
 				);
-			}
+			} );
 		}
 	} );
 } );
@@ -1100,6 +1115,30 @@ QUnit.test( 'findText (plain text)', ( assert ) => {
 				]
 			},
 			{
+				msg: 'Set query: case insensitive',
+				query: new Set( [ 'foo', 'baz' ] ),
+				options: {
+					caseSensitiveString: false
+				},
+				ranges: [
+					new ve.Range( 1, 4 ),
+					new ve.Range( 9, 12 ),
+					new ve.Range( 16, 19 ),
+					new ve.Range( 20, 23 )
+				]
+			},
+			{
+				msg: 'Set query: case sensitive',
+				query: new Set( [ 'Foo', 'baz' ] ),
+				options: {
+					caseSensitiveString: true
+				},
+				ranges: [
+					new ve.Range( 1, 4 ),
+					new ve.Range( 16, 19 )
+				]
+			},
+			{
 				msg: 'Literal newline',
 				query: /\n/g,
 				options: {},
@@ -1140,6 +1179,21 @@ QUnit.test( 'findText (plain text)', ( assert ) => {
 				ranges: [
 					new ve.Range( 78, 82 )
 				]
+			},
+			{
+				msg: 'Character which changes length after toLowerCase (İ) doesn\'t break later offsets (Set query)',
+				query: new Set( [ 'land' ] ),
+				options: {},
+				ranges: [
+					new ve.Range( 78, 82 )
+				]
+			},
+			{
+				msg: 'Match that works case insensitively but not case sensitively (Set query)',
+				query: new Set( [ '\u0307zlanda' ] ),
+				ranges: [],
+				// This spuriously matches, because findText's lowercasing converts 'İzlanda' to 'i\u0307zlanda'
+				expectFail: true
 			},
 			{
 				msg: 'Diacritic insensitive & case sensitive match',
@@ -1261,7 +1315,13 @@ QUnit.test( 'findText (plain text)', ( assert ) => {
 	cases.forEach( ( caseItem ) => {
 		doc.lang = caseItem.lang || 'en';
 		const ranges = doc.findText( caseItem.query, caseItem.options );
-		assert.deepEqual( ranges, caseItem.ranges, caseItem.msg );
+		const actualRanges = ranges.map( ( r ) => r.toJSON() );
+		const expectedRanges = caseItem.ranges.map( ( r ) => r.toJSON() );
+		if ( caseItem.expectFail ) {
+			assert.notDeepEqual( actualRanges, expectedRanges, caseItem.msg );
+		} else {
+			assert.deepEqual( actualRanges, expectedRanges, caseItem.msg );
+		}
 	} );
 } );
 
@@ -1339,7 +1399,7 @@ QUnit.test( 'findText (non-text content)', ( assert ) => {
 
 	cases.forEach( ( caseItem ) => {
 		const ranges = doc.findText( caseItem.query, caseItem.options );
-		assert.deepEqual( ranges, caseItem.ranges, caseItem.msg );
+		assert.deepEqual( ranges.map( ( r ) => r.toJSON() ), caseItem.ranges.map( ( r ) => r.toJSON() ), caseItem.msg );
 	} );
 } );
 
@@ -1412,14 +1472,14 @@ QUnit.test( 'read-only and offset caching', ( assert ) => {
 	const doc = ve.dm.example.createExampleDocument(),
 		surface = new ve.dm.Surface( doc );
 
-	assert.strictEqual( doc.isReadOnly(), false, 'New document is not read-only' );
+	assert.false( doc.isReadOnly(), 'New document is not read-only' );
 
 	// Set up offset caching test
 	assert.strictEqual( doc.getDocumentNode().children[ 1 ].getOffset(), 5, 'Second child node has offset 6' );
 	surface.getLinearFragment( new ve.Range( 1 ) ).insertContent( 'Test' );
 
 	doc.setReadOnly( true );
-	assert.strictEqual( doc.isReadOnly(), true, 'Document is read-only' );
+	assert.true( doc.isReadOnly(), 'Document is read-only' );
 
 	// Offset caching test
 	assert.strictEqual( doc.getDocumentNode().children[ 1 ].getOffset(), 9, 'Second child node offset has been translated, not cached from before' );
@@ -1430,4 +1490,107 @@ QUnit.test( 'read-only and offset caching', ( assert ) => {
 
 	doc.setReadOnly( true );
 	assert.strictEqual( doc.getDocumentNode().children[ 1 ].getOffset(), 13, 'Second child node offset has been translated again, not cached from before' );
+} );
+
+QUnit.test( 'MemoizedTextFinder', ( assert ) => {
+	const doc = ve.dm.example.createExampleDocument();
+	const setTextFinder = new ve.dm.SetTextFinder( new Set( 'abcdefghijklmnopqrstuvwxyz' ) );
+	const expected = doc.findText( setTextFinder );
+	const memoizedTextFinder = new ve.dm.MemoizedTextFinder( setTextFinder );
+	assert.deepEqual( doc.findText( memoizedTextFinder ), expected, 'Memoized TextFinder gives the same result' );
+	setTextFinder.findRanges = null;
+	assert.deepEqual( doc.findText( memoizedTextFinder ), expected, 'Second call to memoized TextFinder doesn’t recheck anything' );
+} );
+
+QUnit.test( 'getOrInsertCachedData', ( assert ) => {
+	const doc = ve.dm.example.createExampleDocument();
+	const surface = new ve.dm.Surface( doc );
+
+	function calculateLengths( nodes ) {
+		let callCount = 0;
+		function getLength( node ) {
+			callCount++;
+			return node.getLength();
+		}
+		nodes.forEach( ( node ) => doc.getOrInsertCachedData( node, getLength, 'len' ) );
+		return callCount;
+	}
+
+	// Check the length of each ContentBranchNode (filling the cache)
+	let nodes = doc.getNodesByType( ve.dm.ContentBranchNode, true );
+	let callCount = calculateLengths( nodes );
+	assert.strictEqual( callCount, nodes.length, 'First run is entirely cache misses' );
+
+	// Recheck the lengths (entirely using the cache)
+	callCount = calculateLengths( nodes );
+	assert.strictEqual( callCount, 0, 'No paragraph modifications, no cache misses' );
+
+	// Modify the first ContentBranchNode (invalidating its cached length)
+	const firstNode = nodes[ 0 ];
+	const tx = ve.dm.TransactionBuilder.static.newFromInsertion( doc, firstNode.getOffset() + 1, [ ...'foo' ] );
+	surface.change( tx );
+	callCount = calculateLengths( nodes );
+	assert.strictEqual( callCount, 1, 'One paragraph modification, one cache invalidation' );
+
+	// Undo the modification (again invalidating the node's cached length)
+	surface.breakpoint();
+	surface.undo();
+	callCount = calculateLengths( nodes );
+	assert.strictEqual( callCount, 1, 'Paragraph modification undone, one cache invalidation' );
+
+	// Insert a table containing a single paragraph, after the node (not affecting existing ContentBranchNodes)
+	const tableTx = ve.dm.TransactionBuilder.static.newFromInsertion( doc, firstNode.getOuterRange().end, [
+		{ type: 'table' },
+		{ type: 'tableSection', attributes: { style: 'body' } },
+		{ type: 'tableRow' },
+		{ type: 'tableCell', attributes: { style: 'data' } },
+		{ type: 'paragraph' },
+		...'foo',
+		{ type: '/paragraph' },
+		{ type: '/tableCell' },
+		{ type: '/tableRow' },
+		{ type: '/tableSection' },
+		{ type: '/table' }
+	] );
+	surface.change( tableTx );
+	callCount = calculateLengths( nodes );
+	assert.strictEqual( callCount, 0, 'Table inserted, no cache invalidation' );
+	nodes = doc.getNodesByType( ve.dm.ContentBranchNode, true );
+	callCount = calculateLengths( nodes );
+	assert.strictEqual( callCount, 1, 'Table inserted, one new ContentBranchNode' );
+
+	// Wrap the entire document in a div (not affecting existing ContentBranchNodes)
+	const wrapTx = ve.dm.TransactionBuilder.static.newFromWrap( doc, doc.getDocumentRange(), [], [ { type: 'div' } ], [], [] );
+	surface.change( wrapTx );
+	callCount = calculateLengths( nodes );
+	assert.strictEqual( callCount, 0, 'Document wrapped in div, no cache invalidation' );
+	nodes = doc.getNodesByType( ve.dm.ContentBranchNode, true );
+	callCount = calculateLengths( nodes );
+	assert.strictEqual( callCount, 0, 'Document wrapped in div, no new ContentBranchNodes' );
+} );
+
+QUnit.test( 'subroot', ( assert ) => {
+	function checkSubroots( docNode ) {
+		assert.strictEqual( docNode.subroot, null, 'Document node has null subroot' );
+		docNode.traverse( ( node ) => {
+			const offsetPath = node.getOffsetPath();
+			const expectedSubroot = docNode.children[ offsetPath[ 0 ] ];
+			// Avoid assert.strictEqual, else total failure generates a catastrophic volume of
+			// node dumps and causes the test suite to freeze
+			// eslint-disable-next-line qunit/no-loose-assertions
+			assert.ok( node.subroot === expectedSubroot, 'Correct subroot at ' + offsetPath );
+		} );
+	}
+	const doc = ve.dm.example.createExampleDocument();
+	checkSubroots( doc.documentNode );
+
+	// Move some stuff round
+	const tableRange = doc.documentNode.children[ 1 ].getOuterRange();
+	const tableData = ve.copy( doc.getData( tableRange ) );
+	const tx1 = ve.dm.TransactionBuilder.static.newFromRemoval( doc, tableRange );
+	doc.commit( tx1 );
+	const newOffset = doc.documentNode.children[ 5 ].getOffset();
+	const tx2 = ve.dm.TransactionBuilder.static.newFromInsertion( doc, newOffset, tableData );
+	doc.commit( tx2 );
+	checkSubroots( doc.documentNode );
 } );

@@ -11,8 +11,14 @@
                         "bool": {
                             "filter": [
                                 {
-                                    "match": {
-                                        "labels_all.prefix": "Wien"
+                                    "bool": {
+                                        "should": [
+                                            {
+                                                "match": {
+                                                    "labels_all.prefix": "Wien"
+                                                }
+                                            }
+                                        ]
                                     }
                                 }
                             ],
@@ -105,6 +111,7 @@
                 "labels.de-ch.prefix": {
                     "type": "experimental",
                     "fragmenter": "none",
+                    "order": "none",
                     "number_of_fragments": 0,
                     "options": {
                         "skip_if_last_matched": true,
@@ -114,6 +121,7 @@
                 "labels.de.prefix": {
                     "type": "experimental",
                     "fragmenter": "none",
+                    "order": "none",
                     "number_of_fragments": 0,
                     "options": {
                         "skip_if_last_matched": true,
@@ -123,6 +131,7 @@
                 "labels.en.prefix": {
                     "type": "experimental",
                     "fragmenter": "none",
+                    "order": "none",
                     "number_of_fragments": 0,
                     "options": {
                         "skip_if_last_matched": true,
@@ -132,6 +141,7 @@
                 "labels.*.prefix": {
                     "type": "experimental",
                     "fragmenter": "none",
+                    "order": "none",
                     "number_of_fragments": 0,
                     "options": {
                         "skip_if_last_matched": true,

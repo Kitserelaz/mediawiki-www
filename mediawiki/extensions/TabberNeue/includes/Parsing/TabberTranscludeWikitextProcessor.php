@@ -3,87 +3,47 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\TabberNeue\Parsing;
 
-use MediaWiki\Config\Config;
-use MediaWiki\Extension\TabberNeue\DataModel\TabModel;
-use MediaWiki\Extension\TabberNeue\Service\TabNameHelper;
-use MediaWiki\Html\Html;
+use MediaWiki\Extension\TabberNeue\DataModel\TransclusionLine;
+use MediaWiki\Extension\TabberNeue\DataModel\TransclusionTab;
+use MediaWiki\Extension\TabberNeue\Service\TabIdRegistry;
+use MediaWiki\Extension\TabberNeue\Service\TabParser;
+use MediaWiki\Extension\TabberNeue\Transclusion\TransclusionTitleResolver;
 use MediaWiki\Parser\Parser;
-use MediaWiki\Title\Title;
 
-class TabberTranscludeWikitextProcessor implements WikitextProcessor {
+/**
+ * Note: this processor no longer implements WikitextProcessor — it
+ * returns TransclusionTab[] (an intermediate type), not TabModel[].
+ * Kept in the Parsing namespace because it does input parsing.
+ */
+class TabberTranscludeWikitextProcessor {
 	public function __construct(
 		private Parser $parser,
-		private Config $config,
-		private readonly TabNameHelper $tabNameHelper
+		private readonly TabSegmentSplitter $splitter,
+		private readonly TabParser $tabParser,
+		private readonly TabIdRegistry $tabIdRegistry,
+		private readonly TransclusionTitleResolver $titleResolver
 	) {
 	}
 
-	/**
-	 * Processes the raw wikitext input for tabbertransclude.
-	 * Each line of the wikitext is expected to be in the format: "Page name|Tab label".
-	 *
-	 * @return TabModel[] An array of TabModel objects.
-	 */
+	/** @return TransclusionTab[] */
 	public function process( string $wikitext ): array {
-		$tabModels = [];
-		$lines = explode( "\n", $wikitext );
-
-		foreach ( $lines as $line ) {
-			if ( empty( trim( $line ) ) ) {
-				continue;
+		$tabs = [];
+		foreach ( $this->splitter->splitTransclude( $wikitext ) as $line ) {
+			$tab = $this->buildTab( $line );
+			if ( $tab !== null ) {
+				$tabs[] = $tab;
 			}
-
-			[ $pageName, $label ] = array_pad( explode( '|', $line, 2 ), 2, '' );
-
-			$label = $this->parseTabLabel( $label );
-			if ( $label === '' ) {
-				continue;
-			}
-
-			$baseId = $this->tabNameHelper->generateSanitizedId( $label );
-			$uniqueName = $this->tabNameHelper->ensureUniqueId( $baseId, $this->parser->getOutput() );
-			$tabModels[] = new TabModel( $uniqueName, $label, $this->parseTabContent( $pageName ) );
 		}
-
-		return $tabModels;
+		return $tabs;
 	}
 
-	/**
-	 * Parses the tab label.
-	 */
-	private function parseTabLabel( string $labelWikitext ): string {
-		$label = trim( $labelWikitext );
+	private function buildTab( TransclusionLine $line ): ?TransclusionTab {
+		$label = $this->tabParser->parseLabel( $line->rawLabel, $this->parser );
 		if ( $label === '' ) {
-			return '';
+			return null;
 		}
-
-		if ( !$this->config->get( 'TabberNeueParseTabName' ) ) {
-			$label = $this->parser->getTargetLanguageConverter()->convertHtml( $label );
-		} else {
-			$label = $this->parser->recursiveTagParseFully( $label );
-			$label = $this->parser->stripOuterParagraph( $label );
-		}
-		return $label;
-	}
-
-	/**
-	 * Parses the tab content.
-	 */
-	private function parseTabContent( string $contentWikitext ): string {
-		$content = trim( $contentWikitext );
-		if ( $content === '' ) {
-			return '';
-		}
-
-		$title = Title::newFromText( trim( $content ) );
-		if ( $title === null ) {
-			return Html::errorBox( 'Invalid title: ' . htmlspecialchars( $content ) );
-		}
-
-		if ( !$title->exists() ) {
-			return Html::errorBox( 'Page does not exist: ' . htmlspecialchars( $content ) );
-		}
-
-		return $title->getPrefixedText();
+		$id = $this->tabIdRegistry->generateUniqueId( $label, $this->parser->getOutput() );
+		$titleResult = $this->titleResolver->resolve( $line->pageName );
+		return new TransclusionTab( $id, $label, $titleResult );
 	}
 }

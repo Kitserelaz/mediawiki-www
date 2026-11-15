@@ -9,6 +9,7 @@
 			"Justincheng12345",
 			"Kly",
 			"LNDDYL",
+			"Lakejason0",
 			"Liuxinyu970226",
 			"Mark85296341",
 			"Simon Shek",
@@ -16,8 +17,9 @@
 			"Sunny00217",
 			"Winston Sung",
 			"Xiplus",
+			"YeBoy371",
 			"蘭斯特",
-			"YeBoy371"
+			"LowensteinYang"
 		]
 	},
 	"timedmediahandler-desc": "音訊、影片與字幕處理程式，支援的格式包含 WebM、Ogg Theora、Vorbis、srt",
@@ -66,14 +68,14 @@
 	"timedmedia-error-on": "於 $1 發生錯誤。",
 	"timedmedia-started-transcode": "起始於$1。$2",
 	"timedmedia-percent-done": "大約已完成 $1%",
-	"timedmedia-in-job-queue": "添加到工作佇列在$1前",
+	"timedmedia-in-job-queue": "已於$1加入作業佇列",
 	"timedmedia-unknown-target-size": "不明目標大小，已編碼 $1",
 	"timedmedia-reset": "重設轉碼",
 	"timedmedia-reset-areyousure": "你真的要繼續嗎？",
 	"timedmedia-reset-button-cancel": "不要重設",
 	"timedmedia-reset-button-dismiss": "關閉",
 	"timedmedia-reset-button-reset": "重設",
-	"timedmedia-reset-error": "重設轉碼任務時發生錯誤。",
+	"timedmedia-reset-error": "重設轉碼作業時發生錯誤。",
 	"timedmedia-reset-explanation": "重設轉碼會移除所有已存在的檔案，並重新將檔案加入轉碼工作序列。這需要花費一些時間來重新轉碼。",
 	"timedmedia-error-details": "轉碼錯誤詳細內容",
 	"timedmedia-error-dismiss": "關閉",
@@ -182,5 +184,13 @@
 	"timedmedia-timedtext-title-create-subtitles": "沒有找到片段的$1字幕文件：$2",
 	"m3u8-error-create-temp": "無法建立$1的臨時檔案",
 	"m3u8-error-write-temp": "無法寫入$1的臨時檔案",
-	"m3u8-error-save-playlist": "儲存 HLS 播放清單$1時發生錯誤"
+	"m3u8-error-save-playlist": "儲存 HLS 播放清單$1時發生錯誤",
+	"videojs-endcard-share-title": "連結至此媒體",
+	"videojs-endcard-copy-link": "複製連結",
+	"videojs-endcard-share": "分享",
+	"videojs-endcard-share-not-possible": "無法使用共享",
+	"videojs-endcard-embed-title": "將此媒體內嵌到您的網站",
+	"videojs-endcard-embed-copy": "複製",
+	"videojs-endcard-copied": "已複製到剪貼簿！",
+	"videojs-endcard-copy-failed": "無法複製到剪貼簿"
 }

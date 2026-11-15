@@ -3,13 +3,13 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageBundleTranslation;
 
-use Content;
 use InvalidArgumentException;
+use MediaWiki\Content\Content;
 use MediaWiki\Content\Renderer\ContentParseParams;
+use MediaWiki\Content\TextContentHandler;
 use MediaWiki\Content\ValidationParams;
 use MediaWiki\Parser\ParserOutput;
 use StatusValue;
-use TextContentHandler;
 use const CONTENT_FORMAT_JSON;
 
 /**
@@ -18,6 +18,7 @@ use const CONTENT_FORMAT_JSON;
  * @since 2021.05
  */
 class MessageBundleContentHandler extends TextContentHandler {
+	/** @inheritDoc */
 	public function __construct( $modelId = MessageBundleContent::CONTENT_MODEL_ID ) {
 		parent::__construct( $modelId, [ CONTENT_FORMAT_JSON ] );
 	}
@@ -31,6 +32,7 @@ class MessageBundleContentHandler extends TextContentHandler {
 		return new $class( '{}' );
 	}
 
+	/** @inheritDoc */
 	public function validateSave( Content $content, ValidationParams $validationParams ) {
 		// This will give an informative error message when trying to change the content model
 		try {
@@ -56,17 +58,34 @@ class MessageBundleContentHandler extends TextContentHandler {
 			);
 		}
 
+		try {
+			$content->validate();
+		} catch ( MalformedBundle $exception ) {
+			if ( $cpoParams->getGenerateHtml() ) {
+				// if HTML generation is requested, the content of the ParserOutput cannot be null - this sets an
+				// error message to help the user debug
+				$error = wfMessage( 'invalid-json-data', $exception->getMessage() )
+					->inLanguage( $cpoParams->getParserOptions()->getUserLang() )
+					->setInterfaceMessageFlag( true )
+					->parse();
+			} else {
+				$error = null;
+			}
+			$parserOutput->setContentHolderText( $error );
+			return;
+		}
+
 		$label = $content->getMetadata()->getLabel();
 		if ( $label !== null ) {
 			$parserOutput->setDisplayTitle( $label );
 		}
 
-		if ( $cpoParams->getGenerateHtml() && $content->isValid() ) {
+		if ( $cpoParams->getGenerateHtml() ) {
 			/** @param $content JsonContent::class */
-			$parserOutput->setRawText( $content->rootValueTable( $content->getData()->getValue() ) );
+			$parserOutput->setContentHolderText( $content->rootValueTable( $content->getData()->getValue() ) );
 			$parserOutput->addModuleStyles( [ 'mediawiki.content.json' ] );
 		} else {
-			$parserOutput->setRawText( null );
+			$parserOutput->setContentHolderText( null );
 		}
 	}
 }

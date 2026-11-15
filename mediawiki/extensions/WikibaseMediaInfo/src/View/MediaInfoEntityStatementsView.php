@@ -38,18 +38,6 @@ use Wikibase\View\LocalizedTextProvider;
  */
 class MediaInfoEntityStatementsView {
 
-	private PropertyOrderProvider $propertyOrderProvider;
-	private LocalizedTextProvider $textProvider;
-	/** @var NumericPropertyId[] */
-	private array $defaultPropertyIds;
-	private OutputFormatSnakFormatterFactory $snakFormatterFactory;
-	private OutputFormatValueFormatterFactory $valueFormatterFactory;
-	private SerializerFactory $serializerFactory;
-	/** @var string */
-	private $languageCode;
-	/** @var array<string,string> */
-	private $properties;
-
 	public const STATEMENTS_CUSTOM_TAG = 'mediaInfoViewStatements';
 
 	/**
@@ -64,25 +52,16 @@ class MediaInfoEntityStatementsView {
 	 * @param array<string,string> $properties Array of property IDs
 	 */
 	public function __construct(
-		PropertyOrderProvider $propertyOrderProvider,
-		LocalizedTextProvider $textProvider,
-		array $defaultPropertyIds,
-		OutputFormatSnakFormatterFactory $snakFormatterFactory,
-		OutputFormatValueFormatterFactory $valueFormatterFactory,
-		SerializerFactory $serializerFactory,
-		$languageCode,
-		$properties
+		private readonly PropertyOrderProvider $propertyOrderProvider,
+		private readonly LocalizedTextProvider $textProvider,
+		private readonly array $defaultPropertyIds,
+		private readonly OutputFormatSnakFormatterFactory $snakFormatterFactory,
+		private readonly OutputFormatValueFormatterFactory $valueFormatterFactory,
+		private readonly SerializerFactory $serializerFactory,
+		private readonly string $languageCode,
+		private readonly array $properties,
 	) {
 		OutputPage::setupOOUI();
-
-		$this->propertyOrderProvider = $propertyOrderProvider;
-		$this->textProvider = $textProvider;
-		$this->defaultPropertyIds = $defaultPropertyIds;
-		$this->snakFormatterFactory = $snakFormatterFactory;
-		$this->valueFormatterFactory = $valueFormatterFactory;
-		$this->serializerFactory = $serializerFactory;
-		$this->languageCode = $languageCode;
-		$this->properties = $properties;
 	}
 
 	/**
@@ -107,6 +86,10 @@ class MediaInfoEntityStatementsView {
 		);
 	}
 
+	/**
+	 * @param string $propertyIdString
+	 * @return string
+	 */
 	public static function getHtmlContainerClass( $propertyIdString ) {
 		return 'wbmi-entityview-statementsGroup-' . str_replace( ':', '_', $propertyIdString );
 	}
@@ -265,7 +248,7 @@ class MediaInfoEntityStatementsView {
 		return $panel;
 	}
 
-	private function createPropertyHeader( $propertyIdString ) {
+	private function createPropertyHeader( string $propertyIdString ): Tag {
 		$propertyId = new NumericPropertyId( $propertyIdString );
 
 		$propertyTitle = $this->createFormattedDataValue(
@@ -312,7 +295,7 @@ class MediaInfoEntityStatementsView {
 	}
 
 	/**
-	 * @param string $formattedValue
+	 * @param string|HtmlSnippet $formattedValue
 	 * @return Tag
 	 */
 	private function createFormattedDataValue( $formattedValue ) {
@@ -333,14 +316,14 @@ class MediaInfoEntityStatementsView {
 		return $tag;
 	}
 
-	private function createStatementDiv( Statement $statement ) {
+	private function createStatementDiv( Statement $statement ): Tag {
 		$div = new Tag( 'div' );
 		$div->appendContent( $this->innerStatementDiv( $statement ) );
 		$div->addClasses( [ 'wbmi-item', 'wbmi-item-read' ] );
 		return $div;
 	}
 
-	private function innerStatementDiv( Statement $statement ) {
+	private function innerStatementDiv( Statement $statement ): Tag {
 		$mainSnak = $statement->getMainSnak();
 
 		$statementDiv = new Tag( 'div' );
@@ -388,7 +371,6 @@ class MediaInfoEntityStatementsView {
 					);
 					$referenceSnaklist->appendContent( $referenceTitle );
 
-					// @phan-suppress-next-line PhanTypeMismatchArgumentSuperType
 					$referenceSnaklist->appendContent( $this->renderSnakList( $snakList ) );
 				}
 			}
@@ -399,7 +381,7 @@ class MediaInfoEntityStatementsView {
 		return $statementDiv;
 	}
 
-	private function renderSnakList( SnakList $snakList ) {
+	private function renderSnakList( SnakList $snakList ): Tag {
 		$propertyOrder = $this->propertyOrderProvider->getPropertyOrder();
 		if ( $propertyOrder === null ) {
 			$snakList->orderByProperty();
@@ -480,7 +462,7 @@ class MediaInfoEntityStatementsView {
 
 			// if there are any links inside the formatted content, make them open in a new window
 			return preg_replace( '/<a/', '<a target="_blank"', $formatted );
-		} catch ( Exception $e ) {
+		} catch ( Exception ) {
 			return wfMessage( 'wikibasemediainfo-filepage-statement-invalid-value' )->escaped();
 		}
 	}
@@ -590,7 +572,7 @@ class MediaInfoEntityStatementsView {
 		return $statementsByProperty;
 	}
 
-	private function addDefaultStatements( $statementsByProperty ) {
+	private function addDefaultStatements( array $statementsByProperty ): array {
 		foreach ( $this->defaultPropertyIds as $propertyId ) {
 			if ( !isset( $statementsByProperty[ $propertyId->getSerialization() ] ) ) {
 				$statementsByProperty[ $propertyId->getSerialization() ] = [];

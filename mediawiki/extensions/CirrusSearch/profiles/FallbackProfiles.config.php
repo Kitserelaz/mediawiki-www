@@ -3,84 +3,48 @@
 /**
  * CirrusSearch - List of profiles for "fallback" methods
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
-return [
-	'phrase_suggest_and_language_detection' => [
+$profiles = [
+	'none' => []
+];
+
+foreach ( [
+	'default', 'strict', 'default_1', 'default_1v',
+] as $profileName ) {
+	$suffix = $profileName === 'default' ? '' : "_{$profileName}";
+	$profiles["phrase_suggest{$suffix}"] = [
 		'methods' => [
 			'phrase-default' => [
 				'class' => \CirrusSearch\Fallbacks\PhraseSuggestFallbackMethod::class,
 				'params' => [
-					'profile' => 'default',
+					'profile' => $profileName,
 				]
-			],
-			'langdetect' => [
-				'class' => \CirrusSearch\Fallbacks\LangDetectFallbackMethod::class,
-				'params' => []
-			],
-		]
-	],
-	'phrase_suggest' => [
-		'methods' => [
-			'phrase-default' => [
-				'class' => \CirrusSearch\Fallbacks\PhraseSuggestFallbackMethod::class,
-				'params' => [
-					'profile' => 'default',
-				]
-			],
-		]
-	],
-	'phrase_suggest_strict' => [
-		'methods' => [
-			'phrase-strict' => [
-				'class' => \CirrusSearch\Fallbacks\PhraseSuggestFallbackMethod::class,
-				'params' => [
-					'profile' => 'strict',
-				]
-			],
-		]
-	],
-	'phrase_suggest_glentM0_and_langdetect' => [
-		'methods' => [
-			'glent-m0run' => [
-				'class' => \CirrusSearch\Fallbacks\IndexLookupFallbackMethod::class,
-				'params' => [
-					'profile' => 'glent',
-					'profile_params' => [
-						'methods' => [ 'm0run' ],
-					]
-				]
-			],
-			'phrase-default' => [
-				'class' => \CirrusSearch\Fallbacks\PhraseSuggestFallbackMethod::class,
-				'params' => [
-					'profile' => 'default',
-				]
-			],
-			'langdetect' => [
-				'class' => \CirrusSearch\Fallbacks\LangDetectFallbackMethod::class,
-				'params' => []
 			],
 		],
-	],
-	'phrase_suggest_glentM01_and_langdetect' => [
+	];
+	$profiles["phrase_suggest{$suffix}_and_language_detection"] = [
 		'methods' => [
-			'glent-m0run' => [
+			'phrase-default' => [
+				'class' => \CirrusSearch\Fallbacks\PhraseSuggestFallbackMethod::class,
+				'params' => [
+					'profile' => $profileName,
+				]
+			],
+			'langdetect' => [
+				'class' => \CirrusSearch\Fallbacks\LangDetectFallbackMethod::class,
+				'params' => []
+			],
+		]
+	];
+	$profiles["phrase_suggest{$suffix}_glentM01_and_langdetect"] = [
+		'methods' => [
+			'glent-m01run' => [
 				'class' => \CirrusSearch\Fallbacks\IndexLookupFallbackMethod::class,
+				// Glent is trained on queries from the default namespace, do not enable it
+				// when the target namespaces to search on is not the same.
+				'default_ns_only' => true,
 				'params' => [
 					'profile' => 'glent',
 					'profile_params' => [
@@ -91,14 +55,15 @@ return [
 			'phrase-default' => [
 				'class' => \CirrusSearch\Fallbacks\PhraseSuggestFallbackMethod::class,
 				'params' => [
-					'profile' => 'default',
+					'profile' => $profileName,
 				]
 			],
 			'langdetect' => [
 				'class' => \CirrusSearch\Fallbacks\LangDetectFallbackMethod::class,
 				'params' => []
 			],
-		]
-	],
-	'none' => []
-];
+		],
+	];
+}
+
+return $profiles;

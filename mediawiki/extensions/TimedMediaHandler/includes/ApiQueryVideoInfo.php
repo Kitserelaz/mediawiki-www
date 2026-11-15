@@ -10,21 +10,20 @@
 namespace MediaWiki\TimedMediaHandler;
 
 use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiQuery;
 use MediaWiki\Api\ApiQueryImageInfo;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\TimedMediaHandler\Handlers\TextHandler\TextHandler;
 use MediaWiki\TimedMediaHandler\WebVideoTranscode\WebVideoTranscode;
 
 class ApiQueryVideoInfo extends ApiQueryImageInfo {
 
 	/** @inheritDoc */
-	public function __construct( $query, $moduleName, $prefix = 'vi' ) {
+	public function __construct( ApiQuery $query, string $moduleName, ?string $prefix = null ) {
 		// We allow a subclass to override the prefix, to create a related API module.
 		// Some other parts of MediaWiki construct this with a null $prefix,
 		// which used to be ignored when this only took two arguments
-		if ( $prefix === null ) {
-			$prefix = 'vi';
-		}
-		parent::__construct( $query, $moduleName, $prefix );
+		parent::__construct( $query, $moduleName, $prefix ?? 'vi' );
 	}
 
 	/** @inheritDoc */
@@ -47,7 +46,8 @@ class ApiQueryVideoInfo extends ApiQueryImageInfo {
 				);
 				$timedtext = $handler->getTracks();
 				foreach ( $timedtext as &$track ) {
-					$track['src'] = wfExpandUrl( $track['src'], PROTO_CURRENT );
+					$track['src'] = MediaWikiServices::getInstance()->getUrlUtils()
+						->expand( $track['src'], PROTO_CURRENT ) ?? '';
 					// We add origin anonymous for the benefit of
 					// InstantCommons, the primary user of this API
 					$track['src'] = wfAppendQuery( $track['src'], [ 'origin' => '*' ] );
@@ -64,7 +64,7 @@ class ApiQueryVideoInfo extends ApiQueryImageInfo {
 	}
 
 	/** @inheritDoc */
-	public static function getPropertyMessages( $filter = [] ) {
+	public static function getPropertyMessages( $filter = [] ): array {
 		$pm = parent::getPropertyMessages( $filter );
 		$pm['derivatives'] = 'apihelp-query+videoinfo-paramvalue-prop-derivatives';
 		$pm['timedtext'] = 'apihelp-query+videoinfo-paramvalue-prop-timedtext';
@@ -73,9 +73,8 @@ class ApiQueryVideoInfo extends ApiQueryImageInfo {
 
 	/**
 	 * @see ApiBase::getExamplesMessages()
-	 * @return array
 	 */
-	protected function getExamplesMessages() {
+	protected function getExamplesMessages(): array {
 		return [
 			'action=query&titles=File:Folgers.ogv&prop=videoinfo&viprop=derivatives'
 				=> 'apihelp-query+videoinfo-example-1',
@@ -83,12 +82,12 @@ class ApiQueryVideoInfo extends ApiQueryImageInfo {
 	}
 
 	/** @inheritDoc */
-	public function getHelpUrls() {
+	public function getHelpUrls(): string {
 		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Videoinfo';
 	}
 
 	/** @inheritDoc */
-	public function getAllowedParams() {
+	public function getAllowedParams(): array {
 		$params = parent::getAllowedParams();
 		foreach ( $params as $k => $v ) {
 			// If PARAM_HELP_MSG is not manually set for this parameter, force fallback

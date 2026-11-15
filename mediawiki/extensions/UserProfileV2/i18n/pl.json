@@ -1,0 +1,39 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dawid2",
+			"PanWor"
+		]
+	},
+	"userprofilev2-desc": "System profili użytkowników oparty na technologii MediaWiki.",
+	"userprofilev2-selectavatar": "Wybierz awatar",
+	"userprofilev2-avatarchanged": "Awatar został zmieniony pomyślnie.",
+	"userprofilev2-avatardeleted": "Awatar został usunięty pomyślnie.",
+	"userprofilev2-user-locked": "To konto użytkownika zostało globalnie wyłączone.",
+	"userprofilev2-edit-profile": "Edytuj swój profil",
+	"userprofilev2-apierror-forbidden": "Odmowa dostępu: nie masz uprawnień do zmiany tego awatara.",
+	"userprofilev2-apierror-invalidpermission": "Odmowa dostępu: nie masz uprawnień do edycji profilu $1",
+	"userprofilev2-apierror-nofile": "Nie przekazano pliku do przesłania.",
+	"userprofilev2-apierror-ratelimited": "W tej chwili nie możesz przesyłać obrazów.",
+	"userprofilev2-apierror-invalidusername": "Żaden użytkownik nie zarejestrował się na tej wiki pod nazwą '$1'.",
+	"userprofilev2-about-me": "O mnie",
+	"userprofilev2-discord": "Nazwa użytkownika na Discordzie",
+	"userprofilev2-twitter": "Nazwa użytkownika na Twitterze",
+	"userprofilev2-mastodon": "Nazwa użytkownika na Mastodonie",
+	"userprofilev2-about-me-placeholder": "Napisz coś o sobie…",
+	"userprofilev2-about-me-help": "Opowiedz nam o sobie (maksymalnie 200 znaków).",
+	"userprofilev2-mastodon-help": "Twoja nazwa użytkownika na Mastodonie (z @)",
+	"userprofilev2-twitter-help": "Twoja nazwa użytkownika na Twitterze (z @)",
+	"userprofilev2-discord-help": "Twoja nazwa użytkownika na Discordzie (bez #)",
+	"userprofilev2-showglobalgroups": "Wyświetlać moje grupy globalne?",
+	"userprofilev2-showglobaleditcount": "Wyświetlać mój globalny licznik edycji?",
+	"userprofilev2-showglobalgroupshelp": "Wyświetlaj globalne grupy użytkowników, do których należę (będą widoczne dla wszystkich)",
+	"userprofilev2-showglobaleditcounthelp": "Wyświetlaj moją globalną liczbę edycji z CentralAuth (będzie widoczna dla wszystkich)",
+	"userprofilev2-edit": "Edytuj",
+	"userprofilev2-edit-count": "$1 {{PLURAL:$1|edycja|edycje|edycji}}",
+	"userprofilev2-globaledit-count": "$1 {{PLURAL:$1|globalna edycja|globalne edycje|globalnych edycji}}",
+	"userprofilev2-editavatar": "Edytuj awatar",
+	"userprofilev2-edit-back": "Powrót",
+	"userprofilev2-deleteavatar": "Usuń awatar",
+	"userprofilev2-helptext": "Użyj tego okna dialogowego, aby zmienić zawartość swojego profilu użytkownika."
+}

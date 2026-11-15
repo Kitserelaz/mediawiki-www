@@ -1,6 +1,10 @@
 <?php
 
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Html\Html;
+use MediaWiki\Language\Language;
+use MediaWiki\Page\WikiPageFactory;
+use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\Title\Title;
 
 /**
  * Displays an interface to let users create and edit the <PageSchema> XML.
@@ -9,8 +13,19 @@ use MediaWiki\MediaWikiServices;
  * @author Yaron Koren
  */
 class PSEditSchema extends IncludableSpecialPage {
-	function __construct() {
-		parent::__construct( 'EditSchema', 'edit' );
+	private Language $contentLanguage;
+	private PermissionManager $permissionManager;
+	private WikiPageFactory $wikiPageFactory;
+
+	public function __construct(
+		Language $contentLanguage,
+		PermissionManager $permissionManager,
+		WikiPageFactory $wikiPageFactory
+	) {
+		parent::__construct( 'EditSchema' );
+		$this->contentLanguage = $contentLanguage;
+		$this->permissionManager = $permissionManager;
+		$this->wikiPageFactory = $wikiPageFactory;
 	}
 
 	/**
@@ -40,7 +55,7 @@ class PSEditSchema extends IncludableSpecialPage {
 		$request = $this->getRequest();
 
 		// Generate the XML from the form elements.
-		$psXML = '<PageSchema>';
+		$psXML = Xml::openElement( 'PageSchema' );
 		$additionalXML = $request->getText( 'ps_add_xml' );
 		$psXML .= $additionalXML;
 		$fieldName = "";
@@ -106,7 +121,7 @@ class PSEditSchema extends IncludableSpecialPage {
 				$psXML .= Xml::openElement( 'Field', $fieldAttrs );
 			} elseif ( substr( $var, 0, 8 ) == 'f_label_' ) {
 				if ( !empty( $val ) ) {
-					$psXML .= '<Label>' . $val . '</Label>';
+					$psXML .= Xml::element( 'Label', null, $val );
 				}
 
 				// Get XML created by extensions for this field
@@ -117,24 +132,24 @@ class PSEditSchema extends IncludableSpecialPage {
 				}
 			} elseif ( substr( $var, 0, 10 ) == 'f_add_xml_' ) {
 				$psXML .= $val;
-				$psXML .= '</Field>';
+				$psXML .= Xml::closeElement( 'Field' );
 			} elseif ( substr( $var, 0, 10 ) == 't_add_xml_' ) {
 				$psXML .= $val;
-				$psXML .= '</Template>';
+				$psXML .= Xml::closeElement( 'Template' );
 			} elseif ( substr( $var, 0, 7 ) == 's_name_' ) {
 				$pageSectionNum = substr( $var, 7 );
 				$sectionName = $val;
 				$sectionLevel = $request->getVal( "s_level_" . $pageSectionNum );
-				$psXML .= '<Section name="' . $sectionName . '" level="' . $sectionLevel . '">';
+				$psXML .= Xml::openElement( 'Section', [ 'name' => $sectionName, 'level' => $sectionLevel ] );
 				foreach ( $pageSectionXMLFromExtensions as $extensionName => $xmlPerPageSection ) {
 					if ( !empty( $xmlPerPageSection[$pageSectionNum] ) ) {
 						$psXML .= $xmlPerPageSection[$pageSectionNum];
 					}
 				}
-				$psXML .= '</Section>';
+				$psXML .= Xml::closeElement( 'Section' );
 			}
 		}
-		$psXML .= '</PageSchema>';
+		$psXML .= Xml::closeElement( 'PageSchema' );
 		return $this->prettyPrintXML( $psXML );
 	}
 
@@ -247,8 +262,8 @@ class PSEditSchema extends IncludableSpecialPage {
 	/**
 	 * Based in part on MediaWiki's Html::namespaceSelector().
 	 */
-	static function printNamespaceDropdown( $inputName, $curNamespace ) {
-		$options = MediaWikiServices::getInstance()->getContentLanguage()->getFormattedNamespaces();
+	private function printNamespaceDropdown( $inputName, $curNamespace ) {
+		$options = $this->contentLanguage->getFormattedNamespaces();
 
 		// Convert $options to HTML and filter out namespaces below 0
 		$optionsHtml = [];
@@ -355,7 +370,7 @@ class PSEditSchema extends IncludableSpecialPage {
 		$fieldHTML .= Html::rawElement( 'p', null, $fieldDisplaySet );
 
 		$fieldNamespaceSet = $this->msg( 'ps-field-namespace' )->parse() . ' ';
-		$fieldNamespaceSet .= self::printNamespaceDropdown( 'f_namespace_' . $fieldNum, $fieldNamespace );
+		$fieldNamespaceSet .= $this->printNamespaceDropdown( 'f_namespace_' . $fieldNum, $fieldNamespace );
 		$fieldHTML .= Html::rawElement( 'div', [ 'class' => 'editSchemaMinorFields' ], $fieldNamespaceSet );
 
 		// Insert HTML text from extensions
@@ -724,17 +739,22 @@ END;
 	}
 
 	function execute( $category ) {
-		$categoryTitle = Title::newFromText( $category, NS_CATEGORY );
 		$user = $this->getUser();
 		$request = $this->getRequest();
 		$out = $this->getOutput();
+
+		// Check permissions.
+		if ( !$user->isAllowed( 'edit' ) ) {
+			$this->displayRestrictionError();
+		}
+
+		$categoryTitle = Title::newFromText( $category, NS_CATEGORY );
 
 		// If a category has been selected (i.e., it's not just
 		// Special:EditSchema), only display this if the user is
 		// allowed to edit the category page.
 		if ( $categoryTitle !== null ) {
-			$permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
-			if ( !$permissionManager->userCan( 'edit', $user, $categoryTitle ) ) {
+			if ( !$this->permissionManager->userCan( 'edit', $user, $categoryTitle ) ) {
 				throw new PermissionsError( 'edit' );
 			}
 		}
@@ -748,7 +768,7 @@ END;
 		if ( $save_page ) {
 			$psXML = $this->createPageSchemaXMLFromForm();
 			$categoryTitle = Title::newFromText( $category, NS_CATEGORY );
-			$categoryPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $categoryTitle );
+			$categoryPage = $this->wikiPageFactory->newFromTitle( $categoryTitle );
 			if ( $categoryTitle->exists() ) {
 				/** @var TextContent $content */
 				'@phan-var TextContent $content';

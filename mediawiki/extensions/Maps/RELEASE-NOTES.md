@@ -3,6 +3,209 @@ different releases and which versions of PHP and MediaWiki they support, see the
 [platform compatibility tables](INSTALL.md#platform-compatibility-and-release-status).
 
 
+## Maps 15.1.0
+
+Released on November 4th, 2026.
+
+* Fixed an XSS vulnerability in semantic maps: when a query found no locations, its `default` text was output as raw HTML, so a crafted link to Special:Ask could run JavaScript. `default` now works as in other result formats: wikitext on pages, plain text on Special:Ask
+* Fixed an XSS vulnerability in semantic maps shown with Google Maps: the inline label of a location in `staticlocations` was used as raw HTML, so a crafted link to Special:Ask could run JavaScript. As in `{{#display_map:}}`, the label now takes wikitext and keeps only its links and images
+* Fixed an XSS vulnerability in semantic maps: on pages, their `intro` and `outro` were output as raw HTML, which let editors add scripts and, through Special:Ask, let a crafted link run JavaScript. They now take wikitext, as in other result formats
+* Fixed an XSS vulnerability on wikis that set `$wgRawHtml`: maps on Special:Ask rendered `<html>` sections in their texts as raw HTML, so a crafted link could run JavaScript
+* Fixed maps not updating when a template or GeoJSON page they use is edited
+* Fixed links in marker text and popups missing from "What links here"
+* Fixed `<nowiki>`, `<pre>` and similar tags in `{{#display_map:}}` marker text showing as strip markers such as `UNIQ--nowiki-00000000-QINU`. Under Parsoid on MediaWiki 1.44 and later, other tags still show as strip markers, and `<nowiki>` content is parsed as wikitext
+* Fixed readers getting a page with a map rendered for other settings, such as another interface language
+* Fixed the page's own TemplateStyles styles going missing after a `<display_map>` whose marker text uses the same styles, on MediaWiki 1.43 and 1.44
+* Fixed charts and other query results placed above a map missing their data, scripts or styles when the map's markers have a title or text, with Semantic MediaWiki 7.0 and older
+* Fixed `{{PAGENAME}}` and relative links in popup templates referring to `Badtitle/Parser` instead of the page
+* Fixed widgets of the Widgets extension showing as `START_WIDGET…END_WIDGET` markers in `{{#display_map:}}` marker text and in the popups of semantic maps
+* Categories and language links in marker text and popup templates now apply to the page, so category queries, such as those of Semantic MediaWiki, find it
+* The content of references in `<display_map>` marker text shows nowhere, as the popup no longer gets a reference list. References in popup templates are numbered per popup
+* Semantic maps with many popups that link pages render much faster, while popup templates that use Lua take longer, as Lua starts anew for each popup. Each popup also has the limits of a parse of its own, including Lua's CPU time limit, so a large map whose popups run heavy Lua can now reach the request timeout
+* Extensions that vary the parser cache with `ParserOptions::addExtraKey()` while parsing marker text or popups do not vary it for the page
+* Extensions that restrict which pages a page may include now apply to marker text and popups as to the rest of the page, and to GeoJSON pages as to Lua's `mw.title:getContent()`
+* Existing pages pick up the new categories, links and dependencies when their links are next updated, as on an edit or with `refreshLinks.php`
+* For developers: `MappingService::newMapDataFromProcessingResult()` and `newMapDataFromParameters()`, `CargoOutputBuilder::buildOutputFromCargoData()`, `QueryHandler::setTemplate()` and the `GeoJsonFetcher` constructor now take the parser rendering the page, and the `WikitextParser` constructor also takes a `ParserFactory`. `MapsFactory::newGeoJsonFetcher()` takes the parser optionally; without one, the fetcher reads pages as an anonymous reader
+
+## Maps 15.0.1
+
+Released on October 3rd, 2026.
+
+* Fixed a fatal error on MediaWiki 1.44+ when the `lines` or `polygons` parameter links to a wiki page
+* Fixed a fatal error on MediaWiki 1.46+ when `$egMapsEnableCategory` is enabled and a map query is shown on Special:Ask or rendered by Parsoid
+* Fixed fatal errors on MediaWiki 1.47+ when viewing a GeoJson page or a map that uses one
+* Fixed the `MediaWiki:Maps` page accepting invalid configuration on MediaWiki 1.47+, and on older versions when changed via `edit.php`, rollback or undeletion
+* Fixed deprecation warnings on MediaWiki 1.45+, including one logged on nearly every request
+
+## Maps 15.0.0
+
+Released on September 18th, 2026.
+
+* Breaking change: the `kml` and `geojson` parameters now only load files that are on this wiki: KML files uploaded here and GeoJson pages. Maps that name a URL render without that data. Set `$egMapsAllowExternalDataFiles = true;` to keep loading URLs
+* Breaking change: `$egMapsAllowExternalKml` and `general.allowExternalKml` are replaced by `$egMapsAllowExternalDataFiles` and `general.allowExternalDataFiles`. A `MediaWiki:Maps` page that still holds the old key keeps working, but cannot be saved until the key is renamed
+
+## Maps 14.2.1
+
+Released on September 18th, 2026.
+
+* Fixed a Server-Side Request Forgery vulnerability: the check that stops the Leaflet `geojson` parameter from fetching URLs on private and internal networks could be bypassed, for instance by writing such an address in IPv6 form or by using a hostname that resolves to one. The check now covers these forms and the connection is pinned to the addresses it approved, which requires the `curl` PHP extension ([GHSA-56p2-6jwm-mvfc](https://github.com/ProfessionalWiki/Maps/security/advisories/GHSA-56p2-6jwm-mvfc))
+
+## Maps 14.2.0
+
+Released on September 7th, 2026.
+
+* Added the `$egMapsAllowExternalKml` setting (also available as `general.allowExternalKml` on the `MediaWiki:Maps` page). Set it to `false` to have the Google Maps `kml` parameter accept only files on the wiki, and to stop `NetworkLink` elements inside a KML file from pointing anywhere else. It defaults to `true`, which keeps the existing behavior of letting an editor's browser fetch KML from any host for everyone viewing the map
+* Fixed an endless browser loop issue triggered by KML files that link back to themselves: `NetworkLink` elements in KML files are now followed at most three levels deep
+* Restored the `MapsFactory::getLeafletLayerDefinitions()` accessor that 14.0.0 removed
+
+## Maps 14.1.1
+
+Released on July 31st, 2026.
+
+* Fixed a stored XSS vulnerability in the Google Maps service, where content from KML files loaded via the `kml` parameter was used to build map popups without sanitization, and a `NetworkLink` refresh URL was evaluated as code ([GHSA-rg4f-xvhj-mw22](https://github.com/ProfessionalWiki/Maps/security/advisories/GHSA-rg4f-xvhj-mw22))
+* KML popups are now limited to safe HTML: frames, objects and scripts embedded in KML descriptions are no longer rendered
+* Fixed `GroundOverlay` images in KML files never rendering
+
+## Maps 14.1.0
+
+Released on July 26th, 2026.
+
+* The Leaflet `geojson` parameter now takes a semicolon-separated list of pages or URLs, shown together on one map. Existing values containing a semicolon are split into several sources. (#831)
+* Fixed the GeoJSON editor being offered for a source outside the `GeoJson` namespace, where saving wrote to a different page
+* Fixed a source whose content is JSON but not an object stopping the page it is shown on from rendering at all
+
+## Maps 14.0.0
+
+Released on July 21st, 2026.
+
+* Added an on-wiki JSON configuration page at `MediaWiki:Maps` exposing most Maps settings. It is editable only by administrators and interface administrators and is combined with `LocalSettings.php` with the wiki page taking precedence. Secrets stay exclusive to `LocalSettings.php`. Set `$egMapsEnableInWikiConfig` to `false` to disable it.
+* Removed built-in Leaflet layers whose upstream tile services have shut down: Stamen, Hydda, MapQuest Open, OpenMapSurfer, HikeBike, GeoportailFrance, Esri.DeLorme, and OpenStreetMap.BlackAndWhite. If you still use one of these, define a replacement via the `$egMapsLeafletLayerDefinitions` setting.
+
+## Maps 13.1.0
+
+Released on July 19th, 2026.
+
+* Added the `$egMapsLeafletLayerDefinitions` setting to define custom named Leaflet tile and WMS layers, which can then be used as values of the `layers` and `overlays` parameters
+
+## Maps 13.0.2
+
+Released on July 14th, 2026.
+
+* Fixed the `imageoverlays` parameter not working in query result formats, where it produced invalid map data that stopped the map from rendering at all (#919)
+
+## Maps 13.0.1
+
+Released on June 21st, 2026.
+
+* Fixed custom marker popups being offset to the left instead of centered above the marker icon (#915)
+
+## Maps 13.0.0
+
+Released on June 13th, 2026.
+
+* Removed the Google Maps based map editor (Special:MapEditor), which has been non-functional since Google removed the Drawing library from the Maps JavaScript API at the end of May 2026 (#906)
+
+## Maps 12.1.7
+
+Released on June 13th, 2026.
+
+* Restored compatibility with Semantic MediaWiki 6, which regressed when the Semantic integration moved to the namespaced classes introduced in Semantic MediaWiki 7 (#908)
+
+## Maps 12.1.6
+
+Released on June 5th, 2026.
+
+* Fixed a fatal error when rendering coordinate values with Semantic MediaWiki 7, where the long text and tooltip output referenced the removed `SMW_HEADER_TOOLTIP` constant
+* Restored the coordinate value hover tooltip on Semantic MediaWiki 7
+
+## Maps 12.1.5
+
+Released on June 4th, 2026.
+
+* Fixed Semantic MediaWiki 7 compatibility issues (#898, #901)
+
+## Maps 12.1.4
+
+Released on May 30th, 2026.
+
+* Hardened HTML sanitization of Cargo `map` result popups, stripping event-handler attributes and unsafe URL schemes (`javascript:`, `data:`, `vbscript:`) while preserving links and images (#900)
+
+## Maps 12.1.3
+
+Released on May 29th, 2026.
+
+* Fixed a stored XSS vulnerability in the Leaflet service, where base layer and overlay names supplied via the `layers` and `overlays` parameters were used as layer control labels without escaping ([GHSA-4h7g-5542-v3fc](https://github.com/ProfessionalWiki/Maps/security/advisories/GHSA-4h7g-5542-v3fc))
+* The `layers` and `overlays` parameters are now restricted to the configured available layers; values not listed in `$egMapsLeafletAvailableLayers` / `$egMapsLeafletAvailableOverlayLayers` are ignored
+
+## Maps 12.1.2
+
+Released on May 13th, 2026.
+
+* Added compatibility with Semantic MediaWiki 7.x (#895)
+* Added compatibility with ParserHooks 3.x
+* Fixed PHP 8.4 implicit nullable parameter deprecations (#890)
+
+## Maps 12.1.1
+
+Released on April 15th, 2026.
+
+* Fixed GeoJSON Point features being excluded from layer bounds, causing auto-zoom to ignore point-only GeoJSON data (#863)
+* Fixed `setInterval` never cleared in VisualEditor, causing intervals to accumulate (#864)
+* Fixed zero-valued GeoJSON style properties (`stroke-width: 0`, `fill-opacity: 0`) being silently dropped (#865)
+* Fixed layer order flipping on repeated map initialization due to in-place array mutation (#866)
+* Fixed crash in `LineParser` when using `link:` with an invalid wiki title (#867)
+* Fixed crash in Cargo map format when icon file does not exist (#868)
+* Fixed division by zero in image layer aspect ratio calculation for zero-width images (#869)
+* Fixed GeoJSON visual editor silently swallowing API save errors (#870)
+* Fixed empty map when using `cluster`, `center` and `zoom` together (#688)
+* Fixed overlay layers not appearing on top of base layers (#642)
+* Fixed Google Maps `removeLine`/`removePolygon` crash due to wrong property names (#883)
+* Fixed editor JS module being loaded on every Leaflet map instead of only when GeoJSON is used
+* Internationalized the GeoJSON editor edit summary prompt
+
+## Maps 12.1.0
+
+Released on April 3rd, 2026.
+
+* Added support for the `marker-color` GeoJSON property from the [simplestyle spec](https://github.com/mapbox/simplestyle-spec/tree/master/1.1.0)
+* Added `filename` parameter to KML result format for custom download filenames
+* Added `clusteranimation` parameter to disable cluster animation on Leaflet maps
+* Fixed stored XSS vulnerability in AJAX marker popups for Semantic MediaWiki queries
+* Fixed SSRF vulnerability in GeoJSON URL fetching by blocking requests to private/reserved IP ranges
+* Fixed `maps-visual-edit` tag never being applied to GeoJSON visual edits due to race condition
+* Fixed multi-valued Semantic MediaWiki properties being silently lost in map popups (only last value was shown)
+* Fixed popup anchor offset for custom marker icons on Leaflet maps
+* Fixed Visual Editor crash when maps contain polygons (#758, #829)
+* Fixed deprecated `ParserOutput::getText()` usage causing warnings on MediaWiki 1.42+ (#812, #837)
+* Fixed UI messages showing in content language instead of user language (#694)
+* Fixed deprecated `wfExpandUrl()` usage
+* Fixed deprecated nullable parameter in file fetcher
+* Fixed non-namespaced `Html` class alias usage (#826)
+* Fixed `GeoJsonContent` subject page type casting (#827)
+* Fixed `DistanceParserTest` floating point comparison (#684)
+
+## Maps 12.0.0
+
+Released on August 13th, 2025.
+
+* Raised the minimum MediaWiki version from 1.35 to 1.40
+* Added _partial_ compatibility with MediaWiki 1.44
+* Fixed GeoJSON error by ignoring GeoJSON descriptions that are objects
+* Fixed fatal error when providing an invalid radius for circles
+
+## Maps 11.0.1
+
+Released on March 16th, 2025.
+
+* Improved compatibility with future Semantic MediaWiki versions
+
+## Maps 11.0.0
+
+Released on March 5th, 2025.
+
+* Improved encoding of the map data in the HTML. Parser cache rebuild is recommended after upgrading
+* Dropped dependence on the Validator library
+
 ## Maps 10.3.0
 
 Released on November 28th, 2024.
@@ -265,7 +468,7 @@ Released on December 9th, 2019.
     * Border color (property key `stroke`)
     * Border width (property key `stroke-width`)
     * Border opacity (property key `stroke-opacity`)
-    * `marker-size`, `marker-symbol` and `marker-color` are not yet supported and will be ignored
+    * `marker-size` and `marker-symbol` are not yet supported and will be ignored
     * Display only, editing in the visual editor is not yet supported
 * Marker clustering now also cluster markers from the GeoJSON layer
 * Marker clustering now also cluster markers dynamically loaded via the `ajaxquery` feature

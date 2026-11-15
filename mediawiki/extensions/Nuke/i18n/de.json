@@ -67,6 +67,5 @@
 	"nuke-daterange-helper-text-max-age-different": "Wenn ein Benutzername oder eine IP-Adresse angegeben wird, können Seiten, die bis zu {{PLURAL:$1|1 Tag|$1 Tage}} alt sind, abgerufen werden. Andernfalls können aus Leistungsgründen Seiten abgerufen werden, die bis zu {{PLURAL:$2|1 Tag|$2 Tage}} alt sind.",
 	"nuke-daterange-helper-text-max-age-same": "Aus Leistungsgründen können Seiten abgerufen werden, die bis zu {{PLURAL:$1|1 Tag|$1 Tage}} alt sind.",
 	"tag-nuke": "Nuke",
-	"tag-nuke-description": "Mit der Nuke-Erweiterung durchgeführte Löschungen",
-	"nuke-list-tempaccount": "Die folgenden Seiten wurden kürzlich von temporären Konten erstellt, die von der IP-Adresse $1 verwendet wurden. Wähle die zu löschenden Seiten aus, gib eine Bearbeitungszusammenfassung ein und klicke auf „Ausgewählte löschen“, um die Seitenlöschung zu starten. '''Schreibe aus Datenschutzgründen die IP-Adresse nicht in die Bearbeitungszusammenfassung.'''\n\nWeiterleitungen werden kursiv dargestellt."
+	"tag-nuke-description": "Mit der Nuke-Erweiterung durchgeführte Löschungen"
 }

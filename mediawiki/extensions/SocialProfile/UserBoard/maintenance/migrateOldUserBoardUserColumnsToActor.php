@@ -37,7 +37,7 @@ class MigrateOldUserBoardUserColumnsToActor extends LoggedUpdateMaintenance {
 	 *
 	 * @return string
 	 */
-	protected function updateSkippedMessage() {
+	public function updateSkippedMessage() {
 		return 'user_board has already been migrated to use the actor columns.';
 	}
 
@@ -64,12 +64,7 @@ class MigrateOldUserBoardUserColumnsToActor extends LoggedUpdateMaintenance {
 		);
 		foreach ( $res as $row ) {
 			$user = User::newFromId( $row->ub_user_id );
-			if ( interface_exists( '\MediaWiki\User\ActorNormalization' ) ) {
-				// MW 1.36+
-				$actorId = MediaWikiServices::getInstance()->getActorNormalization()->acquireActorId( $user, $dbw );
-			} else {
-				$actorId = $user->getActorId( $dbw );
-			}
+			$actorId = MediaWikiServices::getInstance()->getActorNormalization()->acquireActorId( $user, $dbw );
 			$dbw->update(
 				'user_board',
 				[
@@ -94,12 +89,7 @@ class MigrateOldUserBoardUserColumnsToActor extends LoggedUpdateMaintenance {
 		);
 		foreach ( $res as $row ) {
 			$user = User::newFromId( $row->ub_user_id_from );
-			if ( interface_exists( '\MediaWiki\User\ActorNormalization' ) ) {
-				// MW 1.36+
-				$actorId = MediaWikiServices::getInstance()->getActorNormalization()->acquireActorId( $user, $dbw );
-			} else {
-				$actorId = $user->getActorId( $dbw );
-			}
+			$actorId = MediaWikiServices::getInstance()->getActorNormalization()->acquireActorId( $user, $dbw );
 			$dbw->update(
 				'user_board',
 				[

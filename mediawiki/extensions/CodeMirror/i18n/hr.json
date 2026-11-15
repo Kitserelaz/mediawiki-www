@@ -60,7 +60,7 @@
 	"codemirror-replace-all": "Zamijeni sve",
 	"codemirror-done": "Gotovo",
 	"codemirror-find-results": "$1 od $2",
-	"codemirror-goto-line": "Idi na liniju",
+	"codemirror-goto-line": "Idi na redak",
 	"codemirror-goto-line-go": "Idi",
 	"codemirror-control-character": "Kontrolni znak $1",
 	"codemirror-special-char-null": "Null znak",
@@ -193,6 +193,5 @@
 	"codemirror-potentially-slow": "može biti sporo",
 	"codemirror-validate-js-syntaxerror": "Sintaksna pogreška u stupcu $1 retka $2: $3",
 	"codemirror-ve-limit-exceeded": "Isključeno je isticanje sintakse jer je dokument prevelik.",
-	"codemirror-ve-limit-exceeded-info": "Više informacija",
-	"codemirror-v6-prefs-colorblind": "Koristi shemu boja prilagođenu daltonistima"
+	"codemirror-ve-limit-exceeded-info": "Više informacija"
 }

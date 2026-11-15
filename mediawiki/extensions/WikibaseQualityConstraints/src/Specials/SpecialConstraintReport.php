@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 
 namespace WikibaseQuality\ConstraintReport\Specials;
 
-use HtmlArmor;
 use InvalidArgumentException;
 use MediaWiki\Config\Config;
 use MediaWiki\Html\Html;
@@ -32,7 +31,8 @@ use WikibaseQuality\ConstraintReport\ConstraintCheck\Result\CheckResult;
 use WikibaseQuality\ConstraintReport\Html\HtmlTableBuilder;
 use WikibaseQuality\ConstraintReport\Html\HtmlTableCellBuilder;
 use WikibaseQuality\ConstraintReport\Html\HtmlTableHeaderBuilder;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\HtmlArmor\HtmlArmor;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * Special page that displays all constraints that are defined on an Entity with additional information
@@ -51,11 +51,11 @@ class SpecialConstraintReport extends SpecialPage {
 	private DelegatingConstraintChecker $constraintChecker;
 	private ViolationMessageRenderer $violationMessageRenderer;
 	private Config $config;
-	private IBufferingStatsdDataFactory $dataFactory;
+	private StatsFactory $statsFactory;
 
 	public static function factory(
 		Config $config,
-		IBufferingStatsdDataFactory $dataFactory,
+		StatsFactory $statsFactory,
 		EntityIdFormatterFactory $entityIdHtmlLinkFormatterFactory,
 		EntityIdLabelFormatterFactory $entityIdLabelFormatterFactory,
 		EntityIdParser $entityIdParser,
@@ -75,7 +75,7 @@ class SpecialConstraintReport extends SpecialPage {
 			$delegatingConstraintChecker,
 			$violationMessageRendererFactory,
 			$config,
-			$dataFactory
+			$statsFactory
 		);
 	}
 
@@ -89,7 +89,7 @@ class SpecialConstraintReport extends SpecialPage {
 		DelegatingConstraintChecker $constraintChecker,
 		ViolationMessageRendererFactory $violationMessageRendererFactory,
 		Config $config,
-		IBufferingStatsdDataFactory $dataFactory
+		StatsFactory $statsFactory
 	) {
 		parent::__construct( 'ConstraintReport' );
 
@@ -116,7 +116,12 @@ class SpecialConstraintReport extends SpecialPage {
 		);
 
 		$this->config = $config;
-		$this->dataFactory = $dataFactory;
+		$this->statsFactory = $statsFactory;
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'wbqc-check-constraints-uncached';
 	}
 
 	/**
@@ -158,12 +163,19 @@ class SpecialConstraintReport extends SpecialPage {
 	 * @throws UnexpectedValueException
 	 */
 	public function execute( $subPage ) {
+		parent::execute( $subPage );
+
 		$out = $this->getOutput();
 
 		$postRequest = $this->getContext()->getRequest()->getVal( 'entityid' );
 		if ( $postRequest ) {
-			$out->redirect( $this->getPageTitle( strtoupper( $postRequest ) )->getLocalURL() );
-			return;
+			try {
+				$entityId = $this->entityIdParser->parse( $postRequest );
+				$out->redirect( $this->getPageTitle( $entityId->getSerialization() )->getLocalURL() );
+				return;
+			} catch ( EntityIdParsingException ) {
+				// fall through, error is shown later
+			}
 		}
 
 		$out->enableOOUI();
@@ -174,17 +186,21 @@ class SpecialConstraintReport extends SpecialPage {
 		$out->addHTML( $this->getExplanationText() );
 		$this->buildEntityIdForm();
 
+		if ( $postRequest ) {
+			// must be an invalid entity ID (otherwise we would have redirected and returned above)
+			$out->addHTML(
+				$this->buildNotice( 'wbqc-constraintreport-invalid-entity-id', true )
+			);
+			return;
+		}
+
 		if ( !$subPage ) {
 			return;
 		}
 
-		if ( !is_string( $subPage ) ) {
-			throw new InvalidArgumentException( '$subPage must be string.' );
-		}
-
 		try {
 			$entityId = $this->entityIdParser->parse( $subPage );
-		} catch ( EntityIdParsingException $e ) {
+		} catch ( EntityIdParsingException ) {
 			$out->addHTML(
 				$this->buildNotice( 'wbqc-constraintreport-invalid-entity-id', true )
 			);
@@ -198,23 +214,22 @@ class SpecialConstraintReport extends SpecialPage {
 			return;
 		}
 
-		$this->dataFactory->increment(
-			'wikibase.quality.constraints.specials.specialConstraintReport.executeCheck'
-		);
+		$this->statsFactory->getCounter( 'special_constraint_report_execute_check_total' )
+			->increment();
 		$results = $this->constraintChecker->checkAgainstConstraintsOnEntityId( $entityId );
 
-		if ( $results !== [] ) {
-			$out->addHTML(
-				$this->buildResultHeader( $entityId )
-				. $this->buildSummary( $results )
-				. $this->buildResultTable( $entityId, $results )
+		if ( !$results ) {
+			$out->addHTML( $this->buildResultHeader( $entityId ) .
+				$this->buildNotice( 'wbqc-constraintreport-empty-result' )
 			);
-		} else {
-			$out->addHTML(
-				$this->buildResultHeader( $entityId )
-				. $this->buildNotice( 'wbqc-constraintreport-empty-result' )
-			);
+			return;
 		}
+
+		$out->addHTML(
+			$this->buildResultHeader( $entityId )
+			. $this->buildSummary( $results )
+			. $this->buildResultTable( $entityId, $results )
+		);
 	}
 
 	/**
@@ -228,16 +243,15 @@ class SpecialConstraintReport extends SpecialPage {
 				'name' => 'entityid',
 				'label-message' => 'wbqc-constraintreport-form-entityid-label',
 				'cssclass' => 'wbqc-constraintreport-form-entity-id',
-				'placeholder' => $this->msg( 'wbqc-constraintreport-form-entityid-placeholder' )->escaped(),
+				'placeholder' => $this->msg( 'wbqc-constraintreport-form-entityid-placeholder' )->text(),
 				'required' => true,
 			],
 		];
-		$htmlForm = HTMLForm::factory( 'ooui', $formDescriptor, $this->getContext(), 'wbqc-constraintreport-form' );
-		$htmlForm->setSubmitText( $this->msg( 'wbqc-constraintreport-form-submit-label' )->escaped() );
-		$htmlForm->setSubmitCallback( static function () {
-			return false;
-		} );
-		$htmlForm->setMethod( 'post' );
+		$htmlForm = HTMLForm::factory( 'ooui', $formDescriptor, $this->getContext(),
+			'wbqc-constraintreport-form'
+		);
+		$htmlForm->setSubmitText( $this->msg( 'wbqc-constraintreport-form-submit-label' )->text() );
+		$htmlForm->setSubmitCallback( static fn () => false );
 		$htmlForm->show();
 	}
 
@@ -252,18 +266,16 @@ class SpecialConstraintReport extends SpecialPage {
 	 * @return string HTML
 	 */
 	private function buildNotice( string $messageKey, bool $error = false ): string {
-		$cssClasses = 'wbqc-constraintreport-notice';
+		$cssClasses = [ 'wbqc-constraintreport-notice' ];
 		if ( $error ) {
-			$cssClasses .= ' wbqc-constraintreport-notice-error';
+			$cssClasses[] = ' wbqc-constraintreport-notice-error';
 		}
 
-		return Html::rawElement(
-				'p',
-				[
-					'class' => $cssClasses,
-				],
-				$this->msg( $messageKey )->escaped()
-			);
+		return Html::element(
+			'p',
+			[ 'class' => $cssClasses ],
+			$this->msg( $messageKey )->text()
+		);
 	}
 
 	/**
@@ -273,15 +285,15 @@ class SpecialConstraintReport extends SpecialPage {
 		return Html::rawElement(
 			'div',
 			[ 'class' => 'wbqc-explanation' ],
-			Html::rawElement(
+			Html::element(
 				'p',
 				[],
-				$this->msg( 'wbqc-constraintreport-explanation-part-one' )->escaped()
+				$this->msg( 'wbqc-constraintreport-explanation-part-one' )->text()
 			)
-			. Html::rawElement(
+			. Html::element(
 				'p',
 				[],
-				$this->msg( 'wbqc-constraintreport-explanation-part-two' )->escaped()
+				$this->msg( 'wbqc-constraintreport-explanation-part-two' )->text()
 			)
 		);
 	}
@@ -316,7 +328,7 @@ class SpecialConstraintReport extends SpecialPage {
 		);
 
 		foreach ( $results as $result ) {
-			$table = $this->appendToResultTable( $table, $entityId, $result );
+			$this->appendToResultTable( $table, $entityId, $result );
 		}
 
 		return $table->toHtml();
@@ -326,11 +338,11 @@ class SpecialConstraintReport extends SpecialPage {
 		HtmlTableBuilder $table,
 		EntityId $entityId,
 		CheckResult $result
-	): HtmlTableBuilder {
+	): void {
 		$message = $result->getMessage();
-		if ( $message === null ) {
+		if ( !$message ) {
 			// no row for this result
-			return $table;
+			return;
 		}
 
 		// Status column
@@ -351,7 +363,7 @@ class SpecialConstraintReport extends SpecialPage {
 		$constraintTypeItemId = $result->getConstraint()->getConstraintTypeItemId();
 		try {
 			$constraintTypeLabel = $this->entityIdLabelFormatter->formatEntityId( new ItemId( $constraintTypeItemId ) );
-		} catch ( InvalidArgumentException $e ) {
+		} catch ( InvalidArgumentException ) {
 			$constraintTypeLabel = htmlspecialchars( $constraintTypeItemId );
 		}
 		$constraintColumn = $this->getClaimLink(
@@ -377,8 +389,6 @@ class SpecialConstraintReport extends SpecialPage {
 				),
 			]
 		);
-
-		return $table;
 	}
 
 	/**
@@ -389,14 +399,14 @@ class SpecialConstraintReport extends SpecialPage {
 	 * @return string HTML
 	 */
 	protected function buildResultHeader( EntityId $entityId ): string {
-		$entityLink = sprintf( '%s (%s)',
-							   $this->entityIdLinkFormatter->formatEntityId( $entityId ),
-							   htmlspecialchars( $entityId->getSerialization() ) );
-
 		return Html::rawElement(
 			'h3',
 			[],
-			sprintf( '%s %s', $this->msg( 'wbqc-constraintreport-result-headline' )->escaped(), $entityLink )
+			$this->msg( 'wbqc-constraintreport-result-headline' )->escaped() .
+				$this->msg( 'word-separator' )->escaped() .
+				$this->entityIdLinkFormatter->formatEntityId( $entityId ) .
+				$this->msg( 'word-separator' )->escaped() .
+				$this->msg( 'parentheses', $entityId->getSerialization() )->escaped()
 		);
 	}
 
@@ -411,20 +421,20 @@ class SpecialConstraintReport extends SpecialPage {
 		$statuses = [];
 		foreach ( $results as $result ) {
 			$status = strtolower( $result->getStatus() );
-			$statuses[$status] = isset( $statuses[$status] ) ? $statuses[$status] + 1 : 1;
+			$statuses[$status] ??= 0;
+			$statuses[$status]++;
 		}
 
 		$statusElements = [];
 		foreach ( $statuses as $status => $count ) {
-			if ( $count > 0 ) {
-				$statusElements[] =
-					$this->formatStatus( $status )
-					. ': '
-					. $count;
-			}
+			$statusElements[] = $this->formatStatus( $status ) .
+				$this->msg( 'colon-separator' )->escaped() .
+				htmlspecialchars( $this->getLanguage()->formatNum( $count ) );
 		}
 
-		return Html::rawElement( 'p', [], implode( ', ', $statusElements ) );
+		return Html::rawElement( 'p', [],
+			implode( $this->msg( 'comma-separator' )->escaped(), $statusElements )
+		);
 	}
 
 	/**
@@ -455,27 +465,21 @@ class SpecialConstraintReport extends SpecialPage {
 		];
 
 		if ( array_key_exists( $status, $statusIcons ) ) {
-			$iconWidget = new IconWidget( $statusIcons[$status] );
-			$iconHtml = $iconWidget->toString() . ' ';
+			$iconHtml = new IconWidget( $statusIcons[$status] ) .
+				$this->msg( 'word-separator' )->escaped();
 		} else {
 			$iconHtml = '';
 		}
 
-		$labelWidget = new LabelWidget( [
-			'label' => $this->msg( $messageName )->text(),
-		] );
-		$labelHtml = $labelWidget->toString();
+		$labelWidget = new LabelWidget( [ 'label' => $this->msg( $messageName )->text() ] );
 
-		$formattedStatus =
-			Html::rawElement(
-				'span',
-				[
-					'class' => 'wbqc-status wbqc-status-' . $status,
-				],
-				$iconHtml . $labelHtml
-			);
-
-		return $formattedStatus;
+		return Html::rawElement(
+			'span',
+			[
+				'class' => 'wbqc-status wbqc-status-' . $status,
+			],
+			$iconHtml . $labelWidget
+		);
 	}
 
 	/**
@@ -492,27 +496,16 @@ class SpecialConstraintReport extends SpecialPage {
 		NumericPropertyId $propertyId,
 		string $text
 	): string {
-		return Html::rawElement(
-			'a',
+		$title = clone $this->entityTitleLookup->getTitleForId( $entityId );
+		$title->setFragment( $propertyId->getSerialization() );
+
+		return Html::rawElement( 'a',
 			[
-				'href' => $this->getClaimUrl( $entityId, $propertyId ),
+				'href' => $title->getLinkURL(),
 				'target' => '_blank',
 			],
 			$text
 		);
-	}
-
-	/**
-	 * Returns url of given entity with anchor to specified property.
-	 */
-	private function getClaimUrl(
-		EntityId $entityId,
-		NumericPropertyId $propertyId
-	): string {
-		$title = $this->entityTitleLookup->getTitleForId( $entityId );
-		$entityUrl = sprintf( '%s#%s', $title->getLocalURL(), $propertyId->getSerialization() );
-
-		return $entityUrl;
 	}
 
 }

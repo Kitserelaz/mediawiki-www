@@ -2,6 +2,7 @@
 
 use MediaWiki\Html\TemplateParser;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\ParserOptions;
 
 /**
  * Functions for managing user board data
@@ -32,6 +33,28 @@ class UserBoard {
 	}
 
 	/**
+	 * Check the given user-supplied text for spam and other nasty things.
+	 *
+	 * @note You should usually always call this before calling sendBoardMessage()!
+	 * @param string $textualContent The user-supplied text string to check for spam etc.
+	 * @param User|MediaWiki\User\UserIdentity $user The User (object) who is trying to send the message
+	 * @return Status
+	 */
+	public static function checkForSpam( $textualContent, $user ) {
+		$hasSpam = SpecialUpdateProfile::validateSpamRegex( $textualContent );
+		if ( $hasSpam ) {
+			return Status::newFatal( 'spamprotectiontext' );
+		}
+
+		$hasSpam = SpecialUpdateProfile::validateSpamBlacklist( $textualContent, rand(), $user );
+		if ( $hasSpam ) {
+			return Status::newFatal( 'spamprotectiontext' );
+		}
+
+		return Status::newGood();
+	}
+
+	/**
 	 * Sends a user board message to another user.
 	 *
 	 * Performs the insertion to user_board table, sends e-mail notification
@@ -41,9 +64,15 @@ class UserBoard {
 	 * @param User $recipient User (object) receiving the message
 	 * @param string $message Message text
 	 * @param int $message_type 0 for public message
-	 * @return int The inserted value of ub_id row
+	 * @return int|false The inserted value of ub_id row, or false if it was not sent
 	 */
 	public function sendBoardMessage( $sender, $recipient, $message, $message_type = 0 ) {
+		$allowPrivateMessages = MediaWikiServices::getInstance()->getMainConfig()
+			->get( 'UserBoardAllowPrivateMessages' );
+		if ( $message_type !== self::MESSAGE_PUBLIC && !$allowPrivateMessages ) {
+			return false;
+		}
+
 		$dbw = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_PRIMARY );
 
 		$dbw->insert(
@@ -222,25 +251,22 @@ class UserBoard {
 	 * @return array Array containing info about the message on success, empty array on failure
 	 */
 	public function getMessage( $messageId ) {
-		global $wgOut, $wgTitle;
-
 		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
-		$res = $dbr->select(
+		$row = $dbr->selectRow(
 			'user_board',
 			'*',
 			[ 'ub_id' => $messageId ],
-			__METHOD__,
-			[ 'LIMIT' => 1 ]
+			__METHOD__
 		);
 
-		$message = [];
-
-		foreach ( $res as $row ) {
+		if ( $row ) {
 			$parser = MediaWikiServices::getInstance()->getParserFactory()->create();
-			$message_text = $parser->parse( $row->ub_message, $wgTitle, $wgOut->parserOptions(), true );
-			$message_text = $message_text->getText();
+			$context = RequestContext::getMain();
+			$parserOptions = ParserOptions::newFromContext( $context );
+			$message_text = $parser->parse( $row->ub_message, $context->getTitle(), $parserOptions, true );
+			$message_text = $message_text->getContentHolderText();
 
-			$message = [
+			return [
 				'id' => $row->ub_id,
 				'timestamp' => wfTimestamp( TS_UNIX, $row->ub_date ),
 				'ub_actor_from' => $row->ub_actor_from,
@@ -250,7 +276,7 @@ class UserBoard {
 			];
 		}
 
-		return $message;
+		return [];
 	}
 
 	/**
@@ -265,8 +291,6 @@ class UserBoard {
 	 * @return array Array of user board messages
 	 */
 	public function getUserBoardMessages( $user, $user_2 = 0, $limit = 0, $page = 0 ) {
-		global $wgOut, $wgTitle;
-
 		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
 
 		$offset = 0;
@@ -301,12 +325,13 @@ class UserBoard {
 		$res = $dbr->query( $dbr->limitResult( $sql, $limit, $offset ), __METHOD__ );
 
 		$messages = [];
+		$parser = MediaWikiServices::getInstance()->getParserFactory()->create();
 
+		$context = RequestContext::getMain();
+		$parserOptions = ParserOptions::newFromContext( $context );
 		foreach ( $res as $row ) {
-			$parser = MediaWikiServices::getInstance()->getParserFactory()->create();
-			$message_text = $parser->parse( $row->ub_message, $wgTitle, $wgOut->parserOptions(), true );
-			$message_text = $message_text->getText();
-
+			$message_text = $parser->parse( $row->ub_message, $context->getTitle(), $parserOptions, true );
+			$message_text = $message_text->getContentHolderText();
 			$messages[] = [
 				'id' => $row->ub_id,
 				'timestamp' => wfTimestamp( TS_UNIX, $row->ub_date ),
@@ -464,17 +489,17 @@ class UserBoard {
 	 */
 	public function dateDiff( $date1, $date2 ) {
 		$dtDiff = $date1 - $date2;
-
 		$totalDays = intval( $dtDiff / ( 24 * 60 * 60 ) );
 		$totalSecs = $dtDiff - ( $totalDays * 24 * 60 * 60 );
-		$dif = [];
-		$dif['w'] = intval( $totalDays / 7 );
-		$dif['d'] = $totalDays;
-		$dif['h'] = $h = intval( $totalSecs / ( 60 * 60 ) );
-		$dif['m'] = $m = intval( ( $totalSecs - ( $h * 60 * 60 ) ) / 60 );
-		$dif['s'] = $totalSecs - ( $h * 60 * 60 ) - ( $m * 60 );
-
-		return $dif;
+		$h = intval( $totalSecs / ( 60 * 60 ) );
+		$m = intval( ( $totalSecs - ( $h * 60 * 60 ) ) / 60 );
+		return [
+			'w' => intval( $totalDays / 7 ),
+			'd' => $totalDays,
+			'h' => $h,
+			'm' => $m,
+			's' => $totalSecs - ( $h * 60 * 60 ) - ( $m * 60 ),
+		];
 	}
 
 	public function getTimeOffset( $time, $timeabrv, $timename ) {

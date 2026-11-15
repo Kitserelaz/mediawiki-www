@@ -17,9 +17,13 @@
 	"mediasearch-filter-namespace-discussion": "Savâstâllâm",
 	"mediasearch-clear-title": "Siho",
 	"mediasearch-load-more-results": "Luođii lase",
+	"mediasearch-quickview-button-text": "Lasetiäđuh",
 	"mediasearch-copytextlayout-copy": "Kopijist",
 	"mediasearch-results-count": "{{PLURAL:$1|1=uuccâmpuáđus|$1 uuccâmpuáttus|$1 uuccâmpuáđusid}}",
+	"mediasearch-filter-assessment-picture-of-the-day": "Peeivi kove",
+	"mediasearch-filter-assessment-picture-of-the-year": "Ive kove",
 	"mediasearch-filter-assessment-unset": "Puoh",
 	"mediasearch-filter-license": "Liiseens",
-	"mediasearch-filter-license-unset": "Puoh"
+	"mediasearch-filter-license-unset": "Puoh",
+	"mediasearch-dialog-close-button-label": "Toopâ"
 }

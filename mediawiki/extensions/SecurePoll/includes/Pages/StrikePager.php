@@ -17,12 +17,17 @@ class StrikePager extends TablePager {
 	/** @var int */
 	public $voteId;
 
+	/**
+	 * @param DetailsPage $detailsPage
+	 * @param int $voteId
+	 */
 	public function __construct( $detailsPage, $voteId ) {
 		$this->detailsPage = $detailsPage;
 		$this->voteId = $voteId;
 		parent::__construct();
 	}
 
+	/** @inheritDoc */
 	public function getQueryInfo() {
 		return [
 			'tables' => [
@@ -54,10 +59,12 @@ class StrikePager extends TablePager {
 		}
 	}
 
+	/** @inheritDoc */
 	public function getDefaultSort() {
 		return 'st_timestamp';
 	}
 
+	/** @inheritDoc */
 	protected function getFieldNames() {
 		return [
 			'st_timestamp' => $this->msg( 'securepoll-header-timestamp' )->escaped(),
@@ -67,10 +74,12 @@ class StrikePager extends TablePager {
 		];
 	}
 
+	/** @inheritDoc */
 	public function getTitle() {
 		return $this->detailsPage->getTitle();
 	}
 
+	/** @inheritDoc */
 	protected function isFieldSortable( $field ) {
 		return $field === 'st_timestamp';
 	}

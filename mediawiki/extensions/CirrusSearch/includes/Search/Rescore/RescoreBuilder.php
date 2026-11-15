@@ -11,20 +11,7 @@ use Elastica\Query\AbstractQuery;
 /**
  * Set of rescore builders
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
 /**
@@ -37,7 +24,7 @@ class RescoreBuilder {
 
 	/**
 	 * List of allowed rescore params
-	 * @todo: refactor to const with php 5.6
+	 * @todo refactor to const with php 5.6
 	 *
 	 * @var string[]
 	 */
@@ -87,15 +74,16 @@ class RescoreBuilder {
 			if ( $windowSize <= 0 ) {
 				continue;
 			}
-			$rescore = [
-				'window_size' => $windowSize,
-			];
 
-			$rescore['query'] = $this->prepareQueryParams( $rescoreDef );
 			$rescoreQuery = $this->buildRescoreQuery( $rescoreDef );
 			if ( $rescoreQuery === null ) {
 				continue;
 			}
+
+			$rescore = [
+				'window_size' => $windowSize,
+				'query' => $this->prepareQueryParams( $rescoreDef ),
+			];
 			$rescore['query']['rescore_query'] = $rescoreQuery;
 			$rescores[] = $rescore;
 		}
@@ -253,6 +241,7 @@ class RescoreBuilder {
 	 *
 	 * @param array $profile Profile to check
 	 * @return bool True is the profile supports current namespaces
+	 * @throws InvalidRescoreProfileException
 	 */
 	private function isProfileNamespaceSupported( array $profile ) {
 		if ( !is_array( $profile['supported_namespaces'] ) ) {

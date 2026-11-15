@@ -5,6 +5,7 @@ namespace MediaWiki\Extension\Translate;
 
 use MediaWiki\Extension\Translate\Cache\PersistentCache;
 use MediaWiki\Extension\Translate\FileFormatSupport\FileFormatFactory;
+use MediaWiki\Extension\Translate\MessageBundleTranslation\MessageBundleDependencyPurger;
 use MediaWiki\Extension\Translate\MessageBundleTranslation\MessageBundleMessageGroupFactory;
 use MediaWiki\Extension\Translate\MessageBundleTranslation\MessageBundleStore;
 use MediaWiki\Extension\Translate\MessageBundleTranslation\MessageBundleTranslationLoader;
@@ -22,6 +23,7 @@ use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundleFacto
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundleImporter;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundleStatusStore;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatablePageStore;
+use MediaWiki\Extension\Translate\MessageGroupProcessing\WorkflowStatesMessageGroupLoader;
 use MediaWiki\Extension\Translate\MessageLoading\MessageIndex;
 use MediaWiki\Extension\Translate\MessageProcessing\MessageGroupMetadata;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatableBundleMover;
@@ -56,13 +58,13 @@ use Psr\Container\ContainerInterface;
  * @since 2020.04
  */
 class Services implements ContainerInterface {
-	private ContainerInterface $container;
 
-	private function __construct( ContainerInterface $container ) {
-		$this->container = $container;
+	private function __construct(
+		private readonly ContainerInterface $container,
+	) {
 	}
 
-	public static function getInstance(): Services {
+	public static function getInstance(): self {
 		return new self( MediaWikiServices::getInstance() );
 	}
 
@@ -131,6 +133,11 @@ class Services implements ContainerInterface {
 		return $this->get( 'Translate:HookRunner' );
 	}
 
+	/** @since 2024.10 */
+	public function getMessageBundleDependencyPurger(): MessageBundleDependencyPurger {
+		return $this->get( 'Translate:MessageBundleDependencyPurger' );
+	}
+
 	/** @since 2024.05 */
 	public function getMessageBundleMessageGroupFactory(): MessageBundleMessageGroupFactory {
 		return $this->get( 'Translate:MessageBundleMessageGroupFactory' );
@@ -167,7 +174,7 @@ class Services implements ContainerInterface {
 	}
 
 	/** @since 2024.04 */
-	public function getMessageGroupSubscriptionHookHandler(): MessageGroupSubscriptionHookHandler {
+	public function getMessageGroupSubscriptionHookHandler(): ?MessageGroupSubscriptionHookHandler {
 		return $this->get( 'Translate:MessageGroupSubscriptionHookHandler' );
 	}
 
@@ -271,5 +278,10 @@ class Services implements ContainerInterface {
 	/** @since 2021.01 */
 	public function getTtmServerFactory(): TtmServerFactory {
 		return $this->get( 'Translate:TtmServerFactory' );
+	}
+
+	/** @since 2025.03 */
+	public function getWorkflowStatesMessageGroupLoader(): WorkflowStatesMessageGroupLoader {
+		return $this->get( 'Translate:WorkflowStatesMessageGroupLoader' );
 	}
 }

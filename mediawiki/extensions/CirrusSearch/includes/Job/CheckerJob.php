@@ -14,26 +14,14 @@ use CirrusSearch\Sanity\QueueingRemediator;
 use CirrusSearch\Searcher;
 use CirrusSearch\UpdateGroup;
 use CirrusSearch\Util;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 
 /**
  * Job wrapper around Sanity\Checker
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class CheckerJob extends CirrusGenericJob {
 	/**
@@ -51,10 +39,10 @@ class CheckerJob extends CirrusGenericJob {
 	 * @param string|null $cluster
 	 * @param int $loopId The number of times the checker jobs have looped
 	 *  over the pages to be checked.
-	 * @param \JobQueueGroup $jobQueueGroup
-	 * @return CheckerJob
+	 * @param JobQueueGroup $jobQueueGroup
+	 * @return self
 	 */
-	public static function build( $fromPageId, $toPageId, $delay, $profile, $cluster, $loopId, \JobQueueGroup $jobQueueGroup ) {
+	public static function build( $fromPageId, $toPageId, $delay, $profile, $cluster, $loopId, JobQueueGroup $jobQueueGroup ): self {
 		$job = new self( [
 			'fromPageId' => $fromPageId,
 			'toPageId' => $toPageId,
@@ -67,9 +55,6 @@ class CheckerJob extends CirrusGenericJob {
 		return $job;
 	}
 
-	/**
-	 * @param array $params
-	 */
 	public function __construct( array $params ) {
 		// BC for jobs created before id fields were clarified to be explicitly page id's
 		if ( isset( $params['fromId'] ) ) {

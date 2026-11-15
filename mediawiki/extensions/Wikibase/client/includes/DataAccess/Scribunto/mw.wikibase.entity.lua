@@ -143,13 +143,13 @@ local function maskStatementTable( statement, tableName, usageFunc, entityId, pr
 	end
 
 	local function ipairsfunc( _ , i )
-		i = i + 1
-		if actualStatementTable[i] ~= nil then
-			usageFunc( entityId, propertyId )
-			return i, actualStatementTable[i]
-		end
-		return -- no nil to match default ipairs()
-	end
+    		i = i + 1
+    		if actualStatementTable[i] ~= nil then
+    			usageFunc( entityId, propertyId )
+    			return i, actualStatementTable[i]
+    		end
+    		return -- no nil to match default ipairs()
+    	end
 
 	local pseudoTableMetatable = {
 		__index = function( _, key )
@@ -195,7 +195,7 @@ local function maskEntityTables( entity )
 		end
 	end
 
-	maskEntityTable( entity, 'claims', addStatementUsage )
+ 	maskEntityTable( entity, 'claims', addStatementUsage )
 	maskEntityTable( entity, 'labels', php.addLabelUsage )
 	maskEntityTable( entity, 'sitelinks', php.addTitleOrSiteLinksUsage )
 	maskEntityTable( entity, 'descriptions', php.addDescriptionUsage )

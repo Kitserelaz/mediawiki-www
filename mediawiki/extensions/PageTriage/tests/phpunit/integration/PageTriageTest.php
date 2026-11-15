@@ -34,11 +34,11 @@ class PageTriageTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testBulkSetTagsUpdated() {
-		// Skipping this test if ORES is not loaded. See: T335998
-		// $this->markTestSkippedIfExtensionNotLoaded( 'ORES' );
-
-		// Skip the test altogether. T376412, T335998
+		// This test started being flaky around May 2025. T394375
 		$this->markTestSkipped();
+
+		// Skipping this test if ORES is not loaded. See: T335998
+		$this->markTestSkippedIfExtensionNotLoaded( 'ORES' );
 
 		$pageIds[] = $this->insertPage( 'PageTriageTest', 'Testing 123' )['id'];
 

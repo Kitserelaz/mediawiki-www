@@ -50,6 +50,7 @@ ve.demo.SurfaceContainer = function VeDemoSurfaceContainer( target, page, lang, 
 		label: 'Null selection on blur',
 		value: true
 	} );
+
 	const $exitReadButton = $( '<a>' ).attr( 'href', '#' ).text( 'Back to editor' ).on( 'click', () => {
 		this.modeSelect.selectItemByData( 'visual' );
 		return false;
@@ -208,7 +209,7 @@ ve.demo.SurfaceContainer.prototype.change = function ( mode, page ) {
 	return closePromise.done( () => {
 		const isRead = mode === 'read',
 			otherDir = currentDir === 'ltr' ? 'rtl' : 'ltr',
-			$editStylesheets = $( 'link[rel~=stylesheet]:not(.stylesheet-read):not(.stylesheet-' + otherDir + ')' );
+			$editStylesheets = $( 'link[rel~=stylesheet]:not(.stylesheet-read):not(.stylesheet-dark):not(.stylesheet-' + otherDir + ')' );
 
 		if ( this.surface ) {
 			this.surface.destroy();
@@ -228,7 +229,7 @@ ve.demo.SurfaceContainer.prototype.change = function ( mode, page ) {
 				if ( page ) {
 					this.loadPage( page, mode );
 				} else if ( html !== undefined ) {
-					this.loadHtml( html, mode );
+					this.loadHtml( html, mode, true );
 				}
 				break;
 
@@ -284,15 +285,16 @@ ve.demo.SurfaceContainer.prototype.loadPage = function ( page, mode ) {
  *
  * @param {string} pageHtml HTML string
  * @param {string} mode Edit mode
+ * @param {boolean} skipAutoSave Skip auto-save check (e.g. when switching modes)
  */
-ve.demo.SurfaceContainer.prototype.loadHtml = function ( pageHtml, mode ) {
+ve.demo.SurfaceContainer.prototype.loadHtml = function ( pageHtml, mode, skipAutoSave ) {
 	let restored = false;
 
 	if ( this.surface ) {
 		this.surface.destroy();
 	}
 
-	if ( this.autosaveToggle.getValue() ) {
+	if ( !skipAutoSave && this.autosaveToggle.getValue() ) {
 		const state = ve.init.platform.sessionStorage.getObject( 've-docstate' );
 
 		if ( state && state.page === this.page ) {
@@ -307,7 +309,7 @@ ve.demo.SurfaceContainer.prototype.loadHtml = function ( pageHtml, mode ) {
 			mode,
 			{ lang: this.lang, dir: this.dir }
 		),
-		{ placeholder: 'Start your document', mode: mode }
+		{ placeholder: 'Start your document', mode }
 	);
 
 	this.target.setSurface( this.surface );

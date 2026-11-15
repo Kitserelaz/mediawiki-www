@@ -13,12 +13,13 @@ class TranslationQueryResponse {
 	private int $code;
 	private string $reason;
 	private array $headers;
-	private ?string $body;
+	private string $body;
 	private string $error;
-	/** @var TranslationQuery */
-	private $query;
 
-	public function __construct( array $data, TranslationQuery $query ) {
+	public function __construct(
+		array $data,
+		private readonly TranslationQuery $query,
+	) {
 		$response = $data['response'];
 
 		$this->code = (int)$response['code'];
@@ -26,7 +27,6 @@ class TranslationQueryResponse {
 		$this->headers = $response['headers'];
 		$this->body = $response['body'];
 		$this->error = $response['error'];
-		$this->query = $query;
 	}
 
 	public function getStatusCode(): int {
@@ -41,7 +41,7 @@ class TranslationQueryResponse {
 		}
 	}
 
-	public function getBody(): ?string {
+	public function getBody(): string {
 		return $this->body;
 	}
 

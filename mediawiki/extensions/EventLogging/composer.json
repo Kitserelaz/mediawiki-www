@@ -28,7 +28,6 @@
 		},
 		"audit": {
 			"block-insecure": false
-		},
-		"prepend-autoloader": false
+		}
 	}
 }

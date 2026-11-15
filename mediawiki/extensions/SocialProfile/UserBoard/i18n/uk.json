@@ -4,14 +4,16 @@
 			"DDPAT",
 			"Ice bulldog",
 			"Prima klasy4na",
-			"Тест"
+			"Vlad5250",
+			"Тест",
+			"Movses"
 		]
 	},
 	"userboard-desc": "Дозволяє надсилати повідомлення \"борт до борту\"",
 	"messagesenttitle": "Повідомлення надіслано",
 	"boardblasttitle": "Надіслати вибух дошки",
 	"boardblaststep1": "Крок 1 - Напишіть своє повідомлення",
-	"boardblastprivatenote": "Усі повідомлення надсилатимуться як приватні повідомлення",
+	"boardblast-message-type-note": "Всі повідомлення будуть надсилатися як публічні, оскільки приватні повідомлення відключені.",
 	"boardblaststep2": "Крок 2 - Виберіть, кому ви хочете надіслати своє повідомлення",
 	"boardlinkselectall": "Обрати всі",
 	"boardlinkunselectall": "Скасувати вибір усіх",
@@ -59,10 +61,13 @@
 	"echo-pref-tooltip-social-msg": "Повідомляти мене, коли хтось залишає повідомлення на моїй дошці користувачів.",
 	"notification-social-msg-send": "$1 щойно залишив повідомлення на вашій дошці користувачів.<br /><br />''$2''",
 	"notification-social-msg-send-bundle": "{{PLURAL:$1|Одне повідомлення|$1 повідомлень|100=99+ повідомлень}} залишилося на вашій дошці користувачів.",
+	"apierror-socialprofile-send-message-nosend": "Ви не можете надсилати повідомлення.",
 	"apihelp-socialprofile-send-message-summary": "Надіслати повідомлення на UserBoard користувача.",
 	"apihelp-socialprofile-send-message-param-username": "Ім'я користувача одержувача.",
 	"apihelp-socialprofile-send-message-param-message": "Версія повідомлення з кодом, що надсилається.",
 	"apihelp-socialprofile-send-message-param-type": "Тип повідомлення: 0 для публічного повідомлення, 1 для приватного повідомлення.",
 	"apihelp-socialprofile-delete-message-summary": "Видалити повідомлення UserBoard.",
-	"apihelp-socialprofile-delete-message-param-id": "Унікальний ідентифікатор повідомлення на дошці для видалення."
+	"apihelp-socialprofile-delete-message-param-id": "Унікальний ідентифікатор повідомлення на дошці для видалення.",
+	"userboard-private-messages-disabled": "Приватні повідомлення відключені у цій вікі.",
+	"userboard-private-messages-disabled-title": "Функція відключена"
 }

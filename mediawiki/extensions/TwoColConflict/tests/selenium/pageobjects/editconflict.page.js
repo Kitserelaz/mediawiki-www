@@ -1,11 +1,8 @@
-'use strict';
-
-const assert = require( 'assert' ),
-	Page = require( 'wdio-mediawiki/Page' ),
-	EditPage = require( '../pageobjects/edit.page' ),
-	UserLoginPage = require( 'wdio-mediawiki/LoginPage' ),
-	TestAccounts = require( '../test_accounts' ),
-	Util = require( 'wdio-mediawiki/Util' );
+import Page from 'wdio-mediawiki/Page';
+import LoginPage from 'wdio-mediawiki/LoginPage';
+import { getTestString, waitForModuleState } from 'wdio-mediawiki/Util';
+import EditPage from '../pageobjects/edit.page.js';
+import TestAccounts from '../test_accounts.js';
 
 class EditConflictPage extends Page {
 	get conflictHeader() {
@@ -44,20 +41,12 @@ class EditConflictPage extends Page {
 		return $( this.columnToClass( column ) );
 	}
 
-	get selectionLabel() {
-		return $( '.mw-twocolconflict-split-row .mw-twocolconflict-split-selector-label > span' );
-	}
-
 	get otherParagraphSelection() {
 		return $( '.mw-twocolconflict-split-selection-row div:nth-child(1) span' );
 	}
 
 	get otherParagraphRadio() {
 		return $( '.mw-twocolconflict-split-selection-row div:nth-child(1) input' );
-	}
-
-	get otherParagraphAllSelection() {
-		return $( '.mw-twocolconflict-split-selection-header div:nth-child(1) span' );
 	}
 
 	get yourParagraphSelection() {
@@ -76,58 +65,6 @@ class EditConflictPage extends Page {
 		return $( '.oo-ui-windowManager-floating .oo-ui-window-content .oo-ui-messageDialog-actions span:nth-of-type(2) a' );
 	}
 
-	get collapsedParagraph() {
-		return $( '.mw-twocolconflict-split-collapsed' );
-	}
-
-	get expandedParagraph() {
-		return $( '.mw-twocolconflict-split-expanded' );
-	}
-
-	get fadeOverlay() {
-		return $( '.mw-twocolconflict-split-fade' );
-	}
-
-	get collapseButton() {
-		return $( '.mw-twocolconflict-split-collapse-button' );
-	}
-
-	get expandButton() {
-		return $( '.mw-twocolconflict-split-expand-button' );
-	}
-
-	get infoButton() {
-		return $( '.mw-twocolconflict-split-tour-help-button' );
-	}
-
-	get tourDialog() {
-		return $( '.mw-twocolconflict-split-tour-intro-container' );
-	}
-
-	get tourDialogCloseButton() {
-		return $( '.mw-twocolconflict-split-tour-intro-container a' );
-	}
-
-	get tourDiffChangeButton() {
-		return $( '.mw-twocolconflict-diffchange .mw-twocolconflict-split-tour-pulsating-button' );
-	}
-
-	get tourSplitSelectionButton() {
-		return $( '.mw-twocolconflict-split-selection .mw-twocolconflict-split-tour-pulsating-button' );
-	}
-
-	get tourYourVersionHeaderPopup() {
-		return $( '.mw-twocolconflict-split-your-version-header .mw-twocolconflict-split-tour-popup' );
-	}
-
-	get tourDiffChangePopup() {
-		return $( '.mw-twocolconflict-diffchange .mw-twocolconflict-split-tour-popup' );
-	}
-
-	get tourDiffChangePopupCloseButton() {
-		return $( '.mw-twocolconflict-diffchange .mw-twocolconflict-split-tour-popup a' );
-	}
-
 	get submitButton() {
 		return $( '#wpSave' );
 	}
@@ -142,18 +79,6 @@ class EditConflictPage extends Page {
 
 	get previewText() {
 		return $( '#wikiPreview .mw-parser-output' );
-	}
-
-	get coreUiHint() {
-		return $( '.mw-twocolconflict-core-ui-hint .oo-ui-messageWidget' );
-	}
-
-	get coreUiHintCloseButton() {
-		return $( '.mw-twocolconflict-core-ui-hint .oo-ui-icon-close' );
-	}
-
-	get rowsInEditMode() {
-		return $( '.mw-twocolconflict-split-editing' );
 	}
 
 	columnToClass( column ) {
@@ -175,7 +100,7 @@ class EditConflictPage extends Page {
 	 * @return {Promise} Promise from the mw.Api request
 	 */
 	async prepareUserSettings() {
-		await Util.waitForModuleState( 'mediawiki.base' );
+		await waitForModuleState( 'mediawiki.base' );
 		return await browser.execute( async () => {
 			await mw.loader.using( 'mediawiki.api' );
 			return new mw.Api().saveOptions( {
@@ -195,7 +120,7 @@ class EditConflictPage extends Page {
 	 */
 	async toggleHelpDialog( show ) {
 		const hide = show === false;
-		await Util.waitForModuleState( 'mediawiki.base' );
+		await waitForModuleState( 'mediawiki.base' );
 		return await browser.execute( async ( setHide ) => {
 			await mw.loader.using( 'mediawiki.api' );
 			return new mw.Api().saveOption(
@@ -206,7 +131,7 @@ class EditConflictPage extends Page {
 	}
 
 	async prepareEditConflict() {
-		await UserLoginPage.loginAdmin();
+		await LoginPage.loginAdmin();
 		await this.prepareUserSettings();
 	}
 
@@ -222,18 +147,8 @@ class EditConflictPage extends Page {
 		await this.waitForJS();
 	}
 
-	async showBigConflict() {
-		await this.createConflict(
-			'Line1\nLine2\nLine3\nline4',
-			'Line1\nLine2\nLine3\nChange <span lang="de">A</span>',
-			'Line1\nLine2\nLine3\nChange <span lang="en">B</span>'
-		);
-		await this.waitForJS();
-	}
-
-	async apiEditPage( bot, title, text ) {
-		await browser.call( async () => await bot.edit( title, text ) );
-		await browser.pause( 500 );
+	async apiEditPage( apiClient, title, text ) {
+		await apiClient.edit( title, text );
 	}
 
 	async createConflict(
@@ -243,10 +158,10 @@ class EditConflictPage extends Page {
 		title = null,
 		section = null
 	) {
-		title = ( title !== null ) ? title : ( Util.getTestString( 'conflict-title-' ) );
+		title = ( title !== null ) ? title : ( getTestString( 'conflict-title-' ) );
 
 		// set initial page content
-		await this.apiEditPage( await TestAccounts.adminBot, title, startText );
+		await this.apiEditPage( await TestAccounts.adminBot(), title, startText );
 
 		// open editor and change the initial content
 		if ( section !== null ) {
@@ -265,7 +180,7 @@ class EditConflictPage extends Page {
 	}
 
 	async waitForJS() {
-		await Util.waitForModuleState( 'ext.TwoColConflict.SplitJs' );
+		await waitForModuleState( 'ext.TwoColConflict.SplitJs' );
 	}
 
 	async testNoJs() {
@@ -274,53 +189,6 @@ class EditConflictPage extends Page {
 			value: '1'
 		} );
 	}
-
-	async assertUnchangedIsCollapsed() {
-		assert(
-			await this.fadeOverlay.isDisplayed(),
-			'an overlay fades the collapsed text'
-		);
-		assert(
-			await this.collapsedParagraph.isDisplayed(),
-			'the collapsed paragraph text is visible'
-		);
-		assert(
-			!( await this.expandedParagraph.isDisplayed() ),
-			'the expanded paragraph text is hidden'
-		);
-		assert(
-			await this.expandButton.isDisplayed(),
-			'the expand button is visible'
-		);
-		assert(
-			!( await this.collapseButton.isDisplayed() ),
-			'the collapse button is hidden'
-		);
-	}
-
-	async assertUnchangedIsExpanded() {
-		assert(
-			!( await this.fadeOverlay.isDisplayed() ),
-			'no overlay fades the collapsed text'
-		);
-		assert(
-			await this.expandedParagraph.isDisplayed(),
-			'the expanded paragraph text is visible'
-		);
-		assert(
-			!( await this.collapsedParagraph.isDisplayed() ),
-			'the collapsed paragraph text is hidden'
-		);
-		assert(
-			!( await this.expandButton.isDisplayed() ),
-			'the expand button is hidden'
-		);
-		assert(
-			await this.collapseButton.isDisplayed(),
-			'the collapse button is visible'
-		);
-	}
-
 }
 
-module.exports = new EditConflictPage();
+export default new EditConflictPage();

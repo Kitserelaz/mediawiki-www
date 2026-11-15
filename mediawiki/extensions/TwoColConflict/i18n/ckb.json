@@ -1,10 +1,10 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aram",
 			"Cwtiyar",
 			"Lost Whispers",
-			"Épine",
-			"Aram"
+			"Épine"
 		]
 	},
 	"twocolconflict": "کێشەی دەستکاریی بەند بە پەڕەگڕاف",
@@ -19,6 +19,7 @@
 	"twocolconflict-copy-tooltip": "تەواوی ویکیدەقی پێداچوونەوەکەت بۆ کلیپبۆرد لەبەر بگرەوە (ئەو دەستکارییانەی لە خوارەوە کراون ناگرێتەوە)",
 	"twocolconflict-core-ui-hint": "ئێستا ڕووکارێکی نوێکراوە بۆ چارەسەکردنی کێشەکانی دەستکاریکردن بەردەستە. ڕووکاری کێشەی دەستکاری بەند بە پەڕەگڕاف لە [[Special:Preferences#mw-prefsection-editing|ھەڵبژاردەکانت]] چالاک بکە تا تاقیی بکەیتەوە.",
 	"twocolconflict-core-ui-hint-close": "قەت پیشانی مەدەوە",
+	"twocolconflict-preference-enabled": "[https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Paragraph-based_Edit_Conflict_Interface ڕووکاری کێشەی دەستکاریی بەند بە پەڕەگڕاف] چالاک بکە تا ناکۆکییەکانی دەستکاریکردن چارە بکەیت",
 	"twocolconflict-special-footer-hint": "پەڕەکەی ئێستا داخە تا بۆ ڕووکاری ناکۆکیی دەستکارییەکە بگەڕێیتەوە.",
 	"twocolconflict-special-header-overview": "کە دەستکاریت دەکرد، بەکارھێنەرێکی تریش ھەمان پەڕەی دەستکاری کرد و پێشی تۆ بڵاو کردەوە. نوسخەیەکی پێداچوونەوەکەت کە تەنیا توانای بینینی ھەیە لە خوارەوە پارێزراوە. ھەر گۆڕانکارییەک کە لە ڕووکاری ناکۆکیی دەستکارییەکە کرابێت، کاریگەریی نییە. بۆ ئەوەی بە بەکارھێنانی ڕووکاری ناکۆکیی دەستکارییەکە گۆڕانکارییەکان تێکەڵ بکەیت و کێشەکە چارە بکەیت، بۆ تابی پێشوو بگەڕێوە.",
 	"twocolconflict-special-not-saved": "بڵاونەکراوە",

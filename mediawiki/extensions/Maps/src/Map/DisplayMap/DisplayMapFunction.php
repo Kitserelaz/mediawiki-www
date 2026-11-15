@@ -12,7 +12,7 @@ use Maps\Presentation\ParameterExtractor;
 use MWException;
 use ParamProcessor\ParamDefinition;
 use ParamProcessor\Processor;
-use Parser;
+use MediaWiki\Parser\Parser;
 
 /**
  * Class for the 'display_map' parser hooks.
@@ -62,7 +62,7 @@ class DisplayMapFunction {
 		$this->trackMap( $parser );
 
 		$mapOutput = $this->renderer->renderMap(
-			$service->newMapDataFromProcessingResult( $processor->processParameters() ),
+			$service->newMapDataFromProcessingResult( $processor->processParameters(), $parser ),
 			$parser
 		);
 
@@ -94,7 +94,7 @@ class DisplayMapFunction {
 		$this->trackMap( $parser );
 
 		$mapOutput = $this->renderer->renderMap(
-			$service->newMapDataFromProcessingResult( $processor->processParameters() ),
+			$service->newMapDataFromProcessingResult( $processor->processParameters(), $parser ),
 			$parser
 		);
 
@@ -148,7 +148,7 @@ class DisplayMapFunction {
 	}
 
 	private function trackMap( Parser $parser ) {
-		if ( $GLOBALS['egMapsEnableCategory'] ) {
+		if ( MapsFactory::globalInstance()->getEffectiveSettings()->get( 'egMapsEnableCategory' ) ) {
 			$parser->addTrackingCategory( 'maps-tracking-category' );
 		}
 	}

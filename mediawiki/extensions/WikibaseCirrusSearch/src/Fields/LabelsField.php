@@ -2,7 +2,7 @@
 namespace Wikibase\Search\Elastic\Fields;
 
 use CirrusSearch\CirrusSearch;
-use SearchEngine;
+use MediaWiki\Search\SearchEngine;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Term\AliasesProvider;
 use Wikibase\DataModel\Term\LabelsProvider;
@@ -13,32 +13,14 @@ use Wikibase\DataModel\Term\LabelsProvider;
  * @license GPL-2.0-or-later
  * @author Stas Malyshev
  */
-class LabelsField extends TermIndexField {
+class LabelsField extends TermIndexField implements WikibaseLabelsIndexField {
+
+	use LabelsDescriptionsFieldTrait;
 
 	/**
 	 * Field name
 	 */
 	public const NAME = "labels";
-
-	/**
-	 * List of available languages
-	 * @var string[]
-	 */
-	private $languages;
-
-	/**
-	 * @var array
-	 */
-	private $stemmingSettings;
-
-	/**
-	 * @param string[] $languages
-	 */
-	public function __construct( array $languages, array $stemmingSettings ) {
-		$this->languages = $languages;
-		parent::__construct( self::NAME, \SearchIndexField::INDEX_TYPE_NESTED );
-		$this->stemmingSettings = $stemmingSettings;
-	}
 
 	/**
 	 * @param SearchEngine $engine
@@ -95,6 +77,13 @@ class LabelsField extends TermIndexField {
 		if ( !( $entity instanceof LabelsProvider ) ) {
 			return null;
 		}
+		return $this->getLabelsIndexedData( $entity );
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function getLabelsIndexedData( LabelsProvider $entity ) {
 		$data = [];
 		foreach ( $entity->getLabels() as $language => $label ) {
 			$data[$language][] = $label->getText();
@@ -113,20 +102,4 @@ class LabelsField extends TermIndexField {
 		// allows more consistency working with the resulting cirrus docs
 		return $data ?: null;
 	}
-
-	/**
-	 * Set engine hints.
-	 * Specifically, sets noop hint so that labels would be compared
-	 * as arrays and removal of labels would be processed correctly.
-	 * @param SearchEngine $engine
-	 * @return array
-	 */
-	public function getEngineHints( SearchEngine $engine ) {
-		if ( !( $engine instanceof CirrusSearch ) ) {
-			// For now only Cirrus/Elastic is supported
-			return [];
-		}
-		return [ \CirrusSearch\Search\CirrusIndexField::NOOP_HINT => "equals" ];
-	}
-
 }

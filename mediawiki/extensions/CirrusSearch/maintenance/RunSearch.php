@@ -5,41 +5,31 @@ namespace CirrusSearch\Maintenance;
 use CirrusSearch\CirrusDebugOptions;
 use CirrusSearch\CirrusSearch;
 use CirrusSearch\HashSearchConfig;
+use CirrusSearch\Search\CirrusSearchResult;
 use CirrusSearch\Search\CirrusSearchResultSet;
 use CirrusSearch\SearchConfig;
 use MediaWiki\Maintenance\OrderedStreamingForkController;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\PageArchive;
+use MediaWiki\Search\SearchSuggestionSet;
 use MediaWiki\Settings\SettingsBuilder;
 use MediaWiki\Status\Status;
-use PageArchive;
-use SearchSuggestionSet;
 use Wikimedia\Rdbms\IResultWrapper;
 
 /**
  * Run search queries provided on stdin
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
 require_once __DIR__ . '/../includes/Maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
 
 class RunSearch extends Maintenance {
 
@@ -71,6 +61,16 @@ class RunSearch extends Maintenance {
 		$this->applyGlobals();
 	}
 
+	/**
+	 * @return bool True if this script only operates on clusters specified
+	 *  in CirrusSearchManagedClusters. Can be set to false for read-only
+	 *  scripts that don't care where they read from.
+	 */
+	protected function requireManagedCluster() {
+		return false;
+	}
+
+	/** @inheritDoc */
 	public function execute() {
 		$this->disablePoolCountersAndLogging();
 		$this->indexBaseName = $this->getOption( 'baseName', $this->getSearchConfig()->get( SearchConfig::INDEX_BASE_NAME ) );
@@ -215,7 +215,7 @@ class RunSearch extends Maintenance {
 		// these are prefix or full text results
 		$rows = [];
 		foreach ( $value as $result ) {
-			/** @var CirrusSearch\Search\CirrusSearchResult $result */
+			/** @var CirrusSearchResult $result */
 			$row = [
 				// use getDocId() rather than asking the title to allow this script
 				// to work when a production index has been imported to a test es instance
@@ -356,5 +356,7 @@ class RunSearch extends Maintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = RunSearch::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

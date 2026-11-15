@@ -6,11 +6,11 @@ use MediaWiki\Content\Content;
 use MediaWiki\Deferred\LinksUpdate\LinksUpdate;
 use MediaWiki\Extension\PageTriage\PageTriageUtil;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Revision\SlotRecord;
-use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\IDBAccessObject;
-use WikiPage;
+use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
  * The abstract class extended in each ArticleCompile, used by ArticleCompileProcessor.
@@ -28,7 +28,7 @@ abstract class ArticleCompile {
 	/** @var LinksUpdate[] */
 	protected $linksUpdates;
 
-	/** @var IDatabase */
+	/** @var IReadableDatabase */
 	protected $db;
 
 	/** @var int Either DB_PRIMARY or DB_REPLICA */
@@ -57,6 +57,7 @@ abstract class ArticleCompile {
 		$this->componentDb = $componentDb;
 	}
 
+	/** @return bool */
 	abstract public function compile();
 
 	/**

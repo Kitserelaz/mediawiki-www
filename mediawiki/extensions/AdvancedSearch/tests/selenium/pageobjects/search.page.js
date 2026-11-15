@@ -1,8 +1,6 @@
-'use strict';
-const Api = require( 'wdio-mediawiki/Api' ),
-	Page = require( 'wdio-mediawiki/Page' ),
-	Util = require( 'wdio-mediawiki/Util' ),
-	url = require( 'url' );
+import { createApiClient } from 'wdio-mediawiki/Api';
+import Page from 'wdio-mediawiki/Page';
+import { waitForModuleState } from 'wdio-mediawiki/Util';
 
 class TextInputField {
 	constructor( selector ) {
@@ -104,7 +102,7 @@ class SearchPage extends Page {
 	}
 
 	get namespaceOptionMain() {
-		return $( '.mw-advancedSearch-namespace-0' );
+		return $( '.oo-ui-defaultOverlay .oo-ui-menuSelectWidget .mw-advancedSearch-namespace-0' );
 	}
 
 	async expandNamespacesPreview() {
@@ -115,6 +113,7 @@ class SearchPage extends Page {
 
 	async expandNamespacesMenu() {
 		await this.namespacesMenu.waitForDisplayed();
+		await browser.keys( 'Tab' );
 		await this.namespacesMenu.click();
 		await this.namespaceOptionMain.waitForDisplayed();
 	}
@@ -136,7 +135,7 @@ class SearchPage extends Page {
 				await menuItem.click();
 			},
 			getAllLabelsFromMenu: async () => {
-				const labels = $$( '.oo-ui-defaultOverlay .oo-ui-menuSelectWidget div[class^="mw-advancedSearch-namespace-"]' ).map(
+				const labels = await $$( '.oo-ui-defaultOverlay .oo-ui-menuSelectWidget div[class^="mw-advancedSearch-namespace-"]' ).map(
 					async ( el ) => await el.$( '.oo-ui-labelElement-label' ).getText()
 				);
 				await browser.keys( '\uE00C' ); // Close menu by hitting the Escape key
@@ -193,7 +192,7 @@ class SearchPage extends Page {
 	}
 
 	async formWasSubmitted() {
-		return Object.prototype.hasOwnProperty.call( await this.getQueryFromUrl(), 'profile' );
+		return ( await this.getQueryFromUrl() ).has( 'profile' );
 	}
 
 	async advancedSearchIsCollapsed() {
@@ -201,12 +200,11 @@ class SearchPage extends Page {
 	}
 
 	async getSearchQueryFromUrl() {
-		return ( await this.getQueryFromUrl() ).search;
+		return ( await this.getQueryFromUrl() ).get( 'search' );
 	}
 
 	async getQueryFromUrl() {
-		// eslint-disable-next-line n/no-deprecated-api
-		return url.parse( await browser.getUrl(), true ).query;
+		return new URL( await browser.getUrl() ).searchParams;
 	}
 
 	async getSelectedNamespaceIDs() {
@@ -247,7 +245,7 @@ class SearchPage extends Page {
 	}
 
 	async waitForAdvancedSearchToLoad() {
-		await Util.waitForModuleState( 'ext.advancedSearch.init' );
+		await waitForModuleState( 'ext.advancedSearch.init' );
 	}
 
 	async submitForm() {
@@ -262,21 +260,19 @@ class SearchPage extends Page {
 	}
 
 	async addExamplePages( num ) {
-		await browser.call( async () => {
-			const animals = [ 'cat', 'goat' ],
-				bot = await Api.bot();
+		const animals = [ 'cat', 'goat' ],
+			apiClient = await createApiClient();
 
-			for ( let i = 1; i <= num; i++ ) {
-				await bot.edit(
-					'Search Test Page ' + ( i + 1 ),
-					'The big brown ' + animals[ i % 2 ] + ' jumped over the lazy dog.'
-				);
-			}
-		} );
+		for ( let i = 1; i <= num; i++ ) {
+			await apiClient.edit(
+				'Search Test Page ' + ( i + 1 ),
+				'The big brown ' + animals[ i % 2 ] + ' jumped over the lazy dog.'
+			);
+		}
 	}
 
 	async setSearchNamespaceOptions( nsIds ) {
-		await Util.waitForModuleState( 'mediawiki.base' );
+		await waitForModuleState( 'mediawiki.base' );
 		await browser.execute( async ( namespaceIds ) => {
 			await mw.loader.using( 'mediawiki.api' );
 			const api = new mw.Api();
@@ -292,7 +288,7 @@ class SearchPage extends Page {
 			const userOptions = data.query.userinfo.options;
 			Object.keys( userOptions ).forEach( ( key ) => {
 				if ( userOptions[ key ] &&
-					key.indexOf( 'searchNs' ) === 0 &&
+					key.startsWith( 'searchNs' ) &&
 					!newSearchNamespaces.includes( key + '=1' )
 				) {
 					newSearchNamespaces += '|' + key + '=0';
@@ -308,13 +304,11 @@ class SearchPage extends Page {
 	}
 
 	async addPage( title, text ) {
-		await browser.call( async () => {
-			const bot = await Api.bot();
-			return bot.edit(
-				title,
-				text
-			);
-		} );
+		const apiClient = await createApiClient();
+		await apiClient.edit(
+			title,
+			text
+		);
 	}
 
 	async addCategory( title ) {
@@ -325,4 +319,4 @@ class SearchPage extends Page {
 		await this.addPage( 'Template:' + title, 'test' );
 	}
 }
-module.exports = new SearchPage();
+export default new SearchPage();

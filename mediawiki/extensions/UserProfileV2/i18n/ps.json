@@ -1,0 +1,39 @@
+{
+	"@metadata": {
+		"authors": [
+			"شاه زمان پټان"
+		]
+	},
+	"prefs-profile": "کارن‌پېژنيال‌وي‌۲",
+	"userprofilev2-desc": "د ويکي پربنسټ د کارن پېژنيال غونډال.",
+	"userprofilev2-selectavatar": "ځان‌بڼه غوره‌کول",
+	"userprofilev2-avatarchanged": "ځان‌بڼه په برياليتوب سره بدله شوه.",
+	"userprofilev2-avatardeleted": "ځان‌بڼه په برياليتوب سره ړنگه شوه.",
+	"userprofilev2-user-locked": "دا کارن گڼون په ټوليز ډول ناچارن‌شوی دی.",
+	"userprofilev2-edit-profile": "خپل پېژنيال سمول",
+	"userprofilev2-apierror-forbidden": "منع‌شوی: تاسو د دې ځان‌بڼې بدلولو اجازه نه‌لرئ.",
+	"userprofilev2-apierror-invalidpermission": "منع‌شوی: تاسو د $1 پېژنيال سمولو اجازه نه‌لرئ",
+	"userprofilev2-apierror-nofile": "راپورته‌کولو لپاره هېڅ دوتنه نه ده چمتو شوې.",
+	"userprofilev2-apierror-ratelimited": "وسمهال تاسو انځورونه نه‌شئ راپورته‌کولی.",
+	"userprofilev2-apierror-invalidusername": "دې ويکي کې په '$1' کارن‌نوم هېڅ کارن نوم‌ليکنه نه ده کړې.",
+	"userprofilev2-about-me": "زما په اړه",
+	"userprofilev2-discord": "ډيسکارډ کارن‌نوم",
+	"userprofilev2-twitter": "ټويټر کارن‌نوم",
+	"userprofilev2-mastodon": "ماستودون کارن‌نوم",
+	"userprofilev2-about-me-placeholder": "د خپل ځان په اړه يو څه وليکئ...",
+	"userprofilev2-about-me-help": "د ځان په اړه راته وواياست. ډېر تر ډېره ۲۰۰ لوښې.",
+	"userprofilev2-mastodon-help": "ستاسو ماستودون کارن‌نوم، د @ سره",
+	"userprofilev2-twitter-help": "ستاسو ټويټر کارن‌نوم، د @ سره",
+	"userprofilev2-discord-help": "ستاسو ډيسکارډ کارن‌نوم، بې له #",
+	"userprofilev2-showglobalgroups": "زما ټوليز ډلگي وښيي؟",
+	"userprofilev2-showglobaleditcount": "زما ټوليز سمون وښيي؟",
+	"userprofilev2-showglobalgroupshelp": "هغه ټوليز ډلگي چې زه يې غړی يم وښاياست (هر چاته به ښکاره شي)",
+	"userprofilev2-showglobaleditcounthelp": "زما د مرکزي‌تاييد څخه د ټوليزو سمونونو شمېره وښاياست (ټولو ته به ښکاره شي)",
+	"userprofilev2-edit": "سمول",
+	"userprofilev2-edit-count": "$1 سمونونه",
+	"userprofilev2-globaledit-count": "$1 ټوليز سمونونه",
+	"userprofilev2-editavatar": "ځان‌بڼه سمول",
+	"userprofilev2-edit-back": "پرشاکېدل",
+	"userprofilev2-deleteavatar": "ځان‌بڼه ړنگول",
+	"userprofilev2-helptext": "د خپل کارن پېژنيال د منځپانگې بدلون لپاره دا خبربکس وکاروئ."
+}

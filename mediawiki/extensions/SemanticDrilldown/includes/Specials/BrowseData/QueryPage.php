@@ -3,8 +3,9 @@
 namespace SD\Specials\BrowseData;
 
 use Closure;
-use PageProps;
-use RequestContext;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Page\PageProps;
+use MediaWiki\Title\Title;
 use SD\DbService;
 use SD\Parameters\DisplayParameters;
 use SD\Parameters\Parameters;
@@ -12,7 +13,6 @@ use SD\Sql\PropertyTypeDbInfo;
 use SD\Sql\SqlProvider;
 use SD\Utils;
 use SMWOutputs;
-use Title;
 use Wikimedia\Rdbms\Subquery;
 
 class QueryPage extends \QueryPage {
@@ -102,9 +102,9 @@ class QueryPage extends \QueryPage {
 	protected function getPageHeader(): string {
 		$vm = [
 			'displayParametersWithUnknownFormat' =>
-				array_map( fn ( $x ) => "$x", $this->displayParametersWithUnknownFormat ),
-			'displayParametersWithUnsupportedFormat' =>
-				array_map( fn ( $x ) => "$x", $this->displayParametersWithUnsupportedFormat ),
+					array_map( static fn ( $x ) => "$x", $this->displayParametersWithUnknownFormat ),
+				'displayParametersWithUnsupportedFormat' =>
+					array_map( static fn ( $x ) => "$x", $this->displayParametersWithUnsupportedFormat ),
 			'header' => $this->getPageContent( $this->getOutput(), $this->headerPage ),
 		];
 
@@ -113,7 +113,9 @@ class QueryPage extends \QueryPage {
 			$vm += [
 				'appliedFilters' => ( $this->getAppliedFilters )(),
 				'applicableFilters' => ( $this->getApplicableFilters )(),
-				'results' => ( $this->getSemanticResults )( $this->unpagedDisplayParametersList, $this->getOutput(), $res ),
+				'results' => ( $this->getSemanticResults )(
+					$this->unpagedDisplayParametersList, $this->getOutput(), $res
+				),
 			];
 		}
 
@@ -130,6 +132,14 @@ class QueryPage extends \QueryPage {
 		$cat_ns = NS_CATEGORY;
 		$prop_ns = SMW_NS_PROPERTY;
 
+		$category = $this->query->category();
+		$subcategory = $this->query->subcategory();
+		$actual_cat = str_replace( ' ', '_', $subcategory ?: $category );
+		$actual_cat = str_replace( "'", "\'", $actual_cat );
+
+		$pageTable = $dbr->tableName( 'page' );
+		$categorylinksTable = $dbr->tableName( 'categorylinks' );
+
 		$query = [
 			'fields' => [
 				'title' => 'ids.smw_title',
@@ -139,11 +149,13 @@ class QueryPage extends \QueryPage {
 				'ns' => 'ids.smw_namespace',
 				'id' => 'ids.smw_id',
 				'iw' => 'ids.smw_iw',
-				'sortkey' => 'ids.smw_sortkey',
+				'sortkey' => 'COALESCE(cl.cl_sortkey, ids.smw_sortkey)',
 			],
 			'tables' => [
 				'ids' => $smwIDs,
-				'insts' => $smwCategoryInstances
+				'insts' => $smwCategoryInstances,
+				'pg' => $pageTable,
+				'cl' => $categorylinksTable,
 			],
 			'join_conds' => [
 				'insts' => [
@@ -152,7 +164,21 @@ class QueryPage extends \QueryPage {
 						'ids.smw_id = insts.s_id',
 						'ids.smw_namespace != ' . $cat_ns
 					]
-				]
+				],
+				'pg' => [
+					'LEFT JOIN',
+					[
+						'pg.page_title = ids.smw_title',
+						'pg.page_namespace = ids.smw_namespace',
+					]
+				],
+				'cl' => [
+					'LEFT JOIN',
+					[
+						'cl.cl_from = pg.page_id',
+						"cl.cl_to = '$actual_cat'",
+					]
+				],
 			],
 			'conds' => []
 		];
@@ -184,7 +210,11 @@ class QueryPage extends \QueryPage {
 				// doesn't need to, because of occasional bugs
 				// in SMW where the same page gets two
 				// different SMW IDs.
-				$query[ 'tables' ][ $property_table_nickname ] = new Subquery( "SELECT s_id FROM $property_table_name WHERE $property_field = (SELECT MIN(smw_id) FROM $smwIDs WHERE smw_title = '$property_value' AND smw_namespace = $prop_ns)" );
+				$query[ 'tables' ][ $property_table_nickname ] = new Subquery(
+					"SELECT s_id FROM $property_table_name WHERE $property_field"
+					. " = (SELECT MIN(smw_id) FROM $smwIDs"
+					. " WHERE smw_title = '$property_value' AND smw_namespace = $prop_ns)"
+				);
 				$query[ 'join_conds' ][ $property_table_nickname ] = [
 					"LEFT OUTER JOIN",
 					[
@@ -231,11 +261,6 @@ class QueryPage extends \QueryPage {
 				];
 			}
 		}
-		$category = $this->query->category();
-		$subcategory = $this->query->subcategory();
-		$actual_cat = str_replace( ' ', '_', ( $subcategory ) ? $subcategory : $category );
-		$actual_cat = str_replace( "'", "\'", $actual_cat );
-
 		$sql = "(SELECT smw_id FROM $smwIDs cat_ids WHERE smw_namespace = $cat_ns AND (smw_title = '$actual_cat'";
 		foreach ( $this->query->allSubcategories() as $subcat ) {
 			$subcat = str_replace( "'", "\'", $subcat );
@@ -248,7 +273,8 @@ class QueryPage extends \QueryPage {
 			$value_field = PropertyTypeDbInfo::valueField( $af->filter->propertyType() );
 			if ( $af->filter->propertyType() === 'page' ) {
 				$property_field = "r$i.p_id";
-				$sql = "SELECT MIN(smw_id) FROM $smwIDs WHERE (smw_title = '$property_value' AND smw_namespace = $prop_ns)";
+				$sql = "SELECT MIN(smw_id) FROM $smwIDs"
+					. " WHERE (smw_title = '$property_value' AND smw_namespace = $prop_ns)";
 				if ( $includes_none ) {
 					$sql .= " OR $property_field IS NULL";
 				}
@@ -256,7 +282,8 @@ class QueryPage extends \QueryPage {
 				$value_field = "o_ids$i.smw_title";
 			} else {
 				$property_field = "a$i.p_id";
-				$sql = "SELECT MIN(smw_id) FROM $smwIDs WHERE smw_title = '$property_value' AND smw_namespace = $prop_ns AND ";
+				$sql = "SELECT MIN(smw_id) FROM $smwIDs"
+					. " WHERE smw_title = '$property_value' AND smw_namespace = $prop_ns AND ";
 				if ( strncmp( $value_field, '(IF(o_blob IS NULL', 18 ) === 0 ) {
 					$value_field = str_replace( 'o_', "a$i.o_", $value_field );
 				} else {

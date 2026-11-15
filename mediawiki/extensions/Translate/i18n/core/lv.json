@@ -5,6 +5,7 @@
 			"Kikos",
 			"Marozols",
 			"Papuass",
+			"Rusjanis",
 			"Yyy"
 		]
 	},
@@ -21,7 +22,7 @@
 	"translate-page-no-such-group": "Norādītā grupa bija nederīga.",
 	"translate-language-disabled": "Tulkošana uz šo valodu ir atspējota.",
 	"translate-page-settings-legend": "Iestatījumi",
-	"translate-page-group": "Grupa",
+	"translate-page-group": "Grupa:",
 	"translate-page-language": "Valoda",
 	"translate-page-limit": "Ierobežojums",
 	"translate-page-limit-option": "$1 {{PLURAL:$1|ziņojumi|ziņojums|ziņojumi}} lapā",
@@ -99,7 +100,6 @@
 	"translate-langstats-expandall": "izvērst visus",
 	"translate-langstats-collapseall": "sakļaut visus",
 	"translate-language-code": "Valodas kods",
-	"translate-language-code-field-name": "Valodas kods:",
 	"translate-suppress-complete": "Nerādīt pilnībā iztulkotās ierakstu grupas",
 	"translate-ls-noempty": "Nerādīt vispār netulkotās ierakstu grupas",
 	"translate-language": "Valoda",
@@ -227,6 +227,5 @@
 	"tux-editor-loading": "Ielādē...",
 	"translate-search-more-languages-info": "vēl $1 {{PLURAL:$1|valodas|valoda|valodas}}",
 	"translate-search-more-groups-info": "vēl $1 {{PLURAL:$1|grupas|grupa|grupas}}",
-	"translate-syntax-error": "Tulkojums satur sintakses kļūdas",
 	"specialpages-group-translation": "Tulkojums"
 }

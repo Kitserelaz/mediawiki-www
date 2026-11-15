@@ -3,13 +3,12 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
-use ApiBase;
-use ApiMain;
-use IDBAccessObject;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\Translate\MessageProcessing\MessageGroupMetadata;
-use MediaWiki\Extension\Translate\Utilities\Utilities;
-use MediaWiki\Status\Status;
 use Wikimedia\ParamValidator\ParamValidator;
+use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
  * API module to mark a page for translation
@@ -18,18 +17,14 @@ use Wikimedia\ParamValidator\ParamValidator;
  * @license GPL-2.0-or-later
  */
 class MarkForTranslationActionApi extends ApiBase {
-	private TranslatablePageMarker $translatablePageMarker;
-	private MessageGroupMetadata $messageGroupMetadata;
 
 	public function __construct(
 		ApiMain $mainModule,
-		$moduleName,
-		TranslatablePageMarker $translatablePageMarker,
-		MessageGroupMetadata $messageGroupMetadata
+		string $moduleName,
+		private readonly TranslatablePageMarker $translatablePageMarker,
+		private readonly MessageGroupMetadata $messageGroupMetadata,
 	) {
 		parent::__construct( $mainModule, $moduleName );
-		$this->translatablePageMarker = $translatablePageMarker;
-		$this->messageGroupMetadata = $messageGroupMetadata;
 	}
 
 	public function execute() {
@@ -45,7 +40,7 @@ class MarkForTranslationActionApi extends ApiBase {
 			$operation = $this->translatablePageMarker->getMarkOperation(
 				$title->toPageRecord( IDBAccessObject::READ_LATEST ),
 				$revision,
-				$translateTitle ?? true
+				$translateTitle
 			);
 		} catch ( TranslatablePageMarkException $e ) {
 			$this->addError( $e->getMessageObject() );
@@ -58,15 +53,7 @@ class MarkForTranslationActionApi extends ApiBase {
 			return;
 		}
 
-		if ( $translateTitle === null ) {
-			// Check whether page title was previously marked for translation.
-			// If the page is marked for translation the first time, default to
-			// allowing title translation, unless the page is a template. T305240
-			$translateTitle = (
-					$operation->isFirstMark() &&
-					!$title->inNamespace( NS_TEMPLATE )
-				) || $operation->getPage()->hasPageDisplayTitle();
-		}
+		$translateTitle = $operation->titleTranslationState === TranslateTitleEnum::DEFAULT_CHECKED;
 
 		// By default, units are marked nofuzzy if only their tvars have changed
 		$noFuzzyUnits = [];
@@ -84,7 +71,7 @@ class MarkForTranslationActionApi extends ApiBase {
 		if ( isset( $params['prioritylanguages'] ) ) {
 			// Set priority languages
 			$priorityLanguages = $params['prioritylanguages'];
-			$priorityLanguageStatus = $this->validatePriorityLanguages( $priorityLanguages );
+			$priorityLanguageStatus = $this->translatablePageMarker->validatePriorityLanguages( $priorityLanguages );
 			if ( !$priorityLanguageStatus->isOK() ) {
 				$this->addMessagesFromStatus( $priorityLanguageStatus );
 				return;
@@ -122,6 +109,7 @@ class MarkForTranslationActionApi extends ApiBase {
 			$unitCount = $this->translatablePageMarker->markForTranslation(
 				$operation,
 				$translatablePageSettings,
+				RequestContext::getMain(),
 				$this->getUser()
 			);
 		} catch ( TranslatablePageMarkException $e ) {
@@ -141,33 +129,17 @@ class MarkForTranslationActionApi extends ApiBase {
 		return isset( $params[$name] ) ? $params[$name] === 'yes' : null;
 	}
 
-	private function validatePriorityLanguages( array $priorityLanguageCodes ): Status {
-		$knownLanguageCodes = array_keys( Utilities::getLanguageNames( 'en' ) );
-		$invalidLanguageCodes = array_diff( $priorityLanguageCodes, $knownLanguageCodes );
-		$context = $this->getContext();
-
-		if ( $invalidLanguageCodes ) {
-			return Status::newFatal(
-				$context->msg( 'apierror-markfortranslation-invalid-prioritylangs' )
-					->params(
-						count( $invalidLanguageCodes ),
-						$context->getLanguage()->commaList( $invalidLanguageCodes )
-					)
-			);
-		}
-
-		return Status::newGood();
-	}
-
+	/** @inheritDoc */
 	public function isWriteMode() {
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function needsToken() {
 		return 'csrf';
 	}
 
-	protected function getAllowedParams() {
+	protected function getAllowedParams(): array {
 		return [
 			'title' => [
 				ParamValidator::PARAM_TYPE => 'string',

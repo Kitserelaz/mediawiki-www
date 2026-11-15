@@ -39,7 +39,7 @@ class NamespacesFunctionScoreBuilder extends FunctionScoreBuilder {
 	public function __construct( SearchConfig $config, $namespaces, $weight, ?NamespaceInfo $namespaceInfo = null ) {
 		parent::__construct( $config, $weight );
 
-		$this->namespaceInfo = $namespaceInfo ?: MediaWikiServices::getInstance()->getNamespaceInfo();
+		$this->namespaceInfo = $namespaceInfo ?? MediaWikiServices::getInstance()->getNamespaceInfo();
 		$this->namespacesToBoost =
 			$namespaces ?: $this->namespaceInfo->getValidNamespaces();
 		if ( !$this->namespacesToBoost || count( $this->namespacesToBoost ) == 1 ) {
@@ -105,24 +105,14 @@ class NamespacesFunctionScoreBuilder extends FunctionScoreBuilder {
 		$weightToNs = [];
 		foreach ( $this->namespacesToBoost as $ns ) {
 			$weight = $this->getBoostForNamespace( $ns ) * $this->weight;
-			$key = (string)$weight;
-			if ( $key == '1' ) {
-				// such weights would have no effect
-				// we can ignore them.
-				continue;
-			}
-			if ( !isset( $weightToNs[$key] ) ) {
-				$weightToNs[$key] = [
-					'weight' => $weight,
-					'ns' => [ $ns ]
-				];
-			} else {
-				$weightToNs[$key]['ns'][] = $ns;
+			// Weight 1.0 would have no effect and can be ignored
+			if ( (float)$weight !== 1.0 ) {
+				$weightToNs[(string)$weight][] = $ns;
 			}
 		}
-		foreach ( $weightToNs as $weight => $namespacesAndWeight ) {
-			$filter = new \Elastica\Query\Terms( 'namespace', $namespacesAndWeight['ns'] );
-			$functionScore->addWeightFunction( $namespacesAndWeight['weight'], $filter );
+		foreach ( $weightToNs as $weight => $ns ) {
+			$filter = new \Elastica\Query\Terms( 'namespace', $ns );
+			$functionScore->addWeightFunction( (float)$weight, $filter );
 		}
 	}
 }

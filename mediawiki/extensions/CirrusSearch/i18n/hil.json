@@ -4,7 +4,7 @@
 			"Exec8"
 		]
 	},
-	"cirrussearch-desc": "Elasticsearch-powered search para sa MediaWiki",
+	"cirrussearch-desc": "OpenSearch-powered search para sa MediaWiki",
 	"cirrussearch-backend-error": "Indi namon matapos ang imo pagpangita bangod sang temporaryo nga problema. Palihog tilawi liwat sa ulihi.",
 	"cirrussearch-parse-error": "Ang pamangkot wala mahangpi. Palihog himua ini nga mas simple. Ang pamangkot gin-log agud mapauswag ang sistema sa pagpangita.",
 	"cirrussearch-too-busy-error": "Ang pagpangita masako gid subong. Palihog tilawi liwat sa ulihi.",
@@ -59,6 +59,7 @@
 	"cirrussearch-feature-deepcat-endpoint": "Ang $wgCirrusSearchCategoryEndpoint dapat ibutang sa isa ka balido nga SPARQL endpoint sa paggamit sang madalom nga pagpangita sang kategorya.",
 	"cirrussearch-feature-deepcat-exception": "Ang madalom nga kategorya nga pagpangita sang SPARQL nga pamangkot napaslawan",
 	"cirrussearch-feature-deepcat-timeout": "Ang pagpangita sa madalom nga kategorya natapos na. Mahimo gid nga ang kategorya may madamo nga mga subkategorya",
+	"cirrussearch-feature-deepcat-toomany": "Ang madalom nga pamangkot sa kategorya nagbalik sang tuman kadamo nga mga kategorya. Isa lamang ka subset sang mga kategorya ang gin-apply.",
 	"cirrussearch-feature-deepcat-invalid-title": "Ang ginhatag nga kategorya indi balido.",
 	"cirrussearch-feature-pageid-invalid-id": "Indi balido nga pahina {{PLURAL:$2|ID|IDs}}: $1",
 	"cirrussearch-incategory-feature-no-valid-categories": "Wala sing balido nga mga kategorya nga ginhatag sa ' $1 '.",
@@ -70,6 +71,5 @@
 	"cirrussearch-autoselect-profile": "Tuguti ang search engine nga magdesisyon sa pinakamaayo nga profile nga gamiton.",
 	"cirrussearch-offset-too-large": "Indi makuha ang mga resulta. Ang mga resulta sang pagpangita tubtob sa $1 ginasuportahan, apang ang mga resulta nga nagasugod sa $2 ginpangabay.",
 	"cirrussearch-offset-not-allowed-with-random-sort": "Ginabalewala ang pangabay nga i-paginate ang mga resulta nga gin-sort sing random.",
-	"cirrussearch-articletopic-invalid-topic": "Wala makilala nga topiko {{PLURAL:$2| ngalan|mga ngalan}} para sa <kbd>topiko sang artikulo:</kbd> keyword: $1",
 	"cirrussearch-inlanguage-deprecate-comma": "Ang paggamit sang koma bilang separator para sa inlanguage keyword wala na ginagamit. Palihog gamit sang | (pipe) sa pagbulag sa mga pinulongan."
 }

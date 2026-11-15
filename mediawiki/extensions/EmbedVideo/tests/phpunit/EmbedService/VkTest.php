@@ -5,12 +5,12 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\EmbedVideo\Tests\EmbedService;
 
 use Exception;
-use InvalidArgumentException;
 use MediaWiki\Extension\EmbedVideo\EmbedService\Vk;
 use MediaWiki\Extension\EmbedVideo\EmbedVideo;
+use MediaWiki\Extension\EmbedVideo\EmbedVideoException;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\PPCustomFrame_Hash;
 use MediaWikiIntegrationTestCase;
-use ParserOptions;
-use PPCustomFrame_Hash;
 
 /**
  * @group EmbedVideo
@@ -33,7 +33,7 @@ class VkTest extends MediaWikiIntegrationTestCase {
 	 * A valid url containing an id
 	 * @var string
 	 */
-	private string $validUrlId = 'https://vk.com/video-22822305_456241864';
+	private string $validUrlId = 'https://vkvideo.ru/video-22822305_456241864';
 
 	/**
 	 * An invalid url
@@ -46,7 +46,7 @@ class VkTest extends MediaWikiIntegrationTestCase {
 	 * @return void
 	 */
 	public function testInvalidId() {
-		$this->expectException( InvalidArgumentException::class );
+		$this->expectException( EmbedVideoException::class );
 
 		new Vk( $this->invalidId );
 	}
@@ -83,7 +83,7 @@ class VkTest extends MediaWikiIntegrationTestCase {
 	 * @return void
 	 */
 	public function testInvalidUrlId() {
-		$this->expectException( InvalidArgumentException::class );
+		$this->expectException( EmbedVideoException::class );
 		new Vk( $this->invalidUrlId );
 	}
 
@@ -97,7 +97,7 @@ class VkTest extends MediaWikiIntegrationTestCase {
 	public function testUrl() {
 		$service = new Vk( $this->validUrlId );
 
-		$this->assertStringContainsString( 'https://vk.com/video_ext', $service->getUrl() );
+		$this->assertStringContainsString( 'https://vkvideo.ru/video_ext', $service->getUrl() );
 	}
 
 	/**
@@ -110,7 +110,7 @@ class VkTest extends MediaWikiIntegrationTestCase {
 	public function testEvu(): void {
 		$parser = $this->getServiceContainer()->getParser();
 		$parser->setOptions( ParserOptions::newFromAnon() );
-		$parser->resetOutput();
+		$parser->clearState();
 
 		$out = EmbedVideo::parseEVU(
 			$parser, new PPCustomFrame_Hash( $parser->getPreprocessor(), [] ), [
@@ -118,10 +118,10 @@ class VkTest extends MediaWikiIntegrationTestCase {
 		] );
 
 		$this->assertIsArray( $out );
-		$this->assertCount( 3, $out );
+		$this->assertCount( 2, $out );
 		$this->assertStringContainsString(
 			'oid=-22822305&id=456241864',
-			$out[0]
+			htmlspecialchars_decode( $parser->getStripState()->unstripNoWiki( $out[0] ) )
 		);
 	}
 }

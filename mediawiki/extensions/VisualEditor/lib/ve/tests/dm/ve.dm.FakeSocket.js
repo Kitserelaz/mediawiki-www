@@ -10,7 +10,7 @@ ve.dm.FakeSocket = function VeDmFakeSocket( server, query ) {
 	this.handlers = new Map();
 	this.rooms = new Set();
 	this.pending = [];
-	this.handshake = { query: query, url: 'fakeurl' };
+	this.handshake = { query, url: 'fakeurl' };
 	this.client = { conn: { remoteAddress: 'fakeaddress' } };
 	this.storedDataForDoc = {};
 	this.dataForDoc = undefined;
@@ -23,20 +23,18 @@ ve.dm.FakeSocket.static.makeServer = function () {
 	const sockets = [],
 		log = [];
 
-	const getRoom = function ( roomName ) {
-		return { emit: ( ...args ) => {
-			sockets.forEach( ( socket ) => {
-				if ( socket.rooms.has( roomName ) ) {
-					socket.emit( ...args );
-				}
-			} );
-		} };
-	};
-	const reset = function () {
+	const getRoom = ( roomName ) => ( { emit: ( ...args ) => {
+		sockets.forEach( ( socket ) => {
+			if ( socket.rooms.has( roomName ) ) {
+				socket.emit( ...args );
+			}
+		} );
+	} } );
+	const reset = () => {
 		sockets.length = 0;
 		log.length = 0;
 	};
-	return { sockets: { sockets: sockets, log: log, in: getRoom, reset: reset } };
+	return { sockets: { sockets, log, in: getRoom, reset } };
 };
 
 ve.dm.FakeSocket.prototype.join = function ( roomName ) {

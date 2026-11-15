@@ -26,9 +26,7 @@ function getQueryFlag( setting, flag ) {
  */
 function globalWatchlistGetSettings( globalWatchlistDebug ) {
 	// Note: this must be the same key as SettingsManager::PREFERENCE_NAME
-	var userOptions = mw.user.options.get( 'global-watchlist-options' ),
-		userSettings = {},
-		config = {},
+	const userOptions = mw.user.options.get( 'global-watchlist-options' ),
 		defaultConfig = {
 			siteList: [
 				mw.config.get( 'wgServer' ).replace( /.*?\/\//, '' )
@@ -44,11 +42,12 @@ function globalWatchlistGetSettings( globalWatchlistDebug ) {
 			showNewPages: true
 		};
 
+	let config;
 	if ( userOptions === null ) {
 		config = defaultConfig;
 	} else {
 		try {
-			userSettings = JSON.parse( userOptions );
+			const userSettings = JSON.parse( userOptions );
 			config = {
 				siteList: userSettings.sites,
 				anon: userSettings.anonfilter,
@@ -57,9 +56,9 @@ function globalWatchlistGetSettings( globalWatchlistDebug ) {
 				confirmAllSites: userSettings.confirmallsites,
 				fastMode: userSettings.fastmode,
 				groupPage: userSettings.grouppage,
-				showEdits: userSettings.showtypes.indexOf( 'edit' ) > -1,
-				showLogEntries: userSettings.showtypes.indexOf( 'log' ) > -1,
-				showNewPages: userSettings.showtypes.indexOf( 'new' ) > -1
+				showEdits: userSettings.showtypes.includes( 'edit' ),
+				showLogEntries: userSettings.showtypes.includes( 'log' ),
+				showNewPages: userSettings.showtypes.includes( 'new' )
 			};
 		} catch ( e ) {
 			// Not using .error since it can be recovered from, and the user notice
@@ -73,13 +72,15 @@ function globalWatchlistGetSettings( globalWatchlistDebug ) {
 		}
 	}
 
+	// Get the uselang URL parameter if provided, leave null otherwise
+	// The language code is checked for existing later after the languageinfo API call
+	config.lang = mw.util.getParamValue( 'uselang' );
+
 	// The following settings are extracted from the user's set configuration or the defaults
 	// or are not set in the options
-	config.lang = mw.config.get( 'wgUserLanguage' );
-
 	config.watchlistQueryProps = config.fastMode ?
 		'ids|title|flags|loginfo' :
-		'ids|title|flags|loginfo|parsedcomment|timestamp|user|tags|expiry';
+		'ids|title|flags|loginfo|parsedcomment|timestamp|user|tags|expiry|labels';
 
 	config.watchlistQueryTypes = (
 		( config.showEdits ? 'edit|' : '' ) +
@@ -93,8 +94,6 @@ function globalWatchlistGetSettings( globalWatchlistDebug ) {
 		getQueryFlag( config.bot, 'bot' ),
 		getQueryFlag( config.minor, 'minor' )
 	].join( '' ).replace( /^\|+/, '' );
-
-	config.wikibaseSite = mw.config.get( 'wgGlobalWatchlistWikibaseSite' );
 
 	return config;
 }

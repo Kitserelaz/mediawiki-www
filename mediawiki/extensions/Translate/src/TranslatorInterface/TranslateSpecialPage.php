@@ -4,20 +4,20 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\TranslatorInterface;
 
 use AggregateMessageGroup;
-use Language;
 use MediaWiki\Config\Config;
 use MediaWiki\Extension\Translate\HookRunner;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
-use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\Html\Html;
-use MediaWiki\Languages\LanguageFactory;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\Language;
+use MediaWiki\Language\LanguageFactory;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Skin\Skin;
 use MediaWiki\SpecialPage\SpecialPage;
 use MessageGroup;
 use Psr\Log\LoggerInterface;
-use Skin;
 
 /**
  * Implements the core of Translate extension - a special page which shows
@@ -31,34 +31,27 @@ use Skin;
 class TranslateSpecialPage extends SpecialPage {
 	private ?MessageGroup $group = null;
 	private array $options = [];
-	private Language $contentLanguage;
-	private LanguageFactory $languageFactory;
-	private LanguageNameUtils $languageNameUtils;
-	private HookRunner $hookRunner;
 	private LoggerInterface $logger;
 	private bool $isMessageGroupSubscriptionEnabled;
 
 	public function __construct(
-		Language $contentLanguage,
-		LanguageFactory $languageFactory,
-		LanguageNameUtils $languageNameUtils,
-		HookRunner $hookRunner,
+		private readonly Language $contentLanguage,
+		private readonly LanguageFactory $languageFactory,
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly HookRunner $hookRunner,
 		Config $config
 	) {
 		parent::__construct( 'Translate' );
-		$this->contentLanguage = $contentLanguage;
-		$this->languageFactory = $languageFactory;
-		$this->languageNameUtils = $languageNameUtils;
-		$this->hookRunner = $hookRunner;
-		$this->logger = LoggerFactory::getInstance( 'Translate' );
+		$this->logger = LoggerFactory::getInstance( LogNames::MAIN );
 		$this->isMessageGroupSubscriptionEnabled = $config->get( 'TranslateEnableMessageGroupSubscription' );
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
 
-	protected function getGroupName() {
+	protected function getGroupName(): string {
 		return 'translation';
 	}
 
@@ -68,7 +61,8 @@ class TranslateSpecialPage extends SpecialPage {
 		$out->addModuleStyles( [
 			'ext.translate.special.translate.styles',
 			'jquery.uls.grid',
-			'mediawiki.ui.button'
+			'codex-styles',
+			"mediawiki.codex.messagebox.styles",
 		] );
 
 		$this->setHeaders();
@@ -83,22 +77,23 @@ class TranslateSpecialPage extends SpecialPage {
 
 		$out->addModules( 'ext.translate.special.translate' );
 		$out->addJsConfigVars( [
-			'wgTranslateLanguages' => Utilities::getLanguageNames( LanguageNameUtils::AUTONYMS ),
 			'wgTranslateEnableMessageGroupSubscription' => $this->isMessageGroupSubscriptionEnabled
 		] );
 
 		$out->addHTML( Html::openElement( 'div', [
 			// FIXME: Temporary hack. Add better support for dark mode.
-			'class' => 'grid ext-translate-container notheme skin-invert',
+			'class' => 'grid ext-translate-container',
 		] ) );
 
 		$out->addHTML( $this->tuxSettingsForm() );
 		$out->addHTML( $this->messageSelector() );
 
-		$table = new MessageTable( $this->getContext(), $this->group, $this->options['language'] );
-		$output = $table->fullTable();
+		if ( $this->group ) {
+			$table = new MessageTable( $this->getContext(), $this->group, $this->options['language'] );
+			$output = $table->fullTable();
 
-		$out->addHTML( $output );
+			$out->addHTML( $output );
+		}
 		$out->addHTML( Html::closeElement( 'div' ) );
 	}
 
@@ -208,7 +203,14 @@ class TranslateSpecialPage extends SpecialPage {
 			// tux-tab-translated
 			// tux-tab-unproofread
 			$tabClass = "tux-tab-$tab";
-			$link = Html::element( 'a', [ 'href' => '#' ], $this->msg( $tabClass )->text() );
+			$link = Html::element(
+				'span',
+				[
+					'role' => 'button',
+					'tabindex' => '0',
+				],
+				$this->msg( $tabClass )->text()
+			);
 			$output .= Html::rawElement( 'li', [
 				'class' => 'column ' . $tabClass,
 				'data-filter' => $filter,
@@ -220,9 +222,7 @@ class TranslateSpecialPage extends SpecialPage {
 		$container = Html::openElement( 'ul', [ 'class' => 'column tux-message-selector' ] );
 		$container .= Html::rawElement( 'li',
 			[ 'class' => 'column' ],
-			Html::element( 'input', [
-				'type' => 'checkbox', 'name' => 'optional', 'value' => '1',
-				'checked' => false,
+			Html::check( 'optional', false, [
 				'id' => 'tux-option-optional',
 				'data-filter' => 'optional'
 			] ) . "\u{00A0}" . Html::label(
@@ -232,10 +232,10 @@ class TranslateSpecialPage extends SpecialPage {
 		);
 
 		$container .= Html::closeElement( 'ul' );
-		$output .= Html::openElement( 'li', [ 'class' => 'column more' ] ) .
+		$output .= Html::rawElement( 'li', [ 'class' => 'column more' ],
 			$this->msg( 'ellipsis' )->escaped() .
-			$container .
-			Html::closeElement( 'li' );
+			$container
+		);
 
 		$output .= Html::closeElement( 'ul' );
 		$output .= Html::closeElement( 'div' ); // close nine columns
@@ -243,11 +243,15 @@ class TranslateSpecialPage extends SpecialPage {
 		$output .= Html::rawElement(
 			'div',
 			[ 'class' => 'tux-message-filter-wrapper' ],
-			Html::element( 'input', [
-				'class' => 'tux-message-filter-box',
-				'type' => 'search',
-				'placeholder' => $this->msg( 'tux-message-filter-placeholder' )->text()
-			] )
+			Html::input(
+				'',
+				'',
+				'search',
+				[
+					'class' => 'tux-message-filter-box',
+					'placeholder' => $this->msg( 'tux-message-filter-placeholder' )->text(),
+				]
+			)
 		);
 
 		// close three columns and the row
@@ -286,11 +290,11 @@ class TranslateSpecialPage extends SpecialPage {
 
 	private function tuxLanguageSelector(): string {
 		if ( $this->options['language'] === $this->getConfig()->get( 'TranslateDocumentationLanguageCode' ) ) {
-			$targetLangName = $this->msg( 'translate-documentation-language' )->text();
 			$targetLanguage = $this->contentLanguage;
+			$targetLangName = $this->msg( 'translate-documentation-language' )->text();
 		} else {
-			$targetLangName = $this->languageNameUtils->getLanguageName( $this->options['language'] );
 			$targetLanguage = $this->languageFactory->getLanguage( $this->options['language'] );
+			$targetLangName = $this->languageNameUtils->getLanguageName( $targetLanguage->getCode() );
 		}
 
 		$label = Html::element( 'span', [], $this->msg( 'tux-languageselector' )->text() );
@@ -316,10 +320,9 @@ class TranslateSpecialPage extends SpecialPage {
 		);
 
 		$value = Html::rawElement(
-			'span',
+			'button',
 			[
-				'class' => 'uls mw-ui-button',
-				'tabindex' => 0,
+				'class' => 'uls cdx-button',
 				'title' => $this->msg( 'tux-select-target-language' )->text()
 			],
 			$languageIcon . $targetLanguageName . $expandIcon
@@ -344,7 +347,7 @@ class TranslateSpecialPage extends SpecialPage {
 		return Html::rawElement(
 			'div',
 			[ 'class' => 'twelve columns description' ],
-			$this->getGroupDescription( $this->group )
+			$this->group ? $this->getGroupDescription( $this->group ) : ''
 		);
 	}
 
@@ -412,16 +415,16 @@ class TranslateSpecialPage extends SpecialPage {
 		$messageGroupStatistics = SpecialPage::getTitleFor( 'MessageGroupStats' );
 
 		// Clear the special page tab that might be there already
-		$tabs['namespaces'] = [];
+		$tabs['associated-pages'] = [];
 
-		$tabs['namespaces']['translate'] = [
+		$tabs['associated-pages']['translate'] = [
 			'text' => wfMessage( 'translate-taction-translate' )->text(),
 			'href' => $translate->getLocalURL( $params ),
 			'class' => 'tux-tab',
 		];
 
 		if ( $alias === 'Translate' ) {
-			$tabs['namespaces']['translate']['class'] .= ' selected';
+			$tabs['associated-pages']['translate']['class'] .= ' selected';
 		}
 
 		$tabs['views']['lstats'] = [

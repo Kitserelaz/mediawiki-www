@@ -9,8 +9,17 @@ class RemoveMasterGift extends UnlistedSpecialPage {
 	 */
 	public $gift_id;
 
+	// MW 1.46+ compatibility, remove comparison with 1.47 LTS release
 	public function __construct() {
-		parent::__construct( 'RemoveMasterGift', 'giftadmin' );
+		if ( version_compare( MW_VERSION, '1.46', '>=' ) ) {
+			parent::__construct( 'RemoveMasterGift' );
+		} else {
+			parent::__construct( 'RemoveMasterGift', 'giftadmin' );
+		}
+	}
+
+	public function getRestriction(): string {
+		return 'giftadmin';
 	}
 
 	/**
@@ -73,6 +82,7 @@ class RemoveMasterGift extends UnlistedSpecialPage {
 	public function execute( $par ) {
 		$out = $this->getOutput();
 		$request = $this->getRequest();
+		$session = $request->getSession();
 		$user = $this->getUser();
 
 		// user needs to be logged in to access
@@ -106,9 +116,9 @@ class RemoveMasterGift extends UnlistedSpecialPage {
 		if (
 			$request->wasPosted() &&
 			$user->matchEditToken( $request->getVal( 'wpEditToken' ) ) &&
-			$_SESSION['alreadysubmitted'] == false
+			$session->get( 'alreadysubmitted' ) == false
 		) {
-			$_SESSION['alreadysubmitted'] = true;
+			$session->set( 'alreadysubmitted', true );
 
 			$dbw = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_PRIMARY );
 			$gift = Gifts::getGift( $this->gift_id );
@@ -142,7 +152,7 @@ class RemoveMasterGift extends UnlistedSpecialPage {
 
 			$out->addHTML( $output );
 		} else {
-			$_SESSION['alreadysubmitted'] = false;
+			$session->set( 'alreadysubmitted', false );
 			$out->addHTML( $this->displayForm() );
 		}
 	}

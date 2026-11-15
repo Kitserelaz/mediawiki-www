@@ -3,7 +3,8 @@
 namespace CirrusSearch\Search;
 
 use CirrusSearch\CirrusTestCase;
-use SearchIndexField;
+use MediaWiki\Search\NullIndexField;
+use MediaWiki\Search\SearchIndexField;
 
 /**
  * @group CirrusSearch
@@ -11,10 +12,10 @@ use SearchIndexField;
  */
 class SearchFieldsTest extends CirrusTestCase {
 
-	public function getFields() {
+	public static function provideFields() {
 		return [
 			[ SearchIndexField::INDEX_TYPE_TEXT, 'text' ],
-			[ SearchIndexField::INDEX_TYPE_KEYWORD, 'text' ],
+			[ SearchIndexField::INDEX_TYPE_KEYWORD, 'keyword' ],
 			[ SearchIndexField::INDEX_TYPE_INTEGER, 'long' ],
 			[ SearchIndexField::INDEX_TYPE_NUMBER, 'double' ],
 			[ SearchIndexField::INDEX_TYPE_DATETIME, 'date' ],
@@ -24,7 +25,7 @@ class SearchFieldsTest extends CirrusTestCase {
 	}
 
 	/**
-	 * @dataProvider getFields
+	 * @dataProvider provideFields
 	 * @param int $type Generic type
 	 * @param string $elasticType Elasticsearch type
 	 */
@@ -43,7 +44,7 @@ class SearchFieldsTest extends CirrusTestCase {
 	public function testBadField() {
 		$engine = $this->newEngine();
 		$field = $engine->makeSearchFieldMapping( 'testBadField', 42 );
-		$this->assertInstanceOf( \NullIndexField::class, $field );
+		$this->assertInstanceOf( NullIndexField::class, $field );
 		$this->assertNull( $field->getMapping( $engine ) );
 	}
 

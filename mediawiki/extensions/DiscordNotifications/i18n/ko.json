@@ -2,13 +2,15 @@
 	"@metadata": {
 		"authors": [
 			"Markingdots",
+			"Revi",
 			"Suleiman the Magnificent Television",
+			"Tensama0415",
 			"Ykhwong",
 			"lens0021",
 			"렌즈"
 		]
 	},
-	"discordnotifications-desc": "미디어위키 사이트에서 발생한 선택된 동작에 대한 디스코드 알림을 전송합니다.",
+	"discordnotifications-desc": "미디어위키 사이트에서 발생한 선택된 작업에 대한 디스코드 알림을 전송합니다.",
 	"discordnotifications-block": "차단",
 	"discordnotifications-groups": "권한",
 	"discordnotifications-talk": "토론",
@@ -18,6 +20,7 @@
 	"discordnotifications-delete": "삭제",
 	"discordnotifications-history": "역사",
 	"discordnotifications-diff": "차이",
+	"discordnotifications-preview": "미리 보기",
 	"discordnotifications-bytes": "$1 {{PLURAL:$1|byte|bytes}}",
 	"discordnotifications-article-saved": "📝 $1 님이 $3 문서를 $2: $4",
 	"discordnotifications-article-saved-minor-edits": "사소하게 편집했습니다",
@@ -25,6 +28,7 @@
 	"discordnotifications-article-created": "📄 $1 님이 $2 문서를 새로 만들었습니다 $3",
 	"discordnotifications-file-namespace": "파일",
 	"discordnotifications-article-deleted": "❌ $1 님이 $2 문서를 삭제했습니다 (이유: $3)",
+	"discordnotifications-article-undeleted": "🔄 $1 님이 $2 문서를 복구했습니다 이유: $3",
 	"discordnotifications-article-moved": "➡ $1 님이 $2 문서를 $3 문서로 이동했습니다 (이유: $4)",
 	"discordnotifications-article-protected": "🔒 $1 님이 $2 문서의 $3 (이유: $4)",
 	"discordnotifications-article-protected-change": "보호 수준을 변경했습니다",
@@ -40,22 +44,6 @@
 	"discordnotifications-view-user-rights": "사용자 권한을 보거나 관리",
 	"discordnotifications-change-user-groups": "%s 님이 %s 님의 사용자 그룹을 변경했습니다 (새 그룹:%s)",
 	"discordnotifications-change-user-groups-with-old": "$1 님이 $2 님의 사용자 그룹을 변경했습니다. 예전 그룹: $3. 새 그룹: $4",
-	"discordnotifications-flow-edit-header": "💬 $1 님이 $2의 설명을 편집했습니다",
-	"discordnotifications-flow-edit-post": "💬 $1 님이 $2의 게시글을 편집했습니다",
-	"discordnotifications-flow-edit-title": "💬 $1 님이 주제 \"$3\"의 제목을 \"$2\"로 바꿨습니다",
-	"discordnotifications-flow-edit-topic-summary": "💬 $1 님이 $2의 주제 요약을 편집했습니다",
-	"discordnotifications-flow-lock-topic": "💬 $1 님이 $3 주제를 $2으로 표시했습니다",
-	"discordnotifications-flow-lock-topic-lock": "해결됨",
-	"discordnotifications-flow-lock-topic-unlock": "다시 열림",
-	"discordnotifications-flow-moderate-post": "💬 $1 님이 게시글을 $2 ($3)",
-	"discordnotifications-flow-moderate-topic": "💬 $1 님이 주제를 $2 ($3)",
-	"discordnotifications-flow-moderate-hide": "숨겼습니다",
-	"discordnotifications-flow-moderate-unhide": "숨기기를 취소했습니다",
-	"discordnotifications-flow-moderate-suppress": "표시하지 않도록 했습니다",
-	"discordnotifications-flow-moderate-unsuppress": "표시하지 않도록 한 것을 복구했습니다",
-	"discordnotifications-flow-moderate-delete": "삭제했습니다",
-	"discordnotifications-flow-moderate-undelete": "삭제를 취소했습니다",
-	"discordnotifications-flow-new-topic": "💬 $1 님이 $3에 $2 주제를 만들었습니다",
-	"discordnotifications-flow-reply": "💬 $1 님이 $2 주제에 댓글을 남겼습니다",
-	"discordnotifications-import-complete": "⤵️ $1 문서를 가져왔습니다."
+	"discordnotifications-import-complete": "⤵️ $1 문서를 가져왔습니다.",
+	"discordnotifications-moderation-pending": "🔍 $1 님이 $2 문서를 [중재 대기열]에 제출했습니다($3)."
 }

@@ -8,5 +8,6 @@
 	"wikibase-edit": "Uredi",
 	"wikibase-add": "dodaj",
 	"wikibase-label-empty": "Nedefinisana oznaka",
+	"wikibase-description-empty": "Opis nije definiran",
 	"wikibase-sitelinks-special": "Druge lokacije"
 }

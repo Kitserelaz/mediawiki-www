@@ -1,5 +1,5 @@
 /*!
- * VisualEditor DataModel StubReferenceNode class.
+ * Testing stub which closely follows ve.dm.MWReferenceNode
  *
  * @copyright See AUTHORS.txt
  * @license MIT
@@ -8,7 +8,7 @@
 /**
  * @class
  * @extends ve.dm.LeafNode
- * @mixin ve.dm.FocusableNode
+ * @mixes ve.dm.FocusableNode
  *
  * @constructor
  * @param {Object} [element] Reference to element in linear model
@@ -16,9 +16,6 @@
 ve.dm.example.StubReferenceNode = function VeDmStubReferenceNode() {
 	// Parent constructor
 	ve.dm.example.StubReferenceNode.super.apply( this, arguments );
-
-	// Mixin constructors
-	ve.dm.FocusableNode.call( this );
 
 	// Event handlers
 	this.connect( this, {
@@ -30,19 +27,13 @@ ve.dm.example.StubReferenceNode = function VeDmStubReferenceNode() {
 
 /* Inheritance */
 
-OO.inheritClass( ve.dm.example.StubReferenceNode, ve.dm.LeafNode );
-
-OO.mixinClass( ve.dm.example.StubReferenceNode, ve.dm.FocusableNode );
+OO.inheritClass( ve.dm.example.StubReferenceNode, ve.dm.ReferenceNode );
 
 /* Static members */
 
 ve.dm.example.StubReferenceNode.static.name = 'stubReference';
 
 ve.dm.example.StubReferenceNode.static.matchTagNames = [ 'ref' ];
-
-ve.dm.example.StubReferenceNode.static.isContent = true;
-
-ve.dm.example.StubReferenceNode.static.handlesOwnChildren = true;
 
 /**
  * Regular expression for parsing the listKey attribute
@@ -63,19 +54,19 @@ ve.dm.example.StubReferenceNode.static.toDataElement = function ( domElements, c
 	const name = refElement.getAttribute( 'name' );
 	const listKey = name ?
 		'literal/' + name :
-		'auto/' + converter.internalList.getNextUniqueNumber();
-	const queueResult = converter.internalList.queueItemHtml( listGroup, listKey, body );
+		'auto/' + converter.getInternalList().getNextUniqueNumber();
+	const queueResult = converter.getInternalList().queueItemHtml( listGroup, listKey, body );
 	const listIndex = queueResult.index;
 	const contentsUsed = ( body !== '' && queueResult.isNew );
 
 	const dataElement = {
 		type: this.name,
 		attributes: {
-			listIndex: listIndex,
-			listGroup: listGroup,
-			listKey: listKey,
-			refGroup: refGroup,
-			contentsUsed: contentsUsed
+			listGroup,
+			listKey,
+			listIndex,
+			refGroup,
+			contentsUsed
 		}
 	};
 	return dataElement;
@@ -137,18 +128,14 @@ ve.dm.example.StubReferenceNode.prototype.removeFromInternalList = function () {
 };
 
 ve.dm.example.StubReferenceNode.prototype.onAttributeChange = function ( key, from, to ) {
-	if (
-		( key !== 'listGroup' && key !== 'listKey' ) ||
-		( key === 'listGroup' && this.registeredListGroup === to ) ||
-		( key === 'listKey' && this.registeredListKey === to )
+	if ( ( key === 'listGroup' && this.registeredListGroup !== to ) ||
+		( key === 'listKey' && this.registeredListKey !== to )
 	) {
-		return;
+		// Need the old list keys and indexes, so we register them in addToInternalList
+		// They've already been updated in this.element.attributes before this code runs
+		this.removeFromInternalList();
+		this.addToInternalList();
 	}
-
-	// Need the old list keys and indexes, so we register them in addToInternalList
-	// They've already been updated in this.element.attributes before this code runs
-	this.removeFromInternalList();
-	this.addToInternalList();
 };
 
 /* Registration */

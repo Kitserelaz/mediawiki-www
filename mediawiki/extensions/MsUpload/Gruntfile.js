@@ -12,7 +12,8 @@ module.exports = function ( grunt ) {
 				'**/*.{js,json}',
 				'!node_modules/**',
 				'!vendor/**',
-				'!resources/plupload/**'
+				'!resources/lib/foreign-resources.cdx.json',
+				'!resources/lib/plupload/**'
 			]
 		},
 		banana: {

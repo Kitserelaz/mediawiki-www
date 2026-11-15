@@ -12,16 +12,16 @@
 	"license-name": "MIT",
 	"type": "specialpage",
 	"requires": {
-		"MediaWiki": ">= 1.43.0"
+		"MediaWiki": ">= 1.46"
 	},
 	"APIModules": {
 		"pagetriagelist": {
 			"class": "MediaWiki\\Extension\\PageTriage\\Api\\ApiPageTriageList",
 			"services": [
-				"UserFactory",
 				"RedirectLookup",
 				"TitleFormatter",
-				"LinksMigration"
+				"LinksMigration",
+				"TempUserDetailsLookup"
 			]
 		},
 		"pagetriagestats": "MediaWiki\\Extension\\PageTriage\\Api\\ApiPageTriageStats",
@@ -61,17 +61,17 @@
 		}
 	},
 	"LogActionsHandlers": {
-		"pagetriage-curation/reviewed": "LogFormatter",
-		"pagetriage-curation/reviewed-redirect": "LogFormatter",
-		"pagetriage-curation/reviewed-article": "LogFormatter",
-		"pagetriage-curation/unreviewed": "LogFormatter",
-		"pagetriage-curation/unreviewed-article": "LogFormatter",
-		"pagetriage-curation/unreviewed-redirect": "LogFormatter",
-		"pagetriage-curation/enqueue": "LogFormatter",
+		"pagetriage-curation/reviewed": "MediaWiki\\Logging\\LogFormatter",
+		"pagetriage-curation/reviewed-redirect": "MediaWiki\\Logging\\LogFormatter",
+		"pagetriage-curation/reviewed-article": "MediaWiki\\Logging\\LogFormatter",
+		"pagetriage-curation/unreviewed": "MediaWiki\\Logging\\LogFormatter",
+		"pagetriage-curation/unreviewed-article": "MediaWiki\\Logging\\LogFormatter",
+		"pagetriage-curation/unreviewed-redirect": "MediaWiki\\Logging\\LogFormatter",
+		"pagetriage-curation/enqueue": "MediaWiki\\Logging\\LogFormatter",
 		"pagetriage-curation/tag": "MediaWiki\\Extension\\PageTriage\\PageTriageLogFormatter",
 		"pagetriage-curation/delete": "MediaWiki\\Extension\\PageTriage\\PageTriageLogFormatter",
-		"pagetriage-copyvio/insert": "LogFormatter",
-		"pagetriage-copyvio/delete": "LogFormatter"
+		"pagetriage-copyvio/insert": "MediaWiki\\Logging\\LogFormatter",
+		"pagetriage-copyvio/delete": "MediaWiki\\Logging\\LogFormatter"
 	},
 	"LogTypes": [
 		"pagetriage-curation",
@@ -79,15 +79,27 @@
 	],
 	"ActionFilteredLogs": {
 		"pagetriage-curation": {
-			"review": [
+			"review-all": [
 				"reviewed",
 				"reviewed-article",
 				"reviewed-redirect"
 			],
-			"unreview": [
+			"review-article": [
+				"reviewed-article"
+			],
+			"review-redirect": [
+				"reviewed-redirect"
+			],
+			"unreview-all": [
 				"unreviewed",
 				"unreviewed-redirect",
 				"unreviewed-article"
+			],
+			"unreview-article": [
+				"unreviewed-article"
+			],
+			"unreview-redirect": [
+				"unreviewed-redirect"
 			],
 			"enqueue": [
 				"enqueue"
@@ -123,7 +135,12 @@
 		}
 	},
 	"SpecialPages": {
-		"NewPagesFeed": "MediaWiki\\Extension\\PageTriage\\SpecialNewPagesFeed"
+		"NewPagesFeed": {
+			"class": "MediaWiki\\Extension\\PageTriage\\SpecialNewPagesFeed",
+			"services": [
+				"UserOptionsLookup"
+			]
+		}
 	},
 	"MessagesDirs": {
 		"PageTriage": [
@@ -137,7 +154,8 @@
 		"PageTriageAlias": "PageTriage.alias.php"
 	},
 	"AutoloadNamespaces": {
-		"MediaWiki\\Extension\\PageTriage\\": "includes/"
+		"MediaWiki\\Extension\\PageTriage\\": "includes/",
+		"MediaWiki\\Extension\\PageTriage\\Maintenance\\": "maintenance/"
 	},
 	"JobClasses": {
 		"compileArticleMetadata": "\\MediaWiki\\Extension\\PageTriage\\CompileArticleMetadataJob"
@@ -158,9 +176,7 @@
 		"ext.pageTriage.external": {
 			"scripts": [
 				"external/underscore.js",
-				"external/backbone.js",
-				"external/jquery.waypoints.js",
-				"external/jquery.tipoff/jquery.tipoff.js"
+				"external/backbone.js"
 			]
 		},
 		"ext.pageTriage.util": {
@@ -182,7 +198,6 @@
 			],
 			"dependencies": [
 				"mediawiki.Title",
-				"mediawiki.Uri",
 				"mediawiki.api",
 				"mediawiki.user",
 				"moment",
@@ -190,7 +205,24 @@
 				"ext.pageTriage.external"
 			]
 		},
+		"ext.pageTriage.showIp": {
+			"localBasePath": "modules/ext.pageTriage.showIp",
+			"remoteExtPath": "PageTriage/modules/ext.pageTriage.showIp",
+			"packageFiles": [
+				"main.js",
+				"showIp.js"
+			],
+			"dependencies": [
+				"mediawiki.api",
+				"mediawiki.jqueryMsg"
+			],
+			"messages": [
+				"pagetriage-new-page-feed-show-ip",
+				"pagetriage-new-page-feed-show-ip-not-found"
+			]
+		},
 		"ext.pageTriage.toolbar": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
 			"packageFiles": [
 				"ext.pageTriage.toolbar/init.js",
 				"ext.pageTriage.toolbar/ToolbarView.js",
@@ -208,10 +240,8 @@
 				"ext.pageTriage.toolbar/vue/components/ToolMinimize.vue",
 				"ext.pageTriage.toolbar/vue/components/ToolNext.vue",
 				"ext.pageTriage.toolbar/vue/components/ToolFlyout.vue",
+				"ext.pageTriage.toolbar/vue/components/ToolWikiLove.vue",
 				"ext.pageTriage.toolbar/vue/components/FlyoutHeader.vue",
-				"ext.pageTriage.toolbar/vue/components/FlyoutContent.vue",
-				"ext.pageTriage.toolbar/vue/components/FlyoutFooter.vue",
-				"ext.pageTriage.toolbar/vue/components/FlyoutNotes.vue",
 				{
 					"name": "ext.pageTriage.toolbar/contentLanguageMessages.json",
 					"callback": "MediaWiki\\Extension\\PageTriage\\Hooks::toolbarContentLanguageMessages"
@@ -221,7 +251,8 @@
 					"callback": "MediaWiki\\Extension\\PageTriage\\Hooks::toolbarConfig"
 				},
 				"external/jquery.badge.js",
-				"ext.pageTriage.toolbar/wikiLove.js"
+				"ext.pageTriage.toolbar/wikiLove.js",
+				"ext.pageTriage.showIp/showIp.js"
 			],
 			"dependencies": [
 				"vue",
@@ -236,12 +267,16 @@
 				"jquery.ui",
 				"jquery.spinner",
 				"jquery.client",
-				"ext.pageTriage.tagData"
+				"ext.pageTriage.tagData",
+				"ext.pageTriage.icons",
+				"ext.pageTriage.icons.hover",
+				"ext.pageTriage.icons.disabled",
+				"ext.pageTriage.icons.active"
 			],
 			"styles": [
 				"external/jquery.badge.css",
 				"ext.pageTriage.css",
-				"ext.pageTriage.toolbar/ToolbarView.css",
+				"ext.pageTriage.toolbar/ToolbarView.less",
 				"ext.pageTriage.toolbar/ToolView.less",
 				"ext.pageTriage.toolbar/articleInfo.less",
 				"ext.pageTriage.toolbar/mark.less",
@@ -362,7 +397,13 @@
 				"pagetriage-tag-previousdeletion-error",
 				"pagetriage-toolbar-close",
 				"pagetriage-toolbar-minimize",
-				"pagetriage-tag-warning-notice"
+				"pagetriage-tag-warning-notice",
+				"pagetriage-new-page-feed-show-ip",
+				"pagetriage-new-page-feed-show-ip-not-found"
+			],
+			"codexComponents": [
+				"CdxButton",
+				"CdxCheckbox"
 			]
 		},
 		"ext.pageTriage.newPagesFeed": {
@@ -399,7 +440,14 @@
 				"ext.pageTriage.newPagesFeed/components/AfcStateRadio.vue",
 				"ext.pageTriage.newPagesFeed/components/ShowingText.vue",
 				"ext.pageTriage.newPagesFeed/components/UsernameLookup.vue",
+				"ext.pageTriage.newPagesFeed/components/KeywordSearch.vue",
 				"ext.pageTriage.newPagesFeed/stores/settings.js",
+				{
+					"name": "ext.pageTriage.newPagesFeed/features.json",
+					"config": [
+						"PageTriageEnableKeywordSearch"
+					]
+				},
 				{
 					"name": "ext.pageTriage.newPagesFeed/components/icons.json",
 					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
@@ -415,7 +463,6 @@
 				}
 			],
 			"styles": [
-				"external/jquery.tipoff/jquery.tipoff.css",
 				"ext.pageTriage.css"
 			],
 			"messages": [
@@ -426,6 +473,7 @@
 				"parentheses",
 				"pipe-separator",
 				"sp-contributions-talk",
+				"tempuser-expired-link-tooltip",
 				"pagetriage-afc-state",
 				"pagetriage-afc-newest",
 				"pagetriage-afc-oldest",
@@ -499,6 +547,8 @@
 				"pagetriage-filter-article",
 				"pagetriage-filter-user-heading",
 				"pagetriage-filter-username",
+				"pagetriage-filter-keyword",
+				"pagetriage-filter-keyword-placeholder",
 				"pagetriage-filter-tag-heading",
 				"pagetriage-filter-second-show-heading",
 				"pagetriage-filter-no-categories",
@@ -533,6 +583,7 @@
 				"pagetriage-filter-stat-learners",
 				"pagetriage-filter-stat-blocked",
 				"pagetriage-filter-stat-username",
+				"pagetriage-filter-stat-keyword",
 				"pagetriage-filter-stat-namespace",
 				"pagetriage-filter-stat-predicted-class",
 				"pagetriage-filter-stat-predicted-class-stub",
@@ -627,8 +678,7 @@
 			"dependencies": [
 				"ext.pageTriage.external",
 				"mediawiki.api",
-				"mediawiki.jqueryMsg",
-				"mediawiki.Uri"
+				"mediawiki.jqueryMsg"
 			]
 		},
 		"ext.pageTriage.sidebarLink": {
@@ -651,6 +701,82 @@
 				"oojs-ui-core",
 				"oojs-ui-windows"
 			]
+		},
+		"ext.pageTriage.icons": {
+			"class": "MediaWiki\\ResourceLoader\\ImageModule",
+			"selectorWithoutVariant": ".mwe-pt-tool-icon-{name}",
+			"selectorWithVariant": ".mwe-pt-tool-{variant}.mwe-pt-tool-icon-{name}",
+			"variants": [],
+			"images": {
+				"close": "ext.pageTriage.toolbar/images/close.png",
+				"flyout-pokey": "ext.pageTriage.toolbar/images/flyout_pokey.png",
+				"flyout-pokey-flipped": "ext.pageTriage.toolbar/images/flyout_pokey_flipped.png",
+				"minimize-mini": "ext.pageTriage.toolbar/images/minimize.png",
+				"minimize2-mini": "ext.pageTriage.toolbar/images/minimize2.png",
+				"baby-pokey": "ext.pageTriage.toolbar/images/baby_pokey.png",
+				"info": "ext.pageTriage.toolbar/images/icons/normal/icon_info.png",
+				"mark-autopatrolled": "ext.pageTriage.toolbar/images/icons/normal/icon_mark_autopatrolled.png",
+				"mark-reviewed": "ext.pageTriage.toolbar/images/icons/normal/icon_mark_reviewed.png",
+				"minimize": "ext.pageTriage.toolbar/images/icons/normal/icon_minimize.png",
+				"skip": "ext.pageTriage.toolbar/images/icons/normal/icon_skip.png",
+				"tag": "ext.pageTriage.toolbar/images/icons/normal/icon_tag.png",
+				"trash": "ext.pageTriage.toolbar/images/icons/normal/icon_trash.png",
+				"wikilove": "ext.pageTriage.toolbar/images/icons/normal/icon_wikilove.png",
+				"mark-autopatrolled-special": "ext.pageTriage.toolbar/images/icons/special/icon_mark_autopatrolled.png",
+				"mark-reviewed-special": "ext.pageTriage.toolbar/images/icons/special/icon_mark_reviewed.png",
+				"trash-special": "ext.pageTriage.toolbar/images/icons/special/icon_trash_red.png",
+				"mark-autopatrolled-info": "ext.pageTriage.toolbar/images/pageInfo/icon_autopatrolled.png",
+				"mark-deletion-info": "ext.pageTriage.toolbar/images/pageInfo/icon_marked_for_deletion.png",
+				"not-reviewed-info": "ext.pageTriage.toolbar/images/pageInfo/icon_not_reviewed.png",
+				"reviewed-info": "ext.pageTriage.toolbar/images/pageInfo/icon_reviewed.png"
+			}
+		},
+		"ext.pageTriage.icons.hover": {
+			"class": "MediaWiki\\ResourceLoader\\ImageModule",
+			"selectorWithoutVariant": ".mwe-pt-tool-icon-{name}:hover",
+			"selectorWithVariant": ".mwe-pt-tool-{variant}.mwe-pt-tool-icon-{name}:hover",
+			"variants": [],
+			"images": {
+				"close": "ext.pageTriage.toolbar/images/close_hover.png",
+				"info": "ext.pageTriage.toolbar/images/icons/hover/icon_info.png",
+				"mark-autopatrolled": "ext.pageTriage.toolbar/images/icons/hover/icon_mark_autopatrolled.png",
+				"mark-reviewed": "ext.pageTriage.toolbar/images/icons/hover/icon_mark_reviewed.png",
+				"minimize": "ext.pageTriage.toolbar/images/icons/hover/icon_minimize.png",
+				"skip": "ext.pageTriage.toolbar/images/icons/hover/icon_skip.png",
+				"tag": "ext.pageTriage.toolbar/images/icons/hover/icon_tag.png",
+				"trash": "ext.pageTriage.toolbar/images/icons/hover/icon_trash.png",
+				"wikilove": "ext.pageTriage.toolbar/images/icons/hover/icon_wikilove.png"
+			}
+		},
+		"ext.pageTriage.icons.disabled": {
+			"class": "MediaWiki\\ResourceLoader\\ImageModule",
+			"selectorWithoutVariant": ".mwe-pt-tool-icon-{name}-disabled",
+			"selectorWithVariant": ".mwe-pt-tool-{variant}.mwe-pt-tool-icon-{name}-disabled",
+			"variants": [],
+			"images": {
+				"info": "ext.pageTriage.toolbar/images/icons/disabled/icon_info.png",
+				"mark-reviewed": "ext.pageTriage.toolbar/images/icons/disabled/icon_mark_reviewed.png",
+				"skip": "ext.pageTriage.toolbar/images/icons/disabled/icon_skip.png",
+				"tag": "ext.pageTriage.toolbar/images/icons/disabled/icon_tag.png",
+				"trash": "ext.pageTriage.toolbar/images/icons/disabled/icon_trash.png",
+				"wikilove": "ext.pageTriage.toolbar/images/icons/disabled/icon_wikilove.png"
+			}
+		},
+		"ext.pageTriage.icons.active": {
+			"class": "MediaWiki\\ResourceLoader\\ImageModule",
+			"selectorWithoutVariant": ".mwe-pt-tool-icon-{name}-active",
+			"selectorWithVariant": ".mwe-pt-tool-{variant}.mwe-pt-tool-icon-{name}-active",
+			"variants": [],
+			"images": {
+				"close": "ext.pageTriage.toolbar/images/icons/active/icon_close.png",
+				"info": "ext.pageTriage.toolbar/images/icons/active/icon_info.png",
+				"mark-reviewed": "ext.pageTriage.toolbar/images/icons/active/icon_mark_reviewed.png",
+				"mark-autopatrolled": "ext.pageTriage.toolbar/images/icons/active/icon_mark_autopatrolled.png",
+				"skip": "ext.pageTriage.toolbar/images/icons/active/icon_skip.png",
+				"tag": "ext.pageTriage.toolbar/images/icons/active/icon_tag.png",
+				"trash": "ext.pageTriage.toolbar/images/icons/active/icon_trash.png",
+				"wikilove": "ext.pageTriage.toolbar/images/icons/active/icon_wikilove.png"
+			}
 		}
 	},
 	"ResourceFileModulePaths": {
@@ -663,7 +789,7 @@
 			"services": [
 				"MainConfig",
 				"RevisionLookup",
-				"StatsdDataFactory",
+				"StatsFactory",
 				"PermissionManager",
 				"RevisionStore",
 				"TitleFactory",
@@ -712,12 +838,6 @@
 		},
 		"PageTriageMaxNoIndexAge": {
 			"value": 90
-		},
-		"PageTriagePagesPerRequest": {
-			"value": 20
-		},
-		"PageTriageMarkPatrolledLinkExpiry": {
-			"value": 86400
 		},
 		"PageTriageNoIndexUnreviewedNewArticles": {
 			"value": false
@@ -788,37 +908,6 @@
 				"pagetriage-add-deletion-tag"
 			]
 		},
-		"PtTemplatePath": {
-			"value": "modules",
-			"path": true
-		},
-		"PageTriageTagsOptionsMessages": {
-			"value": [
-				"pagetriage-tags-title",
-				"pagetriage-tags-cat-all-label",
-				"pagetriage-tags-param-date-label",
-				"pagetriage-tag-count-total",
-				"pagetriage-button-add-tag",
-				"pagetriage-button-add-tag-number",
-				"pagetriage-button-add-parameters",
-				"pagetriage-button-add-details",
-				"pagetriage-button-edit-details",
-				"pagetriage-button-mark-for-deletion",
-				"cancel",
-				"pagetriage-tags-param-free-yes-label",
-				"pagetriage-tags-param-free-no-label",
-				"pagetriage-tags-param-missing-required",
-				"pagetriage-tags-tooltip"
-			]
-		},
-		"PageTriageDeletionTagsOptionsMessages": {
-			"value": [
-				"pagetriage-tags-param-article-label",
-				"pagetriage-del-title",
-				"pagetriage-del-tooltip",
-				"pagetriage-tags-param-article-label"
-			]
-		},
 		"PageTriageDeletionTagsOptionsContentLanguageMessages": {
 			"value": [
 				"pagetriage-del-tags-prod-notify-topic-title",
@@ -826,6 +915,9 @@
 				"pagetriage-del-tags-speedy-deletion-nomination-notify-without-article-name",
 				"pagetriage-del-tags-xfd-notify-topic-title"
 			]
+		},
+		"PageTriageEnableKeywordSearch": {
+			"value": true
 		},
 		"PageTriageDraftNamespaceId": {
 			"description": "The ID of the Draft namespace, as defined in $wgExtraNamespaces. If false, all AfC features are disabled.",

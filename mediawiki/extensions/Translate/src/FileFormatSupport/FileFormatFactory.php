@@ -26,16 +26,17 @@ class FileFormatFactory {
 		'Apple' => AppleFormat::class,
 		'Dtd' => DtdFormat::class,
 		'FlatPhp' => FlatPhpFormat::class,
+		'Fluent' => FluentFormat::class,
 		'Gettext' => GettextFormat::class,
 		'Ini' => IniFormat::class,
 		'Java' => JavaFormat::class,
 		'Json' => JsonFormat::class,
 		'Yaml' => YamlFormat::class
 	];
-	private ObjectFactory $objectFactory;
 
-	public function __construct( ObjectFactory $objectFactory ) {
-		$this->objectFactory = $objectFactory;
+	public function __construct(
+		private readonly ObjectFactory $objectFactory,
+	) {
 	}
 
 	/**
@@ -46,13 +47,13 @@ class FileFormatFactory {
 	 * @return SimpleFormat
 	 */
 	public function create( string $format, FileBasedMessageGroup $group ): SimpleFormat {
-		if ( !isset( self::FORMATS[ $format ] ) ) {
+		if ( !isset( self::FORMATS[$format] ) ) {
 			throw new InvalidArgumentException(
 				"FileFormatSupport: Unknown file format '$format' specified for group '{$group->getId()}'"
 			);
 		}
 
-		$spec = self::FORMATS[ $format ];
+		$spec = self::FORMATS[$format];
 		if ( is_string( $spec ) ) {
 			$spec = [ 'class' => $spec ];
 		}
@@ -60,8 +61,6 @@ class FileFormatFactory {
 		// Pass the given params as one item, instead of expanding
 		$spec['args'][] = $group;
 
-		// Phan seems to misunderstand the param type as callable instead of an array
-		// @phan-suppress-next-line PhanTypeInvalidCallableArrayKey
 		return $this->objectFactory->createObject( $spec );
 	}
 
@@ -76,10 +75,10 @@ class FileFormatFactory {
 	}
 
 	public function getClassname( string $format ): string {
-		if ( !isset( self::FORMATS[ $format ] ) ) {
+		if ( !isset( self::FORMATS[$format] ) ) {
 			throw new InvalidArgumentException( "Unknown format $format" );
 		}
 
-		return self::FORMATS[ $format ];
+		return self::FORMATS[$format];
 	}
 }

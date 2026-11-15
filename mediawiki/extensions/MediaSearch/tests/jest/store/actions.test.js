@@ -2,8 +2,8 @@ const initialState = require( '../fixtures/initialVuexState.js' ),
 	namespaceGroups = require( '../fixtures/namespaceGroups.js' ),
 	mockImageSearchApiResponse = require( '../fixtures/mockImageSearchApiResponse.json' ),
 	mockEmptyImageSearchApiWithSuggestionResponse = require( '../fixtures/mockEmptyImageSearchApiWithSuggestion.json' ),
+	mockEmptyImageSearchApiWithWarningsResponse = require( '../fixtures/mockEmptyImageSearchApiWithWarnings.json' ),
 	mockImageDetailsApiResponse = require( '../fixtures/mockImageDetailsApiResponse.json' ),
-	thumbRenderMap = [ 320, 640, 800, 1024, 1280, 1920 ],
 	when = require( 'jest-when' ).when;
 
 require( '../mocks/history.js' );
@@ -48,7 +48,6 @@ describe( 'performNewSearch', () => {
 		// Mocks for mw.config values
 		when( global.mw.config.get ).calledWith( 'wgUserLanguage' ).mockReturnValue( 'en' );
 		when( global.mw.config.get ).calledWith( 'sdmsNamespaceGroups' ).mockReturnValue( namespaceGroups );
-		when( global.mw.config.get ).calledWith( 'sdmsThumbRenderMap' ).mockReturnValue( thumbRenderMap );
 		when( global.mw.config.get ).calledWith( 'sdmsExternalSearchUri' ).mockReturnValue( false );
 
 		// Fake an API response
@@ -123,7 +122,7 @@ describe( 'performNewSearch', () => {
 					inprop: 'url',
 					iiprop: 'url|size|mime',
 					iiurlheight: undefined,
-					iiurlwidth: 320,
+					iiurlwidth: 330,
 					wbetterms: 'label'
 				} )
 			);
@@ -147,7 +146,7 @@ describe( 'performNewSearch', () => {
 					inprop: 'url',
 					iiprop: 'url|size|mime',
 					iiurlheight: undefined,
-					iiurlwidth: 200,
+					iiurlwidth: 250,
 					wbetterms: 'label'
 				} )
 			);
@@ -235,6 +234,20 @@ describe( 'performNewSearch', () => {
 		actions.performNewSearch( context ).then( () => {
 			expect( global.mw.Api.prototype.get ).not.toHaveBeenCalled();
 			done();
+		} );
+	} );
+
+	describe( 'when response includes warnings', () => {
+		it( 'commits a "setSearchWarnings" mutation', ( done ) => {
+			context.getters.currentType = 'image';
+			global.mw.Api.prototype.get.mockReturnValue(
+				$.Deferred().resolve( mockEmptyImageSearchApiWithWarningsResponse ).promise() );
+
+			actions.performNewSearch( context ).then( () => {
+				const setSearchWarnings = context.commit.mock.calls.filter( ( call ) => call[ 0 ] === 'setSearchWarnings' );
+				expect( setSearchWarnings.length ).toEqual( 1 );
+				done();
+			} );
 		} );
 	} );
 
@@ -328,7 +341,6 @@ describe( 'searchMore', () => {
 		// Mocks for mw.config values
 		when( global.mw.config.get ).calledWith( 'wgUserLanguage' ).mockReturnValue( 'en' );
 		when( global.mw.config.get ).calledWith( 'sdmsNamespaceGroups' ).mockReturnValue( namespaceGroups );
-		when( global.mw.config.get ).calledWith( 'sdmsThumbRenderMap' ).mockReturnValue( thumbRenderMap );
 		when( global.mw.config.get ).calledWith( 'sdmsExternalSearchUri' ).mockReturnValue( false );
 
 		// Fake an API response
@@ -449,6 +461,7 @@ describe( 'clear', () => {
 		expect( context.commit ).toHaveBeenCalledWith( 'resetFilters' );
 		expect( context.commit ).toHaveBeenCalledWith( 'resetResults' );
 		expect( context.commit ).toHaveBeenCalledWith( 'clearDidYouMean' );
+		expect( context.commit ).toHaveBeenCalledWith( 'clearSearchWarnings' );
 	} );
 } );
 

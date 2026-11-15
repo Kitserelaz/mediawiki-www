@@ -13,6 +13,7 @@ use CirrusSearch\WarningCollector;
 use Elastica\Query\AbstractQuery;
 use Elastica\Query\BoolQuery;
 use Elastica\Query\Term;
+use MediaWiki\Search\SearchEngine;
 use Wikimedia\Assert\Assert;
 
 /**
@@ -49,13 +50,14 @@ class PrefixFeature extends SimpleKeywordFeature implements FilterQueryFeature {
 	private $namespacePrefixParser;
 
 	public function __construct( ?NamespacePrefixParser $namespacePrefixParser = null ) {
-		$this->namespacePrefixParser = $namespacePrefixParser ?: self::defaultNSPrefixParser();
+		$this->namespacePrefixParser = $namespacePrefixParser ?? self::defaultNSPrefixParser();
 	}
 
 	private static function defaultNSPrefixParser(): NamespacePrefixParser {
 		return new class() implements NamespacePrefixParser {
+			/** @inheritDoc */
 			public function parse( $query ) {
-				return \SearchEngine::parseNamespacePrefixes( $query, true, false );
+				return SearchEngine::parseNamespacePrefixes( $query, true, false );
 			}
 		};
 	}
@@ -256,6 +258,7 @@ class PrefixFeature extends SimpleKeywordFeature implements FilterQueryFeature {
 			 */
 			private $namespaces;
 
+			/** @inheritDoc */
 			public function __construct( $query, array $namespaces ) {
 				$this->query = $query;
 				$this->namespaces = $namespaces;

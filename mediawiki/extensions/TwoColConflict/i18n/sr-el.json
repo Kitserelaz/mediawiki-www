@@ -9,7 +9,7 @@
 	"twocolconflict-copy-action": "kopiraj ceo tekst",
 	"twocolconflict-copy-tab-action": "vidi ceo tekst",
 	"twocolconflict-core-ui-hint-close": "Ne prikazuj ponovo",
-	"twocolconflict-preference-enabled": "Omogući [[mw:Special:MyLanguage/Help:Paragraph-based Edit Conflict Interface|prikaz konflikta izmena baziran na paragrafima]] za rešavanje konflikta u izmenama",
+	"twocolconflict-preference-enabled": "Omogući [https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Paragraph-based_Edit_Conflict_Interface prikaz konflikta izmena baziran na paragrafima] za rešavanje konflikta u izmenama",
 	"twocolconflict-special-not-saved": "Nije objavljeno",
 	"twocolconflict-special-textarea-hint": "Možete pogledati i kopirati izvor vaše izmene:",
 	"twocolconflict-special-malformed-title": "Naslov nedostaje ili nije važeći.",

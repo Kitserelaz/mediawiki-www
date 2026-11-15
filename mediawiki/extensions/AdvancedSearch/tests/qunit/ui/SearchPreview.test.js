@@ -1,31 +1,22 @@
-( function () {
+QUnit.module( 'ext.advancedSearch.ui.SearchPreview', ( hooks ) => {
 	'use strict';
 
 	const { SearchPreview } = require( 'ext.advancedSearch.elements' );
 
-	let sandbox,
-		store,
-		config;
+	let store, config;
 
-	QUnit.testStart( () => {
-		sandbox = sinon.sandbox.create();
+	hooks.beforeEach( function () {
 		store = {
-			connect: sandbox.stub(),
-			getField: sandbox.stub(),
-			removeField: sandbox.stub(),
-			getSortMethod: sandbox.stub().returns( '' )
+			connect: this.sandbox.stub(),
+			getField: this.sandbox.stub(),
+			removeField: this.sandbox.stub(),
+			getSortMethod: this.sandbox.stub().returns( '' )
 		};
 		config = {};
 	} );
 
-	QUnit.testDone( () => {
-		sandbox.restore();
-	} );
-
-	QUnit.module( 'ext.advancedSearch.ui.SearchPreview' );
-
-	QUnit.test( 'Store data subscribed to and synced initially', ( assert ) => {
-		const updatePreviewSpy = sandbox.spy( SearchPreview.prototype, 'updatePreview' );
+	QUnit.test( 'Store data subscribed to and synced initially', function ( assert ) {
+		const updatePreviewSpy = this.sandbox.spy( SearchPreview.prototype, 'updatePreview' );
 
 		// eslint-disable-next-line no-new
 		new SearchPreview( store, config );
@@ -34,8 +25,8 @@
 		assert.true( updatePreviewSpy.calledOnce );
 	} );
 
-	QUnit.test( 'Store state is reflected in preview', ( assert ) => {
-		const generateTagSpy = sandbox.spy( SearchPreview.prototype, 'generateTag' );
+	QUnit.test( 'Store state is reflected in preview', function ( assert ) {
+		const generateTagSpy = this.sandbox.spy( SearchPreview.prototype, 'generateTag' );
 
 		store.getField.withArgs( 'somename' ).returns( 'field one value' );
 		store.getField.withArgs( 'another' ).returns( 'field two value' );
@@ -78,19 +69,15 @@
 	} );
 
 	QUnit.test( 'Tag is generated', ( assert ) => {
-		const messageStub = sandbox.stub( mw, 'msg' )
-			.withArgs( 'advancedsearch-field-somename' ).returns( 'my label' )
-			.withArgs( 'colon-separator' ).returns( ':' );
 		const searchPreview = new SearchPreview( store, config );
 		const tag = searchPreview.generateTag( 'somename', 'my field value' );
 
 		const element = tag.$element[ 0 ];
 
-		assert.true( messageStub.calledOnce );
 		assert.strictEqual( element.title, 'my field value' );
 		assert.false( tag.isDraggable() );
 		assert.strictEqual( $( '.mw-advancedSearch-searchPreview-content', element ).html(), '<bdi>my field value</bdi>' );
-		assert.strictEqual( $( '.oo-ui-labelElement-label span', element ).html(), 'my label:' );
+		assert.strictEqual( $( '.oo-ui-labelElement-label span', element ).html(), '(advancedsearch-field-somename)(colon-separator)' );
 	} );
 
 	QUnit.test( 'Tag content is HTML-safe', ( assert ) => {
@@ -100,18 +87,6 @@
 		const element = tag.$element[ 0 ];
 
 		assert.strictEqual( $( '.mw-advancedSearch-searchPreview-content', element ).html(), '<bdi>&lt;script&gt;alert("evil");&lt;/script&gt;</bdi>' );
-	} );
-
-	QUnit.test( 'Tag label is HTML-safe', ( assert ) => {
-		sandbox.stub( mw, 'msg' )
-			.withArgs( 'advancedsearch-field-whatever' ).returns( '<div>block</div>' )
-			.withArgs( 'colon-separator' ).returns( ':' );
-		const searchPreview = new SearchPreview( store, config );
-		const tag = searchPreview.generateTag( 'whatever', 'lorem' );
-
-		const element = tag.$element[ 0 ];
-
-		assert.strictEqual( $( '.oo-ui-labelElement-label span', element ).html(), '&lt;div&gt;block&lt;/div&gt;:' );
 	} );
 
 	QUnit.test( 'Tag removals clears store', ( assert ) => {
@@ -153,22 +128,18 @@
 
 	QUnit.test( 'Array values get formatted well', ( assert ) => {
 		const searchPreview = new SearchPreview( store, config );
-		sandbox.stub( mw, 'msg' ).withArgs( 'comma-separator' ).returns( ', ' );
 
-		assert.strictEqual( searchPreview.formatValue( 'someOption', [ 'some', 'words', 'in', 'combination' ] ), 'some, words, in, combination' );
-		assert.strictEqual( searchPreview.formatValue( 'someOption', [ 'related words', 'not', 'so' ] ), 'related words, not, so' );
-		assert.strictEqual( searchPreview.formatValue( 'someOption', [ '', ' stray', 'whitespace  ' ] ), 'stray, whitespace' );
+		assert.strictEqual( searchPreview.formatValue( 'someOption', [ 'some', 'words', 'in', 'combination' ] ), 'some(comma-separator)words(comma-separator)in(comma-separator)combination' );
+		assert.strictEqual( searchPreview.formatValue( 'someOption', [ 'related words', 'not', 'so' ] ), 'related words(comma-separator)not(comma-separator)so' );
+		assert.strictEqual( searchPreview.formatValue( 'someOption', [ '', ' stray', 'whitespace  ' ] ), 'stray(comma-separator)whitespace' );
 	} );
 
 	QUnit.test( 'Dimension values get formatted well', ( assert ) => {
 		const searchPreview = new SearchPreview( store, config );
-		const translationStub = sandbox.stub( mw, 'msg' ).withArgs( 'word-separator' ).returns( ' ' );
 
 		assert.strictEqual( searchPreview.formatValue( 'someOption', [ '', '' ] ), '' );
-		assert.strictEqual( searchPreview.formatValue( 'fileh', [ '', 1000 ] ), '= 1000' );
-		assert.strictEqual( searchPreview.formatValue( 'fileh', [ '>', 300 ] ), '> 300' );
-		assert.strictEqual( searchPreview.formatValue( 'filew', [ '<', 1400 ] ), '< 1400' );
-
-		assert.strictEqual( translationStub.callCount, 3 );
+		assert.strictEqual( searchPreview.formatValue( 'fileh', [ '', 1000 ] ), '=(word-separator)1000' );
+		assert.strictEqual( searchPreview.formatValue( 'fileh', [ '>', 300 ] ), '>(word-separator)300' );
+		assert.strictEqual( searchPreview.formatValue( 'filew', [ '<', 1400 ] ), '<(word-separator)1400' );
 	} );
-}() );
+} );

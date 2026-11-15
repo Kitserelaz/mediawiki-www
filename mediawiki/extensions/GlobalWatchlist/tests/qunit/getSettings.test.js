@@ -1,5 +1,5 @@
 ( function () {
-	var getSettings = require( 'ext.globalwatchlist.specialglobalwatchlist/getSettings.js' );
+	const getSettings = require( 'ext.globalwatchlist.specialglobalwatchlist/getSettings.js' );
 
 	function FakeDebugger() {
 		this.infoCalled = false;
@@ -10,7 +10,7 @@
 		};
 	}
 
-	var defaultSettings = {
+	const defaultSettings = {
 		siteList: [ 'en.wikipedia.org' ],
 		anon: 0,
 		bot: 0,
@@ -22,27 +22,25 @@
 		showLogEntries: true,
 		showNewPages: true,
 
+		lang: null,
 		// Based on the others or the config
-		lang: 'en',
-		watchlistQueryProps: 'ids|title|flags|loginfo|parsedcomment|timestamp|user|tags|expiry',
+		watchlistQueryProps: 'ids|title|flags|loginfo|parsedcomment|timestamp|user|tags|expiry|labels',
 		watchlistQueryTypes: 'edit|new|log',
-		watchlistQueryShow: 'unread',
-		wikibaseSite: 'www.wikidata.org'
+		watchlistQueryShow: 'unread'
 	};
 
 	QUnit.module( 'ext.globalwatchlist.specialglobalwatchlist/getSettings', QUnit.newMwEnvironment( {
 		config: {
-			wgGlobalWatchlistWikibaseSite: 'www.wikidata.org',
 			wgServer: '//en.wikipedia.org',
 			wgUserLanguage: 'en'
 		}
 	} ) );
 
-	QUnit.test( 'getSettings.noSettings', function ( assert ) {
+	QUnit.test( 'getSettings.noSettings', ( assert ) => {
 		mw.user.options.set( 'global-watchlist-options', null );
-		var fakeDebugInstance = new FakeDebugger();
+		const fakeDebugInstance = new FakeDebugger();
 
-		var settings = getSettings( fakeDebugInstance );
+		const settings = getSettings( fakeDebugInstance );
 
 		assert.deepEqual(
 			settings,
@@ -56,16 +54,16 @@
 		);
 	} );
 
-	QUnit.test( 'getSettings.userSettings', function ( assert ) {
+	QUnit.test( 'getSettings.userSettings', ( assert ) => {
 		mw.user.options.set(
 			'global-watchlist-options',
 			'{"sites":["foo.bar.org","baz.qux.org"],"anonfilter":2,"botfilter":2,"minorfilter":2,"confirmallsites":false,"fastmode":true,"grouppage":true,"showtypes":["edit","log"],"version":1}'
 		);
-		var fakeDebugInstance = new FakeDebugger();
+		const fakeDebugInstance = new FakeDebugger();
 
-		var settings = getSettings( fakeDebugInstance );
+		const settings = getSettings( fakeDebugInstance );
 
-		var expectedSettings = {
+		const expectedSettings = {
 			siteList: [ 'foo.bar.org', 'baz.qux.org' ],
 			anon: 2,
 			bot: 2,
@@ -77,12 +75,11 @@
 			showLogEntries: true,
 			showNewPages: false,
 
+			lang: null,
 			// Based on the others or the config
-			lang: 'en',
 			watchlistQueryProps: 'ids|title|flags|loginfo',
 			watchlistQueryTypes: 'edit|log',
-			watchlistQueryShow: 'unread|!anon|!bot|!minor',
-			wikibaseSite: 'www.wikidata.org'
+			watchlistQueryShow: 'unread|!anon|!bot|!minor'
 		};
 
 		assert.deepEqual(
@@ -97,11 +94,11 @@
 		);
 	} );
 
-	QUnit.test( 'getSettings.invalidSettings', function ( assert ) {
+	QUnit.test( 'getSettings.invalidSettings', ( assert ) => {
 		mw.user.options.set( 'global-watchlist-options', 'notValidJson' );
-		var fakeDebugInstance = new FakeDebugger();
+		const fakeDebugInstance = new FakeDebugger();
 
-		var settings = getSettings( fakeDebugInstance );
+		const settings = getSettings( fakeDebugInstance );
 
 		assert.deepEqual(
 			settings,

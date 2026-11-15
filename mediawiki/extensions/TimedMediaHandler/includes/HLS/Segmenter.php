@@ -19,11 +19,12 @@ use LogicException;
  */
 abstract class Segmenter {
 
-	protected string $filename;
 	protected array $segments;
 
-	public function __construct( string $filename, ?array $segments = null ) {
-		$this->filename = $filename;
+	public function __construct(
+		protected readonly string $filename,
+		?array $segments = null,
+	) {
 		if ( $segments ) {
 			$this->segments = $segments;
 		} else {
@@ -142,18 +143,15 @@ abstract class Segmenter {
 	}
 
 	public static function segment( string $filename ): Segmenter {
-		$ext = strtolower( substr( $filename, strrpos( $filename, '.' ) ) );
-		switch ( $ext ) {
-			case '.mp3':
-				return new MP3Segmenter( $filename );
-			case '.mp4':
-			case '.m4v':
-			case '.m4a':
-			case '.mov':
-			case '.3gp':
-				return new MP4Segmenter( $filename );
-			default:
-				throw new LogicException( "Unexpected streaming file extension $ext" );
-		}
+		$ext = strtolower( pathinfo( $filename, PATHINFO_EXTENSION ) );
+		return match ( $ext ) {
+			'mp3' => new MP3Segmenter( $filename ),
+			'mp4',
+			'm4v',
+			'm4a',
+			'mov',
+			'3gp' => new MP4Segmenter( $filename ),
+			default => throw new LogicException( "Unexpected streaming file extension $ext" )
+		};
 	}
 }

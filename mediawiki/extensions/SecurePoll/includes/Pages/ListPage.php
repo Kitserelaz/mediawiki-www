@@ -2,10 +2,10 @@
 
 namespace MediaWiki\Extension\SecurePoll\Pages;
 
-use JobQueueGroup;
-use JobSpecification;
 use MediaWiki\Extension\SecurePoll\Entities\Election;
 use MediaWiki\Extension\SecurePoll\SpecialSecurePoll;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 
@@ -17,19 +17,11 @@ class ListPage extends ActionPage {
 	/** @var Election */
 	public $election;
 
-	/** @var JobQueueGroup */
-	private $jobQueueGroup;
-
-	/**
-	 * @param SpecialSecurePoll $specialPage
-	 * @param JobQueueGroup $jobQueueGroup
-	 */
 	public function __construct(
 		SpecialSecurePoll $specialPage,
-		JobQueueGroup $jobQueueGroup
+		private readonly JobQueueGroup $jobQueueGroup,
 	) {
 		parent::__construct( $specialPage );
-		$this->jobQueueGroup = $jobQueueGroup;
 	}
 
 	/**
@@ -56,6 +48,10 @@ class ListPage extends ActionPage {
 		$this->initLanguage( $this->specialPage->getUser(), $this->election );
 
 		$out->setPageTitleMsg( $this->msg( 'securepoll-list-title', $this->election->getMessage( 'title' ) ) );
+
+		if ( $this->showRedirectMessage( 'list', $params ) ) {
+			return;
+		}
 
 		$isAdmin = $this->election->isAdmin( $this->specialPage->getUser() );
 
@@ -123,9 +119,10 @@ class ListPage extends ActionPage {
 
 		$pager = new ListPager( $this );
 
-		// If an admin is viewing the votes, log it
+		// If someone that can see PII is viewing the votes (and the PII), log it
 		$securePollUseLogging = $this->specialPage->getConfig()->get( 'SecurePollUseLogging' );
-		if ( $isAdmin && $securePollUseLogging ) {
+		$canViewPii = $this->specialPage->getUser()->isAllowed( 'securepoll-view-voter-pii' );
+		if ( $isAdmin && $securePollUseLogging && $canViewPii ) {
 			$fields = [
 				'spl_election_id' => $electionId,
 				'spl_user' => $this->specialPage->getUser()->getId(),
@@ -143,7 +140,10 @@ class ListPage extends ActionPage {
 		}
 
 		$out->addHTML( $pager->getLimitForm() . $pager->getNavigationBar() );
-		$out->addParserOutputContent( $pager->getBodyOutput() );
+		$out->addParserOutputContent(
+			$pager->getBodyOutput(),
+			$this->context->getParserOptions()
+		);
 		$out->addHTML( $pager->getNavigationBar() );
 		if ( $isAdmin ) {
 			$out->addJsConfigVars( 'SecurePollSubPage', 'list' );

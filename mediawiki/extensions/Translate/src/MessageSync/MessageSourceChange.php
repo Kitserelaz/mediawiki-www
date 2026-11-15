@@ -33,12 +33,12 @@ class MessageSourceChange {
 
 	/**
 	 * Contains a mapping of message type, and the corresponding addition function
-	 * @var callable[]
+	 * @var array<string,callable>
 	 */
 	protected $addFunctionMap;
 	/**
 	 * Contains a mapping of message type, and the corresponding removal function
-	 * @var callable[]
+	 * @var array<string,callable>
 	 */
 	protected $removeFunctionMap;
 
@@ -113,6 +113,11 @@ class MessageSourceChange {
 		];
 	}
 
+	/**
+	 * @param string $language
+	 * @param string $msgKey
+	 * @param string $state
+	 */
 	public function setRenameState( $language, $msgKey, $state ) {
 		$possibleStates = [ self::ADDITION, self::CHANGE, self::DELETION,
 			self::NONE, self::RENAME ];
@@ -181,11 +186,12 @@ class MessageSourceChange {
 	 * @return array|null
 	 */
 	public function findMessage( $language, $key, $possibleStates = [], &$modificationType = null ) {
-		$allChanges = [];
-		$allChanges[self::ADDITION] = $this->getAdditions( $language );
-		$allChanges[self::DELETION] = $this->getDeletions( $language );
-		$allChanges[self::CHANGE] = $this->getChanges( $language );
-		$allChanges[self::RENAME] = $this->getRenames( $language );
+		$allChanges = [
+			self::ADDITION => $this->getAdditions( $language ),
+			self::DELETION => $this->getDeletions( $language ),
+			self::CHANGE => $this->getChanges( $language ),
+			self::RENAME => $this->getRenames( $language ),
+		];
 
 		if ( $possibleStates === [] ) {
 			$possibleStates = [ self::ADDITION, self::CHANGE, self::DELETION, self::RENAME ];
@@ -244,8 +250,7 @@ class MessageSourceChange {
 			if ( $matchedMsgState === self::CHANGE ) {
 				$matchedMsg['key'] = $msg['key'];
 			}
-			call_user_func(
-				$this->addFunctionMap[ $matchedMsgState ],
+			$this->addFunctionMap[ $matchedMsgState ](
 				$languageCode,
 				$matchedMsg['key'],
 				$matchedMsg['content']
@@ -256,8 +261,7 @@ class MessageSourceChange {
 			if ( $msgState === self::CHANGE ) {
 				$msg['key'] = $matchedMsg['key'];
 			}
-			call_user_func(
-				$this->addFunctionMap[ $msgState ],
+			$this->addFunctionMap[ $msgState ](
 				$languageCode,
 				$msg['key'],
 				$msg['content']
@@ -293,7 +297,7 @@ class MessageSourceChange {
 	/**
 	 * Remove additions for a language under the group.
 	 * @param string $language
-	 * @param array|null $keysToRemove
+	 * @param string[]|null $keysToRemove
 	 */
 	public function removeAdditions( $language, $keysToRemove ) {
 		$this->removeModification( $language, self::ADDITION, $keysToRemove );
@@ -302,7 +306,7 @@ class MessageSourceChange {
 	/**
 	 * Remove deletions for a language under the group.
 	 * @param string $language
-	 * @param array|null $keysToRemove
+	 * @param string[]|null $keysToRemove
 	 */
 	public function removeDeletions( $language, $keysToRemove ) {
 		$this->removeModification( $language, self::DELETION, $keysToRemove );
@@ -311,7 +315,7 @@ class MessageSourceChange {
 	/**
 	 * Remove changes for a language under the group.
 	 * @param string $language
-	 * @param array|null $keysToRemove
+	 * @param string[]|null $keysToRemove
 	 */
 	public function removeChanges( $language, $keysToRemove ) {
 		$this->removeModification( $language, self::CHANGE, $keysToRemove );
@@ -320,7 +324,7 @@ class MessageSourceChange {
 	/**
 	 * Remove renames for a language under the group.
 	 * @param string $language
-	 * @param array|null $keysToRemove
+	 * @param string[]|null $keysToRemove
 	 */
 	public function removeRenames( $language, $keysToRemove ) {
 		$this->removeModification( $language, self::RENAME, $keysToRemove );
@@ -330,7 +334,7 @@ class MessageSourceChange {
 	 * Remove modifications based on the type. Avoids usage of ugly if / switch
 	 * statement.
 	 * @param string $language
-	 * @param array $keysToRemove
+	 * @param string[] $keysToRemove
 	 * @param string $type One of ADDITION, CHANGE, DELETION
 	 */
 	public function removeBasedOnType( $language, $keysToRemove, $type ) {
@@ -343,7 +347,7 @@ class MessageSourceChange {
 			);
 		}
 
-		call_user_func( $callable, $language, $keysToRemove );
+		$callable( $language, $keysToRemove );
 	}
 
 	/**
@@ -354,8 +358,14 @@ class MessageSourceChange {
 		unset( $this->changes[ $language ] );
 	}
 
+	/**
+	 * @param string $language
+	 * @param string $type
+	 * @param string[]|null $keysToRemove Use null to remove all
+	 */
 	protected function removeModification( $language, $type, $keysToRemove = null ) {
 		if ( !isset( $this->changes[$language][$type] ) || $keysToRemove === [] ) {
+			// Nothing to do
 			return;
 		}
 
@@ -419,42 +429,14 @@ class MessageSourceChange {
 	 * @return bool
 	 */
 	public function hasOnly( $language, $type ) {
-		$deletions = $this->getDeletions( $language );
-		$additions = $this->getAdditions( $language );
-		$renames = $this->getRenames( $language );
-		$changes = $this->getChanges( $language );
-		$hasOnlyAdditions = $hasOnlyRenames =
-			$hasOnlyChanges = $hasOnlyDeletions = true;
-
-		if ( $deletions ) {
-			$hasOnlyAdditions = $hasOnlyRenames = $hasOnlyChanges = false;
+		$modifications = $this->getModificationsForLanguage( $language );
+		foreach ( [ self::ADDITION, self::CHANGE, self::DELETION, self::RENAME ] as $t ) {
+			// Stop if modifications of any type other than the allowed type exist
+			if ( $t !== $type && ( $modifications[$t] ?? null ) ) {
+				return false;
+			}
 		}
-
-		if ( $renames ) {
-			$hasOnlyDeletions = $hasOnlyAdditions = $hasOnlyChanges = false;
-		}
-
-		if ( $changes ) {
-			$hasOnlyAdditions = $hasOnlyRenames = $hasOnlyDeletions = false;
-		}
-
-		if ( $additions ) {
-			$hasOnlyDeletions = $hasOnlyRenames = $hasOnlyChanges = false;
-		}
-
-		if ( $type === self::DELETION ) {
-			$response = $hasOnlyDeletions;
-		} elseif ( $type === self::RENAME ) {
-			$response = $hasOnlyRenames;
-		} elseif ( $type === self::CHANGE ) {
-			$response = $hasOnlyChanges;
-		} elseif ( $type === self::ADDITION ) {
-			$response = $hasOnlyAdditions;
-		} else {
-			throw new InvalidArgumentException( "Unknown $type passed." );
-		}
-
-		return $response;
+		return true;
 	}
 
 	/**

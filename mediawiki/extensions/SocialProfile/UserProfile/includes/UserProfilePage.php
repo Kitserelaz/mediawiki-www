@@ -3,6 +3,7 @@
 use MediaWiki\Html\Html;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Title\Title;
 
 /**
@@ -1814,20 +1815,27 @@ class UserProfilePage extends Article {
 					] ),
 					ENT_QUOTES
 				);
-				$output .= '<div class="user-page-message-form">
-					<form id="board-post-form" action="' . $url . '" method="post">
-						<input type="hidden" id="user_name_to" name="user_name_to" value="' . htmlspecialchars( $this->profileOwner->getName(), ENT_QUOTES ) . '" />
-						<span class="profile-board-message-type">' .
+
+				if ( $this->getContext()->getConfig()->get( 'UserBoardAllowPrivateMessages' ) ) {
+					$messageTypeSelector = '<span class="profile-board-message-type">' .
 							wfMessage( 'userboard_messagetype' )->escaped() .
 						'</span>
 						<select id="message_type" name="message_type">
-							<option value="0">' .
-								wfMessage( 'userboard_public' )->escaped() .
-							'</option>
-							<option value="1">' .
-								wfMessage( 'userboard_private' )->escaped() .
-							'</option>
-						</select><p>
+						<option value="0">' .
+							wfMessage( 'userboard_public' )->escaped() .
+						'</option>
+						<option value="1">' .
+							wfMessage( 'userboard_private' )->escaped() .
+						'</option>
+					</select>';
+				} else {
+					$messageTypeSelector = '';
+				}
+				$output .= '<div class="user-page-message-form">
+					<form id="board-post-form" action="' . $url . '" method="post">
+						<input type="hidden" id="user_name_to" name="user_name_to" value="' . htmlspecialchars( $this->profileOwner->getName(), ENT_QUOTES ) . '" />' .
+						$messageTypeSelector .
+						'<p>
 						<textarea name="message" id="message" cols="43" rows="4"></textarea>
 						<div class="user-page-message-box-button">
 							<input type="submit" value="' . wfMessage( 'userboard_sendbutton' )->escaped() . '" class="site-button" />
@@ -1972,9 +1980,9 @@ class UserProfilePage extends Article {
 					$fantag_leftside = $fanbox['fantag_left_text'];
 					$fantag_leftside = $tagParser->parse(
 						$fantag_leftside, $this->getTitle(),
-						$out->parserOptions(), false
+						ParserOptions::newFromContext( $out->getContext() ), false
 					);
-					$fantag_leftside = $fantag_leftside->getText();
+					$fantag_leftside = $fantag_leftside->getContentHolderText();
 				}
 
 				$leftfontsize = '10px';
@@ -1999,9 +2007,9 @@ class UserProfilePage extends Article {
 				$fantag_title = Title::makeTitle( NS_FANTAG, $fanbox['fantag_title'] );
 				$right_text = $fanbox['fantag_right_text'];
 				$right_text = $tagParser->parse(
-					$right_text, $this->getTitle(), $out->parserOptions(), false
+					$right_text, $this->getTitle(), ParserOptions::newFromContext( $out->getContext() ), false
 				);
-				$right_text = $right_text->getText();
+				$right_text = $right_text->getContentHolderText();
 
 				// Output fanboxes
 				$output .= "<div class=\"fanbox-item\">

@@ -11,8 +11,7 @@
  * @param {dataValues.DataValue} [config.dataValue] Relevant DataValue object, or null for valueless
  * @param {string} [config.editing] True for edit mode, False for read mode
  */
-var DATA_TYPES,
-	SnakListWidget = require( './SnakListWidget.js' ),
+const SnakListWidget = require( './SnakListWidget.js' ),
 	ConstraintsReportHandlerElement = require( './ConstraintsReportHandlerElement.js' ),
 	ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget,
 	DOMLessGroupWidget = require( 'wikibase.mediainfo.base' ).DOMLessGroupWidget,
@@ -23,15 +22,15 @@ var DATA_TYPES,
 		VALUE: datamodel.PropertyValueSnak.TYPE,
 		SOMEVALUE: datamodel.PropertySomeValueSnak.TYPE,
 		NOVALUE: datamodel.PropertyNoValueSnak.TYPE
-	},
-	kartoBox,
-	kartoEditing,
-	ItemWidget;
+	};
+
+let kartoBox,
+	kartoEditing;
 
 /**
  * Enum for data types that have special display requirements.
  */
-DATA_TYPES = {
+const DATA_TYPES = {
 	GLOBECOORDINATE: 'globecoordinate'
 	// NOTE: when the need arises to put more datatype-specific logic
 	// in here, consider refactoring this similar to the input fields
@@ -40,7 +39,7 @@ DATA_TYPES = {
 /**
  * @param {Object} config Configuration options
  */
-ItemWidget = function MediaInfoStatementsItemWidget( config ) {
+const ItemWidget = function MediaInfoStatementsItemWidget( config ) {
 	this.config = Object.assign( { editing: false }, config );
 
 	this.guidGenerator = new wikibase.utilities.ClaimGuidGenerator( config.entityId );
@@ -93,22 +92,20 @@ OO.mixinClass( ItemWidget, ConstraintsReportHandlerElement );
  * @inheritDoc
  */
 ItemWidget.prototype.getTemplateData = function () {
-	var self = this,
-		labelPromise,
-		errors = this.getErrors(),
-		errorMessages = ( errors.length > 0 ) ?
-			errors.map( function ( error ) {
-				return new OO.ui.MessageWidget( {
-					type: 'error',
-					label: error,
-					classes: [ 'wbmi-statement-error-msg--inline' ]
-				} );
-			} ) : null;
+	const self = this;
+	const errors = this.getErrors();
+	const errorMessages = ( errors.length > 0 ) ?
+		errors.map( ( error ) => new OO.ui.MessageWidget( {
+			type: 'error',
+			label: error,
+			classes: [ 'wbmi-statement-error-msg--inline' ]
+		} ) ) : null;
 
 	// Get the formatted label text for the value if necessary,
 	// or else use a dummy promise
 	// Determine if we are dealing with a globecoordinate value, which has
 	// special display needs
+	let labelPromise;
 	if ( this.state.dataValue ) {
 		labelPromise = this.formatValue( this.state.dataValue, 'text/html', null, this.state.propertyId );
 	} else {
@@ -121,15 +118,12 @@ ItemWidget.prototype.getTemplateData = function () {
 		).promise();
 	}
 
-	return labelPromise.then( function ( label ) {
-		var id = self.dataValue ? self.dataValue.toJSON().id : '',
-			prominent = self.state.rank === datamodel.Statement.RANK.PREFERRED,
-			dataValueType = self.state.dataValue ? self.state.dataValue.getType() : undefined,
-			removeButton,
-			addReferenceButton,
-			formatResponse;
+	return labelPromise.then( ( label ) => {
+		const id = self.dataValue ? self.dataValue.toJSON().id : '';
+		const prominent = self.state.rank === datamodel.Statement.RANK.PREFERRED;
+		const dataValueType = self.state.dataValue ? self.state.dataValue.getType() : undefined;
 
-		formatResponse = function ( html ) {
+		const formatResponse = function ( html ) {
 			return $( '<div>' )
 				.append( html )
 				.find( 'a' )
@@ -138,7 +132,7 @@ ItemWidget.prototype.getTemplateData = function () {
 				.html();
 		};
 
-		removeButton = new OO.ui.ButtonWidget( {
+		const removeButton = new OO.ui.ButtonWidget( {
 			classes: [ 'wbmi-item-remove' ],
 			title: mw.msg( 'wikibasemediainfo-statements-item-remove' ),
 			flags: 'destructive',
@@ -147,14 +141,14 @@ ItemWidget.prototype.getTemplateData = function () {
 		} );
 		removeButton.connect( self, { click: [ 'emit', 'delete' ] } );
 
-		addReferenceButton = new OO.ui.ButtonWidget( {
+		const addReferenceButton = new OO.ui.ButtonWidget( {
 			classes: [ 'wbmi-snaklist-add-snak' ],
 			label: mw.msg( 'wikibasemediainfo-statements-item-add-reference' ),
 			flags: 'progressive',
 			framed: false
 		} );
-		addReferenceButton.on( 'click', function () {
-			var widget = self.createReferenceWidget();
+		addReferenceButton.on( 'click', () => {
+			const widget = self.createReferenceWidget();
 			// initialize with an empty snak input
 			widget.addWidget();
 			self.setState( {
@@ -191,16 +185,16 @@ ItemWidget.prototype.getTemplateData = function () {
 };
 
 ItemWidget.prototype.render = function () {
-	var self = this,
-		promise = ComponentWidget.prototype.render.call( this );
+	const self = this;
+	let promise = ComponentWidget.prototype.render.call( this );
 
 	if (
 		this.map &&
 		this.state.dataValue &&
 		this.state.dataValue.getType() === DATA_TYPES.GLOBECOORDINATE
 	) {
-		promise = promise.then( function ( $element ) {
-			var data = self.state.dataValue.getValue(),
+		promise = promise.then( ( $element ) => {
+			const data = self.state.dataValue.getValue(),
 				layer = kartoEditing.getKartographerLayer( self.map );
 
 			// we've just rerendered & DOM might look different then it did
@@ -256,14 +250,12 @@ ItemWidget.prototype.toggleItemProminence = function ( event ) {
  * @return {jQuery.Promise}
  */
 ItemWidget.prototype.setEditing = function ( editing ) {
-	var self = this;
+	const self = this;
 
 	return $.Deferred().resolve().promise()
 		.then( this.qualifiers.setEditing.bind( this.qualifiers, editing ) )
-		.then( function () {
-			var promises = self.state.references.map( function ( reference ) {
-				return reference.setEditing( editing );
-			} );
+		.then( () => {
+			const promises = self.state.references.map( ( reference ) => reference.setEditing( editing ) );
 			return $.when.apply( $, promises );
 		} )
 		.then( this.setState.bind( this, { editing: editing } ) );
@@ -273,8 +265,8 @@ ItemWidget.prototype.setEditing = function ( editing ) {
  * @return {datamodel.Statement}
  */
 ItemWidget.prototype.getData = function () {
-	var self = this,
-		snak;
+	const self = this;
+	let snak;
 
 	switch ( this.state.snakType ) {
 		case valueTypes.SOMEVALUE:
@@ -298,15 +290,11 @@ ItemWidget.prototype.getData = function () {
 		),
 		new datamodel.ReferenceList(
 			this.state.references
-				.map( function ( reference, i ) {
-					return new datamodel.Reference(
-						reference.getData(),
-						self.state.referenceHashes[ i ]
-					);
-				} )
-				.filter( function ( reference ) {
-					return reference.getSnaks().length > 0;
-				} )
+				.map( ( reference, i ) => new datamodel.Reference(
+					reference.getData(),
+					self.state.referenceHashes[ i ]
+				) )
+				.filter( ( reference ) => reference.getSnaks().length > 0 )
 		),
 		this.state.rank
 	);
@@ -317,7 +305,7 @@ ItemWidget.prototype.getData = function () {
  * @return {SnakListWidget}
  */
 ItemWidget.prototype.createSnaklistWidget = function ( config ) {
-	var widget = new SnakListWidget( Object.assign( { editing: this.config.editing }, config ) );
+	const widget = new SnakListWidget( Object.assign( { editing: this.config.editing }, config ) );
 	widget.connect( this, { remove: [ 'emit', 'change' ] } );
 	widget.connect( this, { change: [ 'emit', 'change' ] } );
 	return widget;
@@ -328,20 +316,20 @@ ItemWidget.prototype.createSnaklistWidget = function ( config ) {
  * @return {SnakListWidget}
  */
 ItemWidget.prototype.createReferenceWidget = function ( config ) {
-	var widget, self = this;
+	const self = this;
 	config = config || {};
 
-	widget = this.createSnaklistWidget( Object.assign( config, {
+	const widget = this.createSnaklistWidget( Object.assign( config, {
 		editing: this.state.editing,
 		addText: mw.msg( 'wikibasemediainfo-statements-item-add-reference-snak' )
 	} ) );
 
 	// if a reference snaklist widget is emptied, remove it entirely
-	widget.on( 'empty', function () {
-		var newReferences = [],
+	widget.on( 'empty', () => {
+		const newReferences = [],
 			newReferenceHashes = [];
 
-		self.state.references.forEach( function ( reference, i ) {
+		self.state.references.forEach( ( reference, i ) => {
 			if ( widget !== reference ) {
 				newReferences.push( reference );
 				newReferenceHashes.push( self.state.referenceHashes[ i ] );
@@ -362,16 +350,9 @@ ItemWidget.prototype.createReferenceWidget = function ( config ) {
  * @return {jQuery.Deferred}
  */
 ItemWidget.prototype.setData = function ( data ) {
-	var claim,
-		mainSnak,
-		qualifiers,
-		referencesArray,
-		referencesHashes,
-		type,
-		i,
-		newReferenceHashes = [],
-		newReferenceWidgets = [],
-		newReferenceWidgetPromises = [];
+	const newReferenceHashes = [];
+	const newReferenceWidgets = [];
+	const newReferenceWidgetPromises = [];
 
 	// Bail early and discard existing data if data argument is not a snak
 	if ( !( data instanceof datamodel.Statement ) ) {
@@ -379,11 +360,11 @@ ItemWidget.prototype.setData = function ( data ) {
 	}
 
 	// Store the attributes we need to reference frequently for later use
-	claim = data.getClaim();
-	mainSnak = claim.getMainSnak();
-	qualifiers = claim.getQualifiers();
-	referencesArray = data.getReferences().toArray();
-	type = mainSnak.getType();
+	const claim = data.getClaim();
+	const mainSnak = claim.getMainSnak();
+	const qualifiers = claim.getQualifiers();
+	const referencesArray = data.getReferences().toArray();
+	const type = mainSnak.getType();
 
 	// if amount of widgets stayed the same or increased, events will be
 	// emitted once those widgets receive new data (in case it changed);
@@ -393,12 +374,10 @@ ItemWidget.prototype.setData = function ( data ) {
 		this.emit( 'change' );
 	}
 
-	referencesHashes = referencesArray.map( function ( reference ) {
-		return reference.getHash();
-	} );
+	const referencesHashes = referencesArray.map( ( reference ) => reference.getHash() );
 
-	for ( i = 0; i < referencesArray.length; i++ ) {
-		if ( referencesHashes.indexOf( this.state.referenceHashes[ i ] ) >= 0 ) {
+	for ( let i = 0; i < referencesArray.length; i++ ) {
+		if ( referencesHashes.includes( this.state.referenceHashes[ i ] ) ) {
 			// salvage existing widgets that are also in the newly received data,
 			newReferenceWidgets[ i ] = this.state.references[ i ];
 		} else {
@@ -432,7 +411,7 @@ ItemWidget.prototype.setData = function ( data ) {
  * @return {jQuery.Promise}
  */
 ItemWidget.prototype.initializeMap = function () {
-	var self = this;
+	const self = this;
 
 	if (
 		// map already initialized previously
@@ -445,9 +424,7 @@ ItemWidget.prototype.initializeMap = function () {
 	}
 
 	return mw.loader.using( [ 'ext.kartographer.box', 'ext.kartographer.editing' ] )
-		.then( function ( require ) {
-			var sdTab;
-
+		.then( ( require ) => {
 			kartoBox = require( 'ext.kartographer.box' );
 			kartoEditing = require( 'ext.kartographer.editing' );
 
@@ -472,8 +449,8 @@ ItemWidget.prototype.initializeMap = function () {
 			// the children of a non-visible tab), so we must do it again when the map
 			// becomes visible.
 			// eslint-disable-next-line no-jquery/no-global-selector
-			sdTab = $( '.wbmi-structured-data-header' ).closest( '.wbmi-tab' )[ 0 ];
-			new MutationObserver( function () {
+			const sdTab = $( '.wbmi-structured-data-header' ).closest( '.wbmi-tab' )[ 0 ];
+			new MutationObserver( () => {
 				if ( self.$map.parents( 'body' ).length > 0 ) {
 					self.map.invalidateSize();
 				}
@@ -496,13 +473,13 @@ ItemWidget.prototype.initializeMap = function () {
  * @return {jQuery.Promise}
  */
 ItemWidget.prototype.setConstraintsReport = function ( results ) {
-	var self = this,
+	const self = this,
 		promises = [];
 
 	promises.push( this.setState( { constraintsReport: results && results.mainsnak.results } ) );
 	promises.push( this.qualifiers.setConstraintsReport( results.qualifiers || {} ) );
-	( results.references || [] ).forEach( function ( snakListResult ) {
-		var i = self.state.referenceHashes.indexOf( snakListResult.hash );
+	( results.references || [] ).forEach( ( snakListResult ) => {
+		const i = self.state.referenceHashes.indexOf( snakListResult.hash );
 		if ( i >= 0 ) {
 			promises.push( self.state.references[ i ].setConstraintsReport( snakListResult.snaks ) );
 		}

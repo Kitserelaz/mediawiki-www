@@ -11,14 +11,12 @@
 			"Ole Yves",
 			"Soul Train",
 			"Stjn",
-			"Vlad5250"
+			"Vlad5250",
+			"Vonavy"
 		]
 	},
 	"templatewizard-add-all": "Добавить все параметры",
 	"templatewizard-cancel": "Отмена",
-	"templatewizard-close-dialog": "Закрыть мастер шаблонов?",
-	"templatewizard-close-dialog-body": "Выход из мастера приведёт к потере любых данных, которые вы добавили в шаблон.",
-	"templatewizard-close-dialog-retry": "Отменить изменения",
 	"templatewizard-default": "По умолчанию: $1",
 	"templatewizard-desc": "Надстройка WikiEditor, которая предоставляет мастер установки шаблонов",
 	"templatewizard-dialog-title": "Вставить шаблон",
@@ -39,14 +37,14 @@
 	"templatewizard-placeholder-default": "По умолчанию: $1",
 	"templatewizard-placeholder-example": "Например: $1",
 	"templatewizard-remove-all": "Убрать все параметры",
-	"templatewizard-remove-template": "Удалить шаблон?",
-	"templatewizard-remove-template-body": "Шаблон, который вы хотите удалить, содержит введённые вами данные. Удаление шаблона также удалит информацию, которую вы добавили в него. Это действие нельзя будет отменить.",
-	"templatewizard-remove-template-retry": "Удалить шаблон",
+	"templatewizard-remove-template": "Отменить правки?",
+	"templatewizard-remove-template-body": "Вернуться к поиску? Сделанные вами изменения будут утрачены, и это действие нельзя будет отменить.",
+	"templatewizard-remove-template-retry": "Отменить правки",
 	"templatewizard-search-placeholder": "Искать шаблон",
 	"templatewizard-parambutton-add-title": "Добавить параметр '$1'",
 	"templatewizard-parambutton-remove-title": "Удалить параметр '$1'",
 	"templatewizard-parambutton-required-title": "Требуется параметр '$1'",
-	"templatewizard-remove-template-title": "Удалить шаблон",
+	"templatewizard-remove-template-title": "Вернуться к поиску",
 	"templatewizard-link-to-template-title": "Просмотр шаблона",
 	"templatewizard-use": "Использовать"
 }

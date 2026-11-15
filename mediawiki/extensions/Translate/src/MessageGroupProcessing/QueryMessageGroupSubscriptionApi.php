@@ -3,8 +3,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
-use ApiQuery;
-use ApiQueryBase;
+use MediaWiki\Api\ApiQuery;
+use MediaWiki\Api\ApiQueryBase;
 
 /**
  * API module to query message groups watched by the current user.
@@ -14,15 +14,13 @@ use ApiQueryBase;
  * @ingroup API TranslateAPI
  */
 class QueryMessageGroupSubscriptionApi extends ApiQueryBase {
-	private MessageGroupSubscription $groupSubscription;
 
 	public function __construct(
 		ApiQuery $queryModule,
 		string $moduleName,
-		MessageGroupSubscription $groupSubscription
+		private readonly MessageGroupSubscription $groupSubscription,
 	) {
 		parent::__construct( $queryModule, $moduleName, 'qmgs' );
-		$this->groupSubscription = $groupSubscription;
 	}
 
 	public function execute(): void {

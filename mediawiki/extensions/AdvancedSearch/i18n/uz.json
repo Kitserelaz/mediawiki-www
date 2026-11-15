@@ -1,10 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
-			"Malikxan",
-			"Diyora Iskandarova"
+			"Diyora Iskandarova",
+			"Malikxan"
 		]
 	},
+	"advancedsearch-desc": "[[{{#Special:Search}}]] sahifasi orqali kengaytirilgan qidiruv imkoniyatlariga oson kirish",
 	"advancedsearch-options-pane-head": "Kengaytirilgan qidiruv",
 	"advancedsearch-options-pane-preview-list": "Hozirda foydalanilayotgan qidiruv soʻzlari",
 	"advancedsearch-optgroup-text": "Sahifa matnida qidirish",
@@ -30,8 +31,8 @@
 	"advancedsearch-inlanguage-default": "Tilni tanlash",
 	"advancedsearch-filetype-section-types": "Umumiy fayl turlari",
 	"advancedsearch-filetype-section-image": "Tasvirga oid formatlar",
-	"advancedsearch-filetype-section-video": "Video formatlar",
 	"advancedsearch-filetype-section-audio": "Audio formatlar",
+	"advancedsearch-filetype-section-video": "Video formatlar",
 	"advancedsearch-filetype-section-document": "Hujjatga oid formatlar",
 	"advancedsearch-filetype-section-other": "Boshqa formatlar",
 	"advancedsearch-filetype-default": "Fayl turini tanlash",

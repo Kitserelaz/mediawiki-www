@@ -1,6 +1,6 @@
 {
 	"name": "SemanticDrilldown",
-	"version": "4.0.0-beta4",
+	"version": "5.0.2",
 	"author": [
 		"Yaron Koren",
 		"gesinn.it team",
@@ -11,10 +11,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "semantic",
 	"requires": {
-		"MediaWiki": ">= 1.39",
-		"platform": {
-			"php": ">= 7.4"
-		}
+		"MediaWiki": ">= 1.43"
 	},
 	"SpecialPages": {
 		"BrowseData": "SD\\Services::getSpecialBrowseData"

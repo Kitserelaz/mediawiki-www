@@ -40,8 +40,7 @@ ve.ui.SequenceRegistry.prototype.register = function ( sequence ) {
 /**
  * Matching sequence and corresponding range
  *
- * @typedef {Object} Match
- * @memberof ve.ui.SequenceRegistry
+ * @typedef {Object} ve.ui.SequenceRegistry.Match
  * @property {ve.ui.Sequence} sequence
  * @property {ve.Range} range
  */
@@ -49,10 +48,10 @@ ve.ui.SequenceRegistry.prototype.register = function ( sequence ) {
 /**
  * Find sequence matches a given offset in the data
  *
- * @param {ve.dm.ElementLinearData} data
+ * @param {ve.dm.LinearData} data
  * @param {number} offset
- * @param {boolean} [isPaste] Whether this in the context of a paste
- * @param {boolean} [isDelete] Whether this is after content being deleted
+ * @param {boolean} [isPaste=false] Whether this in the context of a paste
+ * @param {boolean} [isDelete=false] Whether this is after content being deleted
  * @return {ve.ui.SequenceRegistry.Match[]} Array of matching sequences, and the corresponding range of the match for each.
  */
 ve.ui.SequenceRegistry.prototype.findMatching = function ( data, offset, isPaste, isDelete ) {
@@ -94,10 +93,7 @@ ve.ui.SequenceRegistry.prototype.findMatching = function ( data, offset, isPaste
 		}
 		const range = sequence.match( data, offset, plaintext );
 		if ( range !== null ) {
-			sequences.push( {
-				sequence: sequence,
-				range: range
-			} );
+			sequences.push( { sequence, range } );
 		}
 	}
 	return sequences;

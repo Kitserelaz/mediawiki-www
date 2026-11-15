@@ -1,43 +1,49 @@
 'use strict';
-/* eslint-disable no-implicit-globals */
 
 /*!
  * @author Santhosh Thottingal
  * @author Niklas Laxström
  * @license GPL-2.0-or-later
  */
-
-var LanguagesMultiselectWidget = require( './LanguagesMultiselectWidget.js' );
-
-// Needed for OOUI :(
-window.LanguagesMultiselectWidget = LanguagesMultiselectWidget;
-
-function configureLanguageInput( $form, $widget ) {
-	/** @type {LanguagesMultiselectWidget} */
-	var widget = OO.ui.infuse( $widget, { api: new mw.Api() } );
-
-	var $input = $( '<input>' ).prop( {
-		type: 'hidden',
-		name: 'prioritylangs',
-		value: widget.getValue()
-	} );
-
-	$form.prepend( $input );
-	widget.on( 'change', function () {
-		$input.val( widget.getValue() );
-	} );
-}
-
 function configurePostLinks( $container ) {
-	$container.on( 'click', '.mw-translate-jspost', function ( e ) {
-		var uri = new mw.Uri( e.target.href );
-
-		var params = uri.query;
-		params.token = mw.user.tokens.get( 'csrfToken' );
-		$.post( uri.path, params ).done( function () {
-			location.reload();
+	$container.on( 'click', '.mw-translate-encourage, .mw-translate-discourage', function ( e ) {
+		const $this = $( e.currentTarget );
+		const dis = $this.hasClass( 'mw-translate-discourage' );
+		const $li = $this.closest( '.mw-tpt-pagelist-item' );
+		const api = new mw.Api();
+		api.postWithToken( 'csrf', {
+			action: 'discouragetranslation',
+			title: $li.attr( 'data-target' ),
+			do: dis ? 'discourage' : 'encourage'
+		} ).then( updateLinks, function ( _code, data ) {
+			if ( data.error.code === 'discouragetranslation-alreadydone' ) {
+				updateLinks();
+			} else {
+				mw.notify( data.error.info, { type: 'error' } );
+			}
 		} );
 
+		function updateLinks() {
+			// Update the link
+			if ( dis ) {
+				$this.removeClass( 'mw-translate-discourage' )
+					.addClass( 'mw-translate-encourage' )
+					.attr( 'title', mw.msg( 'tpt-rev-encourage-tooltip' ) )
+					.text( mw.msg( 'tpt-rev-encourage' ) );
+			} else {
+				$this.removeClass( 'mw-translate-encourage' )
+					.addClass( 'mw-translate-discourage' )
+					.attr( 'title', mw.msg( 'tpt-rev-discourage-tooltip' ) )
+					.text( mw.msg( 'tpt-rev-discourage' ) );
+			}
+			// Now update the (discouraged | old syntax | no transclusion support) list.
+			const $acts = $li.find( '.mw-tpt-actions' );
+			if ( dis ) {
+				$acts.prepend( $( '<li>' ).addClass( 'mw-tpt-actions-discouraged' ).text( mw.msg( 'tpt-tag-discouraged' ) ) );
+			} else {
+				$acts.find( '.mw-tpt-actions-discouraged' ).remove();
+			}
+		}
 		e.preventDefault();
 	} );
 }
@@ -50,13 +56,22 @@ function configureDropdownForFuzzySelector( $container ) {
 		$form.toggleClass( 'mw-tpt-hide-custom-fuzzy', $( this ).val() !== 'custom' );
 	} );
 }
+
+function configureHideUnchangedTranslationUnits( $container ) {
+	var $form = $container.find( '.mw-tpt-sp-markform' );
+	var $input = $form.find( 'input[name="unchanged-translation-units"]' );
+	// Set the form class now (rather than relying on it being set by the PHP code)
+	// so checking the checkbox before JS loads works properly
+	$form.toggleClass( 'mw-tpt-hide-unchanged', $input.prop( 'checked' ) );
+	$input.on( 'change', function () {
+		$form.toggleClass( 'mw-tpt-hide-unchanged', $( this ).prop( 'checked' ) );
+	} );
+}
+
 // Init
 $( function () {
-	var $widgets = $( '#mw-translate-SpecialPageTranslation-prioritylangs' );
-
-	configurePostLinks( $( '#mw-content-text' ) );
-	configureDropdownForFuzzySelector( $( '#mw-content-text' ) );
-	if ( $widgets.length ) {
-		configureLanguageInput( $( '.mw-tpt-sp-markform' ), $widgets );
-	}
+	var $container = $( '#mw-content-text' );
+	configurePostLinks( $container );
+	configureDropdownForFuzzySelector( $container );
+	configureHideUnchangedTranslationUnits( $container );
 } );

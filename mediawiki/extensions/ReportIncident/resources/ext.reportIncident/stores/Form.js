@@ -1,20 +1,25 @@
 'use strict';
 
 const Pinia = require( 'pinia' );
-const { ref, computed } = require( 'vue' );
+const Constants = require( '../Constants.js' );
+const { ref, computed, watch } = require( 'vue' );
 
 const useFormStore = Pinia.defineStore( 'form', () => {
 	const overflowMenuData = ref( {} );
-	const inputBehaviors = ref( [ ] );
+	const incidentType = ref( '' );
+	const physicalHarmType = ref( '' );
+	const inputBehavior = ref( '' );
 	const displayBehaviorsRequiredError = ref( false );
 	const inputReportedUser = ref( '' );
 	const inputReportedUserDisabled = ref( false );
-	const displayReportedUserRequiredError = ref( false );
-	const reportedUserDoesNotExist = ref( false );
 	const inputDetails = ref( '' );
 	const inputSomethingElseDetails = ref( '' );
+	const displaySomethingElseDetailsEmptyError = ref( false );
 	const displaySomethingElseTextboxRequiredError = ref( false );
-	const formSuccessfullySubmitted = ref( false );
+	const showValidationError = ref( false );
+	const missingBehaviorSelection = ref( false );
+	const funnelEntryToken = ref( '' );
+	const funnelName = ref( '' );
 
 	/**
 	 * A dictionary of error messages for display in step 2 of the dialog.
@@ -29,41 +34,92 @@ const useFormStore = Pinia.defineStore( 'form', () => {
 		// Validate that the "Something else" box is filled if something-else
 		// is selected as a behaviour.
 		if (
-			inputBehaviors.value.indexOf( 'something-else' ) !== -1 &&
+			inputBehavior.value === Constants.harassmentTypes.SOMETHING_ELSE &&
 			inputSomethingElseDetails.value === '' &&
 			displaySomethingElseTextboxRequiredError.value
 		) {
 			displayBehaviorsRequiredError.value = true;
 			formErrors.inputBehaviors = { error: mw.msg( 'reportincident-dialog-something-else-empty' ) };
 		} else if (
-			inputBehaviors.value.indexOf( 'something-else' ) !== -1 &&
+			inputBehavior.value === Constants.harassmentTypes.SOMETHING_ELSE &&
 			inputSomethingElseDetails.value !== ''
 		) {
 			displaySomethingElseTextboxRequiredError.value = true;
 		}
-		// Validate at least one of behaviours is selected.
-		if ( inputBehaviors.value.length === 0 ) {
-			if ( displayBehaviorsRequiredError.value ) {
-				formErrors.inputBehaviors = { error: mw.msg( 'reportincident-dialog-harassment-empty' ) };
-			}
-		} else {
-			// If text has been entered for this field, then now display errors for empty field.
-			displayBehaviorsRequiredError.value = true;
+
+		if ( displaySomethingElseDetailsEmptyError.value &&
+			!areSomethingElseDetailsProvided() ) {
+			formErrors.inputBehaviors = {
+				error: mw.msg( 'reportincident-dialog-something-else-empty' )
+			};
 		}
-		// Validate the reported user field has some content.
-		if ( inputReportedUser.value === '' ) {
-			if ( displayReportedUserRequiredError.value ) {
-				formErrors.inputReportedUser = { error: mw.msg( 'reportincident-dialog-violator-empty' ) };
-			}
-		} else {
-			// If text has been entered for this field, then now display errors for empty field.
-			displayReportedUserRequiredError.value = true;
-			if ( reportedUserDoesNotExist.value ) {
-				formErrors.inputReportedUser = { error: mw.msg( 'reportincident-dialog-violator-nonexistent' ) };
-			}
+
+		if ( showValidationError.value && missingBehaviorSelection.value ) {
+			formErrors.inputBehaviors = {
+				error: mw.msg( 'reportincident-behavior-required' )
+			};
 		}
 
 		return formErrors;
+	} );
+
+	const harassmentOptions = ( mw.config.get( 'wgReportIncidentEnabledNonEmergencyCategories' ) || [] )
+		.reduce( ( categories, category ) => {
+			const categoryDefinition = Constants.harassmentTypesV2[ category ];
+			if ( categoryDefinition ) {
+				categories.push( {
+					// * reportincident-dialog-harassment-type-intimidation
+					// * reportincident-dialog-harassment-type-sexual-harassment
+					// * reportincident-dialog-harassment-type-doxing
+					// * reportincident-dialog-harassment-type-trolling
+					// * reportincident-dialog-harassment-type-hate-speech-or-discrimination
+					// * reportincident-dialog-harassment-type-spam
+					// * reportincident-dialog-harassment-type-something-else
+					// * reportincident-dialog-harassment-type-sockpuppetry
+					// * reportincident-dialog-harassment-type-vandalism
+					// * reportincident-dialog-harassment-type-userdispute
+					// * reportincident-dialog-harassment-type-other
+					label: mw.msg( categoryDefinition.labelKey ),
+					value: categoryDefinition.id
+				} );
+			}
+
+			return categories;
+		}, [] );
+
+	const contextsByHarmType = {
+		[ Constants.physicalHarmTypes.physicalHarm ]: 'physical',
+		[ Constants.physicalHarmTypes.selfHarm ]: 'self',
+		[ Constants.physicalHarmTypes.publicHarm ]: 'public'
+	};
+
+	/**
+	 * Getter for the interaction data context associated with the current physical harm type.
+	 */
+	const physicalHarmTypeContext = computed( () => {
+		if ( incidentType.value === Constants.typeOfIncident.immediateThreatPhysicalHarm ) {
+			return contextsByHarmType[ physicalHarmType.value ] || 'na';
+		}
+
+		return 'na';
+	} );
+
+	watch( inputSomethingElseDetails, ( newSomethingElseDetails ) => {
+		displaySomethingElseDetailsEmptyError.value = false;
+
+		if ( isUnacceptableBehavior() && isSomethingElse() ) {
+			if ( !areSomethingElseDetailsProvided( newSomethingElseDetails ) ) {
+				displaySomethingElseDetailsEmptyError.value = true;
+			}
+		}
+	} );
+
+	// eslint-disable-next-line no-unused-vars
+	watch( inputBehavior, ( _newInputBehavior ) => {
+		// If the user has just changed the type of unacceptable behavior, reset
+		// the error: If the details are left empty, they will be validated when
+		// moving forward to the next screen by isFormValidForSubmission().
+		displaySomethingElseDetailsEmptyError.value = false;
 	} );
 
 	/**
@@ -82,13 +138,93 @@ const useFormStore = Pinia.defineStore( 'form', () => {
 		// Because this is called when checking if the form can be submitted after
 		// the user pressed the submit button, update the form checks to check that
 		// errors appear for empty items.
-		if ( inputBehaviors.value.indexOf( 'something-else' ) !== -1 ) {
-			displaySomethingElseTextboxRequiredError.value = true;
+		displaySomethingElseTextboxRequiredError.value = isSomethingElse() &&
+			isUnacceptableBehavior() &&
+			!areSomethingElseDetailsProvided();
+
+		if ( displaySomethingElseTextboxRequiredError.value ) {
+			return false;
 		}
+
 		displayBehaviorsRequiredError.value = true;
-		displayReportedUserRequiredError.value = true;
+
 		// The form is valid if the formErrorMessages has no items.
 		return Object.keys( formErrorMessages.value ).length === 0;
+	}
+
+	/**
+	 * Check if an incident type is selected.
+	 *
+	 * @return {boolean} If an incident type is selected (and for immediate
+	 * threat of physical harm, if a subtype is selected)
+	 */
+	function isIncidentTypeSelected() {
+		return incidentType.value.length > 0;
+	}
+
+	/**
+	 * Check if the user selected one of the "physical harm" incident type, i.e.
+	 * if the report is an emergency.
+	 *
+	 * @return {boolean}
+	 */
+	function isEmergency() {
+		return incidentType.value !== Constants.typeOfIncident.unacceptableUserBehavior;
+	}
+
+	/**
+	 * Check if the user selected "physical harm" as the incident type, but
+	 * did not yet select a subtype.
+	 *
+	 * @return {boolean}
+	 */
+	function isPhysicalHarmSelectedButNoSubtypeSelected() {
+		return incidentType.value === Constants.typeOfIncident.immediateThreatPhysicalHarm &&
+			physicalHarmType.value.length === 0;
+	}
+
+	/**
+	 * Check if the user selected "unacceptable behavior" as the incident type.
+	 *
+	 * @return {boolean}
+	 */
+	function isUnacceptableBehavior() {
+		return incidentType.value === Constants.typeOfIncident.unacceptableUserBehavior;
+	}
+
+	/**
+	 * Check if the user selected "something else" as the type of unacceptable
+	 * behavior.
+	 *
+	 * @return {boolean}
+	 */
+	function isSomethingElse() {
+		return inputBehavior.value === Constants.harassmentTypes.SOMETHING_ELSE;
+	}
+
+	/**
+	 * Check if the user provided additional details in the textbox associated
+	 * with the "something else" behavior type.
+	 *
+	 * @param {string|undefined} value
+	 * @return {boolean}
+	 */
+	function areSomethingElseDetailsProvided( value = undefined ) {
+		if ( typeof value === 'undefined' ) {
+			value = inputSomethingElseDetails.value;
+		}
+
+		return value.trim().length > 0;
+	}
+
+	/**
+	 * Check whether a behavior is selected in the list of
+	 * unacceptable behaviors types.
+	 *
+	 * @return {boolean}
+	 */
+	function noBehaviorIsSelected() {
+		return inputBehavior.value.length === 0;
 	}
 
 	/**
@@ -98,20 +234,32 @@ const useFormStore = Pinia.defineStore( 'form', () => {
 	const restPayload = computed( () => {
 		const restData = {
 			reportedUser: inputReportedUser.value,
-			details: inputDetails.value,
-			behaviors: inputBehaviors.value
+			incidentType: incidentType.value
 		};
-		if ( inputBehaviors.value.indexOf( 'something-else' ) !== -1 ) {
-			restData.somethingElseDetails = inputSomethingElseDetails.value;
-		}
-		if ( Object.keys( overflowMenuData.value ).indexOf( 'thread-id' ) !== -1 ) {
+
+		if ( Object.keys( overflowMenuData.value ).includes( 'thread-id' ) ) {
 			restData.threadId = overflowMenuData.value[ 'thread-id' ];
 		}
-		return restData;
+
+		if ( isEmergency() ) {
+			return Object.assign( restData, {
+				details: inputDetails.value,
+				physicalHarmType: physicalHarmType.value
+			} );
+		}
+
+		if ( isSomethingElse() ) {
+			return Object.assign( restData, {
+				somethingElseDetails: inputSomethingElseDetails.value,
+				behaviorType: inputBehavior.value
+			} );
+		}
+
+		return Object.assign( restData, { behaviorType: inputBehavior.value } );
 	} );
 
 	/**
-	 * Resets the form data to it's initial state, which
+	 * Resets the form data to its initial state, which
 	 * is all text fields as an empty string and no
 	 * checkboxes selected.
 	 *
@@ -122,39 +270,54 @@ const useFormStore = Pinia.defineStore( 'form', () => {
 	 */
 	function $reset() {
 		// Reset the form data
-		inputBehaviors.value = [ ];
+		incidentType.value = '';
+		physicalHarmType.value = '';
+		inputBehavior.value = '';
 		inputReportedUser.value = '';
 		inputDetails.value = '';
 		inputSomethingElseDetails.value = '';
 		overflowMenuData.value = {};
+		showValidationError.value = false;
 		// Disable the required fields error again until
 		// that required field is un-focused or a submit
 		// is attempted.
-		displayReportedUserRequiredError.value = false;
 		displayBehaviorsRequiredError.value = false;
 		displaySomethingElseTextboxRequiredError.value = false;
+		displaySomethingElseDetailsEmptyError.value = false;
 		// Re-enable the username field if it was disabled
 		inputReportedUserDisabled.value = false;
-		// The username is now empty, so the username not
-		// existing error is no longer applicable.
-		reportedUserDoesNotExist.value = false;
+
+		funnelEntryToken.value = '';
+		funnelName.value = '';
 	}
 
 	return {
+		harassmentOptions,
 		overflowMenuData,
-		inputBehaviors,
+		incidentType,
+		physicalHarmType,
+		inputBehavior,
 		displayBehaviorsRequiredError,
 		inputReportedUser,
 		inputReportedUserDisabled,
-		displayReportedUserRequiredError,
-		reportedUserDoesNotExist,
 		inputDetails,
 		inputSomethingElseDetails,
 		displaySomethingElseTextboxRequiredError,
+		displaySomethingElseDetailsEmptyError,
 		restPayload,
 		formErrorMessages,
-		formSuccessfullySubmitted,
+		showValidationError,
+		noBehaviorIsSelected,
+		missingBehaviorSelection,
+		isIncidentTypeSelected,
+		isPhysicalHarmSelectedButNoSubtypeSelected,
+		isUnacceptableBehavior,
+		isSomethingElse,
+		areSomethingElseDetailsProvided,
 		isFormValidForSubmission,
+		funnelName,
+		funnelEntryToken,
+		physicalHarmTypeContext,
 		$reset
 	};
 } );

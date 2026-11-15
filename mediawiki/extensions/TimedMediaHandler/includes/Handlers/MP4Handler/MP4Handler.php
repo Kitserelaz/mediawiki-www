@@ -2,7 +2,7 @@
 
 namespace MediaWiki\TimedMediaHandler\Handlers\MP4Handler;
 
-use File;
+use MediaWiki\FileRepo\File\File;
 use MediaWiki\TimedMediaHandler\Handlers\ID3Handler\ID3Handler;
 
 /**
@@ -10,10 +10,7 @@ use MediaWiki\TimedMediaHandler\Handlers\ID3Handler\ID3Handler;
  */
 class MP4Handler extends ID3Handler {
 
-	/**
-	 * @param string $path
-	 * @return array
-	 */
+	/** @inheritDoc */
 	protected function getID3( $path ) {
 		$id3 = parent::getID3( $path );
 		// Unset some parts of id3 that are too detailed and matroska specific:
@@ -21,22 +18,9 @@ class MP4Handler extends ID3Handler {
 		return $id3;
 	}
 
-	/**
-	 * Get the "media size"
-	 * @param File $file
-	 * @param string $path
-	 * @param string|false $metadata
-	 * @return array|false
-	 */
-	public function getImageSize( $file, $path, $metadata = false ) {
+	/** @inheritDoc */
+	protected function getSizeFromMetadata( $metadata ) {
 		// Just return the size of the first video stream
-		if ( $metadata === false ) {
-			$metadata = $file->getMetadata();
-		}
-		$metadata = $this->unpackMetadata( $metadata );
-		if ( isset( $metadata['error'] ) ) {
-			return false;
-		}
 		if ( isset( $metadata['video']['resolution_x'] ) && isset( $metadata['video']['resolution_y'] ) ) {
 			return [
 				$metadata['video']['resolution_x'],
@@ -46,10 +30,7 @@ class MP4Handler extends ID3Handler {
 		return [ false, false ];
 	}
 
-	/**
-	 * @param File $image
-	 * @return string
-	 */
+	/** @inheritDoc */
 	public function getMetadataType( $image ) {
 		return 'mp4';
 	}
@@ -85,10 +66,8 @@ class MP4Handler extends ID3Handler {
 	 */
 	public function getStreamTypes( $file ) {
 		$streamTypes = [];
-		$metadata = $this->unpackMetadata( $file->getMetadata() );
-		if ( !$metadata || isset( $metadata['error'] ) ) {
-			return false;
-		}
+		$metadata = $file->getMetadataArray();
+
 		if ( isset( $metadata['audio'] ) && $metadata['audio']['dataformat'] === 'mp4' ) {
 			if ( isset( $metadata['audio']['codec'] )
 				&&
@@ -107,43 +86,31 @@ class MP4Handler extends ID3Handler {
 		return $streamTypes;
 	}
 
-	/**
-	 * @param File $file
-	 * @return string
-	 */
+	/** @inheritDoc */
 	public function getShortDesc( $file ) {
 		$streamTypes = $this->getStreamTypes( $file );
 		if ( !$streamTypes ) {
 			return parent::getShortDesc( $file );
 		}
-		return wfMessage( 'timedmedia-mp4-short-video', implode( '/', $streamTypes )
-		)->timeperiodParams(
-			$this->getLength( $file )
-		)->text();
+		return wfMessage( 'timedmedia-mp4-short-video' )
+			->params( implode( '/', $streamTypes ) )
+			->timeperiodParams( $this->getLength( $file ) )
+			->escaped();
 	}
 
-	/**
-	 * @param File $file
-	 * @return string
-	 */
+	/** @inheritDoc */
 	public function getLongDesc( $file ) {
 		$streamTypes = $this->getStreamTypes( $file );
 		if ( !$streamTypes ) {
 			return parent::getLongDesc( $file );
 		}
-		return wfMessage(
-			'timedmedia-mp4-long-video',
-			implode( '/', $streamTypes )
-			)->timeperiodParams(
-				$this->getLength( $file )
-			)->bitrateParams(
-				$this->getBitRate( $file )
-			)->numParams(
-				$file->getWidth(),
-				$file->getHeight()
-			)->sizeParams(
-				$file->getSize()
-			)->text();
+		return wfMessage( 'timedmedia-mp4-long-video' )
+			->params( implode( '/', $streamTypes ) )
+			->timeperiodParams( $this->getLength( $file ) )
+			->bitrateParams( $this->getBitRate( $file ) )
+			->numParams( $file->getWidth(), $file->getHeight() )
+			->sizeParams( $file->getSize() )
+			->escaped();
 	}
 
 }

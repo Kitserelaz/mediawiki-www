@@ -27,9 +27,7 @@
  *   attaching inspectors)
  * @param {string[]} [config.classes] CSS classes to be added to the highlight container
  */
-ve.ce.FocusableNode = function VeCeFocusableNode( $focusable, config ) {
-	config = config || {};
-
+ve.ce.FocusableNode = function VeCeFocusableNode( $focusable, config = {} ) {
 	// Properties
 	this.focused = false;
 	this.highlighted = false;
@@ -164,31 +162,15 @@ ve.ce.FocusableNode.static.getRectsForElement = function ( $element, relativeRec
 		rects = filteredRects;
 	}
 
-	let boundingRect = null;
-
-	for ( let i = 0, l = rects.length; i < l; i++ ) {
-		// Translate to relative
-		if ( relativeRect ) {
-			rects[ i ] = ve.translateRect( rects[ i ], -relativeRect.left, -relativeRect.top );
-		}
-		if ( !boundingRect ) {
-			boundingRect = ve.copy( rects[ i ] );
-		} else {
-			boundingRect.top = Math.min( boundingRect.top, rects[ i ].top );
-			boundingRect.left = Math.min( boundingRect.left, rects[ i ].left );
-			boundingRect.bottom = Math.max( boundingRect.bottom, rects[ i ].bottom );
-			boundingRect.right = Math.max( boundingRect.right, rects[ i ].right );
-		}
-	}
-	if ( boundingRect ) {
-		boundingRect.width = boundingRect.right - boundingRect.left;
-		boundingRect.height = boundingRect.bottom - boundingRect.top;
+	if ( relativeRect ) {
+		rects.forEach( ( rect, i ) => {
+			rects[ i ] = ve.translateRect( rect, -relativeRect.left, -relativeRect.top );
+		} );
 	}
 
-	return {
-		rects: rects,
-		boundingRect: boundingRect
-	};
+	const boundingRect = ve.getBoundingRect( rects );
+
+	return { rects, boundingRect };
 };
 
 /* Methods */
@@ -343,10 +325,10 @@ ve.ce.FocusableNode.prototype.updateInvisibleIconSync = function ( showIcon ) {
 			$firstElement.empty().css( 'display', 'inline-block' );
 		}
 		$firstElement
-			.addClass( 've-ce-focusableNode-invisible' )
+			.addClass( 've-ce-focusableNode-invisible ve-ce-surface-interface' )
 			.prepend( this.icon.$element );
 	} else if ( this.icon ) {
-		this.$element.removeClass( 've-ce-focusableNode-invisible' );
+		this.$element.removeClass( 've-ce-focusableNode-invisible ve-ce-surface-interface' );
 		this.icon.$element.detach();
 	}
 };
@@ -358,6 +340,8 @@ ve.ce.FocusableNode.prototype.createInvisibleIcon = function () {
 	if ( this.icon ) {
 		return;
 	}
+	// Label is set in updateInvisibleIconLabel
+	// eslint-disable-next-line mediawiki/no-unlabeled-buttonwidget
 	this.icon = new OO.ui.ButtonWidget( {
 		classes: [ 've-ce-focusableNode-invisibleIcon' ],
 		framed: false,
@@ -365,6 +349,13 @@ ve.ce.FocusableNode.prototype.createInvisibleIcon = function () {
 		tabIndex: null,
 		icon: this.constructor.static.iconWhenInvisible
 	} );
+	// Add an invisible image to the button, which is expanded to cover the
+	// whole area, so that when selected the element is highlighted (T390733).
+	this.icon.$element.append(
+		$( '<img>' )
+			.addClass( 've-ce-focusableNode-invisibleIcon-selectionMask' )
+			.attr( 'src', ve.ce.minImgDataUri )
+	);
 	this.updateInvisibleIconLabel();
 };
 
@@ -440,7 +431,7 @@ ve.ce.FocusableNode.prototype.onFocusableMouseDown = function ( e ) {
 		setTimeout( () => {
 			// Undo ce=true as soon as the context menu is shown
 			this.$highlights.prop( 'contentEditable', 'false' );
-			this.focusableSurface.preparePasteTargetForCopy();
+			this.focusableSurface.prepareClipboardHandlerForCopy();
 		} );
 	}
 
@@ -499,7 +490,7 @@ ve.ce.FocusableNode.prototype.executeCommand = function () {
 ve.ce.FocusableNode.prototype.onFocusableDragStart = function ( e ) {
 	if ( this.focusableSurface ) {
 		// Pass event up to the surface
-		this.focusableSurface.onDocumentDragStart( e );
+		this.focusableSurface.$element.trigger( e );
 	}
 };
 
@@ -510,11 +501,11 @@ ve.ce.FocusableNode.prototype.onFocusableDragStart = function ( e ) {
  *
  * @param {jQuery.Event} e Drag end event
  */
-ve.ce.FocusableNode.prototype.onFocusableDragEnd = function () {
+ve.ce.FocusableNode.prototype.onFocusableDragEnd = function ( e ) {
 	// endRelocation is usually triggered by onDocumentDrop in the surface, but if it isn't
 	// trigger it here instead
 	if ( this.focusableSurface ) {
-		this.focusableSurface.endRelocation();
+		this.focusableSurface.$element.trigger( e );
 	}
 };
 
@@ -735,17 +726,17 @@ ve.ce.FocusableNode.prototype.positionHighlights = function () {
 		// Append something selectable for right-click copy
 		.append( $( '<span>' ).addClass( 've-ce-focusableNode-highlight-selectable' ).text( '\u00a0' ) );
 
-	for ( let i = 0, l = this.rects.length; i < l; i++ ) {
+	this.rects.forEach( ( rect ) => {
 		const $highlight = this.createHighlight();
 		this.$highlights.append(
 			$highlight.css( {
-				top: this.rects[ i ].top,
-				left: this.rects[ i ].left,
-				width: this.rects[ i ].width,
-				height: this.rects[ i ].height
+				top: rect.top,
+				left: rect.left,
+				width: rect.width,
+				height: rect.height
 			} )
 		);
-	}
+	} );
 };
 
 /**

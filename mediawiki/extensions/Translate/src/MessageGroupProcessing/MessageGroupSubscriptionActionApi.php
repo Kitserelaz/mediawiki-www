@@ -3,8 +3,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
-use ApiBase;
-use ApiMain;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
 use StatusValue;
 use Wikimedia\ParamValidator\ParamValidator;
 
@@ -16,15 +16,13 @@ use Wikimedia\ParamValidator\ParamValidator;
  * @ingroup API TranslateAPI
  */
 class MessageGroupSubscriptionActionApi extends ApiBase {
-	private MessageGroupSubscription $groupSubscription;
 
 	public function __construct(
 		ApiMain $mainModule,
-		$moduleName,
-		MessageGroupSubscription $groupSubscription
+		string $moduleName,
+		private readonly MessageGroupSubscription $groupSubscription,
 	) {
 		parent::__construct( $mainModule, $moduleName );
-		$this->groupSubscription = $groupSubscription;
 	}
 
 	public function execute(): void {
@@ -87,7 +85,7 @@ class MessageGroupSubscriptionActionApi extends ApiBase {
 		return 'csrf';
 	}
 
-	private function handleSubscriptionFailure( StatusValue $status ): void {
+	private function handleSubscriptionFailure( StatusValue $status ): never {
 		if ( $status->hasMessage( MessageGroupSubscription::NOT_ENABLED ) ) {
 			$this->dieWithError( 'apierror-translate-messagegroupsubscription-disabled' );
 		} elseif ( $status->hasMessage( MessageGroupSubscription::UNNAMED_USER_UNSUPPORTED ) ) {

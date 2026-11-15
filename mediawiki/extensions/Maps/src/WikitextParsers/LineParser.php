@@ -8,6 +8,7 @@ use DataValues\Geo\Values\LatLongValue;
 use Jeroen\SimpleGeocoder\Geocoder;
 use Maps\LegacyModel\Line;
 use Maps\MapsFactory;
+use MediaWiki\Title\Title;
 use ValueParsers\StringValueParser;
 use ValueParsers\ValueParser;
 
@@ -144,8 +145,10 @@ class LineParser implements ValueParser {
 		if ( filter_var( $link, FILTER_VALIDATE_URL ) ) {
 			$line->setLink( $link );
 		} else {
-			$title = \Title::newFromText( $link );
-			$line->setLink( $title->getFullURL() );
+			$title = Title::newFromText( $link );
+			if ( $title !== null ) {
+				$line->setLink( $title->getFullURL() );
+			}
 		}
 	}
 

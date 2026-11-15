@@ -10,7 +10,7 @@
 			"Vivaelcelta"
 		]
 	},
-	"cirrussearch-desc": "Procura baseada en Elasticsearch para MediaWiki",
+	"cirrussearch-desc": "Procura baseada en OpenSearch para MediaWiki",
 	"cirrussearch-backend-error": "Non puidemos completar a súa procura debido a un problema temporal. Inténteo de novo máis tarde.",
 	"cirrussearch-parse-error": "Non se entendeu a pescuda. Fágaa máis sinxela. Rexistrouse a pescuda para mellorar o sistema de procuras.",
 	"cirrussearch-too-busy-error": "O motor de procura está moi ocupado nestes intres. Inténteo de novo máis tarde.",
@@ -65,9 +65,10 @@
 	"cirrussearch-feature-deepcat-endpoint": "$wgCirrusSearchCategoryEndpoint debe fixarse nun valor válido de SPARQL para usar a procura profunda de categorías.",
 	"cirrussearch-feature-deepcat-exception": "Fallou a pescuda SPARQL de procura profunda de categorías",
 	"cirrussearch-feature-deepcat-timeout": "A procura profunda de categorías superou o tempo límite. Probablemente a categoría ten demasiadas subcategorías",
-	"cirrussearch-feature-deepcat-toomany": "A pescuda profunda de categorías devolveu demasiadas categorías",
+	"cirrussearch-feature-deepcat-toomany": "A pescuda profunda de categorías devolveu demasiadas categorías. Só se aplicou un subconxunto de categorías.",
 	"cirrussearch-feature-deepcat-invalid-title": "A categoría especificada non é válida.",
 	"cirrussearch-feature-pageid-invalid-id": "{{PLURAL:$2|Identificador|Identificadores}} de páxina non {{PLURAL:$2|válido|válidos}}: $1",
+	"cirrussearch-feature-invalid-date-range": "A data proporcionada non ten un formato válido. Emprega os formatos recoñecidos para ano (<code>AAAA</code>), mes (<code>AAAA-MM</code>) e día (<code>AAAA-MM-DD</code>) ou expresións de tempo relativo como <code>now-2d</code> ou <code>today-1y</code>.",
 	"cirrussearch-incategory-feature-no-valid-categories": "Categorías non válidas proporcionadas a \"$1\".",
 	"cirrussearch-mlt-feature-no-valid-titles": "Títulos non válidos proporcionados a \"$1\".",
 	"cirrussearch-mlt-not-configured": "A funcionalidade \"$1\" está mal configurada. Solicite a un administrador que amañe $wgCirrusSearchMoreLikeThisFields",
@@ -77,6 +78,10 @@
 	"cirrussearch-autoselect-profile": "Deixar que o motor de procura decida o mellor perfil a usar.",
 	"cirrussearch-offset-too-large": "Non se puideron recuperar os resultados. Pódense obter ata $1 resultados, pero solicitáronse os resultados desde a posición $2.",
 	"cirrussearch-offset-not-allowed-with-random-sort": "Ignórase a pescuda para paxinar os resultados ordenados aleatoriamente.",
-	"cirrussearch-articletopic-invalid-topic": "{{PLURAL:$2|Nome|Nomes}} de tema non {{PLURAL:$2|recoñecido|recoñecidos}} para a palabra clave <kbd>articletopic:</kbd>: $1",
-	"cirrussearch-inlanguage-deprecate-comma": "O uso dunha coma como separador para a palabra clave \"inlanguage\" está obsoleto. Utiliza unha barra vertical (\"|\") para separar as linguas."
+	"cirrussearch-articleprediction-invalid-keyword": "{{PLURAL:$2|Valor non recoñecido|Valores non recoñecidos}} para a clave <kbd>$3:</kbd>: $1",
+	"cirrussearch-inlanguage-deprecate-comma": "O uso dunha coma como separador para a palabra clave \"inlanguage\" está obsoleto. Utiliza unha barra vertical (\"|\") para separar as linguas.",
+	"cirrussearch-invalid-keyword-boost": "Proporcionouse un valor de aumento non válido \"$1\". Esperábase un número decimal positivo.",
+	"cirrussearch-invalid-keyword-threshold": "Proporcionouse un valor límite non válido \"$1\". Esperábase un número decimal entre 0 e 1.",
+	"cirrussearch-semantic-empty-query": "A busca semántica necesita un termo de procura que non estea baleiro.",
+	"cirrussearch-semantic-too-many-results": "A busca semántica solicitou demasiados resultados. Só os primeiros $1 se clasificarán correctamente."
 }

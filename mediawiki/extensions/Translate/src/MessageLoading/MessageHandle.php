@@ -4,15 +4,17 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\MessageLoading;
 
 use BadMethodCallException;
-use Language;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\RevTagStore;
 use MediaWiki\Extension\Translate\Services;
+use MediaWiki\Language\Language;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use MessageGroup;
+use RuntimeException;
 
 /**
  * Class for pointing to messages, like Title class is for titles.
@@ -22,15 +24,16 @@ use MessageGroup;
  * @license GPL-2.0-or-later
  */
 class MessageHandle {
-	private LinkTarget $title;
+
 	private ?string $key = null;
 	private ?string $languageCode = null;
 	/** @var string[]|null */
 	private ?array $groupIds = null;
 	private MessageIndex $messageIndex;
 
-	public function __construct( LinkTarget $title ) {
-		$this->title = $title;
+	public function __construct(
+		private readonly LinkTarget $title,
+	) {
 		$this->messageIndex = Services::getInstance()->getMessageIndex();
 	}
 
@@ -56,8 +59,7 @@ class MessageHandle {
 			if ( $known || $pos === false ) {
 				$this->languageCode = '';
 			} else {
-				// For keys like Foo/, substr returns false instead of ''
-				$this->languageCode = (string)( substr( $this->key, $pos + 1 ) );
+				$this->languageCode = substr( $this->key, $pos + 1 );
 				$this->key = substr( $this->key, 0, $pos );
 			}
 		}
@@ -156,13 +158,15 @@ class MessageHandle {
 		// Do another check that the group actually exists
 		$group = $this->getGroup();
 		if ( !$group ) {
-			$logger = LoggerFactory::getInstance( 'Translate' );
+			$logger = LoggerFactory::getInstance( LogNames::MAIN );
 			$logger->warning(
 				'[MessageHandle] MessageIndex is out of date. Page {pagename} refers to ' .
 				'unknown group {messagegroup}',
 				[
 					'pagename' => $this->getTitle()->getPrefixedText(),
 					'messagegroup' => $groups[0],
+					'exception' => new RuntimeException(),
+					'hasJobBeenScheduled' => $jobHasBeenScheduled
 				]
 			);
 
@@ -216,7 +220,7 @@ class MessageHandle {
 
 	/** Check if a title is marked as fuzzy. */
 	public function isFuzzy(): bool {
-		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
+		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 
 		$res = $dbr->newSelectQueryBuilder()
 			->select( 'rt_type' )
@@ -301,10 +305,10 @@ class MessageHandle {
 		$message = new FatMessage( $key, $en );
 		// Take the contents from edit field as a translation.
 		$message->setTranslation( $text );
-		if ( $message->definition() === null ) {
+		if ( $message->rawDefinition() === null ) {
 			// This should NOT happen, but add a check since it seems to be happening
 			// See: https://phabricator.wikimedia.org/T255669
-			LoggerFactory::getInstance( 'Translate' )->warning(
+			LoggerFactory::getInstance( LogNames::MAIN )->warning(
 				'Message definition is empty! Title: {title}, group: {group}, key: {key}',
 				[
 					'title' => $this->getTitle()->getPrefixedText(),

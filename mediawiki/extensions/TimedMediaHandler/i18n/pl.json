@@ -8,14 +8,14 @@
 			"Leinad",
 			"Matma Rex",
 			"Msz2001",
+			"PanWor",
 			"Przemub",
 			"Rail",
 			"Railfail536",
 			"Rzuwig",
 			"Sp5uhe",
 			"The Polish",
-			"Woytecr",
-			"PanWor"
+			"Woytecr"
 		]
 	},
 	"timedmediahandler-desc": "Obsługa plików audio, wideo i napisów filmowych w formatach WebM, Ogg Theora, Vorbis i srt",
@@ -159,13 +159,13 @@
 	"timedmedia-duration-hms": "{{PLURAL:$1|$1 godzina|$1 godziny|$1 godzin}}, {{PLURAL:$2| $2 minut|$2 minuty|$2 minut}} i {{PLURAL:$3|$3 sekunda|$3 sekundy|$3 sekund}}",
 	"timedmedia-duration-ms": "{{PLURAL:$1|$1 minuta|$1 minuty|$1 minut}} i {{PLURAL:$2|$2 sekunda|$2 sekundy|$2 sekund}}",
 	"timedmedia-duration-s": "{{PLURAL:$1|$1 sekunda|$1 sekundy|$1 sekund}}",
-	"right-transcode-reset": "Resetowanie błędnych lub transkodowanych filmów, które zostały ponownie umieszczone w kolejce zadań",
+	"right-transcode-reset": "Resetowanie błędnych lub transkodowanych filmów, co spowoduje ponowne umieszczenie w kolejce zadań",
 	"right-transcode-status": "Podgląd [[Special:TimedMediaHandler|informacji o aktualnym statusie transkodowania]]",
 	"action-transcode-reset": "resetowania transkodowania",
 	"action-transcode-status": "zobaczenia aktualnego statusu transkodowania",
 	"log-name-timedmediahandler": "Rejestr TimedMediaHandlera",
 	"log-description-timedmediahandler": "Poniżej znajduje się rejestr operacji związanych z transkodowaniem TimedMediaHandlera.",
-	"logentry-timedmediahandler-resettranscode": "$1 {{GENDER:$2|zresetował|zresetowała}} transkodowanie $3 do formatu „$4”",
+	"logentry-timedmediahandler-resettranscode": "$1 {{GENDER:$2|zresetował|zresetowała|zresetował(a)}} transkodowanie $3 do formatu „$4”",
 	"orphanedtimedtext": "Osierocone strony TimedText",
 	"orphanedtimedtext-summary": "Lista stron w przestrzeni [[{{#special:AllPages/TimedText:}}|{{ns:TimedText}}]], które nie mają odpowiedniego pliku.",
 	"orphanedtimedtext-unsupported": "To strona specjalna jest obsługiwana tylko przez bazy danych MySQL.",
@@ -178,5 +178,10 @@
 	"timedmedia-timedtext-title-create-subtitles": "Nie odnaleziono $1 napisów do filmu: $2",
 	"m3u8-error-create-temp": "Nie udało się utworzyć pliku tymczasowego dla $1",
 	"m3u8-error-write-temp": "Nie udało się zapisać do pliku tymczasowego dla $1",
-	"m3u8-error-save-playlist": "Błędy podczas zapisywania listy odtwarzania HLS $1"
+	"m3u8-error-save-playlist": "Błędy podczas zapisywania listy odtwarzania HLS $1",
+	"videojs-endcard-copy-link": "Skopiuj link",
+	"videojs-endcard-embed-title": "Osadź te multimedia na swojej stronie internetowej",
+	"videojs-endcard-embed-copy": "Skopiuj",
+	"videojs-endcard-copied": "Skopiowano do schowka!",
+	"videojs-endcard-copy-failed": "Nie udało się skopiować do schowka"
 }

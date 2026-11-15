@@ -2,13 +2,14 @@
 
 namespace MediaWiki\TimedMediaHandler;
 
-use File;
-use ManualLogEntry;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\FileRepo\RepoGroup;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\TimedMediaHandler\WebVideoTranscode\TranscodePresets;
 use MediaWiki\TimedMediaHandler\WebVideoTranscode\WebVideoTranscode;
 use MediaWiki\Title\Title;
-use RepoGroup;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\Rdbms\IConnectionProvider;
 
@@ -20,14 +21,7 @@ use Wikimedia\Rdbms\IConnectionProvider;
  * @ingroup API
  */
 class ApiTranscodeReset extends ApiBase {
-	/** @var IConnectionProvider */
-	private $dbProvider;
-
-	/** @var RepoGroup */
-	private $repoGroup;
-
-	/** @var TranscodableChecker */
-	private $transcodableChecker;
+	private readonly TranscodableChecker $transcodableChecker;
 
 	/**
 	 * @param ApiMain $main
@@ -37,20 +31,19 @@ class ApiTranscodeReset extends ApiBase {
 	 */
 	public function __construct(
 		ApiMain $main,
-		$action,
-		IConnectionProvider $dbProvider,
-		RepoGroup $repoGroup
+		string $action,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly RepoGroup $repoGroup,
+		private readonly TranscodePresets $transcodePresets
 	) {
 		parent::__construct( $main, $action );
-		$this->dbProvider = $dbProvider;
-		$this->repoGroup = $repoGroup;
 		$this->transcodableChecker = new TranscodableChecker(
 			$this->getConfig(),
 			$repoGroup
 		);
 	}
 
-	public function execute() {
+	public function execute(): void {
 		// Check if transcoding is enabled on this wiki at all:
 		if ( !$this->getConfig()->get( 'EnableTranscode' ) ) {
 			$this->dieWithError( 'apierror-timedmedia-disabledtranscode', 'disabledtranscode' );
@@ -64,7 +57,7 @@ class ApiTranscodeReset extends ApiBase {
 			$this->dieWithError( [ 'apierror-invalidtitle', wfEscapeWikiText( $params['title'] ) ] );
 		}
 
-		// Check that the user has permmission to reset transcodes on the file
+		// Check that the user has permission to reset transcodes on the file
 		$this->checkTitleUserPermissions( $titleObj, 'transcode-reset' );
 
 		// Make sure the title can be transcoded
@@ -77,18 +70,17 @@ class ApiTranscodeReset extends ApiBase {
 				'invalidtranscodetitle'
 			);
 		}
-		$transcodeKey = false;
-		// Make sure it's an enabled transcode key we are trying to remove:
-		// ( if you update your transcode keys the api is not how you purge the database of expired keys )
-		if ( isset( $params['transcodekey'] ) ) {
-			$transcodeSet = WebVideoTranscode::enabledTranscodes();
-			if ( !in_array( $params['transcodekey'], $transcodeSet, true ) ) {
+		$transcodeKey = $params['transcodekey'] ?? null;
+
+		// Check if a specified key can exist
+		if ( $transcodeKey !== null ) {
+			$keyExists = $this->transcodePresets->findByKey( $transcodeKey );
+
+			if ( !$keyExists ) {
 				$this->dieWithError(
-					[ 'apierror-timedmedia-badtranscodekey', wfEscapeWikiText( $params['transcodekey'] ) ],
+					[ 'apierror-timedmedia-badtranscodekey', wfEscapeWikiText( $transcodeKey ) ],
 					'badtranscodekey'
 				);
-			} else {
-				$transcodeKey = $params['transcodekey'];
 			}
 		}
 
@@ -103,14 +95,15 @@ class ApiTranscodeReset extends ApiBase {
 			$this->dieWithError( $msg, 'notenoughtimereset' );
 		}
 
-		// All good do the transcode removal:
+		// All good, do the transcode removal:
 		WebVideoTranscode::removeTranscodes( $file, $transcodeKey );
-
-		// Oh and we wanted to reset it, right? Trigger again.
-		$options = [
-			'manualOverride' => true,
-		];
-		WebVideoTranscode::updateJobQueue( $file, $transcodeKey, $options );
+		// Only schedule a new transcode if the key is currently enabled or if resetting all
+		$keyEnabled = in_array( $transcodeKey, $this->transcodePresets->enabledTranscodes(), true );
+		if ( $transcodeKey === null || $keyEnabled ) {
+			WebVideoTranscode::updateJobQueue( $file, $transcodeKey, [
+				'manualOverride' => true,
+			] );
+		}
 
 		$logEntry = new ManualLogEntry( 'timedmediahandler', 'resettranscode' );
 		$logEntry->setPerformer( $this->getUser() );
@@ -125,10 +118,10 @@ class ApiTranscodeReset extends ApiBase {
 
 	/**
 	 * @param File $file
-	 * @param string|false $transcodeKey
+	 * @param string|null $transcodeKey
 	 * @return int|string
 	 */
-	public function checkTimeSinceLastReset( $file, $transcodeKey ) {
+	private function checkTimeSinceLastReset( File $file, ?string $transcodeKey ) {
 		$dbw = $file->repo->getPrimaryDB();
 		$transcodeStates = WebVideoTranscode::getTranscodeState( $file, $dbw );
 		if ( $transcodeKey ) {
@@ -151,10 +144,9 @@ class ApiTranscodeReset extends ApiBase {
 	}
 
 	/**
-	 * @param array $state
 	 * @return int|string
 	 */
-	public function getStateResetTime( $state ) {
+	public function getStateResetTime( array $state ) {
 		$db = $this->dbProvider->getReplicaDatabase();
 		// if an error return waitTime +1
 		if ( $state['time_error'] !== null ) {
@@ -171,17 +163,17 @@ class ApiTranscodeReset extends ApiBase {
 	}
 
 	/** @inheritDoc */
-	public function mustBePosted() {
+	public function mustBePosted(): bool {
 		return true;
 	}
 
 	/** @inheritDoc */
-	public function isWriteMode() {
+	public function isWriteMode(): bool {
 		return true;
 	}
 
 	/** @inheritDoc */
-	protected function getAllowedParams() {
+	protected function getAllowedParams(): array {
 		return [
 			'title' => [
 				ParamValidator::PARAM_TYPE => 'string',
@@ -193,15 +185,14 @@ class ApiTranscodeReset extends ApiBase {
 	}
 
 	/** @inheritDoc */
-	public function needsToken() {
+	public function needsToken(): string {
 		return 'csrf';
 	}
 
 	/**
 	 * @see ApiBase::getExamplesMessages()
-	 * @return array
 	 */
-	protected function getExamplesMessages() {
+	protected function getExamplesMessages(): array {
 		return [
 			'action=transcodereset&title=File:Clip.webm&token=123ABC'
 				=> 'apihelp-transcodereset-example-1',

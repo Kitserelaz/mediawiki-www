@@ -2,7 +2,9 @@
 	"@metadata": {
 		"authors": [
 			"Beta16",
+			"Daimona Eaytoy",
 			"Dansita",
+			"FL2226",
 			"Fringio",
 			"Gianfranco",
 			"Mannivu",
@@ -12,7 +14,7 @@
 			"Titore"
 		]
 	},
-	"advancedsearch-desc": "Accesso rapido alle funzioni di ricerca avanzata in [[Special:Search]]",
+	"advancedsearch-desc": "Accesso rapido alle funzioni di ricerca avanzata in [[{{#Special:Search}}]]",
 	"advancedsearch-options-pane-head": "Ricerca avanzata:",
 	"advancedsearch-optgroup-text": "Cerca nel testo della pagina",
 	"advancedsearch-optgroup-structure": "Struttura",
@@ -48,8 +50,8 @@
 	"advancedsearch-inlanguage-default": "Seleziona lingua",
 	"advancedsearch-filetype-section-types": "Tipi di file generale",
 	"advancedsearch-filetype-section-image": "Formati immagine",
-	"advancedsearch-filetype-section-video": "Formati video",
 	"advancedsearch-filetype-section-audio": "Formati audio",
+	"advancedsearch-filetype-section-video": "Formati video",
 	"advancedsearch-filetype-section-document": "Formati documento",
 	"advancedsearch-filetype-section-other": "Altri formati",
 	"advancedsearch-filetype-default": "Seleziona il tipo di file",
@@ -66,11 +68,21 @@
 	"advancedsearch-sort-last-edit-desc": "Data di modifica – prima i più recenti",
 	"advancedsearch-sort-create-timestamp-asc": "Data di creazione – meno recenti in alto",
 	"advancedsearch-sort-create-timestamp-desc": "Data di creazione – prima i più recenti",
+	"advancedsearch-sort-title-natural-asc": "Alfabetico",
+	"advancedsearch-sort-title-natural-desc": "Alfabetico – decrescente",
+	"advancedsearch-sort-incoming-links-asc": "Meno collegamenti da altre pagine",
+	"advancedsearch-sort-incoming-links-desc": "Più collegamenti da altre pagine",
+	"advancedsearch-sort-random": "Casuale",
 	"advancedsearch-sort-preview-relevance": "rilevanza",
 	"advancedsearch-sort-preview-last-edit-asc": "modificato da più tempo",
 	"advancedsearch-sort-preview-last-edit-desc": "data modifica",
 	"advancedsearch-sort-preview-create-timestamp-asc": "creato da più tempo",
 	"advancedsearch-sort-preview-create-timestamp-desc": "data creazione",
+	"advancedsearch-sort-preview-title-natural-asc": "titolo",
+	"advancedsearch-sort-preview-title-natural-desc": "alfabetico (decrescente)",
+	"advancedsearch-sort-preview-incoming-links-asc": "meno collegato",
+	"advancedsearch-sort-preview-incoming-links-desc": "più collegato",
+	"advancedsearch-sort-preview-random": "casuale",
 	"advancedsearch-namespaces-search-in": "Cerca in:",
 	"advancedsearch-namespaces-remember": "Ricorda la selezione per le prossime ricerche",
 	"advancedsearch-namespaces-preset-all": "Tutti",
@@ -79,6 +91,6 @@
 	"advancedsearch-namespaces-preset-discussion": "Discussione",
 	"advancedsearch-namespaces-placeholder": "Aggiungi namespace…",
 	"prefs-advancedsearch": "Ricerca avanzata",
-	"advancedsearch-preference-help": "La ricerca avanzata aggiunge un modulo alla pagina Speciale:Ricerca per consentirti di effettuare ricerche specializzate, anche se non conosci la sintassi di ricerca. Inoltre cambia il modo in cui si possono selezionare i namespace.",
-	"advancedsearch-preference-disable": "Non mostrare l'interfaccia di ricerca avanzata quanto utilizzi Speciale:Ricerca"
+	"advancedsearch-preference-help": "La ricerca avanzata aggiunge un modulo alla pagina {{#Special:Search}} per consentirti di effettuare ricerche specializzate, anche se non conosci la sintassi di ricerca. Inoltre cambia il modo in cui si possono selezionare i namespace.",
+	"advancedsearch-preference-disable": "Non mostrare l'interfaccia di ricerca avanzata quanto utilizzi {{#Special:Search}}"
 }

@@ -10,9 +10,6 @@ use Wikimedia\Rdbms\ILoadBalancer;
  */
 class DBStore implements Store {
 
-	/** @var bool */
-	private $forcePrimary = false;
-
 	/** @var ILoadBalancer */
 	private $loadBalancer;
 
@@ -32,6 +29,7 @@ class DBStore implements Store {
 		$this->wiki = $wiki;
 	}
 
+	/** @inheritDoc */
 	public function getMessages( $lang, $ids ) {
 		$db = $this->getDB( DB_REPLICA );
 		$res = $db->newSelectQueryBuilder()
@@ -51,6 +49,7 @@ class DBStore implements Store {
 		return $messages;
 	}
 
+	/** @inheritDoc */
 	public function getLangList( $ids ) {
 		$db = $this->getDB( DB_REPLICA );
 		$res = $db->newSelectQueryBuilder()
@@ -70,6 +69,7 @@ class DBStore implements Store {
 		return $langs;
 	}
 
+	/** @inheritDoc */
 	public function getProperties( $ids ) {
 		$db = $this->getDB( DB_REPLICA );
 		$res = $db->newSelectQueryBuilder()
@@ -86,6 +86,7 @@ class DBStore implements Store {
 		return $properties;
 	}
 
+	/** @inheritDoc */
 	public function getElectionInfo( $ids ) {
 		$ids = (array)$ids;
 		$db = $this->getDB( DB_REPLICA );
@@ -103,6 +104,7 @@ class DBStore implements Store {
 		return $infos;
 	}
 
+	/** @inheritDoc */
 	public function getElectionInfoByTitle( $names ) {
 		$names = (array)$names;
 		$db = $this->getDB( DB_REPLICA );
@@ -120,6 +122,29 @@ class DBStore implements Store {
 		return $infos;
 	}
 
+	/** @inheritDoc */
+	public function getElectionInfoByTally( $ids ) {
+		$ids = (array)$ids;
+		$db = $this->getDB( DB_REPLICA );
+		$res = $db->newSelectQueryBuilder()
+			->select( [ 'el.*', 'ta_id' ] )
+			->from( 'securepoll_tallies' )
+			->join(
+				'securepoll_elections', 'el',
+				'el_entity = ta_entity'
+			)
+			->where( [ 'ta_id' => $ids ] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
+		$infos = [];
+		foreach ( $res as $row ) {
+			$infos[$row->ta_id] = $this->decodeElectionRow( $row );
+		}
+
+		return $infos;
+	}
+
+	/** @inheritDoc */
 	public function decodeElectionRow( $row ) {
 		static $map = [
 			'id' => 'el_entity',
@@ -145,18 +170,16 @@ class DBStore implements Store {
 		return $info;
 	}
 
+	/** @inheritDoc */
 	public function getDB( $index = DB_PRIMARY ) {
 		return $this->loadBalancer->getConnection(
-			$this->forcePrimary ? DB_PRIMARY : $index,
+			$index,
 			[],
 			$this->wiki
 		);
 	}
 
-	public function setForcePrimary( $forcePrimary ) {
-		$this->forcePrimary = $forcePrimary;
-	}
-
+	/** @inheritDoc */
 	public function getQuestionInfo( $electionId ) {
 		$db = $this->getDB( DB_REPLICA );
 		$res = $db->newSelectQueryBuilder()
@@ -201,6 +224,7 @@ class DBStore implements Store {
 		return $questions;
 	}
 
+	/** @inheritDoc */
 	public function callbackValidVotes( $electionId, $callback, $voterId = null ) {
 		$dbr = $this->getDB( DB_REPLICA );
 		$queryBuilder = $dbr->newSelectQueryBuilder()
@@ -218,7 +242,7 @@ class DBStore implements Store {
 		$res = $queryBuilder->fetchResultSet();
 
 		foreach ( $res as $row ) {
-			$status = call_user_func( $callback, $this, $row->vote_record );
+			$status = $callback( $this, $row->vote_record );
 			if ( $status instanceof Status && !$status->isOK() ) {
 				return $status;
 			}
@@ -227,6 +251,7 @@ class DBStore implements Store {
 		return Status::newGood();
 	}
 
+	/** @inheritDoc */
 	public function getEntityType( $id ) {
 		$db = $this->getDB( DB_REPLICA );
 		$res = $db->newSelectQueryBuilder()

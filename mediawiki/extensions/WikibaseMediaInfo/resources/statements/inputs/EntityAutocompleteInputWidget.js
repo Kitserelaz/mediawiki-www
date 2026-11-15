@@ -1,8 +1,7 @@
 'use strict';
 
-var FormatValueElement = require( 'wikibase.mediainfo.base' ).FormatValueElement,
-	datamodel = require( 'wikibase.datamodel' ),
-	EntityAutocompleteInputWidget;
+const FormatValueElement = require( 'wikibase.mediainfo.base' ).FormatValueElement,
+	datamodel = require( 'wikibase.datamodel' );
 
 /**
  * @param {Object} config Configuration options
@@ -14,7 +13,7 @@ var FormatValueElement = require( 'wikibase.mediainfo.base' ).FormatValueElement
  *      equal to 'property' will be returned.
  *      Suffixing the value of 'field' with the character ! inverts the filter
  */
-EntityAutocompleteInputWidget = function MediaInfoStatementsEntityAutocompleteInputWidget( config ) {
+const EntityAutocompleteInputWidget = function MediaInfoStatementsEntityAutocompleteInputWidget( config ) {
 	config = config || {};
 
 	this.apiUri =
@@ -70,7 +69,7 @@ OO.mixinClass( EntityAutocompleteInputWidget, FormatValueElement );
  * @inheritdoc
  */
 EntityAutocompleteInputWidget.prototype.onLookupMenuChoose = function ( item ) {
-	var data = item.getData();
+	const data = item.getData();
 	this.setData( data.id );
 	this.emit( 'add', data );
 };
@@ -80,7 +79,7 @@ EntityAutocompleteInputWidget.prototype.onLookupMenuChoose = function ( item ) {
  * @return {jQuery.Promise}
  */
 EntityAutocompleteInputWidget.prototype.setData = function ( entityId ) {
-	var self = this;
+	const self = this;
 
 	if ( entityId === this.entityId ) {
 		return $.Deferred().resolve( this.$element ).promise();
@@ -106,7 +105,7 @@ EntityAutocompleteInputWidget.prototype.setData = function ( entityId ) {
 
 	this.entityId = entityId;
 	return this.formatValue( new datamodel.EntityId( entityId ), 'text/plain' )
-		.then( function ( plain ) {
+		.then( ( plain ) => {
 			// update textual representation (= label) in the input field
 			self.setValue( plain );
 			self.setFlags( { destructive: false } );
@@ -114,14 +113,12 @@ EntityAutocompleteInputWidget.prototype.setData = function ( entityId ) {
 			// so let's make sure to overrule it and restore the entity id
 			self.entityId = entityId;
 		} )
-		.catch( function () {
+		.catch( () => {
 			// failed to format this id - invalidate it
 			self.entityId = undefined;
 			self.setFlags( { destructive: true } );
 		} )
-		.always( function () {
-			return self.$element;
-		} );
+		.always( () => self.$element );
 };
 
 /**
@@ -135,10 +132,8 @@ EntityAutocompleteInputWidget.prototype.getData = function () {
  * @inheritdoc
  */
 EntityAutocompleteInputWidget.prototype.setValue = function ( value ) {
-	var self = this,
-		labels = Object.keys( this.dataCache ).map( function ( entityId ) {
-			return self.dataCache[ entityId ].label || self.dataCache[ entityId ].id;
-		} ),
+	const self = this,
+		labels = Object.keys( this.dataCache ).map( ( entityId ) => self.dataCache[ entityId ].label || self.dataCache[ entityId ].id ),
 		index = labels.indexOf( this.cleanUpValue( value ) );
 
 	this.entityId = index >= 0 ? Object.keys( this.dataCache )[ index ] : undefined;
@@ -175,7 +170,7 @@ EntityAutocompleteInputWidget.prototype.onFocus = function () {
  * @inheritdoc
  */
 EntityAutocompleteInputWidget.prototype.getLookupRequest = function () {
-	var value = this.getValue(),
+	const value = this.getValue(),
 		deferred = $.Deferred(),
 		api = wikibase.api.getLocationAgnosticMwApi( this.apiUri, { anonymous: true } ),
 		requestParams = {
@@ -226,10 +221,6 @@ EntityAutocompleteInputWidget.prototype.onMousedown = function ( e ) {
  * @inheritdoc
  */
 EntityAutocompleteInputWidget.prototype.getLookupMenuOptionsFromData = function ( data ) {
-	var i,
-		item,
-		items = [];
-
 	data = this.filterData( data );
 
 	if ( this.maxSuggestions !== undefined ) {
@@ -248,10 +239,11 @@ EntityAutocompleteInputWidget.prototype.getLookupMenuOptionsFromData = function 
 		];
 	}
 
-	for ( i = 0; i < data.length; i++ ) {
+	const items = [];
+	for ( let i = 0; i < data.length; i++ ) {
 		this.dataCache[ data[ i ].id ] = data[ i ];
 
-		item = new OO.ui.MenuOptionWidget( {
+		const item = new OO.ui.MenuOptionWidget( {
 			// this data will be passed to onLookupMenuChoose when item is selected
 			data: data[ i ],
 			label: this.createLabelFromSuggestion( data[ i ] )
@@ -264,7 +256,7 @@ EntityAutocompleteInputWidget.prototype.getLookupMenuOptionsFromData = function 
 };
 
 EntityAutocompleteInputWidget.prototype.filterData = function ( data ) {
-	var filters = this.filter;
+	let filters = this.filter;
 
 	if ( filters === undefined ) {
 		return data;
@@ -275,20 +267,20 @@ EntityAutocompleteInputWidget.prototype.filterData = function ( data ) {
 		filters = [ filters ];
 	}
 
-	filters.forEach( function ( filter ) {
-		var values,
-			field = filter.field,
-			filterType = 'includeOnMatch';
+	filters.forEach( ( filter ) => {
+		let field = filter.field;
+		let filterType = 'includeOnMatch';
+
 		if ( field.indexOf( '!' ) === 0 ) {
 			filterType = 'excludeOnMatch';
 			field = filter.field.slice( 1 );
 		}
-		values = filter.value.split( '|' );
-		data = data.filter( function ( datum ) {
+		const values = filter.value.split( '|' );
+		data = data.filter( ( datum ) => {
 			if ( filterType === 'includeOnMatch' ) {
-				return values.indexOf( datum[ field ] ) !== -1;
+				return values.includes( datum[ field ] );
 			} else {
-				return values.indexOf( datum[ field ] ) === -1;
+				return !values.includes( datum[ field ] );
 			}
 		} );
 	} );
@@ -301,13 +293,12 @@ EntityAutocompleteInputWidget.prototype.filterData = function ( data ) {
  * @return {jQuery}
  */
 EntityAutocompleteInputWidget.prototype.createLabelFromSuggestion = function ( entityStub ) {
-	var data = {},
-		template;
-
-	template = mw.template.get(
+	const template = mw.template.get(
 		'wikibase.mediainfo.statements',
 		'templates/statements/inputs/EntityAutocompleteInputWidgetLabel.mustache+dom'
 	);
+
+	const data = {};
 
 	data.label = entityStub.label || entityStub.id;
 	data.description = entityStub.description;

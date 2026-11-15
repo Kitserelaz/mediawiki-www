@@ -1,6 +1,4 @@
-'use strict';
-
-const Page = require( 'wdio-mediawiki/Page' );
+import Page from 'wdio-mediawiki/Page';
 
 class UseTemplatePage extends Page {
 
@@ -13,7 +11,7 @@ class UseTemplatePage extends Page {
 	}
 
 	get searchInput() {
-		return $( '.ext-templatewizard-dialog .oo-ui-comboBoxInputWidget-field' );
+		return $( '.ext-templatewizard-dialog .oo-ui-comboBoxInputWidget-field input' );
 	}
 
 	get searchResultMenu() {
@@ -36,8 +34,8 @@ class UseTemplatePage extends Page {
 		return $( '.ext-templatewizard-dialog input[name="dod"]' );
 	}
 
-	get cancelField() {
-		return $( '.ext-templatewizard-dialog .oo-ui-icon-close' );
+	get closeDialogButton() {
+		return $( '.ext-templatewizard-dialog .oo-ui-flaggedElement-close a' );
 	}
 
 	get dialogError() {
@@ -45,19 +43,19 @@ class UseTemplatePage extends Page {
 	}
 
 	get dialogErrorCancelButton() {
-		return $( '//div[@class="oo-ui-processDialog-errors"]//*[text()="Cancel"]' );
+		return $( '//div[@class="oo-ui-processDialog-errors"]//*[text()="Continue editing"]' );
 	}
 
 	get closeTemplateButton() {
-		return $( '#ext-templatewizard-close-template-button' );
+		return $( '.ext-templatewizard-dialog .oo-ui-processDialog-actions-safe .oo-ui-flaggedElement-back' );
 	}
 
 	get insertField() {
 		return $( '=Insert' );
 	}
 
-	openEdit() {
-		super.openTitle(
+	async openEdit() {
+		return super.openTitle(
 			'TemplateWizard_test',
 			{
 				action: 'edit',
@@ -76,4 +74,4 @@ class UseTemplatePage extends Page {
 
 }
 
-module.exports = new UseTemplatePage();
+export default new UseTemplatePage();

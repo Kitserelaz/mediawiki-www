@@ -21,8 +21,17 @@ use MediaWiki\Title\Title;
  */
 class GenerateTopUsersReport extends SpecialPage {
 
+	// MW 1.46+ compatibility, remove comparison with 1.47 LTS release
 	public function __construct() {
-		parent::__construct( 'GenerateTopUsersReport', 'generatetopusersreport' );
+		if ( version_compare( MW_VERSION, '1.46', '>=' ) ) {
+			parent::__construct( 'GenerateTopUsersReport' );
+		} else {
+			parent::__construct( 'GenerateTopUsersReport', 'generatetopusersreport' );
+		}
+	}
+
+	public function getRestriction(): string {
+		return 'generatetopusersreport';
 	}
 
 	public function doesWrites() {
@@ -289,13 +298,7 @@ class GenerateTopUsersReport extends SpecialPage {
 			$this->msg( "user-stats-report-{$period}-page-title", $period_title )->inContentLanguage()->plain()
 		);
 
-		if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
-			// MW 1.36+
-			$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
-		} else {
-			// @phan-suppress-next-line PhanUndeclaredStaticMethod
-			$page = WikiPage::factory( $title );
-		}
+		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
 		// If the article doesn't exist, create it!
 		// @todo Would there be any point in updating a pre-existing article?
 		// I think not, but...
@@ -329,25 +332,13 @@ class GenerateTopUsersReport extends SpecialPage {
 		// For grep: user-stats-report-weekly-edit-summary, user-stats-report-monthly-edit-summary
 		$summary = $this->msg( "user-stats-report-{$period}-edit-summary" )->inContentLanguage()->plain();
 		$contentObj = ContentHandler::makeContent( $pageContent, $title );
-		if ( method_exists( $page, 'doUserEditContent' ) ) {
-			// MW 1.36+
-			$page->doUserEditContent(
-				$contentObj,
-				// @phan-suppress-next-line PhanTypeMismatchArgumentNullable There's no way this can be null...
-				$user,
-				$summary,
-				EDIT_NEW | EDIT_FORCE_BOT
-			);
-		} else {
-			// @phan-suppress-next-line PhanUndeclaredMethod Removed in MW 1.41
-			$page->doEditContent(
-				$contentObj,
-				$summary,
-				EDIT_NEW | EDIT_FORCE_BOT,
-				false, /* $originalRevId */
-				$user
-			);
-		}
+		$page->doUserEditContent(
+			$contentObj,
+			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable There's no way this can be null...
+			$user,
+			$summary,
+			EDIT_NEW | EDIT_FORCE_BOT
+		);
 
 		$date = date( 'Y-m-d H:i:s' );
 		// Archive points from the weekly/monthly table into the archive table

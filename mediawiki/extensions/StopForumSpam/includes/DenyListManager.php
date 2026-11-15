@@ -40,12 +40,6 @@ class DenyListManager {
 
 	private const CACHE_VERSION = 1;
 
-	/** @var HttpRequestFactory */
-	private $http;
-	/** @var BagOStuff */
-	private $srvCache;
-	/** @var WANObjectCache */
-	private $wanCache;
 	/** @var LoggerInterface */
 	private $logger;
 
@@ -55,21 +49,12 @@ class DenyListManager {
 	/** @var self */
 	private static $instance = null;
 
-	/**
-	 * @param HttpRequestFactory $http
-	 * @param BagOStuff $srvCache
-	 * @param WANObjectCache $wanCache
-	 * @param LoggerInterface|null $logger
-	 */
 	public function __construct(
-		HttpRequestFactory $http,
-		BagOStuff $srvCache,
-		WANObjectCache $wanCache,
-		?LoggerInterface $logger
+		private readonly HttpRequestFactory $http,
+		private readonly BagOStuff $srvCache,
+		private readonly WANObjectCache $wanCache,
+		?LoggerInterface $logger,
 	) {
-		$this->http = $http;
-		$this->srvCache = $srvCache;
-		$this->wanCache = $wanCache;
 		$this->logger = $logger ?: new NullLogger();
 	}
 
@@ -281,15 +266,9 @@ class DenyListManager {
 		// permission related hooks that mean the code here gets executed too...
 		// So, if we have a URL, and try and do a HTTP request whilst in MW_PHPUNIT_TEST,
 		// just fallback to loading sample_denylist_all.txt as a file...
-		// See also: T262443, T265628.
-		if ( defined( 'MW_PHPUNIT_TEST' ) ) {
+		// See also: T262443, T265628, T353001.
+		if ( defined( 'MW_PHPUNIT_TEST' ) || defined( 'MW_QUIBBLE_CI' ) ) {
 			$filePath = dirname( __DIR__ ) . '/tests/phpunit/sample_denylist_all.txt';
-			return $this->fetchFlatDenyListHexIpsLocal( $filePath );
-		}
-
-		// T353001 - this should be an ok way to determine that we're in a quibble context
-		if ( getenv( 'ZUUL_PROJECT' ) && getenv( 'MW_INSTALL_PATH' ) ) {
-			$filePath = getenv( 'MW_INSTALL_PATH' ) . '/extensions/StopForumSpam/tests/phpunit/sample_denylist_all.txt';
 			return $this->fetchFlatDenyListHexIpsLocal( $filePath );
 		}
 

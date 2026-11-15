@@ -3,11 +3,11 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Synchronization;
 
-use Language;
 use MediaWiki\Html\Html;
+use MediaWiki\Language\Language;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Title\Title;
-use MessageLocalizer;
 
 /**
  * Display Group synchronization related information
@@ -16,12 +16,11 @@ use MessageLocalizer;
  * @since 2021.02
  */
 class DisplayGroupSynchronizationInfo {
-	private MessageLocalizer $localizer;
-	private LinkRenderer $linkRenderer;
 
-	public function __construct( MessageLocalizer $localizer, LinkRenderer $linkRenderer ) {
-		$this->localizer = $localizer;
-		$this->linkRenderer = $linkRenderer;
+	public function __construct(
+		private readonly MessageLocalizer $localizer,
+		private readonly LinkRenderer $linkRenderer,
+	) {
 	}
 
 	/** @param string[] $groupsInSync */
@@ -197,12 +196,12 @@ class DisplayGroupSynchronizationInfo {
 				->rawParams( $language->pipeList( $actions ) )->escaped()
 		);
 
-		$output .= $this->getMessageInfoHtml( $message, $language );
+		$output .= $this->getMessageInfoHtml( $message );
 
 		return $output;
 	}
 
-	private function getMessageInfoHtml( MessageUpdateParameter $message, Language $language ): string {
+	private function getMessageInfoHtml( MessageUpdateParameter $message ): string {
 		$output = Html::openElement( 'dl' );
 
 		$tags = [];

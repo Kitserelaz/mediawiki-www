@@ -3,9 +3,9 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TranslatorSandbox;
 
-use FormatJson;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Html\Html;
+use MediaWiki\Json\FormatJson;
 use MediaWiki\Parser\Sanitizer;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\Options\UserOptionsLookup;
@@ -21,50 +21,51 @@ use MediaWiki\Utils\MWTimestamp;
  * @ingroup SpecialPage TranslateSpecialPage
  */
 class ManageTranslatorSandboxSpecialPage extends SpecialPage {
-	/** @var TranslationStashReader */
-	private $stash;
-	/** @var UserOptionsLookup */
-	private $userOptionsLookup;
-	private TranslateSandbox $translateSandbox;
 
 	public const CONSTRUCTOR_OPTIONS = [
 		'TranslateUseSandbox',
 	];
 
 	public function __construct(
-		TranslationStashReader $stash,
-		UserOptionsLookup $userOptionsLookup,
-		TranslateSandbox $translateSandbox,
-		ServiceOptions $options
+		private readonly TranslationStashReader $stash,
+		private readonly UserOptionsLookup $userOptionsLookup,
+		private readonly TranslateSandbox $translateSandbox,
+		private readonly ServiceOptions $options,
 	) {
-		$this->stash = $stash;
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->translateSandbox = $translateSandbox;
-
-		parent::__construct(
-			'ManageTranslatorSandbox',
-			'translate-sandboxmanage',
-			$options->get( 'TranslateUseSandbox' )
-		);
+		parent::__construct( 'ManageTranslatorSandbox' );
+		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 	}
 
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'translate-sandboxmanage';
+	}
+
+	public function isListed(): bool {
+		return $this->options->get( 'TranslateUseSandbox' );
+	}
+
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
 
-	protected function getGroupName() {
+	protected function getGroupName(): string {
 		return 'translation';
 	}
 
+	/** @inheritDoc */
 	public function execute( $params ) {
 		$this->setHeaders();
 		$this->checkPermissions();
+		$this->outputHeader();
 		$out = $this->getOutput();
 		$out->addModuleStyles(
 			[
 				'ext.translate.special.managetranslatorsandbox.styles',
-				'mediawiki.ui.button',
+				'codex-styles',
 				'jquery.uls.grid',
+				'mediawiki.codex.messagebox.styles',
 			]
 		);
 		$out->addModules( 'ext.translate.special.managetranslatorsandbox' );
@@ -131,11 +132,13 @@ class ManageTranslatorSandboxSpecialPage extends SpecialPage {
 			$remindersCount = count( $reminders );
 			if ( $remindersCount ) {
 				$lastReminderTimestamp = new MWTimestamp( end( $reminders ) );
+				$lastReminderRfcTimestamp = $lastReminderTimestamp->getTimestamp( TS_RFC2822 );
 				$lastReminderAgo = htmlspecialchars(
 					$this->getHumanTimestamp( $lastReminderTimestamp )
 				);
 			} else {
 				$lastReminderAgo = '';
+				$lastReminderRfcTimestamp = '';
 			}
 
 			$requests[] = [
@@ -150,6 +153,7 @@ class ManageTranslatorSandboxSpecialPage extends SpecialPage {
 				'userid' => $user->getId(),
 				'reminderscount' => $remindersCount,
 				'lastreminder' => $lastReminderAgo,
+				'lastreminderts' => $lastReminderRfcTimestamp
 			];
 		}
 

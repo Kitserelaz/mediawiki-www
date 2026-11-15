@@ -50,19 +50,22 @@ class DumpPage extends ActionPage {
 			return;
 		}
 
-		$isAdmin = $this->election->isAdmin( $this->specialPage->getUser() );
+		$isAdmin = $this->election->isAdmin( $this->specialPage->getAuthority() );
 		if ( $this->election->getProperty( 'voter-privacy' ) && !$isAdmin ) {
 			$out->addWikiMsg( 'securepoll-dump-private' );
 
 			return;
 		}
 
+		$dbr = $this->context->getDB( DB_REPLICA );
+		if ( !$isAdmin && !$this->election->isTallied( $dbr ) ) {
+			$out->addWikiMsg( 'securepoll-dump-not-tallied' );
+
+			return;
+		}
+
 		try {
-			if ( $format === "blt" ) {
-				$dump = DumpElection::createBLTDump( $this->election );
-			} else {
-				$dump = DumpElection::createXMLDump( $this->election );
-			}
+			$dump = DumpElection::createXMLDump( $this->election );
 		} catch ( Exception $e ) {
 			$out->addWikiTextAsInterface( $e->getMessage() );
 

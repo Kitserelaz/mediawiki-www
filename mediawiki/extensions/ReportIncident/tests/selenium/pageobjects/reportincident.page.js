@@ -1,14 +1,20 @@
-'use strict';
-
-const Page = require( 'wdio-mediawiki/Page' );
+import Page from 'wdio-mediawiki/Page';
 
 class ReportIncidentPage extends Page {
+	get actionsMenu() {
+		return $( '.mw-portlet-cactions' );
+	}
+
 	get reportLinkInToolsMenu() {
 		return $( '.ext-reportincident-link' );
 	}
 
 	get reportIncidentDialog() {
 		return $( '.ext-reportincident-dialog' );
+	}
+
+	get dialogUnacceptableBehaviorsButton() {
+		return $( 'input[value="unacceptable-user-behavior"]', this.reportIncidentDialog );
 	}
 
 	get dialogFooterNextButton() {
@@ -23,12 +29,8 @@ class ReportIncidentPage extends Page {
 		return $( '.ext-reportincident-dialog-step1', this.reportIncidentDialog );
 	}
 
-	get stepTwoContent() {
-		return $( '.ext-reportincident-dialog-step2', this.reportIncidentDialog );
-	}
-
-	get additionalContentFormInput() {
-		return $( '.ext-reportincident-dialog-step2__additional-details textarea', this.reportIncidentDialog );
+	get typesOfBehviorScreenContent() {
+		return $( '.ext-reportincident-dialog-types-of-behavior', this.reportIncidentDialog );
 	}
 
 	get violatorFormInput() {
@@ -40,7 +42,7 @@ class ReportIncidentPage extends Page {
 	}
 
 	get harassmentOptionsFormFieldset() {
-		return $( '.ext-reportincident-dialog-step2__harassment-options', this.reportIncidentDialog );
+		return $( '.ext-reportincident-dialog-types-of-behavior__harassment-options', this.reportIncidentDialog );
 	}
 
 	get harassmentOptionsFieldsetFormErrors() {
@@ -48,19 +50,19 @@ class ReportIncidentPage extends Page {
 	}
 
 	get hateSpeechOrDiscriminationOption() {
-		return $( 'input[value="hate-speech-or-discrimination"]', this.harassmentOptionsFormFieldset );
+		return $( 'input[value="hate-or-discrimination"]', this.harassmentOptionsFormFieldset );
 	}
 
 	get sexualHarassmentOption() {
 		return $( 'input[value="sexual-harassment"]', this.harassmentOptionsFormFieldset );
 	}
 
-	get threatsOrViolenceOption() {
-		return $( 'input[value="threats-or-violence"]', this.harassmentOptionsFormFieldset );
+	get trollingOption() {
+		return $( 'input[value="trolling"]', this.harassmentOptionsFormFieldset );
 	}
 
-	get intimidationAggressionOption() {
-		return $( 'input[value="intimidation-aggression"]', this.harassmentOptionsFormFieldset );
+	get intimidationOption() {
+		return $( 'input[value="intimidation"]', this.harassmentOptionsFormFieldset );
 	}
 
 	get somethingElseOption() {
@@ -68,12 +70,36 @@ class ReportIncidentPage extends Page {
 	}
 
 	get somethingElseTextbox() {
-		return $( '.ext-reportincident-dialog-step2__something-else-textarea textarea', this.harassmentOptionsFormFieldset );
+		return $( '.ext-reportincident-dialog-types-of-behavior__something-else-textarea textarea', this.harassmentOptionsFormFieldset );
 	}
 
-	async open( query ) {
-		await super.openTitle( 'User talk:Admin', query );
+	get submitButton() {
+		return $( 'input[name="wpSave"]' );
+	}
+
+	get messageDialog() {
+		return $( '.oo-ui-messageDialog-content' );
+	}
+
+	get threadOptions() {
+		return $( '.ext-discussiontools-init-section-overflowMenuButton > a' );
+	}
+
+	get reportLink() {
+		return $( '#reportincident .oo-ui-labelElement-label', this.threadOptions );
+	}
+
+	get successfulSubmissionSectionHeader() {
+		return $( '.ext-reportincident-dialog__submit-success-section-header', this.messageDialog );
+	}
+
+	async open( userName, query, fragment ) {
+		await super.openTitle(
+			`User talk:${ userName }`,
+			query,
+			fragment
+		);
 	}
 }
 
-module.exports = new ReportIncidentPage();
+export default new ReportIncidentPage();

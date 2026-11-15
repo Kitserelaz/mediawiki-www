@@ -20,7 +20,6 @@ use TwoColConflict\ProvideSubmittedText\SubmittedTextCache;
 use TwoColConflict\TalkPageConflict\ResolutionSuggester;
 use TwoColConflict\TalkPageConflict\TalkPageResolution;
 use Wikimedia\ObjectCache\BagOStuff;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
 use Wikimedia\Stats\StatsFactory;
 
 /**
@@ -39,7 +38,7 @@ class SplitTwoColConflictHelper extends TextConflictHelper {
 	/**
 	 * @param Title $title
 	 * @param OutputPage $out
-	 * @param IBufferingStatsdDataFactory|StatsFactory $stats
+	 * @param StatsFactory $stats
 	 * @param string $submitLabel Message key for submit button's label
 	 * @param IContentHandlerFactory $contentHandlerFactory
 	 * @param TwoColConflictContext $twoColContext
@@ -52,7 +51,7 @@ class SplitTwoColConflictHelper extends TextConflictHelper {
 	public function __construct(
 		Title $title,
 		OutputPage $out,
-		$stats,
+		StatsFactory $stats,
 		string $submitLabel,
 		IContentHandlerFactory $contentHandlerFactory,
 		TwoColConflictContext $twoColContext,
@@ -82,7 +81,7 @@ class SplitTwoColConflictHelper extends TextConflictHelper {
 	/**
 	 * @inheritDoc
 	 */
-	public function incrementConflictStats( ?User $user = null ) {
+	public function incrementConflictStats( ?User $user = null ): void {
 		parent::incrementConflictStats( $user );
 		// XXX This is copied largely from core and we may be able to refactor something here.
 		$namespace = 'n/a';
@@ -113,7 +112,7 @@ class SplitTwoColConflictHelper extends TextConflictHelper {
 	/**
 	 * @inheritDoc
 	 */
-	public function incrementResolvedStats( ?User $user = null ) {
+	public function incrementResolvedStats( ?User $user = null ): void {
 		parent::incrementResolvedStats( $user );
 		// XXX This is copied largely from core and we may be able to refactor something here.
 		$namespace = 'n/a';
@@ -143,10 +142,8 @@ class SplitTwoColConflictHelper extends TextConflictHelper {
 
 	/**
 	 * Replace default header for explaining the conflict screen.
-	 *
-	 * @return string
 	 */
-	public function getExplainHeader() {
+	public function getExplainHeader(): string {
 		// TODO
 		return '';
 	}
@@ -154,12 +151,9 @@ class SplitTwoColConflictHelper extends TextConflictHelper {
 	/**
 	 * Shows the diff part in the original conflict handling. Is not
 	 * used and overwritten by a simple container for the result text.
-	 *
-	 * @param array $customAttribs
-	 *
-	 * @return string HTML
+	 * @inheritDoc
 	 */
-	public function getEditConflictMainTextBox( array $customAttribs = [] ) {
+	public function getEditConflictMainTextBox( array $customAttribs = [] ): string {
 		return '';
 	}
 
@@ -167,15 +161,14 @@ class SplitTwoColConflictHelper extends TextConflictHelper {
 	 * Shows the diff part in the original conflict handling. Is not
 	 * used and overwritten.
 	 */
-	public function showEditFormTextAfterFooters() {
+	public function showEditFormTextAfterFooters(): void {
 	}
 
 	/**
 	 * Build HTML that will be added before the default edit form.
-	 *
-	 * @return string
+	 * @inheritDoc
 	 */
-	public function getEditFormHtmlBeforeContent() {
+	public function getEditFormHtmlBeforeContent(): string {
 		$storedLines = SplitConflictUtils::splitText( $this->storedversion );
 		$yourLines = SplitConflictUtils::splitText( $this->yourtext );
 
@@ -199,10 +192,9 @@ class SplitTwoColConflictHelper extends TextConflictHelper {
 
 	/**
 	 * Build HTML content that will be added after the default edit form.
-	 *
-	 * @return string
+	 * @inheritDoc
 	 */
-	public function getEditFormHtmlAfterContent() {
+	public function getEditFormHtmlAfterContent(): string {
 		$this->out->addModuleStyles( 'ext.TwoColConflict.SplitCss' );
 		$this->out->addModules( 'ext.TwoColConflict.SplitJs' );
 		return '';
@@ -248,7 +240,6 @@ class SplitTwoColConflictHelper extends TextConflictHelper {
 			$this->out->getContext(),
 			$this->commentFormatter
 		) )->getHtml( $this->twoColContext->isUsedAsBetaFeature() );
-		// @phan-suppress-next-line SecurityCheck-DoubleEscaped
 		$out .= ( new HtmlSplitConflictView(
 			new HtmlEditableTextComponent(
 				$this->out->getContext(),
@@ -265,7 +256,6 @@ class SplitTwoColConflictHelper extends TextConflictHelper {
 	}
 
 	private function buildResolutionSuggestionView( TalkPageResolution $suggestion ): string {
-		// @phan-suppress-next-line SecurityCheck-DoubleEscaped
 		return ( new HtmlTalkPageResolutionView(
 			new HtmlEditableTextComponent(
 				$this->out->getContext(),
@@ -283,8 +273,6 @@ class SplitTwoColConflictHelper extends TextConflictHelper {
 
 	/**
 	 * Build HTML for the hidden field with the text the user submitted.
-	 *
-	 * @return string
 	 */
 	private function buildRawTextsHiddenFields(): string {
 		return Html::textarea(

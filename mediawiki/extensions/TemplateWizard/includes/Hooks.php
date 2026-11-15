@@ -1,9 +1,4 @@
 <?php
-/**
- * @file
- */
-
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
 
 namespace MediaWiki\Extension\TemplateWizard;
 
@@ -22,6 +17,9 @@ class Hooks implements
 	ResourceLoaderGetConfigVarsHook
 {
 
+	public function __construct( private readonly ExtensionRegistry $extensionRegistry ) {
+	}
+
 	/**
 	 * Add the extension's module.
 	 * @link https://www.mediawiki.org/wiki/Manual:Hooks/EditPage::showEditForm:initial
@@ -32,6 +30,9 @@ class Hooks implements
 		$editPage,
 		$output
 	) {
+		if ( $output->getConfig()->get( 'TemplateDataEnableDiscovery' ) ) {
+			$output->addModules( 'ext.templateData.templateDiscovery' );
+		}
 		$output->addModules( 'ext.TemplateWizard' );
 	}
 
@@ -43,10 +44,8 @@ class Hooks implements
 	 * @param Config $config
 	 */
 	public function onResourceLoaderGetConfigVars( array &$vars, $skin, Config $config ): void {
-		$extensionRegistry = ExtensionRegistry::getInstance();
-
 		$vars['wgTemplateWizardConfig'] = [
-			'cirrusSearchLookup' => $extensionRegistry->isLoaded( 'CirrusSearch' ),
+			'cirrusSearchLookup' => $this->extensionRegistry->isLoaded( 'CirrusSearch' ),
 		];
 	}
 }

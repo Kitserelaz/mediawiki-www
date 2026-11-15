@@ -11,40 +11,76 @@
 	"license-name": "CC0-1.0",
 	"manifest_version": 2,
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"config": {
-		"ParserMigrationEnableQueryString": {
+		"ParserMigrationEnableQuickSurvey": {
 			"value": false,
+			"description": "Whether to enable the quick survey about Parsoid migration"
+		},
+		"ParserMigrationEnableQueryString": {
+			"value": true,
 			"description": "Whether to enable the ?useparsoid=1 query string for article views"
 		},
-		"ParserMigrationEnableParsoidDiscussionTools": {
-			"value": false,
+		"ParserMigrationEnableParsoidTalkPages": {
+			"value": true,
 			"description": "Whether to use Parsoid by default on discussion tools pages"
 		},
+		"ParserMigrationEnableParsoidPercentage": {
+			"value": 100,
+			"description": "Allows incremental migration to Parsoid by default when this percentage is less than 100."
+		},
 		"ParserMigrationEnableParsoidArticlePages": {
-			"value": false,
+			"value": true,
 			"description": "Whether to use Parsoid by default on article pages"
 		},
-		"ParserMigrationEnableParsoidMobileFrontend": {
+		"ParserMigrationEnableParsoidMobileArticlePages": {
 			"value": true,
 			"description": "Whether to use Parsoid by default on mobile domains, intersecting with the other default configs"
 		},
-		"ParserMigrationEnableParsoidMobileFrontendTalkPages": {
-			"value": false,
+		"ParserMigrationEnableParsoidMobileTalkPages": {
+			"value": true,
 			"description": "Whether to use Parsoid by default on mobile domains for talk pages, intersecting with the other default configs"
+		},
+		"ParserMigrationEnableIndicator": {
+			"value": false,
+			"description": "Add a Parsoid Read Views indicator"
+		},
+		"ParserMigrationEnableUserNotice": {
+			"value": false,
+			"description": "Add a user notice"
+		},
+		"ParserMigrationEnableReportVisualBug": {
+			"value": true,
+			"description": "Add a 'Report visual bug' link to the sidebar"
+		},
+		"ParserMigrationEnableReportVisualBugOnlyLoggedIn": {
+			"value": true,
+			"description": "Disable 'Report visual bug' for non-logged-in users"
 		},
 		"ParserMigrationUserNoticeVersion": {
 			"value": 1,
 			"description": "Updated whenever the user notice is modified sufficient to merit redisplay"
 		},
 		"ParserMigrationUserNoticeDays": {
-			"value": 7,
+			"value": 90,
 			"description": "The number of days before the user notice is reshown after being dismissed"
 		},
 		"ParserMigrationCompactIndicator": {
-			"value": false,
+			"value": true,
 			"description": "Use a compact icon as a Parsoid Read Views indicator"
+		},
+		"ParserMigrationFeedbackTitle": {
+			"value": false,
+			"description": "The title of the page where 'report visual bug' feedback is collected"
+		},
+		"ParserMigrationFeedbackTitleURL": {
+			"value": false,
+			"description": "The URL of the page where 'report visual bug' feedback is collected, if the ParserMigrationFeedbackTitle is on another wiki"
+		},
+		"ParserMigrationFeedbackAPIURL": {
+			"value": false,
+			"description": "URL of api.php, if the ParserMigrationFeedbackTitle is on another wiki"
 		}
 	},
 	"AutoloadNamespaces": {
@@ -104,6 +140,72 @@
 			"codexComponents": [
 				"CdxInfoChip"
 			]
+		},
+		"ext.parsermigration.survey": {
+			"dependencies": [
+				"mediawiki.user"
+			],
+			"styles": [
+				"ext.parsermigration.survey.less"
+			],
+			"packageFiles": [
+				"ext.parsermigration.survey.js"
+			]
+		},
+		"ext.parsermigration.reportbug.init": {
+			"styles": "ext.parsermigration.reportbug/init.less",
+			"dependencies": [
+				"mediawiki.user"
+			],
+			"packageFiles": [
+				"ext.parsermigration.reportbug/init.js"
+			]
+		},
+		"ext.parsermigration.reportbug.dialog": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"dependencies": [
+				"mediawiki.messagePoster",
+				"mediawiki.user",
+				"vue"
+			],
+			"packageFiles": [
+				"ext.parsermigration.reportbug/reportVisualBug.js",
+				{
+					"name": "ext.parsermigration.reportbug/icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconClose"
+					]
+				},
+				"ext.parsermigration.reportbug/ReportVisualBug.vue"
+			],
+			"codexComponents": [
+				"CdxButton",
+				"CdxDialog",
+				"CdxField",
+				"CdxIcon",
+				"CdxMessage",
+				"CdxProgressIndicator",
+				"CdxTextArea"
+			],
+			"messages": [
+				"parsermigration-feedback-error1",
+				"parsermigration-feedback-error4",
+				"parsermigration-reportbug-dialog-cancel-button-label",
+				"parsermigration-reportbug-dialog-complete-message",
+				"parsermigration-reportbug-dialog-complete-title",
+				"parsermigration-reportbug-dialog-desc",
+				"parsermigration-reportbug-dialog-destination",
+				"parsermigration-reportbug-dialog-done-button-label",
+				"parsermigration-reportbug-dialog-error-label",
+				"parsermigration-reportbug-dialog-message-label",
+				"parsermigration-reportbug-dialog-placeholder",
+				"parsermigration-reportbug-dialog-progress",
+				"parsermigration-reportbug-dialog-retry-button-label",
+				"parsermigration-reportbug-dialog-submit-button-label",
+				"parsermigration-reportbug-dialog-title",
+				"parsermigration-reportbug-feedback-title"
+			]
 		}
 	},
 	"DefaultUserOptions": {
@@ -123,7 +225,13 @@
 	"Hooks": {
 		"ArticleParserOptions": "ParserMigrationHooks",
 		"GetPreferences": "ParserMigrationHooks",
+		"ParserOutputPostCacheTransform": "ParserMigrationHooks",
+		"ResourceLoaderGetConfigVars": "ParserMigrationHooks",
 		"SidebarBeforeOutput": "ParserMigrationHooks",
-		"ParserOutputPostCacheTransform": "ParserMigrationHooks"
+		"ListDefinedTags": "ParserMigrationHooks",
+		"ChangeTagsListActive": "ParserMigrationHooks",
+		"ChangeTagsAllowedAdd": "ParserMigrationHooks",
+		"ConfirmEditTriggersCaptcha": "MediaWiki\\Extension\\ParserMigration\\Hooks::onConfirmEditTriggersCaptcha",
+		"QuickSurveysEnabled": "MediaWiki\\Extension\\ParserMigration\\Hooks::onQuickSurveysEnabled"
 	}
 }

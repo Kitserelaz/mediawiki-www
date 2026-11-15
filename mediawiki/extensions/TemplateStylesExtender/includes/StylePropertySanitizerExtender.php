@@ -31,61 +31,88 @@ use Wikimedia\CSS\Grammar\MatcherFactory;
 use Wikimedia\CSS\Grammar\Quantifier;
 use Wikimedia\CSS\Grammar\TokenMatcher;
 use Wikimedia\CSS\Objects\CSSObject;
+use Wikimedia\CSS\Objects\Declaration;
 use Wikimedia\CSS\Objects\Token;
 use Wikimedia\CSS\Sanitizer\StylePropertySanitizer;
 
 class StylePropertySanitizerExtender extends StylePropertySanitizer {
 
+	private const EXTERNAL_RESOURCE_FUNCTIONS = [
+		'attr',
+		'image',
+		'image-set',
+		'-webkit-image-set',
+		'src',
+		'url',
+	];
+
 	private bool $varEnabled = false;
-	private static $extendedCssSizingAdditions = false;
-	private static $extendedCss1Masking = false;
-	private static $extendedCss1Grid = false;
 
 	/**
-	 * @param MatcherFactory $matcherFactory
+	 * When true, the a9043c4 external-resource rejection below is skipped, so a custom
+	 * property may hold url()/image-set()/etc. and CSP is relied on instead. See #45.
 	 */
+	private bool $allowExternalResources = false;
+
+	private static bool $extendedCss1Masking = false;
+	private static bool $extendedCss3Grid = false;
+	private static bool $extendedCss3Backgrounds = false;
+
 	public function __construct( MatcherFactory $matcherFactory ) {
-		parent::__construct( new MatcherFactoryExtender() );
+		$extendedMatcherFactory = $matcherFactory instanceof MatcherFactoryExtender
+			? $matcherFactory
+			: new MatcherFactoryExtender( $matcherFactory );
+
+		parent::__construct( $extendedMatcherFactory );
 	}
 
-	/**
-	 * @param bool $varEnabled
-	 * @return void
-	 */
 	public function setVarEnabled( bool $varEnabled ): void {
 		$this->varEnabled = $varEnabled;
 	}
 
 	/**
+	 * Permit external-resource functions (url, image-set, ...) inside custom-property
+	 * values, lifting the rejection wholesale. Only for deployments whose CSP governs
+	 * these fetches -- see the config documentation.
+	 */
+	public function setAllowExternalResources( bool $allow ): void {
+		$this->allowExternalResources = $allow;
+	}
+
+	/**
 	 * @inheritDoc
 	 *
-	 * Partly implement clamp
+	 * Let border-color take a light-dark().
+	 *
+	 * Upstream builds it from safeColor() rather than color(), because the property
+	 * concatenates up to four colours and a var() could expand to more than one of them.
+	 * That reasoning does not reach light-dark(), which is a single function and yields
+	 * exactly one colour whatever it holds, so it is refused here only as a side effect of
+	 * keeping var() out. The per-side longhands, which do not concatenate, take it already.
 	 */
-	protected function getSizingAdditions( MatcherFactory $matcherFactory ) {
+	protected function cssBackgrounds3( MatcherFactory $matcherFactory ) {
 		// @codeCoverageIgnoreStart
-		if ( self::$extendedCssSizingAdditions && isset( $this->cache[__METHOD__] ) ) {
+		if ( self::$extendedCss3Backgrounds && isset( $this->cache[__METHOD__] ) ) {
 			return $this->cache[__METHOD__];
 		}
 		// @codeCoverageIgnoreEnd
 
-		$props = parent::getSizingAdditions( $matcherFactory );
+		$props = parent::cssBackgrounds3( $matcherFactory );
 
-		$props[] = new FunctionMatcher( 'clamp', Quantifier::hash( new Alternative( [
-			$matcherFactory->length(),
-			$matcherFactory->lengthPercentage(),
-			$matcherFactory->frequency(),
-			$matcherFactory->angle(),
-			$matcherFactory->anglePercentage(),
-			$matcherFactory->time(),
-			$matcherFactory->number(),
-			$matcherFactory->integer(),
-		] ), 3, 3 ) );
+		$factory = $matcherFactory instanceof MatcherFactoryExtender
+			? $matcherFactory
+			: new MatcherFactoryExtender( $matcherFactory );
+
+		// Still no bare var(), which is the part of upstream's caution that holds.
+		$props['border-color'] = Quantifier::count( new Alternative( [
+			$factory->safeColor(),
+			$factory->lightDark(),
+		] ), 1, 4 );
 
 		$this->cache[__METHOD__] = $props;
+		self::$extendedCss3Backgrounds = true;
 
-		self::$extendedCssSizingAdditions = true;
-
-		return $this->cache[__METHOD__];
+		return $props;
 	}
 
 	/**
@@ -117,7 +144,7 @@ class StylePropertySanitizerExtender extends StylePropertySanitizer {
 	 */
 	protected function cssGrid1( MatcherFactory $matcherFactory ) {
 		// @codeCoverageIgnoreStart
-		if ( self::$extendedCss1Grid && isset( $this->cache[__METHOD__] ) ) {
+		if ( self::$extendedCss3Grid && isset( $this->cache[__METHOD__] ) ) {
 			return $this->cache[__METHOD__];
 		}
 		// @codeCoverageIgnoreEnd
@@ -197,12 +224,24 @@ class StylePropertySanitizerExtender extends StylePropertySanitizer {
 			$lineNamesO,
 		] );
 
+		$subgrid = new Juxtaposition( [ $lineNamesO, new KeywordMatcher( 'subgrid' ), $lineNamesO ] );
+
 		$props['grid-template-columns'] = new Alternative( [
-			new KeywordMatcher( 'none' ), $trackList, $autoTrackList
+			new KeywordMatcher( [ 'none', 'masonry' ] ),
+			$trackList,
+			$autoTrackList,
+			$subgrid,
 		] );
 		$props['grid-template-rows'] = $props['grid-template-columns'];
 
+		$props['masonry-auto-flow'] = new Juxtaposition( [
+			new KeywordMatcher( [ 'pack', 'next' ] ),
+			Quantifier::optional( new KeywordMatcher( 'definite-first' ) )
+		] );
+
 		$this->cache[__METHOD__] = $props;
+		self::$extendedCss3Grid = true;
+
 		return $props;
 	}
 
@@ -210,16 +249,36 @@ class StylePropertySanitizerExtender extends StylePropertySanitizer {
 	 * @inheritDoc
 	 */
 	protected function doSanitize( CSSObject $object ) {
-		if ( !$this->varEnabled ) {
+		if ( !$this->varEnabled || !$object instanceof Declaration ) {
 			return parent::doSanitize( $object );
 		}
+
+		$name = $object->getName();
 
 		// Not a CSS custom property
-		if ( !str_starts_with( $object->getName(), '--' ) ) {
+		if ( !str_starts_with( $name, '--' ) ) {
 			return parent::doSanitize( $object );
 		}
 
-		$this->clearSanitizationErrors();
+		if ( !$this->allowExternalResources ) {
+			foreach ( $object->toTokenArray() as $token ) {
+				if (
+					$token->type() === Token::T_URL ||
+					$token->type() === Token::T_BAD_URL ||
+					(
+						$token->type() === Token::T_FUNCTION &&
+						in_array( strtolower( (string)$token->value() ), self::EXTERNAL_RESOURCE_FUNCTIONS, true )
+					)
+				) {
+					$this->sanitizationError( 'bad-value-for-property', $token, [ $name ] );
+					return null;
+				}
+			}
+		}
+
+		// Deliberately no clearSanitizationErrors(): the early return above means nothing
+		// here needs clearing, and it would discard earlier declarations' errors.
+		// @phan-suppress-next-line PhanTypeMismatchReturn generics weakness, see parent
 		return $object;
 	}
 }

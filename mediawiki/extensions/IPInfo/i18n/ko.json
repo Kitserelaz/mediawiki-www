@@ -141,7 +141,7 @@
 	"ipinfo-blocklist-url-text": "차단 목록",
 	"ipinfo-value-deleted-edits": "{{PLURAL:$1|삭제된 편집 $1개|0=삭제된 편집 없음}}",
 	"ipinfo-special-ipinfo": "IP 정보",
-	"ipinfo-special-ipinfo-legend": "임시 사용자가 사용하는 모든 IP 주소에 대한 IP 정보를 조회합니다. 최대 $1개의 {{PLURAL:$1|결과}}가 표시됩니다.",
+	"ipinfo-special-ipinfo-legend": "임시 사용자 또는 임의의 IP 주소가 사용하는 모든 IP 주소에 대한 IP 정보를 조회합니다. 최대 $1개의 {{PLURAL:$1|결과}}가 표시됩니다.",
 	"ipinfo-deleted-edits-url-text": "삭제된 기여",
 	"ipinfo-special-ipinfo-table-caption": "$1의 IP 정보",
 	"ipinfo-special-ipinfo-target": "대상 사용자 이름 또는 IP 주소:",

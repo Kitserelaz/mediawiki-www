@@ -1,16 +1,16 @@
 <?php
 
-use MediaWiki\Config\HashConfig;
 use MediaWiki\Extension\EventBus\Serializers\EventSerializer;
 use MediaWiki\Extension\EventBus\Serializers\MediaWiki\PageChangeEventSerializer;
 use MediaWiki\Extension\EventBus\Serializers\MediaWiki\PageEntitySerializer;
 use MediaWiki\Extension\EventBus\Serializers\MediaWiki\RevisionEntitySerializer;
-use MediaWiki\Extension\EventBus\Serializers\MediaWiki\RevisionSlotEntitySerializer;
 use MediaWiki\Extension\EventBus\Serializers\MediaWiki\UserEntitySerializer;
 use MediaWiki\Http\Telemetry;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
+use MediaWiki\Tests\MockWikiMapTrait;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
@@ -23,9 +23,7 @@ use Wikimedia\UUID\GlobalIdGenerator;
  * @group EventBus
  */
 class PageChangeEventSerializerTest extends MediaWikiIntegrationTestCase {
-	private const MOCK_CANONICAL_SERVER = 'http://my_wiki.org';
-	private const MOCK_ARTICLE_PATH = '/wiki/$1';
-	private const MOCK_SERVER_NAME = 'my_wiki';
+	use MockWikiMapTrait;
 
 	private const MOCK_UUID = 'b14a2ee4-f5df-40f3-b995-ce6c954e29e3';
 	private const MOCK_STREAM_NAME = 'test.mediawiki.page_change';
@@ -73,51 +71,30 @@ class PageChangeEventSerializerTest extends MediaWikiIntegrationTestCase {
 		if ( $this->setUpHasRun ) {
 			return;
 		}
+		$this->mockWikiMap();
 
-		$config = new HashConfig( [
-			'ServerName' => self::MOCK_SERVER_NAME,
-			'CanonicalServer' => self::MOCK_CANONICAL_SERVER,
-			'ArticlePath' => self::MOCK_ARTICLE_PATH
-		] );
 		$globalIdGenerator = $this->createMock( GlobalIdGenerator::class );
 		$globalIdGenerator->method( 'newUUIDv4' )->willReturn( self::MOCK_UUID );
 
-		$telemetry = $this->createMock( Telemetry::class );
-		$telemetry->method( 'getRequestId' )->willReturn( 'requestid' );
+		$services = $this->getServiceContainer();
 
-		$this->userFactory = $this->getServiceContainer()->getUserFactory();
-		$this->revisionStore = $this->getServiceContainer()->getRevisionStore();
+		$this->userFactory = $services->getUserFactory();
+		$this->revisionStore = $services->getRevisionStore();
 
-		$this->eventSerializer = new EventSerializer(
-			$config,
-			$globalIdGenerator,
-			$telemetry
-		);
-
-		$this->pageEntitySerializer = new PageEntitySerializer(
-			$config,
-			$this->getServiceContainer()->getTitleFormatter()
-		);
-
-		$this->userEntitySerializer = new UserEntitySerializer(
-			$this->userFactory,
-			$this->getServiceContainer()->getUserGroupManager()
-		);
-
-		$revisionSlotEntitySerializer = new RevisionSlotEntitySerializer(
-			$this->getServiceContainer()->getContentHandlerFactory()
-		);
-
-		$this->revisionEntitySerializer = new RevisionEntitySerializer(
-			$revisionSlotEntitySerializer,
-			$this->userEntitySerializer
-		);
+		// Use a custom (not MediaWiki Service) EventSerializer
+		// so we can override the $globalIdGenerator.
+		$this->eventSerializer = new EventSerializer( $globalIdGenerator );
+		// Tests will MediaWiki Service instance of entity serializers.
+		// so ServiceWiring.php is exercised.
+		$this->pageEntitySerializer = $services->get( 'EventBus.PageEntitySerializer' );
+		$this->userEntitySerializer = $services->get( 'EventBus.UserEntitySerializer' );
+		$this->revisionEntitySerializer = $services->get( 'EventBus.RevisionEntitySerializer' );
 
 		$this->pageChangeEventSerializer = new PageChangeEventSerializer(
 			$this->eventSerializer,
 			$this->pageEntitySerializer,
 			$this->userEntitySerializer,
-			$this->revisionEntitySerializer
+			$this->revisionEntitySerializer,
 		);
 
 		$this->setUpHasRun = true;
@@ -145,8 +122,8 @@ class PageChangeEventSerializerTest extends MediaWikiIntegrationTestCase {
 		?string $comment = null,
 		?array $eventAttrs = null
 	): array {
-		$currentRevision = $currentRevision ?? $wikiPage->getRevisionRecord();
-		$eventTimestamp = $eventTimestamp ?? $wikiPage->getRevisionRecord()->getTimestamp();
+		$currentRevision ??= $wikiPage->getRevisionRecord();
+		$eventTimestamp ??= $wikiPage->getRevisionRecord()->getTimestamp();
 
 		$commentAttrs = [];
 		if ( $comment !== null ) {
@@ -172,6 +149,9 @@ class PageChangeEventSerializerTest extends MediaWikiIntegrationTestCase {
 					],
 					$performerArray
 				),
+				WikiMap::getCurrentWikiId(),
+				null,
+				Telemetry::getInstance()->getRequestId(),
 			),
 			$commentAttrs,
 			$eventAttrs
@@ -532,13 +512,6 @@ class PageChangeEventSerializerTest extends MediaWikiIntegrationTestCase {
 
 		$revisionRecord->setVisibility( RevisionRecord::DELETED_COMMENT | RevisionRecord::DELETED_USER );
 		$newDeleted = $revisionRecord->getVisibility();
-
-		// NOTE: This is the logic that PageChangeHooks uses to decide if performer
-		// should be in the event.  We don't have a great integration test for hooks
-		// right now.
-		// If we make one, this test should be moved there, so the actual code is tested.
-		$performerForEvent = $newDeleted & RevisionRecord::DELETED_RESTRICTED ?
-			null : $this->getTestUser()->getUser();
 
 		// NOTE: This is the logic that EventBusHooks uses to decide if performer
 		// should be in the event.  We don't have a great integration test for hooks

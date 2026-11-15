@@ -19,21 +19,16 @@
 
 namespace MediaWiki\Extension\RealMe;
 
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Title\Title;
 use MediaWiki\Utils\UrlUtils;
-use MessageLocalizer;
 
 class Validator {
 
-	/** @var MessageLocalizer */
-	private $localizer;
-
-	/** @var UrlUtils */
-	private $urlUtils;
-
-	public function __construct( MessageLocalizer $localizer, UrlUtils $urlUtils ) {
-		$this->localizer = $localizer;
-		$this->urlUtils = $urlUtils;
+	public function __construct(
+		private readonly MessageLocalizer $localizer,
+		private readonly UrlUtils $urlUtils,
+	) {
 	}
 
 	/**

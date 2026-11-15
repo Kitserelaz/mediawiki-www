@@ -46,15 +46,19 @@ ve.dm.TableNode.static.matchTagNames = [ 'table' ];
 
 /**
  * Handle splicing of child nodes
+ *
+ * @param {number} index
+ * @param {number} deleteCount
+ * @param {...ve.dm.Node} [nodes]
  */
-ve.dm.TableNode.prototype.onSplice = function () {
-	const nodes = Array.prototype.slice.call( arguments, 2 );
+ve.dm.TableNode.prototype.onSplice = function ( index, deleteCount, ...nodes ) {
 	this.getMatrix().invalidate();
-	for ( let i = 0; i < nodes.length; i++ ) {
-		nodes[ i ].connect( this, {
+
+	nodes.forEach( ( node ) => {
+		node.connect( this, {
 			cellAttributeChange: 'onCellAttributeChange'
 		} );
-	}
+	} );
 };
 
 /**
@@ -82,12 +86,7 @@ ve.dm.TableNode.prototype.getMatrix = function () {
  * @return {ve.dm.TableCaptionNode|null} The table's caption node, or null if not found
  */
 ve.dm.TableNode.prototype.getCaptionNode = function () {
-	for ( let i = 0, l = this.children.length; i < l; i++ ) {
-		if ( this.children[ i ] instanceof ve.dm.TableCaptionNode ) {
-			return this.children[ i ];
-		}
-	}
-	return null;
+	return this.children.find( ( child ) => child instanceof ve.dm.TableCaptionNode ) || null;
 };
 
 /**

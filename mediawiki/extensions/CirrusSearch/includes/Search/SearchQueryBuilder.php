@@ -11,6 +11,8 @@ use CirrusSearch\Parser\NamespacePrefixParser;
 use CirrusSearch\Parser\QueryParserFactory;
 use CirrusSearch\Query\Builder\ContextualFilter;
 use CirrusSearch\SearchConfig;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Search\SearchEngine;
 use Wikimedia\Assert\Assert;
 
 /**
@@ -140,7 +142,7 @@ final class SearchQueryBuilder {
 		$builder->parsedQuery = QueryParserFactory::newFullTextQueryParser( $config,
 			$namespacePrefixParser, $cirrusSearchHookRunner )->parse( $queryString );
 		$builder->initialNamespaces = [ NS_MAIN ];
-		$builder->sort = \SearchEngine::DEFAULT_SORT;
+		$builder->sort = SearchEngine::DEFAULT_SORT;
 		$builder->randomSeed = null;
 		$builder->debugOptions = CirrusDebugOptions::defaultOptions();
 		$builder->limit = 10;
@@ -187,14 +189,19 @@ final class SearchQueryBuilder {
 		$builder->parsedQuery = $original->getParsedQuery();
 		$builder->searchEngineEntryPoint = $original->getSearchEngineEntryPoint();
 
-		// Only allow core namespaces. We can't be sure any others exist
-		// TODO: possibly move this later and try to detect if we run the default
-		// profile, so that we could try to run the default profile on sister wikis
-		$namespaces = $original->getInitialNamespaces();
-		if ( $namespaces !== null ) {
-			$namespaces = array_filter( $namespaces, static function ( $namespace ) {
-				return $namespace <= NS_CATEGORY_TALK;
-			} );
+		if ( $original->isUsingDefaultSearchedNamespaces() && $config->has( MainConfigNames::NamespacesToBeSearchedDefault ) ) {
+			// If we search for default namespaces we assume the user wants to search for default namespaces
+			// on the cross wiki.
+			$namespaces = array_map( static fn ( $n ) => intval( $n ),
+				array_keys( $config->get( MainConfigNames::NamespacesToBeSearchedDefault ), true ) );
+		} else {
+			// For the rest only allow core namespaces. We can't be sure any others exist
+			$namespaces = $original->getInitialNamespaces();
+			if ( $namespaces !== null ) {
+				$namespaces = array_filter( $namespaces, static function ( $namespace ) {
+					return $namespace <= NS_CATEGORY_TALK;
+				} );
+			}
 		}
 
 		$builder->initialNamespaces = $namespaces;
@@ -281,9 +288,6 @@ final class SearchQueryBuilder {
 		return $builder;
 	}
 
-	/**
-	 * @return SearchQuery
-	 */
 	public function build(): SearchQuery {
 		return new SearchQuery(
 			$this->parsedQuery,
@@ -402,10 +406,6 @@ final class SearchQueryBuilder {
 		return $this;
 	}
 
-	/**
-	 * @param CirrusDebugOptions $debugOptions
-	 * @return SearchQueryBuilder
-	 */
 	public function setDebugOptions( CirrusDebugOptions $debugOptions ): SearchQueryBuilder {
 		$this->debugOptions = $debugOptions;
 

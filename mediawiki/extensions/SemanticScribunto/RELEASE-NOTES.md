@@ -1,5 +1,41 @@
 This file contains the RELEASE-NOTES of the **Semantic Scribunto** (a.k.a. SSC) extension.
 
+## 3.0.0
+
+Released on June 8, 2026.
+
+* Minimum requirement for PHP raised to 8.1.
+* Minimum requirement for MediaWiki raised to 1.43.
+* Minimum requirement for Semantic MediaWiki raised to 7.0.
+* Fixed a fatal error when calling `mw.smw.ask` with `format=debug` (or
+  another format whose store result is a string rather than a `QueryResult`).
+* Removed the undocumented `SMW_SCRIBUNTO_VERSION` PHP constant. Dependency
+  checks are now handled entirely by `extension.json`'s `requires` block.
+* `mw.smw.ask` and `mw.smw.getQueryResult` now run as inline queries
+  (matching the actual call site inside page parsing) instead of being
+  mis-tagged as special-page queries. The practical effect is that the
+  default result cap is `$smwgQMaxInlineLimit` (default 500) instead of
+  `$smwgQMaxLimit` (default 10000). Wikis that need higher limits in
+  Lua-driven reports should raise `$smwgQMaxInlineLimit` in
+  `LocalSettings.php`.
+* `mw.smw.ask`, `mw.smw.getQueryResult`, and `mw.smw.info` now raise a
+  Lua error on invalid argument shapes (nested-too-deep tables,
+  non-scalar values, or `nil` where a value is required). Previously
+  the same inputs silently produced empty results or leaked PHP
+  warnings from `processLuaArguments` when `display_errors=On`. Lua
+  modules calling these functions without arguments will now error
+  instead of receiving a degenerate empty response.
+* Localization updates from https://translatewiki.net
+
+## 2.3.3
+
+Released on October 10, 2025
+
+* Fixes installation issues with newer versions of Semantic MediaWiki
+* Bug fixes and code improvements
+* Localization updates from https://translatewiki.net
+
+
 ## 2.3.2
 
 Released on July 23, 2024

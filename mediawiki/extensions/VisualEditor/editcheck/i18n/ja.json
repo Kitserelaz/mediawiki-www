@@ -30,7 +30,7 @@
 	"editcheck-dialog-toggle": "表示/非表示",
 	"editcheck-dialog-addref-description": "出典を追加することで、読者がこの情報の根拠や情報源を理解できるようにしてください。",
 	"editcheck-dialog-addref-reject-question": "出典を追加しない理由はなんですか。",
-	"editcheck-dialog-addref-reject-description": "出典が不要だと判断した理由を、さらに詳しく教えてください。",
+	"editcheck-dialog-addref-reject-description": "出典を追加しなくてもよいと判断した理由を、さらに詳しく教えてください。",
 	"editcheck-dialog-addref-reject-irrelevant": "私が行った変更は、出典とは無関係だと思います",
 	"editcheck-dialog-addref-reject-common-knowledge": "私が付け加えた情報は、既に広く知られています",
 	"editcheck-dialog-addref-reject-uncertain": "どのような出典を追加すればよいか、わかりません",

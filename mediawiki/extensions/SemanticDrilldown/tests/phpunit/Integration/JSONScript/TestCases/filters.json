@@ -154,7 +154,7 @@
 					"> Text: <span class=\"drilldown-header-value\">~ 'A'</span> <a href=\"/index.php/Special:BrowseData/Category1\" title=\"Remove this filter\">",
 
 					"Text:",
-					"<option value=\"_search_Text[1]\"></option>",
+					"<select class=\"semanticDrilldownCombobox\" style=\"display: none;\" data-mw-input-name=\"_search_Text[1]\" data-mw-filter-name=\"Text[1]\">",
 					"<option value=\"B\">B</option>",
 
 					"Number:",
@@ -336,9 +336,51 @@
 					"Category1TextBNumber2Date2Page2BoolN"
 				]
 			}
+		},
+		{
+			"type": "special",
+			"about": "blank search term is ignored — no filter applied, both pages appear (PR #121)",
+			"special-page": {
+				"page": "BrowseData",
+				"query-parameters": "Category1",
+				"request-parameters": {
+					"_search_Text": [ "" ]
+				}
+			},
+			"assert-output": {
+				"to-contain": [
+					"<a href=\"/index.php/Category1TextANumber1Date1Page1BoolY\" title=\"Category1TextANumber1Date1Page1BoolY\">Category1TextANumber1Date1Page1BoolY</a>",
+					"<a href=\"/index.php/Category1TextBNumber2Date2Page2BoolN\" title=\"Category1TextBNumber2Date2Page2BoolN\">Category1TextBNumber2Date2Page2BoolN</a>"
+				],
+				"not-contain": [
+					"<span class=\"drilldown-header-value\">~ ''</span>"
+				]
+			}
+		},
+		{
+			"type": "special",
+			"about": "blank search term mixed with non-blank — only the non-blank term filters (PR #121)",
+			"special-page": {
+				"page": "BrowseData",
+				"query-parameters": "Category1",
+				"request-parameters": {
+					"_search_Text": [ "", "A" ]
+				}
+			},
+			"assert-output": {
+				"to-contain": [
+					"<a href=\"/index.php/Category1TextANumber1Date1Page1BoolY\" title=\"Category1TextANumber1Date1Page1BoolY\">Category1TextANumber1Date1Page1BoolY</a>",
+					"title=\"Reset filters\""
+				],
+				"not-contain": [
+					"<span class=\"drilldown-header-value\">~ ''</span>",
+					"Category1TextBNumber2Date2Page2BoolN"
+				]
+			}
 		}
 	],
 	"settings": {
+		"wgArticlePath": "/index.php/$1",
 		"wgLang": "en"
 	},
 	"meta": {

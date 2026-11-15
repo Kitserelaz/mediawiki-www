@@ -14,7 +14,7 @@
  * @param {Object} [config] Configuration options
  * @param {Object} [config.toolbarConfig] Configuration options for the toolbar
  */
-ve.init.sa.MobileTarget = function VeInitSaMobileTarget( config ) {
+ve.init.sa.MobileTarget = function VeInitSaMobileTarget( config = {} ) {
 	// Parent constructor
 	ve.init.sa.MobileTarget.super.call( this, config );
 
@@ -73,3 +73,5 @@ ve.init.sa.MobileTarget.static.toolbarGroups = [
 		include: '*'
 	}
 ];
+
+ve.init.sa.MobileTarget.static.enforceResizesContent = true;

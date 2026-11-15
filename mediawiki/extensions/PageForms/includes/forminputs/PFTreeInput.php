@@ -107,7 +107,7 @@ class PFTreeInput extends PFFormInput {
 
 		} else {
 			// Escape - we can't do anything.
-			Html::element( 'div', [ 'class' => 'errorMessage' ], "Tree input: either 'structure' or 'top category' must be set." );
+			return Html::element( 'div', [ 'class' => 'errorMessage' ], "Tree input: either 'structure' or 'top category' must be set." );
 		}
 
 		$cur_value = implode( $delimiter, $pftree->current_values );
@@ -125,7 +125,7 @@ class PFTreeInput extends PFFormInput {
 			'params' => json_encode( $params )
 		];
 
-		$text = Html::element( 'div', $treeInputAttrs, null );
+		$text = Html::element( 'div', $treeInputAttrs, '' );
 		$text .= "<input type='hidden' class='PFTree_data' name='" . $input_name . "'>";
 
 		$wrapperClass = 'pfTreeInputWrapper';

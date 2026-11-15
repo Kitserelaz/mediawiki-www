@@ -3,11 +3,11 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
-use Content;
-use ContentHandler;
-use Language;
+use MediaWiki\Content\Content;
+use MediaWiki\Content\ContentHandler;
 use MediaWiki\Extension\Translate\MessageLoading\Message;
 use MediaWiki\Extension\Translate\MessageLoading\MessageCollection;
+use MediaWiki\Language\Language;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Title\Title;
 use WikiPageMessageGroup;
@@ -49,8 +49,8 @@ class TranslationPage {
 	}
 
 	/** @since 2021.07 */
-	public function getPageContent( Parser $parser, ?int &$percentageTranslated = null ): Content {
-		$text = $this->generateSource( $parser, $percentageTranslated );
+	public function getPageContent( Parser $parser, bool &$isTranslated = false ): Content {
+		$text = $this->generateSource( $parser, $isTranslated );
 		$model = $this->sourcePageTitle->getContentModel();
 		return ContentHandler::makeContent( $text, null, $model );
 	}
@@ -62,9 +62,9 @@ class TranslationPage {
 	public function filterMessageCollection( MessageCollection $collection ): void {
 		$collection->loadTranslations();
 		if ( $this->showOutdated ) {
-			$collection->filter( 'hastranslation', false );
+			$collection->filter( MessageCollection::FILTER_HAS_TRANSLATION, MessageCollection::INCLUDE_MATCHING );
 		} else {
-			$collection->filter( 'translated', false );
+			$collection->filter( MessageCollection::FILTER_TRANSLATED, MessageCollection::INCLUDE_MATCHING );
 		}
 	}
 
@@ -105,17 +105,10 @@ class TranslationPage {
 	}
 
 	/** Generate translation page source using default options. */
-	private function generateSource( Parser $parser, ?int &$percentageTranslated = null ): string {
+	private function generateSource( Parser $parser, bool &$isTranslated = false ): string {
 		$collection = $this->getMessageCollection();
-		$allKeys = count( $collection );
 		$this->filterMessageCollection( $collection );
-		$keysWithTranslation = count( $collection );
-
-		if ( $allKeys === 0 ) {
-			$percentageTranslated = 0;
-		} else {
-			$percentageTranslated = (int)( ( $keysWithTranslation / $allKeys ) * 100 );
-		}
+		$isTranslated = count( $collection ) > 0;
 
 		$messages = $this->extractMessages( $collection );
 		return $this->generateSourceFromTranslations( $parser, $messages );

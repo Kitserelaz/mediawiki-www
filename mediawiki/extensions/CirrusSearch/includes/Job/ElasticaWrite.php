@@ -2,37 +2,20 @@
 
 namespace CirrusSearch\Job;
 
-use CirrusSearch\ClusterSettings;
 use CirrusSearch\Connection;
 use CirrusSearch\DataSender;
 use CirrusSearch\UpdateGroup;
-use CirrusSearch\Util;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Status\Status;
-use MediaWiki\Utils\MWTimestamp;
 use Wikimedia\Assert\Assert;
-use Wikimedia\Stats\StatsFactory;
 
 /**
  * Performs writes to elasticsearch indexes with requeuing and an
  * exponential backoff (if supported by jobqueue) when the index
  * writes fail.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class ElasticaWrite extends CirrusGenericJob {
 
@@ -47,57 +30,35 @@ class ElasticaWrite extends CirrusGenericJob {
 	];
 
 	/**
-	 * @param ClusterSettings $cluster
+	 * @param string $cluster
 	 * @param string $updateGroup UpdateGroup::* constant
 	 * @param string $method
 	 * @param array $arguments
 	 * @param array $params
 	 * @param string|null $updateKind the kind of update to perform (used for monitoring)
 	 * @param int|null $rootEventTime the time of MW event that caused this update (used for monitoring)
-	 * @return ElasticaWrite
+	 * @return self
 	 */
 	public static function build(
-		ClusterSettings $cluster,
+		string $cluster,
 		string $updateGroup,
 		string $method,
 		array $arguments,
 		array $params = [],
 		?string $updateKind = null,
 		?int $rootEventTime = null
-	) {
+	): self {
 		return new self( [
 			'method' => $method,
 			'arguments' => self::serde( $method, $arguments ),
-			'cluster' => $cluster->getName(),
-			// This does not directly partition the jobs, it only provides a value
-			// to use during partitioning. The job queue must be separately
-			// configured to utilize this value.
-			'jobqueue_partition' => self::partitioningKey( $cluster ),
+			'cluster' => $cluster,
 			'update_group' => $updateGroup,
 			CirrusTitleJob::UPDATE_KIND => $updateKind,
 			CirrusTitleJob::ROOT_EVENT_TIME => $rootEventTime
 		] + $params );
 	}
 
-	/**
-	 * Generate a cluster specific partitioning key
-	 *
-	 * Some job queue implementations, such as cpjobqueue, can partition the
-	 * execution of jobs based on a parameter of the job. By default we
-	 * provide one partition per cluster, but allow to configure multiple
-	 * partitions per cluster if more throughput is necessary. Within a
-	 * single cluster jobs are distributed randomly.
-	 *
-	 * @param ClusterSettings $settings
-	 * @return string A value suitable for partitioning jobs per-cluster
-	 */
-	private static function partitioningKey( ClusterSettings $settings ): string {
-		$numPartitions = $settings->getElasticaWritePartitionCount();
-		$partition = mt_rand() % $numPartitions;
-		return "{$settings->getName()}-{$partition}";
-	}
-
-	private static function serde( $method, array $arguments, $serialize = true ) {
+	private static function serde( string $method, array $arguments, bool $serialize = true ): array {
 		if ( isset( self::$SERDE[$method] ) ) {
 			foreach ( self::$SERDE[$method] as $i => $serde ) {
 				if ( $serde !== null && array_key_exists( $i, $arguments ) ) {
@@ -116,8 +77,6 @@ class ElasticaWrite extends CirrusGenericJob {
 	/**
 	 * Entry point for jobs received from the job queue. Creating new
 	 * jobs should be done via self::build.
-	 *
-	 * @param array $params
 	 */
 	public function __construct( array $params ) {
 		parent::__construct( $params + [
@@ -197,8 +156,6 @@ class ElasticaWrite extends CirrusGenericJob {
 			$action = $this->requeueError( $conn ) ? "Requeued" : "Dropped";
 			$this->setLastError( "ElasticaWrite job failed: {$action}" );
 			$ok = false;
-		} else {
-			$this->reportUpdateLag( $conn->getClusterName() );
 		}
 
 		return $ok;
@@ -239,30 +196,6 @@ class ElasticaWrite extends CirrusGenericJob {
 			);
 			$jobQueue->push( $job );
 			return true;
-		}
-	}
-
-	/**
-	 * Report the update lag based on stored params if set.
-	 * @param string $cluster
-	 * @param StatsFactory|null $statsFactory already prefixed with the right component
-	 * @return void
-	 */
-	public function reportUpdateLag( string $cluster, ?StatsFactory $statsFactory = null ): void {
-		$params = $this->getParams();
-		$updateKind = $params[CirrusTitleJob::UPDATE_KIND] ?? null;
-		$eventTime = $params[CirrusTitleJob::ROOT_EVENT_TIME] ?? null;
-		if ( $updateKind !== null && $eventTime !== null ) {
-			$now = MWTimestamp::time();
-			$lagInSeconds = $now - $eventTime;
-			$statsFactory ??= Util::getStatsFactory();
-			$statsFactory->getTiming( "update_lag_seconds" )
-				->setLabel( "search_cluster", $cluster )
-				->setLabel( "type", $updateKind )
-				->observe( $lagInSeconds * 1000 );
-			// This metric was improperly recorded as seconds, we have to copy to statsd by hand
-			MediaWikiServices::getInstance()->getStatsdDataFactory()
-				->timing( "CirrusSearch.$cluster.updates.all.lag.$updateKind", $lagInSeconds );
 		}
 	}
 }

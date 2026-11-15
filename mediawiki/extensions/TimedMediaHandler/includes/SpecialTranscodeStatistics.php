@@ -12,6 +12,7 @@ namespace MediaWiki\TimedMediaHandler;
 
 use MediaWiki\Output\OutputPage;
 use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\TimedMediaHandler\WebVideoTranscode\TranscodePresets;
 use MediaWiki\TimedMediaHandler\WebVideoTranscode\WebVideoTranscode;
 use MediaWiki\Title\Title;
 use Wikimedia\ObjectCache\WANObjectCache;
@@ -20,37 +21,28 @@ use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\SelectQueryBuilder;
 
 class SpecialTranscodeStatistics extends SpecialPage {
-	/** @var string[] */
-	private $transcodeStates = [
-		// Note: these queries should check prefixes of the index transcode_time_inx
-		// phpcs:ignore Generic.Files.LineLength.TooLong
-		'active'  => 'transcode_time_addjob IS NOT NULL AND transcode_time_startwork IS NOT NULL AND transcode_time_success IS     NULL AND transcode_time_error IS     NULL',
-		// phpcs:ignore Generic.Files.LineLength.TooLong
-		'failed'  => 'transcode_time_addjob IS NOT NULL AND transcode_time_startwork IS NOT NULL AND transcode_time_success IS     NULL AND transcode_time_error IS NOT NULL',
-		// phpcs:ignore Generic.Files.LineLength.TooLong
-		'queued'  => 'transcode_time_addjob IS NOT NULL AND transcode_time_startwork IS     NULL AND transcode_time_success IS     NULL AND transcode_time_error IS     NULL',
-		// phpcs:ignore Generic.Files.LineLength.TooLong
-		'missing' => 'transcode_time_addjob IS     NULL AND transcode_time_startwork IS     NULL AND transcode_time_success IS     NULL AND transcode_time_error IS     NULL',
-	];
-	// index on transcode_time_addjob,transcode_time_startwork,transcode_time_error,transcode_key,transcode_image_name
-
-	/** @var IConnectionProvider */
-	private $dbProvider;
-
-	/** @var WANObjectCache */
-	private $cache;
 
 	/**
-	 * @param IConnectionProvider $dbProvider
-	 * @param WANObjectCache $cache
+	 * @var string[]
 	 */
+	private $transcodeStates = [
+		'success' => WebVideoTranscode::STATE_SUCCESS,
+		'active'  => WebVideoTranscode::STATE_ACTIVE,
+		'failed'  => WebVideoTranscode::STATE_FAILED,
+		'queued'  => WebVideoTranscode::STATE_QUEUED,
+		'missing' => WebVideoTranscode::STATE_MISSING,
+	];
+
 	public function __construct(
-		IConnectionProvider $dbProvider,
-		WANObjectCache $cache
+		private readonly IConnectionProvider $dbProvider,
+		private readonly WANObjectCache $cache,
+		private readonly TranscodePresets $transcodePresets,
 	) {
-		parent::__construct( 'TranscodeStatistics', 'transcode-status' );
-		$this->dbProvider = $dbProvider;
-		$this->cache = $cache;
+		parent::__construct( 'TranscodeStatistics' );
+	}
+
+	public function getRestriction(): string {
+		return 'transcode-status';
 	}
 
 	/** @inheritDoc */
@@ -58,24 +50,27 @@ class SpecialTranscodeStatistics extends SpecialPage {
 		$this->setHeaders();
 		$this->checkPermissions();
 		$out = $this->getOutput();
-
 		$out->addModuleStyles( 'mediawiki.special' );
 
-		$states = $this->getStates();
-		$this->renderState( $out, 'transcodes', $states, false );
+		$states = $this->getStateCounts();
+
 		foreach ( $this->transcodeStates as $state => $condition ) {
-			$this->renderState( $out, $state, $states, $state !== 'missing' );
+			$this->renderState(
+				$out,
+				$state,
+				$states,
+				$state === 'active' || $state === 'failed' || $state === 'queued'
+			);
 		}
 	}
 
-	/**
-	 * @param OutputPage $out
-	 * @param string $state
-	 * @param array $states
-	 * @param bool $showTable
-	 */
-	private function renderState( $out, $state, $states, $showTable = true ) {
-		$allTranscodes = WebVideoTranscode::enabledTranscodes();
+	private function renderState(
+		OutputPage $out,
+		string $state,
+		array $states,
+		bool $showTable = true
+	): void {
+		$allTranscodes = $this->transcodePresets->enabledTranscodes();
 		if ( $states[ $state ][ 'total' ] ) {
 			// Give grep a chance to find the usages:
 			// timedmedia-derivative-state-transcodes, timedmedia-derivative-state-active,
@@ -84,7 +79,7 @@ class SpecialTranscodeStatistics extends SpecialPage {
 			$out->addHTML(
 				"<h2>"
 				. $this->msg(
-					'timedmedia-derivative-state-' . $state
+					'timedmedia-derivative-state-' . ( $state === 'success' ? 'transcodes' : $state )
 				)->numParams( $states[ $state ]['total'] )->escaped()
 				. "</h2>"
 			);
@@ -103,17 +98,12 @@ class SpecialTranscodeStatistics extends SpecialPage {
 		}
 	}
 
-	/**
-	 * @param string $state
-	 * @param int $limit
-	 *
-	 * @return false|array
-	 */
-	private function getTranscodes( $state, $limit = 50 ) {
+	private function getTranscodes( string $stateName, int $limit = 50 ): false|array {
 		$fname = __METHOD__;
+		$state = $this->transcodeStates[$stateName] ?? null;
 
 		return $this->cache->getWithSetCallback(
-			$this->cache->makeKey( 'TimedMediaHandler-files', $state ),
+			$this->cache->makeKey( 'TimedMediaHandler-files', $stateName, $limit ),
 			$this->cache::TTL_MINUTE,
 			function ( $oldValue, &$ttl, array &$setOpts ) use ( $state, $limit, $fname ) {
 				$dbr = $this->dbProvider->getReplicaDatabase();
@@ -123,14 +113,12 @@ class SpecialTranscodeStatistics extends SpecialPage {
 				$res = $dbr->newSelectQueryBuilder()
 					->select( [ 'transcode_image_name', 'transcode_key' ] )
 					->from( 'transcode' )
-					->where( $this->transcodeStates[ $state ] )
+					->where( [
+						'transcode_key' => $this->transcodePresets->enabledTranscodes(),
+						'transcode_state' => $state,
+					] )
 					->limit( $limit )
-					->orderBy( [
-						'transcode_time_addjob',
-						'transcode_time_startwork',
-						'transcode_time_success',
-						'transcode_time_error',
-					], SelectQueryBuilder::SORT_DESC )
+					->orderBy( 'transcode_touched', SelectQueryBuilder::SORT_DESC )
 					->caller( $fname )
 					->fetchResultSet();
 
@@ -147,13 +135,7 @@ class SpecialTranscodeStatistics extends SpecialPage {
 		);
 	}
 
-	/**
-	 * @param string $state
-	 * @param int $limit
-	 *
-	 * @return string
-	 */
-	private function getTranscodesTable( $state, $limit = 50 ) {
+	private function getTranscodesTable( string $state, int $limit = 50 ): string {
 		$linkRenderer = $this->getLinkRenderer();
 		$table = '<table class="wikitable">' . "\n"
 			. '<tr>'
@@ -176,23 +158,18 @@ class SpecialTranscodeStatistics extends SpecialPage {
 		return $table;
 	}
 
-	/**
-	 * @return array
-	 */
-	private function getStates() {
+	private function getStateCounts(): array {
 		$fname = __METHOD__;
 
+		$allTranscodes = $this->transcodePresets->enabledTranscodes();
 		return $this->cache->getWithSetCallback(
 			$this->cache->makeKey( 'TimedMediaHandler-states' ),
 			$this->cache::TTL_MINUTE,
-			function ( $oldValue, &$ttl, array &$setOpts ) use ( $fname ) {
+			function ( $oldValue, &$ttl, array &$setOpts ) use ( $fname, $allTranscodes ) {
 				$dbr = $this->dbProvider->getReplicaDatabase();
 				$setOpts += Database::getCacheSetOptions( $dbr );
 
-				$allTranscodes = WebVideoTranscode::enabledTranscodes();
-
 				$states = [];
-				$states[ 'transcodes' ] = [ 'total' => 0 ];
 				foreach ( $this->transcodeStates as $state => $condition ) {
 					$states[ $state ] = [ 'total' => 0 ];
 					foreach ( $allTranscodes as $type ) {
@@ -201,37 +178,23 @@ class SpecialTranscodeStatistics extends SpecialPage {
 						$states[ $state ][ $type ] = 0;
 					}
 				}
-				foreach ( $this->transcodeStates as $state => $condition ) {
-					$cond = [ 'transcode_key' => $allTranscodes ];
-					$cond[] = $condition;
-					$res = $dbr->newSelectQueryBuilder()
-						->select( [ 'count' => 'COUNT(*)', 'transcode_key' ] )
-						->from( 'transcode' )
-						->where( $cond )
-						->groupBy( 'transcode_key' )
-						->caller( $fname )
-						->fetchResultSet();
-					foreach ( $res as $row ) {
-						$key = $row->transcode_key;
-						$states[ $state ][ $key ] = $row->count;
-						$states[ $state ][ 'total' ] += $states[ $state ][ $key ];
-					}
-				}
-				$res = $dbr->newSelectQueryBuilder()
-					->select( [ 'count' => 'COUNT(*)', 'transcode_key' ] )
+
+				$res = $this->dbProvider->getReplicaDatabase()->newSelectQueryBuilder()
+					->select( [ 'count' => 'COUNT(*)', 'transcode_key', 'transcode_state' ] )
 					->from( 'transcode' )
 					->where( [ 'transcode_key' => $allTranscodes ] )
-					->groupBy( 'transcode_key' )
+					->groupBy( [ 'transcode_key', 'transcode_state' ] )
 					->caller( $fname )
 					->fetchResultSet();
+
+				$stateMap = array_flip( $this->transcodeStates );
 				foreach ( $res as $row ) {
 					$key = $row->transcode_key;
-					$states[ 'transcodes' ][ $key ] = $row->count;
-					$states[ 'transcodes' ][ $key ] -= $states[ 'queued' ][ $key ];
-					$states[ 'transcodes' ][ $key ] -= $states[ 'missing' ][ $key ];
-					$states[ 'transcodes' ][ $key ] -= $states[ 'active' ][ $key ];
-					$states[ 'transcodes' ][ $key ] -= $states[ 'failed' ][ $key ];
-					$states[ 'transcodes' ][ 'total' ] += $states[ 'transcodes' ][ $key ];
+					$stateVal = (int)$row->transcode_state;
+					$stateName = $stateMap[ $stateVal ];
+
+					$states[ $stateName ][ $key ] = (int)$row->count;
+					$states[ $stateName ][ 'total' ] += $states[ $stateName ][ $key ];
 				}
 
 				return $states;

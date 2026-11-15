@@ -1,6 +1,6 @@
 'use strict';
 
-var FormatValueElement = function MediaInfoStatementsFormatValueElement() {};
+const FormatValueElement = function MediaInfoStatementsFormatValueElement() {};
 OO.initClass( FormatValueElement );
 
 FormatValueElement.cache = {};
@@ -18,7 +18,7 @@ FormatValueElement.getKey = function ( dataValue, format, language, propertyId )
 		format: format,
 		language: language,
 		property: propertyId
-	}, function ( key, value ) {
+	}, ( key, value ) => {
 		// make sure the data gets sorted during stringify, or we might
 		// end up with a different key for data that is essentially the
 		// same, but where the properties were stringified in a different
@@ -27,7 +27,7 @@ FormatValueElement.getKey = function ( dataValue, format, language, propertyId )
 		if ( value instanceof Object && !( value instanceof Array ) ) {
 			return Object.keys( value )
 				.sort()
-				.reduce( function ( sorted, sortedKey ) {
+				.reduce( ( sorted, sortedKey ) => {
 					sorted[ sortedKey ] = value[ sortedKey ];
 					return sorted;
 				}, {} );
@@ -54,35 +54,20 @@ FormatValueElement.toCache = function ( key, result ) {
  * @return {jQuery.Promise}
  */
 FormatValueElement.prototype.formatValue = function ( dataValue, format, language, propertyId ) {
-	var api,
-		data = { type: dataValue.getType(), value: dataValue.toJSON() },
-		stringified = JSON.stringify( data ),
-		promise,
-		params,
-		key,
-		otherKey;
+	const data = { type: dataValue.getType(), value: dataValue.toJSON() };
+	const stringified = JSON.stringify( data );
 
-	api = wikibase.api.getLocationAgnosticMwApi(
+	const api = wikibase.api.getLocationAgnosticMwApi(
 		mw.config.get( 'wbmiRepoApiUrl', mw.config.get( 'wbRepoApiUrl' ) ),
 		{ anonymous: true }
 	);
 
 	format = format || 'text/plain';
 	language = language || mw.config.get( 'wgUserLanguage' );
-	key = FormatValueElement.getKey( dataValue, format, language, propertyId );
-
-	// backward compatibility for output generated before property ids
-	// were included - this can be deleted after parser caches expire
-	// (30 days after this patch got deployed, so probably ~ february 2020)
-	if ( !( key in FormatValueElement.cache ) && propertyId !== undefined ) {
-		otherKey = FormatValueElement.getKey( dataValue, format, language );
-		if ( otherKey in FormatValueElement.cache ) {
-			return FormatValueElement.cache[ otherKey ];
-		}
-	}
+	const key = FormatValueElement.getKey( dataValue, format, language, propertyId );
 
 	if ( !( key in FormatValueElement.cache ) ) {
-		params = {
+		const params = {
 			action: 'wbformatvalue',
 			datavalue: stringified,
 			format: 'json',
@@ -90,11 +75,9 @@ FormatValueElement.prototype.formatValue = function ( dataValue, format, languag
 			options: JSON.stringify( { lang: language } ),
 			property: propertyId
 		};
-		promise = api.get( params );
+		const promise = api.get( params );
 
-		FormatValueElement.cache[ key ] = promise.then( function ( response ) {
-			return response.result || '';
-		} ).promise( { abort: function () {
+		FormatValueElement.cache[ key ] = promise.then( ( response ) => response.result || '' ).promise( { abort: function () {
 			if ( !( key in FormatValueElement.cache ) ) {
 				// request already aborted/failed and cleaned out of cache
 				return;
@@ -111,7 +94,7 @@ FormatValueElement.prototype.formatValue = function ( dataValue, format, languag
 			delete FormatValueElement.cache[ key ];
 		} } );
 
-		FormatValueElement.cache[ key ].catch( function () {
+		FormatValueElement.cache[ key ].catch( () => {
 			// this promise seems to have failed, might as well remove this from
 			// cache, so it's re-attempted next time we need this...
 			delete FormatValueElement.cache[ key ];

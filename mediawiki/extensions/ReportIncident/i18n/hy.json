@@ -4,5 +4,7 @@
 			"Kareyac"
 		]
 	},
-	"reportincident-emaildialog-close-button": "Չեղարկել"
+	"reportincident-emaildialog-close-button": "Չեղարկել",
+	"reportincident-dialog-harassment-type-other": "Այլ",
+	"communityconfiguration-reportincident-reportincident_nonemergency_other-label": "Այլ"
 }

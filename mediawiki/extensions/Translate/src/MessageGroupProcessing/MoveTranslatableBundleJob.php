@@ -3,12 +3,14 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
-use Job;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatableBundleMover;
 use MediaWiki\Extension\Translate\Services;
+use MediaWiki\JobQueue\Job;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
+use Wikimedia\ScopedCallback;
 
 /**
  * Contains class with job for moving translation pages.
@@ -35,7 +37,8 @@ class MoveTranslatableBundleJob extends Job {
 		array $moves,
 		array $redirects,
 		string $reason,
-		User $performer
+		User $performer,
+		array $session
 	): self {
 		$params = [
 			'source' => $source->getPrefixedText(),
@@ -44,6 +47,7 @@ class MoveTranslatableBundleJob extends Job {
 			'redirects' => $redirects,
 			'summary' => $reason,
 			'performer' => $performer->getName(),
+			'session' => $session
 		];
 
 		return new self( $target, $params );
@@ -54,12 +58,21 @@ class MoveTranslatableBundleJob extends Job {
 		$this->bundleMover = Services::getInstance()->getTranslatableBundleMover();
 	}
 
+	/** @inheritDoc */
 	public function run() {
 		$sourceTitle = Title::newFromText( $this->params['source'] );
 		$targetTitle = Title::newFromText( $this->params['target'] );
 
 		$userFactory = MediaWikiServices::getInstance()->getUserFactory();
 		$performer = $userFactory->newFromName( $this->params['performer'] );
+
+		// Restore the session information if present
+		if ( isset( $this->params[ 'session' ] ) ) {
+			$scope = RequestContext::importScopedSession( $this->params['session'] );
+			$this->addTeardownCallback( static function () use ( &$scope ) {
+				ScopedCallback::consume( $scope );
+			} );
+		}
 
 		$this->bundleMover->moveSynchronously(
 			$sourceTitle,

@@ -3,7 +3,7 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
-use DifferenceEngine;
+use MediaWiki\Diff\DifferenceEngine;
 use MediaWiki\Html\Html;
 use MediaWiki\Html\TemplateParser;
 use MediaWiki\SpecialPage\SpecialPage;
@@ -17,14 +17,15 @@ class PrepareTranslatablePageSpecialPage extends SpecialPage {
 	private TemplateParser $templateParser;
 
 	public function __construct() {
-		parent::__construct( 'PagePreparation', 'pagetranslation' );
+		parent::__construct( 'PagePreparation' );
 		$this->templateParser = new TemplateParser( __DIR__ . '/templates' );
 	}
 
-	protected function getGroupName() {
+	protected function getGroupName(): string {
 		return 'translation';
 	}
 
+	/** @inheritDoc */
 	public function execute( $par ) {
 		$request = $this->getRequest();
 		$output = $this->getOutput();
@@ -55,14 +56,18 @@ class PrepareTranslatablePageSpecialPage extends SpecialPage {
 		$diffHeader = $diff->addHeader( ' ', $this->msg( 'pp-diff-old-header' )->escaped(),
 			$this->msg( 'pp-diff-new-header' )->escaped() );
 
+		$translateTaggerUrl = $this->getConfig()->get( 'TranslateEnableTranslateTaggerAPIIntegration' );
+
 		$data = [
 			'pagenamePlaceholder' => $this->msg( 'pp-pagename-placeholder' )->text(),
 			'prepareButtonLabel' => $this->msg( 'pp-prepare-button-label' )->text(),
+			'prepareWithTranslateTagger' => $this->msg( 'pp-prepare-with-translate-tagger-button-label' )->text(),
 			'saveButtonLabel' => $this->msg( 'pp-save-button-label' )->text(),
 			'cancelButtonLabel' => $this->msg( 'pp-cancel-button-label' )->text(),
 			'summaryValue' => $this->msg( 'pp-save-summary' )->inContentLanguage()->text(),
 			'inputValue' => $inputValue,
-			'diffHeaderHtml' => $diffHeader
+			'diffHeaderHtml' => $diffHeader,
+			'translateTaggerUrl' => $translateTaggerUrl,
 		];
 
 		return $this->templateParser->processTemplate( 'PrepareTranslatablePageTemplate', $data );

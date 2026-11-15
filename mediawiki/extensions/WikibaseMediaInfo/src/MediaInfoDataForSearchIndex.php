@@ -5,13 +5,13 @@ namespace Wikibase\MediaInfo;
 use MediaWiki\Content\ContentHandler;
 use MediaWiki\Content\ContentHandlerFactory;
 use MediaWiki\Content\Hook\SearchDataForIndex2Hook;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Revision\RevisionRecord;
-use SearchEngine;
+use MediaWiki\Search\SearchEngine;
 use Wikibase\MediaInfo\Content\MediaInfoHandler;
 use Wikibase\MediaInfo\DataModel\MediaInfo;
 use Wikimedia\Assert\Assert;
-use WikiPage;
 
 /**
  * Media info data is not stored in the main slot and thus the corresponding
@@ -20,13 +20,9 @@ use WikiPage;
  * slot content data into the search index.
  */
 class MediaInfoDataForSearchIndex implements SearchDataForIndex2Hook {
-	/**
-	 * @var ContentHandlerFactory
-	 */
-	private $contentHandlerFactory;
-
-	public function __construct( ContentHandlerFactory $contentHandlerFactory ) {
-		$this->contentHandlerFactory = $contentHandlerFactory;
+	public function __construct(
+		private readonly ContentHandlerFactory $contentHandlerFactory,
+	) {
 	}
 
 	/**

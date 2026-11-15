@@ -22,19 +22,16 @@ use Wikimedia\Stats\StatsFactory;
  */
 class SpecialProvideSubmittedText extends UnlistedSpecialPage {
 
-	private TwoColConflictContext $twoColConflictContext;
-	private SubmittedTextCache $textCache;
-	private StatsFactory $statsFactory;
+	private readonly SubmittedTextCache $textCache;
 
 	public function __construct(
-		TwoColConflictContext $twoColConflictContext,
+		private readonly TwoColConflictContext $twoColConflictContext,
 		BagOStuff $textCache,
-		StatsFactory $statsFactory
+		private readonly StatsFactory $statsFactory,
+		private readonly TextboxBuilder $textboxBuilder,
 	) {
 		parent::__construct( 'TwoColConflictProvideSubmittedText' );
-		$this->twoColConflictContext = $twoColConflictContext;
 		$this->textCache = new SubmittedTextCache( $textCache );
-		$this->statsFactory = $statsFactory;
 	}
 
 	/**
@@ -53,7 +50,7 @@ class SpecialProvideSubmittedText extends UnlistedSpecialPage {
 		if ( !$title ) {
 			// Should be the same error code as for every malformed title
 			$out->setStatusCode( 404 );
-			$out->addHTML( new MessageWidget( [
+			$out->addHTML( (string)new MessageWidget( [
 				'label' => $this->msg( 'twocolconflict-special-malformed-title' )->text(),
 				'type' => 'error',
 			] ) );
@@ -73,7 +70,7 @@ class SpecialProvideSubmittedText extends UnlistedSpecialPage {
 		if ( !$text ) {
 			// 410 means "gone", which is quite literally what happened here
 			$out->setStatusCode( 410 );
-			$out->addHTML( new MessageWidget( [
+			$out->addHTML( (string)new MessageWidget( [
 				'label' => $this->msg( 'twocolconflict-special-expired' )->text(),
 				'type' => 'warning',
 			] ) );
@@ -129,13 +126,13 @@ class SpecialProvideSubmittedText extends UnlistedSpecialPage {
 	 * @return string
 	 */
 	private function getTextAreaHtml( string $text, PageIdentity $page ): string {
-		$builder = new TextboxBuilder();
-		$attribs = $builder->mergeClassesIntoAttributes(
-			[ 'mw-twocolconflict-submitted-text' ],
-			[ 'readonly', 'tabindex' => 1 ]
-		);
+		$attribs = [
+			'class' => [ 'mw-twocolconflict-submitted-text' ],
+			'readonly',
+			'tabindex' => 1,
+		];
 
-		$attribs = $builder->buildTextboxAttribs(
+		$attribs = $this->textboxBuilder->buildTextboxAttribs(
 			'wpTextbox2',
 			$attribs,
 			$this->getUser(),
@@ -145,7 +142,7 @@ class SpecialProvideSubmittedText extends UnlistedSpecialPage {
 		return Html::element( 'span', [], $this->msg( 'twocolconflict-special-textarea-hint' )->text() ) .
 			Html::textarea(
 				'wpTextbox2',
-				$builder->addNewLineAtEnd( $text ),
+				$this->textboxBuilder->addNewLineAtEnd( $text ),
 				$attribs
 			);
 	}

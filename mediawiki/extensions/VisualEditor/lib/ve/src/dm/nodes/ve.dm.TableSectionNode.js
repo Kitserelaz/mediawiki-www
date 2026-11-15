@@ -47,7 +47,7 @@ ve.dm.TableSectionNode.static.toDataElement = function ( domElements ) {
 			tfoot: 'footer'
 		},
 		style = styles[ domElements[ 0 ].nodeName.toLowerCase() ] || 'body';
-	return { type: this.name, attributes: { style: style } };
+	return { type: this.name, attributes: { style } };
 };
 
 ve.dm.TableSectionNode.static.toDomElements = function ( dataElement, doc ) {
@@ -64,17 +64,21 @@ ve.dm.TableSectionNode.static.toDomElements = function ( dataElement, doc ) {
 
 /**
  * Handle splicing of child nodes
+ *
+ * @param {number} index
+ * @param {number} deleteCount
+ * @param {...ve.dm.Node} [nodes]
  */
-ve.dm.TableSectionNode.prototype.onSplice = function () {
+ve.dm.TableSectionNode.prototype.onSplice = function ( index, deleteCount, ...nodes ) {
 	if ( this.getRoot() ) {
 		this.getParent().getMatrix().invalidate();
 	}
-	const nodes = Array.prototype.slice.call( arguments, 2 );
-	for ( let i = 0; i < nodes.length; i++ ) {
-		nodes[ i ].connect( this, {
+
+	nodes.forEach( ( node ) => {
+		node.connect( this, {
 			cellAttributeChange: 'onCellAttributeChange'
 		} );
-	}
+	} );
 };
 
 /**

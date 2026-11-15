@@ -3,8 +3,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TranslatorInterface;
 
-use ManualLogEntry;
 use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroupStatesUpdaterJob;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\RevTagStore;
@@ -13,15 +13,16 @@ use MediaWiki\Extension\Translate\PageTranslation\Hooks as PageTranslationHooks;
 use MediaWiki\Extension\Translate\Services;
 use MediaWiki\Extension\Translate\Statistics\MessageGroupStats;
 use MediaWiki\Extension\Translate\TtmServer\TtmServer;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\PageIdentity;
+use MediaWiki\Page\WikiPage;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Storage\EditResult;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
-use ParserOptions;
-use TextContent;
-use WikiPage;
 
 /**
  * Various editing enhancements to the edit page interface.
@@ -61,31 +62,29 @@ class TranslateEditAddons {
 			return true;
 		}
 
-		$group = $handle->getGroup();
-		$languages = $group->getTranslatableLanguages();
 		$langCode = $handle->getCode();
-		if ( $languages !== null && $langCode && !isset( $languages[$langCode] ) ) {
+		if ( $langCode === '' ) {
+			return true;
+		}
+
+		$group = $handle->getGroup();
+		if ( !$group ) {
+			return true;
+		}
+
+		$configHelper = Services::getInstance()->getConfigHelper();
+		$isDisabled = $configHelper->isTargetLanguageDisabled( $group, $langCode, $reason );
+		if ( !$isDisabled ) {
+			return true;
+		}
+
+		if ( $reason === null ) {
 			$result = [ 'translate-language-disabled' ];
-			return false;
+		} else {
+			$result = [ 'translate-page-disabled', $reason ];
 		}
 
-		$groupId = $group->getId();
-		$checks = [
-			$groupId,
-			strtok( $groupId, '-' ),
-			'*'
-		];
-
-		$disabledLanguages = Services::getInstance()->getConfigHelper()->getDisabledTargetLanguages();
-		foreach ( $checks as $check ) {
-			if ( isset( $disabledLanguages[$check][$langCode] ) ) {
-				$reason = $disabledLanguages[$check][$langCode];
-				$result = [ 'translate-page-disabled', $reason ];
-				return false;
-			}
-		}
-
-		return true;
+		return false;
 	}
 
 	/**
@@ -110,12 +109,33 @@ class TranslateEditAddons {
 		}
 
 		$text = $content->getText();
-		$title = $wikiPage->getTitle();
-		$handle = new MessageHandle( $title );
+		$handle = new MessageHandle( $wikiPage->getTitle() );
 
 		if ( !$handle->isValid() ) {
 			return;
 		}
+
+		// TODO: Convert this method to a listener for PageLatestRevisionChangedEvent,
+		// which provides a better way to detect dummy revisions and null edits.
+		$isDummyRevision = !$editResult->isNew()
+			&& ( $editResult->getOriginalRevisionId() === $revisionRecord->getParentId() );
+
+		if ( $isDummyRevision ) {
+			// Dummy revisions should not unfuzzy the page, see T392321.
+			// Fuzziness propagation for dummy revisions is handled in
+			// HookHandler::onRevisionRecordInserted.
+			// Returning here also protects against infinite recursion
+			// when we insert a dummy revision below.
+			return;
+		}
+
+		// Check if this is a null edit, i.e. no revision was created,
+		// or a dummy revision, i.e. the content didn't change.
+		// NOTE: $editResult->isNullEdit() does not distinguish between null
+		// edits and dummy revisions (T392333). We need that distinction though,
+		// since we want to create a dummy revision when we are informed about a
+		// null edit.
+		$isNullEdit = $editResult->getOriginalRevisionId() === $revisionRecord->getId();
 
 		// Update it.
 		$revId = $revisionRecord->getId();
@@ -123,53 +143,65 @@ class TranslateEditAddons {
 
 		$fuzzy = $handle->needsFuzzy( $text );
 		$parentId = $revisionRecord->getParentId();
-		if ( $editResult->isNullEdit() || $parentId == 0 ) {
+		$revTagStore = Services::getInstance()->getRevTagStore();
+		if ( $isNullEdit || $parentId == 0 ) {
 			// In this case the page_latest hasn't changed so we can rely on its fuzzy status
 			$wasFuzzy = $handle->isFuzzy();
 		} else {
 			// In this case the page_latest will (probably) have changed. The above might work by chance
 			// since it reads from a replica database which might not have gotten the update yet, but
 			// don't trust it and read the fuzzy status of the parent ID from the database instead
-			$revTagStore = Services::getInstance()->getRevTagStore();
-			$wasFuzzy = $revTagStore->isRevIdFuzzy( $title->getArticleID(), $parentId );
+			$wasFuzzy = $revTagStore->isRevIdFuzzy( $wikiPage->getId(), $parentId );
 		}
 		if ( !$fuzzy && $wasFuzzy ) {
-			$title = $mwServices->getTitleFactory()->castFromPageIdentity( $wikiPage );
 			$user = $mwServices->getUserFactory()->newFromUserIdentity( $userIdentity );
 
-			if ( !$mwServices->getPermissionManager()->userCan( 'unfuzzy', $user, $title ) ) {
+			if ( !$mwServices->getPermissionManager()->userCan( 'unfuzzy', $user, $wikiPage->getTitle() ) ) {
 				// No permission to unfuzzy this unit so leave it fuzzy
 				$fuzzy = true;
-			} elseif ( $editResult->isNullEdit() ) {
+			} elseif ( $isNullEdit ) {
 				$entry = new ManualLogEntry( 'translationreview', 'unfuzzy' );
 				// Generate a log entry and null revision for the otherwise
 				// invisible unfuzzying
-				$dbw = $mwServices->getDBLoadBalancer()->getConnection( DB_PRIMARY );
-				$nullRevision = $mwServices->getRevisionStore()->newNullRevision(
-					$dbw,
-					$wikiPage,
-					CommentStoreComment::newUnsavedComment(
-						$summary !== '' ? $summary : wfMessage( "translate-unfuzzy-comment" )
-					),
-					false,
-					$userIdentity
-				);
-				if ( $nullRevision ) {
-					$nullRevision = $mwServices->getRevisionStore()->insertRevisionOn( $nullRevision, $dbw );
-					// Overwrite $revId so the revision ID of the null revision rather than the previous parent
-					// revision is used for any further edits
-					$revId = $nullRevision->getId();
-					$wikiPage->updateRevisionOn( $dbw, $nullRevision, $nullRevision->getParentId() );
-					$entry->setAssociatedRevId( $revId );
-				}
+				// NOTE: This will trigger onSaveComplete again! We have to be
+				//       careful to avoid infinite recursion!
+				$nullRevision = $mwServices->getPageUpdaterFactory()
+					->newPageUpdater( $wikiPage, $userIdentity )
+					->saveDummyRevision(
+						CommentStoreComment::newUnsavedComment(
+							$summary !== '' ? $summary : wfMessage( "translate-unfuzzy-comment" )
+						),
+						EDIT_SILENT
+					);
 
+				// Set $revId to the revision ID of the dummy revision so it (rather than the previous revision)
+				// has the fuzzy and transver tags updated below.
+				$revId = $nullRevision->getId();
+				$entry->setAssociatedRevId( $revId );
 				$entry->setPerformer( $userIdentity );
-				$entry->setTarget( $title );
+				$entry->setTarget( $wikiPage );
 				$logId = $entry->insert();
 				$entry->publish( $logId );
 			}
 		}
-		self::updateFuzzyTag( $title, $revId, $fuzzy );
+		// If the edit is already fuzzy due to validation, !!FUZZY!!, or lacking permissions to unfuzzy
+		// then don't do revert checking (and don't set a transver below)
+		// Otherwise, if the edit undoes or rolls back (but not manually reverts) to a fuzzy revision
+		// then set the fuzzy status
+		$revertedTo = null;
+		if ( !$fuzzy && $editResult->isExactRevert() ) {
+			$method = $editResult->getRevertMethod();
+			if ( $method !== EditResult::REVERT_MANUAL ) {
+				$revertedTo = $editResult->getOriginalRevisionId();
+				// This is a paranoia check - if somehow getOriginalRevisionId returns null despite isExactRevert
+				// being true just handle it like it wasn't a revert rather than crashing
+				if ( $revertedTo !== null ) {
+					$fuzzy = $revTagStore->isRevIdFuzzy( $wikiPage->getId(), $revertedTo );
+				}
+			}
+		}
+
+		self::updateFuzzyTag( $wikiPage, $revId, $fuzzy );
 
 		$group = $handle->getGroup();
 		// Update translation stats - source language should always be up to date
@@ -195,6 +227,13 @@ class TranslateEditAddons {
 		if ( !$fuzzy ) {
 			Services::getInstance()->getHookRunner()
 				->onTranslate_newTranslation( $handle, $revId, $text, $user );
+		} elseif ( $revertedTo !== null ) {
+			// If a revert sets fuzzy status then also set tp:transver
+			// to the tp:transver of the version being reverted to
+			$oldTransver = $revTagStore->getTransver( $wikiPage, $revertedTo );
+			if ( $oldTransver !== null ) {
+				$revTagStore->setTransver( $wikiPage, $revId, $oldTransver );
+			}
 		}
 
 		TtmServer::onChange( $handle );
@@ -208,15 +247,15 @@ class TranslateEditAddons {
 	}
 
 	/**
-	 * @param Title $title
+	 * @param PageIdentity $page
 	 * @param int $revision
 	 * @param bool $fuzzy Whether to fuzzy or not
 	 */
-	private static function updateFuzzyTag( Title $title, int $revision, bool $fuzzy ): void {
+	private static function updateFuzzyTag( PageIdentity $page, int $revision, bool $fuzzy ): void {
 		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 
 		$conds = [
-			'rt_page' => $title->getArticleID(),
+			'rt_page' => $page->getId(),
 			'rt_type' => RevTagStore::FUZZY_TAG,
 			'rt_revision' => $revision
 		];

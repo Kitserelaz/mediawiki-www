@@ -2,22 +2,21 @@
 
 namespace ArticlePlaceholder;
 
-use ExtensionRegistry;
-use Language;
 use MediaWiki\Html\Html;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Language\Language;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\Site\SiteLookup;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\MalformedTitleException;
 use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\User;
 use OOUI;
-use SiteLookup;
 use Wikibase\Client\Hooks\OtherProjectsSidebarGeneratorFactory;
 use Wikibase\Client\RepoLinker;
 use Wikibase\Client\Usage\HashUsageAccumulator;
-use Wikibase\Client\WikibaseClient;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Term\Term;
 use Wikibase\DataModel\Term\TermTypes;
@@ -35,88 +34,28 @@ use Wikibase\Lib\Store\SiteLinkLookup;
  */
 class AboutTopicRenderer {
 
-	/**
-	 * @var FallbackLabelDescriptionLookupFactory
-	 */
-	private $termLookupFactory;
-
-	/**
-	 * @var SiteLinkLookup
-	 */
-	private $siteLinkLookup;
-
-	/**
-	 * @var SiteLookup
-	 */
-	private $siteLookup;
-
-	/**
-	 * @var string
-	 */
-	private $langLinkSiteGroup;
-
-	/**
-	 * @var TitleFactory
-	 */
-	private $titleFactory;
-
-	/**
-	 * @var OtherProjectsSidebarGeneratorFactory
-	 */
-	private $otherProjectsSidebarGeneratorFactory;
-
-	/**
-	 * @var PermissionManager
-	 */
-	private $permissionManager;
-
-	/** @var RepoLinker */
-	private $repoLinker;
-
-	/**
-	 * @param FallbackLabelDescriptionLookupFactory $termLookupFactory
-	 * @param SiteLinkLookup $siteLinkLookup
-	 * @param SiteLookup $siteLookup
-	 * @param string $langLinkSiteGroup
-	 * @param TitleFactory $titleFactory
-	 * @param OtherProjectsSidebarGeneratorFactory $otherProjectsSidebarGeneratorFactory
-	 * @param PermissionManager $permissionManager
-	 * @param RepoLinker $repoLinker
-	 */
 	public function __construct(
-		FallbackLabelDescriptionLookupFactory $termLookupFactory,
-		SiteLinkLookup $siteLinkLookup,
-		SiteLookup $siteLookup,
-		string $langLinkSiteGroup,
-		TitleFactory $titleFactory,
-		OtherProjectsSidebarGeneratorFactory $otherProjectsSidebarGeneratorFactory,
-		PermissionManager $permissionManager,
-		RepoLinker $repoLinker
+		private readonly FallbackLabelDescriptionLookupFactory $termLookupFactory,
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly SiteLinkLookup $siteLinkLookup,
+		private readonly SiteLookup $siteLookup,
+		private readonly string $langLinkSiteGroup,
+		private readonly TitleFactory $titleFactory,
+		private readonly OtherProjectsSidebarGeneratorFactory $otherProjectsSidebarGeneratorFactory,
+		private readonly PermissionManager $permissionManager,
+		private readonly RepoLinker $repoLinker,
 	) {
-		$this->termLookupFactory = $termLookupFactory;
-		$this->siteLinkLookup = $siteLinkLookup;
-		$this->siteLookup = $siteLookup;
-		$this->langLinkSiteGroup = $langLinkSiteGroup;
-		$this->titleFactory = $titleFactory;
-		$this->otherProjectsSidebarGeneratorFactory = $otherProjectsSidebarGeneratorFactory;
-		$this->permissionManager = $permissionManager;
-		$this->repoLinker = $repoLinker;
 	}
 
 	/**
 	 * Show content of the ArticlePlaceholder
-	 *
-	 * @param ItemId $entityId
-	 * @param Language $language
-	 * @param User $user
-	 * @param OutputPage $output
 	 */
 	public function showPlaceholder(
 		ItemId $entityId,
 		Language $language,
 		User $user,
-		OutputPage $output
-	) {
+		OutputPage $output,
+	): void {
 		$termLookup = $this->termLookupFactory->newLabelDescriptionLookup(
 			$language,
 			[ $entityId ],
@@ -135,7 +74,7 @@ class AboutTopicRenderer {
 				if ( $this->permissionManager->quickUserCan( 'createpage', $user, $title ) ) {
 					$canEdit = true;
 				}
-			} catch ( MalformedTitleException $ex ) {
+			} catch ( MalformedTitleException ) {
 				// When the entity's label contains characters not allowed in page titles
 				$label = '';
 				$canEdit = true;
@@ -153,13 +92,13 @@ class AboutTopicRenderer {
 
 	/**
 	 * Adds the top message bar
-	 *
-	 * @param ItemId $entityId
-	 * @param string|null $label
-	 * @param OutputPage $output
-	 * @param bool $canEdit
 	 */
-	private function showTopMessage( ItemId $entityId, ?string $label, OutputPage $output, bool $canEdit ) {
+	private function showTopMessage(
+		ItemId $entityId,
+		?string $label,
+		OutputPage $output,
+		bool $canEdit,
+	): void {
 		$infoIcon = new OOUI\IconWidget( [
 			'icon' => 'infoFilled',
 			'title' => $output->msg( 'articleplaceholder-abouttopic-icon-title' )->text()
@@ -169,7 +108,7 @@ class AboutTopicRenderer {
 
 		$leftDIV = Html::rawElement( 'div',
 			[ 'class' => 'mw-articleplaceholder-topmessage-container-left' ],
-			$infoIcon
+			(string)$infoIcon
 		);
 
 		$buttonCode = '';
@@ -177,7 +116,6 @@ class AboutTopicRenderer {
 			$buttonCode = $this->showCreateArticle( $entityId, $label, $output );
 		}
 
-		$this->repoLinker = WikibaseClient::getRepoLinker();
 		$messageP = Html::rawElement( 'p', [], $output->msg(
 			'articleplaceholder-abouttopic-topmessage-text',
 			$this->repoLinker->getEntityUrl( $entityId )
@@ -208,7 +146,11 @@ class AboutTopicRenderer {
 	 *
 	 * @return string HTML
 	 */
-	private function showCreateArticle( ItemId $itemId, $label, OutputPage $output ) {
+	private function showCreateArticle(
+		ItemId $itemId,
+		string $label,
+		OutputPage $output,
+	): string {
 		$siteLinks = $this->siteLinkLookup->getSiteLinksForItem( $itemId );
 
 		$output->enableOOUI();
@@ -219,7 +161,7 @@ class AboutTopicRenderer {
 			'id' => 'new-article-button',
 			'flags' => [ 'primary', 'progressive' ],
 			'infusable' => true,
-			'label' => wfMessage( 'articleplaceholder-abouttopic-create-article-button' )->text(),
+			'label' => $output->msg( 'articleplaceholder-abouttopic-create-article-button' )->text(),
 			'href' => SpecialPage::getTitleFor( 'CreateTopicPage', $label )
 				->getLocalURL( [ 'ref' => 'button' ] ),
 			'target' => 'blank'
@@ -231,26 +173,20 @@ class AboutTopicRenderer {
 			$output->addJsConfigVars( 'apContentTranslation', true );
 		}
 
-		return $contents;
+		return (string)$contents;
 	}
 
 	/**
 	 * Show label as page title
-	 *
-	 * @param string $label
-	 * @param OutputPage $output
 	 */
-	private function showTitle( $label, OutputPage $output ) {
+	private function showTitle( string $label, OutputPage $output ): void {
 		$output->setPageTitle( htmlspecialchars( $label ) );
 	}
 
 	/**
 	 * Set language links
-	 *
-	 * @param ItemId $entityId
-	 * @param OutputPage $output
 	 */
-	private function showLanguageLinks( ItemId $entityId, OutputPage $output ) {
+	private function showLanguageLinks( ItemId $entityId, OutputPage $output ): void {
 		$siteLinks = $this->siteLinkLookup->getSiteLinksForItem( $entityId );
 		$languageLinks = [];
 		$languageNames = [];
@@ -271,23 +207,18 @@ class AboutTopicRenderer {
 				// TODO: We may want to filter with user languages
 				$languageNames[] = [
 					'data' => $languageCode,
-					'label' => MediaWikiServices::getInstance()->getLanguageNameUtils()
-						->getLanguageName( $languageCode ),
+					'label' => $this->languageNameUtils->getLanguageName( $languageCode ),
 				];
 				$pageNames[ $languageCode ] = $siteLink->getPageName();
 			}
 		}
 
-		$output->setLanguageLinks( $languageLinks );
+		$output->addLanguageLinks( $languageLinks );
 		$output->addJsConfigVars( 'apLanguages', $languageNames );
 		$output->addJsConfigVars( 'apPageNames', $pageNames );
 	}
 
-	/**
-	 * @param ItemId $itemId
-	 * @param OutputPage $output
-	 */
-	private function setOtherProjectsLinks( ItemId $itemId, OutputPage $output ) {
+	private function setOtherProjectsLinks( ItemId $itemId, OutputPage $output ): void {
 		$otherProjectsSidebarGenerator = $this->otherProjectsSidebarGeneratorFactory
 			->getOtherProjectsSidebarGenerator( new HashUsageAccumulator() );
 
@@ -295,11 +226,7 @@ class AboutTopicRenderer {
 		$output->setProperty( 'wikibase-otherprojects-sidebar', $otherProjects );
 	}
 
-	/**
-	 * @param OutputPage $output
-	 * @param Term|null $description
-	 */
-	private function addMetaTags( OutputPage $output, ?Term $description ) {
+	private function addMetaTags( OutputPage $output, ?Term $description ): void {
 		if ( $description !== null ) {
 			$output->addMeta( 'description', trim( $description->getText() ) );
 		}

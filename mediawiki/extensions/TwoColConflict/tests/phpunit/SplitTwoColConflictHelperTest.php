@@ -5,18 +5,18 @@ namespace TwoColConflict\Tests;
 use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\Content\IContentHandlerFactory;
 use MediaWiki\Language\Language;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\Session\SessionId;
 use MediaWiki\User\User;
-use MessageLocalizer;
 use MockTitleTrait;
 use TwoColConflict\SplitTwoColConflictHelper;
 use TwoColConflict\TalkPageConflict\ResolutionSuggester;
 use TwoColConflict\TwoColConflictContext;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
-use WikiPage;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @covers \TwoColConflict\SplitTwoColConflictHelper
@@ -37,7 +37,7 @@ class SplitTwoColConflictHelperTest extends \MediaWikiIntegrationTestCase {
 		$helper = new SplitTwoColConflictHelper(
 			$this->makeMockTitle( __CLASS__ ),
 			$this->createOutputPage(),
-			$this->createMock( IBufferingStatsdDataFactory::class ),
+			StatsFactory::newNull(),
 			'',
 			$this->createMock( IContentHandlerFactory::class ),
 			$this->createMock( TwoColConflictContext::class ),
@@ -55,7 +55,7 @@ class SplitTwoColConflictHelperTest extends \MediaWikiIntegrationTestCase {
 		$helper = new SplitTwoColConflictHelper(
 			$this->makeMockTitle( __CLASS__ ),
 			$this->createOutputPage(),
-			$this->createMock( IBufferingStatsdDataFactory::class ),
+			StatsFactory::newNull(),
 			'',
 			$this->createMock( IContentHandlerFactory::class ),
 			$this->createMock( TwoColConflictContext::class ),
@@ -82,7 +82,7 @@ class SplitTwoColConflictHelperTest extends \MediaWikiIntegrationTestCase {
 		$helper = new SplitTwoColConflictHelper(
 			$this->makeMockTitle( __CLASS__ ),
 			$out,
-			$this->createMock( IBufferingStatsdDataFactory::class ),
+			StatsFactory::newNull(),
 			'',
 			$this->createMock( IContentHandlerFactory::class ),
 			$this->createMock( TwoColConflictContext::class ),

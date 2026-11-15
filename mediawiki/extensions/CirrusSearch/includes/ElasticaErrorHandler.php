@@ -15,7 +15,7 @@ use MediaWiki\Status\Status;
  */
 class ElasticaErrorHandler {
 
-	public static function logRequestResponse( Connection $conn, $message, array $context = [] ) {
+	public static function logRequestResponse( Connection $conn, string $message, array $context = [] ) {
 		$client = $conn->getClient();
 		LoggerFactory::getInstance( 'CirrusSearch' )->info( $message, $context + [
 			'cluster' => $conn->getClusterName(),
@@ -70,9 +70,7 @@ class ElasticaErrorHandler {
 			$type = null;
 			foreach ( $shardStats[ 'failures' ] as $failure ) {
 				$message[] = $failure['reason']['reason'];
-				if ( $type === null ) {
-					$type = $failure['reason']['type'];
-				}
+				$type ??= $failure['reason']['type'];
 			}
 
 			return [

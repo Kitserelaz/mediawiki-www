@@ -3,7 +3,6 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
-use IDBAccessObject;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePageMarkException;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePageSettings;
@@ -15,6 +14,7 @@ use MediaWiki\Title\ForeignTitle;
 use MediaWiki\Title\MalformedTitleException;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
+use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
  * Script to import a translatable bundle from a script exported via WikiExporter.
@@ -127,6 +127,7 @@ class ImportTranslatableBundleMaintenanceScript extends BaseMaintenanceScript {
 				$interwikiPrefix,
 				$assignKnownUsers,
 				$importUser,
+				RequestContext::getMain(),
 				$targetPage,
 				$comment
 			);
@@ -194,6 +195,7 @@ class ImportTranslatableBundleMaintenanceScript extends BaseMaintenanceScript {
 		return $interwikiPrefix;
 	}
 
+	/** @return string[] */
 	private function getPriorityLanguages(): array {
 		$priorityLanguageCodes = self::commaList2Array( $this->getOption( 'priority-languages' ) ?? '' );
 		$knownLanguageCodes = array_keys( Utilities::getLanguageNames( 'en' ) );
@@ -238,7 +240,12 @@ class ImportTranslatableBundleMaintenanceScript extends BaseMaintenanceScript {
 		}
 
 		try {
-			$translatablePageMarker->markForTranslation( $operation, $translatablePageSettings, $user );
+			$translatablePageMarker->markForTranslation(
+				$operation,
+				$translatablePageSettings,
+				RequestContext::getMain(),
+				$user
+			);
 			$this->output( "The page {$bundleTitle->getPrefixedText()} has been marked for translation.\n" );
 		} catch ( TranslatablePageMarkException $e ) {
 			$this->error( "Error while marking page {$bundleTitle->getPrefixedText()} for translation.\n" );

@@ -3,23 +3,24 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Statistics;
 
-use HtmlArmor;
 use InvalidArgumentException;
-use Language;
-use LanguageCode;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Config\Config;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Extension\Translate\Utilities\ConfigHelper;
 use MediaWiki\Html\Html;
-use MediaWiki\Languages\LanguageFactory;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\Language;
+use MediaWiki\Language\LanguageCode;
+use MediaWiki\Language\LanguageFactory;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\ObjectCache\ObjectCacheFactory;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
-use ObjectCacheFactory;
+use Wikimedia\HtmlArmor\HtmlArmor;
 use Wikimedia\ObjectCache\BagOStuff;
-use Wikimedia\Rdbms\ILoadBalancer;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * This special page shows active languages and active translators per language.
@@ -30,71 +31,61 @@ use Wikimedia\Rdbms\ILoadBalancer;
  * @ingroup SpecialPage TranslateSpecialPage Stats
  */
 class ActiveLanguagesSpecialPage extends SpecialPage {
-	private ServiceOptions $options;
-	private TranslatorActivity $translatorActivity;
-	private LanguageNameUtils $langNameUtils;
-	private ILoadBalancer $loadBalancer;
-	private ConfigHelper $configHelper;
-	private Language $contentLanguage;
-	private ProgressStatsTableFactory $progressStatsTableFactory;
+	private readonly ServiceOptions $options;
+	private readonly BagOStuff $cache;
 	private StatsTable $progressStatsTable;
-	private LinkBatchFactory $linkBatchFactory;
-	private LanguageFactory $languageFactory;
-	private BagOStuff $cache;
-	/** Cutoff time for inactivity in days */
-	private int $period = 180;
+	/** @var int Cutoff time for inactivity in days */
+	private const PERIOD = 180;
 
 	public const CONSTRUCTOR_OPTIONS = [
 		'TranslateMessageNamespaces',
 	];
 
 	public function __construct(
+		private readonly TranslatorActivity $translatorActivity,
+		private readonly LanguageNameUtils $langNameUtils,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly ConfigHelper $configHelper,
+		private readonly Language $contentLanguage,
+		private readonly ProgressStatsTableFactory $progressStatsTableFactory,
+		private readonly LinkBatchFactory $linkBatchFactory,
+		private readonly LanguageFactory $languageFactory,
 		Config $config,
-		TranslatorActivity $translatorActivity,
-		LanguageNameUtils $langNameUtils,
-		ILoadBalancer $loadBalancer,
-		ConfigHelper $configHelper,
-		Language $contentLanguage,
-		ProgressStatsTableFactory $progressStatsTableFactory,
-		LinkBatchFactory $linkBatchFactory,
-		LanguageFactory $languageFactory,
-		ObjectCacheFactory $objectCacheFactory
+		ObjectCacheFactory $objectCacheFactory,
 	) {
 		parent::__construct( 'SupportedLanguages' );
 		$this->options = new ServiceOptions( self::CONSTRUCTOR_OPTIONS, $config );
-		$this->translatorActivity = $translatorActivity;
-		$this->langNameUtils = $langNameUtils;
-		$this->loadBalancer = $loadBalancer;
-		$this->configHelper = $configHelper;
-		$this->contentLanguage = $contentLanguage;
-		$this->progressStatsTableFactory = $progressStatsTableFactory;
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->languageFactory = $languageFactory;
 		$this->cache = $objectCacheFactory->getInstance( CACHE_ANYTHING );
 	}
 
-	protected function getGroupName() {
+	/** @inheritDoc */
+	protected function getGroupName(): string {
 		return 'translation';
 	}
 
+	/** @inheritDoc */
 	public function getDescription() {
 		return $this->msg( 'supportedlanguages' );
 	}
 
+	/** @inheritDoc */
 	public function execute( $par ): void {
 		$out = $this->getOutput();
 		$lang = $this->getLanguage();
 		$this->progressStatsTable = $this->progressStatsTableFactory->newFromContext( $this->getContext() );
 
 		$this->setHeaders();
-		$out->addModuleStyles( 'ext.translate.specialpages.styles' );
+		$out->addModuleStyles( [
+			'ext.translate.specialpages.styles',
+			'mediawiki.codex.messagebox.styles',
+		] );
 
 		$out->addHelpLink(
 			'Help:Extension:Translate/Statistics_and_reporting#List_of_languages_and_translators'
 		);
 
 		$this->outputHeader( 'supportedlanguages-summary' );
-		$dbr = $this->loadBalancer->getConnection( DB_REPLICA );
+		$dbr = $this->dbProvider->getReplicaDatabase();
 		$dbType = $dbr->getType();
 		if ( $dbType === 'sqlite' || $dbType === 'postgres' ) {
 			$out->addHTML(
@@ -124,11 +115,11 @@ class ActiveLanguagesSpecialPage extends SpecialPage {
 		$language = strtolower( $par );
 		try {
 			$data = $this->translatorActivity->inLanguage( $language );
-		} catch ( StatisticsUnavailable $e ) {
+		} catch ( StatisticsUnavailable ) {
 			// generic-pool-error is from MW core
 			$out->addHTML( Html::errorBox( $this->msg( 'generic-pool-error' )->parse() ) );
 			return;
-		} catch ( InvalidArgumentException $e ) {
+		} catch ( InvalidArgumentException ) {
 			$errorMessageHtml = $this->msg( 'translate-activelanguages-invalid-code' )
 				->params( LanguageCode::bcp47( $language ) )
 				->parse();
@@ -146,13 +137,6 @@ class ActiveLanguagesSpecialPage extends SpecialPage {
 		$out = $this->getOutput();
 		$lang = $this->getLanguage();
 
-		// Information to be used inside the foreach loop.
-		$linkInfo = [];
-		$linkInfo['rc']['title'] = SpecialPage::getTitleFor( 'Recentchanges' );
-		$linkInfo['rc']['msg'] = $this->msg( 'supportedlanguages-recenttranslations' )->text();
-		$linkInfo['stats']['title'] = SpecialPage::getTitleFor( 'LanguageStats' );
-		$linkInfo['stats']['msg'] = $this->msg( 'languagestats' )->text();
-
 		$local = $this->langNameUtils->getLanguageName( $code, $lang->getCode() );
 		$native = $this->langNameUtils->getLanguageName( $code );
 		$statLanguage = $this->languageFactory->getLanguage( $code );
@@ -160,23 +144,18 @@ class ActiveLanguagesSpecialPage extends SpecialPage {
 
 		$span = Html::rawElement( 'span', [ 'lang' => $bcp47Code, 'dir' => $statLanguage->getDir() ], $native );
 
-		if ( $local !== $native ) {
-
-			$headerText = $this->msg( 'supportedlanguages-portallink' )
-				->params( $bcp47Code, $local, $span )->parse();
-		} else {
-			// No CLDR, so a less localised header and link title.
-			$headerText = $this->msg( 'supportedlanguages-portallink-nocldr' )
-				->params( $bcp47Code, $span )->parse();
-		}
+		$headerText = $local !== $native
+			? $this->msg( 'supportedlanguages-portallink', $bcp47Code, $local, $span )->parse()
+			// No CLDR, so a less localised header and link title
+			: $this->msg( 'supportedlanguages-portallink-nocldr', $bcp47Code, $span )->parse();
 
 		$out->addHTML( Html::rawElement( 'h2', [ 'id' => $code ], $headerText ) );
 
 		// Add useful links for language stats and recent changes for the language.
 		$links = [];
 		$links[] = $this->getLinkRenderer()->makeKnownLink(
-			$linkInfo['stats']['title'],
-			$linkInfo['stats']['msg'],
+			SpecialPage::getTitleValueFor( 'LanguageStats' ),
+			$this->msg( 'languagestats' )->text(),
 			[],
 			[
 				'code' => $code,
@@ -184,8 +163,8 @@ class ActiveLanguagesSpecialPage extends SpecialPage {
 			]
 		);
 		$links[] = $this->getLinkRenderer()->makeKnownLink(
-			$linkInfo['rc']['title'],
-			$linkInfo['rc']['msg'],
+			SpecialPage::getTitleValueFor( 'Recentchanges' ),
+			$this->msg( 'supportedlanguages-recenttranslations' )->text(),
 			[],
 			[
 				'translations' => 'only',
@@ -213,8 +192,8 @@ class ActiveLanguagesSpecialPage extends SpecialPage {
 			return $data;
 		}
 
-		$dbr = $this->loadBalancer->getConnection( DB_REPLICA );
-		$timestamp = $dbr->timestamp( (int)wfTimestamp() - 60 * 60 * 24 * $this->period );
+		$dbr = $this->dbProvider->getReplicaDatabase();
+		$timestamp = $dbr->timestamp( (int)wfTimestamp() - 60 * 60 * 24 * self::PERIOD );
 
 		$res = $dbr->newSelectQueryBuilder()
 			->select( [ 'lang' => 'substring_index(rc_title, \'/\', -1)', 'count' => 'COUNT(*)' ] )
@@ -240,7 +219,7 @@ class ActiveLanguagesSpecialPage extends SpecialPage {
 		return $data;
 	}
 
-	protected function filterUsers( array $users, string $code ): array {
+	private function filterUsers( array $users, string $code ): array {
 		foreach ( $users as $index => $user ) {
 			$username = $user[TranslatorActivityQuery::USER_NAME];
 			// We do not know the group
@@ -252,7 +231,7 @@ class ActiveLanguagesSpecialPage extends SpecialPage {
 		return $users;
 	}
 
-	protected function outputLanguageCloud( array $languages, array $names ) {
+	private function outputLanguageCloud( array $languages, array $names ): void {
 		$out = $this->getOutput();
 
 		$out->addHTML( '<div class="tagcloud autonym">' );
@@ -265,6 +244,8 @@ class ActiveLanguagesSpecialPage extends SpecialPage {
 
 			if ( $langAttribute === $translateDocumentationLanguageCode ) {
 				$langAttribute = $this->contentLanguage->getHtmlCode();
+			} else {
+				$langAttribute = LanguageCode::bcp47( $langAttribute );
 			}
 
 			$params = [
@@ -285,7 +266,7 @@ class ActiveLanguagesSpecialPage extends SpecialPage {
 
 		// Scale of the activity colors, anything
 		// longer than this is just inactive
-		$period = $this->period;
+		$period = self::PERIOD;
 
 		$links = [];
 		// List users in descending order by number of translations in this language
@@ -301,7 +282,7 @@ class ActiveLanguagesSpecialPage extends SpecialPage {
 			$username = $stats[TranslatorActivityQuery::USER_NAME];
 			$title = Title::makeTitleSafe( NS_USER, $username );
 			if ( !$title ) {
-				LoggerFactory::getInstance( 'Translate' )->warning(
+				LoggerFactory::getInstance( LogNames::MAIN )->warning(
 					"T248125: Got Title-invalid username '{username}'",
 					[ 'username' => $username ]
 				);
@@ -353,7 +334,7 @@ class ActiveLanguagesSpecialPage extends SpecialPage {
 		$this->getOutput()->addHTML( $html );
 	}
 
-	protected function formatStyle( $styles ) {
+	private function formatStyle( array $styles ): string {
 		$stylestr = '';
 		foreach ( $styles as $key => $value ) {
 			$stylestr .= "$key:$value;";
@@ -362,7 +343,7 @@ class ActiveLanguagesSpecialPage extends SpecialPage {
 		return $stylestr;
 	}
 
-	protected function preQueryUsers( array $users ): void {
+	private function preQueryUsers( array $users ): void {
 		$lb = $this->linkBatchFactory->newLinkBatch();
 		foreach ( $users as $data ) {
 			$username = $data[TranslatorActivityQuery::USER_NAME];
@@ -373,9 +354,9 @@ class ActiveLanguagesSpecialPage extends SpecialPage {
 		$lb->execute();
 	}
 
-	protected function getColorLegend() {
+	private function getColorLegend(): string {
 		$legend = '';
-		$period = $this->period;
+		$period = self::PERIOD;
 
 		for ( $i = 0; $i <= $period; $i += 30 ) {
 			$iFormatted = htmlspecialchars( $this->getLanguage()->formatNum( $i ) );

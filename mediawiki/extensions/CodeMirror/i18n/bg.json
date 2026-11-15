@@ -33,7 +33,7 @@
 	"codemirror-match-case": "Зачитане на регистъра",
 	"codemirror-regexp": "Регулярен израз",
 	"codemirror-regexp-invalid": "Неправилен регулярен израз",
-	"codemirror-by-word": "По дума",
+	"codemirror-by-word": "По цяла дума",
 	"codemirror-replace": "Замяна",
 	"codemirror-replace-placeholder": "Замяна",
 	"codemirror-replace-all": "Замяна на всички",
@@ -44,7 +44,5 @@
 	"codemirror-unfold": "разгъване",
 	"codemirror-folded-code": "сгънат код",
 	"prefs-accessibility": "Достъпност",
-	"prefs-syntax-highlighting": "Оцветяване на синтаксиса",
-	"codemirror-v6-prefs-colorblind": "Използване на благоприятна за далтонисти схема",
-	"codemirror-fold-template": "Сгъване на параметрите на шаблона"
+	"prefs-syntax-highlighting": "Оцветяване на синтаксиса"
 }

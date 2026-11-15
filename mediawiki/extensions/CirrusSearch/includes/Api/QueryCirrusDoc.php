@@ -20,25 +20,12 @@ use Wikimedia\ParamValidator\ParamValidator;
  * not be returned. In this way this tries to faithfully return the document
  * in elasticsearch that represents the requested page.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class QueryCirrusDoc extends ApiQueryBase {
 	use ApiTrait;
 
-	public function __construct( ApiQuery $query, $moduleName ) {
+	public function __construct( ApiQuery $query, string $moduleName ) {
 		parent::__construct( $query, $moduleName, 'cd' );
 	}
 
@@ -68,6 +55,12 @@ class QueryCirrusDoc extends ApiQueryBase {
 			[ 'query', 'pages', $resultPageId ],
 			'cirrusdoc', $this->loadDocuments( $title, $sourceFiltering )
 		);
+		$this->getResult()->addValue(
+			[ 'query', 'pages', $resultPageId ],
+			'cirrusdoc_comment',
+			'The CirrusDoc format is meant for internal use by CirrusSearch for debugging or queries, '
+			. 'it might change at any time without notice'
+		);
 	}
 
 	/**
@@ -85,6 +78,7 @@ class QueryCirrusDoc extends ApiQueryBase {
 		}
 	}
 
+	/** @inheritDoc */
 	public function getAllowedParams() {
 		return [
 			'includes' => [
@@ -93,6 +87,14 @@ class QueryCirrusDoc extends ApiQueryBase {
 				ParamValidator::PARAM_ISMULTI => true,
 			],
 		];
+	}
+
+	/**
+	 * Mark as internal. This isn't meant to be used by normal api users
+	 * @return bool
+	 */
+	public function isInternal() {
+		return true;
 	}
 
 	/**

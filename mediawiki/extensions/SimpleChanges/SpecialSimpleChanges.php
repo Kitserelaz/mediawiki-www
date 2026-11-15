@@ -1,6 +1,11 @@
 <?php
 
+use MediaWiki\Html\FormOptions;
+use MediaWiki\Html\Html;
+use MediaWiki\Linker\Linker;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\RecentChanges\ChangesList;
+use MediaWiki\RecentChanges\RecentChange;
 
 class SpecialSimpleChanges extends SpecialRecentChanges {
 	public function __construct() {
@@ -28,7 +33,7 @@ class SpecialSimpleChanges extends SpecialRecentChanges {
 		global $wgContentNamespaces, $wgSimpleChangesOnlyContentNamespaces, $wgSimpleChangesOnlyLatest;
 
 		# don't count log entries toward limit of number of changes displayed
-		$conds[] = 'rc_type != ' . RC_LOG;
+		$conds[] = $this->getDB()->expr( 'rc_source', '!=', RecentChange::SRC_LOG );
 
 		if ( $opts['namespace'] == '' && $wgSimpleChangesOnlyContentNamespaces &&
 			$wgContentNamespaces != null ) {
@@ -77,14 +82,23 @@ class SpecialSimpleChanges extends SpecialRecentChanges {
 				[ 'selected' => $opts['namespace'], 'all' => '', 'exclude' => $nonContentNamespaces ],
 				[ 'name' => 'namespace', 'id' => 'namespace' ]
 		);
-		$nsLabel = Xml::label( $this->msg( 'simplechanges-contentnamespace' )->text(), 'namespace' );
-		$invert = Xml::checkLabel(
-				$this->msg( 'invert' )->text(), 'invert', 'nsinvert', $opts['invert'],
-				[ 'title' => $this->msg( 'tooltip-invert' )->text() ]
+		$nsLabel = Html::label( $this->msg( 'simplechanges-contentnamespace' )->text(), 'namespace' );
+		$invert = Html::check(
+			'invert', $opts['invert'],
+			[ 'id' => 'nsinvert', 'title' => $this->msg( 'tooltip-invert' )->text() ]
+		) . "\u{00A0}" . Html::label(
+			$this->msg( 'invert' )->text(),
+			'nsinvert',
+			[ 'title' => $this->msg( 'tooltip-invert' )->text() ]
 		);
-		$associated = Xml::checkLabel(
-				$this->msg( 'namespace_association' )->text(), 'associated', 'nsassociated',
-				$opts['associated'], [ 'title' => $this->msg( 'tooltip-namespace_association' )->text() ]
+		$associated = Html::check(
+			'associated',
+			$opts['associated'],
+			[ 'id' => 'nsassociated', 'title' => $this->msg( 'tooltip-namespace_association' )->text() ]
+		) . "\u{00A0}" . Html::label(
+			$this->msg( 'namespace_association' )->text(),
+			'nsassociated',
+			[ 'title' => $this->msg( 'tooltip-namespace_association' )->text() ]
 		);
 
 		return [ $nsLabel, "$nsSelect $invert $associated" ];
@@ -128,9 +142,10 @@ class SpecialSimpleChanges extends SpecialRecentChanges {
 				global $wgSimpleChangesShowUser;
 				if ( $wgSimpleChangesShowUser ) {
 					# from ChangesList::insertUserRelatedLinks()
-					$user = ' (' .
-						Linker::userLink( $rc->getAttribute( 'rc_user' ), $rc->getAttribute( 'rc_user_text' ) ) . ')';
-					$changeLine .= Html::rawElement( 'span', [ 'class' => 'simplechanges-user' ], $user );
+					$user = $rc->getPerformerIdentity();
+					$userHtml = ' (' .
+						Linker::userLink( $user->getId(), $user->getName() ) . ')';
+					$changeLine .= Html::rawElement( 'span', [ 'class' => 'simplechanges-user' ], $userHtml );
 				}
 				$changeLine .= Html::closeElement( 'li' ) . "\n";
 			}
@@ -143,5 +158,11 @@ class SpecialSimpleChanges extends SpecialRecentChanges {
 		$rclistOutput .= "\n</ul>\n";
 		$rclistOutput .= $list->endRecentChangesList();
 		$this->getOutput()->addHTML( $rclistOutput );
+	}
+
+	/** @inheritDoc */
+	public function maxIncludeCacheTime() {
+		global $wgSimpleChangesMaxCacheTime;
+		return $wgSimpleChangesMaxCacheTime === -1 ? parent::maxIncludeCacheTime() : (int)$wgSimpleChangesMaxCacheTime;
 	}
 }

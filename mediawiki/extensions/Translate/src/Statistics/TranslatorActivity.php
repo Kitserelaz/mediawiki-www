@@ -3,12 +3,12 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Statistics;
 
-use BagOStuff;
 use InvalidArgumentException;
-use JobQueueGroup;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\PoolCounter\PoolCounterWorkViaCallback;
+use Wikimedia\ObjectCache\BagOStuff;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
@@ -22,18 +22,12 @@ class TranslatorActivity {
 	public const CACHE_TIME = 3 * 24 * 3600;
 	// 25 hours so that it's easy to configure the maintenance script run daily
 	public const CACHE_STALE = 25 * 3600;
-	private BagOStuff $cache;
-	private TranslatorActivityQuery $query;
-	private JobQueueGroup $jobQueue;
 
 	public function __construct(
-		BagOStuff $cache,
-		TranslatorActivityQuery $query,
-		JobQueueGroup $jobQueue
+		private readonly BagOStuff $cache,
+		private readonly TranslatorActivityQuery $query,
+		private readonly JobQueueGroup $jobQueue,
 	) {
-		$this->cache = $cache;
-		$this->query = $query;
-		$this->jobQueue = $jobQueue;
 	}
 
 	/**
@@ -63,6 +57,7 @@ class TranslatorActivity {
 		return $queriedValue;
 	}
 
+	/** @return array|false */
 	private function getFromCache( string $language ) {
 		$cacheKey = $this->getCacheKey( $language );
 		return $this->cache->get( $cacheKey );
@@ -82,6 +77,7 @@ class TranslatorActivity {
 		$this->jobQueue->push( $job );
 	}
 
+	/** @return array|false */
 	private function doQueryAndCache( string $language ) {
 		$now = (int)ConvertibleTimestamp::now( TS_UNIX );
 

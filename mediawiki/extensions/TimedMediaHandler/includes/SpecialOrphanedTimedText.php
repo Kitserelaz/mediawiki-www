@@ -9,17 +9,18 @@
 
 namespace MediaWiki\TimedMediaHandler;
 
-use HtmlArmor;
+use MediaWiki\FileRepo\RepoGroup;
 use MediaWiki\Html\Html;
-use MediaWiki\Languages\LanguageConverterFactory;
+use MediaWiki\Language\LanguageConverterFactory;
 use MediaWiki\Linker\Linker;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Skin\Skin;
 use MediaWiki\SpecialPage\PageQueryPage;
 use MediaWiki\Title\Title;
-use RepoGroup;
-use Skin;
 use stdClass;
+use Wikimedia\HtmlArmor\HtmlArmor;
 use Wikimedia\Rdbms\IConnectionProvider;
-use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IReadableDatabase;
 use Wikimedia\Rdbms\IResultWrapper;
 
 /**
@@ -29,39 +30,25 @@ use Wikimedia\Rdbms\IResultWrapper;
  */
 class SpecialOrphanedTimedText extends PageQueryPage {
 
-	/** @var array with keys being names of valid files */
-	private $existingFiles;
+	/** Array with keys being names of valid files */
+	private array $existingFiles;
+	private readonly int $migrationStage;
 
-	/** @var IConnectionProvider */
-	private $dbProvider;
-
-	/** @var LanguageConverterFactory */
-	private $languageConverterFactory;
-
-	/** @var RepoGroup */
-	private $repoGroup;
-
-	/**
-	 * @param IConnectionProvider $dbProvider
-	 * @param LanguageConverterFactory $languageConverterFactory
-	 * @param RepoGroup $repoGroup
-	 */
 	public function __construct(
-		IConnectionProvider $dbProvider,
-		LanguageConverterFactory $languageConverterFactory,
-		RepoGroup $repoGroup
+		private readonly IConnectionProvider $dbProvider,
+		private readonly LanguageConverterFactory $languageConverterFactory,
+		private readonly RepoGroup $repoGroup,
 	) {
 		parent::__construct( 'OrphanedTimedText' );
-		$this->dbProvider = $dbProvider;
-		$this->languageConverterFactory = $languageConverterFactory;
-		$this->repoGroup = $repoGroup;
+		$this->migrationStage = $this->getConfig()->get(
+			MainConfigNames::FileSchemaMigrationStage
+		);
 	}
 
 	/**
 	 * This is alphabetical, so sort ascending.
-	 * @return bool
 	 */
-	public function sortDescending() {
+	public function sortDescending(): bool {
 		return false;
 	}
 
@@ -70,9 +57,8 @@ class SpecialOrphanedTimedText extends PageQueryPage {
 	 *
 	 * This query is actually almost cheap given the current
 	 * number of things in TimedText namespace.
-	 * @return bool
 	 */
-	public function isExpensive() {
+	public function isExpensive(): bool {
 		return $this->canExecute();
 	}
 
@@ -81,7 +67,7 @@ class SpecialOrphanedTimedText extends PageQueryPage {
 	 *
 	 * @param string $par subpage
 	 */
-	public function execute( $par ) {
+	public function execute( $par ): void {
 		$this->addHelpLink( 'https://commons.wikimedia.org/wiki/Commons:Timed_Text', true );
 
 		if ( !$this->canExecuteQuery() ) {
@@ -97,18 +83,15 @@ class SpecialOrphanedTimedText extends PageQueryPage {
 	 * Can we cache the results of this query?
 	 *
 	 * Only if we support the query.
-	 * @return bool
 	 */
-	public function isCacheable() {
+	public function isCacheable(): bool {
 		return $this->canExecute();
 	}
 
 	/**
 	 * List in Special:SpecialPages?
-	 *
-	 * @return bool
 	 */
-	public function isListed() {
+	public function isListed(): bool {
 		return $this->canExecute();
 	}
 
@@ -116,10 +99,8 @@ class SpecialOrphanedTimedText extends PageQueryPage {
 	 * Can we execute this special page?
 	 *
 	 * The query uses a mysql specific feature (substring_index), so disable on non mysql dbs.
-	 *
-	 * @return bool
 	 */
-	private function canExecuteQuery() {
+	private function canExecuteQuery(): bool {
 		$dbr = $this->dbProvider->getReplicaDatabase();
 		return $dbr->getType() === 'mysql';
 	}
@@ -128,7 +109,6 @@ class SpecialOrphanedTimedText extends PageQueryPage {
 	 * Can we execute this special page
 	 *
 	 * That is, db is mysql, and TimedText namespace enabled.
-	 * @return bool
 	 */
 	private function canExecute(): bool {
 		return $this->canExecuteQuery();
@@ -156,15 +136,14 @@ class SpecialOrphanedTimedText extends PageQueryPage {
 	 * @note This uses "substring_index" which is a mysql extension.
 	 * @return array Standard query info values.
 	 */
-	public function getQueryInfo() {
-		$tables = [ 'page', 'image' ];
+	public function getQueryInfo(): array {
+		$tables = [ 'page' ];
 		$fields = [
 			'namespace' => 'page_namespace',
 			'title' => 'page_title',
 			'value' => 0,
 		];
 		$conds = [
-			'img_name' => null,
 			'page_namespace' => $this->getConfig()->get( 'TimedTextNS' ),
 			'page_is_redirect' => 0,
 		];
@@ -176,12 +155,26 @@ class SpecialOrphanedTimedText extends PageQueryPage {
 		// this in standard sql, or in sqlite.
 		$baseCond = 'substr( page_title, 1, length( page_title ) - '
 			. "length( substring_index( page_title, '.' ,-2 ) ) - 1 )";
-		$joinConds = [
-			'image' => [
-				'LEFT OUTER JOIN',
-				$baseCond . ' = img_name'
-			]
-		];
+
+		if ( $this->migrationStage & SCHEMA_COMPAT_READ_OLD ) {
+			$tables[] = 'image';
+			$conds['img_name'] = null;
+			$joinConds = [
+				'image' => [
+					'LEFT OUTER JOIN',
+					$baseCond . ' = img_name'
+				]
+			];
+		} else {
+			$tables[] = 'file';
+			$conds['file_name'] = null;
+			$joinConds = [
+				'file' => [
+					'LEFT OUTER JOIN',
+					$baseCond . ' = file_name'
+				]
+			];
+		}
 		return [
 			'tables' => $tables,
 			'fields' => $fields,
@@ -191,7 +184,7 @@ class SpecialOrphanedTimedText extends PageQueryPage {
 	}
 
 	/** @inheritDoc */
-	public function getOrderFields() {
+	public function getOrderFields(): array {
 		return [ 'namespace', 'title' ];
 	}
 
@@ -203,7 +196,7 @@ class SpecialOrphanedTimedText extends PageQueryPage {
 	 * @param Title $title
 	 * @return bool True if we should cross out the line.
 	 */
-	protected function existenceCheck( Title $title ) {
+	protected function existenceCheck( Title $title ): bool {
 		$fileTitle = $this->getCorrespondingFile( $title );
 		if ( !$fileTitle ) {
 			return !$title->isKnown();
@@ -220,7 +213,7 @@ class SpecialOrphanedTimedText extends PageQueryPage {
 	 * @param Title $timedText
 	 * @return Title|null Title in File namespace. null on error.
 	 */
-	private function getCorrespondingFile( Title $timedText ) {
+	private function getCorrespondingFile( Title $timedText ): ?Title {
 		$titleParts = explode( '.', $timedText->getDBkey() );
 		$baseParts = array_slice( $titleParts, 0, -2 );
 		return Title::makeTitleSafe( NS_FILE, implode( '.', $baseParts ) );
@@ -228,19 +221,18 @@ class SpecialOrphanedTimedText extends PageQueryPage {
 
 	/**
 	 * What group to include this page in on Special:SpecialPages
-	 * @return string
 	 */
-	protected function getGroupName() {
+	protected function getGroupName(): string {
 		return 'media';
 	}
 
 	/**
 	 * Preprocess result to do existence checks all at once.
 	 *
-	 * @param IDatabase $db
+	 * @param IReadableDatabase $db
 	 * @param IResultWrapper $res
 	 */
-	public function preprocessResults( $db, $res ) {
+	public function preprocessResults( $db, $res ): void {
 		parent::preprocessResults( $db, $res );
 
 		if ( !$res->numRows() ) {
@@ -268,9 +260,8 @@ class SpecialOrphanedTimedText extends PageQueryPage {
 	 *
 	 * @param Skin $skin
 	 * @param stdClass $row Result row
-	 * @return string
 	 */
-	public function formatResult( $skin, $row ) {
+	public function formatResult( $skin, $row ): string {
 		$title = Title::makeTitleSafe( $row->namespace, $row->title );
 
 		if ( $title instanceof Title ) {

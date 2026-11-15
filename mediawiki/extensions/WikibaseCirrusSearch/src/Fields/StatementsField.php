@@ -3,11 +3,12 @@
 namespace Wikibase\Search\Elastic\Fields;
 
 use CirrusSearch\CirrusSearch;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchIndexField;
+use MediaWiki\Search\SearchIndexFieldDefinition;
+use OutOfBoundsException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use SearchEngine;
-use SearchIndexField;
-use SearchIndexFieldDefinition;
 use UnexpectedValueException;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Services\Lookup\PropertyDataTypeLookup;
@@ -16,6 +17,7 @@ use Wikibase\DataModel\Snak\PropertyValueSnak;
 use Wikibase\DataModel\Snak\Snak;
 use Wikibase\DataModel\Statement\Statement;
 use Wikibase\DataModel\Statement\StatementListProvider;
+use Wikibase\Lib\DataTypeFactory;
 use Wikibase\Repo\Search\Fields\WikibaseIndexField;
 
 /**
@@ -46,54 +48,56 @@ class StatementsField extends SearchIndexFieldDefinition implements WikibaseInde
 	private const QUALIFIER_END = ']';
 
 	/**
-	 * @var array List of properties to index, as a flipped array with the property IDs as keys.
+	 * @var array<string,int> List of properties to index, as a flipped array with the property IDs as keys.
 	 */
-	protected $propertyIds;
+	protected array $propertyIds;
 
 	/**
-	 * @var string[]
+	 * @var array<string,int>
 	 */
-	private $indexedTypes;
+	private array $indexedTypes;
 
 	/**
-	 * @var callable[]
+	 * @var array<string,int>
 	 */
-	protected $searchIndexDataFormatters;
+	private array $excludedIds;
 
 	/**
-	 * @var PropertyDataTypeLookup
+	 * @var ?callable Accepts an EntityDocument and returns an
+	 *  iterable of Statement instances to index.
 	 */
-	private $propertyDataTypeLookup;
-	/**
-	 * @var array
-	 */
-	private $excludedIds;
+	private $statementProvider;
 
 	private LoggerInterface $logger;
 
 	/**
+	 * @param DataTypeFactory $dataTypeFactory
 	 * @param PropertyDataTypeLookup $propertyDataTypeLookup
 	 * @param string[] $propertyIds List of property IDs to index
 	 * @param string[] $indexedTypes List of property types to index. Property of this type will be
 	 *      indexed regardless of $propertyIds.
 	 * @param string[] $excludedIds List of property IDs to exclude.
 	 * @param callable[] $searchIndexDataFormatters Search formatters, indexed by data type name
+	 * @param ?LoggerInterface $logger
+	 * @param ?callable $statementProvider Callable that accepts an EntityDocument and returns
+	 *      an iterable containing Statement instances to index.
 	 */
 	public function __construct(
-		PropertyDataTypeLookup $propertyDataTypeLookup,
+		private readonly DataTypeFactory $dataTypeFactory,
+		private readonly PropertyDataTypeLookup $propertyDataTypeLookup,
 		array $propertyIds,
 		array $indexedTypes,
 		array $excludedIds,
-		array $searchIndexDataFormatters,
-		?LoggerInterface $logger = null
+		private readonly array $searchIndexDataFormatters,
+		?LoggerInterface $logger = null,
+		?callable $statementProvider = null
 	) {
 		parent::__construct( static::NAME, SearchIndexField::INDEX_TYPE_KEYWORD );
 
 		$this->propertyIds = array_flip( $propertyIds );
 		$this->indexedTypes = array_flip( $indexedTypes );
-		$this->searchIndexDataFormatters = $searchIndexDataFormatters;
-		$this->propertyDataTypeLookup = $propertyDataTypeLookup;
 		$this->excludedIds = array_flip( $excludedIds );
+		$this->statementProvider = $statementProvider;
 		$this->logger = $logger ?? new NullLogger();
 	}
 
@@ -114,6 +118,18 @@ class StatementsField extends SearchIndexFieldDefinition implements WikibaseInde
 		return $this;
 	}
 
+	private function getStatements( EntityDocument $entity ): iterable {
+		if ( $this->statementProvider !== null ) {
+			return ( $this->statementProvider )( $entity );
+		}
+
+		if ( $entity instanceof StatementListProvider ) {
+			return $entity->getStatements();
+		}
+
+		return [];
+	}
+
 	/**
 	 * @param EntityDocument $entity
 	 *
@@ -122,16 +138,12 @@ class StatementsField extends SearchIndexFieldDefinition implements WikibaseInde
 	 *               is defined with nested type or an int or string for simple field types.
 	 */
 	public function getFieldData( EntityDocument $entity ) {
-		if ( !( $entity instanceof StatementListProvider ) ) {
-			return [];
-		}
-
 		$data = [];
 		$seen = [];
 		$skipped = [];
 
 		/** @var Statement $statement */
-		foreach ( $entity->getStatements() as $statement ) {
+		foreach ( $this->getStatements( $entity ) as $statement ) {
 			$snak = $statement->getMainSnak();
 			$mainSnakString = $this->getWhitelistedSnakAsString( $snak, $statement->getGuid() );
 			$propertyId = $snak->getPropertyId()->getSerialization();
@@ -177,12 +189,22 @@ class StatementsField extends SearchIndexFieldDefinition implements WikibaseInde
 
 		try {
 			$propType ??= $this->propertyDataTypeLookup->getDataTypeIdForProperty( $snak->getPropertyId() );
-		} catch ( PropertyDataTypeLookupException $e ) {
+		} catch ( PropertyDataTypeLookupException ) {
+			return null;
+		}
+		try {
+			$dataType = $this->dataTypeFactory->getType( $propType );
+		} catch ( OutOfBoundsException ) {
 			return null;
 		}
 
 		/* @phan-suppress-next-line PhanUndeclaredMethod */
 		$dataValue = $snak->getDataValue();
+		if ( $dataValue::getType() !== $dataType->getDataValueType() ) {
+			// Property type and data value type do not match (T372993)
+			return null;
+		}
+
 		$formatter = $this->searchIndexDataFormatters[$propType] ?? null;
 		if ( $formatter === null ) {
 			// We do not know how to format these values
@@ -207,7 +229,7 @@ class StatementsField extends SearchIndexFieldDefinition implements WikibaseInde
 		];
 	}
 
-	protected function getSnakAsString( Snak $snak, ?string $propType = null ) {
+	protected function getSnakAsString( Snak $snak, ?string $propType = null ): ?string {
 		$snakAsPropertyIdAndValue = $this->getSnakAsPropertyIdAndValue( $snak, $propType );
 		if ( $snakAsPropertyIdAndValue === null ) {
 			return null;
@@ -223,7 +245,7 @@ class StatementsField extends SearchIndexFieldDefinition implements WikibaseInde
 	 * e.g. P180=Q537, P240=1234567
 	 *
 	 * @param Snak $snak
-	 * @param string $guid Statement GUID to which this snak belongs
+	 * @param string|null $guid Statement GUID to which this snak belongs
 	 * @return null|string
 	 */
 	protected function getWhitelistedSnakAsString( Snak $snak, $guid ) {

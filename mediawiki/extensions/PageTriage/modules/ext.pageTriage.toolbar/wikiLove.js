@@ -45,7 +45,7 @@ module.exports = ToolView.extend( {
 		let link = mw.html.element( 'a', { href: this.model.get( 'creator_user_page_url' ) }, creator );
 
 		let creatorContribCount = 1;
-		if ( contributorArray.indexOf( creator ) !== -1 ) {
+		if ( contributorArray.includes( creator ) ) {
 			creatorContribCount = contributorCounts[ creator ];
 		}
 
@@ -96,27 +96,23 @@ module.exports = ToolView.extend( {
 
 		$( '.mwe-pt-recipient-checkbox' ).on( 'click', () => {
 			if ( $( '.mwe-pt-recipient-checkbox:checked' ).length > 0 ) {
-				$( '#mwe-pt-wikilove-button' ).button( 'enable' );
+				$( '#mwe-pt-wikilove-button' ).attr( 'disabled', false );
 			} else {
-				$( '#mwe-pt-wikilove-button' ).button( 'disable' );
+				$( '#mwe-pt-wikilove-button' ).attr( 'disabled', true );
 			}
 		} );
 
 		// initialize the button
-		const that = this;
 		$( '#mwe-pt-wikilove-button' )
-			.button( { icons: { secondary: 'ui-icon-triangle-1-e' } } )
 			.on( 'click', ( e ) => {
 				e.preventDefault();
-				const recipients = $( '.mwe-pt-recipient-checkbox:checked' ).map( function () {
-					return this.value;
-				} ).get();
+				const recipients = $( '.mwe-pt-recipient-checkbox:checked' ).map( ( i, el ) => el.value ).get();
 				$.wikiLove.openDialog( recipients, [ 'pagetriage' ] );
-				that.hide();
+				this.hide();
 			} );
 
 		// Disable the submit button to start with, will be re-enabled once a checkbox is selected
-		$( '#mwe-pt-wikilove-button' ).button( 'disable' );
+		$( '#mwe-pt-wikilove-button' ).attr( 'disabled', true );
 
 	}
 

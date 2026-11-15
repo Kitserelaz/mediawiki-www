@@ -7,7 +7,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "parserhook",
 	"requires": {
-		"MediaWiki": ">= 1.35.3"
+		"MediaWiki": ">= 1.36.0"
 	},
 	"MessagesDirs": {
 		"PageProperties": [
@@ -18,6 +18,9 @@
 	"AutoloadClasses": {
 		"PageProperties": "includes/PageProperties.php",
 		"PagePropertiesHooks": "includes/PagePropertiesHooks.php",
+		"PagePropertiesJsonDataContentHandler": "includes/content/PagePropertiesJsonDataContentHandler.php",
+		"PagePropertiesJsonDataContent": "includes/content/PagePropertiesJsonDataContent.php",
+		"OOUIHTMLFormTabs": "includes/specials/OOUIHTMLFormTabs.php",
 		"SpecialPageProperties": "includes/specials/SpecialPageProperties.php",
 		"PagePropertiesApiCheckLatestVersion": "includes/api/PagePropertiesApiCheckLatestVersion.php"
 	},
@@ -41,7 +44,15 @@
 		"LinkerMakeExternalLink": "PagePropertiesHooks::onLinkerMakeExternalLink"
 	},
 	"SpecialPages": {
-		"PageProperties": "SpecialPageProperties"
+		"PageProperties": {
+			"class": "SpecialPageProperties",
+			"services": [
+				"ContentHandlerFactory",
+				"ContentModelChangeFactory",
+				"ContentLanguage",
+				"LanguageNameUtils"
+			]
+		}
 	},
 	"APIModules": {
 		"pageproperties-check-latest-version": "PagePropertiesApiCheckLatestVersion"
@@ -129,5 +140,6 @@
 		"PagePropertiesDisplayAlwaysUnprefixedTitles": false,
 		"PagePropertiesDisableVersionCheck": false
 	},
+	"load_composer_autoloader": true,
 	"manifest_version": 1
 }

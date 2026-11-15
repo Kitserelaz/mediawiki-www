@@ -2,9 +2,10 @@
 
 namespace CirrusSearch\Search;
 
-use HtmlArmor;
+use MediaWiki\Search\ISearchResultSet;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
-interface CirrusSearchResultSet extends \ISearchResultSet {
+interface CirrusSearchResultSet extends ISearchResultSet {
 	/**
 	 * @return \Elastica\Response|null
 	 */
@@ -17,7 +18,7 @@ interface CirrusSearchResultSet extends \ISearchResultSet {
 
 	/**
 	 * @param CirrusSearchResultSet $res
-	 * @param int $type one of searchresultset::* constants
+	 * @param int $type One of the ISearchResultSet::…_RESULTS constants
 	 * @param string $interwiki
 	 */
 	public function addInterwikiResults( CirrusSearchResultSet $res, $type, $interwiki );

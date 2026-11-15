@@ -1,12 +1,12 @@
 /*!
- * OOUI v0.51.1
+ * OOUI v0.53.2
  * https://www.mediawiki.org/wiki/OOUI
  *
- * Copyright 2011–2024 OOUI Team and other contributors.
+ * Copyright 2011–2026 OOUI Team and other contributors.
  * Released under the MIT license
  * http://oojs.mit-license.org
  *
- * Date: 2024-09-19T17:13:43Z
+ * Date: 2026-04-21T12:46:08Z
  */
 ( function ( OO ) {
 
@@ -99,7 +99,7 @@
  *     // This is a PopupTool. Rather than having a custom 'onSelect' action, it will display a
  *     // little popup window (a PopupWidget).
  *     function HelpTool( toolGroup, config ) {
- *         OO.ui.PopupTool.call( this, toolGroup, $.extend( { popup: {
+ *         OO.ui.PopupTool.call( this, toolGroup, Object.assign( { popup: {
  *             padded: true,
  *             label: 'Help',
  *             head: true
@@ -227,7 +227,7 @@
  *     // This is a PopupTool. Rather than having a custom 'onSelect' action, it will display a
  *     // little popup window (a PopupWidget). 'onUpdateState' is also already implemented.
  *     function HelpTool( toolGroup, config ) {
- *         OO.ui.PopupTool.call( this, toolGroup, $.extend( { popup: {
+ *         OO.ui.PopupTool.call( this, toolGroup, Object.assign( { popup: {
  *             padded: true,
  *             label: 'Help',
  *             head: true
@@ -956,7 +956,7 @@ OO.ui.Tool.prototype.setTitle = function ( title ) {
  */
 OO.ui.Tool.prototype.setDisplayBothIconAndLabel = function ( displayBothIconAndLabel ) {
 	this.displayBothIconAndLabel = displayBothIconAndLabel;
-	this.$element.toggleClass( 'oo-ui-tool-with-label', !!this.title && this.displayBothIconAndLabel );
+	this.$element.toggleClass( 'oo-ui-tool-with-label', !!this.getTitle() && this.displayBothIconAndLabel );
 	return this;
 };
 
@@ -1018,13 +1018,14 @@ OO.ui.Tool.prototype.updateTitle = function () {
 	const titleTooltips = this.toolGroup.constructor.static.titleTooltips,
 		accelTooltips = this.toolGroup.constructor.static.accelTooltips,
 		accel = this.toolbar.getToolAccelerator( this.constructor.static.name ),
-		tooltipParts = [];
+		tooltipParts = [],
+		title = this.getTitle();
 
-	this.$title.text( this.title );
+	this.$title.text( title );
 	this.$accel.text( accel );
 
-	if ( titleTooltips && typeof this.title === 'string' && this.title.length ) {
-		tooltipParts.push( this.title );
+	if ( titleTooltips && typeof title === 'string' && title.length ) {
+		tooltipParts.push( title );
 	}
 	if ( accelTooltips && typeof accel === 'string' && accel.length ) {
 		tooltipParts.push( accel );
@@ -1289,6 +1290,10 @@ OO.ui.ToolGroup.prototype.onMouseKeyDown = function ( e ) {
  * @param {MouseEvent|KeyboardEvent} e Mouse up or key up event
  */
 OO.ui.ToolGroup.prototype.onDocumentMouseKeyUp = function ( e ) {
+	if ( e.target === document.documentElement ) {
+		// This means that the scrollbar was the target of the click
+		return;
+	}
 	this.getElementDocument().removeEventListener(
 		'mouseup',
 		this.onDocumentMouseKeyUpHandler,
@@ -1656,6 +1661,7 @@ OO.inheritClass( OO.ui.ToolGroupFactory, OO.Factory );
 OO.ui.ToolGroupFactory.static.getDefaultClasses = function () {
 	return [
 		OO.ui.BarToolGroup,
+		OO.ui.LabelToolGroup,
 		OO.ui.ListToolGroup,
 		OO.ui.MenuToolGroup
 	];
@@ -1670,7 +1676,7 @@ OO.ui.ToolGroupFactory.static.getDefaultClasses = function () {
  *     // Example of a popup tool. When selected, a popup tool displays
  *     // a popup window.
  *     function HelpTool( toolGroup, config ) {
- *        OO.ui.PopupTool.call( this, toolGroup, $.extend( { popup: {
+ *        OO.ui.PopupTool.call( this, toolGroup, Object.assign( { popup: {
  *            padded: true,
  *            label: 'Help',
  *            head: true
@@ -1943,7 +1949,7 @@ OO.ui.ToolGroupTool.prototype.createGroup = function ( group ) {
  *     // This is a PopupTool. Rather than having a custom 'onSelect' action, it will display a
  *     // little popup window (a PopupWidget).
  *     function HelpTool( toolGroup, config ) {
- *         OO.ui.PopupTool.call( this, toolGroup, $.extend( { popup: {
+ *         OO.ui.PopupTool.call( this, toolGroup, Object.assign( { popup: {
  *             padded: true,
  *             label: 'Help',
  *             head: true
@@ -2032,6 +2038,69 @@ OO.ui.BarToolGroup.static.accelTooltips = true;
 OO.ui.BarToolGroup.static.name = 'bar';
 
 /**
+ * LabelToolGroup is a non-interactive toolgroup for displaying a label in the toolbar.
+ *
+ * It cannot contain any tools and does not respond to interaction.
+ *
+ * @class
+ * @extends OO.ui.ToolGroup
+ * @mixes OO.ui.mixin.IconElement
+ * @mixes OO.ui.mixin.IndicatorElement
+ * @mixes OO.ui.mixin.LabelElement
+ * @mixes OO.ui.mixin.TitledElement
+ *
+ * @constructor
+ * @param {OO.ui.Toolbar} toolbar
+ * @param {Object} [config] Configuration options
+ */
+OO.ui.LabelToolGroup = function OoUiLabelToolGroup( toolbar, config ) {
+	config = config || {};
+
+	// Parent constructor
+	OO.ui.LabelToolGroup.super.call( this, toolbar, config );
+
+	// Mixin constructors
+	OO.ui.mixin.IconElement.call( this, config );
+	OO.ui.mixin.IndicatorElement.call( this, config );
+	OO.ui.mixin.LabelElement.call( this, config );
+	OO.ui.mixin.TitledElement.call( this, config );
+
+	// LabelToolGroup cannot contain tools.
+	this.$group.remove();
+
+	// Use a $handle like PopupToolGroup so styles can be shared more easily
+	this.$handle = $( '<span>' ).addClass( 'oo-ui-toolGroup-handle oo-ui-labelToolGroup-handle' );
+
+	this.$handle.append( this.$icon, this.$label, this.$indicator );
+	this.$element
+		.addClass( 'oo-ui-labelToolGroup' )
+		.prepend( this.$handle );
+};
+
+OO.inheritClass( OO.ui.LabelToolGroup, OO.ui.ToolGroup );
+OO.mixinClass( OO.ui.LabelToolGroup, OO.ui.mixin.IconElement );
+OO.mixinClass( OO.ui.LabelToolGroup, OO.ui.mixin.IndicatorElement );
+OO.mixinClass( OO.ui.LabelToolGroup, OO.ui.mixin.LabelElement );
+OO.mixinClass( OO.ui.LabelToolGroup, OO.ui.mixin.TitledElement );
+
+/*  Static properties */
+
+/**
+ * @static
+ * @inheritdoc
+ */
+OO.ui.LabelToolGroup.static.name = 'label';
+
+/* Methods */
+
+/**
+ * LabelToolGroup cannot contain tools.
+ *
+ * @inheritdoc
+ */
+OO.ui.LabelToolGroup.prototype.populate = function () {};
+
+/**
  * PopupToolGroup is an abstract base class used by both {@link OO.ui.MenuToolGroup MenuToolGroup}
  * and {@link OO.ui.ListToolGroup ListToolGroup} to provide a popup (an overlaid menu or list of
  * tools with an optional icon and label). This class can be used for other base classes that
@@ -2112,7 +2181,7 @@ OO.ui.PopupToolGroup = function OoUiPopupToolGroup( toolbar, config ) {
 
 	// Initialization
 	this.$handle
-		.addClass( 'oo-ui-popupToolGroup-handle' )
+		.addClass( 'oo-ui-toolGroup-handle oo-ui-popupToolGroup-handle' )
 		.attr( { role: 'button', 'aria-expanded': 'false' } )
 		.append( this.$icon, this.$label, this.$indicator );
 	// If the pop-up should have a header, add it to the top of the toolGroup.
@@ -2210,6 +2279,10 @@ OO.ui.PopupToolGroup.prototype.onToolbarResize = function () {
  * @param {MouseEvent|KeyboardEvent} e Mouse up or key up event
  */
 OO.ui.PopupToolGroup.prototype.onPopupDocumentMouseKeyUp = function ( e ) {
+	if ( e.target === document.documentElement ) {
+		// This means that the scrollbar was the target of the click
+		return;
+	}
 	const $target = $( e.target );
 	// Only deactivate when clicking outside the dropdown element
 	if ( $target.closest( '.oo-ui-popupToolGroup' )[ 0 ] === this.$element[ 0 ] ) {
@@ -2350,7 +2423,7 @@ OO.ui.PopupToolGroup.prototype.setActive = function ( value ) {
 				true
 			);
 
-			this.$clippable.css( 'left', '' );
+			this.$clippable.css( { left: '', width: '', 'margin-left': '', 'min-width': '' } );
 			this.$element.addClass( 'oo-ui-popupToolGroup-active' );
 			this.$group.addClass( 'oo-ui-popupToolGroup-active-tools' );
 			this.$handle.attr( 'aria-expanded', true );
@@ -2371,20 +2444,27 @@ OO.ui.PopupToolGroup.prototype.setActive = function ( value ) {
 				this.setHorizontalPosition( otherSide );
 			}
 			if ( this.isClippedHorizontally() || this.isFloatableOutOfView() ) {
+				this.setHorizontalPosition( 'center' );
+			}
+			if ( this.isClippedHorizontally() || this.isFloatableOutOfView() ) {
 				// Anchoring to the right also caused the popup to clip, so just make it fill the
 				// container.
-				containerWidth = this.$clippableScrollableContainer.width();
-				containerLeft = this.$clippableScrollableContainer[ 0 ] ===
-					document.documentElement ?
+				const isDocument = this.$clippableScrollableContainer[ 0 ] ===
+					document.documentElement;
+				containerWidth = isDocument ?
+					document.documentElement.clientWidth :
+					this.$clippableScrollableContainer.width();
+				containerLeft = isDocument ?
 					0 :
 					this.$clippableScrollableContainer.offset().left;
 
 				this.toggleClipping( false );
-				this.setHorizontalPosition( preferredSide );
+				this.setHorizontalPosition( 'start' );
 
 				this.$clippable.css( {
 					'margin-left': -( this.$element.offset().left - containerLeft ),
-					width: containerWidth
+					width: containerWidth,
+					'min-width': containerWidth
 				} );
 			}
 		} else {

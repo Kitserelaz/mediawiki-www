@@ -10,10 +10,7 @@
 	"license-name": "GPL-3.0-or-later",
 	"type": "specialpage",
 	"requires": {
-		"MediaWiki": ">= 1.43.0",
-		"platform": {
-			"php": ">= 8.1"
-		}
+		"MediaWiki": ">= 1.46.0"
 	},
 	"MessagesDirs": {
 		"DataDump": [
@@ -54,9 +51,17 @@
 		"DataDumpGenerateJob": {
 			"class": "Miraheze\\DataDump\\Jobs\\DataDumpGenerateJob",
 			"services": [
-				"ConnectionProvider",
+				"DataDumpStatusManager",
 				"DataDumpConfig",
-				"DataDumpFileBackend"
+				"DataDumpFileBackend",
+				"JobQueueGroupFactory"
+			],
+			"needsPage": false
+		},
+		"DataDumpStatusUpdateJob": {
+			"class": "Miraheze\\DataDump\\Jobs\\DataDumpStatusUpdateJob",
+			"services": [
+				"DataDumpStatusManager"
 			],
 			"needsPage": false
 		}
@@ -149,6 +154,10 @@
 				"time": 0,
 				"walltime": 0
 			}
+		},
+		"DataDumpAllowRetries": {
+			"description" : "Boolean. Whether to retry the job if it fails.",
+			"value": true
 		}
 	},
 	"ConfigRegistry": {

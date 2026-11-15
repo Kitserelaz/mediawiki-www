@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"Winston Sung"
 		]
 	},
@@ -26,7 +27,7 @@
 	"moderation-diff-no-changes": "Nema promjena u tekstu (uređivanje bez promjena).",
 	"moderation-diff-reupload": "Ovo je preotpremanje slike (neće promijeniti tekst).",
 	"moderation-diff-upload-notext": "Ova slika je otpremljena bez opisa.",
-	"moderation-editing-your-version": "Vi uređujete svoju verziju ovog članka, koja trenutačno čeka moderiranje.<br>Kada bude odobrena, ona bit će vidljiva drugim korisnicima.",
+	"moderation-editing-your-version": "Uređujete svoju verziju ovog članka. Ona trenutno čeka moderaciju.<br>Kad bude odobrena, bit će vidljiva drugim korisnicima.",
 	"moderation-edit-not-found": "Izmjena nije pronađena. Vjerojatno već odobrena.",
 	"moderation-edit-queued": "Uspjeh: vaša izmjena je poslana na moderaciju.<br>Možete nastaviti uređivati ​​<a href='$1'>vašu verziju ove stranice</a>.",
 	"moderation-editchange": "uredi",
@@ -51,7 +52,7 @@
 	"moderation-show": "razl",
 	"moderation-suggest-signup": "Kako biste ubuduće preskočili moderaciju, [[Special:CreateAccount|prijavite se]].",
 	"moderation-text": "Ova posebna stranica navodi sve izmjene koje čekaju moderiranje (odobrenje ili odbijanje).<br>Vidi također: [[Special:Log/moderation|dnevnik moderiranja]].",
-	"right-moderation-checkuser": "Pregled IP adresa urednika u moderacijskom sučelju.",
+	"right-moderation-checkuser": "Pregled IP adresa urednika u moderacijskom interfejsu.",
 	"right-moderation": "Moderacija izmjena",
 	"right-skip-moderation": "Uređivanje sa zaobilaženjem moderacije",
 	"right-skip-move-moderation": "Premještanje stranica bez moderacije",

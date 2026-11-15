@@ -3,9 +3,9 @@ namespace Wikibase\Lexeme\Search\Elastic;
 
 use CirrusSearch\CirrusSearch;
 use CirrusSearch\Search\KeywordIndexField;
-use SearchEngine;
-use SearchIndexField;
-use SearchIndexFieldDefinition;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchIndexField;
+use MediaWiki\Search\SearchIndexFieldDefinition;
 use Wikibase\Repo\Search\Fields\WikibaseIndexField;
 
 /**
@@ -16,7 +16,7 @@ abstract class LexemeKeywordField extends SearchIndexFieldDefinition implements 
 	public const NAME = "unknown_field";
 
 	public function __construct() {
-		parent::__construct( static::NAME, \SearchIndexField::INDEX_TYPE_KEYWORD );
+		parent::__construct( static::NAME, SearchIndexField::INDEX_TYPE_KEYWORD );
 	}
 
 	/**

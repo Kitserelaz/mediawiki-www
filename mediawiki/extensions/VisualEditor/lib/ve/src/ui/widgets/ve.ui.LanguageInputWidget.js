@@ -22,10 +22,7 @@
  * @param {ve.ui.WindowManager} [config.dialogManager] Window manager to launch the language search dialog in
  * @param {string[]} [config.availableLanguages] Available language codes to show in search dialog
  */
-ve.ui.LanguageInputWidget = function VeUiLanguageInputWidget( config ) {
-	// Configuration initialization
-	config = config || {};
-
+ve.ui.LanguageInputWidget = function VeUiLanguageInputWidget( config = {} ) {
 	// Parent constructor
 	ve.ui.LanguageInputWidget.super.call( this, config );
 
@@ -39,9 +36,10 @@ ve.ui.LanguageInputWidget = function VeUiLanguageInputWidget( config ) {
 
 	this.findLanguageButton = new OO.ui.ButtonWidget( {
 		classes: [ 've-ui-languageInputWidget-findLanguageButton' ],
-		icon: 'ellipsis'
+		icon: 'ellipsis',
+		label: ve.msg( 'visualeditor-dialog-language-search-title' ),
+		invisibleLabel: true
 	} );
-	this.findLanguageButton.$button.attr( 'aria-label', ve.msg( 'visualeditor-dialog-language-search-title' ) );
 	this.selectedLanguageLabel = new OO.ui.LabelWidget( {
 		classes: [ 've-ui-languageInputWidget-selectedLanguageLabel' ],
 		label: ve.msg( 'visualeditor-languageinspector-widget-changelang' )
@@ -75,13 +73,18 @@ ve.ui.LanguageInputWidget = function VeUiLanguageInputWidget( config ) {
 
 	// Initialization
 	const dirItems = [
+		// TODO: Add LTR/RTL invisible labels for accessibility
 		new OO.ui.ButtonOptionWidget( {
 			data: 'rtl',
-			icon: 'textDirRTL'
+			icon: 'textDirRTL',
+			label: ve.msg( 'visualeditor-languageinspector-widget-label-direction-rtl' ),
+			invisibleLabel: true
 		} ),
 		new OO.ui.ButtonOptionWidget( {
 			data: 'ltr',
-			icon: 'textDirLTR'
+			icon: 'textDirLTR',
+			label: ve.msg( 'visualeditor-languageinspector-widget-label-direction-ltr' ),
+			invisibleLabel: true
 		} )
 	];
 	const dirInput = ( config.dirInput === undefined ) ? 'auto' : config.dirInput;
@@ -127,8 +130,7 @@ ve.ui.LanguageInputWidget.prototype.onFindLanguageButtonClick = function () {
 	this.dialogs.openWindow( 'languageSearch', {
 		availableLanguages: this.availableLanguages,
 		$returnFocusTo: null
-	} ).closing.then( ( data ) => {
-		data = data || {};
+	} ).closing.then( ( data = {} ) => {
 		if ( data.action === 'done' ) {
 			this.setLangAndDir( data.lang, data.dir );
 		}

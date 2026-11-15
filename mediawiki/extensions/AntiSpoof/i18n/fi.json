@@ -11,7 +11,9 @@
 			"Rönttönen",
 			"Samoasambia",
 			"Silvonen",
-			"Str4nd"
+			"Str4nd",
+			"Taavi",
+			"Wikipeedikko"
 		]
 	},
 	"antispoof-desc": "Estää käyttäjätunnusten luonnin, jos ne sisältävät eri kirjoitusjärjestelmiä, harhaanjohtavia tai samankaltaisia käyttäjänimiä.",

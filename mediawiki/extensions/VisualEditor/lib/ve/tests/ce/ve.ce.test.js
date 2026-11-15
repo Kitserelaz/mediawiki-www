@@ -262,9 +262,9 @@ QUnit.test( 'getOffset', ( assert ) => {
 // TODO: ve.ce.getOffsetOfSlug
 
 QUnit.test( 'isShortcutKey', ( assert ) => {
-	assert.strictEqual( ve.ce.isShortcutKey( { ctrlKey: true } ), true, 'ctrlKey' );
-	assert.strictEqual( ve.ce.isShortcutKey( { metaKey: true } ), true, 'metaKey' );
-	assert.strictEqual( ve.ce.isShortcutKey( {} ), false, 'Not set' );
+	assert.true( ve.ce.isShortcutKey( { ctrlKey: true } ), 'ctrlKey' );
+	assert.true( ve.ce.isShortcutKey( { metaKey: true } ), 'metaKey' );
+	assert.false( ve.ce.isShortcutKey( {} ), 'Not set' );
 } );
 
 QUnit.test( 'nextCursorOffset', ( assert ) => {
@@ -341,10 +341,8 @@ QUnit.test( 'fakeImes', ( assert ) => {
 	}
 
 	// TODO: make this function actually affect the events triggered
-	const fakePreventDefault = function () {};
-	const fakeIsPreventDefault = function () {
-		return false;
-	};
+	const fakePreventDefault = () => {};
+	const fakeIsPreventDefault = () => false;
 
 	ve.ce.imetests.forEach( ( caseItem ) => {
 		const testName = caseItem[ 0 ];
@@ -358,7 +356,7 @@ QUnit.test( 'fakeImes', ( assert ) => {
 		const testRunner = new ve.ce.TestRunner( view );
 		// Start at 1 to omit the testInfo
 		let died = false;
-		for ( let j = 1, jlen = testActions.length; j < jlen; j++ ) {
+		for ( let j = 1; j < testActions.length; j++ ) {
 			const action = testActions[ j ].action;
 			const args = testActions[ j ].args;
 			const seq = testActions[ j ].seq;
@@ -369,7 +367,7 @@ QUnit.test( 'fakeImes', ( assert ) => {
 					args[ 1 ].isDefaultPrevented = fakeIsPreventDefault;
 				}
 				try {
-					testRunner[ action ].apply( testRunner, args );
+					testRunner[ action ]( ...args );
 				} catch ( ex ) {
 					died = ex;
 				}
@@ -399,7 +397,7 @@ QUnit.test( 'fakeImes', ( assert ) => {
 			}
 		}
 		// Test that there is at least one endLoop
-		assert.strictEqual( foundEndLoop, true, testName + ' found at least one endLoop' );
+		assert.true( foundEndLoop, testName + ' found at least one endLoop' );
 		view.destroy();
 	} );
 } );
@@ -448,7 +446,7 @@ QUnit.test( 'isAfterAnnotationBoundary', ( assert ) => {
 
 	cases.forEach( ( caseItem ) => {
 		let node = div;
-		for ( let j = 0, jLen = caseItem.path.length; j < jLen; j++ ) {
+		for ( let j = 0; j < caseItem.path.length; j++ ) {
 			node = node.childNodes[ caseItem.path[ j ] ];
 		}
 		assert.strictEqual(

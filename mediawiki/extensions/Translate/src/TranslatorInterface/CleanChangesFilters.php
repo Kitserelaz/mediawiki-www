@@ -4,14 +4,15 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\TranslatorInterface;
 
 use MediaWiki\Config\Config;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\CLDR\LanguageNames;
-use MediaWiki\Hook\FetchChangesListHook;
-use MediaWiki\Hook\SpecialRecentChangesPanelHook;
+use MediaWiki\Extension\Translate\ConfigNames;
 use MediaWiki\Html\Html;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\RecentChanges\Hook\FetchChangesListHook;
 use MediaWiki\SpecialPage\Hook\ChangesListSpecialPageQueryHook;
-use MediaWiki\Xml\Xml;
-use Wikimedia\Rdbms\ILoadBalancer;
+use MediaWiki\Specials\Hook\SpecialRecentChangesPanelHook;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * This class adds a language filter to Special:RecentChanges
@@ -24,14 +25,12 @@ class CleanChangesFilters implements
 	ChangesListSpecialPageQueryHook,
 	SpecialRecentChangesPanelHook
 {
-	private Config $config;
-	private LanguageNameUtils $languageNameUtils;
-	private ILoadBalancer $loadBalancer;
 
-	public function __construct( LanguageNameUtils $languageNameUtils, ILoadBalancer $loadBalancer, Config $config ) {
-		$this->languageNameUtils = $languageNameUtils;
-		$this->loadBalancer = $loadBalancer;
-		$this->config = $config;
+	public function __construct(
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly Config $config,
+	) {
 	}
 
 	/**
@@ -41,18 +40,17 @@ class CleanChangesFilters implements
 	public function onChangesListSpecialPageQuery(
 		$name, &$tables, &$fields, &$conds, &$query_options, &$join_conds, $opts
 	) {
-		global $wgRequest;
-		if ( !$this->config->get( 'TranslateRecentChangesLanguageFilter' ) ) {
+		if ( !$this->config->get( ConfigNames::RecentChangesLanguageFilter ) ) {
 			return;
 		}
 
 		$opts->add( 'trailer', '' );
-		$trailer = $wgRequest->getVal( 'trailer', '' );
-		if ( $trailer === null ) {
+		$trailer = RequestContext::getMain()->getRequest()->getVal( 'trailer', '' );
+		if ( $trailer === '' ) {
 			return;
 		}
 
-		$dbr = $this->loadBalancer->getConnection( DB_REPLICA );
+		$dbr = $this->dbProvider->getReplicaDatabase();
 		$conds[] = 'rc_title ' . $dbr->buildLike( $dbr->anyString(), $trailer );
 		$opts->setValue( 'trailer', $trailer );
 	}
@@ -62,55 +60,58 @@ class CleanChangesFilters implements
 	 * @inheritDoc
 	 */
 	public function onSpecialRecentChangesPanel( &$extraOpts, $opts ) {
-		global $wgLang, $wgRequest;
-		if ( !$this->config->get( 'TranslateRecentChangesLanguageFilter' ) ) {
+		if ( !$this->config->get( ConfigNames::RecentChangesLanguageFilter ) ) {
 			return;
 		}
 
+		$context = RequestContext::getMain();
 		// TODO the query is parsed (and unknown options are discarded) before we got a chance to define our option.
 		// SEE https://gerrit.wikimedia.org/r/c/mediawiki/extensions/Translate/+/1053288/comment/5303b6a3_aaef9399/
-		$default = $wgRequest->getVal( 'trailer', '' );
+		$default = $context->getRequest()->getVal( 'trailer', '' );
 
 		if ( is_callable( [ LanguageNames::class, 'getNames' ] ) ) {
 			// cldr extension
 			$languages = LanguageNames::getNames(
-				$wgLang->getCode(),
+				$context->getLanguage()->getCode(),
 				LanguageNames::FALLBACK_NORMAL
 			);
 		} else {
 			$languages = $this->languageNameUtils->getLanguageNames();
 		}
 		ksort( $languages );
-		$optionAttributes = [ 'value' => '' ];
-		if ( $default === '' ) {
-			$optionAttributes[ 'selected' ] = 'selected';
-		}
 
 		$options = Html::element(
 			'option',
-			$optionAttributes,
+			[
+				'value' => '',
+				'selected' => $default === '',
+			],
 			wfMessage( 'tpt-cleanchanges-language-na' )->text()
 		);
 
 		foreach ( $languages as $code => $name ) {
-			$selected = ( "/$code" === $default );
-			$optionAttributes = [ 'value' => "/$code" ];
-			if ( $selected ) {
-				$optionAttributes[ 'selected' ] = 'selected';
-			}
-			$options .= Html::element( 'option', $optionAttributes, "$code - $name" ) . "\n";
+			$options .= Html::element(
+				'option',
+				[
+					'value' => "/$code",
+					'selected' => $default === "/$code",
+				],
+				"$code - $name"
+			) . "\n";
 		}
-		$str =
-		Xml::openElement( 'select',
-			[
-				'name' => 'trailer',
-				'class' => 'mw-language-selector',
-				'id' => 'tpt-rc-language',
-			] ) .
-		$options .
-		Xml::closeElement( 'select' );
 
-		$extraOpts['tailer'] = [ wfMessage( 'tpt-cleanchanges-language' )->escaped(), $str ];
+		$extraOpts['tailer'] = [
+			wfMessage( 'tpt-cleanchanges-language' )->escaped(),
+			Html::rawElement(
+				'select',
+				[
+					'name' => 'trailer',
+					'class' => 'mw-language-selector',
+					'id' => 'tpt-rc-language',
+				],
+				$options
+			),
+		];
 	}
 
 	/**
@@ -118,7 +119,7 @@ class CleanChangesFilters implements
 	 * @inheritDoc
 	 */
 	public function onFetchChangesList( $user, $skin, &$list, $groups ) {
-		if ( $this->config->get( 'TranslateRecentChangesLanguageFilter' ) && defined( 'ULS_VERSION' ) ) {
+		if ( $this->config->get( ConfigNames::RecentChangesLanguageFilter ) && defined( 'ULS_VERSION' ) ) {
 			$skin->getOutput()->addModules( 'ext.translate.cleanchanges' );
 		}
 	}

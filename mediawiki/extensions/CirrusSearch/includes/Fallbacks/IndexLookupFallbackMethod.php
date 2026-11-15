@@ -4,6 +4,7 @@ namespace CirrusSearch\Fallbacks;
 
 use CirrusSearch\InterwikiResolver;
 use CirrusSearch\Parser\AST\Visitor\QueryFixer;
+use CirrusSearch\Parser\BasicQueryClassifier;
 use CirrusSearch\Profile\ArrayPathSetter;
 use CirrusSearch\Profile\SearchProfileException;
 use CirrusSearch\Profile\SearchProfileService;
@@ -15,6 +16,13 @@ use Elastica\Search;
 
 class IndexLookupFallbackMethod implements FallbackMethod, ElasticSearchRequestFallbackMethod, SearchMetricsProvider {
 	use FallbackMethodTrait;
+
+	/**
+	 * @var string One of 'enabled' or 'metrics' indicating how
+	 * the fallback operates. 'metrics' is for collecting data without
+	 * using the result.
+	 */
+	private string $mode;
 
 	/**
 	 * @var SearchQuery
@@ -124,6 +132,7 @@ class IndexLookupFallbackMethod implements FallbackMethod, ElasticSearchRequestF
 	}
 
 	/**
+	 * @param string $mode Either 'enabled' or 'metrics'.
 	 * @param SearchQuery $query
 	 * @param string $index
 	 * @param array $queryTemplate
@@ -134,6 +143,7 @@ class IndexLookupFallbackMethod implements FallbackMethod, ElasticSearchRequestF
 	 * @param array $profileParams
 	 */
 	public function __construct(
+		string $mode,
 		SearchQuery $query,
 		$index,
 		$queryTemplate,
@@ -142,6 +152,7 @@ class IndexLookupFallbackMethod implements FallbackMethod, ElasticSearchRequestF
 		array $metricFields,
 		array $profileParams
 	) {
+		$this->mode = $mode;
 		$this->query = $query;
 		$this->index = $index;
 		$this->queryTemplate = $queryTemplate;
@@ -167,6 +178,11 @@ class IndexLookupFallbackMethod implements FallbackMethod, ElasticSearchRequestF
 		if ( $query->getOffset() !== 0 ) {
 			return null;
 		}
+		if ( !$query->getParsedQuery()->isQueryOfClass( BasicQueryClassifier::SIMPLE_BAG_OF_WORDS ) ) {
+			// This method does not highlight the problem and thus is not able to use QueryFixer to fix parts of the query.
+			// Ignore complex queries to avoid destructing them.
+			return null;
+		}
 		if ( !isset( $params['profile'] ) ) {
 			throw new SearchProfileException( "Missing mandatory field profile" );
 		}
@@ -178,6 +194,7 @@ class IndexLookupFallbackMethod implements FallbackMethod, ElasticSearchRequestF
 		'@phan-var array $profile';
 
 		return new self(
+			$params['mode'] ?? 'enabled',
 			$query,
 			$profile['index'],
 			$profile['query'],
@@ -193,6 +210,9 @@ class IndexLookupFallbackMethod implements FallbackMethod, ElasticSearchRequestF
 	 * @return float
 	 */
 	public function successApproximation( FallbackRunnerContext $context ) {
+		if ( $this->mode !== 'enabled' ) {
+			return 0.0;
+		}
 		$rset = $this->extractMethodResponse( $context );
 		if ( $rset === null || $rset->getResults() === [] ) {
 			return 0.0;
@@ -231,6 +251,10 @@ class IndexLookupFallbackMethod implements FallbackMethod, ElasticSearchRequestF
 	 * @return FallbackStatus
 	 */
 	public function rewrite( FallbackRunnerContext $context ): FallbackStatus {
+		if ( $this->mode !== 'enabled' ) {
+			// we are only collecting metrics
+			return FallbackStatus::noSuggestion();
+		}
 		$previousSet = $context->getPreviousResultSet();
 		if ( !$context->costlyCallAllowed() ) {
 			// a method rewrote the query before us.

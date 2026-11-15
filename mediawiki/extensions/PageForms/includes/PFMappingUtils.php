@@ -5,7 +5,10 @@
  * @ingroup PF
  */
 
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Title\Title;
 
 class PFMappingUtils {
@@ -61,7 +64,7 @@ class PFMappingUtils {
 	/**
 	 * Check if array is indexed/sequential (true), else named/associative (false)
 	 * @param array $arr
-	 * @return string
+	 * @return bool
 	 */
 	private static function isIndexedArray( $arr ) {
 		if ( array_keys( $arr ) == range( 0, count( $arr ) - 1 ) ) {
@@ -97,8 +100,8 @@ class PFMappingUtils {
 				$mappedValues = self::getValuesWithMappingTemplate( $values, $mappingTemplate );
 				break;
 			case 'mapping cargo field':
-				$mappingCargoField = isset( $args['mapping cargo field'] ) ? $args['mapping cargo field'] : null;
-				$mappingCargoValueField = isset( $args['mapping cargo value field'] ) ? $args['mapping cargo value field'] : null;
+				$mappingCargoField = $args['mapping cargo field'] ?? null;
+				$mappingCargoValueField = $args['mapping cargo value field'] ?? null;
 				$mappingCargoTable = $args['mapping cargo table'];
 				$mappedValues = self::getValuesWithMappingCargoField( $values, $mappingCargoField, $mappingCargoValueField, $mappingCargoTable, $useDisplayTitle );
 				break;
@@ -172,12 +175,26 @@ class PFMappingUtils {
 		$title = Title::makeTitleSafe( NS_TEMPLATE, $mappingTemplate );
 		$templateExists = $title->exists();
 		$res = [];
+
+		if ( $templateExists ) {
+			$parser = PFUtils::getParser();
+			// If the form employs mapping templates to translate values to labels, PFMappingUtils
+			// fundamentally relies on the parser to render them. Since we might be outside a standard
+			// page rendering context (e.g. pfautocomplete API), we explicitly initialize an external
+			// parse sequence so that the template parsing succeeds without crashing.
+			if ( $parser->getOptions() === null ) {
+				wfDebugLog( 'PageForms', 'Parser uninitialized before mapping template. Initializing now.' );
+				$parserOptions = ParserOptions::newFromContext( RequestContext::getMain() );
+				$parser->startExternalParse( Title::newMainPage(), $parserOptions, Parser::OT_HTML, true );
+			}
+		}
+
 		foreach ( $values as $index => $value ) {
 			// if ( $useDisplayTitle ) {
 			// $value = $index;
 			// }
 			if ( $templateExists ) {
-				$label = trim( PFUtils::getParser()->recursiveTagParse( '{{' . $mappingTemplate .
+				$label = trim( $parser->recursiveTagParse( '{{' . $mappingTemplate .
 					'|' . $value . '}}' ) );
 				if ( $label == '' ) {
 					$res[$value] = $value;
@@ -228,7 +245,7 @@ class PFMappingUtils {
 				$mappingCargoField,
 				$valueField . '="' . $value . '"'
 			);
-			if ( count( $vals ) > 0 ) {
+			if ( count( $vals ) > 0 && trim( $vals[0] ) != '' ) {
 				$labels[$value] = html_entity_decode( trim( $vals[0] ) );
 			}
 		}
@@ -246,8 +263,14 @@ class PFMappingUtils {
 		string $translateMapping
 	) {
 		$res = [];
+		$parser = PFUtils::getParser();
+		if ( $parser->getOptions() === null ) {
+			$parserOptions = ParserOptions::newFromContext( RequestContext::getMain() );
+			$parser->startExternalParse( Title::newMainPage(), $parserOptions, Parser::OT_HTML, true );
+		}
+
 		foreach ( $values as $key ) {
-			$res[$key] = PFUtils::getParser()->recursiveTagParse( '{{int:' . $translateMapping . $key . '}}' );
+			$res[$key] = $parser->recursiveTagParse( '{{int:' . $translateMapping . $key . '}}' );
 		}
 		return $res;
 	}
@@ -283,17 +306,24 @@ class PFMappingUtils {
 			}
 
 			if ( $doReverseLookup ) {
+				// Before attempting to extract a page name from parentheses,
+				// check whether the entire value is itself an existing page.
+				// Pages like "Pagename (foobar)" have parentheses in their
+				// actual title; without this check the regex below would
+				// incorrectly extract "foobar" as the page name.
+				$titleDirect = Title::newFromText( $value );
+				if ( $titleDirect instanceof Title && $titleDirect->exists() ) {
+					$pageNamesForValues[$value] = $titleDirect->getPrefixedText();
+					$allTitles[] = $titleDirect;
+					continue;
+				}
+
 				// The regex matches every 'real' page inside the last brackets; for example
 				//  'Privacy (doel) (Privacy (doel)concept)',
 				//  'Pagina (doel) (Pagina)',
 				// will match on (Privacy (doel)concept), (Pagina), ect
 				if ( !preg_match_all( '/\((?:[^)(]*(?R)?)*+\)/', $value, $matches ) ) {
-					$title = Title::newFromText( $value );
-					// @todo : maybe $title instanceof Title && ...?
-					if ( $title && $title->exists() ) {
-						$labels[ $value ] = $value;
-					}
-					// If no matches where found, just leave the value as is
+					// If no matches were found, just leave the value as is
 					continue;
 				} else {
 					$firstMatch = reset( $matches );

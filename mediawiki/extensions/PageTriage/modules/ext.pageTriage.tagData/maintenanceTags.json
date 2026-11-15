@@ -57,10 +57,32 @@
 					"multiple": true
 				},
 
-				"translation": {
-					"label": "Needs translation",
-					"tag": "not English",
-					"desc": "This page is written in a language other than English and needs translation.",
+				"merge": {
+					"label": "Merge",
+					"tag": "merge",
+					"desc": "Merge this page into a different page",
+					"params": {
+						"1": {
+							"label": "Article to merge this article to:",
+							"input": "required",
+							"type": "text",
+							"value": ""
+						},
+						"date": {
+							"label": "Date:",
+							"input": "automated",
+							"type": "hidden",
+							"value": "{{subst:CURRENTMONTHNAME}} {{subst:CURRENTYEAR}}"
+						}
+					},
+					"position": "top",
+					"multiple": true
+				},
+
+				"oneother": {
+					"label": "One other topic",
+					"tag": "one other topic",
+					"desc": "This disambiguation page contains the primary topic and one other topic for the ambiguous title.",
 					"params": {
 						"date": {
 							"label": "Date:",
@@ -96,6 +118,22 @@
 					"params": { },
 					"position": "top",
 					"multiple": false
+				},
+
+				"translation": {
+					"label": "Needs translation",
+					"tag": "not English",
+					"desc": "This page is written in a language other than English and needs translation.",
+					"params": {
+						"date": {
+							"label": "Date:",
+							"input": "automated",
+							"type": "hidden",
+							"value": "{{subst:CURRENTMONTHNAME}} {{subst:CURRENTYEAR}}"
+						}
+					},
+					"position": "top",
+					"multiple": true
 				}
 			}
 		},
@@ -2187,7 +2225,7 @@
 				"R-to-disambiguation-page": {
 					"label": "{{R to disambiguation page}}",
 					"tag": "R to disambiguation page",
-					"desc": "redirect to a disambiguation page",
+					"desc": "redirect to a disambiguation page. This template should only appear on a redirect page that has \"(disambiguation)\" at the end of its title; otherwise, use R from ambiguous term.",
 					"position": "redirectTag",
 					"multiple": true
 				},

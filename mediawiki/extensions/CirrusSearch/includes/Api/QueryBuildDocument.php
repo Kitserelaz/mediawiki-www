@@ -11,41 +11,54 @@ use CirrusSearch\SearchConfig;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiQuery;
 use MediaWiki\Api\ApiQueryBase;
+use MediaWiki\Api\ApiResult;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\PoolCounter\PoolCounterWorkViaCallback;
+use MediaWiki\Revision\SlotRecord;
 use Wikimedia\ParamValidator\ParamValidator;
 
 /**
  * Generate CirrusSearch document for page.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class QueryBuildDocument extends ApiQueryBase {
 	use ApiTrait;
 
-	public function __construct( ApiQuery $query, $moduleName ) {
+	public function __construct( ApiQuery $query, string $moduleName ) {
 		parent::__construct( $query, $moduleName, 'cb' );
 	}
 
 	public function execute() {
-		$result = $this->getResult();
-		$services = MediaWikiServices::getInstance();
-		$engine = $services->getSearchEngineFactory()->create();
+		$engine = MediaWikiServices::getInstance()->getSearchEngineFactory()->create();
 		if ( !( $engine instanceof CirrusSearch ) ) {
 			throw new \RuntimeException( 'Could not create cirrus engine' );
 		}
+
+		if ( $this->getUser()->getName() === $engine->getConfig()->get( "CirrusSearchStreamingUpdaterUsername" ) ) {
+			// Bypass poolcounter protection for the internal cirrus user
+			$this->doExecute( $engine );
+		} else {
+			// Protect against too many concurrent requests
+			// Use a global key this API is internal and could only be useful for manual debugging purposes
+			// so no real need to have it on per user basis.
+			$worker = new PoolCounterWorkViaCallback( 'CirrusSearch-QueryBuildDocument', 'QueryBuildDocument',
+				[
+					'doWork' => function () use ( $engine ) {
+						return $this->doExecute( $engine );
+					},
+					'error' => function (): never {
+						$this->dieWithError( 'apierror-concurrency-limit' );
+					},
+				]
+			);
+			$worker->execute();
+		}
+	}
+
+	public function doExecute( CirrusSearch $engine ) {
+		$result = $this->getResult();
+		$services = MediaWikiServices::getInstance();
 
 		$builders = $this->getParameter( 'builders' );
 		$profile = $this->getParameter( 'limiterprofile' );
@@ -72,7 +85,13 @@ class QueryBuildDocument extends ApiQueryBase {
 						$revId => [ 'revid' => $revId, 'missing' => true ]
 					] );
 				} elseif ( $rev->audienceCan( $rev::DELETED_TEXT, $rev::FOR_PUBLIC ) ) {
-					$pages[$pageId] = $rev;
+					// Redirects are not directly represented as searchable documents.
+					// They are unrenderable.
+					if ( $rev->getContent( SlotRecord::MAIN )->isRedirect() ) {
+						$this->markUnrenderable( $result, $pageId );
+					} else {
+						$pages[$pageId] = $rev;
+					}
 				} else {
 					// While the user might have permissions, we want to limit
 					// what could possibly be indexed to that which is public.
@@ -87,7 +106,12 @@ class QueryBuildDocument extends ApiQueryBase {
 			}
 		} else {
 			foreach ( $this->getPageSet()->getGoodPages() as $pageId => $title ) {
-				$pages[$pageId] = $wikiPageFactory->newFromTitle( $title );
+				$page = $wikiPageFactory->newFromTitle( $title );
+				if ( $page->isRedirect() ) {
+					$this->markUnrenderable( $result, $pageId );
+				} else {
+					$pages[$pageId] = $page;
+				}
 			}
 		}
 
@@ -100,7 +124,8 @@ class QueryBuildDocument extends ApiQueryBase {
 			new DocumentSizeLimiter( $searchConfig->getProfileService()
 				->loadProfile( SearchProfileService::DOCUMENT_SIZE_LIMITER, SearchProfileService::CONTEXT_DEFAULT, $profile ) ),
 			$services->getTitleFormatter(),
-			$services->getWikiPageFactory()
+			$services->getWikiPageFactory(),
+			$services->getTitleFactory()
 		);
 		$baseMetadata = [];
 		$clusterGroup = $searchConfig->getClusterAssignment()->getCrossClusterName();
@@ -133,6 +158,12 @@ class QueryBuildDocument extends ApiQueryBase {
 
 				$result->addValue( [ 'query', 'pages', $pageId ],
 					'cirrusbuilddoc_metadata', $metadata );
+				$result->addValue(
+					[ 'query', 'pages', $pageId ],
+					'cirrusbuilddoc_comment',
+					'The CirrusDoc format is meant for internal use by CirrusSearch for debugging or queries, '
+					. 'it might change at any time without notice'
+				);
 			}
 		}
 	}
@@ -155,6 +186,7 @@ class QueryBuildDocument extends ApiQueryBase {
 		return $result;
 	}
 
+	/** @inheritDoc */
 	public function getAllowedParams() {
 		return [
 			'builders' => [
@@ -174,6 +206,14 @@ class QueryBuildDocument extends ApiQueryBase {
 	}
 
 	/**
+	 * Mark as internal. This isn't meant to be used by normal api users
+	 * @return bool
+	 */
+	public function isInternal() {
+		return true;
+	}
+
+	/**
 	 * @see ApiBase::getExamplesMessages
 	 * @return array
 	 */
@@ -182,6 +222,17 @@ class QueryBuildDocument extends ApiQueryBase {
 			'action=query&prop=cirrusbuilddoc&titles=Main_Page' =>
 				'apihelp-query+cirrusbuilddoc-example'
 		];
+	}
+
+	/**
+	 * @param ApiResult $result Result obect to write to
+	 * @param int $pageId The page to mark unrenderable
+	 */
+	private function markUnrenderable( ApiResult $result, int $pageId ) {
+		$result->addValue(
+			[ 'query', 'pages', $pageId ],
+			'unrenderable', true
+		);
 	}
 
 }

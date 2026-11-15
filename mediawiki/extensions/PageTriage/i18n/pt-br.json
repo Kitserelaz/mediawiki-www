@@ -2,6 +2,7 @@
 	"@metadata": {
 		"authors": [
 			"Cainamarques",
+			"EGobi",
 			"Eduardo Addad de Oliveira",
 			"Eduardoaddad",
 			"Hamilton Abreu",
@@ -10,14 +11,13 @@
 			"Lc97",
 			"Luckas",
 			"Luckas Blade",
+			"McDutchie",
 			"Mello25",
 			"OTAVIO1981",
 			"Pedrofariasm",
 			"Re demz",
-			"YuriNikolai",
-			"McDutchie",
 			"TheEduGobi",
-			"EGobi"
+			"YuriNikolai"
 		]
 	},
 	"pagetriage": "Triagem de Páginas",
@@ -100,6 +100,8 @@
 	"pagetriage-filter-article": "Artigo",
 	"pagetriage-filter-user-heading": "Foram criados por",
 	"pagetriage-filter-username": "Nome de usuário",
+	"pagetriage-filter-keyword": "Pesquisa por palavra-chave",
+	"pagetriage-filter-keyword-placeholder": "Por exemplo: Olimpíadas",
 	"pagetriage-filter-tag-heading": "Com a etiqueta:",
 	"pagetriage-filter-second-show-heading": "Que:",
 	"pagetriage-filter-no-categories": "Não têm categorias",
@@ -138,6 +140,7 @@
 	"pagetriage-filter-stat-learners": "De aprendizes",
 	"pagetriage-filter-stat-blocked": "De usuários bloqueados",
 	"pagetriage-filter-stat-username": "Do usuário: $1",
+	"pagetriage-filter-stat-keyword": "Tem palavra-chave: $1",
 	"pagetriage-filter-stat-namespace": "Espaço nominal",
 	"pagetriage-filter-stat-predicted-class": "Classe prevista",
 	"pagetriage-filter-stat-predicted-class-stub": "Provisória",
@@ -207,6 +210,7 @@
 	"pagetriage-tags-param-free-no-label": "Não",
 	"pagetriage-tags-param-missing-required": "Está faltando um parâmetro obrigatório da etiqueta $1.",
 	"pagetriage-tags-talk-page-notify-topic-title": "Formas de melhorar $1",
+	"pagetriage-new-page-feed-show-ip": "Mostrar IP",
 	"log-name-pagetriage-curation": "Registro da curadoria de páginas",
 	"log-description-pagetriage-curation": "Este é o registro de ações tomadas na barra de ferramentas da curadoria de páginas.",
 	"logentry-pagetriage-curation-reviewed": "$1 {{GENDER:$2|marcou}} $3 como revisada",
@@ -217,7 +221,6 @@
 	"log-description-pagetriage-copyvio": "Este é o registo dos eventos recebidos através da API de infringências de direitos de autor, da triagem de páginas.",
 	"logentry-pagetriage-copyvio-insert": "$1 {{GENDER:$2|marcou}} a revisão $4 de $3 como um potencial infringência de direitos de autor",
 	"logentry-pagetriage-curation-enqueue": "$1 {{GENDER:$2|adicionou}} $3 para o feed de novas páginas",
-	"log-action-filter-pagetriage-curation-review": "Revisando",
 	"pagetriage-tags-edit-summary": "Adicionou etiquetas à página utilizando $1 ($2)",
 	"pagetriage-del-edit-summary": "Nomeou a página para eliminação utilizando $1 ($2)",
 	"pagetriage-info-title": "Informação da página",

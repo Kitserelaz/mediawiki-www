@@ -61,7 +61,5 @@
 	"cite-ve-referenceslist-missingref-in-list": "Ez a forráshivatkozás egy sablonban vagy más generált blokkban van definiálva, és jelenleg csak forrásnézetben szerkeszthető.",
 	"cite-ve-referenceslist-missingreflist": "Ez a forráshivatkozás-lista egy sablonnal készült.",
 	"cite-ve-toolbar-group-label": "Forráshivatkozás",
-	"cite-ve-othergroup-item": "$1 hivatkozás",
-	"cite-ve-dialog-reference-extend-long-tool": "Ezen forráshivatkozás újrafelhasználása további részletekkel",
-	"cite-ve-dialog-reference-useexisting-long-tool": "Ezen forráshivatkozás újrafelhasználása"
+	"cite-ve-othergroup-item": "$1 hivatkozás"
 }

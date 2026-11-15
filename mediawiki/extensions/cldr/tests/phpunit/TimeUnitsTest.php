@@ -1,7 +1,5 @@
 <?php
 
-use MediaWiki\MediaWikiServices;
-
 /**
  * Tests for TimeUnits
  * @author Santhosh Thottingal
@@ -21,7 +19,7 @@ class TimeUnitsTest extends MediaWikiIntegrationTestCase {
 	 * @param string $desc Description
 	 */
 	public function testTimeUnit( $language, $tsTime, $currentTime, $expectedOutput, $desc ) {
-		$lang = MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage( $language );
+		$lang = $this->getServiceContainer()->getLanguageFactory()->getLanguage( $language );
 		$tsTime = new MWTimestamp( $tsTime );
 		$currentTime = new MWTimestamp( $currentTime );
 		$this->assertEquals(
@@ -158,6 +156,22 @@ class TimeUnitsTest extends MediaWikiIntegrationTestCase {
 				'20120716193700',
 				'21 വർഷം മുമ്പ്',
 				'Different year',
+			],
+			[
+				// pt_PT.xml overrides some patterns but defines no 'minute-past-one', so this only
+				// works if the data inherited from pt.xml is resolved at build time (T36760)
+				'pt',
+				'20121006173100',
+				'20121006173200',
+				'há 1 minuto',
+				'"1 minute ago" in European Portuguese',
+			],
+			[
+				'pt',
+				'19910130151500',
+				'20120716193700',
+				'há 21 anos',
+				'Different year in European Portuguese',
 			],
 		];
 	}

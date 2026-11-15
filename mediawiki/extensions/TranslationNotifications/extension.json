@@ -13,7 +13,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "specialpage",
 	"requires": {
-		"MediaWiki": ">= 1.43",
+		"MediaWiki": ">= 1.46",
 		"extensions": {
 			"MassMessage": "*",
 			"Translate": "*"
@@ -42,7 +42,18 @@
 	},
 	"JobClasses": {
 		"TranslationNotificationsEmailJob": "MediaWiki\\Extension\\TranslationNotifications\\Jobs\\TranslationNotificationsEmailJob",
-		"TranslationNotificationsSubmitJob": "MediaWiki\\Extension\\TranslationNotifications\\Jobs\\TranslationNotificationsSubmitJob"
+		"TranslationNotificationsSubmitJob": {
+			"class": "MediaWiki\\Extension\\TranslationNotifications\\Jobs\\TranslationNotificationsSubmitJob",
+			"services": [
+				"UserOptionsManager",
+				"JobQueueGroupFactory",
+				"LanguageNameUtils",
+				"LanguageFactory",
+				"UserFactory",
+				"DBLoadBalancerFactory",
+				"MainConfig"
+			]
+		}
 	},
 	"LogTypes": [
 		"notifytranslators"
@@ -85,11 +96,17 @@
 				"translationnotifications-languages-to-not-notify",
 				"translationnotifications-tes-discouraged-group",
 				"translate-mgs-invalid-group"
-			],
+			]
+		},
+		"ext.translationnotifications.notifytranslators.styles": {
 			"styles": "resources/ext.translationnotifications.notifytranslators.less"
 		},
 		"ext.translationnotifications.translatorsignup": {
-			"scripts": "resources/ext.translationnotifications.translatorsignup.js"
+			"scripts": "resources/ext.translationnotifications.translatorsignup.js",
+			"styles": "resources/ext.translationnotifications.translatorsignup.less",
+			"messages": [
+				"translationnotifications-nolang"
+			]
 		}
 	},
 	"ResourceFileModulePaths": {
@@ -97,10 +114,7 @@
 		"remoteExtPath": "TranslationNotifications"
 	},
 	"Hooks": {
-		"GetPreferences": "main",
-		"BeforeCreateEchoEvent": [
-			"MediaWiki\\Extension\\TranslationNotifications\\Hooks::onBeforeCreateEchoEvent"
-		]
+		"GetPreferences": "main"
 	},
 	"HookHandlers": {
 		"main": {
@@ -121,6 +135,29 @@
 		},
 		"TranslationNotificationsAlwaysHttpsInEmail": {
 			"value": false
+		}
+	},
+	"attributes": {
+		"Echo": {
+			"NotificationCategories": {
+				"translationnotifications": {
+					"title": "echo-category-title-translationnotifications",
+					"tooltip": "echo-pref-tooltip-inactive-unsubscribe"
+				}
+			},
+			"Notifications": {
+				"translationnotifications-unsubscribed": {
+					"category": "translationnotifications",
+					"group": "neutral",
+					"section": "alert",
+					"presentation-model": "MediaWiki\\Extension\\TranslationNotifications\\UnsubscribeInactiveUsersPresentationModel",
+					"user-locators": [
+						[
+							"MediaWiki\\Extension\\TranslationNotifications\\UnsubscribeInactiveUsersPresentationModel::locateUsers"
+						]
+					]
+				}
+			}
 		}
 	},
 	"manifest_version": 2

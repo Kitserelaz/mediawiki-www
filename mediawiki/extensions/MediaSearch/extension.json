@@ -12,7 +12,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "wikibase",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"AutoloadNamespaces": {
 		"MediaWiki\\Extension\\MediaSearch\\": "src/"
@@ -21,7 +21,7 @@
 		"MediaWiki\\Extension\\MediaSearch\\Tests\\MediaWiki\\": "tests/phpunit/mediawiki/"
 	},
 	"ConfigRegistry": {
-		"MediaSearch": "GlobalVarConfig::newInstance"
+		"MediaSearch": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"config": {
 		"MediaSearchExternalEntitySearchBaseUri": {
@@ -122,6 +122,7 @@
 				"resources/components/DidYouMean.vue",
 				"resources/components/SearchError.vue",
 				"resources/components/SearchFilters.vue",
+				"resources/components/SearchWarnings.vue",
 				"resources/components/NamespaceFilterDialog.vue",
 				"resources/components/UserNotice.vue",
 				"resources/models/SearchFilter.js",
@@ -164,7 +165,7 @@
 						"cdxIconUnStar",
 						"cdxIconVolumeUp",
 						"cdxIconUserAvatar",
-						"cdxIconWikiText"
+						"cdxIconWikitext"
 					]
 				}
 			],
@@ -230,7 +231,6 @@
 			],
 			"dependencies": [
 				"mediasearch.styles",
-				"mediawiki.Uri",
 				"mediawiki.jqueryMsg",
 				"mediawiki.api",
 				"mediawiki.storage",

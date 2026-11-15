@@ -2,6 +2,8 @@
 
 declare( strict_types = 1 );
 
+// @phan-file-suppress PhanPluginNeverReturnMethod
+
 namespace WikibaseQuality\ConstraintReport\ConstraintCheck\Helper;
 
 use LogicException;
@@ -20,7 +22,6 @@ use WikibaseQuality\ConstraintReport\ConstraintCheck\Cache\CachedQueryResults;
  * See T196053#4514308 for details.
  *
  * @license GPL-2.0-or-later
- * @phan-file-suppress PhanPluginNeverReturnMethod
  */
 class DummySparqlHelper extends SparqlHelper {
 
@@ -28,11 +29,12 @@ class DummySparqlHelper extends SparqlHelper {
 		// no parent::__construct() call
 	}
 
-	public function hasType( string $id, array $classes ): CachedBool {
+	public function hasType( EntityId $id, array $classes ): CachedBool {
 		throw new LogicException( 'methods of this class should never be called' );
 	}
 
 	public function findEntitiesWithSameStatement(
+		EntityId $entityId,
 		Statement $statement,
 		array $separators
 	): CachedEntityIds {

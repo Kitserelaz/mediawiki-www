@@ -88,7 +88,6 @@ class CargoFeedFormat extends CargoDeferredFormat {
 	 * Get the iCalendar format output.
 	 * @param WebRequest $request
 	 * @param CargoSQLQuery[] $sqlQueries
-	 * @return string
 	 */
 	public function outputFeed( WebRequest $request, $sqlQueries ) {
 		global $wgOut;
@@ -107,10 +106,7 @@ class CargoFeedFormat extends CargoDeferredFormat {
 		$parser = $services->getParser();
 		$pageTitle = $parser->getTitle();
 		$parserOptions = ParserOptions::newFromAnon();
-		if ( method_exists( $parserOptions, 'setSuppressSectionEditLinks' ) ) {
-			// MW 1.42+
-			$parserOptions->setSuppressSectionEditLinks();
-		}
+		$parserOptions->setSuppressSectionEditLinks();
 		$contentRenderer = $services->getContentRenderer();
 		$items = [];
 		foreach ( $sqlQueries as $sqlQuery ) {

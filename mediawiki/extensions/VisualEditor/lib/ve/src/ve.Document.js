@@ -104,7 +104,7 @@ ve.Document.prototype.getBranchNodeFromOffset = function ( offset ) {
  * @throws {Error} Invalid end offset
  * @throws {Error} Failed to select any nodes
  */
-ve.Document.prototype.selectNodes = function ( range, mode ) {
+ve.Document.prototype.selectNodes = function ( range, mode = 'leaves' ) {
 	const doc = this.getDocumentNode(),
 		start = range.start,
 		end = range.end,
@@ -121,7 +121,6 @@ ve.Document.prototype.selectNodes = function ( range, mode ) {
 		currentFrame = stack[ 0 ],
 		startFound = false;
 
-	mode = mode || 'leaves';
 	if ( mode !== 'leaves' && mode !== 'branches' && mode !== 'covered' && mode !== 'siblings' ) {
 		throw new Error( 'Invalid mode: ' + mode );
 	}
@@ -140,7 +139,7 @@ ve.Document.prototype.selectNodes = function ( range, mode ) {
 			node: doc,
 			range: new ve.Range( start, end ),
 			index: 0,
-			nodeRange: nodeRange,
+			nodeRange,
 			nodeOuterRange: nodeRange
 		} ];
 	}
@@ -228,7 +227,7 @@ ve.Document.prototype.selectNodes = function ( range, mode ) {
 			) {
 				// Descend into node
 				currentFrame = {
-					node: node,
+					node,
 					index: 0,
 					startOffset: left
 				};
@@ -242,7 +241,7 @@ ve.Document.prototype.selectNodes = function ( range, mode ) {
 			} else if ( !endInside ) {
 				// All of node is covered
 				retval.push( {
-					node: node,
+					node,
 					// No 'range' because the entire node is covered
 					index: currentFrame.index,
 					nodeRange: new ve.Range( left, right ),
@@ -256,7 +255,7 @@ ve.Document.prototype.selectNodes = function ( range, mode ) {
 			} else {
 				// Part of node is covered
 				return [ {
-					node: node,
+					node,
 					range: new ve.Range( start, end ),
 					index: currentFrame.index,
 					nodeRange: new ve.Range( left, right ),
@@ -272,7 +271,7 @@ ve.Document.prototype.selectNodes = function ( range, mode ) {
 				( mode !== 'branches' || node.canHaveChildrenNotContent() ) ) {
 				// Descend into node
 				currentFrame = {
-					node: node,
+					node,
 					index: 0,
 					startOffset: left
 				};
@@ -285,7 +284,7 @@ ve.Document.prototype.selectNodes = function ( range, mode ) {
 			} else {
 				// node is a leaf node and the range is entirely inside it
 				retval = [ {
-					node: node,
+					node,
 					range: new ve.Range( start, end ),
 					index: currentFrame.index,
 					nodeRange: new ve.Range( left, right ),
@@ -309,7 +308,7 @@ ve.Document.prototype.selectNodes = function ( range, mode ) {
 				// node is a branch node and the start is inside it
 				// Descend into it
 				currentFrame = {
-					node: node,
+					node,
 					index: 0,
 					startOffset: left
 				};
@@ -323,7 +322,7 @@ ve.Document.prototype.selectNodes = function ( range, mode ) {
 				// node is a leaf node and the start is inside it
 				// Add to retval and keep going
 				retval.push( {
-					node: node,
+					node,
 					range: new ve.Range( start, right ),
 					index: currentFrame.index,
 					nodeRange: new ve.Range( left, right ),
@@ -346,7 +345,7 @@ ve.Document.prototype.selectNodes = function ( range, mode ) {
 			) {
 				// Descend into node
 				currentFrame = {
-					node: node,
+					node,
 					index: 0,
 					startOffset: left
 				};
@@ -359,7 +358,7 @@ ve.Document.prototype.selectNodes = function ( range, mode ) {
 			} else {
 				// All of node is covered
 				retval.push( {
-					node: node,
+					node,
 					// No 'range' because the entire node is covered
 					index: currentFrame.index,
 					nodeRange: new ve.Range( left, right ),
@@ -380,7 +379,7 @@ ve.Document.prototype.selectNodes = function ( range, mode ) {
 				// node is a branch node and the end is inside it
 				// Descend into it
 				currentFrame = {
-					node: node,
+					node,
 					index: 0,
 					startOffset: left
 				};
@@ -394,7 +393,7 @@ ve.Document.prototype.selectNodes = function ( range, mode ) {
 				// node is a leaf node and the end is inside it
 				// Add to retval and return
 				retval.push( {
-					node: node,
+					node,
 					range: new ve.Range( left, end ),
 					index: currentFrame.index,
 					nodeRange: new ve.Range( left, right ),
@@ -417,7 +416,7 @@ ve.Document.prototype.selectNodes = function ( range, mode ) {
 			) {
 				// Descend into node
 				currentFrame = {
-					node: node,
+					node,
 					index: 0,
 					startOffset: left
 				};
@@ -430,7 +429,7 @@ ve.Document.prototype.selectNodes = function ( range, mode ) {
 			} else {
 				// All of node is covered
 				retval.push( {
-					node: node,
+					node,
 					// No 'range' because the entire node is covered
 					index: currentFrame.index,
 					nodeRange: new ve.Range( left, right ),

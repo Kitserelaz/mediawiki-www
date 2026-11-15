@@ -1,7 +1,6 @@
 'use strict';
 
-var ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget,
-	BestPractices;
+const ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget;
 
 /**
  * This builds on the ExampleComponentWidget & TemplatingFetaures
@@ -16,7 +15,7 @@ var ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget,
  * @constructor
  * @param {Object} config
  */
-BestPractices = function BestPracticesConstructor( config ) {
+const BestPractices = function BestPracticesConstructor( config ) {
 	config = config || {};
 
 	BestPractices.super.call( this, config );
@@ -69,7 +68,7 @@ BestPractices.prototype.getData = function () {
  * @return {jQuery.Promise<jQuery>}
  */
 BestPractices.prototype.setData = function ( data ) {
-	var self = this,
+	const self = this,
 		// some way of determining whether or not the new data is different than
 		// the current state of the component
 		// this could be implemented in any way that makes sense
@@ -79,7 +78,7 @@ BestPractices.prototype.setData = function ( data ) {
 		some: data.some,
 		relevant: data.relevant,
 		data: data.data
-	} ).then( function ( $element ) {
+	} ).then( ( $element ) => {
 		if ( hasChanges ) {
 			self.emit( 'change' );
 		}

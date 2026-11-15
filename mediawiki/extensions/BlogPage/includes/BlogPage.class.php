@@ -1,9 +1,5 @@
 <?php
-/**
- * Class for handling the viewing of pages in the NS_BLOG namespace.
- *
- * @file
- */
+
 use MediaWiki\Content\TextContent;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
@@ -11,6 +7,9 @@ use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
 use Wikimedia\LightweightObjectStore\ExpirationAwareness;
 
+/**
+ * Class for handling the viewing of pages in the NS_BLOG namespace.
+ */
 class BlogPage extends Article {
 
 	/** @var MediaWiki\Title\Title|null */
@@ -89,6 +88,7 @@ class BlogPage extends Article {
 		return '';
 	}
 
+	/** @inheritDoc */
 	public function view() {
 		global $wgBlogPageDisplay;
 
@@ -342,7 +342,7 @@ class BlogPage extends Article {
 		return $output;
 	}
 
-	public function displayMultipleAuthorsMessage() {
+	public function displayMultipleAuthorsMessage(): string {
 		$count = 0;
 
 		$authors = '';
@@ -482,23 +482,45 @@ class BlogPage extends Article {
 			$categoryTitle = Title::newFromText(
 				 wfMessage( 'blog-by-user-category', $user_name )->text()
 			);
-			$res = $dbr->select(
-				[ 'page', 'categorylinks' ],
-				[ 'DISTINCT(page_id) AS page_id', 'page_title' ],
-				/* WHERE */[
-					'cl_to' => [ $categoryTitle->getDBkey() ],
-					'page_namespace' => NS_BLOG
-				],
-				__METHOD__,
-				[
-					'ORDER BY' => 'page_id DESC',
-					'LIMIT' => 4
-				],
-				[
-					'categorylinks' => [ 'INNER JOIN', 'cl_from = page_id' ]
-				]
-			);
-
+			// Get the name of the newest 4 blogs written by the user.
+			if ( version_compare( MW_VERSION, '1.44', '>=' ) ) {
+				// VERSIONSHIM: 1.44+
+				$res = $dbr->select(
+					[ 'page', 'categorylinks', 'linktarget' ],
+					[ 'DISTINCT(page_id) AS page_id', 'page_title' ],
+					/* WHERE */[
+						'lt_title' => [ $categoryTitle->getDBkey() ],
+						'page_namespace' => NS_BLOG
+					],
+					__METHOD__,
+					[
+						'ORDER BY' => 'page_id DESC',
+						'LIMIT' => 4
+					],
+					[
+						'categorylinks' => [ 'INNER JOIN', 'cl_from = page_id' ],
+						'linktarget' => [ 'INNER JOIN', 'cl_target_id = lt_id' ]
+					]
+				);
+			} else {
+				// 1.43 LTS support
+				$res = $dbr->select(
+					[ 'page', 'categorylinks' ],
+					[ 'DISTINCT(page_id) AS page_id', 'page_title' ],
+					/* WHERE */[
+						'cl_to' => [ $categoryTitle->getDBkey() ],
+						'page_namespace' => NS_BLOG
+					],
+					__METHOD__,
+					[
+						'ORDER BY' => 'page_id DESC',
+						'LIMIT' => 4
+					],
+					[
+						'categorylinks' => [ 'INNER JOIN', 'cl_from = page_id' ]
+					]
+				);
+			}
 			$array_count = 0;
 
 			foreach ( $res as $row ) {

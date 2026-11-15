@@ -5,10 +5,9 @@ namespace CirrusSearch;
 use CirrusSearch\Profile\SearchProfileServiceFactoryFactory;
 use MediaWiki\Config\Config;
 use MediaWiki\Language\Language;
-use MediaWiki\MainConfigNames;
+use MediaWiki\Language\MessageCache;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\WikiMap\WikiMap;
-use Wikimedia\ObjectCache\HashBagOStuff;
 use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\TestingAccessWrapper;
 
@@ -16,22 +15,8 @@ use Wikimedia\TestingAccessWrapper;
  * @covers \CirrusSearch\Util
  */
 class UtilIntegrationTest extends CirrusIntegrationTestCase {
-	/**
-	 * Create test local cache
-	 * @return WANObjectCache
-	 */
-	private function makeLocalCache() {
-		$this->overrideConfigValues( [
-			MainConfigNames::MainCacheType => 'UtilTest',
-			MainConfigNames::ObjectCaches => [ 'UtilTest' => [ 'class' => HashBagOStuff::class ] ],
-		] );
-		$services = MediaWikiServices::getInstance();
-		$services->resetServiceForTesting( 'MainWANObjectCache' );
-		$services->redefineService( 'MainWANObjectCache', static function () {
-			return new WANObjectCache( [ 'cache' => new HashBagOStuff() ] );
-		} );
-
-		return $services->getMainWANObjectCache();
+	private function getWanCache(): WANObjectCache {
+		return $this->getServiceContainer()->getMainWANObjectCache();
 	}
 
 	/**
@@ -48,7 +33,7 @@ class UtilIntegrationTest extends CirrusIntegrationTestCase {
 	 * @covers \CirrusSearch\Util::getDefaultBoostTemplates
 	 */
 	public function testgetDefaultBoostTemplates() {
-		$cache = $this->makeLocalCache();
+		$cache = $this->getWanCache();
 		$this->putDataIntoCache( $cache, 'ruwiki' );
 		$this->putDataIntoCache( $cache, 'cywiki' );
 
@@ -74,7 +59,7 @@ class UtilIntegrationTest extends CirrusIntegrationTestCase {
 		$config = $this->getHashConfig( 'ruwiki', $configValues );
 
 		// On wiki config should override config templates
-		$cache = $this->makeLocalCache();
+		$cache = $this->getWanCache();
 		$this->putDataIntoCache( $cache, 'ruwiki' );
 		$ru = Util::getDefaultBoostTemplates( $config );
 		$this->assertNotEquals( $configValues['CirrusSearchBoostTemplates'], $ru );
@@ -92,7 +77,7 @@ class UtilIntegrationTest extends CirrusIntegrationTestCase {
 		$config = $this->getHashConfig( WikiMap::getCurrentWikiId(), $configValues );
 
 		// On wiki config should override config templates
-		$cache = $this->makeLocalCache();
+		$cache = $this->getWanCache();
 		$this->putDataIntoCache( $cache, WikiMap::getCurrentWikiId() );
 
 		$ru = Util::getDefaultBoostTemplates( $config );
@@ -112,7 +97,7 @@ class UtilIntegrationTest extends CirrusIntegrationTestCase {
 		];
 		$config = $this->getHashConfig( 'ruwiki', $configValues );
 
-		$cache = $this->makeLocalCache();
+		$cache = $this->getWanCache();
 		$this->putDataIntoCache( $cache, 'ruwiki' );
 
 		$ru = Util::getDefaultBoostTemplates( $config );
@@ -122,15 +107,10 @@ class UtilIntegrationTest extends CirrusIntegrationTestCase {
 	public function testgetDefaultBoostTemplatesLocal() {
 		$services = MediaWikiServices::getInstance();
 		$services->resetServiceForTesting( 'MessageCache' );
-		$services->redefineService(
-			'MessageCache',
-			function () {
-				return $this->getMockCache();
-			}
-		);
+		$services->redefineService( 'MessageCache', $this->getMockCache( ... ) );
 		TestingAccessWrapper::newFromClass( Util::class )->defaultBoostTemplates = null;
 
-		$cache = $this->makeLocalCache();
+		$cache = $this->getWanCache();
 		$config = $this->getHashConfig( WikiMap::getCurrentWikiId() );
 		$key = $cache->makeGlobalKey( 'cirrussearch-boost-templates', $config->getWikiId() );
 
@@ -146,7 +126,7 @@ class UtilIntegrationTest extends CirrusIntegrationTestCase {
 		$cur = Util::getDefaultBoostTemplates( $config );
 		reset( $cur );
 		$this->assertStringContainsString(
-			' in ' . $services->getContentLanguage()->getCode(), key( $cur )
+			' in ' . $services->getContentLanguageCode()->toString(), key( $cur )
 		);
 
 		// Check we cached it
@@ -159,9 +139,10 @@ class UtilIntegrationTest extends CirrusIntegrationTestCase {
 	 * @return MessageCache
 	 */
 	private function getMockCache() {
-		$mock = $this->createMock( \MessageCache::class );
-		$mock->method( 'get' )->willReturnCallback( static function ( $key, $useDB, Language $lang ) {
-			return "This is $key in {$lang->getCode()}|100%";
+		$mock = $this->createMock( MessageCache::class );
+		$mock->method( 'get' )->willReturnCallback( static function ( $key, $useDB, $lang ) {
+			$langCode = $lang instanceof Language ? $lang->getCode() : $lang;
+			return "This is $key in $langCode|100%";
 		} );
 		return $mock;
 	}
@@ -169,49 +150,6 @@ class UtilIntegrationTest extends CirrusIntegrationTestCase {
 	protected function tearDown(): void {
 		TestingAccessWrapper::newFromClass( Util::class )->defaultBoostTemplates = null;
 		parent::tearDown();
-	}
-
-	/**
-	 * @dataProvider provideTestIdentifyNamespace
-	 * @param string $namespace
-	 * @param int|bool $expected
-	 * @param string $method
-	 */
-	public function testIdentifyNamespace( $namespace, $expected, $method ) {
-		$this->overrideConfigValues( [
-			MainConfigNames::ExtraNamespaces => [
-				100 => 'Maçon',
-				101 => 'Cédille',
-				102 => 'Groß',
-				103 => 'Norræn goðafræði',
-				104 => 'لَحَم', // لحم
-				105 => 'Thảo_luận',
-			],
-			MainConfigNames::NamespaceAliases => [
-				'Mañsoner' => 100,
-			],
-		] );
-		$language = $this->getServiceContainer()->getContentLanguage();
-		$this->assertEquals( $expected, Util::identifyNamespace( $namespace, $method, $language ) );
-	}
-
-	public static function provideTestIdentifyNamespace() {
-		return [
-			'simple' => [ 'macon', 100, 'naive' ],
-			'simple utr30' => [ 'macon', 100, 'utr30' ],
-			'both sides' => [ 'mäcon', 100, 'naive' ],
-			'both sides utr30' => [ 'mäcon', 100, 'utr30' ],
-			'simple alias' => [ 'mansoner', 100, 'naive' ],
-			'simple alias utr30' => [ 'mansoner', 100, 'utr30' ],
-			'no match' => [ 'maçons', false, 'naive' ],
-			'no match utr30' => [ 'maçons', false, 'utr30' ],
-			'arabic' => [ 'لحم', 104, 'naive' ],
-			'arabic utr30' => [ 'لحم', 104, 'utr30' ],
-			'gods are not naive' => [ 'norræn godafræði', false, 'naive' ],
-			'gods are weak with utr30' => [ 'norraen godafraeði', 103, 'utr30' ],
-			'case folding can be gross' => [ 'gross', 102, 'naive' ],
-			'case folding can be gross even with utr30' => [ 'gross', 102, 'utr30' ]
-		];
 	}
 
 	/**

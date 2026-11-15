@@ -3,13 +3,14 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageBundleTranslation;
 
-use Job;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroupSubscription;
 use MediaWiki\Extension\Translate\MessageLoading\RebuildMessageIndexJob;
 use MediaWiki\Extension\Translate\Services;
 use MediaWiki\Extension\Translate\Statistics\MessageGroupStats;
 use MediaWiki\Extension\Translate\Synchronization\UpdateMessageJob;
+use MediaWiki\JobQueue\Job;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
@@ -40,7 +41,7 @@ class UpdateMessageBundleJob extends Job {
 		$mwInstance = MediaWikiServices::getInstance();
 		$lb = $mwInstance->getDBLoadBalancerFactory();
 		$jobQueue = $mwInstance->getJobQueueGroup();
-		$logger = LoggerFactory::getInstance( 'Translate.MessageBundle' );
+		$logger = LoggerFactory::getInstance( LogNames::MESSAGE_BUNDLE );
 		$messageIndex = Services::getInstance()->getMessageIndex();
 		$messageGroupSubscription = Services::getInstance()->getMessageGroupSubscription();
 
@@ -89,15 +90,11 @@ class UpdateMessageBundleJob extends Job {
 		foreach ( $messages as $key => $value ) {
 			$title = Title::makeTitle( $namespace, "$key/$code" );
 			$subscriptionState = $this->getMessageSubscriptionState( $previousMessages, $newKeys, $key, $value );
-			$fuzzy = $subscriptionState === null;
+			$fuzzy = $subscriptionState === MessageGroupSubscription::STATE_UPDATED;
 			$jobs[] = UpdateMessageJob::newJob( $title, $value, $fuzzy );
 
 			if ( $subscriptionState ) {
-				$messageGroupSubscription->queueMessage(
-					$title,
-					$subscriptionState,
-					[ $groupId ],
-				);
+				$messageGroupSubscription->queueMessage( $title, $subscriptionState, $groupId );
 			}
 		}
 		$jobQueue->push( $jobs );

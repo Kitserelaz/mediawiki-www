@@ -5,22 +5,9 @@ namespace CirrusSearch\Maintenance;
 use MediaWiki\Config\ConfigException;
 
 /**
- * Builds one elasticsearch analyzer to add to an analysis config array.
+ * Builds one search analyzer to add to an analysis config array.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class AnalyzerBuilder {
 	/**
@@ -65,6 +52,9 @@ class AnalyzerBuilder {
 
 	/** @var string|null name of char filter mapping digits (using $langZero) */
 	private $numCharMapName;
+
+	/** @var string|null name of char filter for cleaning up invisibles */
+	private $invisCharMapName;
 
 	/** @var bool is elision processing case INsensitive? */
 	private $elisionArticleCase = true;
@@ -139,10 +129,6 @@ class AnalyzerBuilder {
 		$this->icuEnabled = $icuEnabled;
 	}
 
-	/**
-	 * @param string $langName
-	 * @return self
-	 */
 	public function withLangName( string $langName ): self {
 		$this->langName = $langName;
 		return $this;
@@ -157,10 +143,6 @@ class AnalyzerBuilder {
 		return $this;
 	}
 
-	/**
-	 * @param string $tokenizer
-	 * @return self
-	 */
 	public function withTokenizer( string $tokenizer ): self {
 		$this->tokenizer = $tokenizer;
 		return $this;
@@ -184,7 +166,7 @@ class AnalyzerBuilder {
 	public function withCharMap( array $mappings, ?string $name = null, bool $limited = false ): self {
 		$this->charMap = $mappings;
 		$this->charMapName = $name ?? "{$this->langName}_charfilter";
-		$this->charMapLimited = false;
+		$this->charMapLimited = $limited;
 		return $this;
 	}
 
@@ -195,6 +177,15 @@ class AnalyzerBuilder {
 	 */
 	public function withLimitedCharMap( array $mappings, ?string $name = null ): self {
 		return $this->withCharMap( $mappings, $name, true );
+	}
+
+	/**
+	 * @param string|null $name
+	 * @return self
+	 */
+	public function withInvisCharMap( ?string $name = 'invis_cleanup' ): self {
+		$this->invisCharMapName = $name;
+		return $this;
 	}
 
 	/**
@@ -293,11 +284,6 @@ class AnalyzerBuilder {
 		return $this;
 	}
 
-	/**********
-	 * The with.., omit.., and insert.. methods below are only used by unpacked analyzers
-	 */
-
-	/** @return self */
 	public function withUnpackedAnalyzer(): self {
 		$this->unpacked = true;
 		return $this;
@@ -343,42 +329,36 @@ class AnalyzerBuilder {
 		return $this;
 	}
 
-	/** @return self */
 	public function withLightStemmer(): self {
 		$this->unpackedCheck();
 		$this->stemmerLang = "light_{$this->langName}";
 		return $this;
 	}
 
-	/** @return self */
 	public function omitStemmer(): self {
 		$this->unpackedCheck();
 		$this->useStemmer = false;
 		return $this;
 	}
 
-	/** @return self */
 	public function withAsciifolding(): self {
 		$this->unpackedCheck();
 		$this->folding = 'asciifolding';
 		return $this;
 	}
 
-	/** @return self */
 	public function omitFolding(): self {
 		$this->unpackedCheck();
 		$this->folding = '';
 		return $this;
 	}
 
-	/** @return self */
 	public function withRemoveEmpty(): self {
 		$this->unpackedCheck();
 		$this->removeEmpty = 'remove_empty';
 		return $this;
 	}
 
-	/** @return self */
 	public function withDecimalDigit(): self {
 		$this->unpackedCheck();
 		$this->decimalDigit = 'decimal_digit';
@@ -492,6 +472,48 @@ class AnalyzerBuilder {
 		if ( $this->numCharMapName ) {
 			$config[ 'char_filter' ][ $this->numCharMapName ] =
 				$this->numberCharFilter( $this->langZero, $this->numCharMapReversed );
+		}
+
+		if ( $this->invisCharMapName ) {
+			$config[ 'char_filter' ][ $this->invisCharMapName ] = [
+				'type' => 'mapping',
+				'mappings' => [
+					// split on ...
+					'\u200B=>\u0020', // ... zero-width space
+					// remove ...
+					'\u00AD=>', // ... soft hyphen
+					'\u200C=>', // ... zero-width non-joiner
+					'\u200D=>', // ... zero-width joiner
+					'\u2060=>', // ... word joiner
+					'\uFEFF=>', // ... zero-width non-breaking space
+					'\u200E=>', // ... LTR mark
+					'\u200F=>', // ... RTL mark
+					'\u202A=>', // ... LTR embedding
+					'\u202B=>', // ... RTL embedding
+					'\u202C=>', // ... pop directional formatting
+					'\u202D=>', // ... LTR override
+					'\u202E=>', // ... RTL override
+					'\u2066=>', // ... LTR isolate
+					'\u2067=>', // ... RTL isolate
+					'\u2068=>', // ... first strong isolate
+					'\u2069=>', // ... pop directional isolate
+					'\u2061=>', // ... function application
+					'\u2062=>', // ... invisible times
+					'\u2063=>', // ... invisible separator
+					'\u2064=>', // ... invisible plus
+					// remove variation selectors 1-16 & 17-256 (below)
+				]
+			];
+
+			// add all 256 variation selectors to invisCharMapName
+			for ( $varIdx = 1; $varIdx <= 16; $varIdx++ ) { // 1-16 (FE00-FE0F)
+				$chr = mb_chr( 65023 + $varIdx, 'UTF-8' ); // xFE00 = 65024
+				$config[ 'char_filter' ][ $this->invisCharMapName ][ 'mappings' ][] = "$chr=>";
+			}
+			for ( $varIdx = 17; $varIdx <= 256; $varIdx++ ) { // 17-256 (E0100-E01EF)
+				$chr = mb_chr( 917743 + $varIdx, 'UTF-8' ); // E0100 = 917760
+				$config[ 'char_filter' ][ $this->invisCharMapName ][ 'mappings' ][] = "$chr=>";
+			}
 		}
 
 		if ( $this->elisionName ) {
@@ -609,7 +631,7 @@ class AnalyzerBuilder {
 	 */
 	public static function stopFilterFromList( $stopwords, ?bool $ignoreCase = null ): array {
 		$retArray = [ 'type' => 'stop', 'stopwords' => $stopwords ];
-		if ( isset( $ignoreCase ) ) {
+		if ( $ignoreCase !== null ) {
 			$retArray['ignore_case'] = $ignoreCase;
 		}
 		return $retArray;

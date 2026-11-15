@@ -95,9 +95,9 @@ ve.dm.TransactionProcessor.prototype.process = function () {
 	// First process each operation to gather modifications in the modification queue.
 	// If an exception occurs during this stage, we don't need to do anything to recover,
 	// because no modifications were made yet.
-	for ( let i = 0; i < this.operations.length; i++ ) {
-		this.executeOperation( this.operations[ i ] );
-	}
+	this.operations.forEach( ( op ) => {
+		this.executeOperation( op );
+	} );
 	if ( !this.balanced ) {
 		throw new Error( 'Unbalanced set of replace operations found' );
 	}
@@ -164,10 +164,10 @@ ve.dm.TransactionProcessor.prototype.applyModifications = function () {
 	const modifications = this.modificationQueue;
 
 	this.modificationQueue = [];
-	for ( let i = 0, len = modifications.length; i < len; i++ ) {
-		const modifier = ve.dm.TransactionProcessor.modifiers[ modifications[ i ].type ];
-		modifier.apply( this, modifications[ i ].args || [] );
-	}
+	modifications.forEach( ( modification ) => {
+		const modifier = ve.dm.TransactionProcessor.modifiers[ modification.type ];
+		modifier.apply( this, modification.args || [] );
+	} );
 };
 
 /**
@@ -250,7 +250,7 @@ ve.dm.TransactionProcessor.prototype.advanceCursor = function ( increment ) {
  * @param {Object[]} splices Array of splice operations to execute. Properties:
  *  {number} splices[].offset Offset to remove/insert at (unadjusted)
  *  {number} splices[].removeLength Number of elements to remove
- *  {Array} splices[].insert Data to insert; for efficiency, objects are inserted without cloning
+ *  {ve.dm.LinearData.Item[]} splices[].insert Data to insert; for efficiency, objects are inserted without cloning
  */
 ve.dm.TransactionProcessor.modifiers.splice = function ( splices ) {
 	const data = this.document.data;
@@ -305,6 +305,7 @@ ve.dm.TransactionProcessor.modifiers.setAttribute = function ( offset, key, valu
 	} );
 
 	const node = this.document.getDocumentNode().getNodeFromOffset( offset + 1 );
+	this.document.clearCachedData( node );
 	// Update node element pointer
 	node.element = data.getData( offset );
 
@@ -334,12 +335,12 @@ ve.dm.TransactionProcessor.processors.retain = function ( op ) {
 	if ( !this.balanced ) {
 		// Track the depth of retained data when in the middle of an unbalanced replace
 		const retainedData = this.document.getData( new ve.Range( this.cursor, this.cursor + op.length ) );
-		for ( let i = 0; i < retainedData.length; i++ ) {
-			const type = retainedData[ i ].type;
+		retainedData.forEach( ( item ) => {
+			const type = item.type;
 			if ( type !== undefined ) {
 				this.retainDepth += type.charAt( 0 ) === '/' ? -1 : 1;
 			}
-		}
+		} );
 	}
 	this.advanceCursor( op.length );
 };
@@ -373,8 +374,8 @@ ve.dm.TransactionProcessor.processors.attribute = function ( op ) {
  * Verify a replace operation (the actual processing is now done in ve.dm.TreeModifier)
  *
  * @param {Object} op Operation object
- * @param {Array} op.remove Linear model data to remove
- * @param {Array} op.insert Linear model data to insert
+ * @param {ve.dm.LinearData.Item[]} op.remove Linear model data to remove
+ * @param {ve.dm.LinearData.Item[]} op.insert Linear model data to insert
  */
 ve.dm.TransactionProcessor.processors.replace = function ( op ) {
 	// Track balancedness for verification purposes only
@@ -383,9 +384,8 @@ ve.dm.TransactionProcessor.processors.replace = function ( op ) {
 	// and keep track of the element depth change (level)
 	// for each of these two separately. The model is
 	// only consistent if both levels are zero.
-	let i, type;
-	for ( i = 0; i < op.remove.length; i++ ) {
-		type = op.remove[ i ].type;
+	op.remove.forEach( ( item ) => {
+		const type = item.type;
 		if ( type !== undefined ) {
 			if ( type.charAt( 0 ) === '/' ) {
 				// Closing element
@@ -395,9 +395,9 @@ ve.dm.TransactionProcessor.processors.replace = function ( op ) {
 				this.replaceRemoveLevel++;
 			}
 		}
-	}
-	for ( i = 0; i < op.insert.length; i++ ) {
-		type = op.insert[ i ].type;
+	} );
+	op.insert.forEach( ( item ) => {
+		const type = item.type;
 		if ( type !== undefined ) {
 			if ( type.charAt( 0 ) === '/' ) {
 				// Closing element
@@ -407,7 +407,7 @@ ve.dm.TransactionProcessor.processors.replace = function ( op ) {
 				this.replaceInsertLevel++;
 			}
 		}
-	}
+	} );
 	this.advanceCursor( op.remove.length );
 
 	this.balanced =

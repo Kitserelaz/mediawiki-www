@@ -156,7 +156,7 @@ class FormTermResult extends BaseResultsType {
 
 	/**
 	 * Get data for specific form
-	 * @param string[][] $highlight  Highlighter data
+	 * @param string[][] $highlight Highlighter data
 	 * @param array $form Form source data
 	 * @param string $lemmaCode Language code for main lemma
 	 * @return array|null Null if match is bad

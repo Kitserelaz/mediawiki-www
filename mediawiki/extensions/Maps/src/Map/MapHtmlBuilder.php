@@ -5,7 +5,7 @@ declare( strict_types = 1 );
 namespace Maps\Map;
 
 use FormatJson;
-use Html;
+use MediaWiki\Html\Html;
 
 class MapHtmlBuilder {
 
@@ -23,19 +23,15 @@ class MapHtmlBuilder {
 			[
 				'id' => $mapId,
 				'style' => "width: {$json['width']}; height: {$json['height']}; background-color: #eeeeee; overflow: hidden;",
-				'class' => 'maps-map maps-' . $serviceName
+				'class' => 'maps-map maps-' . $serviceName,
+				'data-mw-maps-mapdata' => FormatJson::encode( $json )
 			],
 			Html::element(
 				'div',
 				[
 					'class' => 'maps-loading-message'
 				],
-				wfMessage( 'maps-loading-map' )->inContentLanguage()->text()
-			)
-			. Html::element(
-				'div',
-				[ 'style' => 'display:none', 'class' => 'mapdata' ],
-				FormatJson::encode( $json )
+				wfMessage( 'maps-loading-map' )->text()
 			)
 		);
 	}

@@ -7,6 +7,7 @@
 			"HakanIST",
 			"Incelemeelemani",
 			"Joseph",
+			"Leo",
 			"Mach",
 			"Mavrikant",
 			"Runningfridgesrule",
@@ -17,8 +18,7 @@
 			"Stultiwikia",
 			"TmY e12",
 			"ToprakM",
-			"Vito Genovese",
-			"Leo"
+			"Vito Genovese"
 		]
 	},
 	"timedmediahandler-desc": "Ses işleyicisi, video ve zamanlanmış metin biçimleri için WebM, Ogg Theora, Vorbis, srt desteği",
@@ -167,8 +167,8 @@
 	"log-name-timedmediahandler": "TimedMediaHandler günlüğü",
 	"log-description-timedmediahandler": "Bu, zamanlanmış medya kod dönüştürmeleriyle ilgili eylemlerin bir günlüğüdür.",
 	"logentry-timedmediahandler-resettranscode": "$1, $3 sayfasına bir kodu \"$4\" biçimine {{GENDER:$2|sıfırladı}}",
-	"orphanedtimedtext": "Öksüz TimedText sayfaları",
-	"orphanedtimedtext-summary": "Karşılık gelen bir dosyaya sahip olmayan [[{{#special:AllPages/TimedText:}}|{{ns:TimedText}}]] sayfaların listesi.",
+	"orphanedtimedtext": "Öksüz ZamanlıMetin sayfaları",
+	"orphanedtimedtext-summary": "Karşılık gelen bir dosyası olmayan [[{{#special:AllPages/TimedText:}}|{{ns:TimedText}}]] sayfaların listesi.",
 	"orphanedtimedtext-unsupported": "Bu özel sayfa yalnızca MySQL veritabanlarında desteklenir.",
 	"videojs-more-information": "Daha fazla bilgi",
 	"videojs-quality": "Video kalitesi",
@@ -179,5 +179,13 @@
 	"timedmedia-timedtext-title-create-subtitles": "Klip için $1 altyazı bulunamadı: $2",
 	"m3u8-error-create-temp": "$1 için geçici dosya oluşturulamadı",
 	"m3u8-error-write-temp": "$1 için geçici dosya yazılamadı",
-	"m3u8-error-save-playlist": "$1 HLS oynatma listesi saklanırken hata oluştu"
+	"m3u8-error-save-playlist": "$1 HLS oynatma listesi saklanırken hata oluştu",
+	"videojs-endcard-share-title": "Bu ortama bağlantı",
+	"videojs-endcard-copy-link": "Bağlantıyı kopyala",
+	"videojs-endcard-share": "Paylaş",
+	"videojs-endcard-share-not-possible": "Paylaşımı kullanmak olası değil",
+	"videojs-endcard-embed-title": "Bu ortamı web sitenize yerleştirin",
+	"videojs-endcard-embed-copy": "Kopyala",
+	"videojs-endcard-copied": "Panoya kopyalandı!",
+	"videojs-endcard-copy-failed": "Panoya kopyalanamadı"
 }

@@ -51,6 +51,7 @@ class SpecialAddRelationship extends UnlistedSpecialPage {
 	public function execute( $par ) {
 		$out = $this->getOutput();
 		$request = $this->getRequest();
+		$session = $request->getSession();
 		$currentUser = $this->getUser();
 
 		// Can't use $this->setHeaders(); here because then it'll set the page
@@ -204,13 +205,34 @@ class SpecialAddRelationship extends UnlistedSpecialPage {
 			if (
 				$request->wasPosted() &&
 				$currentUser->matchEditToken( $request->getVal( 'wpEditToken' ) ) &&
-				$_SESSION['alreadysubmitted'] == false
+				$session->get( 'alreadysubmitted' ) == false
 			) {
-				$_SESSION['alreadysubmitted'] = true;
+				$session->set( 'alreadysubmitted', true );
+
+				// Check the user-supplied message for spam etc.
+				$message = $request->getVal( 'message' );
+
+				$hasSpam = SpecialUpdateProfile::validateSpamRegex( $message );
+				if ( $hasSpam ) {
+					$out->setPageTitle( $this->msg( 'ur-error-title' )->plain() );
+					$out->addWikiMsg( 'spamprotectiontext' );
+					$out->addHTML( $this->renderReturnToButtons() );
+					return;
+				}
+
+				$hasSpam = SpecialUpdateProfile::validateSpamBlacklist( $message, rand(), $currentUser );
+				if ( $hasSpam ) {
+					$out->setPageTitle( $this->msg( 'ur-error-title' )->plain() );
+					$out->addWikiMsg( 'spamprotectiontext' );
+					$out->addHTML( $this->renderReturnToButtons() );
+					return;
+				}
+
+				// OK, no spam detected; so send the request (and the message along with it, obviously)
 				$rel = $rel->addRelationshipRequest(
 					$this->user_to,
 					$this->relationship_type,
-					$request->getVal( 'message' )
+					$message
 				);
 
 				$avatar = new wAvatar( $this->user_to->getId(), 'l' );
@@ -225,17 +247,13 @@ class SpecialAddRelationship extends UnlistedSpecialPage {
 
 				$output = "<div class=\"relationship-action\">
 					{$avatar->getAvatarURL()}
-					" . $sent . "
-					<div class=\"relationship-buttons\">
-						<input type=\"button\" class=\"site-button\" value=\"" . htmlspecialchars( $this->msg( 'mainpage' )->plain() ) . "\" size=\"20\" onclick=\"window.location='index.php?title=" . $this->msg( 'mainpage' )->inContentLanguage()->escaped() . "'\"/>
-						<input type=\"button\" class=\"site-button\" value=\"" . htmlspecialchars( $this->msg( 'ur-your-profile' )->plain() ) . "\" size=\"20\" onclick=\"window.location='" . htmlspecialchars( $currentUser->getUserPage()->getFullURL() ) . "'\"/>
-					</div>
-					<div class=\"visualClear\"></div>
-				</div>";
+					" . $sent . $this->renderReturnToButtons() .
+					'<div class="visualClear"></div>
+				</div>';
 
 				$out->addHTML( $output );
 			} else {
-				$_SESSION['alreadysubmitted'] = false;
+				$session->set( 'alreadysubmitted', false );
 				$out->addHTML( $this->displayForm() );
 			}
 		}
@@ -258,7 +276,7 @@ class SpecialAddRelationship extends UnlistedSpecialPage {
 		$services = MediaWikiServices::getInstance();
 		// Autocomplete subpage as user list - public to allow caching
 		return $services->getUserNamePrefixSearch()->search(
-			UserNamePrefixSearch::AUDIENCE_PUBLIC, $user, $limit, $offset
+			UserNamePrefixSearch::AUDIENCE_PUBLIC, $user->getName(), $limit, $offset
 		);
 	}
 
@@ -300,5 +318,21 @@ class SpecialAddRelationship extends UnlistedSpecialPage {
 		</form>';
 
 		return $form;
+	}
+
+	/**
+	 * Render the "Main Page" and "Your profile" buttons (which require JS to work properly), shown after
+	 * successfully sending a relationship request but also when tripping the anti-spam checks.
+	 *
+	 * @return string HTML suitable for output
+	 */
+	private function renderReturnToButtons() {
+		// NoJS TODO: these buttons should not require JS to work; might need to change
+		// them into styled <a>'s or something?
+		$html = "<div class=\"relationship-buttons\">
+			<input type=\"button\" class=\"site-button\" value=\"" . htmlspecialchars( $this->msg( 'mainpage' )->plain() ) . "\" size=\"20\" onclick=\"window.location='index.php?title=" . $this->msg( 'mainpage' )->inContentLanguage()->escaped() . "'\"/>
+			<input type=\"button\" class=\"site-button\" value=\"" . htmlspecialchars( $this->msg( 'ur-your-profile' )->plain() ) . "\" size=\"20\" onclick=\"window.location='" . htmlspecialchars( $this->getUser()->getUserPage()->getFullURL() ) . "'\"/>
+		</div>";
+		return $html;
 	}
 }

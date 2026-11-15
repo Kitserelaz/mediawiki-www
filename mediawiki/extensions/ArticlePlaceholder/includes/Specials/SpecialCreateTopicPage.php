@@ -2,12 +2,13 @@
 
 namespace ArticlePlaceholder\Specials;
 
-use HTMLForm;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Message\Message;
+use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\SpecialPage\UnlistedSpecialPage;
 use MediaWiki\Title\Title;
-use Message;
-use PermissionsError;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * The CreateTopicPage SpecialPage for the ArticlePlaceholder extension
@@ -18,7 +19,10 @@ use PermissionsError;
  */
 class SpecialCreateTopicPage extends UnlistedSpecialPage {
 
-	public function __construct() {
+	public function __construct(
+		private readonly PermissionManager $permissionManager,
+		private readonly StatsFactory $statsFactory,
+	) {
 		parent::__construct( 'CreateTopicPage' );
 	}
 
@@ -28,9 +32,10 @@ class SpecialCreateTopicPage extends UnlistedSpecialPage {
 	public function execute( $par ) {
 		$out = $this->getOutput();
 		$this->setHeaders();
-		if ( $this->getRequest()->getVal( 'ref' ) === 'button' ) {
-			$statsd = MediaWikiServices::getInstance()->getStatsdDataFactory();
-			$statsd->increment( 'wikibase.articleplaceholder.button.createArticle' );
+		if ( $this->getRequest()->getRawVal( 'ref' ) === 'button' ) {
+			$this->statsFactory->getCounter( 'ArticlePlaceholder_button_createArticle_total' )
+				->copyToStatsdAt( 'wikibase.articleplaceholder.button.createArticle' )
+				->increment();
 		}
 		$page = $this->getRequest()->getVal( 'wptitleinput', $par );
 		if ( $page === '' || $page === null ) {
@@ -42,13 +47,13 @@ class SpecialCreateTopicPage extends UnlistedSpecialPage {
 			$this->showNoOrInvalidTitleGivenMessage( 'invalid' );
 			return;
 		}
-		$out->setPageTitle( $this->msg( 'articleplaceholder-createpage-title', $title->getText() ) );
+		$out->setPageTitleMsg( $this->msg( 'articleplaceholder-createpage-title', $title->getText() ) );
 		if ( $title->exists() ) {
 			$this->showAlreadyExistsMessage( $title );
 			return;
 		}
 
-		$permissionErrors = MediaWikiServices::getInstance()->getPermissionManager()
+		$permissionErrors = $this->permissionManager
 			->getPermissionErrors( 'edit', $this->getUser(), $title );
 		if ( $permissionErrors ) {
 			throw new PermissionsError( 'edit', $permissionErrors );
@@ -61,10 +66,8 @@ class SpecialCreateTopicPage extends UnlistedSpecialPage {
 	 * Displays a form that gives the user the information, that the page (with
 	 * the currently tried title) already exists and that he should
 	 * choose another title.
-	 *
-	 * @param Title $title
 	 */
-	private function showAlreadyExistsMessage( Title $title ) {
+	private function showAlreadyExistsMessage( Title $title ): void {
 		$this->showTitleInputWithMessage(
 			$this->msg( 'articleplaceholder-createpage-alreadyexists', $title->getText() )
 		);
@@ -76,7 +79,7 @@ class SpecialCreateTopicPage extends UnlistedSpecialPage {
 	 *
 	 * @param string $invalid
 	 */
-	private function showNoOrInvalidTitleGivenMessage( $invalid = 'missing' ) {
+	private function showNoOrInvalidTitleGivenMessage( $invalid = 'missing' ): void {
 		$this->showTitleInputWithMessage(
 			$this->msg( $invalid === 'invalid' ?
 				'articleplaceholder-createpage-invalidtitleprovided' :
@@ -89,10 +92,8 @@ class SpecialCreateTopicPage extends UnlistedSpecialPage {
 	 * Displays a form that with the information that he should
 	 * choose another title. The given message key is used as a
 	 * reason why he need to do this.
-	 *
-	 * @param Message $msg
 	 */
-	private function showTitleInputWithMessage( Message $msg ) {
+	private function showTitleInputWithMessage( Message $msg ): void {
 		HTMLForm::factory(
 			'ooui',
 			[ 'titleinput' => [ 'type' => 'text' ] ],

@@ -6,10 +6,10 @@
 			"Janezdrilc"
 		]
 	},
-	"cirrussearch-desc": "Iskanje za MediaWiki, ki ga poganja Elasticsearch",
+	"cirrussearch-desc": "Iskanje za MediaWiki, ki ga poganja OpenSearch",
 	"cirrussearch-backend-error": "Zaradi začasne težave nam ni uspelo izvesti vašega iskanja. Prosimo, poskusite pozneje.",
 	"cirrussearch-parse-error": "Poizvedba ni bila razumljiva. Prosimo, poenostavite jo. Poizvedba je bila zabeležena za izboljšanje iskalnega sistema.",
-	"cirrussearch-too-busy-error": "Iskanje je trenutno preobremenjeno. Prosimo, poskusi znova pozneje.",
+	"cirrussearch-too-busy-error": "Iskanje je trenutno preobremenjeno. Prosimo, poskusite znova pozneje.",
 	"cirrussearch-regex-empty-expression": "$1 pročakuje neprazen regularni izraz.",
 	"cirrussearch-regex-syntax-error": "Skladenjska napaka regularnega izraza na mestu $2: $1",
 	"cirrussearch-regex-too-busy-error": "Trenutno poteka preveč iskanj z regularnimi izrazi. Prosimo, poskusite znova pozneje.",
@@ -73,6 +73,5 @@
 	"cirrussearch-autoselect-profile": "Pustite iskalniku, da se odloči za najboljši profil za uporabo.",
 	"cirrussearch-offset-too-large": "Zadetkov ni bilo mogoče pridobiti. Podprti so zadetki iskanja do $1, vendar so bili zahtevani zadetki, ki se začnejo pri $2.",
 	"cirrussearch-offset-not-allowed-with-random-sort": "Prezrtje zahtevka za paginiranje naključno razvrščenih zadetkov.",
-	"cirrussearch-articletopic-invalid-topic": "{{PLURAL:$2|Neprepoznano ime|Neprepoznani imeni|Neprepoznana imena}} teme za ključno besedo <kbd>articletopic:</kbd>: $1",
 	"cirrussearch-inlanguage-deprecate-comma": "Uporaba vejice kot ločila za ključno besedo »interlanguage« je zastarela. Prosimo, ločite jezike z znakom »|« (navpičnico)."
 }

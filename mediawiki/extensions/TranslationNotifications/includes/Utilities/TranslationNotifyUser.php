@@ -1,8 +1,5 @@
 <?php
-/*
-* @file
-* @license GPL-2.0-or-later
-*/
+declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\TranslationNotifications\Utilities;
 
@@ -20,7 +17,7 @@ use MediaWiki\WikiMap\WikiMap;
  * Encapsulates the logic needed to create a notification to be sent to Users based on the
  * type of notification they want. Creates the necessary job classes that are then used to
  * actually deliver the notification.
- * @since 2019.10
+ * @license GPL-2.0-or-later
  */
 class TranslationNotifyUser {
 	private Title $translatablePageTitle;
@@ -50,8 +47,12 @@ class TranslationNotifyUser {
 	 * @param array $requestData
 	 */
 	public function __construct(
-		Title $translatablePageTitle, User $notifier, $localInterwikis, $noReplyAddress,
-		$httpsInEmail, $requestData
+		Title $translatablePageTitle,
+		User $notifier,
+		array $localInterwikis,
+		string $noReplyAddress,
+		bool $httpsInEmail,
+		array $requestData
 	) {
 		$this->notifier = $notifier;
 		$this->translatablePageTitle = $translatablePageTitle;
@@ -75,8 +76,8 @@ class TranslationNotifyUser {
 	 */
 	public function leaveUserMessage(
 		User $translator,
-		$destination = 'talkpageHere'
-	) {
+		string $destination = 'talkpageHere'
+	): MassMessageJob {
 		$relevantLanguages = $this->getRelevantLanguages( $translator, $this->languagesToNotify );
 		$userFirstLanguageCode = $this->getUserFirstLanguage( $translator );
 		$userFirstLanguage = MediaWikiServices::getInstance()->getLanguageFactory()
@@ -100,19 +101,20 @@ class TranslationNotifyUser {
 				MediaWikiServices::getInstance()->getContentLanguage(),
 				$this->notificationText
 			)
-		)->numParams( count( $relevantLanguages ) ) // $9
-			->params( NotificationMessageBuilder::getSignupURL( $this->getUrlProtocol() ) ) // $10
+		)->numParams( count( $relevantLanguages ) )
+			->params( NotificationMessageBuilder::getSignupURL( $this->getUrlProtocol() ) )
 			->inLanguage( $userFirstLanguage )
 			->text();
 
 		// Bidi-isolation of site name from date
 		$text .= $userFirstLanguage->getDirMark() .
-			', ~~~~~'; // Date and time
+			// Date and time
+			', ~~~~~';
 
 		// Note: Maybe this was originally meant for edit summary, but it's actually used as subject
 		$subject = wfMessage(
 			'translationnotifications-edit-summary',
-			$this->translatablePageTitle
+			$this->translatablePageTitle->getPrefixedText()
 		)->inLanguage( $userFirstLanguage )->text();
 
 		$listUrl = SpecialPage::getTitleFor( 'NotifyTranslators' )->getCanonicalURL();
@@ -162,16 +164,16 @@ class TranslationNotifyUser {
 
 		$emailBody = wfMessage( 'translationnotifications-email-body' )
 			->params(
-				NotificationMessageBuilder::getUserName( $translator ), // $1
+				NotificationMessageBuilder::getUserName( $translator ),
 				$userFirstLanguage->listToText( array_values( $relevantLanguages ) ),
-				$this->translatablePageTitle,
-				$translationUrls, // $4
+				$this->translatablePageTitle->getPrefixedText(),
+				$translationUrls,
 				NotificationMessageBuilder::getPriorityClause( $userFirstLanguage, $this->priority ),
 				NotificationMessageBuilder::getDeadlineClause( $userFirstLanguage, $this->deadline ),
-				$this->notificationText, // $7
+				$this->notificationText,
 				NotificationMessageBuilder::getSignupURL( $this->getUrlProtocol() ),
 				Message::numParam( count( $relevantLanguages ) ),
-				$translator->getName() // $10
+				$translator->getName()
 			)->inLanguage( $userFirstLanguage )->text();
 
 		$sender = $this->notifier;
@@ -202,7 +204,7 @@ class TranslationNotifyUser {
 	 * Empty for all languages.
 	 * @return string[] Array of language codes
 	 */
-	protected function getRelevantLanguages( User $user, $languagesToNotify ) {
+	private function getRelevantLanguages( User $user, array $languagesToNotify ): array {
 		$userLanguages = $this->getUserLanguages( $user );
 		$userFirstLanguageCode = $userLanguages[0];
 		$limitLanguages = count( $languagesToNotify );
@@ -232,7 +234,7 @@ class TranslationNotifyUser {
 	 * @param int $langNum Number of language.
 	 * @return string Language code, or null if it wasn't defined.
 	 */
-	protected function getUserLanguageOption( UserIdentity $user, $langNum ) {
+	private function getUserLanguageOption( UserIdentity $user, int $langNum ): string {
 		return MediaWikiServices::getInstance()
 			->getUserOptionsLookup()
 			->getOption( $user, "translationnotifications-lang-$langNum" );
@@ -241,20 +243,18 @@ class TranslationNotifyUser {
 	/**
 	 * Returns the code of the first language to which a user signed up in
 	 * Special:TranslatorSignup.
-	 * @param User $user
 	 * @return string Language code.
 	 */
-	protected function getUserFirstLanguage( User $user ) {
+	private function getUserFirstLanguage( User $user ): string {
 		return $this->getUserLanguageOption( $user, 1 );
 	}
 
 	/**
 	 * Returns an array of all language codes to which a user signed up in
 	 * Special:TranslatorSignup.
-	 * @param User $user
 	 * @return array of language codes.
 	 */
-	protected function getUserLanguages( User $user ) {
+	private function getUserLanguages( User $user ): array {
 		$userLanguages = [];
 
 		foreach ( range( 1, 3 ) as $langNum ) {
@@ -271,7 +271,7 @@ class TranslationNotifyUser {
 	 * Returns the URL protocol to be used based on configuration
 	 * @return string|int a PROTO_* constant
 	 */
-	protected function getUrlProtocol() {
+	private function getUrlProtocol() {
 		return !$this->httpsInEmail
 			? PROTO_CANONICAL
 			: PROTO_HTTPS;

@@ -7,9 +7,9 @@
 
 namespace MediaWiki\Extension\Translate\Statistics;
 
-use GenericParameterJob;
 use MediaWiki\Extension\Translate\Jobs\GenericTranslateJob;
 use MediaWiki\Extension\Translate\Services;
+use MediaWiki\JobQueue\GenericParameterJob;
 
 /** @since 2020.04 */
 class UpdateTranslatorActivityJob extends GenericTranslateJob implements GenericParameterJob {
@@ -22,6 +22,7 @@ class UpdateTranslatorActivityJob extends GenericTranslateJob implements Generic
 		return new self( [ 'language' => $language ] );
 	}
 
+	/** @inheritDoc */
 	public function run() {
 		$activity = Services::getInstance()->getTranslatorActivity();
 

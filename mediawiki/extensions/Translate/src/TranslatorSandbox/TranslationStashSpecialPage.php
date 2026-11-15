@@ -3,13 +3,13 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TranslatorSandbox;
 
-use FormatJson;
-use Language;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\Html\Html;
-use MediaWiki\Languages\LanguageFactory;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Json\FormatJson;
+use MediaWiki\Language\Language;
+use MediaWiki\Language\LanguageFactory;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Options\UserOptionsLookup;
@@ -22,44 +22,32 @@ use MediaWiki\User\Options\UserOptionsLookup;
  * @ingroup SpecialPage TranslateSpecialPage
  */
 class TranslationStashSpecialPage extends SpecialPage {
-	/** @var TranslationStashReader */
-	private $stash;
-	/** @var ServiceOptions */
-	private $options;
-	/** @var LanguageNameUtils */
-	private $languageNameUtils;
-	/** @var UserOptionsLookup */
-	private $userOptionsLookup;
-	/** @var LanguageFactory */
-	private $languageFactory;
 
 	public const CONSTRUCTOR_OPTIONS = [
 		'TranslateSandboxLimit',
 	];
 
 	public function __construct(
-		LanguageNameUtils $languageNameUtils,
-		TranslationStashReader $stash,
-		UserOptionsLookup $userOptionsLookup,
-		LanguageFactory $languageFactory,
-		ServiceOptions $options
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly TranslationStashReader $stash,
+		private readonly UserOptionsLookup $userOptionsLookup,
+		private readonly LanguageFactory $languageFactory,
+		private readonly ServiceOptions $options,
 	) {
 		parent::__construct( 'TranslationStash' );
-		$this->languageNameUtils = $languageNameUtils;
-		$this->stash = $stash;
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->languageFactory = $languageFactory;
-		$this->options = $options;
+		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
 
-	protected function getGroupName() {
+	protected function getGroupName(): string {
 		return 'translation';
 	}
 
+	/** @inheritDoc */
 	public function execute( $params ) {
 		$limit = $this->options->get( 'TranslateSandboxLimit' );
 
@@ -74,7 +62,7 @@ class TranslationStashSpecialPage extends SpecialPage {
 
 		$out->addJsConfigVars( 'wgTranslateSandboxLimit', $limit );
 		$out->addModules( 'ext.translate.specialTranslationStash' );
-		$out->addModuleStyles( 'mediawiki.ui.button' );
+		$out->addModuleStyles( 'codex-styles' );
 		$this->showPage();
 	}
 
@@ -168,10 +156,9 @@ class TranslationStashSpecialPage extends SpecialPage {
 		);
 
 		$value = Html::rawElement(
-			'span',
+			'button',
 			[
-				'class' => 'uls mw-ui-button',
-				'tabindex' => 0,
+				'class' => 'uls cdx-button',
 				'title' => $this->msg( 'tux-select-target-language' )->text()
 			],
 			$languageIcon . $targetLanguageName . $expandIcon

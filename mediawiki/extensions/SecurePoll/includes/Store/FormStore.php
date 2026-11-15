@@ -8,6 +8,7 @@ use MediaWiki\Extension\SecurePoll\Context;
 use MediaWiki\Extension\SecurePoll\Crypt\Crypt;
 use MediaWiki\Extension\SecurePoll\Pages\StatusException;
 use MediaWiki\Extension\SecurePoll\Talliers\Tallier;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\WikiMap\WikiMap;
@@ -36,11 +37,10 @@ class FormStore extends MemoryStore {
 	 * @param Context $context
 	 * @param array $formData
 	 * @param int $userId
+	 * @throws StatusException
 	 */
 	public function setFormData( $context, $formData, $userId ) {
-		global $wgSecurePollCreateWikiGroupDir, $wgSecurePollCreateWikiGroups,
-			$wgSecurePollCreateRemoteScriptPath;
-
+		$config = MediaWikiServices::getInstance()->getMainConfig();
 		$curId = 0;
 
 		$wikis = $formData['property_wiki'] ?? WikiMap::getCurrentWikiId();
@@ -51,9 +51,9 @@ class FormStore extends MemoryStore {
 			$wikis = false;
 
 			// HTMLForm already checked this, but let's do it again anyway.
-			if ( isset( $wgSecurePollCreateWikiGroups[$file] ) ) {
+			if ( isset( $config->get( 'SecurePollCreateWikiGroups' )[$file] ) ) {
 				$wikis = file_get_contents(
-					$wgSecurePollCreateWikiGroupDir . $file . '.dblist'
+					$config->get( 'SecurePollCreateWikiGroupDir' ) . $file . '.dblist'
 				);
 			}
 
@@ -108,15 +108,16 @@ class FormStore extends MemoryStore {
 			'owner' => $userId,
 			'questions' => [],
 		];
-		$this->properties[$eId] = [
+		$this->properties[$eId] = array_merge( $this->properties[$eId] ?? [], [
 			'encrypt-type' => $crypt,
 			'wikis' => implode( "\n", $wikis ),
 			'wikis-val' => $formData['property_wiki'] ?? WikiMap::getCurrentWikiId(),
 			'return-url' => $formData['return-url'],
 			'disallow-change' => $formData['disallow-change'] ? 1 : 0,
 			'voter-privacy' => $formData['voter-privacy'] ? 1 : 0,
-			'request-comment' => $formData['request-comment'] ? 1 : 0
-		];
+			'request-comment' => $formData['request-comment'] ? 1 : 0,
+			'prompt-active-wiki' => (int)( $formData['prompt-active-wiki'] ?? false ),
+		] );
 		$this->messages[$this->lang][$eId] = [
 			'title' => $formData['election_title'],
 			'comment-prompt' => $formData['comment-prompt']
@@ -126,7 +127,8 @@ class FormStore extends MemoryStore {
 		$this->properties[$eId]['admins'] = $admins;
 
 		if ( $this->remoteWikis ) {
-			$this->properties[$eId]['remote-mw-script-path'] = $wgSecurePollCreateRemoteScriptPath;
+			$this->properties[$eId]['remote-mw-script-path'] =
+				$config->get( 'SecurePollCreateRemoteScriptPath' );
 
 			$this->rId = $rId = --$curId;
 			$this->entityInfo[$rId] = [
@@ -263,11 +265,64 @@ class FormStore extends MemoryStore {
 	}
 
 	/**
+	 * Replaces a virtual id (a placeholder negative number) in the data structures
+	 * with the real id (the actual id in the database) once the entity has been
+	 * inserted into the database.
+	 * @param int $virtual
+	 * @param int $real
+	 */
+	public function replaceVirtualId( $virtual, $real ): void {
+		if ( isset( $this->entityInfo[$virtual] ) ) {
+			$entity = $this->entityInfo[$virtual];
+
+			$this->entityInfo[$real] = $entity;
+			if ( isset( $this->properties[$virtual] ) ) {
+				$this->properties[$real] = $this->properties[$virtual];
+			}
+			if ( isset( $this->messages[$this->lang][$virtual] ) ) {
+				$this->messages[$this->lang][$real] = $this->messages[$this->lang][$virtual];
+			}
+
+			// If this is an election, replace reference in each of its questions and options.
+			if ( $entity['type'] === 'election' ) {
+				foreach ( $entity['questions'] as &$question ) {
+					$question['election'] = $real;
+					foreach ( $question['options'] as &$option ) {
+						$option['election'] = $real;
+					}
+				}
+			}
+			// If this is a question, replace reference in its parent election, and each option.
+			if ( $entity['type'] === 'question' ) {
+				$electionId = $entity['election'];
+				$this->replaceArrayValue( $this->entityInfo[$electionId]['questions'], $virtual, $real );
+				foreach ( $entity['options'] as &$option ) {
+					$option['question'] = $real;
+				}
+			}
+			// If this is an option, replace reference in its parent question.
+			if ( $entity['type'] === 'option' ) {
+				$questionId = $entity['question'];
+				$this->replaceArrayValue( $this->entityInfo[$questionId]['options'], $virtual, $real );
+			}
+		}
+	}
+
+	/**
+	 * @param array &$arr
+	 * @param mixed $oldValue Value to be replaced
+	 * @param mixed $newValue Value to inserted in place of $oldValue
+	 */
+	private function replaceArrayValue( array &$arr, $oldValue, $newValue ): void {
+		$arr = array_map( static fn ( $v ) => $v === $oldValue ? $newValue : $v, $arr );
+	}
+
+	/**
 	 * Extract the values for the class's properties and messages
 	 *
 	 * @param int $id
 	 * @param array $formData Form data array
-	 * @param class-string|false $class Class with the ::getCreateDescriptors static method
+	 * @param class-string<Ballot|Crypt|Tallier>|false $class
 	 * @param string|null $category If given, ::getCreateDescriptors is
 	 *    expected to return an array with subarrays for different categories
 	 *    of descriptors, and this selects which subarray to process.
@@ -277,13 +332,7 @@ class FormStore extends MemoryStore {
 			return;
 		}
 
-		$items = call_user_func_array(
-			[
-				$class,
-				'getCreateDescriptors'
-			],
-			[]
-		);
+		$items = $class::getCreateDescriptors();
 
 		if ( $category ) {
 			if ( !isset( $items[$category] ) ) {
@@ -336,13 +385,20 @@ class FormStore extends MemoryStore {
 	 * @return array
 	 */
 	public static function getWikiList() {
-		global $wgConf, $wgSecurePollExcludedWikis;
+		// This is a global exception we may want to let it pass.
+		// Even though $wgConf is an instance of MediaWiki\Config\SiteConfiguration,
+		// it’s not exposed as a service, so accessing it via
+		// `MediaWikiServices::getInstance()->getService( 'SiteConfiguration' )` is
+		// not possible.
+		global $wgConf;
+		$securePollExcludedWikis = MediaWikiServices::getInstance()
+			->getMainConfig()->get( 'SecurePollExcludedWikis' );
 
 		$wikiNames = [];
 		foreach ( $wgConf->getLocalDatabases() as $dbname ) {
 
 			// SecurePoll is not installed on these
-			if ( in_array( $dbname, $wgSecurePollExcludedWikis ) ) {
+			if ( in_array( $dbname, $securePollExcludedWikis ) ) {
 				continue;
 			}
 

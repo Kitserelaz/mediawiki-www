@@ -42,7 +42,7 @@
 			$graphWrapper = $( '<div>' )
 				.attr( 'class', 'mw-translationstats-graph-container' ),
 			$loadingElement = $( '<div>' )
-				.attr( 'class', 'mw-translate-loading-spinner' ),
+				.attr( 'class', 'tux-loading-indicator tux-loading-indicator--centered' ),
 			$errorElement = $( '<div>' )
 				.attr( 'class', 'mw-translate-error-container' ),
 			$tableElement = $( '<table>' )
@@ -66,7 +66,10 @@
 
 		$graphWrapper.append( $graphElement );
 
-		/** @internal */
+		/**
+		 * @param options
+		 * @internal
+		 */
 		function display( options ) {
 			if ( lineChart ) {
 				cleanup();
@@ -177,7 +180,7 @@
 				maxValue = 0, minValue = 0;
 
 			for ( var labelProp in jsonGraphData ) {
-				if ( labels.indexOf( labelProp ) === -1 ) {
+				if ( !labels.includes( labelProp ) ) {
 					labels.push( labelProp );
 				}
 

@@ -5,6 +5,7 @@ namespace Miraheze\RottenLinks\Maintenance;
 use MediaWiki\ExternalLinks\LinkFilter;
 use MediaWiki\Maintenance\Maintenance;
 use Miraheze\RottenLinks\RottenLinks;
+use Wikimedia\Rdbms\Platform\ISQLPlatform;
 
 class UpdateExternalLinks extends Maintenance {
 
@@ -18,17 +19,18 @@ class UpdateExternalLinks extends Maintenance {
 	public function execute(): void {
 		$time = time();
 
-		$dbw = $this->getDB( DB_PRIMARY );
+		$dbr = $this->getReplicaDB();
+		$dbw = $this->getPrimaryDB();
 
 		$this->output( "Dropping all existing recorded entries\n" );
 
 		$dbw->newDeleteQueryBuilder()
 			->deleteFrom( 'rottenlinks' )
-			->where( '*' )
+			->where( ISQLPlatform::ALL_ROWS )
 			->caller( __METHOD__ )
 			->execute();
 
-		$res = $dbw->newSelectQueryBuilder()
+		$res = $dbr->newSelectQueryBuilder()
 			->select( [
 				'el_from',
 				'el_to_domain_index',
@@ -56,19 +58,19 @@ class UpdateExternalLinks extends Maintenance {
 
 			$urlexp = explode( ':', $url );
 
-			if ( isset( $urlexp[0] ) && in_array( strtolower( $urlexp[0] ), $excludeProtocols ) ) {
+			if ( isset( $urlexp[0] ) && in_array( strtolower( $urlexp[0] ), $excludeProtocols, true ) ) {
 				continue;
 			}
 
 			$mainSite = explode( '/', $urlexp[1] );
 
-			if ( isset( $mainSite[2] ) && in_array( $mainSite[2], $excludeWebsites ) ) {
+			if ( isset( $mainSite[2] ) && in_array( $mainSite[2], $excludeWebsites, true ) ) {
 				continue;
 			}
 
 			// This is to ensure duplicate links are not added,
 			// since links are added after each edit that adds a url.
-			$rottenLinksCount = $dbw->newSelectQueryBuilder()
+			$rottenLinksCount = $dbr->newSelectQueryBuilder()
 				->select( 'rl_externallink' )
 				->from( 'rottenlinks' )
 				->where( [ 'rl_externallink' => $url ] )

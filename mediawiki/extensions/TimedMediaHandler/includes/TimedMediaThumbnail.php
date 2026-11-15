@@ -2,20 +2,27 @@
 
 namespace MediaWiki\TimedMediaHandler;
 
-use File;
-use MediaTransformError;
+use MediaWiki\Config\Config;
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\FileRepo\File\UnregisteredLocalFile;
+use MediaWiki\FileRepo\RepoGroup;
 use MediaWiki\MainConfigNames;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Media\MediaTransformError;
 use MediaWiki\PoolCounter\PoolCounterWorkViaCallback;
-use UnregisteredLocalFile;
 
 class TimedMediaThumbnail {
+
+	public function __construct(
+		private readonly Config $config,
+		private readonly RepoGroup $repoGroup,
+	) {
+	}
 
 	/**
 	 * @param array $options
 	 * @return bool|MediaTransformError
 	 */
-	public static function get( $options ) {
+	public function get( $options ) {
 		if ( !is_dir( dirname( $options['dstPath'] ) ) ) {
 			wfMkdirParents( dirname( $options['dstPath'] ), null, __METHOD__ );
 		}
@@ -26,19 +33,18 @@ class TimedMediaThumbnail {
 			$options['width'] != $options['file']->getWidth() &&
 			$options['height'] != $options['file']->getHeight()
 		) {
-			return self::resizeThumb( $options );
+			return $this->resizeThumb( $options );
 		}
-		return self::tryFfmpegThumb( $options );
+		return $this->tryFfmpegThumb( $options );
 	}
 
 	/**
 	 * @param array $options
 	 * @return bool|MediaTransformError
 	 */
-	private static function tryFfmpegThumb( $options ) {
-		$config = MediaWikiServices::getInstance()->getMainConfig();
-		$fFmpegLocation = $config->get( 'FFmpegLocation' );
-		$maxShellMemory = $config->get( MainConfigNames::MaxShellMemory );
+	private function tryFfmpegThumb( $options ) {
+		$fFmpegLocation = $this->config->get( 'FFmpegLocation' );
+		$maxShellMemory = $this->config->get( MainConfigNames::MaxShellMemory );
 
 		if ( !$fFmpegLocation || !is_file( $fFmpegLocation ) ) {
 			return false;
@@ -75,12 +81,8 @@ class TimedMediaThumbnail {
 		// try to get temporary local url to file
 		$backend = $file->getRepo()->getBackend();
 
-		$src = $backend->getFileHttpUrl( [
-			'src' => $file->getPath()
-		] );
-		if ( $src === null ) {
-			$src = $file->getLocalRefPath();
-		}
+		$src = $backend->getFileHttpUrl( [ 'src' => $file->getPath() ] ) ??
+			$file->getLocalRefPath();
 
 		$cmd .= ' -y -i ' . wfEscapeShellArg( $src );
 		$cmd .= ' -ss ' . $offset . ' ';
@@ -118,7 +120,7 @@ class TimedMediaThumbnail {
 	 * @param array $options
 	 * @return bool|MediaTransformError
 	 */
-	private static function resizeThumb( $options ) {
+	private function resizeThumb( $options ) {
 		$file = $options['file'];
 		$params = [];
 		foreach ( [ 'start', 'thumbtime' ] as $key ) {
@@ -147,7 +149,7 @@ class TimedMediaThumbnail {
 		if ( !$src ) {
 			return false;
 		}
-		$localRepo = MediaWikiServices::getInstance()->getRepoGroup()->getLocalRepo();
+		$localRepo = $this->repoGroup->getLocalRepo();
 		$thumbFile = new UnregisteredLocalFile( $file->getTitle(),
 			$localRepo, $src, false );
 		$thumbParams = [

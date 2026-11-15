@@ -8,8 +8,6 @@ const MsUpload = {
 
 		// Define the GUI elements
 		const $uploadDiv = $( '<div>' ).attr( 'id', 'msupload-div' );
-		const $uploadContainer = $( '<div>' ).attr( { id: 'msupload-container', class: 'start-loading', title: mw.msg( 'msu-button-title' ) } );
-		const $uploadButton = $( '<div>' ).attr( 'id', 'msupload-select' );
 		const $statusDiv = $( '<div>' ).attr( 'id', 'msupload-status' ).hide();
 		const $uploadList = $( '<ul>' ).attr( 'id', 'msupload-list' );
 		const $bottomDiv = $( '<div>' ).attr( 'id', 'msupload-bottom' ).hide();
@@ -20,23 +18,38 @@ const MsUpload = {
 		const $linksInsert = $( '<a>' ).attr( 'id', 'msupload-insert-links' ).hide();
 		const $uploadDrop = $( '<div>' ).attr( 'id', 'msupload-dropzone' ).hide();
 
+		// Add the toolbar button.
+		const uploadButton = new OO.ui.ButtonWidget( {
+			icon: 'upload',
+			id: 'msupload-select',
+			classes: [ 'tool' ],
+			framed: false,
+			label: mw.msg( 'msu-button-title' ),
+			invisibleLabel: true
+		} );
+		$textarea.wikiEditor( 'addToToolbar', {
+			section: 'main',
+			group: 'insert',
+			tools: {
+				msupload: {
+					type: 'element',
+					element: () => uploadButton.$element
+				}
+			}
+		} );
+
 		// Add them to the DOM
 		$bottomDiv.append( $startButton, $cleanAll, $galleryInsert, $filesInsert, $linksInsert );
 		$uploadDiv.append( $statusDiv, $uploadDrop, $uploadList, $bottomDiv );
 		$( '#wikiEditor-ui-toolbar' ).after( $uploadDiv );
-		$uploadContainer.append( $uploadButton );
-		$( '#wikiEditor-section-main .group-insert' ).append( $uploadContainer );
 
 		// Create the Uploader object
 		MsUpload.uploader = new plupload.Uploader( {
-			runtimes: 'html5,flash,silverlight,html4',
-			browse_button: 'msupload-select',
-			container: 'msupload-container',
+			runtimes: 'html5,html4',
+			browse_button: uploadButton.$element[ 0 ],
 			max_file_size: MsUpload.config.uploadsize,
 			drop_element: 'msupload-dropzone',
-			url: mw.config.get( 'wgScriptPath' ) + '/api.php',
-			flash_swf_url: MsUpload.config.flash_swf_url,
-			silverlight_xap_url: MsUpload.config.silverlight_xap_url
+			url: mw.config.get( 'wgScriptPath' ) + '/api.php'
 		} );
 
 		// Bind events
@@ -174,7 +187,7 @@ const MsUpload = {
 							$title.show().next().hide();
 							fileItem.unconfirmed = false;
 						} else {
-							$title.hide().next().show().select();
+							$title.hide().next().show().trigger( 'select' );
 							fileItem.unconfirmed = true;
 						}
 						uploader.trigger( 'CheckFiles' );
@@ -250,7 +263,7 @@ const MsUpload = {
 
 		file.li.title.on( 'click', () => {
 			file.li.title.hide();
-			$fileNameInput.show().select();
+			$fileNameInput.show().trigger( 'select' );
 			$fileExtension.show();
 		} );
 
@@ -266,7 +279,7 @@ const MsUpload = {
 		file.extension = file.name.split( '.' ).pop().toLowerCase();
 
 		const fileExtensions = mw.config.get( 'wgFileExtensions' );
-		if ( fileExtensions.indexOf( file.extension ) !== -1 ) {
+		if ( fileExtensions.includes( file.extension ) ) {
 			switch ( file.extension ) {
 				case 'jpg': case 'jpeg': case 'png': case 'gif': case 'bmp': case 'tif': case 'tiff':
 					file.group = 'image';
@@ -337,7 +350,6 @@ const MsUpload = {
 
 	onPostInit: function ( uploader ) {
 		mw.log( 'MsUpload DEBUG: runtime: ' + uploader.runtime + ' features: ' + JSON.stringify( uploader.features ) );
-		$( '#msupload-container' ).removeClass( 'start-loading' );
 		if ( uploader.features.dragdrop && MsUpload.config.useDragDrop ) {
 			$( '#msupload-dropzone' ).text( mw.msg( 'msu-dropzone' ) ).show();
 			$( '#msupload-dropzone' ).on( 'dragover', function () {
@@ -367,7 +379,7 @@ const MsUpload = {
 		files.forEach( ( file, index ) => {
 			// iOS6 by SLBoat
 			if ( ( navigator.platform === 'iPad' || navigator.platform === 'iPhone' ) ) {
-				if ( file.name.indexOf( 'image' ) !== -1 && file.name.length < 11 ) {
+				if ( file.name.includes( 'image' ) && file.name.length < 11 ) {
 					const date = new Date();
 					const fileNameApple = navigator.platform + '_image_' + date.getFullYear() + '-' + date.getMonth() + '-' + date.getDate() + '-' + date.getTime(); // Because each image is named 'image.jpg' in iOS6
 					file.name = fileNameApple + '_' + index + '.' + file.name.split( '.' ).pop(); // image_Y-M-D_0.jpg

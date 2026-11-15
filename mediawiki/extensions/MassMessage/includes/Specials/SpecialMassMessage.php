@@ -19,13 +19,13 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\Parser\Parsoid\LintErrorChecker;
 use MediaWiki\SpecialPage\FormSpecialPage;
-use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\WikiMap\WikiMap;
 use OOUI\FieldsetLayout;
 use OOUI\HtmlSnippet;
 use OOUI\PanelLayout;
 use OOUI\Widget;
+use StatusValue;
 
 /**
  * Form to allow users to send messages to a lot of users at once.
@@ -33,45 +33,31 @@ use OOUI\Widget;
  * @author Kunal Mehta
  * @license GPL-2.0-or-later
  */
-
 class SpecialMassMessage extends FormSpecialPage {
-	/** @var Status */
+	/** @var StatusValue */
 	protected $status;
 	/** @var string */
 	protected $state;
 	/** @var int */
 	protected $count;
-	/** @var LocalMessageContentFetcher */
-	private $localMessageContentFetcher;
-	/** @var LabeledSectionContentFetcher */
-	private $labeledSectionContentFetcher;
-	/** @var MessageBuilder */
-	private $messageBuilder;
-	/** @var PageMessageBuilder */
-	private $pageMessageBuilder;
+	private readonly MessageBuilder $messageBuilder;
 
-	private LintErrorChecker $lintErrorChecker;
-
-	/**
-	 * @param LabeledSectionContentFetcher $labeledSectionContentFetcher
-	 * @param LocalMessageContentFetcher $localMessageContentFetcher
-	 * @param PageMessageBuilder $pageMessageBuilder
-	 * @param LintErrorChecker $lintErrorChecker
-	 */
 	public function __construct(
-		LabeledSectionContentFetcher $labeledSectionContentFetcher,
-		LocalMessageContentFetcher $localMessageContentFetcher,
-		PageMessageBuilder $pageMessageBuilder,
-		LintErrorChecker $lintErrorChecker
+		private readonly LabeledSectionContentFetcher $labeledSectionContentFetcher,
+		private readonly LocalMessageContentFetcher $localMessageContentFetcher,
+		private readonly PageMessageBuilder $pageMessageBuilder,
+		private readonly LintErrorChecker $lintErrorChecker,
 	) {
-		parent::__construct( 'MassMessage', 'massmessage' );
-		$this->labeledSectionContentFetcher = $labeledSectionContentFetcher;
-		$this->localMessageContentFetcher = $localMessageContentFetcher;
+		parent::__construct( 'MassMessage' );
 		$this->messageBuilder = new MessageBuilder();
-		$this->pageMessageBuilder = $pageMessageBuilder;
-		$this->lintErrorChecker = $lintErrorChecker;
 	}
 
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'massmessage';
+	}
+
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
@@ -87,7 +73,7 @@ class SpecialMassMessage extends FormSpecialPage {
 		$output->addModuleStyles( 'ext.MassMessage.styles' );
 
 		// Some variables...
-		$this->status = new Status();
+		$this->status = new StatusValue();
 
 		// Figure out what state we're in.
 		if ( $request->getCheck( 'submit-button' ) ) {
@@ -136,7 +122,7 @@ class SpecialMassMessage extends FormSpecialPage {
 		return $this->state;
 	}
 
-	/** @return Status */
+	/** @return StatusValue */
 	public function getStatus() {
 		return $this->status;
 	}
@@ -278,7 +264,7 @@ class SpecialMassMessage extends FormSpecialPage {
 	 * Decides whether to show the preview screen or the submitted message.
 	 *
 	 * @inheritDoc
-	 * @return Status|bool
+	 * @return StatusValue|bool
 	 */
 	public function onSubmit( array $data ) {
 		$requestParser = new MassMessageRequestParser();
@@ -459,7 +445,7 @@ class SpecialMassMessage extends FormSpecialPage {
 			'framed' => true,
 			'padded' => true,
 		] );
-		$this->getOutput()->addHTML( $previewLayout );
+		$this->getOutput()->addHTML( (string)$previewLayout );
 
 		$wikitextPreviewLayout = new PanelLayout( [
 			'content' => [
@@ -480,7 +466,7 @@ class SpecialMassMessage extends FormSpecialPage {
 			'framed' => true,
 			'padded' => true,
 		] );
-		$this->getOutput()->addHTML( $wikitextPreviewLayout );
+		$this->getOutput()->addHTML( (string)$wikitextPreviewLayout );
 
 		// Check if we have unescaped langlinks (T56846)
 		if ( $parserOutput->getLanguageLinks() ) {
@@ -516,9 +502,6 @@ class SpecialMassMessage extends FormSpecialPage {
 		}
 	}
 
-	/**
-	 * @param array $infoMessages
-	 */
 	protected function showPreviewInfo( array $infoMessages ) {
 		$infoListHtml = $infoMessages[0];
 		if ( count( $infoMessages ) > 1 ) {
@@ -543,7 +526,7 @@ class SpecialMassMessage extends FormSpecialPage {
 			'padded' => true,
 		] );
 
-		$this->getOutput()->addHTML( $infoLayout );
+		$this->getOutput()->addHTML( (string)$infoLayout );
 	}
 
 	/**

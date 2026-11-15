@@ -2,7 +2,7 @@
  * Extended version of SiteBase.js for use in jQuery version of Special:GlobalWatchlist
  */
 
-var GlobalWatchlistSiteBase = require( './SiteBase.js' );
+const GlobalWatchlistSiteBase = require( './SiteBase.js' );
 
 /**
  * Represents a specific site, including the display (used in jQuery display)
@@ -37,7 +37,7 @@ function GlobalWatchlistSiteDisplay(
 	);
 
 	// Actual output for this site
-	this.$feedDiv = '';
+	this.$feedDiv = [];
 }
 
 OO.inheritClass( GlobalWatchlistSiteDisplay, GlobalWatchlistSiteBase );
@@ -49,29 +49,37 @@ OO.inheritClass( GlobalWatchlistSiteDisplay, GlobalWatchlistSiteBase );
  * @return {jQuery} list item
  */
 GlobalWatchlistSiteDisplay.prototype.makePageLink = function ( entry ) {
-	var pageTitle = encodeURIComponent( entry.title ).replace( /'/g, '%27' );
-	var $pageLink = $( '<a>' )
+	const pageTitle = encodeURIComponent( entry.title ).replace( /'/g, '%27' );
+	let $titleMsg = entry.$titleMsg;
+	if ( !$titleMsg || !$titleMsg.length ) {
+		$titleMsg = $( '<bdi>' ).text( entry.title );
+	} else if ( !$titleMsg.html() ) {
+		$titleMsg.text( mw.html.escape( entry.title ) );
+	}
+	const $pageLink = $( '<a>' )
 		.attr( 'href', this.linker.linkQuery( 'title=' + pageTitle + '&redirect=no' ) )
 		.attr( 'target', '_blank' )
-		.text( entry.titleMsg || entry.title );
-	var that = this;
+		.addClass( 'mw-title ext-globalwatchlist-pagetitle' )
+		.append( $titleMsg );
+	const that = this;
 
 	// Actually set up the $row to be returned
-	var $row = $( '<li>' );
+	const $row = $( '<li>' );
 
 	$row.attr( 'data-site', encodeURIComponent( this.siteID ) );
 	$row.attr( 'data-title', encodeURIComponent( entry.title ) );
 
 	if ( entry.timestamp ) {
 		// entry.timestampTitle is either a string explaining grouped changes, or null to ignore
-		var $timestamp = $( '<span>' )
+		const $timestamp = $( '<span>' )
 			.text( entry.timestamp )
+			.addClass( 'ext-globalwatchlist-timestamp' )
 			.attr( 'title', entry.timestampTitle );
 		$row.append( $timestamp )
 			.append( ' ' );
 	}
 	if ( entry.expiry ) {
-		var clockIcon = new OO.ui.IconWidget( {
+		const clockIcon = new OO.ui.IconWidget( {
 			classes: [ 'ext-globalwatchlist-expiry-icon' ],
 			icon: 'clock',
 			title: entry.expiry
@@ -81,91 +89,144 @@ GlobalWatchlistSiteDisplay.prototype.makePageLink = function ( entry ) {
 	}
 	if ( entry.flags ) {
 		// New page / minor edit / bot flag
-		$row.append( $( '<b>' ).text( entry.flags ) )
+		$row.append( $( '<b>' )
+			.addClass( 'ext-globalwatchlist-flags' )
+			.text( entry.flags ) )
 			.append( ' ' );
 	}
 	if ( entry.entryType === 'log' ) {
-		var logText = 'Log: ' + entry.logtype + '/' + entry.logaction + ': ';
-		$row.append( $( '<em>' ).text( logText ) )
-			.append( ' ' );
+		// log action description outside fast mode
+		const $logEntry = $( '<em>' );
+		const $logAction = $( '<span>' )
+			.addClass( 'ext-globalwatchlist-logtype' )
+			.text( 'Log: ' + entry.logtype + '/' + entry.logaction );
+		$logEntry.append( $logAction );
+		if ( entry.logdisplay && entry.logdisplay !== '' && this.config.fastMode === false ) {
+			// remove HTML links, which can have wrong local URLs, preserving the plain text with bdi tags only
+			const wrapper = document.createElement( 'span' );
+			wrapper.className = 'ext-globalwatchlist-logdisplay';
+			wrapper.innerHTML = entry.logdisplay;
+			[ ...wrapper.querySelectorAll( '*' ) ].forEach( ( el ) => {
+				if ( el.tagName.toLowerCase() !== 'bdi' ) {
+					el.replaceWith( ...el.childNodes );
+				}
+			} );
+			$logEntry.append( ' (' ).append( $( '<bdi>' ).append( wrapper ) ).append( ')' );
+		}
+		$logEntry.append( ': ' );
+		$row.append( $logEntry ).append( ' ' );
 	}
-
 	$row.append( $pageLink )
 		.append( ' (' );
 
 	if ( entry.entryType !== 'log' ) {
 		// No history link for log entries, T273691
-		var $historyLink = $( '<a>' )
+		const $historyLink = $( '<a>' )
 			.attr( 'href', this.linker.linkQuery( 'title=' + pageTitle + '&action=history' ) )
 			.attr( 'target', '_blank' )
+			.addClass( 'ext-globalwatchlist-history' )
 			.text( mw.msg( 'globalwatchlist-history' ) );
 		$row.append( $historyLink )
 			.append( ', ' );
 	}
 
+	// flag for the permalink creation
+	let newEdit = false;
+	if ( entry.entryType === 'edit' && entry.newPage === true && this.config.fastMode === false ) {
+		const permrev = entry.editCount === 1 ? entry.toRev : entry.fromRev;
+		const $diffLink = $( '<a>' )
+			.attr( 'href', this.linker.linkQuery( 'oldid=' + permrev ) )
+			.attr( 'target', '_blank' )
+			.addClass( 'ext-globalwatchlist-permalink' )
+			.text( mw.msg( 'globalwatchlist-permalink' ) );
+		$row.append( $diffLink );
+		newEdit = true;
+	}
 	// No diff links in fast mode, see T269728
-	if ( entry.entryType === 'edit' && entry.newPage === false && this.config.fastMode === false ) {
-		var $diffLink = $( '<a>' )
+	if ( entry.entryType === 'edit' && ( entry.newPage === false || entry.editCount > 1 ) && this.config.fastMode === false ) {
+		const $diffLink = $( '<a>' )
 			.attr( 'href', this.linker.linkQuery( 'diff=' + entry.toRev + '&oldid=' + entry.fromRev ) )
 			.attr( 'target', '_blank' )
-			.addClass( 'ext-globalwatchlist-diff' )
-			.text(
+			.attr( 'dir', 'auto' )
+			.addClass( 'ext-globalwatchlist-diff' );
+		// case when there is more than just the creation
+		if ( newEdit ) {
+			$row.append( '+' );
+			$diffLink.text(
+				entry.editCount === 2 ? mw.msg( 'diff' ) : mw.msg( 'nchanges', entry.editCount - 1 )
+			);
+		// case when there is no creation
+		} else {
+			$diffLink.text(
 				entry.editCount === 1 ? mw.msg( 'diff' ) : mw.msg( 'nchanges', entry.editCount )
 			);
+		}
 		$row.append( $diffLink )
 			.append( ', ' );
-	} else if ( entry.entryType === 'log' ) {
-		var $logPageLink = $( '<a>' )
+	// case when there is just the creation
+	} else if ( newEdit ) {
+		$row.append( ', ' );
+	}
+	if ( entry.entryType === 'log' ) {
+		const $logPageLink = $( '<a>' )
 			.attr( 'href', this.linker.linkQuery( 'title=Special:Log&page=' + pageTitle ) )
 			.attr( 'target', '_blank' )
+			.addClass( 'ext-globalwatchlist-logpage' )
 			.text( mw.msg( 'globalwatchlist-log-page' ) );
 		$row.append( $logPageLink )
 			.append( ', ' );
 
-		var $logEntryLink = $( '<a>' )
+		const $logEntryLink = $( '<a>' )
 			.attr( 'href', this.linker.linkQuery( 'title=Special:Log&logid=' + entry.logid ) )
 			.attr( 'target', '_blank' )
+			.addClass( 'ext-globalwatchlist-logentry' )
 			.text( mw.msg( 'globalwatchlist-log-entry' ) );
 		$row.append( $logEntryLink )
 			.append( ', ' );
 	}
 
-	var $unwatchLink = $( '<a>' )
+	const $unwatchLink = $( '<a>' )
 		.addClass( 'ext-globalwatchlist-watchunwatch' )
 		.text( mw.msg( 'globalwatchlist-unwatch' ) )
-		.on( 'click', function () {
+		.on( 'click', () => {
 			that.changeWatched( entry.title, 'unwatch' );
 		} );
 	$row.append( $unwatchLink )
 		.append( ', ' );
 
-	var $markAsReadLink = $( '<a>' )
+	const $markAsReadLink = $( '<a>' )
 		.addClass( 'ext-globalwatchlist-markpageseen' )
 		.text( mw.msg( 'globalwatchlist-markpageseen' ) )
-		.on( 'click', function () {
+		.on( 'click', () => {
 			that.markPageAsSeen( entry.title );
 		} );
 	$row.append( $markAsReadLink );
 
 	$row.append( ')' );
 
-	var $user = ( this.config.fastMode ? '' : entry.userDisplay );
-	var $comment = '';
-	if ( entry.commentDisplay ) {
+	const $user = this.config.fastMode ?
+		$() :
+		$( $.parseHTML( entry.userDisplay ) )
+			.addClass( 'ext-globalwatchlist-user' );
+	const $comment = entry.commentDisplay ?
 		// Need to process links in the parsed comments as raw HTML
-		$comment = $( '<span>' ).html( entry.commentDisplay );
-	}
-	if ( $user !== '' || $comment !== '' ) {
+		$( '<span>' )
+			.addClass( 'ext-globalwatchlist-comment' )
+			.append( $( '<bdi>' ).html( entry.commentDisplay ) ) :
+		$();
+	if ( $user.length || $comment.length ) {
 		$row.append( ' (' )
-			.append( $user )
-			.append( $comment )
-			.append( ')' );
+			.append( $user );
+		if ( $comment.length ) {
+			$row.append( ': ' ).append( $comment );
+		}
+		$row.append( ')' );
 	}
 
 	if ( entry.tagsDisplay ) {
-		// Need to process links in the parsed description as raw HTML
-		var $tags = $( '<em>' ).html( entry.tagsDisplay );
-
+		const $tags = $( '<em>' )
+			.addClass( 'ext-globalwatchlist-tags' )
+			.append( entry.tagsDisplay );
 		$row.append( ' ' )
 			.append( $tags );
 	}
@@ -179,83 +240,119 @@ GlobalWatchlistSiteDisplay.prototype.makePageLink = function ( entry ) {
  * failure (via renderApiFailure)
  *
  * @param {jQuery} $content Content to show
+ * @param {Object} siteinfo Extra site information read live from the wiki
+ * @param {boolean|undefined} siteinfo.rtl Whether the site is right-to-left;
+ *  `undefined` if unknown
+ * @param {string} labelname The name of the Watchlist label
  */
-GlobalWatchlistSiteDisplay.prototype.actuallyRenderWatchlist = function ( $content ) {
-	var headerTemplate = mw.template.get(
+GlobalWatchlistSiteDisplay.prototype.actuallyRenderWatchlist = function ( $content, siteinfo, labelname ) {
+	const headerTemplate = mw.template.get(
 		'ext.globalwatchlist.specialglobalwatchlist',
 		'templates/siteRowHeader.mustache'
 	);
-	var headerParams = {
+	const headerParams = {
 		'special-watchlist-url': this.linker.linkPage( 'Special:Watchlist' ),
 		'site-name': this.site,
 		'special-edit-watchlist-url': this.linker.linkPage( 'Special:EditWatchlist' ),
-		'edit-watchlist-msg': mw.msg( 'globalwatchlist-editwatchlist' )
+		'edit-watchlist-msg': mw.msg( 'globalwatchlist-editwatchlist' ),
+		'site-label': labelname ? mw.msg( 'quotation-marks', labelname ) : ''
 	};
 
-	// Get RTL/LTR direction for the site. We can't use String.prototype.startsWith, since
-	// that is unavailable in IE11, and doesn't take multiple values anyway. Use
-	// String.prototype.match with a list of the language codes that should be RTL
-	// this.siteID is based on the URL form of the wiki, and we assume that wikis that are
-	// meant to be RTL are in the form `⧼rtl language code⧽.*`, and any URL that does not
-	// match this is for an LTR wiki. See T274602 and T274313
-	var isRTL = this.siteID.match(
-		/^(ar|azb|ckb|dv|fa|glk|he|ks|lrc|mzn|nqo|pnb|ps|sd|ug|ur|yi)_/
-	);
-	// mw-content-ltr and -rtl classes are not enough to ensure that the text is formatted
-	// in the correct direction, so add a manual direction attribute. See T287649
-	// We still add those classes because they are also used by jQuery.makeCollapsible
-	// to know if the collapse button should be on the right or left.
-	this.$feedDiv = $( '<div>' )
-		.attr( 'id', 'ext-globalwatchlist-feed-site-' + this.siteID )
-		.attr( 'dir', isRTL ? 'rtl' : 'ltr' )
+	const $currentFeedDiv = $( '<div>' )
+		.attr( 'id', 'ext-globalwatchlist-feed-site-' + this.siteID +
+			( labelname ? '-label-' + labelname : '' ) )
+		.addClass( 'ext-globalwatchlist-feed-site-' + this.siteID )
 		.addClass( 'ext-globalwatchlist-feed-site' )
-		.addClass( isRTL ? 'mw-content-rtl' : 'mw-content-ltr' )
 		.append(
 			headerTemplate.render( headerParams ),
 			$content
 		);
+
+	if ( siteinfo.rtl !== undefined ) {
+		// mw-content-ltr and -rtl classes are not enough to ensure that the text is formatted
+		// in the correct direction, so add a manual direction attribute. See T287649
+		// We still add those classes because they are also used by jQuery.makeCollapsible
+		// to know if the collapse button should be on the right or left.
+		$currentFeedDiv.attr( 'dir', siteinfo.rtl ? 'rtl' : 'ltr' );
+		$currentFeedDiv.addClass( siteinfo.rtl ? 'mw-content-rtl' : 'mw-content-ltr' );
+	}
+	this.$feedDiv.push( $currentFeedDiv );
 };
 
 /**
  * Alert on API failures
  */
 GlobalWatchlistSiteDisplay.prototype.renderApiFailure = function () {
-	var $siteContent = $( '<p>' ).text(
+	const $siteContent = $( '<p>' ).text(
 		mw.msg( 'globalwatchlist-fetch-site-failure' )
 	);
 
-	this.actuallyRenderWatchlist( $siteContent );
+	this.actuallyRenderWatchlist( $siteContent, { rtl: undefined }, '' );
 };
 
 /**
  * Display the watchlist
  *
- * @param {GlobalWatchlistEntryBase[]} summary What should be rendered
+ * @param {Array<Array<GlobalWatchlistEntryBase>>} summaryArray What should be rendered
+ * @param {Object} siteinfo Extra site information read live from the wiki
+ * @param {boolean|undefined} siteinfo.rtl Whether the site is right-to-left;
+ *  `undefined` if unknown
  */
-GlobalWatchlistSiteDisplay.prototype.renderWatchlist = function ( summary ) {
-	var $ul = $( '<ul>' ),
-		that = this;
-	summary.forEach( function ( element ) {
-		$ul.append( that.makePageLink( element ) );
-	} );
+GlobalWatchlistSiteDisplay.prototype.renderWatchlist = function ( summaryArray, siteinfo ) {
+	const that = this;
+	summaryArray.forEach( ( summary, key ) => {
+		if ( !summary ) {
+			return;
+		}
+		const $ul = $( '<ul>' );
+		summary.forEach( ( element ) => {
+			$ul.append( that.makePageLink( element ) );
+		} );
 
-	var markSeenButton = new OO.ui.ButtonInputWidget( {
-		classes: [ 'ext-globalwatchlist-feed-markseen' ],
-		flags: [ 'destructive' ],
-		icon: 'check',
-		label: mw.msg( 'globalwatchlist-markseen' )
-	} ).on( 'click', function () {
-		that.markAllAsSeen();
-	} );
+		const markSeenButton = new OO.ui.ButtonInputWidget( {
+			classes: [ 'ext-globalwatchlist-feed-markseen' ],
+			flags: [ 'destructive' ],
+			icon: 'check',
+			label: mw.msg( 'globalwatchlist-markseen' )
+		} );
 
-	var $outputContent = $( '<div>' )
-		.addClass( 'ext-globalwatchlist-site' )
-		.append(
-			markSeenButton.$element,
-			$ul
-		)
-		.makeCollapsible();
-	this.actuallyRenderWatchlist( $outputContent );
+		markSeenButton.on( 'click', () => {
+			const hasLabels =
+				Array.isArray( that.labelsData ) &&
+				that.labelsData.length > 0;
+
+			if ( !hasLabels ) {
+				that.debug( 'Mark all' );
+				that.markAllAsSeen();
+				return;
+			}
+
+			// Find the closest collapsible container
+			const $container = markSeenButton.$element.closest( '.mw-collapsible' );
+			// Collect all data-title attributes inside the container
+			const titles = [];
+			$container.find( '[data-title]' ).each( function () {
+				const title = $( this ).attr( 'data-title' );
+				if ( title ) {
+					titles.push( decodeURIComponent( title ) );
+				}
+			} );
+
+			that.debug( 'Mark section', titles );
+			that.markSectionAsSeen( Array.from( new Set( titles ) ) ).then( () => $( markSeenButton
+				.$element.closest( '.ext-globalwatchlist-feed-site' ).children()[ 1 ] ).hide() );
+		} );
+
+		const $outputContent = $( '<div>' )
+			.addClass( 'ext-globalwatchlist-site' )
+			.append(
+				markSeenButton.$element,
+				$ul
+			)
+			.makeCollapsible();
+		const labelname = that.labelsData && that.labelsData[ key ];
+		this.actuallyRenderWatchlist( $outputContent, siteinfo, labelname );
+	} );
 };
 /* end GlobalWatchlistSiteDisplay.prototype.renderWatchlist */
 
@@ -264,9 +361,9 @@ GlobalWatchlistSiteDisplay.prototype.renderWatchlist = function ( summary ) {
  */
 GlobalWatchlistSiteDisplay.prototype.afterMarkAllAsSeen = function () {
 	this.debug( 'markSiteAsSeen - hiding site' );
-	if ( this.$feedDiv ) {
+	if ( this.$feedDiv && this.$feedDiv[ 0 ] ) {
 		// Don't call .children() on the default empty string, T275078
-		$( this.$feedDiv.children()[ 1 ] ).hide();
+		$( this.$feedDiv[ 0 ].children()[ 1 ] ).hide();
 	}
 
 	// FIXME
@@ -274,13 +371,20 @@ GlobalWatchlistSiteDisplay.prototype.afterMarkAllAsSeen = function () {
 };
 /* end GlobalWatchlistSiteDisplay.prototype.afterMarkAllAsSeen */
 
+/**
+ * Update display after marking a page as seen
+ * @param {string} pageTitle the marked page
+ */
 GlobalWatchlistSiteBase.prototype.afterMarkPageAsSeen = function ( pageTitle ) {
 	this.debug( 'markPageAsSeen - hiding page' );
+	const dataTitle = encodeURIComponent( pageTitle );
 	if ( this.$feedDiv ) {
-		var dataTitle = encodeURIComponent( pageTitle );
-		$( this.$feedDiv.find( '[data-title="' + dataTitle + '"]' ) ).hide();
+		this.$feedDiv.forEach( ( item ) => {
+			$( item ).find( '[data-title="' + dataTitle + '"]' ).hide();
+		} );
 	}
 };
+/* end GlobalWatchlistSiteDisplay.prototype.afterMarkPageAsSeen */
 
 /**
  * Update entry click handlers, text, and strikethrough for a specific title
@@ -293,20 +397,20 @@ GlobalWatchlistSiteDisplay.prototype.processUpdateWatched = function ( pageTitle
 		'Processing after ' + ( unwatched ? 'unwatching' : 'rewatching' ) + ': ' + pageTitle
 	);
 
-	var encodedSite = encodeURIComponent( this.siteID );
-	var encodedTitle = encodeURIComponent( pageTitle );
-	var $entries = $( 'li[data-site="' + encodedSite + '"][data-title="' + encodedTitle + '"]' );
+	const encodedSite = encodeURIComponent( this.siteID );
+	const encodedTitle = encodeURIComponent( pageTitle );
+	const $entries = $( 'li[data-site="' + encodedSite + '"][data-title="' + encodedTitle + '"]' );
 	$entries[ unwatched ? 'addClass' : 'removeClass' ]( 'ext-globalwatchlist-strike' );
 
 	$entries.children( '.ext-globalwatchlist-expiry-icon' ).remove();
 
-	var $links = $entries.children( 'a.ext-globalwatchlist-watchunwatch' );
-	var newText = mw.msg( unwatched ? 'globalwatchlist-rewatch' : 'globalwatchlist-unwatch' );
-	var that = this;
+	const $links = $entries.children( 'a.ext-globalwatchlist-watchunwatch' );
+	const newText = mw.msg( unwatched ? 'globalwatchlist-rewatch' : 'globalwatchlist-unwatch' );
+	const that = this;
 
 	$links.each( function () {
 		$( this ).off( 'click' );
-		$( this ).on( 'click', function () {
+		$( this ).on( 'click', () => {
 			that.changeWatched( pageTitle, unwatched ? 'watch' : 'unwatch' );
 		} );
 		$( this ).text( newText );

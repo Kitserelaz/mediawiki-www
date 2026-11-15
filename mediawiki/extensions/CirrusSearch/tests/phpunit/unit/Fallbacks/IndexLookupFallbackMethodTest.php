@@ -12,7 +12,7 @@ use Elastica\Index;
 use Elastica\Query;
 use Elastica\Response;
 use Elastica\ResultSet\DefaultBuilder;
-use HtmlArmor;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * @covers \CirrusSearch\Fallbacks\IndexLookupFallbackMethod
@@ -53,7 +53,7 @@ class IndexLookupFallbackMethodTest extends FallbackMethodTestBase {
 			->setAllowRewrite( true )
 			->build();
 
-		$rewrittenResults = DummySearchResultSet::fakeTotalHits( $this->newTitleHelper(), 1 );
+		$rewrittenResults = DummySearchResultSet::fakeTotalHits( self::newTitleHelper(), 1 );
 		$rewrittenQuery = null;
 		if ( $suggestion != null && $rewritten ) {
 			$rewrittenQuery = SearchQueryBuilder::forRewrittenQuery( $query, $suggestion,
@@ -64,11 +64,11 @@ class IndexLookupFallbackMethodTest extends FallbackMethodTestBase {
 		/**
 		 * @var IndexLookupFallbackMethod $fallback
 		 */
-		$fallback = new IndexLookupFallbackMethod( $query, 'lookup_index', [],
+		$fallback = new IndexLookupFallbackMethod( 'enabled', $query, 'lookup_index', [],
 			'lookup_suggestion_field', [], [], [] );
 		$this->assertNotNull( $fallback->getSearchRequest(
 			$this->createMock( Client::class ) ) );
-		$initialResults = DummySearchResultSet::fakeTotalHits( $this->newTitleHelper(), $rewritten ? 0 : 1 );
+		$initialResults = DummySearchResultSet::fakeTotalHits( self::newTitleHelper(), $rewritten ? 0 : 1 );
 		$context = new FallbackRunnerContextImpl( $initialResults, $searcherFactory, $this->namespacePrefixParser(),
 			$this->createCirrusSearchHookRunner() );
 		$this->assertSame( 0.0, $fallback->successApproximation( $context ), "No success without a response" );
@@ -208,6 +208,14 @@ class IndexLookupFallbackMethodTest extends FallbackMethodTestBase {
 			->setOffset( 10 )
 			->build();
 		$this->assertNull( IndexLookupFallbackMethod::build( $query, $params ) );
+
+		$query = $this->getNewFTSearchQueryBuilder(
+			$this->newHashSearchConfig( $config ),
+			'intitle:foo'
+		)
+			->setWithDYMSuggestion( true )
+			->build();
+		$this->assertNull( IndexLookupFallbackMethod::build( $query, $params ) );
 	}
 
 	public static function provideInvalidProfileParams() {
@@ -243,7 +251,7 @@ class IndexLookupFallbackMethodTest extends FallbackMethodTestBase {
 			)
 			->setWithDYMSuggestion( true )
 			->build();
-		$lookup = new IndexLookupFallbackMethod( $query, 'index', [ 'query' => 'test' ],
+		$lookup = new IndexLookupFallbackMethod( 'enabled', $query, 'index', [ 'query' => 'test' ],
 			'field', $queryParams, [], [] );
 		try {
 			$lookup->getSearchRequest( $this->createMock( Client::class ) );

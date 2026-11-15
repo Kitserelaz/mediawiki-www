@@ -18,7 +18,7 @@ use WikibaseQuality\ConstraintReport\ConstraintCheck\DelegatingConstraintChecker
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Helper\ConstraintParameterException;
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Message\ViolationMessageRendererFactory;
 use Wikimedia\ParamValidator\ParamValidator;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * API module that checks whether the parameters of a constraint statement are valid.
@@ -42,7 +42,7 @@ class CheckConstraintParameters extends ApiBase {
 	private DelegatingConstraintChecker $delegatingConstraintChecker;
 	private ViolationMessageRendererFactory $violationMessageRendererFactory;
 	private StatementGuidParser $statementGuidParser;
-	private IBufferingStatsdDataFactory $dataFactory;
+	private StatsFactory $statsFactory;
 
 	/**
 	 * Creates new instance from global state.
@@ -50,7 +50,7 @@ class CheckConstraintParameters extends ApiBase {
 	public static function newFromGlobalState(
 		ApiMain $main,
 		string $name,
-		IBufferingStatsdDataFactory $dataFactory,
+		StatsFactory $statsFactory,
 		ApiHelperFactory $apiHelperFactory,
 		LanguageFallbackChainFactory $languageFallbackChainFactory,
 		StatementGuidParser $statementGuidParser,
@@ -65,7 +65,7 @@ class CheckConstraintParameters extends ApiBase {
 			$delegatingConstraintChecker,
 			$violationMessageRendererFactory,
 			$statementGuidParser,
-			$dataFactory
+			$statsFactory->withComponent( 'WikibaseQualityConstraints' )
 		);
 	}
 
@@ -77,7 +77,7 @@ class CheckConstraintParameters extends ApiBase {
 		DelegatingConstraintChecker $delegatingConstraintChecker,
 		ViolationMessageRendererFactory $violationMessageRendererFactory,
 		StatementGuidParser $statementGuidParser,
-		IBufferingStatsdDataFactory $dataFactory
+		StatsFactory $statsFactory
 	) {
 		parent::__construct( $main, $name );
 
@@ -86,13 +86,14 @@ class CheckConstraintParameters extends ApiBase {
 		$this->delegatingConstraintChecker = $delegatingConstraintChecker;
 		$this->violationMessageRendererFactory = $violationMessageRendererFactory;
 		$this->statementGuidParser = $statementGuidParser;
-		$this->dataFactory = $dataFactory;
+		$this->statsFactory = $statsFactory;
 	}
 
 	public function execute() {
-		$this->dataFactory->increment(
-			'wikibase.quality.constraints.api.checkConstraintParameters.execute'
-		);
+		$this->statsFactory->getCounter( 'check_constraint_parameters_execute_total' )
+			->increment();
+
+		$this->checkUserRightsAny( 'wbqc-check-constraints' );
 
 		$params = $this->extractRequestParams();
 		$result = $this->getResult();
@@ -124,7 +125,7 @@ class CheckConstraintParameters extends ApiBase {
 			function ( $propertyIdSerialization ) {
 				try {
 					return new NumericPropertyId( $propertyIdSerialization );
-				} catch ( InvalidArgumentException $e ) {
+				} catch ( InvalidArgumentException ) {
 					$this->apiErrorReporter->dieError(
 						"Invalid id: $propertyIdSerialization",
 						'invalid-property-id',
@@ -164,7 +165,7 @@ class CheckConstraintParameters extends ApiBase {
 						);
 					}
 					return $constraintId;
-				} catch ( StatementGuidParsingException $e ) {
+				} catch ( StatementGuidParsingException ) {
 					$this->apiErrorReporter->dieError(
 						"Invalid statement GUID: $constraintId",
 						'invalid-guid',

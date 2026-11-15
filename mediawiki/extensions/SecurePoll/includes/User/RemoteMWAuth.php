@@ -2,7 +2,7 @@
 
 namespace MediaWiki\Extension\SecurePoll\User;
 
-use InvalidArgumentException;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\SecurePoll\Entities\Election;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Status\Status;
@@ -11,6 +11,7 @@ use MediaWiki\Status\Status;
  * Class for guest login from one MW instance running SecurePoll to another.
  */
 class RemoteMWAuth extends Auth {
+	/** @inheritDoc */
 	public static function getCreateDescriptors() {
 		return [
 			'script-path' => [
@@ -28,7 +29,13 @@ class RemoteMWAuth extends Auth {
 	 * @return Status
 	 */
 	public function requestLogin( $election ) {
-		global $wgRequest, $wgConf;
+		// This is a global exception we may want to let it pass.
+		// Even though $wgConf is an instance of MediaWiki\Config\SiteConfiguration,
+		// it’s not exposed as a service, so accessing it via
+		// `MediaWikiServices::getInstance()->getService( 'SiteConfiguration' )` is
+		// not possible.
+		global $wgConf;
+		$request = RequestContext::getMain()->getRequest();
 
 		$urlParamNames = [
 			'id',
@@ -41,9 +48,10 @@ class RemoteMWAuth extends Auth {
 		$vars = [];
 		$params = [];
 		foreach ( $urlParamNames as $name ) {
-			$value = $wgRequest->getVal( $name );
+			$value = $request->getVal( $name );
 			if ( !preg_match( '/^[\w.-]*$/', (string)$value ) ) {
-				throw new InvalidArgumentException( "Invalid parameter: $name" );
+				wfDebug( __METHOD__ . " Invalid parameter: $name" );
+				return Status::newFatal( 'securepoll-remote-auth-error' );
 			}
 			$params[$name] = $value;
 			$vars["\$$name"] = $value;
@@ -53,15 +61,17 @@ class RemoteMWAuth extends Auth {
 
 		// Get the site and language from $wgConf, if necessary.
 		if ( !isset( $params['site'] ) || !isset( $params['lang'] ) ) {
-			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable
-			[ $site, $lang ] = $wgConf->siteFromDB( $params['wiki'] );
-			if ( !isset( $params['site'] ) ) {
-				$params['site'] = $site;
-				$vars['$site'] = $site;
-			}
-			if ( !isset( $params['lang'] ) ) {
-				$params['lang'] = $lang;
-				$vars['$lang'] = $lang;
+			if ( isset( $params['wiki'] ) ) {
+				// @phan-suppress-next-line PhanTypeMismatchArgumentNullable
+				[ $site, $lang ] = $wgConf->siteFromDB( $params['wiki'] );
+				if ( !isset( $params['site'] ) ) {
+					$params['site'] = $site;
+					$vars['$site'] = $site;
+				}
+				if ( !isset( $params['lang'] ) ) {
+					$params['lang'] = $lang;
+					$vars['$lang'] = $lang;
+				}
 			}
 		}
 
@@ -73,7 +83,7 @@ class RemoteMWAuth extends Auth {
 			$suffixes[$params['site']]
 		) ? $suffixes[$params['site']] : $params['site'];
 
-		$server = $wgConf->get( 'wgServer', $params['wiki'], $suffix, $params );
+		$server = $wgConf->get( 'wgServer', $params['wiki'] ?? '', $suffix, $params );
 		$params['wgServer'] = $server;
 		$vars["\$wgServer"] = $server;
 

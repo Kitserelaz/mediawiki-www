@@ -17,26 +17,14 @@ use CirrusSearch\SearchConfig;
 use CirrusSearch\WarningCollector;
 use Elastica\Aggregation\AbstractAggregation;
 use Elastica\Query\AbstractQuery;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use Wikimedia\Assert\Assert;
 
 /**
  * The search context, maintains the state of the current search query.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
 /**
@@ -119,7 +107,7 @@ class SearchContext implements WarningCollector, FilterBuilder {
 	private $mainQuery;
 
 	/**
-	 * @var \Elastica\Query\MatchQuery[] Queries that don't use Elastic's "query string" query, for
+	 * @var AbstractQuery[] Queries that don't use Elastic's "query string" query, for
 	 *  more advanced searching (e.g. match_phrase_prefix for regular quoted strings).
 	 */
 	private $nonTextQueries = [];
@@ -163,14 +151,16 @@ class SearchContext implements WarningCollector, FilterBuilder {
 	 * @var int[] weights of different syntaxes
 	 */
 	private static $syntaxWeights = [
-		// regex is really tough
+		// Deep category searches can have thousands of terms
+		'deepcategory' => 20,
 		'full_text' => 10,
-		'regex' => PHP_INT_MAX,
 		'more_like' => 100,
 		'near_match' => 10,
 		'prefix' => 2,
-		// Deep category searches
-		'deepcategory' => 20,
+		// regex is really tough
+		'regex' => PHP_INT_MAX,
+		// depends, filtered semantic is pretty expensive
+		'semantic' => 20,
 	];
 
 	/**
@@ -248,7 +238,7 @@ class SearchContext implements WarningCollector, FilterBuilder {
 	 * Return a copy of this context with a new configuration.
 	 *
 	 * @param SearchConfig $config The new configuration
-	 * @return SearchContext
+	 * @return self
 	 */
 	public function withConfig( SearchConfig $config ) {
 		$other = clone $this;
@@ -262,8 +252,11 @@ class SearchContext implements WarningCollector, FilterBuilder {
 		return $other;
 	}
 
-	private function loadConfig() {
-		$this->escaper = new Escaper( $this->config->get( 'LanguageCode' ), $this->config->get( 'CirrusSearchAllowLeadingWildcard' ) );
+	private function loadConfig(): void {
+		$this->escaper = new Escaper(
+			$this->config->get( MainConfigNames::LanguageCode ),
+			$this->config->get( 'CirrusSearchAllowLeadingWildcard' )
+		);
 	}
 
 	public function __clone() {
@@ -468,9 +461,6 @@ class SearchContext implements WarningCollector, FilterBuilder {
 		$this->nonTextHighlightQueries[] = $query;
 	}
 
-	/**
-	 * @return FetchPhaseConfigBuilder
-	 */
 	public function getFetchPhaseBuilder(): FetchPhaseConfigBuilder {
 		return $this->fetchPhaseBuilder;
 	}
@@ -681,7 +671,6 @@ class SearchContext implements WarningCollector, FilterBuilder {
 	/**
 	 * Add custom scoring function to the context.
 	 * The rescore builder will pick it up.
-	 * @param BoostFunctionBuilder $rescore
 	 */
 	public function addCustomRescoreComponent( BoostFunctionBuilder $rescore ) {
 		$this->isDirty = true;
@@ -694,9 +683,9 @@ class SearchContext implements WarningCollector, FilterBuilder {
 	 */
 	public function addWarning( $message, ...$params ) {
 		$this->isDirty = true;
-		$this->warnings[] = array_filter( func_get_args(), static function ( $v ) {
+		$this->warnings[] = [ $message, ...array_filter( $params, static function ( $v ) {
 			return $v !== null;
-		} );
+		} ) ];
 	}
 
 	/**
@@ -778,7 +767,6 @@ class SearchContext implements WarningCollector, FilterBuilder {
 
 	/**
 	 * Add aggregation to perform on search.
-	 * @param AbstractAggregation $agg
 	 */
 	public function addAggregation( AbstractAggregation $agg ) {
 		$this->aggs[] = $agg;
@@ -808,16 +796,10 @@ class SearchContext implements WarningCollector, FilterBuilder {
 		return $this->filters;
 	}
 
-	/**
-	 * @param AbstractQuery $query
-	 */
 	public function must( AbstractQuery $query ) {
 		$this->addFilter( $query );
 	}
 
-	/**
-	 * @param AbstractQuery $query
-	 */
 	public function mustNot( AbstractQuery $query ) {
 		$this->addNotFilter( $query );
 	}
@@ -838,15 +820,15 @@ class SearchContext implements WarningCollector, FilterBuilder {
 	 * @param SearchQuery $query
 	 * @param FallbackRunner|null $fallbackRunner
 	 * @param CirrusSearchHookRunner|null $cirrusSearchHookRunner
-	 * @return SearchContext
+	 * @return self
 	 * @throws \CirrusSearch\Parser\ParsedQueryClassifierException
 	 */
 	public static function fromSearchQuery(
 		SearchQuery $query,
 		?FallbackRunner $fallbackRunner = null,
 		?CirrusSearchHookRunner $cirrusSearchHookRunner = null
-	): SearchContext {
-		$searchContext = new SearchContext(
+	): self {
+		$searchContext = new self(
 			$query->getSearchConfig(),
 			$query->getNamespaces(),
 			$query->getDebugOptions(),
@@ -893,14 +875,16 @@ class SearchContext implements WarningCollector, FilterBuilder {
 		}
 		$pQuery = $query->getParsedQuery();
 		$searchContext->originalSearchTerm = $pQuery->getRawQuery();
+		$searchContext->trackTotalHits = $query->mustTrackTotalHits();
 		return $searchContext;
 	}
 
-	/**
-	 * @return FallbackRunner
-	 */
 	public function getFallbackRunner(): FallbackRunner {
 		return $this->fallbackRunner;
+	}
+
+	public function disableFallbackRunner(): void {
+		$this->fallbackRunner = FallbackRunner::noopRunner();
 	}
 
 	public function setTrackTotalHits( bool $trackTotalHits ): void {

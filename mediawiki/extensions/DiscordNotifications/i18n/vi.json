@@ -1,0 +1,43 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bapham123"
+		]
+	},
+	"discordnotifications-desc": "Gửi thông báo Discord cho các hành động đã chọn đã xảy ra trên trang web MediaWiki của bạn.",
+	"discordnotifications-block": "cấm",
+	"discordnotifications-groups": "nhóm",
+	"discordnotifications-talk": "thảo luận",
+	"discordnotifications-contribs": "đóng góp",
+	"discordnotifications-centralauth": "Đăng nhập trung ương",
+	"discordnotifications-edit": "sửa đổi",
+	"discordnotifications-delete": "xóa",
+	"discordnotifications-history": "lịch sử",
+	"discordnotifications-diff": "khác",
+	"discordnotifications-preview": "xem trước",
+	"discordnotifications-bytes": "$1 {{PLURAL:$1|byte}}",
+	"discordnotifications-article-saved": "📝 $1 đã $2 $3 $4",
+	"discordnotifications-article-saved-minor-edits": "thực hiện sửa đổi nhỏ vào",
+	"discordnotifications-article-saved-edit": "đã sửa đổi",
+	"discordnotifications-article-created": "📄 $1 đã tạo $2 $3",
+	"discordnotifications-file-namespace": "Tập tin",
+	"discordnotifications-article-deleted": "❌ $1 đã xóa $2 Lý do: $3",
+	"discordnotifications-article-undeleted": "🔄 $1 đã phục hồi $2 Lý do: $3",
+	"discordnotifications-article-moved": "➡ $1 đã chuyển $2 thành $3. Lý do: $4",
+	"discordnotifications-article-protected": "🔒 $1 có $2 bài viết $3 . Lý do: $4",
+	"discordnotifications-article-protected-change": "đổi mức khóa",
+	"discordnotifications-article-protected-remove": "mở khóa",
+	"discordnotifications-new-user": "👥 Tài khoản người dùng mới $1 vừa được tạo $2",
+	"discordnotifications-new-user-filtered": "👥 Tài khoản thành viên mới $1 vừa được mở $2 \n\nBộ lọc phù hợp",
+	"discordnotifications-file-uploaded": "📤 $1 đã tải lên tập tin <$2|$3> (định dạng: $4, kích thước: $5 $6, tóm lược: $7)",
+	"discordnotifications-block-user": "$1 đã cấm $2 $3 Hết hạn cấm: $4. $5",
+	"discordnotifications-block-user-reason": "với lý do",
+	"discordnotifications-block-user-list": "Danh sách người dùng đang bị cấm",
+	"discordnotifications-summary": "Tóm tắt: $1",
+	"discordnotifications-content": "Nội dung:",
+	"discordnotifications-view-user-rights": "Xem hoặc quản lý quyền người dùng",
+	"discordnotifications-change-user-groups": "%s đã thay đổi nhóm người dùng của %s. Nhóm mới: %s",
+	"discordnotifications-change-user-groups-with-old": "$1 đã thay đổi nhóm người dùng cho $2. Nhóm cũ: $3. Nhóm mới: $4",
+	"discordnotifications-import-complete": "⤵️ Bài viết $1 đã được nhập.",
+	"discordnotifications-moderation-pending": "🔍 $1 đã gửi một bản sửa đổi cho $2 tới [hàng đợi duyệt]($3)."
+}

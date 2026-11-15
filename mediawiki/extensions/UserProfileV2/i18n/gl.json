@@ -1,0 +1,38 @@
+{
+	"@metadata": {
+		"authors": [
+			"Toliño"
+		]
+	},
+	"userprofilev2-desc": "Un sistema de perfís de usuario baseado no wiki.",
+	"userprofilev2-selectavatar": "Seleccionar un avatar",
+	"userprofilev2-avatarchanged": "O avatar modificouse correctamente.",
+	"userprofilev2-avatardeleted": "O avatar eliminouse correctamente.",
+	"userprofilev2-user-locked": "Esta conta de usuario foi desactivada globalmente.",
+	"userprofilev2-edit-profile": "Editar o teu perfil",
+	"userprofilev2-apierror-forbidden": "Prohibido: non tes permiso para modificares este avatar.",
+	"userprofilev2-apierror-invalidpermission": "Prohibido: non tes permiso para editares o perfil de $1",
+	"userprofilev2-apierror-nofile": "Non se proporcionou ningún ficheiro para a subida.",
+	"userprofilev2-apierror-ratelimited": "Non podes subir imaxes nestes intres.",
+	"userprofilev2-apierror-invalidusername": "Non hai ningún usuario rexistrado neste wiki co nome de usuario «$1».",
+	"userprofilev2-about-me": "Acerca de min",
+	"userprofilev2-discord": "Nome de usuario de Discord",
+	"userprofilev2-twitter": "Nome de usuario de Twitter",
+	"userprofilev2-mastodon": "Nome de usuario de Mastodon",
+	"userprofilev2-about-me-placeholder": "Escribe algo sobre ti...",
+	"userprofilev2-about-me-help": "Fálanos de ti. Tes un máximo de 200 caracteres.",
+	"userprofilev2-mastodon-help": "O teu nome de usuario de Mastodon, coa @",
+	"userprofilev2-twitter-help": "O teu nome de usuario de Twitter, coa @",
+	"userprofilev2-discord-help": "O teu nome de usuario de Discord, sen o #",
+	"userprofilev2-showglobalgroups": "Mostrar os meus grupos globais?",
+	"userprofilev2-showglobaleditcount": "Mostrar o meu reconto global de edicións?",
+	"userprofilev2-showglobalgroupshelp": "Mostrar os grupos de usuarios globais dos que formo parte (serán visibles para calquera)",
+	"userprofilev2-showglobaleditcounthelp": "Mostrar o meu reconto global de edicións de CentralAuth (será visible para calquera)",
+	"userprofilev2-edit": "Editar",
+	"userprofilev2-edit-count": "$1 edicións",
+	"userprofilev2-globaledit-count": "$1 edicións globais",
+	"userprofilev2-editavatar": "Editar o avatar",
+	"userprofilev2-edit-back": "Volver",
+	"userprofilev2-deleteavatar": "Eliminar o avatar",
+	"userprofilev2-helptext": "Utiliza esta caixa de diálogo para modificar o contido do teu perfil de usuario."
+}

@@ -5,7 +5,6 @@ namespace MediaWiki\Extension\SecurePoll\Test\Integration;
 use MediaWiki\Extension\SecurePoll\ActionPageFactory;
 use MediaWiki\Extension\SecurePoll\Pages\ActionPage;
 use MediaWiki\Extension\SecurePoll\SpecialSecurePoll;
-use MediaWiki\MediaWikiServices;
 use MediaWikiIntegrationTestCase;
 
 /**
@@ -14,7 +13,7 @@ use MediaWikiIntegrationTestCase;
  */
 class ActionPageFactoryTest extends MediaWikiIntegrationTestCase {
 	protected function getFactory() {
-		return MediaWikiServices::getInstance()->getService( 'SecurePoll.ActionPageFactory' );
+		return $this->getServiceContainer()->getService( 'SecurePoll.ActionPageFactory' );
 	}
 
 	protected function getSpecialPage() {
@@ -27,13 +26,13 @@ class ActionPageFactoryTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers \MediaWiki\Extension\SecurePoll\ActionPageFactory::getNames
+	 * @covers \MediaWiki\Extension\SecurePoll\ActionPageFactory::getPageList
 	 */
 	public function testGetNames() {
 		$factory = $this->getFactory();
-		$names = $factory->getNames();
-		$this->assertIsArray( $names );
-		$this->assertContains( 'create', $names );
+		$pages = $factory->getPageList();
+		$this->assertIsArray( $pages );
+		$this->assertContains( 'create', array_keys( $pages ) );
 	}
 
 	/**
@@ -42,10 +41,12 @@ class ActionPageFactoryTest extends MediaWikiIntegrationTestCase {
 	public function testMakingValidPages() {
 		$specialPage = $this->getSpecialPage();
 		$factory = $this->getFactory();
-		$names = $factory->getNames();
-		foreach ( $names as $pageName ) {
-			$page = $factory->getPage( $pageName, $specialPage );
-			$this->assertInstanceOf( ActionPage::class, $page );
+		$names = $factory->getPageList();
+		foreach ( $names as $pageName => $pageProps ) {
+			if ( !isset( $pageProps['pattern'] ) ) {
+				$page = $factory->getPage( $pageName, $specialPage );
+				$this->assertInstanceOf( ActionPage::class, $page );
+			}
 		}
 	}
 
@@ -57,5 +58,16 @@ class ActionPageFactoryTest extends MediaWikiIntegrationTestCase {
 		$factory = $this->getFactory();
 		$subpage = $factory->getPage( 'asdfghjkl', $specialPage );
 		$this->assertNull( $subpage, "Invalid page name results in null return" );
+	}
+
+	/**
+	 * @covers \MediaWiki\Extension\SecurePoll\ActionPageFactory::getPage
+	 */
+	public function testMakingValidPagesWithPatterns() {
+		$specialPage = $this->getSpecialPage();
+		$factory = $this->getFactory();
+		$names = $factory->getPageList();
+		$page = $factory->getPage( 'tallies/1/result/1', $specialPage );
+		$this->assertInstanceOf( ActionPage::class, $page );
 	}
 }

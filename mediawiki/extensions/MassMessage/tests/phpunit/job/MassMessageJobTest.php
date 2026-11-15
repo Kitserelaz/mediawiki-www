@@ -6,14 +6,15 @@ use MediaWiki\Content\ContentHandler;
 use MediaWiki\Content\TextContent;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Json\FormatJson;
+use MediaWiki\Language\RawMessage;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MassMessage\Job\MassMessageJob;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Specials\SpecialPageLanguage;
 use MediaWiki\Title\Title;
+use MediaWiki\Utils\MWCryptRand;
 use MediaWiki\WikiMap\WikiMap;
-use MWCryptRand;
 use RuntimeException;
 
 /**
@@ -258,11 +259,12 @@ class MassMessageJobTest extends MassMessageTestCase {
 
 		$target = $this->getNonexistingTestPage( 'Project:Testing1234' )->getTitle();
 		$pageMessageTitle = $this->createPage( $pageMessageTitleStr, $pageMessageContent );
-		// Set a hook handler to make page editing fail and test that
+		// Set a hook handler to make page saving fail and test that
 		// job fails without creating exceptions
-		$this->setTemporaryHook( 'EditFilter', static function ( $editor, $text, $section, &$error ): bool {
-			$error = 'Failing for testPageMessageSendingFailToEdit';
-
+		$this->setTemporaryHook( 'MultiContentSave', static function (
+			$renderedRevision, $user, $summary, $flags, $status
+		): bool {
+			$status->fatal( new RawMessage( 'Failing for testPageMessageSendingFailToEdit' ) );
 			return false;
 		} );
 		[ , $result ] = $this->simulateJob( $target, [

@@ -1,5 +1,6 @@
 ( function () {
 	'use strict';
+	var logger = require( 'ext.translate.eventlogginghelpers' );
 
 	/**
 	 * Proofread Plugin
@@ -62,17 +63,17 @@
 				beforeSave: function ( translation ) {
 					that.$message.find( '.tux-proofread-translation' )
 						.html( mw.translate.formatMessageGently( translation || '', that.message.key ) )
-						.addClass( 'highlight' );
+						.addClass( 'tux-highlight' );
 				},
 				onSave: function ( translation ) {
 					that.$message.find( '.tux-proofread-translation' )
 						.text( translation )
-						.removeClass( 'highlight' );
+						.removeClass( 'tux-highlight' );
 					that.message.translation = translation;
 					that.markSelfTranslation();
 
 					// `status` class is documented elsewhere
-					// eslint-disable-next-line mediawiki/class-doc
+
 					that.$message.find( '.tux-proofread-status' )
 						.removeClass( 'translated fuzzy proofread untranslated' )
 						.addClass( that.message.properties.status );
@@ -96,7 +97,7 @@
 			/* Whether the current user if the last translator of this message.
 			 * Accepting own translations is prohibited. */
 			var translatedBySelf = ( this.message.properties[ 'last-translator-text' ] === mw.user.getName() );
-			var proofreadBySelf = reviewers.indexOf( userId ) > -1;
+			var proofreadBySelf = reviewers.includes( userId );
 
 			var sourceLangDir = $.uls.data.getDir( this.options.sourcelangcode );
 
@@ -131,7 +132,7 @@
 			var targetLangDir = $.uls.data.getDir( targetLangAttrib );
 
 			// `status` class is documented elsewhere
-			// eslint-disable-next-line mediawiki/class-doc
+
 			this.$message.append(
 				$( '<div>' )
 					.addClass( 'row tux-message-item-compact message' )
@@ -139,7 +140,7 @@
 						// `status` class is documented elsewhere
 						// eslint-disable-next-line mediawiki/class-doc
 						$( '<div>' )
-							.addClass( 'one column tux-proofread-status ' + this.message.properties.status ),
+							.addClass( 'one column tux-proofread-status skin-invert ' + this.message.properties.status ),
 						$( '<div>' )
 							.addClass( 'five columns tux-proofread-source' )
 							.attr( {
@@ -270,6 +271,10 @@
 
 			this.$message.find( '.tux-proofread-action' ).on( 'click', function () {
 				that.proofread();
+				logger.logClickEvent(
+					'review',
+					'review_button'
+				);
 				return false;
 			} );
 
@@ -288,7 +293,7 @@
 	 *
 	 * @internal
 	 * @param {Object} options
-	 * @returns {jQuery}
+	 * @return {jQuery}
 	 */
 	$.fn.proofread = function ( options ) {
 		return this.each( function () {

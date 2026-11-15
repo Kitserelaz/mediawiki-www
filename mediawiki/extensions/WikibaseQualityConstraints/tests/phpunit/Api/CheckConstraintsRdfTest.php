@@ -2,10 +2,10 @@
 
 namespace WikibaseQuality\ConstraintReport\Tests\Api;
 
-use Article;
 use MediaWiki\Config\HashConfig;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\Request\WebResponse;
 use MediaWiki\Title\Title;
@@ -33,7 +33,7 @@ use WikibaseQuality\ConstraintReport\ConstraintCheck\Result\CheckResultDeseriali
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Result\CheckResultSerializer;
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Result\NullResult;
 use Wikimedia\ObjectCache\WANObjectCache;
-use Wikimedia\Stats\NullStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @covers \WikibaseQuality\ConstraintReport\Api\CheckConstraintsRdf
@@ -54,10 +54,7 @@ class CheckConstraintsRdfTest extends \PHPUnit\Framework\TestCase {
 		return $this->createMock( OutputPage::class );
 	}
 
-	/**
-	 * @param string $entityId entity ID serialization
-	 */
-	private function getCheckResult( $entityId, $status = CheckResult::STATUS_VIOLATION ) {
+	private function getCheckResult( string $entityId, string $status = CheckResult::STATUS_VIOLATION ): CheckResult {
 		return new CheckResult(
 			new MainSnakContextCursor(
 				$entityId,
@@ -108,12 +105,9 @@ class CheckConstraintsRdfTest extends \PHPUnit\Framework\TestCase {
 		return $context;
 	}
 
-	/**
-	 * @return LoggingHelper
-	 */
 	private function getLoggingHelper() {
 		return new LoggingHelper(
-			new NullStatsdDataFactory(),
+			StatsFactory::newNull(),
 			new NullLogger(),
 			new HashConfig( [
 				'WBQualityConstraintsCheckDurationInfoSeconds' => 5.0,
@@ -184,14 +178,16 @@ class CheckConstraintsRdfTest extends \PHPUnit\Framework\TestCase {
 		$action->onView();
 		$actualOutput = ob_get_clean();
 
-		$wdsURI = $rdfVocabulary->getNamespaceURI( RdfVocabulary::NS_STATEMENT );
+		$propertyRepo = $rdfVocabulary->getEntityRepositoryName( new NumericPropertyId( 'P1' ) );
+		$wds = $rdfVocabulary->statementNamespaceNames[$propertyRepo][RdfVocabulary::NS_STATEMENT];
+		$wdsURI = $rdfVocabulary->getNamespaceURI( $wds );
 		$expectedOutput = <<<TEXT
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix s: <$wdsURI> .
+@prefix $wds: <$wdsURI> .
 @prefix wikibase: <http://wikiba.se/ontology#> .
 
-s:P1-00000000-0000-0000-0000-000000000000 wikibase:hasViolationForConstraint s:P1-00000000-0000-0000-0000-000000000000 .
+$wds:P1-00000000-0000-0000-0000-000000000000 wikibase:hasViolationForConstraint $wds:P1-00000000-0000-0000-0000-000000000000 .
 
 TEXT;
 		$this->assertSame( $expectedOutput, $actualOutput );

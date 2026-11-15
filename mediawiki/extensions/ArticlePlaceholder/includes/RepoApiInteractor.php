@@ -2,9 +2,9 @@
 
 namespace ArticlePlaceholder;
 
-use FormatJson;
-use Liuggio\StatsdClient\Factory\StatsdDataFactoryInterface;
 use MediaWiki\Http\HttpRequestFactory;
+use MediaWiki\Json\FormatJson;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * Gateway to API of the repository
@@ -13,42 +13,14 @@ use MediaWiki\Http\HttpRequestFactory;
  */
 class RepoApiInteractor {
 
-	/**
-	 * @var string
-	 */
-	private $repoApiUrl;
-
-	/**
-	 * @var StatsdDataFactoryInterface
-	 */
-	private $statsdDataFactory;
-
-	/**
-	 * @var HttpRequestFactory
-	 */
-	private $httpRequestFactory;
-
-	/**
-	 * @param string $repoApiUrl
-	 * @param StatsdDataFactoryInterface $statsdDataFactory
-	 * @param HttpRequestFactory $httpRequestFactory
-	 */
 	public function __construct(
-		$repoApiUrl,
-		StatsdDataFactoryInterface $statsdDataFactory,
-		HttpRequestFactory $httpRequestFactory
+		private readonly string $repoApiUrl,
+		private readonly StatsFactory $statsFactory,
+		private readonly HttpRequestFactory $httpRequestFactory,
 	) {
-		$this->repoApiUrl = $repoApiUrl;
-		$this->statsdDataFactory = $statsdDataFactory;
-		$this->httpRequestFactory = $httpRequestFactory;
 	}
 
-	/**
-	 * @param array $params
-	 *
-	 * @return array
-	 */
-	public function request( array $params ) {
+	public function request( array $params ): array {
 		$url = wfAppendQuery( $this->repoApiUrl, $params );
 		$req = $this->httpRequestFactory->create(
 			$url,
@@ -57,21 +29,28 @@ class RepoApiInteractor {
 			],
 			__METHOD__
 		);
+		$metric = $this->statsFactory->getCounter( 'ArticlePlaceholder_apitermsearch_total' );
 
 		$status = $req->execute();
 		if ( !$status->isOK() ) {
-			$this->statsdDataFactory->increment( 'articleplaceholder.apitermsearch.errored' );
+			$metric->setLabel( 'status', 'errored' )
+				->copyToStatsdAt( 'articleplaceholder.apitermsearch.errored' )
+				->increment();
 			return [];
 		}
 
 		$json = $req->getContent();
 		$data = FormatJson::decode( $json, true );
 		if ( !$data || !empty( $data['error'] ) ) {
-			$this->statsdDataFactory->increment( 'articleplaceholder.apitermsearch.invalid' );
+			$metric->setLabel( 'status', 'invalid' )
+				->copyToStatsdAt( 'articleplaceholder.apitermsearch.invalid' )
+				->increment();
 			return [];
 		}
 
-		$this->statsdDataFactory->increment( 'articleplaceholder.apitermsearch.ok' );
+		$metric->setLabel( 'status', 'ok' )
+			->copyToStatsdAt( 'articleplaceholder.apitermsearch.ok' )
+			->increment();
 		return $data;
 	}
 

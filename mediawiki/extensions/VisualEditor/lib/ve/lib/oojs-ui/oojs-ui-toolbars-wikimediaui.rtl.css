@@ -1,13 +1,14 @@
 /*!
- * OOUI v0.51.1
+ * OOUI v0.53.2
  * https://www.mediawiki.org/wiki/OOUI
  *
- * Copyright 2011–2024 OOUI Team and other contributors.
+ * Copyright 2011–2026 OOUI Team and other contributors.
  * Released under the MIT license
  * http://oojs.mit-license.org
  *
- * Date: 2024-09-19T17:13:45Z
+ * Date: 2026-04-21T12:46:11Z
  */
+/* stylelint-disable-next-line @stylistic/indentation */
 .oo-ui-tool {
   box-sizing: border-box;
 }
@@ -167,14 +168,17 @@
   opacity: 1;
 }
 
+/* stylelint-disable-next-line @stylistic/indentation */
 .oo-ui-popupTool-popup.oo-ui-popupWidget {
   z-index: 4;
 }
 
+/* stylelint-disable-next-line @stylistic/indentation */
 .oo-ui-toolGroupTool > .oo-ui-toolGroup {
   border-left: 0;
 }
 
+/* stylelint-disable-next-line @stylistic/indentation */
 .oo-ui-toolGroup {
   display: inline-block;
   vertical-align: middle;
@@ -198,6 +202,7 @@
   opacity: 0.3 !important;
 }
 
+/* stylelint-disable-next-line @stylistic/indentation */
 .oo-ui-barToolGroup-tools > .oo-ui-tool {
   display: inline-block;
   position: relative;
@@ -244,6 +249,83 @@
   color: var(--color-disabled, #72777d);
 }
 
+/* stylelint-disable-next-line @stylistic/indentation */
+.oo-ui-labelToolGroup {
+  position: relative;
+  min-width: 3em;
+}
+.oo-ui-toolbar-narrow .oo-ui-labelToolGroup {
+  min-width: 2.85714286em;
+}
+.oo-ui-labelToolGroup.oo-ui-indicatorElement:not( .oo-ui-labelElement ):not( .oo-ui-iconElement ) {
+  min-width: 1.85714286em;
+}
+.oo-ui-labelToolGroup .oo-ui-toolGroup-handle {
+  box-sizing: border-box;
+}
+.oo-ui-labelToolGroup .oo-ui-toolGroup-handle .oo-ui-iconElement-icon {
+  right: 0.78571429em;
+}
+.oo-ui-toolbar-narrow .oo-ui-labelToolGroup .oo-ui-toolGroup-handle .oo-ui-iconElement-icon {
+  right: 0.64285714em;
+}
+.oo-ui-labelToolGroup .oo-ui-toolGroup-handle .oo-ui-indicatorElement-indicator {
+  background-position: center 48%;
+  left: 0.57142857em;
+}
+.oo-ui-toolbar-narrow .oo-ui-labelToolGroup .oo-ui-toolGroup-handle .oo-ui-indicatorElement-indicator {
+  left: 0.28571429em;
+}
+.oo-ui-labelToolGroup.oo-ui-iconElement .oo-ui-toolGroup-handle,
+.oo-ui-labelToolGroup.oo-ui-indicatorElement .oo-ui-toolGroup-handle {
+  padding-top: 3em;
+}
+.oo-ui-labelToolGroup.oo-ui-iconElement.oo-ui-indicatorElement .oo-ui-toolGroup-handle {
+  padding-right: 3em;
+}
+.oo-ui-toolbar-narrow .oo-ui-labelToolGroup.oo-ui-iconElement.oo-ui-indicatorElement .oo-ui-toolGroup-handle {
+  padding-right: 2.85714286em;
+}
+.oo-ui-labelToolGroup.oo-ui-labelElement .oo-ui-toolGroup-handle {
+  padding: 11px 12px;
+}
+.oo-ui-labelToolGroup.oo-ui-labelElement .oo-ui-toolGroup-handle .oo-ui-labelElement-label {
+  line-height: 1.42857143em;
+}
+.oo-ui-toolbar-narrow .oo-ui-labelToolGroup.oo-ui-labelElement .oo-ui-toolGroup-handle {
+  padding-right: 0.71428571em;
+  padding-left: 0.71428571em;
+}
+.oo-ui-labelToolGroup.oo-ui-iconElement.oo-ui-labelElement .oo-ui-toolGroup-handle {
+  padding-right: 2.64285714em;
+}
+.oo-ui-toolbar-narrow .oo-ui-labelToolGroup.oo-ui-iconElement.oo-ui-labelElement .oo-ui-toolGroup-handle {
+  padding-right: 2.5em;
+}
+.oo-ui-labelToolGroup.oo-ui-labelElement.oo-ui-indicatorElement .oo-ui-toolGroup-handle {
+  padding-left: 1.85714286em;
+}
+.oo-ui-toolbar-narrow .oo-ui-labelToolGroup.oo-ui-labelElement.oo-ui-indicatorElement .oo-ui-toolGroup-handle {
+  padding-left: 1.28571429em;
+}
+.oo-ui-labelToolGroup.oo-ui-indicatorElement .oo-ui-toolGroup-handle {
+  padding-left: 1.14285714em;
+}
+.oo-ui-toolbar-narrow .oo-ui-labelToolGroup.oo-ui-indicatorElement .oo-ui-toolGroup-handle {
+  padding-left: 0.85714286em;
+}
+.oo-ui-labelToolGroup:not( .oo-ui-labelElement ):not( .oo-ui-iconElement ) .oo-ui-indicatorElement-indicator {
+  opacity: 1;
+}
+.oo-ui-labelToolGroup.oo-ui-widget-disabled {
+  color: var(--color-disabled, #72777d);
+}
+.oo-ui-labelToolGroup.oo-ui-widget-disabled .oo-ui-indicatorElement-indicator,
+.oo-ui-labelToolGroup.oo-ui-widget-disabled .oo-ui-iconElement-icon {
+  opacity: 0.3;
+}
+
+/* stylelint-disable-next-line @stylistic/indentation */
 .oo-ui-popupToolGroup {
   position: relative;
   min-width: 3em;
@@ -287,58 +369,58 @@
 .oo-ui-popupToolGroup.oo-ui-indicatorElement:not( .oo-ui-labelElement ):not( .oo-ui-iconElement ) {
   min-width: 1.85714286em;
 }
-.oo-ui-popupToolGroup-handle {
+.oo-ui-popupToolGroup .oo-ui-toolGroup-handle {
   box-sizing: border-box;
 }
-.oo-ui-popupToolGroup-handle .oo-ui-iconElement-icon {
+.oo-ui-popupToolGroup .oo-ui-toolGroup-handle .oo-ui-iconElement-icon {
   right: 0.78571429em;
 }
-.oo-ui-toolbar-narrow .oo-ui-popupToolGroup-handle .oo-ui-iconElement-icon {
+.oo-ui-toolbar-narrow .oo-ui-popupToolGroup .oo-ui-toolGroup-handle .oo-ui-iconElement-icon {
   right: 0.64285714em;
 }
-.oo-ui-popupToolGroup-handle .oo-ui-indicatorElement-indicator {
+.oo-ui-popupToolGroup .oo-ui-toolGroup-handle .oo-ui-indicatorElement-indicator {
   background-position: center 48%;
   left: 0.57142857em;
 }
-.oo-ui-toolbar-narrow .oo-ui-popupToolGroup-handle .oo-ui-indicatorElement-indicator {
+.oo-ui-toolbar-narrow .oo-ui-popupToolGroup .oo-ui-toolGroup-handle .oo-ui-indicatorElement-indicator {
   left: 0.28571429em;
 }
-.oo-ui-popupToolGroup.oo-ui-iconElement .oo-ui-popupToolGroup-handle,
-.oo-ui-popupToolGroup.oo-ui-indicatorElement .oo-ui-popupToolGroup-handle {
+.oo-ui-popupToolGroup.oo-ui-iconElement .oo-ui-toolGroup-handle,
+.oo-ui-popupToolGroup.oo-ui-indicatorElement .oo-ui-toolGroup-handle {
   padding-top: 3em;
 }
-.oo-ui-popupToolGroup.oo-ui-iconElement.oo-ui-indicatorElement .oo-ui-popupToolGroup-handle {
+.oo-ui-popupToolGroup.oo-ui-iconElement.oo-ui-indicatorElement .oo-ui-toolGroup-handle {
   padding-right: 3em;
 }
-.oo-ui-toolbar-narrow .oo-ui-popupToolGroup.oo-ui-iconElement.oo-ui-indicatorElement .oo-ui-popupToolGroup-handle {
+.oo-ui-toolbar-narrow .oo-ui-popupToolGroup.oo-ui-iconElement.oo-ui-indicatorElement .oo-ui-toolGroup-handle {
   padding-right: 2.85714286em;
 }
-.oo-ui-popupToolGroup.oo-ui-labelElement .oo-ui-popupToolGroup-handle {
+.oo-ui-popupToolGroup.oo-ui-labelElement .oo-ui-toolGroup-handle {
   padding: 11px 12px;
 }
-.oo-ui-popupToolGroup.oo-ui-labelElement .oo-ui-popupToolGroup-handle .oo-ui-labelElement-label {
+.oo-ui-popupToolGroup.oo-ui-labelElement .oo-ui-toolGroup-handle .oo-ui-labelElement-label {
   line-height: 1.42857143em;
 }
-.oo-ui-toolbar-narrow .oo-ui-popupToolGroup.oo-ui-labelElement .oo-ui-popupToolGroup-handle {
+.oo-ui-toolbar-narrow .oo-ui-popupToolGroup.oo-ui-labelElement .oo-ui-toolGroup-handle {
   padding-right: 0.71428571em;
   padding-left: 0.71428571em;
 }
-.oo-ui-popupToolGroup.oo-ui-iconElement.oo-ui-labelElement .oo-ui-popupToolGroup-handle {
+.oo-ui-popupToolGroup.oo-ui-iconElement.oo-ui-labelElement .oo-ui-toolGroup-handle {
   padding-right: 2.64285714em;
 }
-.oo-ui-toolbar-narrow .oo-ui-popupToolGroup.oo-ui-iconElement.oo-ui-labelElement .oo-ui-popupToolGroup-handle {
+.oo-ui-toolbar-narrow .oo-ui-popupToolGroup.oo-ui-iconElement.oo-ui-labelElement .oo-ui-toolGroup-handle {
   padding-right: 2.5em;
 }
-.oo-ui-popupToolGroup.oo-ui-labelElement.oo-ui-indicatorElement .oo-ui-popupToolGroup-handle {
+.oo-ui-popupToolGroup.oo-ui-labelElement.oo-ui-indicatorElement .oo-ui-toolGroup-handle {
   padding-left: 1.85714286em;
 }
-.oo-ui-toolbar-narrow .oo-ui-popupToolGroup.oo-ui-labelElement.oo-ui-indicatorElement .oo-ui-popupToolGroup-handle {
+.oo-ui-toolbar-narrow .oo-ui-popupToolGroup.oo-ui-labelElement.oo-ui-indicatorElement .oo-ui-toolGroup-handle {
   padding-left: 1.28571429em;
 }
-.oo-ui-popupToolGroup.oo-ui-indicatorElement .oo-ui-popupToolGroup-handle {
+.oo-ui-popupToolGroup.oo-ui-indicatorElement .oo-ui-toolGroup-handle {
   padding-left: 1.14285714em;
 }
-.oo-ui-toolbar-narrow .oo-ui-popupToolGroup.oo-ui-indicatorElement .oo-ui-popupToolGroup-handle {
+.oo-ui-toolbar-narrow .oo-ui-popupToolGroup.oo-ui-indicatorElement .oo-ui-toolGroup-handle {
   padding-left: 0.85714286em;
 }
 .oo-ui-popupToolGroup:not( .oo-ui-labelElement ):not( .oo-ui-iconElement ) .oo-ui-indicatorElement-indicator {
@@ -512,6 +594,7 @@
   opacity: 1;
 }
 
+/* stylelint-disable-next-line @stylistic/indentation */
 .oo-ui-listToolGroup-tools .oo-ui-tool {
   display: block;
   box-sizing: border-box;
@@ -531,9 +614,10 @@
   opacity: 0.3;
 }
 
+/* stylelint-disable-next-line @stylistic/indentation */
 .oo-ui-menuToolGroup {
-  border-right: 1px solid #eaecf0;
-  border-left: 1px solid #eaecf0;
+  border-right: 1px solid var(--border-color-subtle, #c8ccd1);
+  border-left: 1px solid var(--border-color-subtle, #c8ccd1);
 }
 .oo-ui-menuToolGroup-tools .oo-ui-tool {
   display: block;
@@ -542,10 +626,17 @@
   border-right: 0;
 }
 .oo-ui-menuToolGroup .oo-ui-popupToolGroup-handle {
-  min-width: 140px;
+  width: 140px;
 }
 .oo-ui-toolbar-narrow .oo-ui-menuToolGroup .oo-ui-popupToolGroup-handle {
-  min-width: 100px;
+  width: 100px;
+}
+.oo-ui-menuToolGroup .oo-ui-popupToolGroup-handle .oo-ui-labelElement-label {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .oo-ui-menuToolGroup-tools .oo-ui-tool-link .oo-ui-iconElement-icon {
   right: 0.78571429em;
@@ -558,6 +649,7 @@
   color: var(--color-disabled, #72777d);
 }
 
+/* stylelint-disable-next-line @stylistic/indentation */
 .oo-ui-toolbar {
   clear: both;
 }
@@ -570,7 +662,6 @@
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -moz-user-select: none;
-  -ms-user-select: none;
   user-select: none;
 }
 .oo-ui-toolbar-tools {
@@ -591,7 +682,6 @@
   -webkit-touch-callout: default;
   -webkit-user-select: text;
   -moz-user-select: text;
-  -ms-user-select: text;
   user-select: text;
 }
 .oo-ui-toolbar-narrow .oo-ui-toolbar-tools,
@@ -613,7 +703,6 @@
   -webkit-touch-callout: default;
   -webkit-user-select: text;
   -moz-user-select: text;
-  -ms-user-select: text;
   user-select: text;
 }
 .oo-ui-toolbar-bar {

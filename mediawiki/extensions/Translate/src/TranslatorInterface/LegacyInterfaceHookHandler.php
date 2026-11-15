@@ -3,18 +3,21 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TranslatorInterface;
 
-use DifferenceEngine;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Diff\DifferenceEngine;
 use MediaWiki\Diff\Hook\ArticleContentOnDiffHook;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
+use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\Hook\AlternateEditHook;
 use MediaWiki\Hook\EditPage__showEditForm_initialHook;
-use MediaWiki\Hook\SidebarBeforeOutputHook;
 use MediaWiki\Hook\TitleGetEditNoticesHook;
-use MediaWiki\Languages\LanguageFactory;
+use MediaWiki\Language\LanguageFactory;
 use MediaWiki\Output\OutputPage;
-use MediaWiki\Skin\SkinComponentUtils;
+use MediaWiki\Skin\Components\SkinComponentUtils;
+use MediaWiki\Skin\Hook\SidebarBeforeOutputHook;
+use MediaWiki\Skin\Hook\SkinTemplateNavigation__UniversalHook;
+use Wikimedia\ArrayUtils\ArrayUtils;
 
 /**
  * Integration point to MediaWiki for the legacy translation aids.
@@ -27,12 +30,13 @@ class LegacyInterfaceHookHandler
 	ArticleContentOnDiffHook,
 	EditPage__showEditForm_initialHook,
 	TitleGetEditNoticesHook,
-	SidebarBeforeOutputHook
+	SidebarBeforeOutputHook,
+	SkinTemplateNavigation__UniversalHook
 {
-	private LanguageFactory $languageFactory;
 
-	public function __construct( LanguageFactory $languageFactory ) {
-		$this->languageFactory = $languageFactory;
+	public function __construct(
+		private readonly LanguageFactory $languageFactory,
+	) {
 	}
 
 	/**
@@ -51,7 +55,6 @@ class LegacyInterfaceHookHandler
 	 * @param EditPage $editPage
 	 * @param OutputPage $out
 	 */
-	// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
 	public function onEditPage__showEditForm_initial( $editPage, $out ): void {
 		// phpcs:enable
 		$handle = new MessageHandle( $editPage->getTitle() );
@@ -70,6 +73,7 @@ class LegacyInterfaceHookHandler
 		}
 	}
 
+	/** @inheritDoc */
 	public function onTitleGetEditNotices( $title, $oldid, &$notices ) {
 		$handle = new MessageHandle( $title );
 		if ( !$handle->isValid() ) {
@@ -125,5 +129,34 @@ class LegacyInterfaceHookHandler
 			'id' => 't-alltrans',
 			'msg' => 'translate-sidebar-alltrans',
 		];
+	}
+
+	/**
+	 * Adds "Translate" tab to pages. Only shown when the page is
+	 * actually a translatable/translated message.
+	 *
+	 * @inheritDoc
+	 */
+	public function onSkinTemplateNavigation__Universal( $skin, &$tabs ): void {
+		$title = $skin->getTitle();
+		$handle = new MessageHandle( $title );
+
+		if ( !$handle->isValid() ) {
+			return;
+		}
+
+		// Don't add language parameter if viewing the message in the source language
+		$isSourceLanguage = $handle->getCode() === $handle->getGroup()->getSourceLanguage();
+
+		$tab = [
+			'text' => $skin->msg( 'tpt-tab-translate' )->text(),
+			'href' => Utilities::getEditorUrl(
+				handle: $handle,
+				action_source: 'message_page_tab',
+				includeLanguageParam: !$isSourceLanguage
+			),
+		];
+
+		$tabs['views'] = ArrayUtils::insertAfter( $tabs[ 'views' ], [ 'translate' => $tab ], 'view' );
 	}
 }

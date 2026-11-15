@@ -19,15 +19,8 @@ use Wikibase\MediaInfo\DataModel\MediaInfo;
  */
 class MediaInfoDiffer implements EntityDifferStrategy {
 
-	/**
-	 * @var MapDiffer
-	 */
-	private $recursiveMapDiffer;
-
-	/**
-	 * @var StatementListDiffer
-	 */
-	private $statementListDiffer;
+	private readonly MapDiffer $recursiveMapDiffer;
+	private readonly StatementListDiffer $statementListDiffer;
 
 	public function __construct() {
 		$this->recursiveMapDiffer = new MapDiffer( true );
@@ -67,6 +60,11 @@ class MediaInfoDiffer implements EntityDifferStrategy {
 		}
 	}
 
+	/**
+	 * @param MediaInfo $from
+	 * @param MediaInfo $to
+	 * @return EntityDiff
+	 */
 	public function diffMediaInfos( MediaInfo $from, MediaInfo $to ) {
 		$diffOps = $this->recursiveMapDiffer->doDiff(
 			$this->toDiffArray( $from ),
@@ -81,7 +79,7 @@ class MediaInfoDiffer implements EntityDifferStrategy {
 		return new EntityDiff( $diffOps );
 	}
 
-	private function toDiffArray( MediaInfo $mediaInfo ) {
+	private function toDiffArray( MediaInfo $mediaInfo ): array {
 		$array = [];
 
 		$array['label'] = $mediaInfo->getLabels()->toTextArray();

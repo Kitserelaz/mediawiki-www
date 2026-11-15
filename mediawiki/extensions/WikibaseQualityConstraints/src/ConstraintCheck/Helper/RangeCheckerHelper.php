@@ -82,11 +82,11 @@ class RangeCheckerHelper {
 	 * @param DataValue|null $rhs right-hand side
 	 *
 	 * @throws InvalidArgumentException if the values do not both have the same, supported data value type
-	 * @return integer An integer less than, equal to, or greater than zero
+	 * @return int An integer less than, equal to, or greater than zero
 	 *                 when $lhs is respectively less than, equal to, or greater than $rhs.
 	 *                 (In other words, just like the “spaceship” operator <=>.)
 	 */
-	public function getComparison( ?DataValue $lhs = null, ?DataValue $rhs = null ) {
+	public function getComparison( ?DataValue $lhs, ?DataValue $rhs ) {
 		if ( $lhs === null || $rhs === null ) {
 			return 0;
 		}
@@ -150,7 +150,7 @@ class RangeCheckerHelper {
 		throw new InvalidArgumentException( 'Unsupported or different data value types' );
 	}
 
-	public function getDifferenceInYears( TimeValue $minuend, TimeValue $subtrahend ) {
+	public function getDifferenceInYears( TimeValue $minuend, TimeValue $subtrahend ): DataValue {
 		if ( !preg_match( '/^([-+]\d{1,16})-(.*)$/', $minuend->getTime(), $minuendMatches ) ||
 			!preg_match( '/^([-+]\d{1,16})-(.*)$/', $subtrahend->getTime(), $subtrahendMatches )
 		) {
@@ -190,7 +190,7 @@ class RangeCheckerHelper {
 		return UnboundedQuantityValue::newFromNumber( $diff, $unit );
 	}
 
-	public function isFutureTime( TimeValue $timeValue ) {
+	public function isFutureTime( TimeValue $timeValue ): bool {
 		return $this->timeValueComparer->isFutureTime( $timeValue );
 	}
 

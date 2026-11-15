@@ -1,29 +1,11 @@
 @import 'mediawiki.skin.variables.less';
 
-#msupload-container {
-	display: inline-block;
-	padding: 3px;
-	line-height: normal;
-	vertical-align: middle;
-}
-
-#msupload-container.start-loading {
-	background: url(images/msu-loading.png) no-repeat 5px 5px;
-}
-
 #msupload-select {
-	background: url(images/msu-upload-button.png) no-repeat 0;
-	width: 20px;
-	height: 20px;
-	cursor: pointer;
-
-	&:hover {
-		opacity: @opacity-icon-base--hover;
-	}
+	margin: 0;
 }
 
 #msupload-div {
-	background: #f8f9fa;
+	background-color: @background-color-neutral-subtle;
 	border-top: @border-width-base @border-style-base @border-color-subtle;
 	padding: 0;
 	z-index: 0;
@@ -43,7 +25,7 @@
 	padding: 5px;
 	border: @border-width-base dashed @border-color-base;
 	text-align: center;
-	height: 20px;
+	min-height: 20px;
 	color: @color-base;
 }
 
@@ -58,7 +40,7 @@
 }
 
 #msupload-list .file {
-	background: #eaecf0;
+	background-color: @background-color-neutral;
 	border-top: @border-width-base @border-style-base @border-color-subtle;
 	margin: 0;
 	padding: 10px;
@@ -228,7 +210,7 @@
 #msupload-bottom {
 	border-top: @border-width-base @border-style-base @border-color-subtle;
 	padding: 8px;
-	height: 22px;
+	min-height: 22px;
 }
 
 #msupload-bottom a {
@@ -246,7 +228,7 @@
 	border-left: @border-width-base @border-style-base @border-color-base;
 	margin: 0 8px;
 	width: 1px;
-	background-color: #c8ccd1;
+	background-color: @background-color-interactive;
 }
 
 #wikiEditor-section-advanced .options {

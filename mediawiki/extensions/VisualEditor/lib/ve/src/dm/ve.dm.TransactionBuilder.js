@@ -26,7 +26,7 @@ OO.initClass( ve.dm.TransactionBuilder );
  *
  * @param {ve.dm.Document} doc Document in pre-transaction state
  * @param {ve.Range} range Range of data to remove
- * @param {Array} data Data to insert
+ * @param {ve.dm.LinearData.Item[]} data Data to insert
  * @param {boolean} [removeMetadata=false] Remove metadata instead of collapsing it
  * @return {ve.dm.Transaction} Transaction that replaces data
  * @throws {Error} Invalid range
@@ -45,7 +45,7 @@ ve.dm.TransactionBuilder.static.newFromReplacement = function ( doc, range, data
  * @static
  * @param {ve.dm.Document} doc Document in pre-transaction state
  * @param {number} offset Offset to insert at
- * @param {Array} data Data to insert
+ * @param {ve.dm.LinearData.Item[]} data Data to insert
  * @return {ve.dm.Transaction} Transaction that inserts data
  */
 ve.dm.TransactionBuilder.static.newFromInsertion = function ( doc, offset, data ) {
@@ -120,10 +120,10 @@ ve.dm.TransactionBuilder.static.newFromDocumentInsertion = function ( doc, offse
 
 	let data;
 	if ( newDocRange ) {
-		data = new ve.dm.ElementLinearData( doc.getStore(), newDoc.getData( newDocRange, true ) );
+		data = new ve.dm.LinearData( doc.getStore(), newDoc.getData( newDocRange, true ) );
 	} else {
 		// Get the data, but skip over the internal list
-		data = new ve.dm.ElementLinearData( doc.getStore(),
+		data = new ve.dm.LinearData( doc.getStore(),
 			newDoc.getData( new ve.Range( 0, newListNodeOuterRange.start ), true ).concat(
 				newDoc.getData( new ve.Range( newListNodeOuterRange.end, newDoc.data.getLength() ), true )
 			)
@@ -133,39 +133,44 @@ ve.dm.TransactionBuilder.static.newFromDocumentInsertion = function ( doc, offse
 	// Merge the stores
 	doc.getStore().merge( newDoc.getStore() );
 
-	const listMerge = doc.internalList.merge( newDoc.internalList, newDoc.origInternalListLength || 0 );
-	// Remap the indexes in the data
-	data.remapInternalListIndexes( listMerge.mapping, doc.internalList );
-	// Get data for the new internal list
-	let linearData, listData;
-	if ( newDoc.origInternalListLength !== null ) {
-		// newDoc is a document slice based on doc, so all the internal list items present in doc
-		// when it was cloned are also in newDoc. We need to get the newDoc version of these items
-		// so that changes made in newDoc are reflected.
-		let oldEndOffset, newEndOffset;
-		if ( newDoc.origInternalListLength > 0 ) {
-			oldEndOffset = doc.internalList.getItemNode( newDoc.origInternalListLength - 1 ).getOuterRange().end;
-			newEndOffset = newDoc.internalList.getItemNode( newDoc.origInternalListLength - 1 ).getOuterRange().end;
+	let listData;
+	// If the new list is empty, and the insertion offset is before the list, we
+	// can skip list merging completely.
+	if ( newListNode.length || offset >= listNodeRange.start ) {
+		const listMerge = doc.internalList.merge( newDoc.internalList, newDoc.origInternalListLength || 0 );
+		// Remap the indexes in the data
+		data.remapInternalListIndexes( listMerge.mapping, doc.internalList );
+		// Get data for the new internal list
+		let linearData;
+		if ( newDoc.origInternalListLength !== null ) {
+			// newDoc is a document slice based on doc, so all the internal list items present in doc
+			// when it was cloned are also in newDoc. We need to get the newDoc version of these items
+			// so that changes made in newDoc are reflected.
+			let oldEndOffset, newEndOffset;
+			if ( newDoc.origInternalListLength > 0 ) {
+				oldEndOffset = doc.internalList.getItemNode( newDoc.origInternalListLength - 1 ).getOuterRange().end;
+				newEndOffset = newDoc.internalList.getItemNode( newDoc.origInternalListLength - 1 ).getOuterRange().end;
+			} else {
+				oldEndOffset = listNodeRange.start;
+				newEndOffset = newListNodeRange.start;
+			}
+			linearData = new ve.dm.LinearData(
+				doc.getStore(),
+				newDoc.getData( new ve.Range( newListNodeRange.start, newEndOffset ), true )
+			);
+			listData = linearData.data
+				.concat( doc.getData( new ve.Range( oldEndOffset, listNodeRange.end ), true ) );
 		} else {
-			oldEndOffset = listNodeRange.start;
-			newEndOffset = newListNodeRange.start;
+			// newDoc is brand new, so use doc's internal list as a base
+			listData = doc.getData( listNodeRange, true );
 		}
-		linearData = new ve.dm.ElementLinearData(
-			doc.getStore(),
-			newDoc.getData( new ve.Range( newListNodeRange.start, newEndOffset ), true )
-		);
-		listData = linearData.data
-			.concat( doc.getData( new ve.Range( oldEndOffset, listNodeRange.end ), true ) );
-	} else {
-		// newDoc is brand new, so use doc's internal list as a base
-		listData = doc.getData( listNodeRange, true );
-	}
-	for ( let i = 0, len = listMerge.newItemRanges.length; i < len; i++ ) {
-		linearData = new ve.dm.ElementLinearData(
-			doc.getStore(),
-			newDoc.getData( listMerge.newItemRanges[ i ], true )
-		);
-		ve.batchPush( listData, linearData.data );
+		listMerge.newItemRanges.forEach( ( newItemRange ) => {
+			linearData = new ve.dm.LinearData(
+				doc.getStore(),
+				newDoc.getData( newItemRange, true )
+			);
+			ve.batchPush( listData, linearData.data );
+		} );
 	}
 
 	const txBuilder = new ve.dm.TransactionBuilder();
@@ -179,11 +184,15 @@ ve.dm.TransactionBuilder.static.newFromDocumentInsertion = function ( doc, offse
 		insertion = doc.fixupInsertion( data.data, offset );
 		txBuilder.pushRetain( insertion.offset );
 		txBuilder.pushReplacement( doc, insertion.offset, insertion.remove, insertion.data, true );
-		txBuilder.pushRetain( listNodeRange.start - ( insertion.offset + insertion.remove ) );
-		txBuilder.pushReplacement( doc, listNodeRange.start, listNodeRange.end - listNodeRange.start,
-			listData, true
-		);
-		txBuilder.pushFinalRetain( doc, listNodeRange.end );
+		if ( listData ) {
+			txBuilder.pushRetain( listNodeRange.start - ( insertion.offset + insertion.remove ) );
+			txBuilder.pushReplacement( doc, listNodeRange.start, listNodeRange.end - listNodeRange.start,
+				listData, true
+			);
+			txBuilder.pushFinalRetain( doc, listNodeRange.end );
+		} else {
+			txBuilder.pushFinalRetain( doc, insertion.offset + insertion.remove );
+		}
 	} else if ( offset >= listNodeRange.end ) {
 		// offset is after listNodeRange
 		// First replace the internal list, then the node
@@ -315,18 +324,18 @@ ve.dm.TransactionBuilder.static.newFromAnnotation = function ( doc, range, metho
 			);
 		}
 		run.data = doc.getData( new ve.Range( run.start, run.end ) );
-		for ( let j = 0, jLen = run.data.length; j < jLen; j++ ) {
+		for ( let j = 0; j < run.data.length; j++ ) {
 			let item = ve.copy( run.data[ j ] );
 			const anns = new ve.dm.AnnotationSet(
 				doc.getStore(),
-				ve.dm.ElementLinearData.static.getAnnotationHashesFromItem( item )
+				ve.dm.LinearData.static.getAnnotationHashesFromItem( item )
 			);
 			if ( clear ) {
 				anns.remove( annotation );
 			} else {
 				anns.add( annotation, run.spliceAt );
 			}
-			item = ve.dm.ElementLinearData.static.replaceAnnotationHashesForItem( item, anns.getHashes() );
+			item = ve.dm.LinearData.static.replaceAnnotationHashesForItem( item, anns.getHashes() );
 			run.data[ j ] = item;
 		}
 		runs.push( run );
@@ -424,7 +433,7 @@ ve.dm.TransactionBuilder.static.newFromAnnotation = function ( doc, range, metho
 ve.dm.TransactionBuilder.static.newFromContentBranchConversion = function ( doc, range, type, attr, internal ) {
 	const txBuilder = new ve.dm.TransactionBuilder(),
 		selection = doc.selectNodes( range, 'leaves' ),
-		opening = { type: type },
+		opening = { type },
 		closing = { type: '/' + type };
 	let previousBranch,
 		previousBranchOuterRange;
@@ -448,12 +457,11 @@ ve.dm.TransactionBuilder.static.newFromContentBranchConversion = function ( doc,
 	}
 
 	// Replace the wrappings of each content branch in the range
-	for ( let i = 0, len = selection.length; i < len; i++ ) {
-		const selected = selection[ i ];
+	selection.forEach( ( selected ) => {
 		// TODO: This duplicates the logic of ve.dm.SurfaceFragment#getSelectedLeafNodes
 		// This could perhaps be a new mode in ve.Document#selectNodes?
-		if ( !( len === 1 || !selected.range || !selected.range.isCollapsed() ) ) {
-			continue;
+		if ( !( selection.length === 1 || !selected.range || !selected.range.isCollapsed() ) ) {
+			return;
 		}
 
 		const branch = selected.node.isContent() ? selected.node.getParent() : selected.node;
@@ -464,12 +472,12 @@ ve.dm.TransactionBuilder.static.newFromContentBranchConversion = function ( doc,
 				ve.compare( attr, branch.getAttributes() ) &&
 				ve.compare( internal, branch.element.internal || {} )
 			) {
-				continue;
+				return;
 			}
 			const branchOuterRange = branch.getOuterRange();
 			// Don't convert the same branch twice
 			if ( branch === previousBranch ) {
-				continue;
+				return;
 			}
 
 			// Retain up to this branch, considering where the previous one left off
@@ -497,7 +505,7 @@ ve.dm.TransactionBuilder.static.newFromContentBranchConversion = function ( doc,
 			previousBranch = branch;
 			previousBranchOuterRange = branchOuterRange;
 		}
-	}
+	} );
 	// Retain until the end
 	txBuilder.pushFinalRetain( doc, previousBranch ? previousBranchOuterRange.end : 0 );
 	return txBuilder.getTransaction();
@@ -518,22 +526,22 @@ ve.dm.TransactionBuilder.static.newFromContentBranchConversion = function ( doc,
  *
  * Changing a paragraph to a header:
  *     Before: [ {type: 'paragraph'}, 'a', 'b', 'c', {type: '/paragraph'} ]
- *     newFromWrap( new ve.Range( 1, 4 ), [ {type: 'paragraph'} ], [ {type: 'heading', level: 1 } ] );
+ *     newFromWrap( doc, new ve.Range( 1, 4 ), [ {type: 'paragraph'} ], [ {type: 'heading', level: 1 } ] );
  *     After: [ {type: 'heading', level: 1 }, 'a', 'b', 'c', {type: '/heading'} ]
  *
  * Changing a set of paragraphs to a list:
  *     Before: [ {type: 'paragraph'}, 'a', {type: '/paragraph'}, {'type':'paragraph'}, 'b', {'type':'/paragraph'} ]
- *     newFromWrap( new ve.Range( 0, 6 ), [], [ {type: 'list' } ], [], [ {type: 'listItem', attributes: {styles: ['bullet']}} ] );
+ *     newFromWrap( doc, new ve.Range( 0, 6 ), [], [ {type: 'list' } ], [], [ {type: 'listItem', attributes: {styles: ['bullet']}} ] );
  *     After: [ {type: 'list'}, {type: 'listItem', attributes: {styles: ['bullet']}}, {'type':'paragraph'} 'a',
  *              {type: '/paragraph'}, {type: '/listItem'}, {type: 'listItem', attributes: {styles: ['bullet']}},
  *              {type: 'paragraph'}, 'b', {type: '/paragraph'}, {type: '/listItem'}, {type: '/list'} ]
  *
  * @param {ve.dm.Document} doc Document in pre-transaction state
  * @param {ve.Range} range Range to wrap/unwrap/replace around
- * @param {Array} unwrapOuter Opening elements to unwrap. These must be immediately *outside* the range
- * @param {Array} wrapOuter Opening elements to wrap around the range
- * @param {Array} unwrapEach Opening elements to unwrap from each top-level element in the range
- * @param {Array} wrapEach Opening elements to wrap around each top-level element in the range
+ * @param {ve.dm.LinearData.Element[]} unwrapOuter Opening elements to unwrap. These must be immediately *outside* the range
+ * @param {ve.dm.LinearData.Element[]} wrapOuter Opening elements to wrap around the range
+ * @param {ve.dm.LinearData.Element[]} unwrapEach Opening elements to unwrap from each top-level element in the range
+ * @param {ve.dm.LinearData.Element[]} wrapEach Opening elements to wrap around each top-level element in the range
  * @return {ve.dm.Transaction}
  */
 ve.dm.TransactionBuilder.static.newFromWrap = function ( doc, range, unwrapOuter, wrapOuter, unwrapEach, wrapEach ) {
@@ -592,11 +600,7 @@ ve.dm.TransactionBuilder.static.newFromWrap = function ( doc, range, unwrapOuter
 
 	// Function to generate arrays of closing elements in reverse order
 	function closingArray( openings ) {
-		const closings = [];
-		for ( let j = 0, jlen = openings.length; j < jlen; j++ ) {
-			closings[ closings.length ] = { type: '/' + openings[ jlen - j - 1 ].type };
-		}
-		return closings;
+		return openings.slice().reverse().map( ( opening ) => ( { type: '/' + opening.type } ) );
 	}
 
 	const closingUnwrapEach = closingArray( unwrapEach );
@@ -772,22 +776,6 @@ ve.dm.TransactionBuilder.prototype.addSafeRemoveOps = function ( doc, removeStar
 };
 
 /**
- * Add a replace operation (internal helper).
- *
- * @private
- * @param {Array} remove Data removed.
- * @param {Array} insert Data to insert.
- * @param {number} [insertedDataOffset] Inserted data offset
- * @param {number} [insertedDataLength] Inserted data length
- */
-ve.dm.TransactionBuilder.prototype.pushReplaceInternal = function ( remove, insert, insertedDataOffset, insertedDataLength ) {
-	if ( remove.length === 0 && insert.length === 0 ) {
-		return; // No-op
-	}
-	this.transaction.pushReplaceOp( remove, insert, insertedDataOffset, insertedDataLength );
-};
-
-/**
  * Add a replace operation
  *
  * If metadata is collapsed instead of removed, it will be shifted backwards if necessary to
@@ -796,7 +784,7 @@ ve.dm.TransactionBuilder.prototype.pushReplaceInternal = function ( remove, inse
  * @param {ve.dm.Document} doc The document in the state to which the transaction applies
  * @param {number} offset Offset to start at
  * @param {number} removeLength Number of data items to remove
- * @param {Array} insert Data to insert
+ * @param {ve.dm.LinearData.Item[]} insert Data to insert
  * @param {boolean} removeMetadata Remove metadata instead of collapsing it
  * @param {number} [insertedDataOffset] Offset of the originally inserted data in the resulting operation data
  * @param {number} [insertedDataLength] Length of the originally inserted data in the resulting operation data
@@ -834,11 +822,7 @@ ve.dm.TransactionBuilder.prototype.pushReplacement = function ( doc, offset, rem
 		insert = lastOp.insert.concat( insert );
 	}
 
-	const op = {
-		type: 'replace',
-		remove: remove,
-		insert: insert
-	};
+	const op = { type: 'replace', remove, insert };
 	if ( insertedDataOffset !== undefined ) {
 		op.insertedDataOffset = insertedDataOffset;
 	}
@@ -884,7 +868,7 @@ ve.dm.TransactionBuilder.prototype.pushAttributeChanges = function ( changes, ol
  * @param {ve.dm.Document} doc The document in the state to which the transaction applies
  * @param {number} currentOffset Offset up to which the transaction has gone already
  * @param {number} insertOffset Offset to insert at
- * @param {Array} data Linear model data to insert
+ * @param {ve.dm.LinearData.Item[]} data Linear model data to insert
  * @return {number} End offset of the insertion
  */
 ve.dm.TransactionBuilder.prototype.pushInsertion = function ( doc, currentOffset, insertOffset, data ) {
@@ -957,16 +941,16 @@ ve.dm.TransactionBuilder.prototype.pushRemoval = function ( doc, currentOffset, 
 
 	// The selection wasn't mergeable, so remove nodes that are completely covered, and strip
 	// nodes that aren't
-	for ( let i = 0; i < selection.length; i++ ) {
+	selection.forEach( ( selected ) => {
 		let nodeStart, nodeEnd;
-		if ( !selection[ i ].range ) {
+		if ( !selected.range ) {
 			// Entire node is covered, remove it
-			nodeStart = selection[ i ].nodeOuterRange.start;
-			nodeEnd = selection[ i ].nodeOuterRange.end;
+			nodeStart = selected.nodeOuterRange.start;
+			nodeEnd = selected.nodeOuterRange.end;
 		} else {
 			// Part of the node is covered, remove that range
-			nodeStart = selection[ i ].range.start;
-			nodeEnd = selection[ i ].range.end;
+			nodeStart = selected.range.start;
+			nodeEnd = selected.range.end;
 		}
 
 		// Merge contiguous removals. Only apply a removal when a gap appears, or at the
@@ -989,7 +973,7 @@ ve.dm.TransactionBuilder.prototype.pushRemoval = function ( doc, currentOffset, 
 			removeStart = nodeStart;
 			removeEnd = nodeEnd;
 		}
-	}
+	} );
 	// Apply the last removal, if any
 	if ( removeEnd !== null ) {
 		this.pushRetain( removeStart - offset );
@@ -1003,7 +987,7 @@ ve.dm.TransactionBuilder.prototype.pushRemoval = function ( doc, currentOffset, 
  *
  * @param {ve.dm.Document} doc Document in pre-transaction state
  * @param {number} offset Offset of the end of the current (partial) operations list
- * @param {Array} metaItems linear data containing just meta items
+ * @param {ve.dm.LinearData.Element[]} metaItems linear data containing just meta items
  */
 ve.dm.TransactionBuilder.prototype.pushMeta = function ( doc, offset, metaItems ) {
 	const ops = this.transaction.operations;

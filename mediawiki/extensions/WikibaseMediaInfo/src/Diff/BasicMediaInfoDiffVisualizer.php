@@ -8,7 +8,7 @@ use Diff\DiffOp\DiffOpAdd;
 use Diff\DiffOp\DiffOpChange;
 use Diff\DiffOp\DiffOpRemove;
 use InvalidArgumentException;
-use MessageLocalizer;
+use MediaWiki\Language\MessageLocalizer;
 use Wikibase\DataModel\Services\Diff\EntityDiff;
 use Wikibase\Repo\Content\EntityContentDiff;
 use Wikibase\Repo\Diff\BasicDiffView;
@@ -24,29 +24,11 @@ use Wikibase\Repo\Diff\EntityDiffVisualizer;
  */
 class BasicMediaInfoDiffVisualizer implements EntityDiffVisualizer {
 
-	/**
-	 * @var MessageLocalizer
-	 */
-	private $messageLocalizer;
-
-	/**
-	 * @var ClaimDiffer|null
-	 */
-	private $claimDiffer;
-
-	/**
-	 * @var ClaimDifferenceVisualizer|null
-	 */
-	private $claimDiffVisualizer;
-
 	public function __construct(
-		MessageLocalizer $messageLocalizer,
-		ClaimDiffer $claimDiffer,
-		ClaimDifferenceVisualizer $claimDiffView
+		private readonly MessageLocalizer $messageLocalizer,
+		private readonly ClaimDiffer $claimDiffer,
+		private readonly ClaimDifferenceVisualizer $claimDiffVisualizer,
 	) {
-		$this->messageLocalizer = $messageLocalizer;
-		$this->claimDiffer = $claimDiffer;
-		$this->claimDiffVisualizer = $claimDiffView;
 	}
 
 	/**

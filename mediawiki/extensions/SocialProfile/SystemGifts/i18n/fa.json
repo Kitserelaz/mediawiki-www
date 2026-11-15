@@ -1,9 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
-			"Mjbmr"
+			"LordProfo",
+			"Mjbmr",
+			"LProfo"
 		]
 	},
+	"systemgifts-desc": "امکان ارسال، دریافت، ایجاد و حذف هدایای سامانه‌ای را فراهم می‌کند",
 	"systemgiftmanager": "سامانه مدیریت هدیه",
 	"ga-addnew": "+ افزودن هدیه جدید",
 	"ga-back-edit-gift": "بازگشت به ویرایش این هدیه",

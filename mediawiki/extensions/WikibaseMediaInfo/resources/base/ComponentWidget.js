@@ -5,7 +5,7 @@
  * @param {string} moduleName
  * @param {string} templateName
  */
-var ComponentWidget = function MediaInfoComponentWidget( moduleName, templateName ) {
+const ComponentWidget = function MediaInfoComponentWidget( moduleName, templateName ) {
 	// add default state for default OOUI functionality where we
 	// can resonably expect that we'll want to rerender if it
 	// changes; probably should prefer using OOUI's built-in
@@ -66,7 +66,7 @@ ComponentWidget.prototype.getTemplateData = function () {
  * @return {jQuery.Promise}
  */
 ComponentWidget.prototype.setState = function ( state ) {
-	var deferred = $.Deferred();
+	const deferred = $.Deferred();
 
 	// add the newest state changes - expanding on previous (if any)
 	// changes that have no yet been rendered (because previous render
@@ -88,7 +88,7 @@ ComponentWidget.prototype.setState = function ( state ) {
  * @return {jQuery.Promise<jQuery>}
  */
 ComponentWidget.prototype.render = function () {
-	var self = this;
+	const self = this;
 
 	if ( this.renderPromise === undefined ) {
 		// initial render
@@ -97,11 +97,9 @@ ComponentWidget.prototype.render = function () {
 	}
 
 	this.renderPromise = this.renderPromise
-		.then( function ( $element ) {
-			var previousState = Object.assign( {}, self.state ),
-				hasChanges = Object.keys( self.pendingState ).some( function ( key ) {
-					return ( !( key in self.state ) || self.state[ key ] !== self.pendingState[ key ] );
-				} );
+		.then( ( $element ) => {
+			const previousState = Object.assign( {}, self.state ),
+				hasChanges = Object.keys( self.pendingState ).some( ( key ) => ( !( key in self.state ) || self.state[ key ] !== self.pendingState[ key ] ) );
 
 			self.state = Object.assign( {}, self.state, self.pendingState );
 			self.pendingState = {};
@@ -129,15 +127,15 @@ ComponentWidget.prototype.render = function () {
  * @return {jQuery.Promise<jQuery>}
  */
 ComponentWidget.prototype.renderInternal = function () {
-	var self = this;
+	const self = this;
 
 	// always chain renders on top of the previous one, so a new
 	// render does not conflict with an in-progress one
 	return $.Deferred().resolve().promise()
 		.then( this.getTemplateData.bind( this ) )
 		.then( this.extractParamDOMNodes.bind( this ) )
-		.then( function ( data, nodes ) {
-			var template = mw.template.get( self.moduleName, self.templateName ),
+		.then( ( data, nodes ) => {
+			const template = mw.template.get( self.moduleName, self.templateName ),
 				$rendered = template.render( data ),
 				scrollTop = $( window ).scrollTop();
 
@@ -155,7 +153,7 @@ ComponentWidget.prototype.renderInternal = function () {
 
 			return self.$element;
 		} )
-		.catch( function ( e ) {
+		.catch( ( e ) => {
 			// something somewhere in the render process failed, but that's ok
 			// we won't handle this except for just catching it & turning the
 			// promise back into a thenable state, so that follow-up renders
@@ -185,19 +183,14 @@ ComponentWidget.prototype.renderInternal = function () {
  * @return {Node}
  */
 ComponentWidget.prototype.rebuildDOM = function ( oldContainer, newContainer, preservedNodes ) {
-	var newChildrenArray = [].slice.call( newContainer.childNodes ),
-		oldChildrenArray = [].slice.call( oldContainer.childNodes ),
-		matchedNodes = this.matchNodes( newChildrenArray, oldChildrenArray, preservedNodes ),
-		newNode,
-		oldNode,
-		newIndex,
-		currentIndex,
-		i;
+	const newChildrenArray = [].slice.call( newContainer.childNodes );
+	const oldChildrenArray = [].slice.call( oldContainer.childNodes );
+	const matchedNodes = this.matchNodes( newChildrenArray, oldChildrenArray, preservedNodes );
 
-	for ( newIndex = 0; newIndex < newChildrenArray.length; newIndex++ ) {
-		newNode = newChildrenArray[ newIndex ];
-		oldNode = matchedNodes[ newIndex ];
-		currentIndex = oldNode ? [].slice.call( oldContainer.childNodes ).indexOf( oldNode ) : -1;
+	for ( let newIndex = 0; newIndex < newChildrenArray.length; newIndex++ ) {
+		const newNode = newChildrenArray[ newIndex ];
+		let oldNode = matchedNodes[ newIndex ];
+		const currentIndex = oldNode ? [].slice.call( oldContainer.childNodes ).indexOf( oldNode ) : -1;
 
 		// step 1: figure out the position of the new nodes in the old DOM,
 		// insert it at the correct position (if new) or detach existing
@@ -216,7 +209,7 @@ ComponentWidget.prototype.rebuildDOM = function ( oldContainer, newContainer, pr
 			// if node already exists, but further away in DOM, detach everything
 			// in between (could be old nodes that will end up removed;
 			// could be old nodes that we'll still need elsewhere later on)
-			[].slice.call( oldContainer.childNodes, newIndex, currentIndex ).forEach( function ( node ) {
+			[].slice.call( oldContainer.childNodes, newIndex, currentIndex ).forEach( ( node ) => {
 				node.parentNode.removeChild( node );
 			} );
 		}
@@ -226,13 +219,13 @@ ComponentWidget.prototype.rebuildDOM = function ( oldContainer, newContainer, pr
 		// or new node (if it's one to be preserved - i.e. we're manipulating the
 		// node directly elsewhere in JS), or trying to apply properties of the
 		// new node to the old node
-		if ( preservedNodes.indexOf( oldNode ) >= 0 ) {
+		if ( preservedNodes.includes( oldNode ) ) {
 			// oldNode is a node that needs to be preserved: it was a DOM node
 			// directly assigned as a variable to the template and it may have
 			// context that we must not lose (event listeners, focus state...)
 			// leave this node alone!
 			preservedNodes.splice( preservedNodes.indexOf( oldNode ), 1 );
-		} else if ( preservedNodes.indexOf( newNode ) >= 0 ) {
+		} else if ( preservedNodes.includes( newNode ) ) {
 			// same as above: it was assigned to the template, but it did not
 			// yet exist in the old render (a very similar node might exist,
 			// but not this exact one, which might have other event handlers
@@ -250,10 +243,10 @@ ComponentWidget.prototype.rebuildDOM = function ( oldContainer, newContainer, pr
 			// we don't want to simply swap out these nodes, because then we
 			// could lose context (e.g. focus state or input values), so let's
 			// just try to apply the new characteristics on to the existing nodes
-			for ( i = 0; i < oldNode.attributes.length; i++ ) {
+			for ( let i = 0; i < oldNode.attributes.length; i++ ) {
 				oldNode.removeAttribute( oldNode.attributes[ i ].name );
 			}
-			for ( i = 0; i < newNode.attributes.length; i++ ) {
+			for ( let i = 0; i < newNode.attributes.length; i++ ) {
 				oldNode.setAttribute( newNode.attributes[ i ].name, newNode.attributes[ i ].value );
 			}
 
@@ -265,7 +258,7 @@ ComponentWidget.prototype.rebuildDOM = function ( oldContainer, newContainer, pr
 	}
 
 	// remove leftover nodes, returning only the relevant ones
-	[].slice.call( oldContainer.childNodes, newChildrenArray.length ).forEach( function ( node ) {
+	[].slice.call( oldContainer.childNodes, newChildrenArray.length ).forEach( ( node ) => {
 		node.parentNode.removeChild( node );
 	} );
 	return oldContainer;
@@ -281,12 +274,9 @@ ComponentWidget.prototype.rebuildDOM = function ( oldContainer, newContainer, pr
  * @return {jQuery.Promise}
  */
 ComponentWidget.prototype.extractParamDOMNodes = function ( data ) {
-	var self = this,
-		transformed,
-		getNode,
-		transformNodes;
+	const self = this;
 
-	getNode = function ( variable ) {
+	const getNode = function ( variable ) {
 		// check if `instanceof Node` (except that wouldn't work headless;
 		// ref `Node` missing)
 		if ( typeof variable === 'object' && typeof variable.nodeType === 'number' ) {
@@ -299,14 +289,13 @@ ComponentWidget.prototype.extractParamDOMNodes = function ( data ) {
 		throw new Error( 'Not a node-like variable' );
 	};
 
-	transformNodes = function ( d ) {
-		var keys = Object.keys( d ),
-			result = new d.constructor(),
-			originals = [],
-			key, i, j, recursive, nodes, node;
+	const transformNodes = function ( d ) {
+		const keys = Object.keys( d );
+		const result = new d.constructor();
+		let originals = [];
 
-		for ( i = 0; i < keys.length; i++ ) {
-			key = keys[ i ];
+		for ( let i = 0; i < keys.length; i++ ) {
+			const key = keys[ i ];
 
 			if (
 				// check if array or object literal, in which case
@@ -314,7 +303,7 @@ ComponentWidget.prototype.extractParamDOMNodes = function ( data ) {
 				d[ key ] instanceof Array ||
 				( d[ key ] instanceof Object && Object.getPrototypeOf( d[ key ] ) === Object.prototype )
 			) {
-				recursive = transformNodes( d[ key ] );
+				const recursive = transformNodes( d[ key ] );
 				result[ key ] = recursive.data;
 				originals = originals.concat( recursive.nodes );
 			} else {
@@ -326,10 +315,10 @@ ComponentWidget.prototype.extractParamDOMNodes = function ( data ) {
 					// in DOM - instead, we'll parse a clone in there, and then
 					// our post-render processing (`rebuildDOM`) will recognize
 					// these nodes are the same and use the original one instead
-					nodes = getNode( d[ key ] );
+					const nodes = getNode( d[ key ] );
 					result[ key ] = [];
-					for ( j = 0; j < nodes.length; j++ ) {
-						node = nodes[ j ];
+					for ( let j = 0; j < nodes.length; j++ ) {
+						const node = nodes[ j ];
 						originals.push( node );
 						// only clone nodes that are currently rendered - others
 						// should actually render the real nodes (not clones)
@@ -349,7 +338,7 @@ ComponentWidget.prototype.extractParamDOMNodes = function ( data ) {
 		return { data: result, nodes: originals };
 	};
 
-	transformed = transformNodes( data );
+	const transformed = transformNodes( data );
 	return $.Deferred().resolve( transformed.data, transformed.nodes ).promise();
 };
 
@@ -367,21 +356,15 @@ ComponentWidget.prototype.extractDOMNodesWithContext = function ( node ) {
 		$( node )
 			.find( 'input:not([type="checkbox"]):not([type="radio"]), textarea' )
 			.addBack( 'input:not([type="checkbox"]):not([type="radio"]), textarea' )
-			.filter( function ( i, n ) {
-				return n.value !== n.defaultValue;
-			} ).get(),
+			.filter( ( i, n ) => n.value !== n.defaultValue ).get(),
 		$( node )
 			.find( 'input[type="checkbox"], input[type="radio"]' )
 			.addBack( 'input[type="checkbox"], input[type="radio"]' )
-			.filter( function ( i, n ) {
-				return n.checked !== n.defaultChecked;
-			} ).get(),
+			.filter( ( i, n ) => n.checked !== n.defaultChecked ).get(),
 		$( node )
 			.find( 'option' )
 			.addBack( 'option' )
-			.filter( function ( i, n ) {
-				return n.selected !== n.defaultSelected;
-			} ).get()
+			.filter( ( i, n ) => n.selected !== n.defaultSelected ).get()
 	);
 };
 
@@ -398,18 +381,16 @@ ComponentWidget.prototype.extractDOMNodesWithContext = function ( node ) {
  * @return {Node[]}
  */
 ComponentWidget.prototype.matchNodes = function ( one, two, preserve ) {
-	var self = this,
+	const self = this,
 		isRelevantNode = function ( node ) {
 			return node.tagName && (
 				// if this node or one of its children is one to be preserved, it matters
-				( preserve || [] ).some( function ( p ) {
-					return $( node ).find( p ).addBack( p ).length > 0;
-				} ) ||
+				( preserve || [] ).some( ( p ) => $( node ).find( p ).addBack( p ).length > 0 ) ||
 				self.extractDOMNodesWithContext( node ).length > 0
 			);
 		},
 		getNumberOfEqualChildren = function ( needle, haystack ) {
-			return haystack.map( function ( target ) {
+			return haystack.map( ( target ) => {
 				if ( self.getNumberOfEqualNodes( [ needle ], [ target ] ) === 0 ) {
 					return 0;
 				}
@@ -420,52 +401,41 @@ ComponentWidget.prototype.matchNodes = function ( one, two, preserve ) {
 			} );
 		},
 		filterRelevantNodes = function ( needle, haystack ) {
-			return haystack.filter( function ( target ) {
-				return (
-					target.tagName &&
+			return haystack.filter( ( target ) => (
+				target.tagName &&
 					// exclude nodes where neither this or the other node are relevant
 					( isRelevantNode( needle ) || isRelevantNode( target ) )
-				);
-			} );
+			) );
 		},
 		filterByMostSimilar = function ( needle, haystack ) {
-			var numbers = getNumberOfEqualChildren( needle, haystack ),
+			const numbers = getNumberOfEqualChildren( needle, haystack ),
 				best = Math.max.apply( Math, numbers.concat( 0 ) );
 
-			return haystack.filter( function ( target, i ) {
-				return numbers[ i ] === best;
-			} );
+			return haystack.filter( ( target, i ) => numbers[ i ] === best );
 		},
 		filterByLeastDissimilar = function ( needle, haystack ) {
-			var numbers = getNumberOfEqualChildren( needle, haystack ).map( function ( number, i ) {
-					return Math.max( needle.children.length, haystack[ i ].children.length ) - number;
-				} ),
+			const numbers = getNumberOfEqualChildren( needle, haystack ).map( ( number, i ) => Math.max( needle.children.length, haystack[ i ].children.length ) - number ),
 				best = Math.min.apply( Math, numbers.concat( needle.children.length ) );
 
-			return haystack.filter( function ( target, i ) {
-				return numbers[ i ] === best;
-			} );
+			return haystack.filter( ( target, i ) => numbers[ i ] === best );
 		};
 
-	return one.reduce( function ( result, node, index, arr ) {
-		var other = [].concat( two ),
-			remaining = arr.slice( index ).filter( function ( target ) {
-				return target.tagName !== undefined;
-			} ),
-			i;
+	return one.reduce( ( result, node, index, arr ) => {
+		let other = [].concat( two );
+		const remaining = arr.slice( index ).filter( ( target ) => target.tagName !== undefined );
 
 		// don't bother matching non-nodes
 		if ( node.tagName === undefined ) {
 			return result.concat( undefined );
 		}
 
-		other = filterRelevantNodes( node, other ).filter( function ( target ) {
+		other = filterRelevantNodes( node, other ).filter(
 			// exclude nodes that we've already paired to a previous node
-			return result.indexOf( target ) < 0;
-		} );
+			( target ) => !result.includes( target )
+		);
 
 		// find the first unmatched relevant equal node (if any)
-		for ( i = 0; i < other.length; i++ ) {
+		for ( let i = 0; i < other.length; i++ ) {
 			if ( node.isEqualNode( other[ i ] ) ) {
 				return result.concat( other[ i ] );
 			}
@@ -476,9 +446,7 @@ ComponentWidget.prototype.matchNodes = function ( one, two, preserve ) {
 
 		// narrow down nodes by cross-referencing similarities from the
 		// other side: a future node might actually be a better match...
-		other = other.filter( function ( target ) {
-			return filterByMostSimilar( target, remaining ).indexOf( node ) >= 0;
-		} );
+		other = other.filter( ( target ) => filterByMostSimilar( target, remaining ).includes( node ) );
 
 		// narrow it down further to the one(s) with the minimum amount
 		// of different children
@@ -486,9 +454,7 @@ ComponentWidget.prototype.matchNodes = function ( one, two, preserve ) {
 
 		// narrow down nodes by cross-referencing dissimilarities from the
 		// other side: a future node might actually be a better match...
-		other = other.filter( function ( target ) {
-			return filterByLeastDissimilar( target, remaining ).indexOf( node ) >= 0;
-		} );
+		other = other.filter( ( target ) => filterByLeastDissimilar( target, remaining ).includes( node ) );
 
 		// return the first of whatever is left
 		return result.concat( other.shift() );
@@ -504,8 +470,7 @@ ComponentWidget.prototype.matchNodes = function ( one, two, preserve ) {
  * @return {boolean}
  */
 ComponentWidget.prototype.isEqualNodeAndProps = function ( one, two ) {
-	var self = this,
-		property, descriptor;
+	const self = this;
 
 	if ( !one.isEqualNode( two ) ) {
 		return false;
@@ -515,10 +480,10 @@ ComponentWidget.prototype.isEqualNodeAndProps = function ( one, two ) {
 	// text input (where `value` prop is different from the `value` attribute,
 	// because the one doesn't sync back when it changes) could be considered
 	// equal even if they have different values - hence the added value compare
-	for ( property in one.constructor.prototype ) {
+	for ( const property in one.constructor.prototype ) {
 		// some properties or getters are auto computed and can't be set
 		// comparing these (e.g. `webkitEntries`) makes no sense
-		descriptor = Object.getOwnPropertyDescriptor( one.constructor.prototype, property );
+		const descriptor = Object.getOwnPropertyDescriptor( one.constructor.prototype, property );
 		if ( descriptor === undefined || !descriptor.writable || descriptor.set === undefined ) {
 			continue;
 		}
@@ -530,9 +495,7 @@ ComponentWidget.prototype.isEqualNodeAndProps = function ( one, two ) {
 	}
 
 	// nodes are the same, but there may be similar prop differences in children...
-	return !one.children || ![].slice.call( one.children ).some( function ( child, i ) {
-		return !self.isEqualNodeAndProps( child, two.children[ i ] );
-	} );
+	return !one.children || ![].slice.call( one.children ).some( ( child, i ) => !self.isEqualNodeAndProps( child, two.children[ i ] ) );
 };
 
 /**
@@ -545,44 +508,38 @@ ComponentWidget.prototype.isEqualNodeAndProps = function ( one, two ) {
  * @return {number}
  */
 ComponentWidget.prototype.getNumberOfEqualNodes = function ( one, two ) {
-	var self = this;
+	const self = this;
 
 	return one
-		.map( function ( twoNode ) {
-			return two.some( function ( oneNode ) {
-				var nodeOneChildren,
-					nodeTwoChildren;
+		.map( ( twoNode ) => two.some( ( oneNode ) => {
 
-				if ( oneNode.tagName !== twoNode.tagName ) {
-					return false;
-				}
+			if ( oneNode.tagName !== twoNode.tagName ) {
+				return false;
+			}
 
-				if ( oneNode.id || twoNode.id ) {
-					// nodes that have an id must match
-					return oneNode.id === twoNode.id;
-				}
+			if ( oneNode.id || twoNode.id ) {
+				// nodes that have an id must match
+				return oneNode.id === twoNode.id;
+			}
 
-				if ( oneNode.getAttribute( 'data-key' ) || twoNode.getAttribute( 'data-key' ) ) {
-					// nodes that have a data-key attribute must match
-					// (similar to id, but doesn't have to be unique
-					// on the page, as long as it's unique in the template)
-					return oneNode.getAttribute( 'data-key' ) === twoNode.getAttribute( 'data-key' );
-				}
+			if ( oneNode.getAttribute( 'data-key' ) || twoNode.getAttribute( 'data-key' ) ) {
+				// nodes that have a data-key attribute must match
+				// (similar to id, but doesn't have to be unique
+				// on the page, as long as it's unique in the template)
+				return oneNode.getAttribute( 'data-key' ) === twoNode.getAttribute( 'data-key' );
+			}
 
-				if ( oneNode.isEqualNode( twoNode ) ) {
-					// node with exact same characteristics = match!
-					return true;
-				}
+			if ( oneNode.isEqualNode( twoNode ) ) {
+				// node with exact same characteristics = match!
+				return true;
+			}
 
-				// node is not a perfect match - let's run their children through the same set of criteria
-				nodeOneChildren = [].slice.call( oneNode.children );
-				nodeTwoChildren = [].slice.call( twoNode.children );
-				return self.getNumberOfEqualNodes( nodeOneChildren, nodeTwoChildren ) > 0;
-			} );
-		} )
-		.reduce( function ( sum, isEqual ) {
-			return sum + ( isEqual ? 1 : 0 );
-		}, 0 );
+			// node is not a perfect match - let's run their children through the same set of criteria
+			const nodeOneChildren = [].slice.call( oneNode.children );
+			const nodeTwoChildren = [].slice.call( twoNode.children );
+			return self.getNumberOfEqualNodes( nodeOneChildren, nodeTwoChildren ) > 0;
+		} ) )
+		.reduce( ( sum, isEqual ) => sum + ( isEqual ? 1 : 0 ), 0 );
 };
 
 /**
@@ -609,7 +566,7 @@ ComponentWidget.prototype.setDisabled = function ( disabled ) {
  * @inheritDoc
  */
 ComponentWidget.prototype.addItems = function () {
-	var result = OO.ui.mixin.GroupElement.prototype.addItems.apply( this, arguments );
+	const result = OO.ui.mixin.GroupElement.prototype.addItems.apply( this, arguments );
 	this.setState( { _group: Object.assign( [], this.getItems() ) } );
 	return result;
 };
@@ -621,7 +578,7 @@ ComponentWidget.prototype.addItems = function () {
  * @inheritDoc
  */
 ComponentWidget.prototype.removeItems = function () {
-	var result = OO.ui.mixin.GroupElement.prototype.removeItems.apply( this, arguments );
+	const result = OO.ui.mixin.GroupElement.prototype.removeItems.apply( this, arguments );
 	this.setState( { _group: Object.assign( [], this.getItems() ) } );
 	return result;
 };
@@ -633,7 +590,7 @@ ComponentWidget.prototype.removeItems = function () {
  * @inheritDoc
  */
 ComponentWidget.prototype.moveItem = function () {
-	var result = OO.ui.mixin.GroupElement.prototype.moveItem.apply( this, arguments );
+	const result = OO.ui.mixin.GroupElement.prototype.moveItem.apply( this, arguments );
 	this.setState( { _group: Object.assign( [], this.getItems() ) } );
 	return result;
 };
@@ -645,7 +602,7 @@ ComponentWidget.prototype.moveItem = function () {
  * @inheritDoc
  */
 ComponentWidget.prototype.insertItem = function () {
-	var result = OO.ui.mixin.GroupElement.prototype.insertItem.apply( this, arguments );
+	const result = OO.ui.mixin.GroupElement.prototype.insertItem.apply( this, arguments );
 	this.setState( { _group: Object.assign( [], this.getItems() ) } );
 	return result;
 };
@@ -657,7 +614,7 @@ ComponentWidget.prototype.insertItem = function () {
  * @inheritDoc
  */
 ComponentWidget.prototype.clearItems = function () {
-	var result = OO.ui.mixin.GroupElement.prototype.clearItems.apply( this, arguments );
+	const result = OO.ui.mixin.GroupElement.prototype.clearItems.apply( this, arguments );
 	this.setState( { _group: Object.assign( [], this.getItems() ) } );
 	return result;
 };

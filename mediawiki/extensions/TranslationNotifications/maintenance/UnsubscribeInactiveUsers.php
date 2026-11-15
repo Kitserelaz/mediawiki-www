@@ -7,15 +7,16 @@ use MediaWiki\Extension\CentralAuth\User\CentralAuthUser;
 use MediaWiki\Extension\Notifications\Model\Event as EchoEvent;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\Maintenance\Maintenance;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
 use Wikimedia\Rdbms\IExpression;
 use Wikimedia\Rdbms\LikeValue;
 
+// @codeCoverageIgnoreStart
 $env = getenv( 'MW_INSTALL_PATH' );
 $IP = $env !== false ? $env : __DIR__ . '/../../..';
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 /**
  * This script unsubscribes translators who've been inactive or blocked for a certain duration of time.
@@ -33,8 +34,10 @@ require_once "$IP/maintenance/Maintenance.php";
 class UnsubscribeInactiveUsers extends Maintenance {
 	private const ACTIVITY_CHECKS = [
 		'archive' => 'ar',
+		// TODO: Drop image and oldimage once we remove them (T28741)
 		'image' => 'img',
 		'oldimage' => 'oi',
+		'filerevision' => 'fr',
 		'filearchive' => 'fa',
 		'revision' => 'rev'
 	];
@@ -64,6 +67,7 @@ class UnsubscribeInactiveUsers extends Maintenance {
 		$this->requireExtension( 'CentralAuth' );
 	}
 
+	/** @inheritDoc */
 	public function execute() {
 		$inactiveSubscribers = [];
 		$blockedSubscribers = [];
@@ -186,7 +190,6 @@ class UnsubscribeInactiveUsers extends Maintenance {
 	private function isSubscriberInactive( UserIdentity $subscriber, string $inactiveTs ): bool {
 		$centralUser = CentralAuthUser::getInstance( $subscriber );
 		$attachedAccounts = $centralUser->queryAttached();
-		$mwServices = $this->getServiceContainer();
 
 		if ( !$attachedAccounts ) {
 			$this->logVerbose( "No central account attached to user: {$subscriber->getName()}\n" );
@@ -202,7 +205,6 @@ class UnsubscribeInactiveUsers extends Maintenance {
 
 		foreach ( $attachedAccounts as $accountInfo ) {
 			$isUserInactive = $this->isSubscriberInactiveOnSite(
-				$mwServices,
 				new UserIdentityValue( (int)$accountInfo[ 'id' ], $accountInfo['name'], $accountInfo['wiki'] ),
 				$inactiveTs
 			);
@@ -216,10 +218,10 @@ class UnsubscribeInactiveUsers extends Maintenance {
 	}
 
 	private function isSubscriberInactiveOnSite(
-		MediaWikiServices $mwServices,
 		UserIdentity $user,
 		string $inactiveTs
 	): bool {
+		$mwServices = $this->getServiceContainer();
 		$siteId = $user->getWikiId();
 		$dbr = $mwServices->getDBLoadBalancerFactory()
 			->getMainLB( $siteId )
@@ -256,7 +258,7 @@ class UnsubscribeInactiveUsers extends Maintenance {
 		$mwServices = $this->getServiceContainer();
 		$blockManager = $mwServices->getBlockManager();
 
-		$userBlock = $blockManager->getUserBlock( $subscriber, null, true );
+		$userBlock = $blockManager->getBlock( $subscriber, null );
 		if ( !$userBlock ) {
 			return false;
 		}
@@ -338,5 +340,7 @@ class UnsubscribeInactiveUsers extends Maintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = UnsubscribeInactiveUsers::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

@@ -2,7 +2,7 @@
 	"root": true,
 	"extends": [
 		"wikimedia/server",
-		"../../.eslintshared.json",
+		"../../resources/.eslintshared.json",
 		"wikimedia/qunit"
 	],
 	"env": {
@@ -10,6 +10,7 @@
 	},
 	"rules": {
 		"max-len": "off",
-		"node/no-missing-require": "off"
+		"n/no-missing-require": "off",
+		"qunit/no-loose-assertions": "warn"
 	}
 }

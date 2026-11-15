@@ -13,8 +13,13 @@
 
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\Statistics\MessageGroupStats;
+use MediaWiki\Extension\Translate\Statistics\Output\CsvStatsOutput;
+use MediaWiki\Extension\Translate\Statistics\Output\TextStatsOutput;
+use MediaWiki\Extension\Translate\Statistics\Output\TranslateStatsOutput;
+use MediaWiki\Extension\Translate\Statistics\Output\WikiStatsOutput;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\Maintenance\Maintenance;
 
 // Standard boilerplate to define $IP
 if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
@@ -326,6 +331,7 @@ class GroupStatistics extends Maintenance {
 		$wmfscore = $this->hasOption( 'wmfscore' );
 
 		// Get groups from input
+		/** @var array<string,MessageGroup> $groups */
 		$groups = [];
 		if ( $reportScore ) {
 			$reqGroups = array_keys( $this->localisedWeights[$most] );
@@ -415,7 +421,6 @@ class GroupStatistics extends Maintenance {
 				);
 			}
 
-			/** @var MessageGroup $g */
 			foreach ( $groups as $g ) {
 				// Add unprocessed description of group as heading
 				if ( $reportScore ) {
@@ -442,8 +447,8 @@ class GroupStatistics extends Maintenance {
 			$rows[$code] = [];
 		}
 
-		foreach ( $groups as $groupName => $g ) {
-			$stats = MessageGroupStats::forGroup( $groupName );
+		foreach ( $groups as $group ) {
+			$stats = MessageGroupStats::forGroup( $group );
 
 			// Perform the statistic calculations on every language
 			foreach ( $languages as $code => $name ) {
@@ -562,8 +567,7 @@ class GroupStatistics extends Maintenance {
 				// Start with 0 points
 				$score = 0;
 
-				foreach ( $columns as $fields ) {
-					[ , $upper, $total ] = $fields;
+				foreach ( $columns as [ , $upper, $total ] ) {
 					// Weigh the score and add it to the current score
 					$score += ( $weights[$i] * $upper ) / $total;
 					$i++;
@@ -607,8 +611,7 @@ class GroupStatistics extends Maintenance {
 
 			// Fill fields for groups
 			if ( !$wmfscore ) {
-				foreach ( $columns as $fields ) {
-					[ $invert, $upper, $total ] = $fields;
+				foreach ( $columns as [ $invert, $upper, $total ] ) {
 					$c = $out->formatPercent( $upper, $total, $invert );
 					$out->element( $c );
 				}

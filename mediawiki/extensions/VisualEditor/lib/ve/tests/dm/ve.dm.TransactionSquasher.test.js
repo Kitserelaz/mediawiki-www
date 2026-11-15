@@ -7,8 +7,8 @@
 QUnit.module( 've.dm.TransactionSquasher' );
 
 QUnit.test( 'squash', ( assert ) => {
-	const boldHash = 'hfbe3cfe099b83e1e',
-		italicHash = 'he4e7c54e2204d10ba';
+	const boldHash = ve.dm.example.boldHash,
+		italicHash = ve.dm.example.italicHash;
 
 	function insertionTxList( before, itemSequence, after ) {
 		return itemSequence.split( '' ).map( ( item, n ) => [ before + n, [ '', item ], after ] );
@@ -20,34 +20,27 @@ QUnit.test( 'squash', ( assert ) => {
 		let newData;
 		if ( method === 'set' ) {
 			newData = oldData.map( ( item ) => {
-				let ch, hashList;
-				if ( Array.isArray( item ) ) {
-					ch = item[ 0 ];
-					hashList = item[ 1 ];
-				} else {
-					ch = item;
+				let ch = item,
 					hashList = [];
+				if ( Array.isArray( item ) ) {
+					[ ch, hashList ] = item;
 				}
-				hashList = [].concat(
-					hashList.slice( 0, spliceAt ),
+				hashList = [
+					...hashList.slice( 0, spliceAt ),
 					hash,
-					hashList.slice( spliceAt )
-				);
+					...hashList.slice( spliceAt )
+				];
 				return [ ch, hashList ];
 			} );
 		} else {
 			newData = oldData.map( ( item ) => {
-				const ch = item[ 0 ];
-				let hashList = item[ 1 ];
-				hashList = [].concat(
-					hashList.slice( 0, spliceAt ),
-					hashList.slice( spliceAt + 1 )
-				);
-				if ( hashList.length === 0 ) {
-					return ch;
-				} else {
-					return [ ch, hashList ];
-				}
+				// eslint-disable-next-line prefer-const
+				let [ ch, hashList ] = item;
+				hashList = [
+					...hashList.slice( 0, spliceAt ),
+					...hashList.slice( spliceAt + 1 )
+				];
+				return hashList.length ? [ ch, hashList ] : ch;
 			} );
 		}
 		return [ start, [ oldData, newData ], length - stop ];
@@ -105,11 +98,11 @@ QUnit.test( 'squash', ( assert ) => {
 					[ 'E' ]
 				], 5 ]
 			],
-			squashed: [ 3, [ 'defgh', [].concat(
-				sequence( 'd', boldHash ),
+			squashed: [ 3, [ 'defgh', [
+				...sequence( 'd', boldHash ),
 				'E',
-				sequence( 'Fgh', boldHash )
-			) ], 2 ]
+				...sequence( 'Fgh', boldHash )
+			] ], 2 ]
 		},
 		{
 			message: 'insert, insert, remove',
@@ -122,36 +115,36 @@ QUnit.test( 'squash', ( assert ) => {
 		},
 		{
 			message: 'type, annotate, clear',
-			transactions: [].concat(
-				insertionTxList( 1, 'Foo bar baz qux quux', 3 ),
-				[ annotationTx( 'WFoo bar baz qux quuxXYZ', 1, 21, 24, 'set', boldHash, 0 ) ],
-				[ annotationTx( [].concat(
+			transactions: [
+				...insertionTxList( 1, 'Foo bar baz qux quux', 3 ),
+				annotationTx( 'WFoo bar baz qux quuxXYZ', 1, 21, 24, 'set', boldHash, 0 ),
+				annotationTx( [
 					'W',
-					sequence( 'Foo bar baz qux quux', boldHash ),
+					...sequence( 'Foo bar baz qux quux', boldHash ),
 					'XYZ'
-				), 1, 4, 24, 'set', italicHash, 1 ) ],
-				[ annotationTx( [].concat(
+				], 1, 4, 24, 'set', italicHash, 1 ),
+				annotationTx( [
 					'W',
-					sequence( 'Foo', boldHash, italicHash ),
-					sequence( ' bar baz qux quux', boldHash ),
+					...sequence( 'Foo', boldHash, italicHash ),
+					...sequence( ' bar baz qux quux', boldHash ),
 					'XYZ'
-				), 9, 12, 24, 'set', italicHash, 1 ) ],
-				[ annotationTx( [].concat(
+				], 9, 12, 24, 'set', italicHash, 1 ),
+				annotationTx( [
 					'W',
-					sequence( 'Foo', boldHash, italicHash ),
-					sequence( ' bar ', boldHash ),
-					sequence( 'baz', boldHash, italicHash ),
-					sequence( ' qux quux', boldHash ),
+					...sequence( 'Foo', boldHash, italicHash ),
+					...sequence( ' bar ', boldHash ),
+					...sequence( 'baz', boldHash, italicHash ),
+					...sequence( ' qux quux', boldHash ),
 					'XYZ'
-				), 1, 17, 24, 'clear', boldHash, 0 ) ]
-			),
-			squashed: [ 1, [ '', [].concat(
-				sequence( 'Foo', italicHash ),
-				sequence( ' bar ' ),
-				sequence( 'baz', italicHash ),
-				sequence( ' qux ' ),
-				sequence( 'quux', boldHash )
-			) ], 3 ]
+				], 1, 17, 24, 'clear', boldHash, 0 )
+			],
+			squashed: [ 1, [ '', [
+				...sequence( 'Foo', italicHash ),
+				...sequence( ' bar ' ),
+				...sequence( 'baz', italicHash ),
+				...sequence( ' qux ' ),
+				...sequence( 'quux', boldHash )
+			] ], 3 ]
 		},
 		{
 			message: 'insert, change attribute, change attribute again',
@@ -212,11 +205,11 @@ QUnit.test( 'squash', ( assert ) => {
 				] ],
 				[ 1, [ 'abcdefg', '' ], 1 ]
 			],
-			squashed: [ [ [].concat(
+			squashed: [ [ [
 				{ type: 'heading', attributes: { level: 1 } },
-				sequence( 'abcdefg' ),
+				...sequence( 'abcdefg' ),
 				{ type: '/heading' }
-			), [
+			], [
 				{ type: 'paragraph' },
 				{ type: '/paragraph' }
 			] ] ]

@@ -135,9 +135,9 @@ class ConflictFormValidatorTest extends \MediaWikiUnitTestCase {
 	/**
 	 * @dataProvider provideRequests
 	 */
-	public function testValidateRequest( array $requestParams, bool $expected ) {
+	public function testValidateRequest( array $params, bool $expected ) {
 		$merger = $this->getValidator();
-		$request = $this->createRequest( $requestParams );
+		$request = $this->createRequest( $params );
 
 		$result = $merger->validateRequest( $request );
 		$this->assertEquals( $expected, $result );
@@ -150,9 +150,7 @@ class ConflictFormValidatorTest extends \MediaWikiUnitTestCase {
 	 */
 	private function createRequest( array $requestParams ) {
 		$request = $this->createMock( WebRequest::class );
-		$getter = static function ( string $name, $default ) use ( $requestParams ) {
-			return $requestParams[$name] ?? $default;
-		};
+		$getter = static fn ( string $name, $default ) => $requestParams[$name] ?? $default;
 		$request->method( 'getArray' )->willReturnCallback( $getter );
 		$request->method( 'getBool' )->willReturnCallback( $getter );
 		return $request;

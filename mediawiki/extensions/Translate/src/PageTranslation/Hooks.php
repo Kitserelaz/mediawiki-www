@@ -1,18 +1,22 @@
 <?php
 
+// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
+
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
-use Article;
-use Content;
 use Exception;
-use IDBAccessObject;
-use Language;
-use LanguageCode;
-use ManualLogEntry;
+use MediaWiki\Category\Category;
 use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Config\Config;
+use MediaWiki\Content\Content;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Deferred\LinksUpdate\LinksUpdate;
+use MediaWiki\Exception\UserBlockedError;
+use MediaWiki\Extension\Translate\LogNames;
+use MediaWiki\Extension\Translate\MessageBundleTranslation\MessageBundleContent;
 use MediaWiki\Extension\Translate\MessageBundleTranslation\MessageBundleMessageGroup;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Extension\Translate\Services;
@@ -21,20 +25,29 @@ use MediaWiki\Extension\Translate\Statistics\RebuildMessageGroupStatsJob;
 use MediaWiki\Extension\Translate\SystemUsers\FuzzyBot;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\Html\Html;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\Language;
+use MediaWiki\Language\LanguageCode;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\PageReference;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Parser\ParserOutputFlags;
+use MediaWiki\Parser\PPFrame;
+use MediaWiki\ResourceLoader\Context;
 use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RenderedRevision;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Skin\Skin;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
 use MediaWiki\Storage\EditResult;
@@ -42,12 +55,10 @@ use MediaWiki\StubObject\StubUserLang;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
-use PPFrame;
-use Skin;
-use TextContent;
-use UserBlockedError;
+use MessageGroup;
+use StatusValue;
+use Wikimedia\Rdbms\IDBAccessObject;
 use Wikimedia\ScopedCallback;
-use WikiPage;
 use WikiPageMessageGroup;
 
 /**
@@ -123,7 +134,7 @@ class Hooks {
 			}
 			self::$renderingContext = false;
 		} catch ( Exception $e ) {
-			LoggerFactory::getInstance( 'Translate' )->error(
+			LoggerFactory::getInstance( LogNames::MAIN )->error(
 				'T302754 Failed to set display title for page {title}',
 				[
 					'title' => $title->getPrefixedDBkey(),
@@ -147,7 +158,7 @@ class Hooks {
 
 		$wikitextParser->getOutput()->setExtensionData( 'translate-translation-page', $extensionData );
 		// Disable edit section links
-		$wikitextParser->getOutput()->setExtensionData( 'Translate-noeditsection', true );
+		$wikitextParser->getOutput()->setOutputFlag( ParserOutputFlags::NO_SECTION_EDIT_LINKS );
 	}
 
 	/**
@@ -167,7 +178,7 @@ class Hooks {
 				$text = $parserOutput->sourcePageTextForRendering(
 					$wikitextParser->getTargetLanguage()
 				);
-			} catch ( ParsingFailure $e ) {
+			} catch ( ParsingFailure ) {
 				wfDebug( 'ParsingFailure caught; expected' );
 			}
 		} else {
@@ -175,22 +186,6 @@ class Hooks {
 			// context of a Parsoid template expansion sub-pipeline. We strip these as well.
 			$unit = new TranslationUnit( $text );
 			$text = $unit->getTextForTrans();
-		}
-	}
-
-	/**
-	 * Hook: ParserOutputPostCacheTransform
-	 * @param ParserOutput $out
-	 * @param string &$text
-	 * @param array &$options
-	 */
-	public static function onParserOutputPostCacheTransform(
-		ParserOutput $out,
-		&$text,
-		array &$options
-	) {
-		if ( $out->getExtensionData( 'Translate-noeditsection' ) ) {
-			$options['enableSectionEditLinks'] = false;
 		}
 	}
 
@@ -215,7 +210,7 @@ class Hooks {
 			return;
 		}
 
-		$templateTitle = Title::castFromLinkTarget( $templateLink );
+		$templateTitle = Title::newFromLinkTarget( $templateLink );
 
 		$templateTranslationPage = TranslatablePage::isTranslationPage( $templateTitle );
 		if ( $templateTranslationPage ) {
@@ -224,7 +219,7 @@ class Hooks {
 			$revRecord = $templateTranslationPage->getRevisionRecordWithFallback();
 			if ( !$revRecord ) {
 				// In rare cases fetching of the source fallback might fail. See: T323863
-				LoggerFactory::getInstance( 'Translate' )->warning(
+				LoggerFactory::getInstance( LogNames::MAIN )->warning(
 					"T323863: Could not fetch any revision record for '{groupid}'",
 					[ 'groupid' => $templateTranslationPage->getMessageGroupId() ]
 				);
@@ -248,7 +243,7 @@ class Hooks {
 		if ( $contextLink ) {
 			// Fetch the context page language, and then check if template is present in that language
 			$templateTranslationTitle = $templateTitle->getSubpage(
-				Title::castFromLinkTarget( $contextLink )->getPageLanguage()->getCode()
+				Title::newFromLinkTarget( $contextLink )->getPageLanguage()->getCode()
 			 );
 
 			if ( $templateTranslationTitle ) {
@@ -329,16 +324,16 @@ class Hooks {
 	 * @param Skin $skin
 	 */
 	public static function onBeforePageDisplay( OutputPage $out, Skin $skin ) {
-		global $wgTranslatePageTranslationULS;
-
 		$title = $out->getTitle();
+		if ( $title->isSpecialPage() ) {
+			return;
+		}
+
 		$isSource = TranslatablePage::isSourcePage( $title );
 		$isTranslation = TranslatablePage::isTranslationPage( $title );
 
 		if ( $isSource || $isTranslation ) {
-			if ( $wgTranslatePageTranslationULS ) {
-				$out->addModules( 'ext.translate.pagetranslation.uls' );
-			}
+			$out->addModules( 'ext.translate.pagetranslation.uls' );
 
 			if ( $isSource ) {
 				// Adding a help notice
@@ -348,6 +343,23 @@ class Hooks {
 			$out->addModuleStyles( 'ext.translate' );
 
 			$out->addJsConfigVars( 'wgTranslatePageTranslation', $isTranslation ? 'translation' : 'source' );
+
+			$groupId = TranslatablePage::getMessageGroupIdFromTitle( $title );
+			$out->addJsConfigVars( 'wgTranslatePageTranslationGroup', $groupId );
+
+			$priorityLanguages = Services::getInstance()->getMessageGroupMetadata()->get( $groupId, 'prioritylangs' );
+			if ( $priorityLanguages ) {
+				$priorityLanguages = explode( ',', $priorityLanguages );
+			} else {
+				$priorityLanguages = [];
+			}
+			$out->addJsConfigVars( 'wgTranslatePriorityLanguages', $priorityLanguages );
+		} else {
+			$viewTranslatablePage = Services::getInstance()->getTranslatablePageView();
+			$user = $out->getUser();
+			if ( $viewTranslatablePage->canDisplayTranslationSettingsBanner( $title, $user ) ) {
+				$out->addModules( 'ext.translate.uls.translation.banner' );
+			}
 		}
 	}
 
@@ -424,7 +436,11 @@ class Hooks {
 		// Update the target page
 		$unitTitleText = $unitTitle ? $unitTitle->getPrefixedText() : null;
 		$job = RenderTranslationPageJob::newJob( $target, $triggerAction, $unitTitleText );
-		$job->setUser( $user );
+		$session = null;
+		if ( !$user->equals( FuzzyBot::getUser() ) ) {
+			$session = RequestContext::getMain()->exportSession();
+		}
+		$job->setUser( $user, $session );
 		$job->setSummary( $summary );
 		$job->setFlags( $flags );
 		$mwInstance->getJobQueueGroup()->push( $job );
@@ -670,7 +686,7 @@ class Hooks {
 		$messageGroupMetadata = Services::getInstance()->getMessageGroupMetadata();
 		// If priority languages have been set, always show those languages
 		$priorityLanguages = $messageGroupMetadata->get( $page->getMessageGroupId(), 'prioritylangs' );
-		if ( (string)$priorityLanguages !== '' ) {
+		if ( $priorityLanguages !== false && $priorityLanguages !== '' ) {
 			$status += array_fill_keys( explode( ',', $priorityLanguages ), 0 );
 		}
 
@@ -717,8 +733,6 @@ class Hooks {
 		$mwServices = MediaWikiServices::getInstance();
 		$en = $mwServices->getLanguageFactory()->getLanguage( 'en' );
 
-		$newLanguageLinks = [];
-
 		// Batch the Title::exists queries used below
 		$lb = $mwServices->getLinkBatchFactory()->newLinkBatch();
 		foreach ( array_keys( $languages ) as $code ) {
@@ -729,13 +743,13 @@ class Hooks {
 		$languageNameUtils = $mwServices->getLanguageNameUtils();
 		foreach ( $languages as $code => $percentage ) {
 			$title = $page->getTitle()->getSubpage( $code );
-			$key = "x-pagetranslation:{$title->getPrefixedText()}";
+			$placeholderValue = "$code-x-pagetranslation:{$title->getPrefixedText()}";
 			$translatedName = $page->getPageDisplayTitle( $code ) ?: $title->getPrefixedText();
 
 			if ( $title->exists() ) {
 				$href = $title->getLocalURL();
 				$classes = self::tpProgressIcon( (float)$percentage );
-				$title = wfMessage( 'tpt-languages-nonzero' )
+				$titleAttribute = wfMessage( 'tpt-languages-nonzero' )
 					->params( $translatedName )
 					->numParams( 100 * $percentage );
 			} else {
@@ -744,23 +758,20 @@ class Hooks {
 					'language' => $code,
 				] );
 				$classes = [ 'mw-pt-progress--none' ];
-				$title = wfMessage( 'tpt-languages-zero' );
+				$titleAttribute = wfMessage( 'tpt-languages-zero' );
 			}
 
-			self::$languageLinkData[ $key ] = [
+			self::$languageLinkData[ $placeholderValue ] = [
 				'href' => $href,
 				'language' => $code,
-				'percentage' => $percentage,
 				'classes' => $classes,
 				'autonym' => $en->ucfirst( $languageNameUtils->getLanguageName( $code ) ),
-				'title' => $title,
+				'title' => $titleAttribute,
 			];
 
-			$newLanguageLinks[ $key ] = self::$languageLinkData[ $key ][ 'autonym' ];
+			// Insert a placeholder which we will then fix up in SkinTemplateGetLanguageLink hook handler
+			$languageLinks[] = $placeholderValue;
 		}
-
-		asort( $newLanguageLinks );
-		$languageLinks = array_merge( array_keys( $newLanguageLinks ), $languageLinks );
 	}
 
 	/**
@@ -776,20 +787,17 @@ class Hooks {
 		Title $pageTitle,
 		OutputPage $out
 	) {
-		if ( !str_starts_with( $link['text'], 'x-pagetranslation:' ) ||
-			!isset( self::$languageLinkData[ $link['text'] ] )
-		) {
+		$data = self::$languageLinkData[$link['text']] ?? null;
+		if ( !$data ) {
 			return;
 		}
 
-		$data = self::$languageLinkData[ $link[ 'text' ] ];
-
-		$link[ 'class' ] .= ' ' . implode( ' ', $data[ 'classes' ] );
-		$link[ 'href' ] = $data[ 'href' ];
-		$link[ 'text' ] = $data[ 'autonym' ];
-		$link[ 'title' ] = $data[ 'title' ]->inLanguage( $out->getLanguage()->getCode() )->text();
-		$link[ 'lang'] = LanguageCode::bcp47( $data[ 'language' ] );
-		$link[ 'hreflang'] = LanguageCode::bcp47( $data[ 'language' ] );
+		$link['class'] .= ' interwiki-pagetranslation ' . implode( ' ', $data['classes'] );
+		$link['href'] = $data['href'];
+		$link['text'] = $data['autonym'];
+		$link['title'] = $data['title']->inLanguage( $out->getLanguage()->getCode() )->text();
+		$link['lang'] = LanguageCode::bcp47( $data['language'] );
+		$link['hreflang'] = LanguageCode::bcp47( $data['language'] );
 
 		$out->addModuleStyles( 'ext.translate.tag.languages' );
 	}
@@ -835,7 +843,7 @@ class Hooks {
 			try {
 				$parser->parse( $text );
 			} catch ( ParsingFailure $e ) {
-				$status->fatal( ...( $e->getMessageSpecification() ) );
+				$status->fatal( $e->getMessageSpecification() );
 			}
 		}
 
@@ -928,7 +936,6 @@ class Hooks {
 	 * re-mark the translations of the page title as outdated (if enabled
 	 * for translation).
 	 * Hook: RevisionRecordInserted
-	 * @param RevisionRecord $rev
 	 */
 	public static function updateTranstagOnNullRevisions( RevisionRecord $rev ) {
 		$parentId = $rev->getParentId();
@@ -946,9 +953,8 @@ class Hooks {
 			return;
 		}
 
-		$title = Title::newFromLinkTarget( $rev->getPageAsLinkTarget() );
 		$bundleFactory = Services::getInstance()->getTranslatableBundleFactory();
-		$bundle = $bundleFactory->getBundle( $title );
+		$bundle = $bundleFactory->getBundle( $rev->getPage() );
 
 		if ( $bundle ) {
 			$bundleStore = $bundleFactory->getStore( $bundle );
@@ -961,6 +967,7 @@ class Hooks {
 	 * Prevent editing of translation units relating to the source language (these should only be touched by FuzzyBot)
 	 * Prevent editing of translation units relating to a page if you're blocked from that page
 	 * Prevent editing of translation units relating to a language that the page isn't allowed to be translated into.
+	 * Prevent creating empty categories via Translate
 	 * Hook: getUserPermissionsErrorsExpensive
 	 *
 	 * @param Title $title
@@ -999,11 +1006,15 @@ class Hooks {
 
 			if ( $permissionTitleCheck ) {
 				if ( $handle->getCode() === $group->getSourceLanguage() && !$user->equals( FuzzyBot::getUser() ) ) {
-					// Allow revision deletion actions as per T286884 since if something bad somehow gets marked for
-					// translation, deleting revisions everywhere should be possible without deliberately
+					// Allow the same set of actions allowed for translation pages - in particular
+					// if something bad somehow gets marked for translation, deleting
+					// revisions everywhere should be possible without deliberately
 					// invalidating the unit
 					$allowedActionList = [
+						'read', 'deletedtext', 'deletedhistory',
 						'deleterevision', 'suppressrevision', 'viewsuppressed', // T286884
+						'review', // FlaggedRevs
+						'patrol', // T151172
 					];
 					if ( !in_array( $action, $allowedActionList ) ) {
 						$result = [ 'tpt-cant-edit-source-language', $permissionTitleCheck ];
@@ -1019,6 +1030,18 @@ class Hooks {
 						$errorMessage = $error->getMessageObject();
 						$result = array_merge( [ $errorMessage->getKey() ], $errorMessage->getParams() );
 						return false;
+					}
+				}
+				if ( $action === 'create' && $permissionTitleCheck->inNamespace( NS_CATEGORY ) ) {
+					$renderedPage = $permissionTitleCheck->getSubpage( $handle->getCode() );
+					if ( !$renderedPage->exists() ) {
+						$cat = Category::newFromTitle( $renderedPage );
+						if ( $cat->getMemberCount() === 0 ) {
+							if ( !$permissionManager->userCan( 'translate-empty-category', $user, $renderedPage ) ) {
+								$result = [ 'tpt-create-empty-category', $renderedPage ];
+								return false;
+							}
+						}
 					}
 				}
 			}
@@ -1057,7 +1080,7 @@ class Hooks {
 		}
 
 		// Don't allow editing invalid messages that do not belong to any translatable page
-		LoggerFactory::getInstance( 'Translate' )->info(
+		LoggerFactory::getInstance( LogNames::MAIN )->info(
 			'Unknown translation page: {title}',
 			[ 'title' => $title->getPrefixedDBkey() ]
 		);
@@ -1080,7 +1103,7 @@ class Hooks {
 		}
 
 		$factory = Services::getInstance()->getTranslationUnitStoreFactory();
-		$store = $factory->getReader( $translatablePage->getTitle() );
+		$store = $factory->getReader( $translatablePage->getPageIdentity() );
 		$units = $store->getNames();
 
 		if ( !in_array( $parts[ 'section' ], $units ) ) {
@@ -1094,10 +1117,10 @@ class Hooks {
 	 * Prevent editing of restricted languages when prioritized.
 	 *
 	 * @param MessageHandle $handle
-	 * @param string $groupId
+	 * @param MessageGroup|string $group
 	 * @return array array containing error message if restricted, empty otherwise
 	 */
-	private static function getTranslationRestrictions( MessageHandle $handle, $groupId ) {
+	private static function getTranslationRestrictions( MessageHandle $handle, MessageGroup|string $group ) {
 		global $wgTranslateDocumentationLanguageCode;
 
 		// Allow adding message documentation even when translation is restricted
@@ -1107,14 +1130,14 @@ class Hooks {
 
 		$messageGroupMetadata = Services::getInstance()->getMessageGroupMetadata();
 		// Check if anything is prevented for the group in the first place
-		$force = $messageGroupMetadata->get( $groupId, 'priorityforce' );
+		$force = $messageGroupMetadata->get( $group, 'priorityforce' );
 		if ( $force !== 'on' ) {
 			return [];
 		}
 
 		// And finally check whether the language is in the inclusion list
-		$languages = $messageGroupMetadata->get( $groupId, 'prioritylangs' );
-		$reason = $messageGroupMetadata->get( $groupId, 'priorityreason' );
+		$languages = $messageGroupMetadata->get( $group, 'prioritylangs' );
+		$reason = $messageGroupMetadata->get( $group, 'priorityreason' );
 		if ( !$languages ) {
 			if ( $reason ) {
 				return [ 'tpt-translation-restricted-no-priority-languages', $reason ];
@@ -1153,6 +1176,7 @@ class Hooks {
 			'deleterevision', 'suppressrevision', 'viewsuppressed', // T286884
 			'review', // FlaggedRevs
 			'patrol', // T151172
+			'translate-empty-category' // This is checked below on the page that would be created
 		];
 		$needsPageTranslationRight = in_array( $action, [ 'delete', 'undelete' ] );
 		if ( in_array( $action, $inclusionList ) ||
@@ -1175,6 +1199,14 @@ class Hooks {
 
 			[ , $code ] = Utilities::figureMessage( $title->getText() );
 
+			if ( $code === $page->getMessageGroup()->getSourceLanguage() ) {
+				$result = [
+					'tpt-source-mirror',
+					':' . $page->getTitle()->getPrefixedText()
+				];
+				return false;
+			}
+
 			$translationUrl = $mwService->getUrlUtils()->expand(
 				$page->getTranslationUrl( $code ), PROTO_RELATIVE
 			);
@@ -1193,6 +1225,32 @@ class Hooks {
 	}
 
 	/**
+	 * Prevent moving translatable pages, translation pages, or message bundles by any means other than
+	 * our own move tools.
+	 * Hook: MovePageIsValidMove
+	 */
+	public static function preventMoves( Title $oldTitle, Title $newTitle, StatusValue $status ) {
+		if ( self::$allowTargetEdit ) {
+			return;
+		}
+		// Don’t use TranslatablePage::isSourcePage() as it uses a cache that might be stale
+		if ( TranslatablePage::newFromTitle( $oldTitle )->getMarkedTag() !== null ) {
+			$status->fatal( 'tpt-manual-move-source', $oldTitle->getPrefixedText() );
+		}
+
+		// Don't use MessageBundle::isSourcePage for the same reason
+		if ( $oldTitle->getContentModel() === MessageBundleContent::CONTENT_MODEL_ID ) {
+			$status->fatal( 'mb-manual-move', $oldTitle->getPrefixedText() );
+		}
+
+		$tp = TranslatablePage::isTranslationPage( $oldTitle );
+		if ( $tp ) {
+			// Somewhat confusingly $tp->getTitle actually returns the source page here
+			$status->fatal( 'tpt-manual-move-translation', $tp->getTitle()->getPrefixedText() );
+		}
+	}
+
+	/**
 	 * Redirects the delete action to our own for translatable pages.
 	 * Hook: ArticleConfirmDelete
 	 *
@@ -1203,8 +1261,9 @@ class Hooks {
 	 * @return bool
 	 */
 	public static function disableDelete( $article, $out, &$reason ) {
-		$title = $article->getTitle();
-		$bundle = Services::getInstance()->getTranslatableBundleFactory()->getBundle( $title );
+		$page = $article->getPage();
+		$title = $page->getTitle();
+		$bundle = Services::getInstance()->getTranslatableBundleFactory()->getBundle( $page );
 		$isDeletableBundle = $bundle && $bundle->isDeletable();
 		if ( $isDeletableBundle || TranslatablePage::isTranslationPage( $title ) ) {
 			$new = SpecialPage::getTitleFor(
@@ -1410,7 +1469,7 @@ class Hooks {
 
 		// T163254: Disable page translation on non-text pages
 		if ( $allowed && !$content instanceof TextContent ) {
-			LoggerFactory::getInstance( 'Translate' )->error(
+			LoggerFactory::getInstance( LogNames::MAIN )->error(
 				'Expected {title} to have content of type TextContent, got {contentType}. ' .
 				'$wgPageTranslationAllowedContentModels is incorrectly configured with a non-text content model.',
 				[
@@ -1440,7 +1499,6 @@ class Hooks {
 			'class' => MoveTranslatableBundleSpecialPage::class,
 			'services' => [
 				'ObjectFactory',
-				'PermissionManager',
 				'Translate:TranslatableBundleMover',
 				'Translate:TranslatableBundleFactory',
 				'FormatterFactory'
@@ -1547,22 +1605,37 @@ class Hooks {
 	}
 
 	/**
-	 * Converts the edit tab (if exists) for translation pages to translate tab.
+	 * Converts the edit tab (if exists) for translation pages to translate tab, and
+	 * adds a "mark for translation" page action link for source translatable pages.
 	 * Hook: SkinTemplateNavigation::Universal
 	 * @param Skin $skin
 	 * @param array &$tabs
 	 */
-	public static function translateTab( Skin $skin, array &$tabs ) {
+	public static function onSkinTemplateNavigation__Universal( Skin $skin, array &$tabs ) {
 		$title = $skin->getTitle();
 		$handle = new MessageHandle( $title );
 		$code = $handle->getCode();
+		$user = $skin->getUser();
+
+		if ( TranslatablePage::isSourcePage( $title ) && !TranslatablePage::newFromTitle( $title )->isBroken() ) {
+			if ( $user->isAllowed( 'pagetranslation' ) ) {
+				$tabs['actions']['marktranslation'] = [
+					'text' => $skin->msg( 'translate-ca-marktranslation' )->text(),
+					'href' => SpecialPage::getTitleFor( 'PageTranslation' )->getLocalURL( [
+						'target' => $title->getPrefixedText(),
+						'do' => 'mark',
+					] ),
+				];
+			}
+			return;
+		}
+
 		$page = TranslatablePage::isTranslationPage( $title );
 		// The source language has a subpage too, but cannot be translated
 		if ( !$page || $page->getSourceLanguageCode() === $code ) {
 			return;
 		}
 
-		$user = $skin->getUser();
 		if ( isset( $tabs['views']['edit'] ) ) {
 			// There is an edit tab, just replace its text and URL with ours, keeping the tooltip and access key
 			$tabs['views']['edit']['text'] = $skin->msg( 'tpt-tab-translate' )->text();
@@ -1766,6 +1839,54 @@ class Hooks {
 				Utilities::isTranslationPage( $handle )
 			) {
 				unset( $titles[ $index ] );
+			}
+		}
+	}
+
+	public static function getSpecialManageMessageGroupSubscriptionsLink(
+		Context $context,
+		Config $config
+	): array {
+		return [
+			'pagelink' => SpecialPage::getTitleFor( 'ManageMessageGroupSubscriptions' )->getPrefixedText()
+		];
+	}
+
+	/**
+	 * Create any redlinked categories marked for translation
+	 * Hook: LinksUpdateComplete
+	 */
+	public static function onLinksUpdateComplete( LinksUpdate $linksUpdate ) {
+		$handle = new MessageHandle( $linksUpdate->getTitle() );
+		if ( !Utilities::isTranslationPage( $handle ) ) {
+			return;
+		}
+		$code = $handle->getCode();
+		$categories = $linksUpdate->getParserOutput()->getCategoryNames();
+		$editSummary = wfMessage(
+			'translate-category-summary',
+			$linksUpdate->getTitle()->getPrefixedText()
+		)->inContentLanguage()->text();
+		foreach ( $categories as $category ) {
+			$categoryTitle = Title::makeTitle( NS_CATEGORY, $category );
+			$categoryHandle = new MessageHandle( $categoryTitle );
+			// Only create categories for the same language code to reduce
+			// the potential for very deep recursion if a category is
+			// a member of itself in a different language
+			$categoryTranslationPage = TranslatablePage::isTranslationPage( $categoryTitle );
+			if (
+				$categoryTranslationPage
+				&& $categoryHandle->getCode() == $code
+				&& !$categoryTitle->exists()
+			) {
+				self::updateTranslationPage(
+					$categoryTranslationPage,
+					$code,
+					FuzzyBot::getUser(),
+					EDIT_FORCE_BOT,
+					$editSummary,
+					RenderTranslationPageJob::ACTION_CATEGORIZATION
+				);
 			}
 		}
 	}

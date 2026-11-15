@@ -14,7 +14,7 @@
 	"codemirror-toggle-label": "Syntaksin korostus",
 	"codemirror-toggle-label-short": "Syntaksi",
 	"codemirror-prefs-summary": "Lisätietoja tästä ominaisuudesta löytyy [https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Extension:CodeMirror ohjesivulta].",
-	"codemirror-prefs-enable": "Ota käyttöön wikitekstin syntaksin korostus",
+	"codemirror-prefs-enable": "Ota käyttöön syntaksin korostus wikitekstille",
 	"codemirror-prefs-enable-help": "Koskee sisältösivujen ja mallineiden muokkaamista.",
 	"codemirror-prefs-enable-code": "Ota käyttöön syntaksin korostus koodille",
 	"codemirror-prefs-enable-code-help": "Koskee esim. JavaScript- ja CSS-koodin sekä Lua-moduulien muokkaamista.",
@@ -48,7 +48,7 @@
 	"codemirror-match-case": "Huomioi kirjainkoko",
 	"codemirror-regexp": "Säännöllinen lauseke",
 	"codemirror-regexp-invalid": "Virheellinen säännöllinen lauseke",
-	"codemirror-by-word": "Sanoittain",
+	"codemirror-by-word": "Koko sana",
 	"codemirror-replace": "Korvaa",
 	"codemirror-replace-placeholder": "Korvaa",
 	"codemirror-replace-all": "Korvaa kaikki",
@@ -109,6 +109,5 @@
 	"codemirror-wikilint-close": "sulje",
 	"codemirror-wikilint-remove": "poista",
 	"codemirror-ve-limit-exceeded": "Asiakirja on liian suuri syntaksin korostamiseen, joten toiminto on otettu pois käytöstä.",
-	"codemirror-ve-limit-exceeded-info": "Lisätietoja",
-	"codemirror-v6-prefs-colorblind": "Käytä värisokeille sopivaa väripalettia"
+	"codemirror-ve-limit-exceeded-info": "Lisätietoja"
 }

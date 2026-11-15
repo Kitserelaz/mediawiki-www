@@ -34,7 +34,7 @@ ve.ui.ContentAction.static.methods = [ 'insert', 'remove', 'select', 'pasteSpeci
 /**
  * Insert content.
  *
- * @param {string|Array} content Content to insert, can be either a string or array of data
+ * @param {string|ve.dm.LinearData.Item[]} content Content to insert, can be either a string or array of data
  * @param {boolean} [annotate] Content should be automatically annotated to match surrounding content
  * @param {boolean} [collapseToEnd] Collapse selection to end after inserting
  * @return {boolean} Action was executed
@@ -103,7 +103,7 @@ ve.ui.ContentAction.prototype.selectAll = function () {
  * @return {boolean} Action was executed
  */
 ve.ui.ContentAction.prototype.pasteSpecial = function () {
-	this.surface.getView().pasteSpecial = true;
+	this.surface.getView().getClipboardHandler().prepareForPasteSpecial();
 	// Return false to allow the paste event to occur
 	return false;
 };

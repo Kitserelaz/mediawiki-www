@@ -1,6 +1,5 @@
 <template>
 	<img
-		:src="observerSupported ? null : source"
 		:data-src="source"
 		:alt="alt"
 		class="sd-image"
@@ -10,7 +9,7 @@
 </template>
 
 <script>
-var observer = require( './mixins/observer.js' );
+const observer = require( './mixins/observer.js' );
 
 // @vue/component
 module.exports = exports = {
@@ -36,6 +35,16 @@ module.exports = exports = {
 		originalHeight: {
 			type: Number,
 			default: 0
+		},
+
+		thumbWidth: {
+			type: Number,
+			default: 0
+		},
+
+		thumbHeight: {
+			type: Number,
+			default: 0
 		}
 	},
 
@@ -59,18 +68,21 @@ module.exports = exports = {
 		 * If we have image dimensions, add a style attribute to constrain the
 		 * image to its original size to avoid stretching a small image.
 		 *
+		 * But it's possible to stretch a thumbnail beyond its original size if it's an SVG
+		 *
 		 * @return {Object|boolean}
 		 */
 		imageStyle: function () {
 			if ( this.originalWidth > 0 && this.originalHeight > 0 ) {
 				return {
+					// Keep this aligned with the style attributes in SpecialMediaSearch
 					// There are height and max-width rules with the important
 					// keyword for .content a > img in Minerva Neue, and they
 					// have to be overridden.
 					// I don't see any other way around this...
 					height: '100% !important',
-					maxWidth: this.originalWidth + 'px !important',
-					maxHeight: this.originalHeight + 'px'
+					maxWidth: Math.max( this.originalWidth, this.thumbWidth ) + 'px !important',
+					maxHeight: Math.max( this.originalHeight, this.thumbHeight ) + 'px'
 				};
 			}
 			return false;

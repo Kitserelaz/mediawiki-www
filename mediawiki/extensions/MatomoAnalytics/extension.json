@@ -7,12 +7,12 @@
 		"Agent Isai"
 	],
 	"url": "https://www.mediawiki.org/wiki/Extension:MatomoAnalytics",
-	"version": "1.3.5",
+	"version": "1.5.0",
 	"descriptionmsg": "matomoanalytics-desc",
 	"license-name": "GPL-3.0-or-later",
 	"type": "specialpage",
 	"requires": {
-		"MediaWiki": ">= 1.43.0"
+		"MediaWiki": ">= 1.46.0"
 	},
 	"AvailableRights": [
 		"noanalytics",
@@ -50,11 +50,11 @@
 		"CreateWikiRename": {
 			"handler": "CreateWiki"
 		},
-		"LoadExtensionSchemaUpdates": {
-			"handler": "Installer"
-		},
 		"InfoAction": {
 			"handler": "Main"
+		},
+		"LoadExtensionSchemaUpdates": {
+			"handler": "Installer"
 		},
 		"SkinAfterBottomScripts": {
 			"handler": "Main"
@@ -68,9 +68,19 @@
 			"class": "Miraheze\\MatomoAnalytics\\HookHandlers\\Installer"
 		},
 		"Main": {
-			"class": "Miraheze\\MatomoAnalytics\\HookHandlers\\Main"
+			"class": "Miraheze\\MatomoAnalytics\\HookHandlers\\Main",
+			"optional_services": [
+				"CookieConsent.CookiePreferences"
+			]
 		}
 	},
+	"RestRoutes": [
+		{
+			"path": "/matomoanalytics/v0/top_pages",
+			"method": "GET",
+			"class": "Miraheze\\MatomoAnalytics\\Rest\\TopPagesHandler"
+		}
+	],
 	"ResourceModules": {
 		"ext.matomoanalytics.charts": {
 			"scripts": "ext.matomoanalytics.charts.js"
@@ -87,44 +97,40 @@
 		"remoteExtPath": "MatomoAnalytics/modules"
 	},
 	"config": {
-		"MatomoAnalyticsDisableJS": {
-			"description": "Boolean. Whether or not to add Javascript tracking code to pages.",
-			"public": true,
-			"value": false
-		},
 		"MatomoAnalyticsDisableCookie": {
 			"description": "Boolean. Whether or not to disable cookies being set by Matomo.",
-			"public": true,
+			"value": false
+		},
+		"MatomoAnalyticsDisableJS": {
+			"description": "Boolean. Whether or not to add Javascript tracking code to pages.",
+			"value": false
+		},
+		"MatomoAnalyticsEnableCustomDimensionsUserType": {
+			"description": "Boolean. Whether to fetch userType in Matomo using CustomDimensions. You must setup CustomDimensions to be able to use this.",
 			"value": false
 		},
 		"MatomoAnalyticsForceGetRequest": {
 			"description": "Boolean. Whether or not you want to foce GET requests which also disables beacon. Reverts back to Matomo v3 tracking behavior.",
-			"public": true,
 			"value": false
 		},
 		"MatomoAnalyticsGlobalID": {
 			"description": "Integer. If tracking more than one site, this is an ID to attach to all wikis for central aggregate statistics.",
-			"public": true,
-			"value": false
+			"value": 0
 		},
 		"MatomoAnalyticsServerURL": {
 			"description": "String. URL of the Matomo installation to use for API queries.",
-			"public": true,
-			"value": false
+			"value": ""
 		},
 		"MatomoAnalyticsSiteID": {
 			"description": "Integer. If not using database, the site number to add all monitoring to.",
-			"public": true,
 			"value": 1
 		},
 		"MatomoAnalyticsTokenAuth": {
 			"description": "String. The API token for authentication when making requests for data.",
-			"public": false,
-			"value": false
+			"value": ""
 		},
 		"MatomoAnalyticsUseDB": {
 			"description": "Boolean. Whether or not to use the database for tracking site IDs.",
-			"public": true,
 			"value": false
 		}
 	},

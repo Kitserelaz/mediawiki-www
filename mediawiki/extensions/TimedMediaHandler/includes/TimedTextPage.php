@@ -10,15 +10,16 @@
 
 namespace MediaWiki\TimedMediaHandler;
 
-use Article;
-use File;
 use MediaWiki\Content\TextContent;
+use MediaWiki\Exception\MWException;
+use MediaWiki\FileRepo\File\File;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Language\LanguageCode;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Status\Status;
@@ -42,38 +43,26 @@ class TimedTextPage extends Article {
 		self::VTT_SUBTITLE_FORMAT,
 	];
 
-	/**
-	 * @var LanguageNameUtils
-	 */
-	private $languageNameUtils;
+	private LanguageNameUtils $languageNameUtils;
 
 	/**
 	 * The file associated with this subtitle page
-	 * @var File|null
 	 */
-	private $correspondingFile;
-
-	/**
-	 * @var Title|null
-	 */
-	private $correspondingFileTitle;
+	private ?File $correspondingFile = null;
+	private ?Title $correspondingFileTitle;
 
 	/**
 	 * The TimedText format extracted from this page's title
-	 * @var null|string
 	 */
-	private $timedTextFormat;
+	private ?string $timedTextFormat;
 
 	/**
 	 * The language key extracted from this page's title
-	 * @var null|string
 	 */
-	private $languageKey;
+	private ?string $languageKey;
 
 	/**
 	 * Status result of the view rendering
-	 *
-	 * @var StatusValue
 	 */
 	private StatusValue $renderStatus;
 
@@ -112,7 +101,7 @@ class TimedTextPage extends Article {
 		// getOldID has side effects
 		$oldid = $this->getOldID();
 
-		if ( $this->mRedirectUrl || isset( $diff ) || $this->getTitle()->getNamespace() !== NS_TIMEDTEXT ) {
+		if ( $this->mRedirectUrl || $diff !== null || $this->getTitle()->getNamespace() !== NS_TIMEDTEXT ) {
 			parent::view();
 			return;
 		}
@@ -132,8 +121,6 @@ class TimedTextPage extends Article {
 	 * This function is used for views and diff views
 	 * It is somewhat special as it renders two separate units of content,
 	 * the timedtext and the corresponding file for that timedtext
-	 *
-	 * @param OutputPage $out
 	 */
 	public function renderOutput( OutputPage $out ): void {
 		$this->renderStatus = Status::newGood();
@@ -146,24 +133,34 @@ class TimedTextPage extends Article {
 		}
 		// We want to render the contents of the page
 
+		$languageKey = $this->getLanguageKey();
 		// Look up the language name for the language that these subtitles use:
-		$language = $out->getLanguage()->getCode();
-		$languages = $this->languageNameUtils->getLanguageNames( $language, LanguageNameUtils::ALL );
-		// @phan-suppress-next-line PhanTypeMismatchDimFetchNullable
-		$languageName = $languages[ $this->getLanguageKey() ] ?? $this->getLanguageKey();
+		if ( $languageKey !== null ) {
+			$language = $out->getLanguage()->getCode();
+			$languages = $this->languageNameUtils->getLanguageNames( $language, LanguageNameUtils::ALL );
+			$languageName = $languages[ $languageKey ] ?? $languageKey;
+		} else {
+			$languageName = '';
+		}
 
 		// Set title of the page
 		$message = $this->getPage()->exists() ?
 			'timedmedia-timedtext-title-edit-subtitles' :
 			'timedmedia-timedtext-title-create-subtitles';
-		$out->setPageTitleMsg( wfMessage( $message, $languageName, $this->getCorrespondingFileTitle() ) );
+		$out->setPageTitleMsg( wfMessage( $message, $languageName, $this->getCorrespondingFileTitle() ?? '' ) );
 
 		// Attempt to render the content
 		$fileHtml = $this->getFileHTML();
 		$timedTextHtml = $this->getTimedTextHTML( $out, $languageName );
 
 		// Generate the page
-		$out->addHTML( $this->getErrorsAndWarnings( $this->renderStatus ) );
+		$warningsAndErrors = $this->getErrorsAndWarnings( $this->renderStatus );
+		$out->addHTML( $warningsAndErrors );
+		if ( $warningsAndErrors ) {
+			$out->addModuleStyles( [
+				'mediawiki.codex.messagebox.styles'
+			] );
+		}
 		$out->addModuleStyles( [ 'ext.tmh.timedtextpage.styles' ] );
 
 		if ( !$this->renderStatus->isOK() ) {
@@ -189,8 +186,7 @@ class TimedTextPage extends Article {
 	 * We show this form if a valid local file exists for this title.
 	 * i.e TimedText:myfile.ogg
 	 *
-	 * @return void
-	 * @throws \MWException
+	 * @throws MWException
 	 */
 	private function doRedirectToPageForm( OutputPage $out ): void {
 		$context = $out->getContext();
@@ -201,6 +197,10 @@ class TimedTextPage extends Article {
 		$out->setPageTitleMsg( wfMessage( 'timedmedia-subtitle-new' ) );
 
 		if ( $file && !$file->isLocal() ) {
+			// Add styles for warning messages
+			$out->addModuleStyles( [
+				'mediawiki.codex.messagebox.styles'
+			] );
 			// Corresponding file is hosted on remote repo.
 			// People aren't really supposed to be here, so link to foreign repo
 			// TODO these two messages should be combined into a single one
@@ -222,10 +222,7 @@ class TimedTextPage extends Article {
 			$this->renderStatus->warning( 'timedmedia-subtitle-no-video' );
 		}
 
-		$languages = $this->languageNameUtils->getLanguageNames(
-			LanguageNameUtils::AUTONYMS,
-			LanguageNameUtils::SUPPORTED
-		);
+		$languages = $this->languageNameUtils->getLanguageNames();
 		$options = [];
 		foreach ( $languages as $code => $name ) {
 			$display = LanguageCode::bcp47( $code ) . ' - ' . $name;
@@ -233,11 +230,6 @@ class TimedTextPage extends Article {
 		}
 
 		$formDescriptor = [
-			'errorsandwarnings' => [
-				'type' => 'info',
-				'raw' => true,
-				'default' => $this->getErrorsAndWarnings( $this->renderStatus )
-			],
 			'lang' => [
 				'label-message' => 'timedmedia-subtitle-new-desc',
 				'required' => true,
@@ -254,6 +246,7 @@ class TimedTextPage extends Article {
 			->setSubmitTextMsg( 'timedmedia-subtitle-new-go' )
 			->prepareForm()
 			->setSubmitCallback( [ $this, 'onSubmit' ] )
+			->addPreHtml( $this->getErrorsAndWarnings( $this->renderStatus ) )
 			->show();
 	}
 
@@ -275,19 +268,17 @@ class TimedTextPage extends Article {
 
 	private function getErrorsAndWarnings( StatusValue $status ): string {
 		$results = [];
-		foreach ( $status->getErrorsByType( 'error' ) as $error ) {
-			$results[] = Html::errorBox( wfMessage( $error[ 'message' ], $error[ 'params' ] )->parse() );
+		foreach ( $status->getMessages( 'error' ) as $msg ) {
+			$results[] = Html::errorBox( $this->getContext()->msg( $msg )->parse() );
 		}
-		foreach ( $status->getErrorsByType( 'warning' ) as $error ) {
-			$results[] = Html::warningBox( wfMessage( $error[ 'message' ], $error[ 'params' ] )->parse() );
+		foreach ( $status->getMessages( 'warning' ) as $msg ) {
+			$results[] = Html::warningBox( $this->getContext()->msg( $msg )->parse() );
 		}
 		return implode( "\n", $results );
 	}
 
 	/**
 	 * Gets the video HTML ( with the current language set as default )
-	 *
-	 * @return string
 	 */
 	private function getFileHTML(): string {
 		// Get the video embed:
@@ -317,12 +308,8 @@ class TimedTextPage extends Article {
 
 	/**
 	 * Gets an HTML representation of the Timed Text
-	 *
-	 * @param OutputPage $out
-	 * @param string $languageName
-	 * @return string
 	 */
-	private function getTimedTextHTML( OutputPage $out, string $languageName ) {
+	private function getTimedTextHTML( OutputPage $out, string $languageName ): string {
 		$file = $this->getCorrespondingFile();
 		if ( !$this->getPage()->exists() ) {
 			if ( $file && $file->isLocal() ) {
@@ -375,8 +362,6 @@ class TimedTextPage extends Article {
 	 * Retrieve the file associated with this TimedText page
 	 * Returns null if no file is associated or no file exists,
 	 * either locally or on a remote server or if it is not a TimedMediaHandler file
-	 *
-	 * @return File|null
 	 */
 	public function getCorrespondingFile(): ?File {
 		if ( $this->correspondingFile ) {
@@ -401,7 +386,6 @@ class TimedTextPage extends Article {
 	 * The media file title that should belong to this TimedText page
 	 *
 	 * The title doesn't necessarily have to exist
-	 * @return Title|null
 	 */
 	public function getCorrespondingFileTitle(): ?Title {
 		return $this->correspondingFileTitle;
@@ -409,7 +393,6 @@ class TimedTextPage extends Article {
 
 	/**
 	 * Returns the extension/timedtext type, based on the page title
-	 * @return string|null
 	 */
 	public function getTimedTextFormat(): ?string {
 		return $this->timedTextFormat;
@@ -418,8 +401,6 @@ class TimedTextPage extends Article {
 	/**
 	 * Only pages that end with .languageKey.srt
 	 * are known allowed names for TimedText pages.
-	 *
-	 * @return bool
 	 */
 	public function isActualTimedTextTitle(): bool {
 		return (bool)$this->getTimedTextFormat();
@@ -427,7 +408,6 @@ class TimedTextPage extends Article {
 
 	/**
 	 * Returns the language key code from the page title, if present
-	 * @return string|null
 	 */
 	public function getLanguageKey(): ?string {
 		return $this->languageKey;

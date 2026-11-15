@@ -1,15 +1,15 @@
 {
 	"@metadata": {
 		"authors": [
-			"Tacsipacsi",
-			"Krisztina"
+			"Krisztina",
+			"Tacsipacsi"
 		]
 	},
 	"apihelp-aggregategroups-summary": "Összesített üzenetcsoportok kezelése.",
 	"apihelp-aggregategroups-extended-description": "Összesített üzenetcsoportok hozzáadása és eltávolítása, illetve üzenetcsoportok hozzáadása egy összesített csoporthoz vagy eltávolítása onnan (egyszerre egy).",
 	"apihelp-aggregategroups-param-do": "Mit csináljon az összesített üzenetcsoporttal.",
 	"apihelp-aggregategroups-param-aggregategroup": "Összesített üzenetcsoport azonosítója.",
-	"apihelp-aggregategroups-param-group": "Az üzenetcsoport azonosítója. A lehetséges értékekért lásd: <kbd>[[Special:ApiHelp/query+messagegroups|action=query&meta=messagegroups]]</kbd>.",
+	"apihelp-aggregategroups-param-groups": "Üzenetcsoport-azonosítók listája. A lehetséges értékekért lásd: <kbd>[[Special:ApiHelp/query+messagegroups|action=query&meta=messagegroups]]</kbd>.",
 	"apihelp-aggregategroups-param-groupname": "Összesített üzenetcsoport neve.",
 	"apihelp-aggregategroups-param-groupdescription": "Összesített üzenetcsoport leírása.",
 	"apihelp-aggregategroups-param-groupsourcelanguagecode": "Az összesített üzenetcsoport forrásnyelvének kódja, vagy <kbd>-</kbd> a forrásnyelv beállításának mellőzéséhez, illetve a meglévő forrásnyelv eltávolításához.",
@@ -38,7 +38,6 @@
 	"apihelp-query+messagecollection-paramvalue-prop-translation": "Jelenlegi fordítás (az esetleges „$1” előtag nélkül, használd a <kbd>tags</kbd>et az elavult vagy problémás fordítások ellenőrzéséhez).",
 	"apihelp-query+messagecollection-paramvalue-prop-tags": "Üzenetcímkék, például <samp>optional</samp>, <samp>ignored</samp> és <samp>fuzzy</samp>.",
 	"apihelp-query+messagecollection-paramvalue-prop-properties": "Az üzenet tulajdonságai, például <samp>status</samp>, <samp>revision</samp>, <samp>last-translator</samp>. Üzenetenként változhat.",
-	"apihelp-query+messagecollection-paramvalue-prop-revision": "Használd az <kbd>$1prop=properties</kbd>t helyette.",
 	"apihelp-query+messagecollection-example-1": "Támogatott nyelvek listája",
 	"apihelp-query+messagecollection-example-2": "A „page-Example” csoport nem opcionális üzenetdefinícióinak listája.",
 	"apihelp-query+messagecollection-example-3": "A „page-Example” csoport opcionális üzeneteinek listája finnül, címkékkel.",
@@ -130,11 +129,7 @@
 	"apihelp-markfortranslation-param-title": "A fordításra megjelölendő lap címe. Vagy a <var>title</var>, vagy a <var>pageid</var> paramétert kötelező megadni.",
 	"apihelp-markfortranslation-param-pageid": "A fordításra megjelölendő lap lapazonosítója. Vagy a <var>title</var>, vagy a <var>pageid</var> paramétert kötelező megadni.",
 	"apierror-translate-changeset-modified": "A változáscsomagot egy másik felhasználó vagy folyamat módosította, így nem lehet közzétenni a módosításaidat, mert felülírhatnák azokat. Töltsd újra a lapot a legfrissebb változások megtekintéséhez.",
-	"apierror-translate-duplicateaggregategroup": "Az üzenetcsoport már létezik",
 	"apierror-translate-groupreviewdisabled": "Az üzenetcsoport-ellenőrzés nincs használatban.",
-	"apierror-translate-grouplanguagemismatch": "A kiválasztott csoport nyelve ($1) nem egyezik meg az összesített csoport nyelvével ($2).",
-	"apierror-translate-messagegroup-aggregategrouplanguagemismatch": "A(z) $1 {{PLURAL:$3|csoport forrásnyelve nem egyezik|csoportok forrásnyelvei nem egyeznek}} meg az összesített csoport forrásnyelvével ($2).",
-	"apierror-translate-invalidaggregategroup": "Érvénytelen összesített üzenetcsoport",
 	"apierror-translate-invalidaggregategroupname": "Érvénytelen név összesített üzenetcsoportnak",
 	"apierror-translate-invalidgroup": "A csoport nem létezik vagy érvénytelen",
 	"apierror-translate-invalidstate": "A kért állapot érvénytelen.",

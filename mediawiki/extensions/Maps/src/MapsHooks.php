@@ -6,12 +6,17 @@ namespace Maps;
 
 use AlItem;
 use ALTree;
+use Maps\Config\ConfigExample;
 use Maps\GeoJsonPages\GeoJsonNewPageUi;
 use Maps\Presentation\OutputFacade;
+use MediaWiki\Content\JsonContent;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\PageIdentity;
 use MediaWiki\Settings\SettingsBuilder;
+use MediaWiki\Title\Title;
 use SkinTemplate;
-use SMWPrintRequest;
+use SMW\Query\PrintRequest;
+use StatusValue;
 
 /**
  * Static class for hooks handled by the Maps extension.
@@ -46,7 +51,7 @@ final class MapsHooks {
 
 		$maps_docu_label = wfMessage( 'adminlinks_documentation', 'Maps' )->text();
 		$smw_docu_row->addItem(
-			AlItem::newFromExternalLink( 'https://www.semantic-mediawiki.org/wiki/Extension:Maps', $maps_docu_label )
+			AlItem::newFromExternalLink( 'https://maps.extension.wiki', $maps_docu_label )
 		);
 
 		return true;
@@ -115,8 +120,112 @@ final class MapsHooks {
 		return true;
 	}
 
-	public static function onChangeTagsAllowedAdd( array &$allowedTags, array $tags, \User $user = null ) {
+	public static function onChangeTagsAllowedAdd( array &$allowedTags ) {
 		$allowedTags[] = 'maps-visual-edit';
+	}
+
+	/**
+	 * Forces the JSON content model on the on-wiki config page, so MediaWiki core requires the
+	 * editinterface and editsitejson rights to edit it and enforces JSON syntax on save.
+	 *
+	 * @param Title $title
+	 * @param string &$model
+	 */
+	public static function onContentHandlerDefaultModelFor( $title, &$model ) {
+		if ( MapsFactory::globalInstance()->isConfigPage( $title ) ) {
+			$model = CONTENT_MODEL_JSON;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Validates the on-wiki config page on save, blocking the save with precise errors when the
+	 * configuration is invalid.
+	 */
+	public static function onJsonValidateSave( JsonContent $content, PageIdentity $pageIdentity, StatusValue $status ) {
+		$factory = MapsFactory::globalInstance();
+
+		if ( !$factory->isConfigPage( Title::newFromPageIdentity( $pageIdentity ) ) ) {
+			return true;
+		}
+
+		foreach ( $factory->getConfigValidator()->validate( $content->getText() ) as $error ) {
+			$status->fatal( ...$error );
+		}
+
+		return true;
+	}
+
+	/**
+	 * On the on-wiki config page, suppresses the default MediaWiki-namespace intro and frames the
+	 * JSON editor with a pointer to the documentation and the schema-generated configuration
+	 * reference.
+	 *
+	 * @param \MediaWiki\EditPage\EditPage $editPage
+	 */
+	public static function onAlternateEdit( $editPage ) {
+		$factory = MapsFactory::globalInstance();
+
+		if ( !$factory->isConfigPage( $editPage->getTitle() ) ) {
+			return true;
+		}
+
+		$editPage->suppressIntro = true;
+
+		$builder = $factory->newConfigDocumentationBuilder( $editPage->getContext() );
+		$editPage->editFormTextTop = $builder->buildPointer();
+		$editPage->editFormTextBottom = $builder->buildReference();
+
+		return true;
+	}
+
+	/**
+	 * Preloads a small valid example when the on-wiki config page is created, so an administrator
+	 * starts from a working configuration rather than a blank page.
+	 *
+	 * @param string &$text
+	 * @param Title $title
+	 */
+	public static function onEditFormPreloadText( &$text, $title ) {
+		if ( MapsFactory::globalInstance()->isConfigPage( $title ) ) {
+			$text = ConfigExample::JSON;
+		}
+
+		return true;
+	}
+
+	/**
+	 * On the on-wiki config page, trims the rendered page to the core JSON table and frames it with
+	 * a documentation pointer and the schema-generated configuration reference. View action only.
+	 *
+	 * @param \MediaWiki\Output\OutputPage $out
+	 * @param \Skin $skin
+	 */
+	public static function onBeforePageDisplay( $out, $skin ) {
+		$title = $out->getTitle();
+
+		if ( $title === null || !MapsFactory::globalInstance()->isConfigPage( $title ) ) {
+			return true;
+		}
+
+		if ( $out->getContext()->getActionName() !== 'view' ) {
+			return true;
+		}
+
+		$builder = MapsFactory::globalInstance()->newConfigDocumentationBuilder( $out->getContext() );
+		$trimmed = self::trimToJsonTable( $out->getHTML() );
+
+		$out->clearHTML();
+		$out->addHTML( $builder->buildPointer() . $trimmed . $builder->buildReference() );
+
+		return true;
+	}
+
+	private static function trimToJsonTable( string $html ): string {
+		$position = strpos( $html, '<table class="mw-json">' );
+
+		return $position === false ? $html : substr( $html, $position );
 	}
 
 	/**
@@ -128,7 +237,7 @@ final class MapsHooks {
 	 * @since 1.0
 	 *
 	 * @param $format Mixed: The format (string), or false when not set yet
-	 * @param SMWPrintRequest[] $printRequests The print requests made
+	 * @param PrintRequest[] $printRequests The print requests made
 	 *
 	 * @return boolean
 	 */
@@ -144,7 +253,7 @@ final class MapsHooks {
 				// Loop through the print requests to determine their types.
 				foreach ( $printRequests as $printRequest ) {
 					// Skip the first request, as it's the object.
-					if ( $printRequest->getMode() == SMWPrintRequest::PRINT_THIS ) {
+					if ( $printRequest->getMode() == PrintRequest::PRINT_THIS ) {
 						continue;
 					}
 

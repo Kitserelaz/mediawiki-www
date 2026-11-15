@@ -1,10 +1,6 @@
 # Wikibase Quality Constraints
-[![Scrutinizer Code Quality][scrutinizer-badge]][scrutinizer]
 
 Extension to Wikibase Repository that performs constraint checks.
-
-[scrutinizer-badge]: https://scrutinizer-ci.com/g/wikimedia/mediawiki-extensions-WikibaseQualityConstraints/badges/quality-score.png?b=master
-[scrutinizer]: https://scrutinizer-ci.com/g/wikimedia/mediawiki-extensions-WikibaseQualityConstraints/?branch=master
 
 ## Installation
 
@@ -42,6 +38,11 @@ Extension to Wikibase Repository that performs constraint checks.
 
   * Alternatively, to check “format” constraints without running a full SPARQL server,
     you can use the [minisparql] server.
+
+  * To check regex format constraints with [Shellbox](https://www.mediawiki.org/wiki/Shellbox),
+    configure `ShellboxUrls['constraint-regex-checker']` with the Shellbox url, and set
+    `WBQualityConstraintsFormatCheckerShellboxRatio` to the ratio of requests that should
+    go to Shellbox.
 
 * Run `php maintenance/run.php WikibaseQualityConstraints:ImportConstraintStatements.php`.
 
@@ -108,6 +109,24 @@ You can run the tests, combined with linting and few other tools for asserting c
   npm install
   grunt test
 ```
+
+#### Cypress / UI tests
+
+Cypress is used to click-test the constraints implementation. The Cypress tests run locally and
+also in CI (through the `selenium-test` npm script), and since we do not have constraints properly
+registered on Wikis in CI, the tests stub responses to the `wbcheckconstraints` API - they are not
+true "end-to-end" tests.
+
+You can run the tests through the provided npm scripts:
+
+```sh
+ # from this extension's folder
+ npm install
+ npm run cypress:install
+ npm run cypress:run
+```
+
+To develop Cypress tests interactively, use the `cypress:open` script.
 
 ### Adding a new constraint type
 

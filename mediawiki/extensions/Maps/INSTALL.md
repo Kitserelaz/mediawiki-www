@@ -25,18 +25,81 @@ minimum requirements are indicated in bold. For a detailed list of changes, see 
 		<th>Release status<br>&nbsp;</th>
 	</tr>
 	<tr>
+		<th>15.0.x</th>
+		<td>8.1+</td>
+		<td>1.43+</td>
+		<td>7.0+</td>
+		<td>Stable release</td>
+	</tr>
+	<tr>
+		<th>14.2.x</th>
+		<td>8.1+</td>
+		<td>1.43+</td>
+		<td>7.0+</td>
+		<td>Obsolete release</td>
+	</tr>
+	<tr>
+		<th>14.1.x</th>
+		<td>8.1+</td>
+		<td>1.43+</td>
+		<td>7.0+</td>
+		<td>Obsolete release, no support</td>
+	</tr>
+	<tr>
+		<th>14.0.x</th>
+		<td>8.1+</td>
+		<td>1.43+</td>
+		<td><strong>7.0</strong> - 7.2</td>
+		<td>Obsolete release, no support</td>
+	</tr>
+	<tr>
+		<th>13.1.x</th>
+		<td><strong>8.1</strong>+</td>
+		<td><strong>1.43</strong> - 1.46</td>
+		<td><strong>5.0</strong> - 6.x</td>
+		<td>Obsolete release</td>
+	</tr>
+	<tr>
+		<th>13.0.x</th>
+		<td><strong>8.1</strong>+</td>
+		<td><strong>1.43</strong> - 1.46</td>
+		<td><strong>5.0</strong> - 6.x</td>
+		<td>Obsolete release, no support</td>
+	</tr>
+	<tr>
+		<th>12.1.x</th>
+		<td>7.4 - 8.4</td>
+		<td>1.43 - 1.44</td>
+		<td>4.2 - 6.0</td>
+		<td>Obsolete release</td>
+	</tr>
+	<tr>
+		<th>12.0.x</th>
+		<td>7.4 - 8.4</td>
+		<td><strong>1.40</strong> - 1.44</td>
+		<td><strong>4.2</strong> - 6.0</td>
+		<td>Obsolete release, no support</td>
+	</tr>
+	<tr>
 		<th>11.0.x</th>
-		<td><strong>8.0</strong> - 8.3</td>
-		<td><strong>1.39</strong> - 1.43</td>
-		<td>4.x</td>
-		<td>Future version</td>
+		<td>7.4 - 8.3</td>
+		<td>1.35 - 1.43</td>
+		<td>3.2 - 5.1</td>
+		<td>Obsolete release, no support</td>
+	</tr>
+	<tr>
+		<th>10.3.x</th>
+		<td>7.4 - 8.3</td>
+		<td>1.35 - 1.43</td>
+		<td>3.2 - 4.2</td>
+		<td>Obsolete release, no support</td>
 	</tr>
 	<tr>
 		<th>10.2.x</th>
 		<td>7.4 - 8.3</td>
 		<td>1.35 - 1.42</td>
-		<td>3.2 - 4.1</td>
-		<td><strong>Stable release</strong></td>
+		<td>3.2 - 4.2</td>
+		<td>Obsolete release, no support</td>
 	</tr>
 	<tr>
 		<th>10.1.x</th>

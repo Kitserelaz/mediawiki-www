@@ -21,12 +21,13 @@ class JsonTestCaseScriptRunnerTest extends JSONScriptTestCaseRunnerTest {
 		Services::onParserFirstCallInit( $parser );
 	}
 
-	protected function getTestCaseLocation() {
+	protected function getTestCaseLocation(): string {
 		return __DIR__ . '/TestCases';
 	}
 
-	protected function getPermittedSettings() {
+	protected function getPermittedSettings(): array {
 		return array_merge( parent::getPermittedSettings(), [
+			"wgArticlePath",
 			"wgRestrictDisplayTitle",
 			"sdgHideCategoriesByDefault",
 			"sdgHideFiltersWithoutValues",

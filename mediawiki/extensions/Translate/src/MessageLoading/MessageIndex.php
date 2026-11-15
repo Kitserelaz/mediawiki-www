@@ -3,18 +3,18 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageLoading;
 
-use BagOStuff;
 use Exception;
-use JobQueueGroup;
-use MapCacheLRU;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Extension\Translate\HookRunner;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\Statistics\RebuildMessageGroupStatsJob;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Title\Title;
 use MessageGroup;
 use Psr\Log\LoggerInterface;
-use WANObjectCache;
+use Wikimedia\ObjectCache\BagOStuff;
+use Wikimedia\ObjectCache\MapCacheLRU;
+use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
@@ -33,37 +33,24 @@ class MessageIndex {
 	// TODO: Use dependency injection
 	private const CACHE_KEY = 'Translate-MessageIndex-interim';
 	private const READ_LATEST = true;
-	private MessageIndexStore $messageIndexStore;
+
 	private MapCacheLRU $keysCache;
-	protected BagOStuff $interimCache;
-	private WANObjectCache $statusCache;
-	private JobQueueGroup $jobQueueGroup;
-	private HookRunner $hookRunner;
-	private LoggerInterface $logger;
-	private IConnectionProvider $dbProvider;
 	private array $translateMessageNamespaces;
 	public const SERVICE_OPTIONS = [
 		'TranslateMessageNamespaces'
 	];
 
 	public function __construct(
-		MessageIndexStore $store,
-		WANObjectCache $statusCache,
-		JobQueueGroup $jobQueueGroup,
-		HookRunner $hookRunner,
-		LoggerInterface $logger,
-		BagOStuff $interimCache,
-		IConnectionProvider $dbProvider,
+		private readonly MessageIndexStore $messageIndexStore,
+		private readonly WANObjectCache $statusCache,
+		private readonly JobQueueGroup $jobQueueGroup,
+		private readonly HookRunner $hookRunner,
+		private readonly LoggerInterface $logger,
+		private readonly BagOStuff $interimCache,
+		private readonly IConnectionProvider $dbProvider,
 		ServiceOptions $options
 	) {
-		$this->messageIndexStore = $store;
 		$this->keysCache = new MapCacheLRU( 30 );
-		$this->statusCache = $statusCache;
-		$this->jobQueueGroup = $jobQueueGroup;
-		$this->hookRunner = $hookRunner;
-		$this->logger = $logger;
-		$this->interimCache = $interimCache;
-		$this->dbProvider = $dbProvider;
 		$options->assertRequiredOptions( self::SERVICE_OPTIONS );
 		$this->translateMessageNamespaces = $options->get( 'TranslateMessageNamespaces' );
 	}
@@ -106,13 +93,13 @@ class MessageIndex {
 	 * Do not include the language code subpage!
 	 * @return string[]
 	 */
-	public function getGroupIdsForDatabaseTitle( int $namespace, string $title ): array {
+	public function getGroupIdsForBaseDatabaseTitle( int $namespace, string $title ): array {
 		$normalisedKey = $this->normaliseKey( $namespace, $title );
 
 		// Optimization 1: skip LRU cache assuming that hit rate is very low for this use case
 		// Optimization 2: skip interim cache as not essential
 
-		return (array)$this->get( $normalisedKey ) ?? [];
+		return (array)$this->get( $normalisedKey );
 	}
 
 	public function getPrimaryGroupId( MessageHandle $handle ): ?string {
@@ -123,7 +110,7 @@ class MessageIndex {
 
 	/** @return string|array|null */
 	private function getWithCache( string $key ) {
-		$interimCacheValue = $this->getInterimCache()->get( self::CACHE_KEY );
+		$interimCacheValue = $this->interimCache->get( self::CACHE_KEY );
 		if ( $interimCacheValue && isset( $interimCacheValue['newKeys'][$key] ) ) {
 			$this->logger->debug(
 				'[MessageIndex] interim cache hit: {messageKey} with value {groupId}',
@@ -135,6 +122,7 @@ class MessageIndex {
 		return $this->messageIndexStore->get( $key );
 	}
 
+	/** @return mixed|null */
 	public function get( string $key ) {
 		return $this->messageIndexStore->get( $key );
 	}
@@ -231,7 +219,7 @@ class MessageIndex {
 		$diff = self::getArrayDiff( $old, $new );
 		$this->messageIndexStore->store( $new, $diff['keys'] );
 
-		$cache = $this->getInterimCache();
+		$cache = $this->interimCache;
 		$interimCacheValue = $cache->get( self::CACHE_KEY );
 		if ( $interimCacheValue ) {
 			$timestamp ??= microtime( true );
@@ -270,6 +258,10 @@ class MessageIndex {
 		$this->statusCache->touchCheckKey( $this->getStatusCacheKey() );
 
 		$this->clearMessageGroupStats( $diff );
+		$this->logger->info(
+			'[MessageIndex] Finished everything in {duration}',
+			[ 'duration' => microtime( true ) - $tsStart ]
+		);
 
 		$recursion--;
 
@@ -278,10 +270,6 @@ class MessageIndex {
 
 	public function getStatusCacheKey(): string {
 		return $this->statusCache->makeKey( 'Translate', 'MessageIndex', 'status' );
-	}
-
-	private function getInterimCache(): BagOStuff {
-		return $this->interimCache;
 	}
 
 	public function storeInterim( MessageGroup $group, array $newKeys ): void {
@@ -293,7 +281,7 @@ class MessageIndex {
 			$normalizedNewKeys[$this->normaliseKey( $namespace, $key )] = $id;
 		}
 
-		$cache = $this->getInterimCache();
+		$cache = $this->interimCache;
 		// Merge with existing keys (if present)
 		$interimCacheValue = $cache->get( self::CACHE_KEY, $cache::READ_LATEST );
 		if ( $interimCacheValue ) {

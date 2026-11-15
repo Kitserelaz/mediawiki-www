@@ -10,13 +10,13 @@
 	"descriptionmsg": "popups-desc",
 	"license-name": "GPL-2.0-or-later",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"AutoloadNamespaces": {
 		"Popups\\": "includes/"
 	},
 	"ConfigRegistry": {
-		"popups": "GlobalVarConfig::newInstance"
+		"popups": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"Hooks": {
 		"BeforePageDisplay": "PopupsHooks",
@@ -155,7 +155,6 @@
 				"mediawiki.jqueryMsg",
 				"mediawiki.storage",
 				"mediawiki.Title",
-				"mediawiki.Uri",
 				"mediawiki.user",
 				"mediawiki.util"
 			]

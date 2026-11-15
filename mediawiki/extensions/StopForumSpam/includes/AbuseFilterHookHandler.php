@@ -25,8 +25,8 @@ use MediaWiki\Extension\AbuseFilter\Hooks\AbuseFilterBuilderHook;
 use MediaWiki\Extension\AbuseFilter\Hooks\AbuseFilterComputeVariableHook;
 use MediaWiki\Extension\AbuseFilter\Hooks\AbuseFilterGenerateUserVarsHook;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\User\User;
-use RecentChange;
 
 class AbuseFilterHookHandler implements
 	AbuseFilterBuilderHook,
@@ -34,14 +34,7 @@ class AbuseFilterHookHandler implements
 	AbuseFilterGenerateUserVarsHook
 {
 
-	/** @var Config */
-	private Config $config;
-
-	/**
-	 * @param Config $config
-	 */
-	public function __construct( Config $config ) {
-		$this->config = $config;
+	public function __construct( private readonly Config $config ) {
 	}
 
 	/**

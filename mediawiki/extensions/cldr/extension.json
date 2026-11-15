@@ -1,5 +1,5 @@
 {
-	"name": "CLDR",
+	"name": "cldr",
 	"version": "4.17.0",
 	"author": [
 		"Niklas Laxström",
@@ -24,7 +24,8 @@
 	},
 	"MessagesDirs": {
 		"CLDR": [
-			"i18n"
+			"i18n",
+			"i18n/LanguageNames"
 		]
 	},
 	"AutoloadClasses": {

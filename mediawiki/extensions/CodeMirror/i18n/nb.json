@@ -35,7 +35,7 @@
 	"codemirror-match-case": "Skill mellom store/små bokstaver",
 	"codemirror-regexp": "Regulært uttrykk",
 	"codemirror-regexp-invalid": "Ugyldig regulært uttrykk",
-	"codemirror-by-word": "Etter ord",
+	"codemirror-by-word": "Helt ord",
 	"codemirror-replace": "Erstatt",
 	"codemirror-replace-placeholder": "Erstatt",
 	"codemirror-replace-all": "Erstatt alle",

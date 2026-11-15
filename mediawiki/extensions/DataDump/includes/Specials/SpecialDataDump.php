@@ -5,6 +5,7 @@ namespace Miraheze\DataDump\Specials;
 use ManualLogEntry;
 use MediaWiki\Html\Html;
 use MediaWiki\JobQueue\JobQueueGroupFactory;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\SpecialPage\SpecialPage;
 use Miraheze\DataDump\ConfigNames;
@@ -23,9 +24,9 @@ class SpecialDataDump extends SpecialPage {
 		private readonly IConnectionProvider $connectionProvider,
 		private readonly DataDumpFileBackend $fileBackend,
 		private readonly JobQueueGroupFactory $jobQueueGroupFactory,
-		private readonly PermissionManager $permissionManager
+		private readonly PermissionManager $permissionManager,
 	) {
-		parent::__construct( 'DataDump', 'view-dump' );
+		parent::__construct( 'DataDump' );
 	}
 
 	/**
@@ -89,7 +90,8 @@ class SpecialDataDump extends SpecialPage {
 		$pager->getForm();
 
 		$table = $pager->getFullOutput();
-		$out->addParserOutputContent( $table );
+		$parserOptions = ParserOptions::newFromContext( $this->getContext() );
+		$out->addParserOutputContent( $table, $parserOptions );
 	}
 
 	private function doDownload( string $fileName ): void {
@@ -247,12 +249,17 @@ class SpecialDataDump extends SpecialPage {
 	}
 
 	/** @inheritDoc */
-	public function doesWrites(): bool {
-		return true;
+	protected function getGroupName(): string {
+		return 'wiki';
 	}
 
 	/** @inheritDoc */
-	protected function getGroupName(): string {
-		return 'wiki';
+	public function getRestriction(): string {
+		return 'view-dump';
+	}
+
+	/** @inheritDoc */
+	public function doesWrites(): bool {
+		return true;
 	}
 }

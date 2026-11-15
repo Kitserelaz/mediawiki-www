@@ -17,12 +17,17 @@
 
 namespace MediaWiki\Extension\CSS;
 
+use MediaWiki\Config\Config;
 use MediaWiki\Extension\CSS\Hooks\HookRunner;
 use MediaWiki\Hook\ParserFirstCallInitHook;
 use MediaWiki\Hook\RawPageViewBeforeOutputHook;
+use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Html\Html;
-use MediaWiki\MediaWikiServices;
-use MediaWiki\Title\Title;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Title\TitleFactory;
+use MediaWiki\Utils\UrlUtils;
+use RawAction;
 use Wikimedia\CSS\Parser\Parser as CSSParser;
 use Wikimedia\CSS\Sanitizer\FontFaceAtRuleSanitizer;
 use Wikimedia\CSS\Sanitizer\KeyframesAtRuleSanitizer;
@@ -37,53 +42,53 @@ use Wikimedia\CSS\Util as CSSUtil;
 
 class Hooks implements ParserFirstCallInitHook, RawPageViewBeforeOutputHook {
 
-	/** @var Sanitizer */
-	private static $sanitizer;
+	private static ?StylesheetSanitizer $sanitizer = null;
 
-	/**
-	 * @return StylesheetSanitizer
-	 */
-	protected static function getSanitizer() {
+	public function __construct(
+		private readonly Config $config,
+		private readonly HookContainer $hookContainer,
+		private readonly TitleFactory $titleFactory,
+		private readonly UrlUtils $urlUtils,
+	) {
+	}
+
+	private function getSanitizer(): StylesheetSanitizer {
 		// This function is based on TemplateStyles's Hooks::getSanitizer():
 		// https://gerrit.wikimedia.org/r/plugins/gitiles/mediawiki/extensions/TemplateStyles/+/refs/heads/master/includes/Hooks.php
-		if ( self::$sanitizer ) {
-			return self::$sanitizer;
+		if ( !self::$sanitizer ) {
+			$matcherFactory = new CSSMatcherFactory;
+
+			$propertySanitizer = new StylePropertySanitizer( $matcherFactory );
+			$hookRunner = new HookRunner( $this->hookContainer );
+			$hookRunner->onCSSPropertySanitizer( $propertySanitizer, $matcherFactory );
+
+			$ruleSanitizers = [
+				'style' => new StyleRuleSanitizer( $matcherFactory->cssSelectorList(), $propertySanitizer ),
+				'@font-face' => new FontFaceAtRuleSanitizer( $matcherFactory ),
+				'@keyframes' => new KeyframesAtRuleSanitizer( $matcherFactory, $propertySanitizer ),
+				'@page' => new PageAtRuleSanitizer( $matcherFactory, $propertySanitizer ),
+				'@media' => new MediaAtRuleSanitizer( $matcherFactory->cssMediaQueryList() ),
+				'@supports' => new SupportsAtRuleSanitizer( $matcherFactory, [
+					'declarationSanitizer' => $propertySanitizer,
+				] ),
+
+				// Do not include @import due to lack of proper security measures
+				'@namespace' => new NamespaceAtRuleSanitizer( $matcherFactory ),
+			];
+
+			$ruleSanitizers['@media']->setRuleSanitizers( $ruleSanitizers );
+			$ruleSanitizers['@supports']->setRuleSanitizers( $ruleSanitizers );
+
+			self::$sanitizer = new StylesheetSanitizer( $ruleSanitizers );
+			$hookRunner->onCSSStylesheetSanitizer( self::$sanitizer, $propertySanitizer, $matcherFactory );
 		}
-
-		$matcherFactory = new CSSMatcherFactory;
-
-		$propertySanitizer = new StylePropertySanitizer( $matcherFactory );
-		$hookRunner = new HookRunner( MediaWikiServices::getInstance()->getHookContainer() );
-		$hookRunner->onCSSPropertySanitizer( $propertySanitizer, $matcherFactory );
-
-		$ruleSanitizers = [
-			'style' => new StyleRuleSanitizer( $matcherFactory->cssSelectorList(), $propertySanitizer ),
-			'@font-face' => new FontFaceAtRuleSanitizer( $matcherFactory ),
-			'@keyframes' => new KeyframesAtRuleSanitizer( $matcherFactory, $propertySanitizer ),
-			'@page' => new PageAtRuleSanitizer( $matcherFactory, $propertySanitizer ),
-			'@media' => new MediaAtRuleSanitizer( $matcherFactory->cssMediaQueryList() ),
-			'@supports' => new SupportsAtRuleSanitizer( $matcherFactory, [
-				'declarationSanitizer' => $propertySanitizer,
-			] ),
-
-			// Do not include @import due to lack of proper security measures
-			'@namespace' => new NamespaceAtRuleSanitizer( $matcherFactory ),
-		];
-
-		$ruleSanitizers['@media']->setRuleSanitizers( $ruleSanitizers );
-		$ruleSanitizers['@supports']->setRuleSanitizers( $ruleSanitizers );
-
-		self::$sanitizer = new StylesheetSanitizer( $ruleSanitizers );
-		$hookRunner->onCSSStylesheetSanitizer( self::$sanitizer, $propertySanitizer, $matcherFactory );
 		return self::$sanitizer;
 	}
 
 	/**
 	 * Sanitize the provided css
-	 * @param string $css
-	 * @return string
 	 */
-	protected static function sanitizeCSS( $css ) {
+	private function sanitizeCSS( string $css ): string {
 		// Errors are reported vaguely since the previous implementation was also vague, and since doing
 		// so could help avoid an amplification DoS (T368594#10146978). This can be revisited though.
 		// This also fails silently rather than loudly, supposedly partly for consistency with the former
@@ -95,13 +100,14 @@ class Hooks implements ParserFirstCallInitHook, RawPageViewBeforeOutputHook {
 			return '/* css-sanitizer failed to parse CSS */';
 		}
 
-		$sanitizer = self::getSanitizer();
+		$sanitizer = $this->getSanitizer();
 		$sanitizer->clearSanitizationErrors();
 		$css = $sanitizer->sanitize( $css );
-		if ( $sanitizer->getSanitizationErrors() ) {
+		if ( !$css || $sanitizer->getSanitizationErrors() ) {
 			return '/* css-sanitizer failed to sanitize CSS */';
 		}
 
+		// @phan-suppress-next-line PhanTypeMismatchArgument False positive
 		$css = CSSUtil::stringify( $css, [ 'minify' => true ] );
 		// Sanity check copied from TemplateStyles: Ensure that $css doesn't break out the sanitizer
 		if ( preg_match( '!</style!i', $css ) ) {
@@ -114,49 +120,51 @@ class Hooks implements ParserFirstCallInitHook, RawPageViewBeforeOutputHook {
 		return $css;
 	}
 
-	/**
-	 * @param Parser &$parser
-	 * @param string $css
-	 * @return string
-	 */
-	public static function CSSRender( &$parser, $css ) {
-		global $wgCSSPath, $wgStylePath, $wgCSSIdentifier;
-
+	public function cssRender( Parser $parser, string $css ): string {
 		$css = trim( $css );
 		if ( $css === '' ) {
 			return '';
 		}
-		$title = Title::newFromText( $css );
-		$rawProtection = "$wgCSSIdentifier=1";
+		$title = $this->titleFactory->newFromText( $css );
+		$identifier = $this->config->get( 'CSSIdentifier' );
+		$rawProtection = [ $identifier => '1' ];
 		$headItem = '<!-- Begin Extension:CSS -->';
 
-		if ( is_object( $title ) && $title->exists() ) {
+		if ( $title && $title->exists() ) {
 			# Article actually in the db
-			$params = "action=raw&ctype=text/css&$rawProtection";
+			$params = [
+				'action' => 'raw',
+				'ctype' => 'text/css',
+			] + $rawProtection;
 			$url = $title->getLocalURL( $params );
 			$headItem .= Html::linkedStyle( $url );
-		} elseif ( $css[0] == '/' ) {
+		} elseif ( $css[0] === '/' && !( strlen( $css ) >= 2 && $css[1] === '*' ) ) {
 			# Regular file
-			$base = $wgCSSPath === false ? $wgStylePath : $wgCSSPath;
-			// The replacement for \ to / is to workaround a path traversal,
-			// per T369486.
+			$base = $this->config->get( 'CSSPath' ) ??
+				$this->config->get( MainConfigNames::StylePath );
+			// The URL decoding and replacement for \ to / are to workaround a
+			// path traversal vulnerability (see T369486 and T401526).
 			// TODO: Implement a proper URL parser. There may be more niche URL
 			// shenanigans one could get up to that MediaWiki's parser does not
 			// handle, but which the browser does. The most surefire way to
 			// guarantee that no tomfoolery happens is to 100% replicate what
 			// the browser does and not only like 90% of it.
-			$path = str_replace( '\\', '/', $css );
+			$path = str_ireplace( '%2f', '/', $css );
+			$path = str_ireplace( '%5c', '\\', $path );
+			$path = str_replace( '\\', '/', $path );
 			$url = wfAppendQuery( $base . $path, $rawProtection );
 
 			# Verify the expanded URL is still using the base URL
-			if ( strpos( wfExpandUrl( $url ), wfExpandUrl( $base ) ) === 0 ) {
+			$expandedUrl = $this->urlUtils->expand( $url );
+			$expandedBase = $this->urlUtils->expand( $base );
+			if ( $expandedUrl && $expandedBase && strpos( $expandedUrl, $expandedBase ) === 0 ) {
 				$headItem .= Html::linkedStyle( $url );
 			} else {
 				$headItem .= '<!-- Invalid/malicious path  -->';
 			}
 		} else {
 			# sanitized user CSS
-			$css = self::sanitizeCSS( $css );
+			$css = $this->sanitizeCSS( $css );
 
 			# Encode data URI and append link tag
 			$dataPrefix = 'data:text/css;charset=UTF-8;base64,';
@@ -172,24 +180,22 @@ class Hooks implements ParserFirstCallInitHook, RawPageViewBeforeOutputHook {
 
 	/**
 	 * @param Parser $parser
-	 * @return bool true
+	 * @return bool|void True or no return value to continue or false to abort
 	 */
 	public function onParserFirstCallInit( $parser ) {
-		$parser->setFunctionHook( 'css', [ $this, 'CSSRender' ] );
-		return true;
+		$parser->setFunctionHook( 'css', [ $this, 'cssRender' ] );
 	}
 
 	/**
-	 * @param RawPage $rawPage
+	 * @param RawAction $rawPage
 	 * @param string &$text
-	 * @return bool true
+	 * @return bool|void True or no return value to continue or false to abort
 	 */
 	public function onRawPageViewBeforeOutput( $rawPage, &$text ) {
-		global $wgCSSIdentifier;
+		$identifier = $this->config->get( 'CSSIdentifier' );
 
-		if ( $rawPage->getRequest()->getBool( $wgCSSIdentifier ) ) {
-			$text = self::sanitizeCSS( $text );
+		if ( $rawPage->getRequest()->getBool( $identifier ) ) {
+			$text = $this->sanitizeCSS( $text );
 		}
-		return true;
 	}
 }

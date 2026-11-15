@@ -4,23 +4,23 @@ declare( strict_types = 1 );
 
 namespace Maps\Map\SemanticFormat;
 
-use Linker;
+use MediaWiki\Linker\Linker;
 use Maps\FileUrlFinder;
 use Maps\LegacyModel\BaseElement;
 use Maps\LegacyModel\Location;
 use Maps\Map\MapOutput;
 use Maps\Map\MapOutputBuilder;
 use Maps\MappingService;
+use Maps\MapsFactory;
 use Maps\Presentation\ElementJsonSerializer;
 use Maps\Presentation\WikitextParser;
 use Maps\SemanticMW\QueryHandler;
 use Maps\WikitextParsers\LocationParser;
-use MediaWiki\MediaWikiServices;
-use Parser;
+use MediaWiki\Title\Title;
+use MediaWiki\Parser\Parser;
 use SMW\Query\QueryResult;
 use SMW\Query\ResultPrinters\ResultPrinter;
 use SMWOutputs;
-use Title;
 
 /**
  * @licence GNU GPL v2+
@@ -65,15 +65,6 @@ class MapPrinter extends ResultPrinter {
 		self::$services['map'] = self::$services[$serviceName];
 	}
 
-	private function getParser(): Parser {
-		return MediaWikiServices::getInstance()->getParser();
-	}
-
-	private function getParserClone(): Parser {
-		$parser = $this->getParser();
-		return clone $parser;
-	}
-
 	/**
 	 * Builds up and returns the HTML for the map, with the queried coordinate data on it.
 	 *
@@ -87,15 +78,16 @@ class MapPrinter extends ResultPrinter {
 			return $this->fatalErrorMsg;
 		}
 
-		$this->isHTML = true;
-
-		$factory = \Maps\MapsFactory::globalInstance();
+		$factory = MapsFactory::globalInstance();
 		$this->locationParser = $factory->newLocationParser();
 		$this->fileUrlFinder = $factory->getFileUrlFinder();
 
-		$this->elementSerializer = new ElementJsonSerializer( new WikitextParser( $this->getParserClone() ) );
+		$parser = $this->getRenderingParser( $factory );
+		$wikitextParser = $factory->newWikitextParser( $parser );
 
-		$this->addTrackingCategoryIfNeeded();
+		$this->elementSerializer = new ElementJsonSerializer( $wikitextParser );
+
+		$this->addTrackingCategoryIfNeeded( $parser );
 
 		$params = $this->params;
 
@@ -103,7 +95,7 @@ class MapPrinter extends ResultPrinter {
 		$queryHandler->setLinkStyle( $params['link'] );
 		$queryHandler->setHeaderStyle( $params['headers'] );
 		$queryHandler->setShowSubject( $params['showtitle'] );
-		$queryHandler->setTemplate( $params['template'] );
+		$queryHandler->setTemplate( $params['template'], $wikitextParser );
 		$queryHandler->setUserParam( $params['userparam'] );
 		$queryHandler->setHideNamespace( $params['hidenamespace'] );
 		$queryHandler->setActiveIcon( $params['activeicon'] );
@@ -115,11 +107,20 @@ class MapPrinter extends ResultPrinter {
 		$params['circles'] = $this->elementsToJson( $params['circles'] );
 		$params['rectangles'] = $this->elementsToJson( $params['rectangles'] );
 
+		// Only the Google Maps service defines this parameter.
+		if ( array_key_exists( 'imageoverlays', $params ) ) {
+			$params['imageoverlays'] = $this->elementsToJson( $params['imageoverlays'] );
+		}
+
 		$params['ajaxquery'] = urlencode( $params['ajaxquery'] );
 
 		if ( $params['locations'] === [] ) {
-			return $params['default'];
+			// Only pages parse the text as wikitext: Special:Ask serves even raw output as HTML.
+			$this->isHTML = $outputMode !== SMW_OUTPUT_WIKI;
+			return $this->isHTML ? htmlspecialchars( $this->mDefault ) : $this->mDefault;
 		}
+
+		$this->isHTML = true;
 
 		// We can only take care of the zoom defaulting here,
 		// as not all locations are available in whats passed to Validator.
@@ -132,11 +133,11 @@ class MapPrinter extends ResultPrinter {
 		}
 
 		$outputBuilder = new MapOutputBuilder();
-		$mapOutput = $outputBuilder->buildOutput( $this->service, $this->service->newMapDataFromParameters( $params ) );
+		$mapOutput = $outputBuilder->buildOutput( $this->service, $this->service->newMapDataFromParameters( $params, $parser ) );
 
 		$this->outputResources( $mapOutput );
 
-		return $mapOutput->getHtml();
+		return $this->withIntroAndOutro( $mapOutput->getHtml(), $wikitextParser, $outputMode );
 	}
 
 	private function outputResources( MapOutput $mapOutput ) {
@@ -148,6 +149,22 @@ class MapPrinter extends ResultPrinter {
 		foreach ( $mapOutput->getResourceModules() as $resourceModule ) {
 			SMWOutputs::requireResource( $resourceModule );
 		}
+	}
+
+	/**
+	 * On pages, Semantic MediaWiki adds the intro and outro to HTML results without parsing them, so the map parses
+	 * them itself and leaves Semantic MediaWiki none to add.
+	 */
+	private function withIntroAndOutro( string $html, WikitextParser $wikitextParser, int $outputMode ): string {
+		if ( $outputMode !== SMW_OUTPUT_WIKI || ( $this->mIntro === '' && $this->mOutro === '' ) ) {
+			return $html;
+		}
+
+		$html = $wikitextParser->wikitextAroundHtmlToHtml( $this->mIntro, $html, $this->mOutro );
+		$this->mIntro = '';
+		$this->mOutro = '';
+
+		return $html;
 	}
 
 	private function randomString(): string {
@@ -163,10 +180,19 @@ class MapPrinter extends ResultPrinter {
 		);
 	}
 
-	private function addTrackingCategoryIfNeeded() {
-		$parser = MediaWikiServices::getInstance()->getParser();
+	private function getRenderingParser( MapsFactory $factory ): Parser {
+		// Queries on special pages, such as Special:Ask, are not part of a page.
+		if ( !$this->mInline ) {
+			return $factory->newRequestParser();
+		}
 
-		if ( $GLOBALS['egMapsEnableCategory'] && $parser->getOutput() !== null ) {
+		// copyParser() does not copy. For #ask and #show it returns the parser running the query; other callers can
+		// get a parser that never parsed, or one whose parse is over.
+		return $factory->getRenderingParser( $this->copyParser() );
+	}
+
+	private function addTrackingCategoryIfNeeded( Parser $parser ) {
+		if ( $this->mInline && MapsFactory::globalInstance()->getEffectiveSettings()->get( 'egMapsEnableCategory' ) ) {
 			$parser->addTrackingCategory( 'maps-tracking-category' );
 		}
 	}
@@ -243,6 +269,8 @@ class MapPrinter extends ResultPrinter {
 
 		if ( $params['pagelabel'] ) {
 			$jsonObj['inlineLabel'] = Linker::link( Title::newFromText( $jsonObj['title'] ) );
+		} else {
+			$this->elementSerializer->inlineLabel( $jsonObj );
 		}
 
 		return $jsonObj;
@@ -289,15 +317,14 @@ class MapPrinter extends ResultPrinter {
 	/**
 	 * Returns a list of parameter information, for usage by Special:Ask and others.
 	 *
+	 * @param array $definitions
+	 *
 	 * @return array
 	 */
-	public function getParameters() {
-		$params = parent::getParameters();
-		$paramInfo = $this->getParameterInfo();
+	public function getParamDefinitions( array $definitions ): array {
+		$definitions = parent::getParamDefinitions( $definitions );
 
-		$params = array_merge( $params, $paramInfo );
-
-		return $params;
+		return array_merge( $definitions, $this->getParameterInfo() );
 	}
 
 	/**
@@ -306,7 +333,7 @@ class MapPrinter extends ResultPrinter {
 	 * @return array
 	 */
 	private function getParameterInfo() {
-		global $smgQPShowTitle, $smgQPTemplate, $smgQPHideNamespace;
+		$config = MapsFactory::globalInstance()->getEffectiveSettings();
 
 		$params = $this->service->getParameterInfo();
 
@@ -322,17 +349,17 @@ class MapPrinter extends ResultPrinter {
 		$params['showtitle'] = [
 			'type' => 'boolean',
 			'aliases' => 'show title',
-			'default' => $smgQPShowTitle,
+			'default' => $config->get( 'smgQPShowTitle' ),
 		];
 
 		$params['hidenamespace'] = [
 			'type' => 'boolean',
 			'aliases' => 'hide namespace',
-			'default' => $smgQPHideNamespace,
+			'default' => $config->get( 'smgQPHideNamespace' ),
 		];
 
 		$params['template'] = [
-			'default' => $smgQPTemplate,
+			'default' => $config->get( 'smgQPTemplate' ),
 		];
 
 		$params['userparam'] = [

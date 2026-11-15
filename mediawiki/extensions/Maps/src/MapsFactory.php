@@ -7,6 +7,7 @@ namespace Maps;
 use DataValues\Geo\Parsers\LatLongParser;
 use FileFetcher\Cache\Factory as CacheFactory;
 use FileFetcher\FileFetcher;
+use GuzzleHttp\Handler\CurlHandler;
 use Jeroen\SimpleGeocoder\Geocoder;
 use Jeroen\SimpleGeocoder\Geocoders\Decorators\CoordinateFriendlyGeocoder;
 use Jeroen\SimpleGeocoder\Geocoders\FileFetchers\GeoNamesGeocoder;
@@ -14,12 +15,21 @@ use Jeroen\SimpleGeocoder\Geocoders\FileFetchers\GoogleGeocoder;
 use Jeroen\SimpleGeocoder\Geocoders\FileFetchers\NominatimGeocoder;
 use Jeroen\SimpleGeocoder\Geocoders\NullGeocoder;
 use Maps\DataAccess\CachingGeocoder;
+use Maps\DataAccess\DnsHostResolver;
 use Maps\DataAccess\GeoJsonFetcher;
+use Maps\DataAccess\GuardedFileFetcher;
 use Maps\DataAccess\ImageRepository;
 use Maps\DataAccess\MapsFileFetcher;
 use Maps\DataAccess\MediaWikiFileUrlFinder;
 use Maps\DataAccess\MwImageRepository;
+use Maps\DataAccess\UrlSsrfGuard;
+use Maps\Config\ConfigDocumentationBuilder;
+use Maps\Config\ConfigSchema;
+use Maps\Config\ConfigValidator;
+use Maps\Config\EffectiveSettings;
+use Maps\Config\WikiConfigSource;
 use Maps\DataAccess\PageContentFetcher;
+use Maps\DataAccess\WikiPageConfigSource;
 use Maps\GeoJsonPages\GeoJsonStore;
 use Maps\GeoJsonPages\Semantic\SemanticGeoJsonStore;
 use Maps\GeoJsonPages\Semantic\SubObjectBuilder;
@@ -27,6 +37,7 @@ use Maps\Map\CargoFormat\CargoOutputBuilder;
 use Maps\Map\DisplayMap\DisplayMapFunction;
 use Maps\Map\MapOutputBuilder;
 use Maps\Presentation\CoordinateFormatter;
+use Maps\Presentation\WikitextParser;
 use Maps\WikitextParsers\CircleParser;
 use Maps\WikitextParsers\DistanceParser;
 use Maps\WikitextParsers\ImageOverlayParser;
@@ -35,20 +46,28 @@ use Maps\WikitextParsers\LocationParser;
 use Maps\WikitextParsers\PolygonParser;
 use Maps\WikitextParsers\RectangleParser;
 use Maps\WikitextParsers\WmsOverlayParser;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
+use MessageLocalizer;
 use ParamProcessor\ParamDefinitionFactory;
-use Parser;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOptions;
 use RepoGroup;
 use SimpleCache\Cache\Cache;
 use SimpleCache\Cache\MediaWikiCache;
-use SMW\ApplicationFactory;
-use Title;
+use SMW\Services\ServicesFactory as ApplicationFactory;
 
 /**
  * @licence GNU GPL v2+
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
 class MapsFactory {
+
+	/**
+	 * The page in the MediaWiki namespace holding the on-wiki JSON configuration.
+	 */
+	public const CONFIG_PAGE_TITLE = 'Maps';
 
 	protected static ?self $globalInstance = null;
 
@@ -57,6 +76,7 @@ class MapsFactory {
 
 	private LeafletService $leafletService;
 	private GoogleMapsService $googleService;
+	private ?EffectiveSettings $effectiveSettings = null;
 
 	final protected function __construct( array $settings, MediaWikiServices $mediaWikiServices ) {
 		$this->settings = $settings;
@@ -100,7 +120,7 @@ class MapsFactory {
 	}
 
 	private function newCoreGeocoder(): Geocoder {
-		switch ( $this->settings['egMapsDefaultGeoService'] ) {
+		switch ( $this->getEffectiveSettings()->get( 'egMapsDefaultGeoService' ) ) {
 			case 'geonames':
 				if ( $this->settings['egMapsGeoNamesUser'] === '' ) {
 					return $this->newGoogleGeocoder();
@@ -129,6 +149,10 @@ class MapsFactory {
 		);
 	}
 
+	/**
+	 * Fetches without any check on where the URL leads, so only give it URLs that an administrator
+	 * configured. Editor provided URLs go through getGeoJsonFileFetcher().
+	 */
 	public function getFileFetcher(): FileFetcher {
 		return $this->newFileFetcher();
 	}
@@ -139,12 +163,24 @@ class MapsFactory {
 
 	public function getGeoJsonFileFetcher(): FileFetcher {
 		if ( $this->settings['egMapsGeoJsonCacheTtl'] === 0 ) {
-			return $this->getFileFetcher();
+			return $this->newGuardedFileFetcher();
 		}
 
 		return ( new CacheFactory() )->newJeroenSimpleCacheFetcher(
-			$this->getFileFetcher(),
+			$this->newGuardedFileFetcher(),
 			$this->getMediaWikiSimpleCache( $this->settings['egMapsGeoJsonCacheTtl'] )
+		);
+	}
+
+	/**
+	 * Unlike the fetcher used for the geocoding services, this one is given URLs that editors control,
+	 * so it only fetches what the SSRF guard approves.
+	 */
+	private function newGuardedFileFetcher(): FileFetcher {
+		return new GuardedFileFetcher(
+			$this->mediaWikiServices->getHttpRequestFactory(),
+			new UrlSsrfGuard( new DnsHostResolver() ),
+			new CurlHandler()
 		);
 	}
 
@@ -161,7 +197,7 @@ class MapsFactory {
 
 	public function getPageContentFetcher(): PageContentFetcher {
 		return new PageContentFetcher(
-			$this->mediaWikiServices->getTitleParser(),
+			$this->mediaWikiServices->getPageStore(),
 			$this->mediaWikiServices->getRevisionLookup()
 		);
 	}
@@ -184,17 +220,70 @@ class MapsFactory {
 	}
 
 	private function getGoogleMapsService(): GoogleMapsService {
-		$this->googleService ??= new GoogleMapsService();
+		$this->googleService ??= new GoogleMapsService(
+			$this->getEffectiveSettings(),
+			$this->getFileUrlFinder()
+		);
 
 		return $this->googleService;
 	}
 
 	private function getLeafletService(): LeafletService {
 		$this->leafletService ??= new LeafletService(
-			$this->getImageRepository()
+			$this->getImageRepository(),
+			$this->getEffectiveSettings()
 		);
 
 		return $this->leafletService;
+	}
+
+	/**
+	 * Public accessor for other extensions bridging to the custom Leaflet layers, such as the
+	 * Semantic Result Formats filtered format. Backed by the effective settings, so definitions
+	 * from both LocalSettings.php and the MediaWiki:Maps config page are included.
+	 */
+	public function getLeafletLayerDefinitions(): LeafletLayerDefinitions {
+		return new LeafletLayerDefinitions( $this->getEffectiveSettings()->get( 'egMapsLeafletLayerDefinitions' ) );
+	}
+
+	public function getEffectiveSettings(): EffectiveSettings {
+		$this->effectiveSettings ??= new EffectiveSettings(
+			$this->settings,
+			$this->getConfigSchema(),
+			$this->newWikiConfigSource(),
+			$this->isWikiConfigEnabled()
+		);
+
+		return $this->effectiveSettings;
+	}
+
+	private function getConfigSchema(): ConfigSchema {
+		return ConfigSchema::newDefault();
+	}
+
+	protected function newWikiConfigSource(): WikiConfigSource {
+		return new WikiPageConfigSource( $this->getPageContentFetcher(), self::CONFIG_PAGE_TITLE );
+	}
+
+	public function getConfigValidator(): ConfigValidator {
+		return new ConfigValidator( $this->getConfigSchema() );
+	}
+
+	public function newConfigDocumentationBuilder( MessageLocalizer $messageLocalizer ): ConfigDocumentationBuilder {
+		return new ConfigDocumentationBuilder( $this->getConfigSchema(), $messageLocalizer );
+	}
+
+	public function isWikiConfigEnabled(): bool {
+		return (bool)( $this->settings['egMapsEnableInWikiConfig'] ?? true );
+	}
+
+	/**
+	 * Whether the given title is the on-wiki config page and reading it is enabled.
+	 */
+	public function isConfigPage( Title $title ): bool {
+		return $this->isWikiConfigEnabled()
+			&& $title->getNamespace() === NS_MEDIAWIKI
+			&& $title->getText() === self::CONFIG_PAGE_TITLE;
 	}
 
 	public function getDisplayMapFunction(): DisplayMapFunction {
@@ -219,12 +308,63 @@ class MapsFactory {
 		return $factory;
 	}
 
-	public function newGeoJsonFetcher( FileFetcher $fileFetcher = null ): GeoJsonFetcher {
+	/**
+	 * @param Parser|null $parser The parser rendering the page, through which the fetcher reads wiki pages
+	 */
+	public function newGeoJsonFetcher( ?Parser $parser = null ): GeoJsonFetcher {
 		return new GeoJsonFetcher(
-			$fileFetcher ?? $this->getGeoJsonFileFetcher(),
-			$this->mediaWikiServices->getTitleParser(),
-			$this->mediaWikiServices->getRevisionLookup()
+			$this->getGeoJsonFileFetcher(),
+			$this->mediaWikiServices->getPageStore(),
+			$this->getRenderingParser( $parser ),
+			(bool)$this->getEffectiveSettings()->get( 'egMapsAllowExternalDataFiles' )
 		);
+	}
+
+	/**
+	 * @return Parser The given parser while it is parsing, and otherwise a parser of Maps' own for an anonymous reader,
+	 * because what it produces can end up in a page render that is cached for every reader.
+	 */
+	public function getRenderingParser( ?Parser $parser ): Parser {
+		if ( $parser !== null && $this->isParsing( $parser ) ) {
+			return $parser;
+		}
+
+		return $this->newParser( ParserOptions::newFromAnon() );
+	}
+
+	private function isParsing( Parser $parser ): bool {
+		// A parser that never parsed has no options, and can lack an output even when given options. Once a parse is
+		// over, its output holds the text.
+		if ( $parser->getOptions() === null ) {
+			return false;
+		}
+
+		$output = $parser->getOutput();
+
+		return $output !== null && !$output->hasText();
+	}
+
+	private function newParser( ParserOptions $options ): Parser {
+		$parser = $this->mediaWikiServices->getParserFactory()->create();
+		$parser->startExternalParse( null, $options, Parser::OT_HTML );
+
+		return $parser;
+	}
+
+	public function newWikitextParser( Parser $pageParser ): WikitextParser {
+		return new WikitextParser( $pageParser, $this->mediaWikiServices->getParserFactory() );
+	}
+
+	/**
+	 * A parser for rendering outside of any page, such as on Special:Ask. It parses for the user making the request,
+	 * as nothing caches the result for other readers.
+	 */
+	public function newRequestParser(): Parser {
+		$options = ParserOptions::newFromContext( RequestContext::getMain() );
+		// The text comes from the request, so anyone can write it.
+		$options->setAllowUnsafeRawHtml( false );
+
+		return $this->newParser( $options );
 	}
 
 	public function smwIntegrationIsEnabled(): bool {

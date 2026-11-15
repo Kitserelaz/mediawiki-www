@@ -3,8 +3,12 @@
 namespace ArticlePlaceholder\Specials;
 
 use ArticlePlaceholder\AboutTopicRenderer;
-use HTMLForm;
+use MediaWiki\Config\Config;
+use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\Site\SiteLookup;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\TitleFactory;
 use Wikibase\Client\WikibaseClient;
@@ -13,8 +17,6 @@ use Wikibase\DataModel\Entity\EntityIdParsingException;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Services\Lookup\EntityLookup;
 use Wikibase\Lib\Store\SiteLinkLookup;
-use Wikimedia\Assert\Assert;
-use Wikimedia\Assert\ParameterTypeException;
 
 /**
  * The AboutTopic SpecialPage for the ArticlePlaceholder extension
@@ -25,103 +27,49 @@ use Wikimedia\Assert\ParameterTypeException;
  */
 class SpecialAboutTopic extends SpecialPage {
 
-	public static function newFromGlobalState() {
+	public static function newFromGlobalState(
+		Config $config,
+		LanguageNameUtils $languageNameUtils,
+		PermissionManager $permissionManager,
+		SiteLookup $siteLookup,
+		TitleFactory $titleFactory,
+	): self {
 		// TODO inject services
 		$mwServices = MediaWikiServices::getInstance();
-		$config = $mwServices->getMainConfig();
 		$settings = WikibaseClient::getSettings( $mwServices );
 		$store = WikibaseClient::getStore( $mwServices );
 
 		return new self(
 			new AboutTopicRenderer(
 				WikibaseClient::getFallbackLabelDescriptionLookupFactory( $mwServices ),
+				$languageNameUtils,
 				$store->getSiteLinkLookup(),
-				$mwServices->getSiteLookup(),
+				$siteLookup,
 				WikibaseClient::getLangLinkSiteGroup( $mwServices ),
-				$mwServices->getTitleFactory(),
+				$titleFactory,
 				WikibaseClient::getOtherProjectsSidebarGeneratorFactory( $mwServices ),
-				$mwServices->getPermissionManager(),
+				$permissionManager,
 				WikibaseClient::getRepoLinker( $mwServices )
 			),
 			WikibaseClient::getEntityIdParser( $mwServices ),
 			$store->getSiteLinkLookup(),
-			$mwServices->getTitleFactory(),
+			$titleFactory,
 			$settings->getSetting( 'siteGlobalID' ),
 			$store->getEntityLookup(),
 			$config->get( 'ArticlePlaceholderSearchEngineIndexed' )
 		);
 	}
 
-	/**
-	 * @var AboutTopicRenderer
-	 */
-	private $aboutTopicRenderer;
-
-	/**
-	 * @var EntityIdParser
-	 */
-	private $idParser;
-
-	/**
-	 * @var SiteLinkLookup
-	 */
-	private $siteLinkLookup;
-
-	/**
-	 * @var TitleFactory
-	 */
-	private $titleFactory;
-
-	/**
-	 * @var string
-	 */
-	private $siteGlobalID;
-
-	/**
-	 * @var EntityLookup
-	 */
-	private $entityLookup;
-
-	/**
-	 * @var bool|string
-	 */
-	private $searchEngineIndexed;
-
-	/**
-	 * @param AboutTopicRenderer $aboutTopicRenderer
-	 * @param EntityIdParser $idParser
-	 * @param SiteLinkLookup $siteLinkLookup
-	 * @param TitleFactory $titleFactory
-	 * @param string $siteGlobalID
-	 * @param EntityLookup $entityLookup
-	 * @param bool|string $searchEngineIndexed
-	 *
-	 * @throws ParameterTypeException
-	 */
 	public function __construct(
-		AboutTopicRenderer $aboutTopicRenderer,
-		EntityIdParser $idParser,
-		SiteLinkLookup $siteLinkLookup,
-		TitleFactory $titleFactory,
-		$siteGlobalID,
-		EntityLookup $entityLookup,
-		$searchEngineIndexed
+		private readonly AboutTopicRenderer $aboutTopicRenderer,
+		private readonly EntityIdParser $idParser,
+		private readonly SiteLinkLookup $siteLinkLookup,
+		private readonly TitleFactory $titleFactory,
+		private readonly string $siteGlobalID,
+		private readonly EntityLookup $entityLookup,
+		private readonly bool|string $searchEngineIndexed,
 	) {
 		parent::__construct( 'AboutTopic' );
-
-		Assert::parameterType(
-			'boolean|string',
-			$searchEngineIndexed,
-			'$searchEngineIndexed'
-		);
-
-		$this->aboutTopicRenderer = $aboutTopicRenderer;
-		$this->idParser = $idParser;
-		$this->siteLinkLookup = $siteLinkLookup;
-		$this->titleFactory = $titleFactory;
-		$this->siteGlobalID = $siteGlobalID;
-		$this->entityLookup = $entityLookup;
-		$this->searchEngineIndexed = $searchEngineIndexed;
 	}
 
 	/**
@@ -131,10 +79,7 @@ class SpecialAboutTopic extends SpecialPage {
 		$this->showContent( $sub );
 	}
 
-	/**
-	 * @param string|null $itemIdString
-	 */
-	private function showContent( ?string $itemIdString ) {
+	private function showContent( ?string $itemIdString ): void {
 		$out = $this->getOutput();
 		$itemId = $this->getItemIdParam( $itemIdString );
 
@@ -142,7 +87,7 @@ class SpecialAboutTopic extends SpecialPage {
 			$out->setProperty( 'wikibase_item', $itemId->getSerialization() );
 
 			$out->setCanonicalUrl(
-				$this->getTitleFor( $this->getName(), $itemId->getSerialization() )->getCanonicalURL()
+				SpecialPage::getTitleFor( $this->getName(), $itemId->getSerialization() )->getCanonicalURL()
 			);
 		}
 		$this->setHeaders();
@@ -215,11 +160,6 @@ class SpecialAboutTopic extends SpecialPage {
 			->displayForm( false );
 	}
 
-	/**
-	 * @param string|null $fallback
-	 *
-	 * @return ItemId|null
-	 */
 	private function getItemIdParam( ?string $fallback ): ?ItemId {
 		$rawId = trim( $this->getRequest()->getText( 'entityid', $fallback ?? '' ) );
 
@@ -234,19 +174,14 @@ class SpecialAboutTopic extends SpecialPage {
 			}
 
 			return $id;
-		} catch ( EntityIdParsingException $ex ) {
+		} catch ( EntityIdParsingException ) {
 			$this->getOutput()->addWikiMsg( 'articleplaceholder-abouttopic-no-entity-error' );
 		}
 
 		return null;
 	}
 
-	/**
-	 * @param ItemId $entityId
-	 *
-	 * @return string|null
-	 */
-	private function getArticleUrl( ItemId $entityId ) {
+	private function getArticleUrl( ItemId $entityId ): ?string {
 		$sitelinkTitles = $this->siteLinkLookup->getLinks(
 			[ $entityId->getNumericId() ],
 			[ $this->siteGlobalID ]
@@ -260,10 +195,7 @@ class SpecialAboutTopic extends SpecialPage {
 		return null;
 	}
 
-	/**
-	 * @return string
-	 */
-	protected function getRobotPolicy() {
+	protected function getRobotPolicy(): string {
 		$wikibaseItem = $this->getOutput()->getProperty( 'wikibase_item' );
 		if ( $wikibaseItem === null ) {
 			// No item id set: We're showing the form, not an actual placeholder.

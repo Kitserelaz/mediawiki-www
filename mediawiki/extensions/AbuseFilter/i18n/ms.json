@@ -27,9 +27,9 @@
 	"abusefilter-blocker": "Penapis salah guna",
 	"abusefilter-blockreason": "Disekat secara automatik oleh penapis salah guna.\nKeterangan peraturan: $1",
 	"abusefilter-degroupreason": "Hak telah digugurkan secara automatik oleh penapis salah guna.\nKeterangan peraturan: $1",
-	"abusefilter-blockautopromotereason": "Autopromosi ditangguhkan secara automatik oleh penapis penyalahgunaan.\nKeterangan peraturan: $1",
+	"abusefilter-blockautopromotereason": "Autopromosi ditangguhkan secara automatik oleh penapis salah guna.\nKeterangan peraturan: $1",
 	"abusefilter-accountreserved": "Nama akaun ini telah disimpan untuk kegunaan penapis salah guna.",
-	"right-abusefilter-modify": "Cipta atau ubah suai penapis penyalahgunaan",
+	"right-abusefilter-modify": "Cipta atau ubah suai penapis salah guna",
 	"right-abusefilter-view": "Melihat penapis salah guna",
 	"right-abusefilter-log": "Melihat log penyalahgunaan",
 	"right-abusefilter-log-detail": "Melihat entri lanjut log penyalahgunaan",
@@ -666,6 +666,5 @@
 	"log-action-filter-abusefilter-protected-vars-change-access": "Ubah capaian",
 	"log-action-filter-abusefilter-protected-vars-view-protected-variable-value": "Lihat nilai pembolehubah yang dilindungi",
 	"communityconfiguration-blockeddomain-title": "Domain Luaran Tersekat",
-	"communityconfiguration-blockeddomain-description": "Senarai domain luaran yang tidak boleh dipautkan.",
-	"abusefilter-edit-builder-vars-accountname": "Nama akaun ketika akaun dibuka ($1)"
+	"communityconfiguration-blockeddomain-description": "Senarai domain luaran yang tidak boleh dipautkan."
 }

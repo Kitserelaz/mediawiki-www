@@ -39,30 +39,33 @@ class PFFormEdit extends UnlistedSpecialPage {
 		// if query string did not contain these variables, try the URL
 		if ( !$this->mForm && !$this->mTarget ) {
 			$queryparts = explode( '/', $query ?? '', 2 );
-			$this->mForm = isset( $queryparts[ 0 ] ) ? $queryparts[ 0 ] : '';
-			$this->mTarget = isset( $queryparts[ 1 ] ) ? $queryparts[ 1 ] : '';
+			$this->mForm = $queryparts[ 0 ] ?? '';
+			$this->mTarget = $queryparts[ 1 ] ?? '';
 			$this->mTarget = str_replace( '_', ' ', $this->mTarget );
 		}
 
 		$this->mForm = trim( $this->mForm );
 		$this->mTarget = trim( $this->mTarget );
 
+		$targetTitle = null;
+		if ( $this->mTarget !== '' ) {
+			$targetTitle = Title::newFromText( $this->mTarget );
 		// This enables a @hack where the $wgUploadMissingFileUrl
 		// setting can be used to point red links to files to a form
 		// (which otherwise can't be done).
-		if ( $this->mTarget == '' && $req->getCheck( 'wpDestFile' ) ) {
+		} elseif ( $req->getCheck( 'wpDestFile' ) ) {
 			$destFile = $req->getText( 'wpDestFile' );
 			$targetTitle = Title::makeTitleSafe( NS_FILE, $destFile );
 			$this->mTarget = $targetTitle->getFullText();
 		}
 
-		if ( $this->mTarget !== '' ) {
+		if ( $targetTitle ) {
 			$userCanRead = MediaWikiServices::getInstance()
 				->getPermissionManager()
 				->userCan(
 					'read',
 					$this->getUser(),
-					Title::newFromText( $this->mTarget )
+					$targetTitle
 				);
 			if ( !$userCanRead ) {
 				throw new PermissionsError( 'read' );
@@ -109,7 +112,7 @@ class PFFormEdit extends UnlistedSpecialPage {
 
 		// If this call is lower down, it doesn't take effect in
 		// "show changes" mode for some MW versions, for some reason.
-		PFUtils::addFormRLModules();
+		PFUtils::addFormRLModules( $out );
 
 		$module = new PFAutoeditAPI( new ApiMain(), 'pfautoedit' );
 		$module->setOption( 'form', $form_name );
@@ -141,15 +144,11 @@ class PFFormEdit extends UnlistedSpecialPage {
 				return;
 			}
 		} else {
-			if ( defined( 'ApiResult::META_CONTENT' ) ) {
-				$resultData = $module->getResult()->getResultData( null, [
-					'BC' => [],
-					'Types' => [],
-					'Strip' => 'all',
-				] );
-			} else {
-				$resultData = $module->getResultData();
-			}
+			$resultData = $module->getResult()->getResultData( null, [
+				'BC' => [],
+				'Types' => [],
+				'Strip' => 'all',
+			] );
 
 			if ( array_key_exists( 'errors', $resultData ) ) {
 				foreach ( $resultData['errors'] as $error ) {

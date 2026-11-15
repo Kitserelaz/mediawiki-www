@@ -2,6 +2,9 @@
 
 namespace SD;
 
+use MediaWiki\Config\GlobalVarConfig;
+use MediaWiki\Linker\LinksMigration;
+use MediaWiki\MediaWikiServices;
 use SD\Sql\PropertyTypeDbInfo;
 use SD\Sql\SqlProvider;
 use Wikimedia\Rdbms\DBConnRef;
@@ -11,10 +14,12 @@ class DbService {
 
 	private ?DBConnRef $dbw;
 	private ?DBConnRef $dbr;
+	private LinksMigration $linksMigration;
 
 	public function __construct( ?DBConnRef $dbw, ?DBConnRef $dbr ) {
 		$this->dbw = $dbw;
 		$this->dbr = $dbr;
+		$this->linksMigration = MediaWikiServices::getInstance()->getLinksMigration();
 	}
 
 	/**
@@ -36,7 +41,7 @@ class DbService {
 		$temporaryTableManager = new TemporaryTableManager( $this->dbw );
 
 		$tableName = $this->dbr->tableName( "semantic_drilldown_values" );
-		$sql0 = "DROP TABLE IF EXISTS $tableName;";
+		$sql0 = "DROP TEMPORARY TABLE IF EXISTS $tableName;";
 		$temporaryTableManager->queryWithAutoCommit( $sql0, __METHOD__ );
 
 		$sql1 = "CREATE TEMPORARY TABLE $tableName ( id INT NOT NULL )";
@@ -86,10 +91,8 @@ END;
 	 * Deletes the temporary table.
 	 */
 	public function dropFilterValuesTempTable() {
-		// DROP TEMPORARY TABLE would be marginally safer, but it's
-		// not supported on all RDBMS's.
 		$tableName = $this->dbr->tableName( "semantic_drilldown_filter_values" );
-		$sql = "DROP TABLE $tableName";
+		$sql = "DROP TEMPORARY TABLE $tableName";
 
 		$temporaryTableManager = new TemporaryTableManager( $this->dbw );
 		$temporaryTableManager->queryWithAutoCommit( $sql, __METHOD__ );
@@ -119,27 +122,58 @@ END;
 		}
 		$pages = [];
 		$subcategories = [];
-		$conds = [ 'cl_to' => str_replace( ' ', '_', $category_name ), ];
+
+		// LinksMigration::getQueryInfo( 'categorylinks' ) is only available from MW 1.44+.
+		// In MW 1.43 the categorylinks table is not yet in the migration mapping.
+		$useLinktarget = false;
+		if ( version_compare( MW_VERSION, '1.44', '>=' ) ) {
+			$queryInfo = $this->linksMigration->getQueryInfo( 'categorylinks' );
+			$useLinktarget = in_array( 'linktarget', $queryInfo['tables'], true );
+		}
+
+		$tables = [ 'categorylinks', 'page' ];
+		$fields = [ 'page_title', 'page_namespace' ];
+		$joinConds = [
+			'page' => [
+				'JOIN',
+				[
+					'cl_from = page_id'
+				]
+			]
+		];
+
+		if ( $useLinktarget ) {
+			$tables[] = 'linktarget';
+			$joinConds['linktarget'] = [
+				'JOIN',
+				[
+					'categorylinks.cl_target_id = linktarget.lt_id',
+					'linktarget.lt_namespace' => NS_CATEGORY,
+				]
+			];
+		}
+
 		if ( $get_categories ) {
-			$conds['page_namespace'] = NS_CATEGORY;
+			$conds = [ 'page_namespace' => NS_CATEGORY ];
+		} else {
+			$conds = [];
+		}
+
+		if ( $useLinktarget ) {
+			$conds['linktarget.lt_title'] = str_replace( ' ', '_', $category_name );
+		} else {
+			$conds['cl_to'] = str_replace( ' ', '_', $category_name );
 		}
 
 		$res = $this->dbr->select(
-			[ 'categorylinks', 'page' ],
-			[ 'page_title', 'page_namespace' ],
+			$tables,
+			$fields,
 			$conds,
 			__METHOD__,
 			[
 				'ORDER BY' => 'cl_sortkey',
 			],
-			[
-				'page' => [
-					'JOIN',
-					[
-						'cl_from = page_id'
-					]
-				]
-			]
+			$joinConds
 		);
 
 		foreach ( $res as $row ) {
@@ -167,9 +201,7 @@ END;
 	 * @return array
 	 */
 	public function getCategoriesForBrowsing() {
-		global $sdgHideCategoriesByDefault;
-
-		if ( $sdgHideCategoriesByDefault ) {
+		if ( ( new GlobalVarConfig( 'sdg' ) )->get( 'HideCategoriesByDefault' ) ) {
 			return $this->getOnlyExplicitlyShownCategories();
 		} else {
 			return $this->getTopLevelCategories();
@@ -214,25 +246,63 @@ END;
 	 * @return array
 	 */
 	public function getTopLevelCategories() {
+		// LinksMigration::getQueryInfo( 'categorylinks' ) is only available from MW 1.44+.
+		// In MW 1.43 the categorylinks table is not yet in the migration mapping.
+		$useLinktarget = false;
+		if ( version_compare( MW_VERSION, '1.44', '>=' ) ) {
+			$queryInfo = $this->linksMigration->getQueryInfo( 'categorylinks' );
+			$useLinktarget = in_array( 'linktarget', $queryInfo['tables'], true );
+		}
+
 		$categories = [];
-		$res = $this->dbr->select(
-			[ 'page', 'categorylinks' ],
-			'page_title',
-			[
-				'page_namespace' => NS_CATEGORY,
-				'cl_to' => null,
-			],
-			__METHOD__,
-			[],
-			[
-				'categorylinks' => [
-					'LEFT OUTER JOIN',
-					[
-						'page_id = cl_from'
-					]
+
+		if ( $useLinktarget ) {
+			$res = $this->dbr->select(
+				[ 'page', 'categorylinks', 'linktarget' ],
+				'page_title',
+				[
+					'page_namespace' => NS_CATEGORY,
+					'linktarget.lt_title' => null,
 				],
-			]
-		);
+				__METHOD__,
+				[],
+				[
+					'categorylinks' => [
+						'LEFT OUTER JOIN',
+						[
+							'page_id = categorylinks.cl_from'
+						]
+					],
+					'linktarget' => [
+						'LEFT OUTER JOIN',
+						[
+							'categorylinks.cl_target_id = linktarget.lt_id',
+							'linktarget.lt_namespace' => NS_CATEGORY,
+						]
+					],
+				]
+			);
+		} else {
+			$res = $this->dbr->select(
+				[ 'page', 'categorylinks' ],
+				'page_title',
+				[
+					'page_namespace' => NS_CATEGORY,
+					'cl_to' => null,
+				],
+				__METHOD__,
+				[],
+				[
+					'categorylinks' => [
+						'LEFT OUTER JOIN',
+						[
+							'page_id = cl_from'
+						]
+					],
+				]
+			);
+		}
+
 		foreach ( $res as $row ) {
 			$categories[] = str_replace( '_', ' ', $row->page_title );
 		}

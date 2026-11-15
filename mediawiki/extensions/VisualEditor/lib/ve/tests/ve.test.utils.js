@@ -11,6 +11,7 @@
 	 * @ignore
 	 */
 	ve.test = { utils: {} };
+	let nextUniqueId = 1;
 
 	// Create a dummy platform and target so ve.init.platform/target are available
 	function DummyPlatform() {
@@ -54,6 +55,9 @@
 	};
 	DummyPlatform.prototype.getUnanchoredExternalLinkUrlProtocolsRegExp = function () {
 		return /https?:\/\//i;
+	};
+	DummyPlatform.prototype.generateUniqueId = function () {
+		return 'test' + ( nextUniqueId++ );
 	};
 	DummyPlatform.prototype.getUserConfig = function () {
 		return undefined;
@@ -125,9 +129,7 @@
 
 		return new MockSafeStorage( store );
 	};
-	DummyPlatform.prototype.createLocalStorage = DummyPlatform.prototype.createSessionStorage = function ( store ) {
-		store = store || {};
-
+	DummyPlatform.prototype.createLocalStorage = DummyPlatform.prototype.createSessionStorage = function ( store = {} ) {
 		const MockSystemStorage = function () {};
 		OO.initClass( MockSystemStorage );
 		MockSystemStorage.prototype.getItem = function ( key ) {
@@ -152,9 +154,7 @@
 		};
 		if ( !Object.prototype.hasOwnProperty.call( store, 'length' ) ) {
 			Object.defineProperty( store, 'length', {
-				get: function () {
-					return Object.keys( store ).length;
-				}
+				get: () => Object.keys( store ).length
 			} );
 		}
 
@@ -188,17 +188,46 @@
 	new ve.test.utils.DummyTarget(); // Target gets appended to qunit-fixture in ve.qunit.local.js
 	/* eslint-enable no-new */
 
-	// Disable scroll animatinos
-	ve.scrollIntoView = function () {
-		return ve.createDeferred().resolve().promise();
+	function ImageTransferHandler() {
+		// Parent constructor
+		ImageTransferHandler.super.apply( this, arguments );
+	}
+	OO.inheritClass( ImageTransferHandler, ve.ui.DataTransferHandler );
+	ImageTransferHandler.static.name = 'imageTest';
+	ImageTransferHandler.static.kinds = [ 'file' ];
+	ImageTransferHandler.static.types = [ 'image/jpeg', 'image/gif' ];
+	ImageTransferHandler.prototype.process = function () {
+		const file = this.item.getAsFile();
+		const text = file.name || ( file.type + ':' + file.size );
+		this.insertableDataDeferred.resolve( text.split( '' ) );
 	};
 
-	const voidGroup = '(' + ve.elementTypes.void.join( '|' ) + ')';
+	ve.test.utils.ImageTransferHandler = ImageTransferHandler;
 
+	/**
+	 * Creates a simulated jQuery Event
+	 *
+	 * @param {string|Object} src Event type, or original event object
+	 * @param {Object} props jQuery event properties
+	 * @return {jQuery.Event}
+	 */
+	ve.test.utils.createTestEvent = function TestEvent( src, props ) {
+		if ( props && !( 'which' in props ) ) {
+			props.which = props.keyCode;
+		}
+		const event = $.Event( src, props );
+		event.isSimulated = true;
+		return event;
+	};
+
+	// Disable scroll animatinos
+	ve.scrollIntoView = () => ve.createDeferred().resolve().promise();
+
+	const voidGroup = '(' + ve.elementTypes.void.join( '|' ) + ')';
 	const voidRegexp = new RegExp( '(<' + voidGroup + '[^>]*?(/?))>', 'g' );
 	const originalCreateDocumentFromHtml = ve.createDocumentFromHtml;
 	/**
-	 * Override ve.createDocumentFromHtml to validate HTML structure using an XML parser
+	 * Wraps ve.createDocumentFromHtml to validate HTML structure using an XML parser.
 	 *
 	 * Some automatic fixes are applied to HTML to make it parseable,
 	 * but some errors will still be thrown, for example:
@@ -211,7 +240,7 @@
 	 * @param {boolean} ignoreXmlWarnings Skip validation
 	 * @return {HTMLDocument}
 	 */
-	ve.createDocumentFromHtml = function ( html, ignoreXmlWarnings ) {
+	ve.test.utils.createDocumentFromHtml = function ( html, ignoreXmlWarnings ) {
 		if ( html && !ignoreXmlWarnings ) {
 			const xml = '<xml>' +
 				html
@@ -243,9 +272,26 @@
 				}
 			}
 		}
-
 		return originalCreateDocumentFromHtml( html );
 	};
+
+	/**
+	 * Override ve.createDocumentFromHtml to validate HTML structure using an XML parser
+	 * when the original function is called, then restore it when it returns.
+	 *
+	 * @param {Function} originalFunc
+	 * @return {Function}
+	 */
+	function withCreateDocumentFromHtmlValidation( originalFunc ) {
+		return function ( ...params ) {
+			ve.createDocumentFromHtml = ve.test.utils.createDocumentFromHtml;
+			try {
+				return originalFunc( ...params );
+			} finally {
+				ve.createDocumentFromHtml = originalCreateDocumentFromHtml;
+			}
+		};
+	}
 
 	function getSerializableData( model ) {
 		return model.getFullData( undefined, 'roundTrip' );
@@ -297,7 +343,7 @@
 				msg: arguments[ 5 ]
 			};
 		}
-		const doc = ve.dm.example.createExampleDocument( 'isolationData', null, caseItem.base ),
+		const doc = ve.dm.example.createExampleDocument( 'isolationData', undefined, caseItem.base ),
 			surface = new ve.dm.Surface( doc ),
 			fragment = surface.getLinearFragment( caseItem.range );
 
@@ -323,6 +369,7 @@
 	 * @param {boolean} [caseItem.undo] Test that the action undoes cleanly
 	 * @param {Function} [caseItem.expectedData] Function to mutate linear data into expected data
 	 * @param {Function} [caseItem.expectedOriginalData] Function to mutate linear data into expected data after undo
+	 * @param {Function} [caseItem.expectedReturn=true] Expected return value from action method
 	 */
 	ve.test.utils.runActionTest = function ( assert, caseItem ) {
 		if ( arguments.length > 2 ) {
@@ -361,7 +408,22 @@
 		}
 
 		surface.getModel().setSelection( selection );
-		action[ caseItem.method ].apply( action, caseItem.args || [] );
+
+		if ( caseItem.insertionAnnotations ) {
+			caseItem.insertionAnnotations.forEach( ( annotation ) => {
+				surface.getModel().addInsertionAnnotations(
+					ve.dm.annotationFactory.create( annotation.type, annotation.data )
+				);
+			} );
+		}
+
+		const executed = action[ caseItem.method ]( ...( caseItem.args || [] ) );
+
+		assert.strictEqual(
+			executed,
+			caseItem.expectedReturn !== undefined ? caseItem.expectedReturn : true,
+			caseItem.msg + ': action return value'
+		);
 
 		const afterApply = () => {
 			const actualData = getSerializableData( surface.getModel().getDocument() );
@@ -369,6 +431,15 @@
 			assert.equalLinearData( actualData, data, caseItem.msg + ': data models match' );
 			if ( expectedSelection ) {
 				assert.equalHash( surface.getModel().getSelection(), expectedSelection, caseItem.msg + ': selections match' );
+			}
+
+			if ( caseItem.expectedInsertionAnnotations ) {
+				const actualAnnotations = surface.getModel().getInsertionAnnotations().get();
+				assert.deepEqual(
+					actualAnnotations.map( ( annotation ) => annotation.getComparableObject() ),
+					caseItem.expectedInsertionAnnotations,
+					'Insertion annotations match expected state'
+				);
 			}
 
 			if ( caseItem.undo ) {
@@ -425,7 +496,7 @@
 			assert.equalLinearData( actualDataMeta, caseItem.data, msg + ': data with metaItems restored' );
 
 			assert.deepEqual( model.getInnerWhitespace(), caseItem.innerWhitespace || new Array( 2 ), msg + ': inner whitespace' );
-			// Check storeItems have been added to store
+			// Add storeItems to store
 			if ( caseItem.storeItems ) {
 				for ( const hash in caseItem.storeItems ) {
 					assert.deepEqualWithDomElements(
@@ -442,6 +513,7 @@
 			assert.equalDomElement( actualRtDoc.body, expectedRtDoc.body, msg + ': round-trip' );
 		}
 	};
+	ve.test.utils.runGetModelFromDomTest = withCreateDocumentFromHtmlValidation( ve.test.utils.runGetModelFromDomTest );
 
 	ve.test.utils.getModelFromTestCase = function ( caseItem ) {
 		const store = new ve.dm.HashValueStore();
@@ -490,6 +562,7 @@
 		}
 		assert.deepEqualWithDomElements( getSerializableData( model ), originalData, msg + ' (data hasn\'t changed)' );
 	};
+	ve.test.utils.runGetDomFromModelTest = withCreateDocumentFromHtmlValidation( ve.test.utils.runGetDomFromModelTest );
 
 	ve.test.utils.runDiffElementTest = function ( assert, caseItem ) {
 		const oldDoc = ve.dm.converter.getModelFromDom( ve.createDocumentFromHtml( caseItem.oldDoc ) ),
@@ -510,6 +583,7 @@
 			'Timeout message ' + ( caseItem.forceTimeout ? 'shown' : 'not shown' )
 		);
 	};
+	ve.test.utils.runDiffElementTest = withCreateDocumentFromHtmlValidation( ve.test.utils.runDiffElementTest );
 
 	/**
 	 * Create a UI surface from some HTML
@@ -521,9 +595,9 @@
 	 * @param {Object} config Surface config
 	 * @return {ve.ui.Surface}
 	 */
-	ve.test.utils.createSurfaceFromHtml = function ( html, config ) {
+	ve.test.utils.createSurfaceFromHtml = function ( html, config = {} ) {
 		return this.createSurfaceFromDocument(
-			ve.dm.converter.getModelFromDom( ve.createDocumentFromHtml( html ) ),
+			ve.dm.converter.getModelFromDom( ve.test.utils.createDocumentFromHtml( html ) ),
 			config
 		);
 	};
@@ -537,7 +611,7 @@
 	 * @param {Object} [config] Surface config
 	 * @return {ve.ui.Surface}
 	 */
-	ve.test.utils.createSurfaceFromDocument = function ( doc, config ) {
+	ve.test.utils.createSurfaceFromDocument = function ( doc, config = {} ) {
 		return ve.init.target.addSurface( doc, config );
 	};
 
@@ -548,9 +622,9 @@
 	 * @param {Object} config Surface config
 	 * @return {ve.ce.Surface}
 	 */
-	ve.test.utils.createSurfaceViewFromHtml = function ( html, config ) {
+	ve.test.utils.createSurfaceViewFromHtml = function ( html, config = {} ) {
 		return this.createSurfaceViewFromDocument(
-			ve.dm.converter.getModelFromDom( ve.createDocumentFromHtml( html ) ),
+			ve.dm.converter.getModelFromDom( ve.test.utils.createDocumentFromHtml( html ) ),
 			config
 		);
 	};
@@ -564,7 +638,7 @@
 	 * @param {Object} config Surface config
 	 * @return {ve.ce.Surface}
 	 */
-	ve.test.utils.createSurfaceViewFromDocument = function ( docOrSurface, config ) {
+	ve.test.utils.createSurfaceViewFromDocument = function ( docOrSurface, config = {} ) {
 		config = ve.init.target.getSurfaceConfig( config );
 
 		let model = null, view = null;
@@ -575,57 +649,37 @@
 			$element: $( '<div>' ),
 			$scrollContainer: $( document.documentElement ),
 			$scrollListener: $( window ),
-			isMobile: function () {
-				return false;
-			},
-			isMultiline: function () {
-				return true;
-			},
-			isReadOnly: function () {
-				return false;
-			},
+			isMobile: () => false,
+			isMultiline: () => true,
+			isReadOnly: () => false,
 			getBoundingClientRect: function () {
 				return this.$element[ 0 ].getClientRects()[ 0 ] || null;
 			},
-			getViewportDimensions: function () {
-				return null;
-			},
+			getViewportDimensions: () => null,
 			getImportRules: function () {
 				return this.importRules;
 			},
-			getMode: function () {
-				return config.mode || 'visual';
-			},
-			getModel: function () {
-				return model;
-			},
-			getView: function () {
-				return view;
-			},
-			getCommands: function () {
-				return ve.ui.commandRegistry.getNames();
-			},
-			getContext: function () {
-				return {
-					toggle: function () {},
-					updateDimensions: function () {}
-				};
-			},
-			isDisabled: function () {
-				return false;
-			},
-			emit: function () {},
-			connect: function () {},
-			disconnect: function () {},
+			getMode: () => config.mode || 'visual',
+			getModel: () => model,
+			getView: () => view,
+			getTarget: () => ve.init.target,
+			getCommands: () => ve.ui.commandRegistry.getNames(),
+			getContext: () => ( {
+				toggle: () => {},
+				updateDimensions: () => {}
+			} ),
+			isDisabled: () => false,
+			doesAllowTabFocusChange: () => !!config.allowTabFocusChange,
+			emit: () => {},
+			connect: () => {},
+			disconnect: () => {},
 			execute: ve.ui.Surface.prototype.execute,
 			executeWithSource: ve.ui.Surface.prototype.executeWithSource,
 			createView: ve.ui.Surface.prototype.createView,
 			createModel: ve.ui.Surface.prototype.createModel,
 			context: {
 				// Used by ContentAction
-				isVisible: function () {
-					return false;
-				}
+				isVisible: () => false
 			}
 		};
 		// Copied from ui.Surface constructor
@@ -643,8 +697,9 @@
 
 		view.surface = mockSurface;
 		mockSurface.$element.append( view.$element );
+		const $focusHolder = $( '<div>' ).prop( 'tabIndex', 0 ).addClass( 've-ui-testFocusHolder' );
 		// eslint-disable-next-line no-jquery/no-global-selector
-		$( '#qunit-fixture' ).append( mockSurface.$element );
+		$( '#qunit-fixture' ).append( mockSurface.$element, $focusHolder );
 
 		view.initialize();
 		model.initialize();
@@ -659,9 +714,9 @@
 	 * @param {Object} config Surface config
 	 * @return {Object} Mock UI surface which only returns a real view (and its model)
 	 */
-	ve.test.utils.createViewOnlySurfaceFromHtml = function ( html, config ) {
+	ve.test.utils.createViewOnlySurfaceFromHtml = function ( html, config = {} ) {
 		const surfaceView = ve.test.utils.createSurfaceViewFromDocument(
-			ve.dm.converter.getModelFromDom( ve.createDocumentFromHtml( html ) ),
+			ve.dm.converter.getModelFromDom( ve.test.utils.createDocumentFromHtml( html ) ),
 			config
 		);
 
@@ -675,22 +730,15 @@
 	 * @param {Object} config Surface config
 	 * @return {Object} Mock UI surface which only returns a real model
 	 */
-	ve.test.utils.createModelOnlySurfaceFromHtml = function ( html, config ) {
+	ve.test.utils.createModelOnlySurfaceFromHtml = function ( html, config = {} ) {
 		const model = new ve.dm.Surface(
-			ve.dm.converter.getModelFromDom( ve.createDocumentFromHtml( html ) ),
+			ve.dm.converter.getModelFromDom( ve.test.utils.createDocumentFromHtml( html ) ),
 			null,
 			config
 		);
 		return {
-			getModel: function () {
-				return model;
-			},
-			getView: function () {
-				// Mock view
-				return {
-					focus: function () {}
-				};
-			}
+			getModel: () => model,
+			getView: () => ( { focus: () => {} } )
 		};
 	};
 

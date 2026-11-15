@@ -1,17 +1,27 @@
 {
 	"@metadata": {
 		"authors": [
-			"Jeeputer"
+			"Jeeputer",
+			"LProfo",
+			"LordProfo"
 		]
 	},
 	"reportincident-dialog-violator-label": "کاربری که {{GENDER:|می‌خواهید}} او را گزارش {{GENDER:|کنید}}",
-	"reportincident-email-body": "کاربر گزارش‌کننده: $1\nکاربر گزارش‌شده: $2\n$3: $4\n\nرفتار: $5\nجزئیات: $6\n\nارسال ایمیل به $1: $7",
-	"reportincident-email-link-to-page-prefix": "پیوند به صفحه",
-	"reportincident-email-link-to-comment-prefix": "پیوند به پیام گزارش‌شده",
-	"reportincident-email-link-to-topic-prefix": "پیوند به مبحث گزارش‌شده",
 	"reportincident-emaildialog-title": "به نشانی ایمیل تأییدشده نیاز است",
 	"reportincident-emaildialog-close-button": "لغو",
-	"reportincident-emaildialog-content": "ما برای ارسال به‌روزرسانی‌ها دربارهٔ گزارش، یا در صورت نیاز برای پی‌گیری، به نشانی ایمیل تأییدشدهٔ {{GENDER:|شما}} نیازمندیم. لطفاً پیش از تنظیم گزارش، از طریق تنظیمات کاربری {{GENDER:|خود}} نشانی ایمیل {{GENDER:|خود}} را بیافزایید یا آن را تأیید کنید.",
+	"reportincident-emaildialog-content": "ما برای ارسال به‌روزرسانی‌ها دربارهٔ گزارش، یا در صورت نیاز برای پیگیری، به نشانی ایمیل تأییدشدهٔ {{GENDER:|شما}} نیازمندیم. لطفاً پیش از تنظیم گزارش، از طریق تنظیمات کاربری {{GENDER:|خود}} نشانی ایمیل {{GENDER:|خود}} را بیفزایید یا آن را تأیید کنید.",
 	"reportincident-emaildialog-primary": "رفتن به تنظیمات",
-	"reportincident-confirmedemail-required": "برای ثبت گزارش یک واقعه، به یک نشانی ایمیل تأییدشده نیاز است."
+	"reportincident-confirmedemail-required": "برای ثبت گزارش یک واقعه، به یک نشانی ایمیل تأییدشده نیاز است.",
+	"reportincident-submit-emergency-section-important-item-services": "اگر صدمه {{GENDER:|دیده‌اید}} یا هم‌اکنون در خطر هستید، با سرویس‌های اضطراری محلی {{GENDER:|خود}} تماس بگیرید.",
+	"communityconfiguration-reportincident-title": "سامانهٔ گزارش رویداد",
+	"communityconfiguration-reportincident-description": "پیکربندی پیوندهای محلی مورد استفادهٔ جریان غیر اضطراری سامانهٔ گزارش رویداد و مدیریت فضاهای نامی که سامانه در آن‌ها فعال است.",
+	"communityconfiguration-reportincident-reportincidentcommunityquestionspage-label": "صفحهٔ پرسش و پاسخ اجتماع",
+	"communityconfiguration-reportincident-reportincidentcommunityquestionspage-help-text": "یک صفحهٔ ویکی که در آن کاربران می‌توانند پرسش‌های خود را با اجتماع در میان بگذارند.",
+	"communityconfiguration-reportincident-reportincidentlocalincidentreportpage-label": "صفحهٔ گزارش رویداد محلی",
+	"communityconfiguration-reportincident-reportincidentlocalincidentreportpage-help-text": "یک صفحهٔ ویکی که در آن کاربران می‌توانند وقایع را به مدیران محلی گزارش کنند.",
+	"communityconfiguration-reportincident-reportincidentdisputeresolutionpage-label": "صفحهٔ حل اختلاف",
+	"communityconfiguration-reportincident-reportincidentdisputeresolutionpage-help-text": "یک صفحهٔ ویکی که در آن کاربران می‌توانند اطلاعاتی پیرامون نحوهٔ رفع اختلافات درون‌ویکی بیابند.",
+	"communityconfiguration-reportincident-reportincidentenablednamespaces-label": "فضاهای نام فعال",
+	"communityconfiguration-reportincident-reportincidentenablednamespaces-help-text": "فضاهای نامی که سامانهٔ گزارش رویداد در آن‌ها فعال است.",
+	"communityconfiguration-reportincident-invalid-title": "صفحهٔ مورد نظر باید یک صفحهٔ موجود در ویکی محلی باشد."
 }

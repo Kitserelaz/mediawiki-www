@@ -2,6 +2,8 @@
 
 namespace CirrusSearch\Search;
 
+use MediaWiki\Search\SearchEngine;
+
 /**
  * Index field representing a short technical text.
  * ShortText uses a language agnostic analyzer.
@@ -11,7 +13,8 @@ class ShortTextIndexField extends CirrusIndexField {
 	/** @inheritDoc */
 	protected $typeName = 'text';
 
-	public function getMapping( \SearchEngine $engine ) {
+	/** @inheritDoc */
+	public function getMapping( SearchEngine $engine ) {
 		$config = parent::getMapping( $engine );
 		$config['analyzer'] = 'short_text';
 		$config['search_analyzer'] = 'short_text_search';

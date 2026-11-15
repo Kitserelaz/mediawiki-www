@@ -15,8 +15,10 @@ use MediaWiki\Config\Config;
 use MediaWiki\Config\HashConfig;
 use MediaWiki\Config\MultiConfig;
 use MediaWiki\Http\HttpRequestFactory;
+use MediaWiki\Http\MWHttpRequest;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Status\Status;
+use MediaWikiIntegrationTestCase;
 use Wikibase\DataAccess\DatabaseEntitySource;
 use Wikibase\DataAccess\EntitySourceDefinitions;
 use Wikibase\DataModel\Entity\EntityIdParser;
@@ -26,11 +28,16 @@ use Wikibase\DataModel\Entity\ItemIdParser;
 use Wikibase\DataModel\Entity\NumericPropertyId;
 use Wikibase\DataModel\Services\Lookup\InMemoryDataTypeLookup;
 use Wikibase\DataModel\Services\Lookup\PropertyDataTypeLookup;
+use Wikibase\DataModel\Snak\PropertyNoValueSnak;
 use Wikibase\DataModel\Snak\PropertyValueSnak;
+use Wikibase\DataModel\Snak\SnakList;
 use Wikibase\DataModel\Statement\Statement;
 use Wikibase\Lib\DataValueFactory;
 use Wikibase\Lib\SubEntityTypesMapper;
+use Wikibase\Lib\Tests\Store\MockPropertyInfoLookup;
 use Wikibase\Repo\Rdf\RdfVocabulary;
+use Wikibase\Repo\Rdf\ValueSnakRdfBuilderFactory;
+use Wikibase\Repo\WikibaseRepo;
 use WikibaseQuality\ConstraintReport\Api\ExpiryLock;
 use WikibaseQuality\ConstraintReport\Constraint;
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Cache\CachedQueryResults;
@@ -50,9 +57,7 @@ use WikibaseQuality\ConstraintReport\Tests\DefaultConfig;
 use WikibaseQuality\ConstraintReport\Tests\ResultAssertions;
 use Wikimedia\ObjectCache\HashBagOStuff;
 use Wikimedia\ObjectCache\WANObjectCache;
-use Wikimedia\Stats\BufferingStatsdDataFactory;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
-use Wikimedia\Stats\NullStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 use Wikimedia\TestingAccessWrapper;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
@@ -64,7 +69,7 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  * @author Lucas Werkmeister
  * @license GPL-2.0-or-later
  */
-class SparqlHelperTest extends \PHPUnit\Framework\TestCase {
+class SparqlHelperTest extends MediaWikiIntegrationTestCase {
 
 	use DefaultConfig;
 	use ResultAssertions;
@@ -89,6 +94,29 @@ class SparqlHelperTest extends \PHPUnit\Framework\TestCase {
 		);
 	}
 
+	private function getRdfVocabulary(): RdfVocabulary {
+		$itemSource = new DatabaseEntitySource(
+			'local',
+			false,
+			[
+				'item' => [ 'namespaceId' => 0, 'slot' => SlotRecord::MAIN ],
+				'property' => [ 'namespaceId' => 1, 'slot' => SlotRecord::MAIN ],
+			],
+			'http://www.wikidata.org/entity/',
+			'wd',
+			'',
+			'local'
+		);
+
+		return new RdfVocabulary(
+			[ 'local' => 'http://www.wikidata.org/entity/' ],
+			[ 'local' => 'http://www.wikidata.org/wiki/Special:EntityData/' ],
+			new EntitySourceDefinitions( [ 'local' => $itemSource ], new SubEntityTypesMapper( [] ) ),
+			[ 'local' => 'wd' ],
+			[ 'local' => '' ]
+		);
+	}
+
 	private function getSparqlHelper(
 		?Config $config = null,
 		?PropertyDataTypeLookup $dataTypeLookup = null,
@@ -99,13 +127,8 @@ class SparqlHelperTest extends \PHPUnit\Framework\TestCase {
 		return $this->getMockBuilder( SparqlHelper::class )
 			->setConstructorArgs( [
 				new MultiConfig( [ $config ?? new HashConfig(), self::getDefaultConfig() ] ),
-				new RdfVocabulary(
-					[ '' => 'http://www.wikidata.org/entity/' ],
-					[ '' => 'http://www.wikidata.org/wiki/Special:EntityData/' ],
-					new EntitySourceDefinitions( [], new SubEntityTypesMapper( [] ) ),
-					[ '' => 'wd' ],
-					[ '' => '' ]
-				),
+				$this->getRdfVocabulary(),
+				WikibaseRepo::getValueSnakRdfBuilderFactory( $this->getServiceContainer() ),
 				$entityIdParser,
 				$dataTypeLookup ?? new InMemoryDataTypeLookup(),
 				WANObjectCache::newEmpty(),
@@ -114,7 +137,7 @@ class SparqlHelperTest extends \PHPUnit\Framework\TestCase {
 					$entityIdParser,
 					new DataValueFactory( new DataValueDeserializer() )
 				),
-				new NullStatsdDataFactory(),
+				StatsFactory::newNull(),
 				new ExpiryLock( new HashBagOStuff() ),
 				$loggingHelper ?? $this->createMock( LoggingHelper::class ),
 				'A fancy user agent',
@@ -140,7 +163,10 @@ EOF;
 			->willReturn( $this->askResult( true ) )
 			->with( $query );
 
-		$this->assertTrue( $sparqlHelper->hasType( 'Q1', [ 'Q100', 'Q101' ] )->getBool() );
+		$this->assertTrue( $sparqlHelper->hasType(
+			new ItemId( 'Q1' ),
+			[ 'Q100', 'Q101' ]
+		)->getBool() );
 	}
 
 	public function testHasTypeWithHint() {
@@ -161,104 +187,95 @@ EOF;
 			->willReturn( $this->askResult( true ) )
 			->with( $query );
 
-		$this->assertTrue( $sparqlHelper->hasType( 'Q1', [ 'Q100', 'Q101' ] )->getBool() );
+		$this->assertTrue( $sparqlHelper->hasType(
+			new ItemId( 'Q1' ),
+			[ 'Q100', 'Q101' ]
+		)->getBool() );
 	}
 
 	public static function provideSeparatorIdsAndExpectedFilters() {
 		$p21 = new NumericPropertyId( 'P21' );
 		$p22 = new NumericPropertyId( 'P22' );
+		$p31 = new NumericPropertyId( 'P31' );
 
-		yield [
-			[], // No separators shouldn't add filtering or declaration
-			'',
+		yield 'no separators' => [
+			'separators' => [],
+			'qualifiers' => [ new PropertyValueSnak( $p31, new StringValue( 'ignored' ) ) ],
+			'expectedSeparatorFilters' => '',
 		];
 
-		yield [
-			[
-				$p21, $p22,
+		yield 'separators not present on statement' => [
+			'separators' => [ $p21, $p22 ],
+			'qualifiers' => [ new PropertyValueSnak( $p31, new StringValue( 'ignored' ) ) ],
+			// other statement should not have the separator qualifiers either
+			'expectedSeparatorFilters' => <<<EOF
+  MINUS { ?otherStatement pq:P21 []. }
+  MINUS { ?otherStatement a wdno:P21. }
+  MINUS { ?otherStatement pq:P22 []. }
+  MINUS { ?otherStatement a wdno:P22. }
+
+EOF
+,
+		];
+
+		yield 'separators partly present on statement' => [
+			'separators' => [ $p21, $p22 ],
+			'qualifiers' => [
+				new PropertyValueSnak( $p21, new StringValue( 'P21 value' ) ),
 			],
-<<<EOF
-  MINUS {
-    ?statement pq:P21 ?qualifier.
-    FILTER NOT EXISTS {
-      ?otherStatement pq:P21 ?qualifier.
-    }
-  }
-  MINUS {
-    ?otherStatement pq:P21 ?qualifier.
-    FILTER NOT EXISTS {
-      ?statement pq:P21 ?qualifier.
-    }
-  }
-  MINUS {
-    ?statement a wdno:P21.
-    FILTER NOT EXISTS {
-      ?otherStatement a wdno:P21.
-    }
-  }
-  MINUS {
-    ?otherStatement a wdno:P21.
-    FILTER NOT EXISTS {
-      ?statement a wdno:P21.
-    }
-  }
-  MINUS {
-    ?statement pq:P22 ?qualifier.
-    FILTER NOT EXISTS {
-      ?otherStatement pq:P22 ?qualifier.
-    }
-  }
-  MINUS {
-    ?otherStatement pq:P22 ?qualifier.
-    FILTER NOT EXISTS {
-      ?statement pq:P22 ?qualifier.
-    }
-  }
-  MINUS {
-    ?statement a wdno:P22.
-    FILTER NOT EXISTS {
-      ?otherStatement a wdno:P22.
-    }
-  }
-  MINUS {
-    ?otherStatement a wdno:P22.
-    FILTER NOT EXISTS {
-      ?statement a wdno:P22.
-    }
-  }
+			'expectedSeparatorFilters' => <<<EOF
+  ?otherStatement pq:P21 "P21 value" .
+  MINUS { ?otherStatement pq:P22 []. }
+  MINUS { ?otherStatement a wdno:P22. }
+
+EOF
+,
+		];
+
+		yield 'separators fully present on statement' => [
+			'separators' => [ $p21, $p22 ],
+			'qualifiers' => [
+				new PropertyValueSnak( $p21, new StringValue( 'P21 value' ) ),
+				new PropertyNoValueSnak( $p22 ),
+				new PropertyValueSnak( $p31, new StringValue( 'ignored' ) ),
+			],
+			'expectedSeparatorFilters' => <<<EOF
+  ?otherStatement pq:P21 "P21 value" .
+  ?otherStatement a wdno:P22.
+
 EOF
 ,
 		];
 	}
 
 	/**
+	 * This test mainly covers the behavior of the separators parameter,
+	 * whereas {@link self::testFindEntitiesWithSameQualifierOrReference()}
+	 * covers the various data types that may be referenced in the query.
+	 *
 	 * @dataProvider provideSeparatorIdsAndExpectedFilters
 	 */
 	public function testFindEntitiesWithSameStatement(
 		array $separators,
-		string $expectedFilter
+		array $qualifiers,
+		string $expectedSeparatorFilters
 	): void {
-		$guid = 'Q1$8542690f-dfab-4846-944f-8382df730d2c';
+		$entityId = new ItemId( 'Q10' );
 		$statement = new Statement(
-			new PropertyValueSnak( new NumericPropertyId( 'P1' ), new EntityIdValue( new ItemId( 'Q1' ) ) ),
-			null,
-			null,
-			$guid
+			new PropertyValueSnak( new NumericPropertyId( 'P1' ), new StringValue( 'mainsnak' ) ),
+			new SnakList( $qualifiers )
 		);
+		$dtLookup = $this->createMock( PropertyDataTypeLookup::class );
+		$dtLookup->method( 'getDataTypeIdForProperty' )->willReturn( 'string' );
 
-		$sparqlHelper = TestingAccessWrapper::newFromObject( $this->getSparqlHelper() );
+		$sparqlHelper = TestingAccessWrapper::newFromObject( $this->getSparqlHelper( null, $dtLookup ) );
 		$query = <<<EOF
 SELECT DISTINCT ?otherEntity WHERE {
-  BIND(wds:Q1-8542690f-dfab-4846-944f-8382df730d2c AS ?statement)
-  BIND(p:P1 AS ?p)
-  BIND(ps:P1 AS ?ps)
-  ?entity ?p ?statement.
-  ?statement ?ps ?value.
-  ?otherStatement ?ps ?value.
-  ?otherEntity ?p ?otherStatement.
-  FILTER(?otherEntity != ?entity)
+  ?otherEntity p:P1 ?otherStatement.
+  ?otherStatement ps:P1 "mainsnak" .
   MINUS { ?otherStatement wikibase:rank wikibase:DeprecatedRank. }
-  $expectedFilter
+  FILTER(?otherEntity != wd:Q10)
+$expectedSeparatorFilters
 }
 LIMIT 10
 EOF;
@@ -272,7 +289,7 @@ EOF;
 			->with( $query );
 
 		$this->assertEquals(
-			$sparqlHelper->findEntitiesWithSameStatement( $statement, $separators )->getArray(),
+			$sparqlHelper->findEntitiesWithSameStatement( $entityId, $statement, $separators )->getArray(),
 			[ new ItemId( 'Q100' ), new ItemId( 'Q101' ) ]
 		);
 	}
@@ -284,9 +301,9 @@ EOF;
 		PropertyValueSnak $snak,
 		string $dataType,
 		string $contextType,
-		string $sparqlValue,
-		string $sparqlPath
+		string $sparqlPredicateAndValue
 	): void {
+		$this->setService( 'WikibaseRepo.PropertyInfoLookup', new MockPropertyInfoLookup() );
 		$dtLookup = $this->createMock( PropertyDataTypeLookup::class );
 		$dtLookup->method( 'getDataTypeIdForProperty' )->willReturn( $dataType );
 
@@ -294,13 +311,9 @@ EOF;
 
 		$query = <<<EOF
 SELECT DISTINCT ?otherEntity WHERE {
-  BIND(wd:Q10 AS ?entity)
-  BIND($sparqlValue AS ?value)
-  ?entity ?p ?statement.
-  ?statement $sparqlPath ?value.
-  ?otherStatement $sparqlPath ?value.
-  ?otherEntity ?otherP ?otherStatement.
-  FILTER(?otherEntity != ?entity)
+  ?otherEntity p:{$snak->getPropertyId()->getSerialization()} ?otherStatement.
+  ?otherStatement $sparqlPredicateAndValue .
+  FILTER(?otherEntity != wd:Q10)
 
 }
 LIMIT 10
@@ -342,85 +355,73 @@ EOF;
 				new PropertyValueSnak( $pid, new StringValue( 'foo' ) ),
 				'string',
 				'qualifier',
-				'"foo"',
-				'pq:P1',
+				'pq:P1 "foo"',
 			],
 			'external identifier, reference' => [
 				new PropertyValueSnak( $pid, new StringValue( 'f00' ) ),
 				'external-id',
 				'reference',
-				'"f00"',
-				'prov:wasDerivedFrom/pr:P1',
+				"prov:wasDerivedFrom ?reference.\n  ?reference pr:P1 \"f00\"",
 			],
 			'Commons media, qualifier' => [
 				new PropertyValueSnak( $pid, new StringValue( 'Bar.jpg' ) ),
 				'commonsMedia',
 				'qualifier',
-				'<http://commons.wikimedia.org/wiki/Special:FilePath/Bar.jpg>',
-				'pq:P1',
+				'pq:P1 <http://commons.wikimedia.org/wiki/Special:FilePath/Bar.jpg>',
 			],
 			'geoshape, reference' => [
 				new PropertyValueSnak( $pid, new StringValue( 'Baznia.map' ) ),
 				'geo-shape',
 				'reference',
-				'<http://commons.wikimedia.org/data/main/Baznia.map>',
-				'prov:wasDerivedFrom/pr:P1',
+				"prov:wasDerivedFrom ?reference.\n  ?reference pr:P1 <http://commons.wikimedia.org/data/main/Baznia.map>",
 			],
 			'tabular data, qualifier' => [
 				new PropertyValueSnak( $pid, new StringValue( 'Qux.tab' ) ),
 				'tabular-data',
 				'qualifier',
-				'<http://commons.wikimedia.org/data/main/Qux.tab>',
-				'pq:P1',
+				'pq:P1 <http://commons.wikimedia.org/data/main/Qux.tab>',
 			],
 			'url, reference' => [
 				new PropertyValueSnak( $pid, new StringValue( 'https://wikibase.example/url' ) ),
 				'url',
 				'reference',
-				'<https://wikibase.example/url>',
-				'prov:wasDerivedFrom/pr:P1',
+				"prov:wasDerivedFrom ?reference.\n  ?reference pr:P1 <https://wikibase.example/url>",
 			],
 			'item, qualifier' => [
 				new PropertyValueSnak( $pid, new EntityIdValue( new ItemId( 'Q100' ) ) ),
 				'wikibase-item',
 				'qualifier',
-				'wd:Q100',
-				'pq:P1',
+				'pq:P1 wd:Q100',
 			],
 			'property, reference' => [
 				new PropertyValueSnak( $pid, new EntityIdValue( new NumericPropertyId( 'P100' ) ) ),
 				'wikibase-property',
 				'reference',
-				'wd:P100',
-				'prov:wasDerivedFrom/pr:P1',
+				"prov:wasDerivedFrom ?reference.\n  ?reference pr:P1 wd:P100",
 			],
 			'monolingual text, qualifier' => [
 				new PropertyValueSnak( $pid, new MonolingualTextValue( 'qqx', 'lorem ipsum' ) ),
 				'monolingualtext',
 				'qualifier',
-				'"lorem ipsum"@qqx',
-				'pq:P1',
+				'pq:P1 "lorem ipsum"@qqx',
 			],
 			'globe coordinate, reference' => [
 				new PropertyValueSnak( $pid, $globeCoordinateValue ),
 				'globe-coordinate',
 				'reference',
-				"wdv:{$globeCoordinateValue->getHash()}",
-				'prov:wasDerivedFrom/prv:P1',
+				"prov:wasDerivedFrom ?reference.\n  ?reference prv:P1 wdv:{$globeCoordinateValue->getHash()}",
 			],
 			'quantity, qualifier' => [
 				new PropertyValueSnak( $pid, $quantityValue ),
 				'quantity',
 				'qualifier',
-				"wdv:{$quantityValue->getHash()}",
-				'pqv:P1',
+				"pqv:P1 wdv:{$quantityValue->getHash()}",
 			],
 			'time, reference' => [
 				new PropertyValueSnak( $pid, $timeValue ),
 				'time',
 				'reference',
-				"wdv:{$timeValue->getHash()}",
-				'prov:wasDerivedFrom/prv:P1',
+				"prov:wasDerivedFrom ?reference.\n  ?reference prv:P1 wdv:{$timeValue->getHash()}",
 			],
 		];
 	}
@@ -434,33 +435,29 @@ EOF;
 		array $expectedResult
 	): void {
 		$separators = [];
-		$expectedFilter = "";
-		$guid = 'Q1$8542690f-dfab-4846-944f-8382df730d2c';
+		$qualifiers = [];
+		$expectedSeparatorFilters = "";
+		$entityId = new ItemId( 'Q10' );
 		$statement = new Statement(
-			new PropertyValueSnak( new NumericPropertyId( 'P1' ), new EntityIdValue( new ItemId( 'Q1' ) ) ),
-			null,
-			null,
-			$guid
+			new PropertyValueSnak( new NumericPropertyId( 'P1' ), new StringValue( 'mainsnak' ) ),
+			new SnakList( $qualifiers )
 		);
+		$dtLookup = $this->createMock( PropertyDataTypeLookup::class );
+		$dtLookup->method( 'getDataTypeIdForProperty' )->willReturn( 'string' );
 
 		$primaryEndpoint = self::getDefaultConfig()->get( 'WBQualityConstraintsSparqlEndpoint' );
 
 		$sparqlHelper = TestingAccessWrapper::newFromObject( $this->getSparqlHelper( new HashConfig( [
 			'WBQualityConstraintsAdditionalSparqlEndpoints' => array_keys( $additionalResults ),
-		] ) ) );
+		] ), $dtLookup ) );
 
 		$query = <<<EOF
 SELECT DISTINCT ?otherEntity WHERE {
-  BIND(wds:Q1-8542690f-dfab-4846-944f-8382df730d2c AS ?statement)
-  BIND(p:P1 AS ?p)
-  BIND(ps:P1 AS ?ps)
-  ?entity ?p ?statement.
-  ?statement ?ps ?value.
-  ?otherStatement ?ps ?value.
-  ?otherEntity ?p ?otherStatement.
-  FILTER(?otherEntity != ?entity)
+  ?otherEntity p:P1 ?otherStatement.
+  ?otherStatement ps:P1 "mainsnak" .
   MINUS { ?otherStatement wikibase:rank wikibase:DeprecatedRank. }
-  $expectedFilter
+  FILTER(?otherEntity != wd:Q10)
+$expectedSeparatorFilters
 }
 LIMIT 10
 EOF;
@@ -479,7 +476,7 @@ EOF;
 
 		$this->assertEquals(
 			$expectedResult,
-			$sparqlHelper->findEntitiesWithSameStatement( $statement, $separators )->getArray(),
+			$sparqlHelper->findEntitiesWithSameStatement( $entityId, $statement, $separators )->getArray(),
 		);
 	}
 
@@ -495,8 +492,7 @@ EOF;
 		$snak = new PropertyValueSnak( $pid, new StringValue( 'foo' ) );
 		$dataType = 'string';
 		$contextType = 'qualifier';
-		$sparqlValue = '"foo"';
-		$sparqlPath = 'pq:P1';
+		$sparqlPredicateAndValue = 'pq:P1 "foo"';
 
 		$dtLookup = $this->createMock( PropertyDataTypeLookup::class );
 		$dtLookup->method( 'getDataTypeIdForProperty' )->willReturn( $dataType );
@@ -509,13 +505,9 @@ EOF;
 
 		$query = <<<EOF
 SELECT DISTINCT ?otherEntity WHERE {
-  BIND(wd:Q10 AS ?entity)
-  BIND($sparqlValue AS ?value)
-  ?entity ?p ?statement.
-  ?statement $sparqlPath ?value.
-  ?otherStatement $sparqlPath ?value.
-  ?otherEntity ?otherP ?otherStatement.
-  FILTER(?otherEntity != ?entity)
+  ?otherEntity p:{$pid->getSerialization()} ?otherStatement.
+  ?otherStatement $sparqlPredicateAndValue .
+  FILTER(?otherEntity != wd:Q10)
 
 }
 LIMIT 10
@@ -677,7 +669,7 @@ EOF;
 			->willReturn( $this->selectResults( [ [] ] ) );
 
 		try {
-			call_user_func_array( [ $sparqlHelper, 'matchesRegularExpressionWithSparql' ], [ $text, $regex ] );
+			$sparqlHelper->matchesRegularExpressionWithSparql( $text, $regex );
 			$this->fail(
 				"matchesRegularExpressionWithSparql should have thrown a ConstraintParameterException with message "
 			. "⧼{$messageKey}⧽."
@@ -784,7 +776,7 @@ EOF;
 		$lock = $this->createMock( ExpiryLock::class );
 		$retryAfter = 1000;
 
-		$requestMock = $this->createMock( \MWHttpRequest::class );
+		$requestMock = $this->createMock( MWHttpRequest::class );
 		$requestMock->method( 'getResponseHeader' )
 			->with( $this->callback( function ( $headerName ) {
 				return strtolower( $headerName ) === 'retry-after';
@@ -813,13 +805,14 @@ EOF;
 
 		$sparqlHelper = TestingAccessWrapper::newFromObject( new SparqlHelper(
 			self::getDefaultConfig(),
-			$this->createMock( RdfVocabulary::class ),
+			$this->getRdfVocabulary(),
+			$this->createMock( ValueSnakRdfBuilderFactory::class ),
 			$this->createMock( EntityIdParser::class ),
 			$this->createMock( PropertyDataTypeLookup::class ),
 			WANObjectCache::newEmpty(),
 			$this->createMock( ViolationMessageSerializer::class ),
 			$this->createMock( ViolationMessageDeserializer::class ),
-			$this->createMock( IBufferingStatsdDataFactory::class ),
+			StatsFactory::newNull(),
 			$lock,
 			$loggingHelper,
 			'',
@@ -834,7 +827,7 @@ EOF;
 		$fakeNow = 5000;
 		ConvertibleTimestamp::setFakeTime( $fakeNow );
 
-		$requestMock = $this->createMock( \MWHttpRequest::class );
+		$requestMock = $this->createMock( MWHttpRequest::class );
 		$requestMock->method( 'getStatus' )
 			->willReturn( 429 );
 		$requestMock->method( 'getResponseHeaders' )
@@ -854,13 +847,14 @@ EOF;
 
 		$sparqlHelper = TestingAccessWrapper::newFromObject( new SparqlHelper(
 			$config,
-			$this->createMock( RdfVocabulary::class ),
+			$this->getRdfVocabulary(),
+			$this->createMock( ValueSnakRdfBuilderFactory::class ),
 			$this->createMock( EntityIdParser::class ),
 			$this->createMock( PropertyDataTypeLookup::class ),
 			WANObjectCache::newEmpty(),
 			$this->createMock( ViolationMessageSerializer::class ),
 			$this->createMock( ViolationMessageDeserializer::class ),
-			$this->createMock( IBufferingStatsdDataFactory::class ),
+			StatsFactory::newNull(),
 			$this->getMockLock( SparqlHelper::EXPIRY_LOCK_ID, $expectedTimestamp ),
 			$loggingHelper,
 			'',
@@ -876,7 +870,7 @@ EOF;
 		$lock->method( 'isLocked' )
 			->willReturn( true );
 
-		$requestMock = $this->createMock( \MWHttpRequest::class );
+		$requestMock = $this->createMock( MWHttpRequest::class );
 		$requestMock->expects( $this->never() )
 			->method( 'execute' );
 
@@ -886,13 +880,14 @@ EOF;
 
 		$sparqlHelper = TestingAccessWrapper::newFromObject( new SparqlHelper(
 			self::getDefaultConfig(),
-			$this->createMock( RdfVocabulary::class ),
+			$this->getRdfVocabulary(),
+			$this->createMock( ValueSnakRdfBuilderFactory::class ),
 			$this->createMock( EntityIdParser::class ),
 			$this->createMock( PropertyDataTypeLookup::class ),
 			WANObjectCache::newEmpty(),
 			$this->createMock( ViolationMessageSerializer::class ),
 			$this->createMock( ViolationMessageDeserializer::class ),
-			$this->createMock( IBufferingStatsdDataFactory::class ),
+			StatsFactory::newNull(),
 			$lock,
 			$this->createMock( LoggingHelper::class ),
 			'',
@@ -919,13 +914,14 @@ EOF;
 
 		$sparqlHelper = TestingAccessWrapper::newFromObject( new SparqlHelper(
 			$config,
-			$this->createMock( RdfVocabulary::class ),
+			$this->getRdfVocabulary(),
+			$this->createMock( ValueSnakRdfBuilderFactory::class ),
 			$this->createMock( EntityIdParser::class ),
 			$this->createMock( PropertyDataTypeLookup::class ),
 			WANObjectCache::newEmpty(),
 			$this->createMock( ViolationMessageSerializer::class ),
 			$this->createMock( ViolationMessageDeserializer::class ),
-			$this->createMock( IBufferingStatsdDataFactory::class ),
+			StatsFactory::newNull(),
 			$lock,
 			$loggingHelper,
 			'',
@@ -953,7 +949,7 @@ EOF;
 	}
 
 	private function getMock429RequestFactory( $requestHeaders = [] ) {
-		$requestMock = $this->createMock( \MWHttpRequest::class );
+		$requestMock = $this->createMock( MWHttpRequest::class );
 
 		$requestMock->method( 'getStatus' )
 			->willReturn( 429 );
@@ -988,7 +984,7 @@ EOF;
 		$lock->method( 'isLocked' )
 			->willReturn( false );
 
-		$request = $this->createMock( \MWHttpRequest::class );
+		$request = $this->createMock( MWHttpRequest::class );
 		$request->method( 'getStatus' )
 			->willReturn( 200 );
 		$request->method( 'getResponseHeaders' )
@@ -1009,11 +1005,11 @@ EOF;
 					$expectedPrefix = <<<END
 #wbqc
 PREFIX wd: <http://wiki/entity/>
-PREFIX wds: <http://wiki/entity/statement/>
 PREFIX wdv: <http://wiki/value/>
 PREFIX wdt: <http://wiki/prop/direct/>
 PREFIX p: <http://wiki/prop/>
 PREFIX ps: <http://wiki/prop/statement/>
+PREFIX psv: <http://wiki/prop/statement/value/>
 PREFIX pq: <http://wiki/prop/qualifier/>
 PREFIX pqv: <http://wiki/prop/qualifier/value/>
 PREFIX pr: <http://wiki/prop/reference/>
@@ -1054,12 +1050,13 @@ END;
 		$sparqlHelper = TestingAccessWrapper::newFromObject( new SparqlHelper(
 			self::getDefaultConfig(),
 			$rdfVocabulary,
+			$this->createMock( ValueSnakRdfBuilderFactory::class ),
 			$this->createMock( EntityIdParser::class ),
 			$this->createMock( PropertyDataTypeLookup::class ),
 			WANObjectCache::newEmpty(),
 			$this->createMock( ViolationMessageSerializer::class ),
 			$this->createMock( ViolationMessageDeserializer::class ),
-			$this->createMock( IBufferingStatsdDataFactory::class ),
+			StatsFactory::newNull(),
 			$lock,
 			$this->createMock( LoggingHelper::class ),
 			'',
@@ -1083,7 +1080,7 @@ END;
 	}
 
 	public function testRunQueryTracksError_http(): void {
-		$request = $this->createMock( \MWHttpRequest::class );
+		$request = $this->createMock( MWHttpRequest::class );
 		$request->method( 'getStatus' )
 			->willReturn( 500 );
 		$request->method( 'getResponseHeaders' )
@@ -1097,17 +1094,19 @@ END;
 		$requestFactory->method( 'create' )
 			->willReturn( $request );
 
-		$dataFactory = new BufferingStatsdDataFactory( '' );
+		$statsHelper = StatsFactory::newUnitTestingHelper();
+		$statsFactory = $statsHelper->getStatsFactory();
 
 		$sparqlHelper = TestingAccessWrapper::newFromObject( new SparqlHelper(
 			self::getDefaultConfig(),
-			$this->createMock( RdfVocabulary::class ),
+			$this->getRdfVocabulary(),
+			$this->createMock( ValueSnakRdfBuilderFactory::class ),
 			$this->createMock( EntityIdParser::class ),
 			$this->createMock( PropertyDataTypeLookup::class ),
 			WANObjectCache::newEmpty(),
 			$this->createMock( ViolationMessageSerializer::class ),
 			$this->createMock( ViolationMessageDeserializer::class ),
-			$dataFactory,
+			$statsFactory,
 			new ExpiryLock( new HashBagOStuff() ),
 			$this->createMock( LoggingHelper::class ),
 			'',
@@ -1118,22 +1117,16 @@ END;
 			$sparqlHelper->runQuery( 'query', self::getDefaultConfig()->get( 'WBQualityConstraintsSparqlEndpoint' ) );
 			$this->fail( 'should have thrown' );
 		} catch ( SparqlHelperException $e ) {
-			$statsdData = $dataFactory->getData();
-			// three data events: timing (ignored here), HTTP error, generic error
-			$this->assertCount( 3, $statsdData );
-			$this->assertSame(
-				'wikibase.quality.constraints.sparql.error.http.500',
-				$statsdData[1]->getKey()
-			);
-			$this->assertSame(
-				'wikibase.quality.constraints.sparql.error',
-				$statsdData[2]->getKey()
-			);
+			// two data events: timing (ignored here) and HTTP error
+			$this->assertCount( 2, $statsHelper->getAllFormatted() );
+			$this->assertSame( 1, $statsHelper->count( 'sparql_error_total' ) );
+			// TODO: Add type="http" to the selector when statsHelper selector method is fixed.
+			$this->assertSame( 1, $statsHelper->count( 'sparql_error_total{code="500"}' ) );
 		}
 	}
 
 	public function testRunQueryTracksError_json(): void {
-		$request = $this->createMock( \MWHttpRequest::class );
+		$request = $this->createMock( MWHttpRequest::class );
 		$request->method( 'getStatus' )
 			->willReturn( 200 );
 		$request->method( 'getResponseHeaders' )
@@ -1147,17 +1140,19 @@ END;
 		$requestFactory->method( 'create' )
 			->willReturn( $request );
 
-		$dataFactory = new BufferingStatsdDataFactory( '' );
+		$statsHelper = StatsFactory::newUnitTestingHelper();
+		$statsFactory = $statsHelper->getStatsFactory();
 
 		$sparqlHelper = TestingAccessWrapper::newFromObject( new SparqlHelper(
 			self::getDefaultConfig(),
-			$this->createMock( RdfVocabulary::class ),
+			$this->getRdfVocabulary(),
+			$this->createMock( ValueSnakRdfBuilderFactory::class ),
 			$this->createMock( EntityIdParser::class ),
 			$this->createMock( PropertyDataTypeLookup::class ),
 			WANObjectCache::newEmpty(),
 			$this->createMock( ViolationMessageSerializer::class ),
 			$this->createMock( ViolationMessageDeserializer::class ),
-			$dataFactory,
+			$statsFactory,
 			new ExpiryLock( new HashBagOStuff() ),
 			$this->createMock( LoggingHelper::class ),
 			'',
@@ -1168,17 +1163,11 @@ END;
 			$sparqlHelper->runQuery( 'query', self::getDefaultConfig()->get( 'WBQualityConstraintsSparqlEndpoint' ) );
 			$this->fail( 'should have thrown' );
 		} catch ( SparqlHelperException $e ) {
-			$statsdData = $dataFactory->getData();
-			// three data events: timing (ignored here), JSON error, generic error
-			$this->assertCount( 3, $statsdData );
-			$this->assertSame(
-				'wikibase.quality.constraints.sparql.error.json.json_error_syntax',
-				$statsdData[1]->getKey()
-			);
-			$this->assertSame(
-				'wikibase.quality.constraints.sparql.error',
-				$statsdData[2]->getKey()
-			);
+			// two data events: timing (ignored here) and HTTP error
+			$this->assertCount( 2, $statsHelper->getAllFormatted() );
+			$this->assertSame( 1, $statsHelper->count( 'sparql_error_total' ) );
+			// TODO: Add type="json" to the selector when statsHelper selector method is fixed.
+			$this->assertSame( 1, $statsHelper->count( 'sparql_error_total{code="json_error_syntax"}' ) );
 		}
 	}
 

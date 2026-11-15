@@ -5,8 +5,8 @@ namespace MediaWiki\Extension\MediaSearch;
 use InvalidArgumentException;
 use MediaWiki\Config\Config;
 use MediaWiki\Config\ConfigException;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\MediaWikiServices;
-use MessageLocalizer;
 use Wikibase\Search\Elastic\Query\HasLicenseFeature;
 
 /**
@@ -58,28 +58,11 @@ class SearchOptions {
 		self::NAMESPACES_CUSTOM
 	];
 
-	/** @var MessageLocalizer */
-	private $context;
-
-	/** @var Config|null */
-	private $mainConfig;
-
-	/** @var Config|null */
-	private $searchConfig;
-
-	/**
-	 * @param MessageLocalizer $context
-	 * @param Config|null $mainConfig
-	 * @param Config|null $searchConfig
-	 */
 	public function __construct(
-		MessageLocalizer $context,
-		?Config $mainConfig = null,
-		?Config $searchConfig = null
+		private readonly MessageLocalizer $context,
+		private readonly ?Config $mainConfig = null,
+		private readonly ?Config $searchConfig = null,
 	) {
-		$this->context = $context;
-		$this->mainConfig = $mainConfig;
-		$this->searchConfig = $searchConfig;
 	}
 
 	/**
@@ -91,13 +74,13 @@ class SearchOptions {
 
 		try {
 			$mainConfig = $configFactory->makeConfig( 'main' );
-		} catch ( ConfigException $e ) {
+		} catch ( ConfigException ) {
 			$mainConfig = null;
 		}
 
 		try {
 			$searchConfig = $configFactory->makeConfig( 'WikibaseCirrusSearch' );
-		} catch ( ConfigException $e ) {
+		} catch ( ConfigException ) {
 			$searchConfig = null;
 		}
 
@@ -168,7 +151,6 @@ class SearchOptions {
 					'value' => '<500'
 				],
 				[
-					// phpcs:ignore Generic.Files.LineLength.TooLong
 					'label' => $this->context->msg( 'mediasearch-filter-size-medium' )->text(),
 					'value' => '500,1000'
 				],
@@ -198,7 +180,6 @@ class SearchOptions {
 			case static::TYPE_IMAGE:
 				return [ 'items' => [
 					[
-						// phpcs:ignore Generic.Files.LineLength.TooLong
 						'label' => $this->context->msg( 'mediasearch-filter-file-type-unset' )->text(),
 						'value' => ''
 					],
@@ -234,7 +215,6 @@ class SearchOptions {
 			case static::TYPE_AUDIO:
 				return [ 'items' => [
 					[
-						// phpcs:ignore Generic.Files.LineLength.TooLong
 						'label' => $this->context->msg( 'mediasearch-filter-file-type-unset' )->text(),
 						'value' => ''
 					],
@@ -262,7 +242,6 @@ class SearchOptions {
 			case static::TYPE_VIDEO:
 				return [ 'items' => [
 					[
-						// phpcs:ignore Generic.Files.LineLength.TooLong
 						'label' => $this->context->msg( 'mediasearch-filter-file-type-unset' )->text(),
 						'value' => ''
 					],
@@ -282,7 +261,6 @@ class SearchOptions {
 			case static::TYPE_OTHER:
 				return [ 'items' => [
 					[
-						// phpcs:ignore Generic.Files.LineLength.TooLong
 						'label' => $this->context->msg( 'mediasearch-filter-file-type-unset' )->text(),
 						'value' => ''
 					],
@@ -462,22 +440,18 @@ class SearchOptions {
 		if ( $type === static::TYPE_PAGE ) {
 			$filterItems = [
 				[
-					// phpcs:ignore Generic.Files.LineLength.TooLong
 					'label' => $this->context->msg( 'mediasearch-filter-namespace-all' )->text(),
 					'value' => static::NAMESPACES_ALL
 				],
 				[
-					// phpcs:ignore Generic.Files.LineLength.TooLong
 					'label' => $this->context->msg( 'mediasearch-filter-namespace-discussion' )->text(),
 					'value' => static::NAMESPACES_DISCUSSION
 				],
 				[
-					// phpcs:ignore Generic.Files.LineLength.TooLong
 					'label' => $this->context->msg( 'mediasearch-filter-namespace-help' )->text(),
 					'value' => static::NAMESPACES_HELP
 				],
 				[
-					// phpcs:ignore Generic.Files.LineLength.TooLong
 					'label' => $this->context->msg( 'mediasearch-filter-namespace-custom' )->text(),
 					'value' => static::NAMESPACES_CUSTOM
 				],

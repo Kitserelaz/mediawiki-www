@@ -2,6 +2,7 @@
 	"@metadata": {
 		"authors": [
 			"Arthur2e5",
+			"Cookai1205",
 			"Hasley",
 			"Kly",
 			"SunAfterRain"
@@ -52,9 +53,10 @@
 	"globalwatchlist-notify-settingssaved": "已儲存您的設定。[[Special:GlobalWatchlist|返回到全域監視清單]]。",
 	"globalwatchlist-option-confirmallsites": "標記所有網站為已看過之前，需要確認",
 	"globalwatchlist-option-fastmode": "載入速度更快，但細節較少",
-	"globalwatchlist-option-grouppage": "按頁面區分的結果",
+	"globalwatchlist-option-grouppage": "按頁面分組結果",
 	"globalwatchlist-option-live": "即時更新",
 	"globalwatchlist-otheroptions": "其它設定",
+	"globalwatchlist-permalink": "固定連結",
 	"globalwatchlist-prefs-settings": "要設定用於全域監視清單的偏好選項，請參訪 [[Special:GlobalWatchlistSettings]]。",
 	"globalwatchlist-refresh": "重新整理",
 	"globalwatchlist-remove": "移除",
@@ -73,7 +75,7 @@
 	"globalwatchlist-show-logentries": "顯示日誌項目",
 	"globalwatchlist-show-newpages": "顯示新建立頁面",
 	"globalwatchlist-sitelist": "使用者定義網站清單",
-	"globalwatchlist-tags": "{{PLURAL:$1|標籤}}：$2",
+	"globalwatchlist-tags": "<bdi>{{PLURAL:$1|標籤}}</bdi>：$2",
 	"globalwatchlist-tour-addsite": "新增站台",
 	"globalwatchlist-tour-addsite-description": "在上方點擊來為站台新增一行。",
 	"globalwatchlist-tour-fastmode": "快速模式",

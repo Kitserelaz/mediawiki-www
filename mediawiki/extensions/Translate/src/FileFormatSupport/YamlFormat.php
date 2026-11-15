@@ -72,7 +72,7 @@ class YamlFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 
 		$messages = [];
 
-		$collection->filter( 'hastranslation', false );
+		$collection->filter( MessageCollection::FILTER_HAS_TRANSLATION, MessageCollection::INCLUDE_MATCHING );
 		/** @var Message $m */
 		foreach ( $collection as $key => $m ) {
 			$key = $mangler->unmangle( $key );
@@ -115,7 +115,7 @@ class YamlFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 		$output = "# Messages for $name ($native)\n";
 		$output .= "# Exported from $wgSitename\n";
 
-		if ( isset( $wgTranslateYamlLibrary ) ) {
+		if ( $wgTranslateYamlLibrary !== null ) {
 			$output .= "# Export driver: $wgTranslateYamlLibrary\n";
 		}
 

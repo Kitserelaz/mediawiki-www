@@ -16,9 +16,7 @@
  * @param {ve.dm.Model} [model] Model the item is related to
  * @param {Object} [config] Configuration options
  */
-ve.ui.LinearContextItem = function VeUiLinearContextItem( context, model, config ) {
-	config = config || {};
-
+ve.ui.LinearContextItem = function VeUiLinearContextItem( context, model, config = {} ) {
 	// Parent constructor
 	ve.ui.LinearContextItem.super.apply( this, arguments );
 
@@ -88,7 +86,7 @@ ve.ui.LinearContextItem = function VeUiLinearContextItem( context, model, config
 /* Inheritance */
 
 OO.inheritClass( ve.ui.LinearContextItem, ve.ui.ContextItem );
-OO.mixinClass( ve.ui.ContextItem, OO.ui.mixin.PendingElement );
+OO.mixinClass( ve.ui.LinearContextItem, OO.ui.mixin.PendingElement );
 
 /* Static Properties */
 

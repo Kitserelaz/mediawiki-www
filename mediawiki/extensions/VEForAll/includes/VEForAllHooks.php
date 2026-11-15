@@ -3,35 +3,17 @@
 namespace VEForAll;
 
 use ExtensionRegistry;
-use FatalError;
 use MediaWiki\MediaWikiServices;
-use MWException;
 use OutputPage;
 use Skin;
 
 class VEForAllHooks {
 
-	public static function registerClasses() {
-		global $wgAutoloadClasses, $wgAPIModules;
-		if ( class_exists( 'MediaWiki\Parser\Parsoid\ParsoidParserFactory' ) ) {
-			// MW 1.41+
-			$wgAutoloadClasses['VEForAll\\ApiParsoidUtils'] = __DIR__ . '/ApiParsoidUtils.php';
-			$wgAPIModules['veforall-parsoid-utils'] = 'VEForAll\\ApiParsoidUtils';
-		} elseif ( trait_exists( 'MediaWiki\Extension\VisualEditor\ApiParsoidTrait' ) ) {
-			// MW 1.39-1.40
-			$wgAutoloadClasses['VEForAll\\ApiParsoidUtilsOld'] = __DIR__ . '/ApiParsoidUtilsOld.php';
-			$wgAPIModules['veforall-parsoid-utils'] = 'VEForAll\\ApiParsoidUtilsOld';
-		} else {
-			// MW < 1.39
-			$wgAutoloadClasses['VEForAll\\ApiParsoidUtilsOld2'] = __DIR__ . '/ApiParsoidUtilsOld2.php';
-			$wgAPIModules['veforall-parsoid-utils'] = 'VEForAll\\ApiParsoidUtilsOld2';
-		}
-	}
-
 	/** @var array[] */
 	private static $defaultConfig = [
 		'normal' => [
 			[
+				'name' => 'paragraph-format',
 				'header' => 'visualeditor-toolbar-paragraph-format',
 				'title' => 'visualeditor-toolbar-format-tooltip',
 				'type' => 'menu',
@@ -47,6 +29,7 @@ class VEForAllHooks {
 				]
 			],
 			[
+				'name' => 'text-style',
 				'header' => 'visualeditor-toolbar-text-style',
 				'title' => 'visualeditor-toolbar-style-tooltip',
 				'include' => [
@@ -56,11 +39,13 @@ class VEForAllHooks {
 				]
 			],
 			[
+				'name' => 'links',
 				'include' => [
 					'link'
 				]
 			],
 			[
+				'name' => 'structure',
 				'header' => 'visualeditor-toolbar-structure',
 				'title' => 'visualeditor-toolbar-structure',
 				'type' => 'list',
@@ -74,6 +59,7 @@ class VEForAllHooks {
 				]
 			],
 			[
+				'name' => 'insert',
 				'header' => 'visualeditor-toolbar-insert',
 				'title' => 'visualeditor-toolbar-insert',
 				'type' => 'list',
@@ -93,6 +79,7 @@ class VEForAllHooks {
 		],
 		'wide' => [
 			[
+				'name' => 'paragraph-format',
 				'header' => 'visualeditor-toolbar-paragraph-format',
 				'title' => 'visualeditor-toolbar-format-tooltip',
 				'type' => 'menu',
@@ -108,6 +95,7 @@ class VEForAllHooks {
 				]
 			],
 			[
+				'name' => 'text-style',
 				'header' => 'visualeditor-toolbar-text-style',
 				'title' => 'visualeditor-toolbar-style-tooltip',
 				'include' => [
@@ -117,11 +105,13 @@ class VEForAllHooks {
 				]
 			],
 			[
+				'name' => 'links',
 				'include' => [
 					'link'
 				]
 			],
 			[
+				'name' => 'structure',
 				'header' => 'visualeditor-toolbar-structure',
 				'title' => 'visualeditor-toolbar-structure',
 				'type' => 'list',
@@ -135,6 +125,7 @@ class VEForAllHooks {
 				]
 			],
 			[
+				'name' => 'insert',
 				'header' => 'visualeditor-toolbar-insert',
 				'title' => 'visualeditor-toolbar-insert',
 				'type' => 'list',
@@ -158,7 +149,6 @@ class VEForAllHooks {
 	/**
 	 * Implements BeforePageDisplay hook.
 	 * See https://www.mediawiki.org/wiki/Manual:Hooks/BeforePageDisplay
-	 * Initializes variables to be passed to JavaScript.
 	 *
 	 * @param OutputPage $output OutputPage object
 	 * @param Skin $skin Skin object that will be used to generate the page
@@ -174,13 +164,6 @@ class VEForAllHooks {
 				'ext.veforall.core.desktop'
 			] );
 		}
-
-		$user = $output->getUser();
-		$userOptionsLookup = MediaWikiServices::getInstance()->getUserOptionsLookup();
-		$vars = [
-			'VisualEditorEnable' => $userOptionsLookup->getOption( $user, 'visualeditor-enable' )
-		];
-		$output->addJSConfigVars( 'VEForAll', $vars );
 	}
 
 	/**

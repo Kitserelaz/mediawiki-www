@@ -1,14 +1,13 @@
 'use strict';
 
-var ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget,
-	AbstractInputWidget = require( './AbstractInputWidget.js' ),
-	UnsupportedInputWidget;
+const ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget,
+	AbstractInputWidget = require( './AbstractInputWidget.js' );
 
 /**
  * @param {Object} config Configuration options
  * @param {boolean} [config.isQualifier]
  */
-UnsupportedInputWidget = function MediaInfoStatementsUnsupportedInputWidget( config ) {
+const UnsupportedInputWidget = function MediaInfoStatementsUnsupportedInputWidget( config ) {
 	config = config || {};
 
 	this.state = {
@@ -65,13 +64,13 @@ UnsupportedInputWidget.prototype.getData = function () {
  * @inheritDoc
  */
 UnsupportedInputWidget.prototype.setData = function ( data ) {
-	var self = this;
+	const self = this;
 
 	if ( data.equals( this.state.data ) ) {
 		return $.Deferred().resolve( this.$element ).promise();
 	}
 
-	return this.setState( { data: data } ).then( function ( $element ) {
+	return this.setState( { data: data } ).then( ( $element ) => {
 		self.emit( 'change', self );
 		return $element;
 	} );

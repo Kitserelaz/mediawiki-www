@@ -4,9 +4,12 @@ declare( strict_types = 1 );
 
 namespace Maps;
 
-use Html;
+use Maps\Config\EffectiveSettings;
+use Maps\DataAccess\GeoJsonFetcherResult;
+use Maps\DataAccess\GeoJsonSources;
 use Maps\DataAccess\ImageRepository;
 use Maps\Map\MapData;
+use MediaWiki\Parser\Parser;
 use ParamProcessor\ParameterTypes;
 use ParamProcessor\ProcessingResult;
 
@@ -16,10 +19,37 @@ use ParamProcessor\ProcessingResult;
 class LeafletService implements MappingService {
 
 	private ImageRepository $imageFinder;
+	private EffectiveSettings $config;
+	private ?LeafletLayerDefinitions $layerDefinitions = null;
 	private array $addedDependencies = [];
 
-	public function __construct( ImageRepository $imageFinder ) {
+	public function __construct( ImageRepository $imageFinder, EffectiveSettings $config ) {
 		$this->imageFinder = $imageFinder;
+		$this->config = $config;
+	}
+
+	/**
+	 * @return array<string, bool>
+	 */
+	private function availableLayers(): array {
+		return $this->config->get( 'egMapsLeafletAvailableLayers' );
+	}
+
+	/**
+	 * @return array<string, bool>
+	 */
+	private function availableOverlays(): array {
+		return $this->config->get( 'egMapsLeafletAvailableOverlayLayers' );
+	}
+
+	/**
+	 * Built lazily and memoized so the MediaWiki:Maps config page is only read at parse time, never
+	 * during extension setup.
+	 */
+	private function getLayerDefinitions(): LeafletLayerDefinitions {
+		$this->layerDefinitions ??= new LeafletLayerDefinitions( $this->config->get( 'egMapsLeafletLayerDefinitions' ) );
+
+		return $this->layerDefinitions;
 	}
 
 	public function getName(): string {
@@ -43,7 +73,7 @@ class LeafletService implements MappingService {
 		$params['defzoom'] = [
 			'type' => ParameterTypes::INTEGER,
 			'range' => [ 0, 20 ],
-			'default' => self::getDefaultZoom(),
+			'default' => $this->getDefaultZoom(),
 			'message' => 'maps-leaflet-par-defzoom'
 		];
 
@@ -51,8 +81,8 @@ class LeafletService implements MappingService {
 			'aliases' => 'layer',
 			'type' => 'string',
 			'islist' => true,
-			'values' => array_keys( $GLOBALS['egMapsLeafletAvailableLayers'], true, true ),
-			'default' => $GLOBALS['egMapsLeafletLayers'],
+			'values' => $this->availableLayerNames( $this->availableLayers() ),
+			'default' => $this->config->get( 'egMapsLeafletLayers' ),
 			'message' => 'maps-leaflet-par-layers',
 		];
 
@@ -68,14 +98,14 @@ class LeafletService implements MappingService {
 			'aliases' => [ 'overlaylayers' ],
 			'type' => ParameterTypes::STRING,
 			'islist' => true,
-			'values' => array_keys( $GLOBALS['egMapsLeafletAvailableOverlayLayers'], true, true ),
-			'default' => $GLOBALS['egMapsLeafletOverlayLayers'],
+			'values' => $this->availableLayerNames( $this->availableOverlays() ),
+			'default' => $this->config->get( 'egMapsLeafletOverlayLayers' ),
 			'message' => 'maps-leaflet-par-overlaylayers',
 		];
 
 		$params['resizable'] = [
 			'type' => ParameterTypes::BOOLEAN,
-			'default' => $GLOBALS['egMapsResizableByDefault'],
+			'default' => $this->config->get( 'egMapsResizableByDefault' ),
 			'message' => 'maps-par-resizable'
 		];
 
@@ -112,6 +142,12 @@ class LeafletService implements MappingService {
 			'message' => 'maps-par-clusterzoomonclick',
 		];
 
+		$params['clusteranimate'] = [
+			'type' => ParameterTypes::BOOLEAN,
+			'default' => true,
+			'message' => 'maps-par-clusteranimate',
+		];
+
 		$params['clustermaxradius'] = [
 			'type' => ParameterTypes::INTEGER,
 			'default' => 80,
@@ -126,7 +162,10 @@ class LeafletService implements MappingService {
 
 		$params['geojson'] = [
 			'type' => ParameterTypes::STRING,
-			'default' => '',
+			'islist' => true,
+			// Not the default comma: commas are common in both GeoJson page titles and URLs.
+			'delimiter' => ';',
+			'default' => [],
 			'message' => 'maps-displaymap-par-geojson',
 		];
 
@@ -140,10 +179,28 @@ class LeafletService implements MappingService {
 	}
 
 	/**
+	 * The enabled stock layer names plus the names of the custom layer definitions, which are
+	 * valid values for both the layers and overlays parameters.
+	 *
+	 * @param array<string, bool> $availableStockLayers
+	 * @return string[]
+	 */
+	private function availableLayerNames( array $availableStockLayers ): array {
+		return array_values(
+			array_unique(
+				array_merge(
+					array_keys( $availableStockLayers, true, true ),
+					$this->getLayerDefinitions()->getLayerNames()
+				)
+			)
+		);
+	}
+
+	/**
 	 * @since 3.0
 	 */
 	public function getDefaultZoom() {
-		return $GLOBALS['egMapsLeafletZoom'];
+		return $this->config->get( 'egMapsLeafletZoom' );
 	}
 
 	public function newMapId(): string {
@@ -171,7 +228,7 @@ class LeafletService implements MappingService {
 			$modules[] = 'ext.maps.leaflet.fullscreen';
 		}
 
-		if ( array_key_exists( 'geojson', $params ) ) {
+		if ( isset( $params['GeoJsonSource'] ) ) {
 			$modules[] = 'ext.maps.leaflet.editor';
 		}
 
@@ -200,14 +257,15 @@ class LeafletService implements MappingService {
 	}
 
 	private function getLayerDependencies( array $params ) {
-		global $egMapsLeafletLayerDependencies, $egMapsLeafletAvailableLayers,
-			   $egMapsLeafletLayersApiKeys;
+		global $egMapsLeafletLayerDependencies, $egMapsLeafletLayersApiKeys;
+
+		$availableLayers = $this->availableLayers();
 
 		$layerDependencies = [];
 
 		foreach ( $params['layers'] as $layerName ) {
-			if ( array_key_exists( $layerName, $egMapsLeafletAvailableLayers )
-				&& $egMapsLeafletAvailableLayers[$layerName]
+			if ( array_key_exists( $layerName, $availableLayers )
+				&& $availableLayers[$layerName]
 				&& array_key_exists( $layerName, $egMapsLeafletLayersApiKeys )
 				&& array_key_exists( $layerName, $egMapsLeafletLayerDependencies ) ) {
 				$layerDependencies[] = '<script src="' . $egMapsLeafletLayerDependencies[$layerName] .
@@ -218,24 +276,92 @@ class LeafletService implements MappingService {
 		return array_unique( $layerDependencies );
 	}
 
-	public function newMapDataFromProcessingResult( ProcessingResult $processingResult ): MapData {
-		return $this->newMapDataFromParameters( $processingResult->getParameterArray() );
+	public function newMapDataFromProcessingResult( ProcessingResult $processingResult, Parser $parser ): MapData {
+		return $this->newMapDataFromParameters( $processingResult->getParameterArray(), $parser );
 	}
 
-	public function newMapDataFromParameters( array $params ): MapData {
-		if ( $params['geojson'] !== '' ) {
-			$fetcher = MapsFactory::globalInstance()->newGeoJsonFetcher();
+	public function newMapDataFromParameters( array $params, Parser $parser ): MapData {
+		if ( $params['geojson'] !== [] ) {
+			$sources = $this->fetchGeoJson( $params['geojson'], $parser );
 
-			$result = $fetcher->fetch( $params['geojson'] );
-
-			$params['geojson'] = $result->getContent();
-			$params['GeoJsonSource'] = $result->getTitleValue() === null ? null : $result->getTitleValue()->getText();
-			$params['GeoJsonRevisionId'] = $result->getRevisionId();
+			$params['geojson'] = $sources->getContents();
+			$params['GeoJsonSource'] = $sources->getEditablePageName();
+			$params['GeoJsonRevisionId'] = $sources->getEditableRevisionId();
 		}
 
 		$params['imageLayers'] = $this->getJsImageLayers( $params['image layers'] );
 
+		$params['overlays'] = $this->filterToAvailable(
+			$params['overlays'],
+			$this->availableWithDefinitions( $this->availableOverlays() )
+		);
+		$params['layers'] = $this->filterToAvailable(
+			$params['layers'],
+			$this->availableWithDefinitions( $this->availableLayers() )
+		);
+
+		$params = $this->addUsedLayerDefinitions( $params );
+
 		return new MapData( $params );
+	}
+
+	/**
+	 * @param string[] $sourceNames Page names in the GeoJson namespace or URLs
+	 */
+	private function fetchGeoJson( array $sourceNames, Parser $parser ): GeoJsonSources {
+		$fetcher = MapsFactory::globalInstance()->newGeoJsonFetcher( $parser );
+
+		return new GeoJsonSources(
+			array_map(
+				static fn ( string $sourceName ): GeoJsonFetcherResult => $fetcher->fetch( $sourceName ),
+				array_filter( $sourceNames, static fn ( string $sourceName ): bool => $sourceName !== '' )
+			)
+		);
+	}
+
+	/**
+	 * Removes values that are not enabled in the available-layers whitelist. ParamProcessor only
+	 * adds a non-fatal warning for such values rather than dropping them, so without this an editor
+	 * can inject arbitrary strings that end up as Leaflet layer-control labels.
+	 *
+	 * @param string[] $values
+	 * @param array<string, bool> $available
+	 * @return string[]
+	 */
+	private function filterToAvailable( array $values, array $available ): array {
+		return array_values(
+			array_filter(
+				$values,
+				static fn ( string $value ): bool => ( $available[$value] ?? false ) === true
+			)
+		);
+	}
+
+	/**
+	 * @param array<string, bool> $available
+	 * @return array<string, bool>
+	 */
+	private function availableWithDefinitions( array $available ): array {
+		// Union rather than array_merge: array_merge renumbers integer-like keys, which would drop
+		// a custom layer whose name is purely numeric (e.g. "1904"). Custom names go on the left so
+		// they take precedence over a same-named stock layer.
+		return array_fill_keys( $this->getLayerDefinitions()->getLayerNames(), true ) + $available;
+	}
+
+	/**
+	 * Serializes the custom layer definitions actually used by this map into the map data, so only
+	 * the relevant definitions are shipped to the client rather than the whole catalog.
+	 */
+	private function addUsedLayerDefinitions( array $params ): array {
+		$usedDefinitions = $this->getLayerDefinitions()->getDefinitions(
+			array_merge( $params['layers'], $params['overlays'] )
+		);
+
+		if ( $usedDefinitions !== [] ) {
+			$params['layerDefinitions'] = $usedDefinitions;
+		}
+
+		return $params;
 	}
 
 	private function getJsImageLayers( array $imageLayers ) {
@@ -244,7 +370,7 @@ class LeafletService implements MappingService {
 		foreach ( $imageLayers as $imageLayer ) {
 			$image = $this->imageFinder->getByName( $imageLayer );
 
-			if ( $image !== null ) {
+			if ( $image !== null && $image->getWidthInPx() > 0 ) {
 				$jsImageLayers[] = [
 					'name' => $imageLayer,
 					'url' => $image->getUrl(),

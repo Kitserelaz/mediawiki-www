@@ -2,7 +2,8 @@
 
 use MediaWiki\Extension\WikimediaIncubator\WikimediaIncubator;
 use MediaWiki\Language\Language;
-use MediaWiki\Languages\LanguageFactory;
+use MediaWiki\Language\LanguageFactory;
+use MediaWiki\Page\Article;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Title\Title;
 
@@ -41,14 +42,6 @@ class IncubatorUnitTest extends MediaWikiLangTestCase {
 				$testPage . ' is ' . ( $outcome ? 'prefixed' : 'unprefixed' )
 			);
 		}
-	}
-
-	public function testOnTitleIsAlwaysKnown() {
-		# Assuming default configuration (Wikipedia = Wp; fictional Wz)
-		$title = Title::newFromText( 'Wp/nl' );
-		$this->assertTrue( $title->isKnown() );
-		$title = Title::newFromText( 'Wz/nl' );
-		$this->assertFalse( $title->isKnown() );
 	}
 
 	public static function provideOnPageContentLanguage() {

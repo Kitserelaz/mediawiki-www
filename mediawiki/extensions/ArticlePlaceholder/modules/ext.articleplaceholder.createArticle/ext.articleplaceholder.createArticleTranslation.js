@@ -4,7 +4,7 @@
  * @author Jonas M. Kress
  */
 
-( function ( $, mw, OO, module ) {
+( function () {
 	'use strict';
 
 	var CreateArticleDialog = module.exports.CreateArticleDialog;
@@ -47,6 +47,7 @@
 		}
 
 		mw.track( 'counter.MediaWiki.wikibase.articleplaceholder.button.translateArticle' );
+		mw.track( 'stats.mediawiki_articleplaceholder_translatearticle_submit_total' );
 
 		return mw.loader.using( 'mw.cx.SiteMapper' ).then( function () {
 			var siteMapper = new mw.cx.SiteMapper(),
@@ -54,7 +55,8 @@
 					mw.config.get( 'apPageNames' )[ self.languageInput.getValue() ],
 					self.titleInput.getValue(),
 					self.languageInput.getValue(),
-					mw.config.get( 'wgContentLanguage' )
+					mw.config.get( 'wgContentLanguage' ),
+					{ campaign: 'articleplaceholder' }
 				);
 
 			self.forwardTo( url );
@@ -149,4 +151,4 @@
 
 	module.exports.CreateArticleTranslationDialog = CreateArticleTranslationDialog;
 
-}( jQuery, mediaWiki, OO, module ) );
+}() );

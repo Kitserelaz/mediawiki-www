@@ -4,7 +4,6 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\MessageBundleTranslation;
 
 use InvalidArgumentException;
-use JobQueueGroup;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\RevTagStore;
@@ -13,7 +12,8 @@ use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundleStore
 use MediaWiki\Extension\Translate\MessageLoading\MessageIndex;
 use MediaWiki\Extension\Translate\MessageLoading\RebuildMessageIndexJob;
 use MediaWiki\Extension\Translate\MessageProcessing\MessageGroupMetadata;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Message\Message;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Specials\SpecialPageLanguage;
@@ -26,28 +26,18 @@ use MediaWiki\Title\Title;
  * @license GPL-2.0-or-later
  */
 class MessageBundleStore implements TranslatableBundleStore {
-	private RevTagStore $revTagStore;
-	private JobQueueGroup $jobQueue;
-	private LanguageNameUtils $languageNameUtils;
-	private MessageIndex $messageIndex;
-	private MessageGroupMetadata $messageGroupMetadata;
 	private const METADATA_KEYS_DB = [
 		'priorityforce',
 		'prioritylangs'
 	];
 
 	public function __construct(
-		RevTagStore $revTagStore,
-		JobQueueGroup $jobQueue,
-		LanguageNameUtils $languageNameUtils,
-		MessageIndex $messageIndex,
-		MessageGroupMetadata $messageGroupMetadata
+		private readonly RevTagStore $revTagStore,
+		private readonly JobQueueGroup $jobQueue,
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly MessageIndex $messageIndex,
+		private readonly MessageGroupMetadata $messageGroupMetadata,
 	) {
-		$this->revTagStore = $revTagStore;
-		$this->jobQueue = $jobQueue;
-		$this->languageNameUtils = $languageNameUtils;
-		$this->messageIndex = $messageIndex;
-		$this->messageGroupMetadata = $messageGroupMetadata;
 	}
 
 	public function move( Title $oldName, Title $newName ): void {
@@ -94,6 +84,7 @@ class MessageBundleStore implements TranslatableBundleStore {
 		$this->jobQueue->push( RebuildMessageIndexJob::newJob( __METHOD__ ) );
 	}
 
+	/** @throws MalformedBundle */
 	public function validate( Title $pageTitle, MessageBundleContent $content ): void {
 		$content->validate();
 		// Verify that the language code is valid
@@ -159,17 +150,19 @@ class MessageBundleStore implements TranslatableBundleStore {
 
 			$this->jobQueue->push( $job );
 
-			// A new message bundle, set the source language.
-			$definedLanguageCode = $content->getMetadata()->getSourceLanguageCode();
-			$pageLanguageCode = $pageTitle->getPageLanguage()->getCode();
+			$metadata = $content->getMetadata();
+
 			if ( $previousRevisionId === null ) {
-				if ( $definedLanguageCode !== $pageLanguageCode ) {
+				// A new message bundle, set the source language.
+				$definedLanguageCode = $metadata->getSourceLanguageCode();
+				$pageLanguageCode = $pageTitle->getPageLanguage()->getCode();
+				if ( $definedLanguageCode !== null && $definedLanguageCode !== $pageLanguageCode ) {
 					$context = RequestContext::getMain();
 					SpecialPageLanguage::changePageLanguage(
 						$context,
 						$pageTitle,
 						$definedLanguageCode,
-						wfMessage( 'translate-messagebundle-change-sourcelanguage' )->inContentLanguage()
+						$context->msg( 'translate-messagebundle-change-sourcelanguage' )->inContentLanguage()->text()
 					);
 				}
 			}
@@ -178,7 +171,6 @@ class MessageBundleStore implements TranslatableBundleStore {
 			$messageBundle = new MessageBundle( $pageTitle );
 			$groupId = $messageBundle->getMessageGroupId();
 
-			$metadata = $content->getMetadata();
 			$priorityForce = $metadata->areOnlyPriorityLanguagesAllowed() ? 'on' : false;
 			$priorityLanguages = $metadata->getPriorityLanguages();
 			$priorityLanguages = $priorityLanguages ? implode( ',', $priorityLanguages ) : false;

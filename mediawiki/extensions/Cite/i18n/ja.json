@@ -22,7 +22,8 @@
 			"Yusuke1109",
 			"春春眠眠",
 			"Cookie4782",
-			"Likibp"
+			"Likibp",
+			"Waki285"
 		]
 	},
 	"cite-desc": "引用のためのタグ <code>&lt;ref&gt;</code> および <code>&lt;references/&gt;</code> を追加する",
@@ -88,6 +89,5 @@
 	"cite-configuration-backlink-marker-label": "バックリンクの記号を設定",
 	"cite-configuration-backlink-marker-description": "以下の文字は、ウィキのバックリンクに使用されます。",
 	"cite-configuration-backlink-marker-help": "カスタム文字セットを、各文字の間にスペースを入れて入力してください。入力する文字は全部でXX個にしてください",
-	"cite-configuration-submit": "変更を保存",
-	"cite-tracking-category-ref-extends-desc": "&lt;ref&gt;タグの\"extends\"属性により、補参照（脚注の入れ子）を使用しているページ"
+	"cite-configuration-submit": "変更を保存"
 }

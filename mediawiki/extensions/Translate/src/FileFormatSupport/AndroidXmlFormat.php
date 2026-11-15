@@ -81,7 +81,7 @@ class AndroidXmlFormat extends SimpleFormat {
 		}
 
 		$authors = $matches = [];
-		preg_match_all( '~\* (.*)~', $match[ 1 ], $matches );
+		preg_match_all( '~\* (.*)~', $match[1], $matches );
 		foreach ( $matches[1] as $author ) {
 			$authors[] = str_replace( "\u{2011}\u{2011}", '--', $author );
 		}
@@ -140,7 +140,7 @@ class AndroidXmlFormat extends SimpleFormat {
 	protected function writeReal( MessageCollection $collection ): string {
 		global $wgTranslateDocumentationLanguageCode;
 
-		$collection->filter( 'hastranslation', false );
+		$collection->filter( MessageCollection::FILTER_HAS_TRANSLATION, MessageCollection::INCLUDE_MATCHING );
 		if ( count( $collection ) === 0 ) {
 			return '';
 		}

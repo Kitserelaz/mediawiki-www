@@ -245,7 +245,7 @@
 	"group-push-subscription-manager-member": "{{GENDER:$1|menedžer push-podpisok}}",
 	"grouppage-push-subscription-manager": "{{ns:project}}:Menedžeri push-podpisok",
 	"notification-subject-email-verify-email-reminder": "Potvrdite {{GENDER:$1|svoj}} e-poštny adres",
-	"notification-header-verify-email-reminder": "Prosimo, <strong>potvrdite {{GENDER:$1|svoj}} e-poštny adres</strong>, da byhmo znali, že e-poštny adres v {{GENDER:$1|vašem}} koristničskom kontu zaisto jest {{GENDER:$1|vaš}}.",
+	"notification-header-verify-email-reminder": "Zdravo, $2!\nProsimo, <strong>potvrdite {{GENDER:$1|svoj}} e-poštny adres</strong>, da byhmo znali, že e-poštny adres v {{GENDER:$1|vašem}} koristničskom kontu zaisto jest {{GENDER:$1|vaš}}.",
 	"notification-link-text-verify-email-reminder": "Upravjenje nastavjenjami za e-poštu",
 	"notification-verify-email-reminder-link-label": "Potvrdženje e-poštnogo adresa"
 }

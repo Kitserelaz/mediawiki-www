@@ -4,9 +4,9 @@ namespace CirrusSearch;
 
 use CirrusSearch\Job\DeleteArchive;
 use CirrusSearch\Job\IndexArchive;
-use JobQueueGroup;
-use ManualLogEntry;
 use MediaWiki\Config\ConfigFactory;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Page\Hook\PageDeleteCompleteHook;
 use MediaWiki\Page\Hook\PageUndeleteCompleteHook;
 use MediaWiki\Page\ProperPageIdentity;
@@ -71,7 +71,7 @@ class ArchiveChangeListener implements PageDeleteCompleteHook, PageUndeleteCompl
 			IndexArchive::build(
 				$title,
 				$this->searchConfig->makeId( $pageID ),
-				$logEntry->getTimestamp() !== false ? MWTimestamp::convert( TS_UNIX, $logEntry->getTimestamp() ) : MWTimestamp::time()
+				$logEntry->getTimestamp() !== false ? (int)MWTimestamp::convert( TS_UNIX, $logEntry->getTimestamp() ) : MWTimestamp::time()
 			)
 		);
 	}

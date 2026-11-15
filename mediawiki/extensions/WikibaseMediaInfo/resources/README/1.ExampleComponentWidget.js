@@ -1,7 +1,6 @@
 'use strict';
 
-var ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget,
-	ExampleComponentWidget;
+const ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget;
 
 /**
  * This is an example ComponentWidget implementation, to show
@@ -34,7 +33,7 @@ var ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget,
  * @constructor
  * @param {Object} config
  */
-ExampleComponentWidget = function ExampleComponentWidgetConstructor( config ) {
+const ExampleComponentWidget = function ExampleComponentWidgetConstructor( config ) {
 	config = config || {};
 
 	ExampleComponentWidget.super.call( this, config );
@@ -155,7 +154,7 @@ ExampleComponentWidget.prototype.setEditing = function ( editing ) {
 	// we can update the internal state of the element with a simple call
 	// to `this.setState`, where we provide an object with *only the data
 	// that has changed*, and it'll be merged into the existing state:
-	var promise = this.setState( { editing: editing } );
+	let promise = this.setState( { editing: editing } );
 	// above will update `this.state` by only overwriting
 	// `this.state.editing` - other keys in state will remain untouched
 
@@ -164,11 +163,11 @@ ExampleComponentWidget.prototype.setEditing = function ( editing ) {
 	// it not to)
 	// if the new state has not changed, no rerender will happen...
 
-	promise = promise.then( function ( $element ) {
-		// `this.setState` returns a promise that doesn't resolve until
-		// `render` is complete and the DOM has been updated (or even
-		// when it didn't have to rerender, in which case it'll resolve
-		// right away with the existing DOM)
+	promise = promise.then(
+	// `this.setState` returns a promise that doesn't resolve until
+	// `render` is complete and the DOM has been updated (or even
+	// when it didn't have to rerender, in which case it'll resolve
+	// right away with the existing DOM)
 
 		// this is useful to synchronize changes, e.g.
 		// - wait until rendering has completed before emitting the relevant events
@@ -177,8 +176,8 @@ ExampleComponentWidget.prototype.setEditing = function ( editing ) {
 		// and the setState promise callback argument will always include
 		// the post-render DOM node `$element`, which is an up-to-date
 		// DOM representation of that new state
-		return $element;
-	} );
+		( $element ) => $element
+	);
 
 	return promise;
 };

@@ -3,14 +3,15 @@
 namespace MediaWiki\Extension\SecurePoll\Jobs;
 
 use Exception;
-use Job;
-use JobSpecification;
+use MediaWiki\Exception\MWExceptionHandler;
 use MediaWiki\Extension\SecurePoll\Entities\Election;
+use MediaWiki\JobQueue\Job;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\PageReference;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\ActorMigration;
 use MediaWiki\WikiMap\WikiMap;
-use MWExceptionHandler;
 use RuntimeException;
 use Wikimedia\Rdbms\IDatabase;
 
@@ -198,10 +199,15 @@ class PopulateVoterListJob extends Job {
 		$lbFactory->commitPrimaryChanges( __METHOD__ );
 	}
 
+	/**
+	 * @param PageReference $title
+	 * @param array $params
+	 */
 	public function __construct( $title, $params ) {
 		parent::__construct( 'securePollPopulateVoterList', $title, $params );
 	}
 
+	/** @inheritDoc */
 	public function run() {
 		$min = (int)$this->params['nextUserId'];
 		$max = min( $min + 500, $this->params['maxUserId'] + 1 );
@@ -244,7 +250,7 @@ class PopulateVoterListJob extends Job {
 					->caller( __METHOD__ )
 					->fetchFieldValues();
 
-				// @phan-suppress-next-line PhanSuspiciousValueComparison Same as in next if
+				// @phan-suppress-next-line PhanRedundantValueComparison Same as in next if
 				if ( $users === null ) {
 					$users = $list;
 				} else {
@@ -418,6 +424,11 @@ class PopulateVoterListJob extends Job {
 		return true;
 	}
 
+	/**
+	 * @param IDatabase $db
+	 * @param int $electionId
+	 * @return string
+	 */
 	private static function fetchJobKey( IDatabase $db, $electionId ) {
 		return $db->newSelectQueryBuilder()
 			->select( 'pr_value' )

@@ -15,7 +15,7 @@ QUnit.test( '(un)wrap', ( assert ) => {
 			method: 'wrap',
 			style: 'bullet',
 			expectedRangeOrSelection: new ve.Range( 58, 64 ),
-			expectedData: function ( data ) {
+			expectedData: ( data ) => {
 				data.splice( 55, 1,
 					{ type: 'list', attributes: { style: 'bullet' } },
 					{ type: 'listItem' },
@@ -39,7 +39,7 @@ QUnit.test( '(un)wrap', ( assert ) => {
 			rangeOrSelection: new ve.Range( 191, 211 ),
 			method: 'unwrap',
 			expectedRangeOrSelection: new ve.Range( 187, 205 ),
-			expectedData: function ( data ) {
+			expectedData: ( data ) => {
 				delete data[ 190 ].internal;
 				delete data[ 202 ].internal;
 				data.splice( 186, 4 );
@@ -62,7 +62,6 @@ QUnit.test( '(un)wrap', ( assert ) => {
 			{
 				actionName: 'list',
 				args: [ caseItem.style ],
-				createView: true,
 				...caseItem
 			}
 		);
@@ -77,7 +76,7 @@ QUnit.test( 'toggle', ( assert ) => {
 			method: 'toggle',
 			style: 'number',
 			expectedRangeOrSelection: new ve.Range( 11 ),
-			expectedData: function ( data ) {
+			expectedData: ( data ) => {
 				data[ 7 ].attributes.style = 'number';
 			},
 			undo: true,
@@ -89,7 +88,7 @@ QUnit.test( 'toggle', ( assert ) => {
 			method: 'toggle',
 			style: 'bullet',
 			expectedRangeOrSelection: new ve.Range( 11 ),
-			expectedData: function ( data ) {
+			expectedData: ( data ) => {
 				data[ 7 ].attributes.style = 'bullet';
 			},
 			undo: true,
@@ -103,7 +102,6 @@ QUnit.test( 'toggle', ( assert ) => {
 			{
 				actionName: 'list',
 				args: [ caseItem.style ],
-				createView: true,
 				...caseItem
 			}
 		);

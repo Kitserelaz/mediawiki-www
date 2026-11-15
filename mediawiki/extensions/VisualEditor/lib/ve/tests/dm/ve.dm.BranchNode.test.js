@@ -33,12 +33,12 @@ ve.dm.nodeFactory.register( ve.dm.BranchNodeStub );
 
 QUnit.test( 'canHaveChildren', ( assert ) => {
 	const node = new ve.dm.BranchNodeStub();
-	assert.strictEqual( node.canHaveChildren(), true );
+	assert.true( node.canHaveChildren() );
 } );
 
 QUnit.test( 'canHaveChildrenNotContent', ( assert ) => {
 	const node = new ve.dm.BranchNodeStub();
-	assert.strictEqual( node.canHaveChildrenNotContent(), true );
+	assert.true( node.canHaveChildrenNotContent() );
 } );
 
 QUnit.test( 'setRoot', ( assert ) => {
@@ -129,4 +129,70 @@ QUnit.test( 'splice', ( assert ) => {
 	// Remove branch and insert branch
 	assert.deepEqual( node4.splice( 1, 1, node3 ), [ node2 ] );
 	assert.deepEqual( node4.getChildren(), [ node1, node3 ] );
+} );
+
+QUnit.test( 'getAnnotationRanges', ( assert ) => {
+	for ( const name in ve.dm.example.domToDataCases ) {
+		const domToDataCase = ve.dm.example.domToDataCases[ name ];
+		if ( !domToDataCase.annotationRanges ) {
+			continue;
+		}
+		const doc = ve.dm.converter.getModelFromDom(
+			ve.createDocumentFromHtml( domToDataCase.body || domToDataCase.fromDataBody )
+		);
+		const annotationRanges = doc.getDocumentNode().getAnnotationRanges().map( ( { node, annotation, relativeRange, range } ) => {
+			const el = annotation.getClonedElement();
+			delete el.originalDomElementsHash;
+			assert.deepEqual(
+				range,
+				relativeRange.translate( node.getOffset() ),
+				'"range" accessor gives absolute range'
+			);
+			return [ range.start, range.end, el ];
+		} );
+		if ( domToDataCase.annotationRangesTestFail ) {
+			assert.notDeepEqual( annotationRanges, domToDataCase.annotationRanges, name );
+		} else {
+			assert.deepEqual( annotationRanges, domToDataCase.annotationRanges, name );
+		}
+	}
+} );
+
+QUnit.test( 'getAnnotationRanges cache', ( assert ) => {
+	const doc = ve.dm.example.createExampleDocument();
+
+	const contentBranchNodes = [];
+	doc.documentNode.traverse( ( node ) => node.canContainContent() && contentBranchNodes.push( node ) );
+
+	// Wrap ve.dm.LinearData#getAnnotationRanges in a call counting wrapper
+	let callCount = 0;
+	const f = doc.data.getAnnotationRanges;
+	doc.data.getAnnotationRanges = function () {
+		callCount++;
+		return f.apply( this, arguments );
+	};
+	doc.documentNode.getAnnotationRanges();
+	assert.strictEqual(
+		callCount,
+		contentBranchNodes.length,
+		'First call, ve.dm.LinearData#getAnnotationRanges called once for each ContentBranchNode'
+	);
+
+	callCount = 0;
+	doc.documentNode.getAnnotationRanges();
+	assert.strictEqual(
+		callCount,
+		0,
+		'Second call, ve.dm.LinearData#getAnnotationRanges not called at all'
+	);
+	const tx = ve.dm.TransactionBuilder.static.newFromInsertion( doc, 51, ...'foo' );
+	doc.commit( tx );
+
+	callCount = 0;
+	doc.documentNode.getAnnotationRanges();
+	assert.strictEqual(
+		callCount,
+		1,
+		'Third call, ve.dm.LinearData#getAnnotationRanges called once'
+	);
 } );

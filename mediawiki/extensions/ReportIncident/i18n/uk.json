@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Movses",
 			"Ата"
 		]
 	},
@@ -8,21 +9,39 @@
 	"reportincident-report-btn-label": "Поскаржитися",
 	"reportincident-dialog-close-btn": "Закрити",
 	"reportincident-dialog-back-btn": "Назад",
+	"reportincident-dialog-submit-btn": "Надіслати скаргу",
+	"reportincident-dialog-harassment-type-label": "Тип неприйнятної поведінки",
+	"reportincident-dialog-additional-details-input-label": "Додаткова інформація",
+	"reportincident-dialog-additional-details-input-placeholder": "Додайте контекст, який може бути корисним при перевірці скарги (наприклад, додаткові посилання).",
 	"reportincident-dialog-optional-label": "(необов'язково)",
+	"reportincident-dialog-violator-label": "Користувач, на якого {{GENDER:|ви}} хочете поскаржитися",
+	"reportincident-dialog-violator-disclaimer": "Фонд Вікімедіа не буде добровільно розкривати {{GENDER:|вашу}} особу людині, на яку {{GENDER:|ви}} скаржитеся",
 	"reportincident-dialog-violator-placeholder-text": "На кого {{GENDER:|ви}} скаржитеся?",
-	"reportincident-dialog-harassment-type-hate-speech-or-discrimination": "Мова ненависті чи дискримінація",
+	"reportincident-dialog-harassment-type-doxing": "Розголошення приватної особистої інформації (доксинг)",
+	"reportincident-dialog-harassment-type-hate-speech-or-discrimination": "Контент з ненавистю та дискримінацію",
+	"reportincident-dialog-harassment-type-intimidation": "Булінг, залякування, погрози або образи",
 	"reportincident-dialog-harassment-type-sexual-harassment": "Сексуальні домагання",
 	"reportincident-dialog-harassment-type-something-else": "Щось інше",
+	"reportincident-dialog-harassment-type-spam": "Спам або рекламний контент",
+	"reportincident-dialog-harassment-type-trolling": "Тролінг або переслідування (сталкінг)",
 	"reportincident-dialog-something-else-input-placeholder": "Укажіть поведінку, не зазначену вище.",
+	"reportincident-dialog-unacceptable-behavior-community-managed": "{{SITENAME}} — це спільнота, де [[Foundation:Special:MyLanguage/Policy:Universal_Code_of_Conduct#3_–_Unacceptable_behaviour|неналежна поведінка не допускається]], і за цим наглядає спільнота досвідчених користувачів.",
+	"reportincident-dialog-get-support-title": "Отримати підтримку щодо інциденту",
 	"reportincident-dialog-harassment-empty": "{{GENDER:|Ви}} маєте вибрати принаймні один тип поведінки.",
 	"reportincident-dialog-something-else-empty": "Будь ласка, дайте короткий опис поведінки.",
+	"reportincident-dialog-internet-disconnected-error": "Схоже, у {{GENDER:|вас}} немає підключення до інтернету. Спробуйте надіслати ще раз, коли з'єднання відновиться.",
 	"reportincident-dialog-server-error": "Вибачте, схоже, що наш сервер не відповідає. Спробуйте надіслати ще раз.",
 	"reportincident-dialog-generic-error": "{{GENDER:|Ваш}} запит не вдалося надіслати через помилку. Спробуйте надіслати ще раз.",
+	"reportincident-unable-to-send": "Не вдалося створити звіт про інцидент. Якщо проблема не зникне, надішліть {{GENDER:|свій}} звіт про інцидент електронним листом на emergency@wikimedia.org.",
 	"right-reportincident": "Надсилання скарг",
 	"action-reportincident": "надсилання скарг",
 	"reportincident-emaildialog-title": "Потрібна підтверджена електронна адреса",
 	"reportincident-emaildialog-close-button": "Скасувати",
 	"reportincident-emaildialog-content": "Нам потрібна {{GENDER:|ваша}} підтверджена адреса електронної пошти, на яку можна буде надіслати новини щодо скарги або зв'язатися з вами за потреби. Будь ласка, додайте або підтвердьте {{GENDER:|свою}} електронну адресу в налаштуваннях облікового запису, перш ніж надсилати скаргу.",
 	"reportincident-emaildialog-primary": "Перейти до налаштувань",
-	"reportincident-confirmedemail-required": "Щоб надіслати скаргу про інцидент, потрібна підтверджена електронна адреса."
+	"reportincident-confirmedemail-required": "Щоб надіслати скаргу про інцидент, потрібна підтверджена електронна адреса.",
+	"reportincident-dialog-describe-the-incident-title": "Опишіть інцидент",
+	"reportincident-dialog-report-immediate-harm-title": "Повідомити про безпосередню загрозу заподіяння шкоди команді невідкладних ситуацій",
+	"reportincident-type-nonemergency": "Неприйнятна поведінка користувача",
+	"reportincident-type-emergency": "Безпосередня загроза фізичної шкоди"
 }

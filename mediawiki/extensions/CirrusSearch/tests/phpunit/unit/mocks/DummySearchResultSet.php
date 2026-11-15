@@ -5,7 +5,7 @@ namespace CirrusSearch\Test;
 use CirrusSearch\Search\BaseCirrusSearchResultSet;
 use CirrusSearch\Search\Result;
 use CirrusSearch\Search\TitleHelper;
-use SearchResult;
+use MediaWiki\Search\SearchResult;
 
 class DummySearchResultSet extends BaseCirrusSearchResultSet {
 	/**
@@ -39,9 +39,9 @@ class DummySearchResultSet extends BaseCirrusSearchResultSet {
 	 * @param TitleHelper $titleHelper
 	 * @param int $totalHits
 	 * @param int[] $interwikiTotals total hits for secondary results interwiki results.
-	 * @return DummySearchResultSet
+	 * @return self
 	 */
-	public static function fakeTotalHits( TitleHelper $titleHelper, $totalHits, array $interwikiTotals = [] ) {
+	public static function fakeTotalHits( TitleHelper $titleHelper, $totalHits, array $interwikiTotals = [] ): self {
 		$results = new self( $titleHelper, $totalHits );
 		foreach ( $interwikiTotals as $pref => $iwTotal ) {
 			$results->addInterwikiResults( self::fakeTotalHits( $titleHelper, $iwTotal ), self::SECONDARY_RESULTS, (string)$pref );
@@ -81,7 +81,6 @@ class DummySearchResultSet extends BaseCirrusSearchResultSet {
 
 	/**
 	 * Returns extra data for specific result and store it in SearchResult object.
-	 * @param SearchResult $result
 	 */
 	public function augmentResult( SearchResult $result ) {
 		// Do nothing, we do not test result augmentation

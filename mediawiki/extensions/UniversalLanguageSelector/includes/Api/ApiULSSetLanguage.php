@@ -31,24 +31,19 @@ use Wikimedia\ParamValidator\ParamValidator;
  * @ingroup API
  */
 class ApiULSSetLanguage extends ApiBase {
-	private UserOptionsManager $userOptionsManager;
-	private LanguageNameUtils $languageNameUtils;
-
 	public function __construct(
 		ApiMain $main,
 		string $action,
-		UserOptionsManager $userOptionsManager,
-		LanguageNameUtils $languageNameUtils
+		private readonly UserOptionsManager $userOptionsManager,
+		private readonly LanguageNameUtils $languageNameUtils,
 	) {
 		parent::__construct( $main, $action );
-		$this->userOptionsManager = $userOptionsManager;
-		$this->languageNameUtils = $languageNameUtils;
 	}
 
 	/**
 	 * @inheritDoc
 	 */
-	public function execute() {
+	public function execute(): void {
 		$request = $this->getRequest();
 		if ( !$request->wasPosted() ) {
 			$this->dieWithError( [ 'apierror-mustbeposted', $request->getText( 'action' ) ] );
@@ -78,18 +73,17 @@ class ApiULSSetLanguage extends ApiBase {
 			$this->dieWithError( [ 'apierror-ulssetlang-anon-notallowed' ] );
 		}
 
-		$updateUser = $user->getInstanceForUpdate();
-		$this->userOptionsManager->setOption( $updateUser, 'language', $languageCode );
+		$this->userOptionsManager->setOption( $user, 'language', $languageCode );
 		// Sync the DB on post-send
-		DeferredUpdates::addCallableUpdate( static function () use ( $updateUser ) {
-			$updateUser->saveSettings();
+		DeferredUpdates::addCallableUpdate( function () use ( $user ) {
+			$this->userOptionsManager->saveOptions( $user );
 		} );
 	}
 
 	/**
 	 * @inheritDoc
 	 */
-	public function getAllowedParams() {
+	public function getAllowedParams(): array {
 		return [
 			'languagecode' => [
 				ParamValidator::PARAM_REQUIRED => true,
@@ -100,7 +94,7 @@ class ApiULSSetLanguage extends ApiBase {
 	/**
 	 * @inheritDoc
 	 */
-	public function isInternal() {
+	public function isInternal(): bool {
 		// Try to scare people away from using this externally
 		return true;
 	}
@@ -108,7 +102,7 @@ class ApiULSSetLanguage extends ApiBase {
 	/**
 	 * @inheritDoc
 	 */
-	public function needsToken() {
+	public function needsToken(): string {
 		return 'csrf';
 	}
 }

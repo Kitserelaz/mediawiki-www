@@ -4,16 +4,19 @@ namespace MediaWiki\Extension\SecurePoll\Pages;
 
 use MediaWiki\Extension\SecurePoll\Context;
 use MediaWiki\Extension\SecurePoll\Entities\Election;
+use MediaWiki\Extension\SecurePoll\Exceptions\InvalidDataException;
 use MediaWiki\Extension\SecurePoll\SpecialSecurePoll;
 use MediaWiki\Extension\SecurePoll\User\Auth;
 use MediaWiki\Extension\SecurePoll\User\Voter;
 use MediaWiki\Language\Language;
-use MediaWiki\Languages\LanguageFallback;
+use MediaWiki\Language\LanguageFallback;
+use MediaWiki\Language\MessageLocalizer;
+use MediaWiki\Linker\Linker;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\User;
-use MessageLocalizer;
+use MediaWiki\WikiMap\WikiMap;
 use Wikimedia\Message\MessageSpecifier;
 
 /**
@@ -23,6 +26,7 @@ abstract class ActionPage implements MessageLocalizer {
 	public const LOG_TYPE_ADDADMIN = 0;
 	public const LOG_TYPE_REMOVEADMIN = 1;
 	public const LOG_TYPE_VIEWVOTES = 2;
+	public const LOG_TYPE_VIEWVOTEDETAILS = 3;
 
 	/** @var SpecialSecurePoll */
 	public $specialPage;
@@ -103,11 +107,11 @@ abstract class ActionPage implements MessageLocalizer {
 		}
 	}
 
-	public function setUserOptionsLookup( $userOptionsLookup ) {
+	public function setUserOptionsLookup( UserOptionsLookup $userOptionsLookup ) {
 		$this->userOptionsLookup = $userOptionsLookup;
 	}
 
-	public function setLanguageFallback( $languageFallback ) {
+	public function setLanguageFallback( LanguageFallback $languageFallback ) {
 		$this->languageFallback = $languageFallback;
 	}
 
@@ -120,5 +124,35 @@ abstract class ActionPage implements MessageLocalizer {
 	 */
 	public function msg( $key, ...$params ) {
 		return $this->specialPage->msg( $key, ...$params );
+	}
+
+	protected function showRedirectMessage( string $action, array $params ): bool {
+		$jumpUrl = $this->election->getProperty( 'jump-url' );
+		if ( $jumpUrl ) {
+			$jumpId = $this->election->getProperty( 'jump-id' );
+			if ( !$jumpId ) {
+				throw new InvalidDataException( 'Configuration error: no jump-id' );
+			}
+			$jumpUrl .= "/$action/$jumpId";
+			if ( count( $params ) > 1 ) {
+				$jumpUrl .= '/' . implode( '/', array_slice( $params, 1 ) );
+			}
+
+			$wiki = $this->election->getProperty( 'main-wiki' );
+			if ( $wiki ) {
+				$wiki = WikiMap::getWikiName( $wiki );
+			} else {
+				$wiki = $this->msg( 'securepoll-edit-redirect-otherwiki' )->text();
+			}
+
+			$this->specialPage->getOutput()->addWikiMsg(
+				// Messages: securepoll-edit-redirect, securepoll-translate-redirect,
+				// securepoll-list-redirect, securepoll-votereligibility-redirect
+				"securepoll-$action-redirect",
+				Message::rawParam( Linker::makeExternalLink( $jumpUrl, $wiki ) )
+			);
+			return true;
+		}
+		return false;
 	}
 }

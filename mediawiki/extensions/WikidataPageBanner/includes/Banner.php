@@ -9,9 +9,8 @@ use MediaWiki\Output\OutputPage;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\Skin\Skin;
 use MediaWiki\Title\Title;
-use PageImages\PageImages;
-use Skin;
 use Wikibase\Client\WikibaseClient;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\NumericPropertyId;
@@ -52,7 +51,7 @@ class Banner {
 			if ( substr( $key, 0, 5 ) === 'icon-' ) {
 				// extract iconname after 'icon-' til the end of key
 				$iconname = substr( $key, 5 );
-				if ( !isset( $iconname ) || !isset( $value ) ) {
+				if ( $iconname === '' || $value === null ) {
 					continue;
 				}
 
@@ -301,8 +300,10 @@ class Banner {
 			$config->get( 'WPBEnablePageImagesBanners' ) &&
 			ExtensionRegistry::getInstance()->isLoaded( 'PageImages' )
 		) {
-			$pi = PageImages::getPageImage( $title );
-			// getPageImage returns false if no page image.
+			$pageImages = MediaWikiServices::getInstance()
+				->getService( 'PageImages.PageImages' );
+			$pi = $pageImages->getImage( $title );
+			// getImage returns null if no page image.
 			if ( $pi ) {
 				return $pi->getTitle()->getDBkey();
 			}

@@ -1,66 +1,26 @@
 ( function () {
-	var TranslationParser = require( 'ext.securepoll.htmlform/TranslationParser.js' );
+	const TranslationParser = require( 'ext.securepoll.htmlform/TranslationParser.js' );
 
 	QUnit.module( 'ext.securepoll.translationParser.test' );
 
-	QUnit.test( 'Parser test with correct tags', function ( assert ) {
-		var done = assert.async();
-		var translationParser = new TranslationParser();
+	function getTestData( fileName ) {
+		return $.get( `${ mw.config.get( 'wgExtensionAssetsPath' ) }/SecurePoll/tests/qunit/data/parser/${ fileName }` );
+	}
 
-		var getOrigin = $.get( '../extensions/SecurePoll/tests/qunit/data/parser/TextWithCorrectTags.txt' );
-		getOrigin.done( function ( data ) {
-			var parseContent = translationParser.parseContent( data );
-			var getExpected = $.get( '../extensions/SecurePoll/tests/qunit/data/parser/ExpectedTextWithCorrectTags.json' );
-			getExpected.done( function ( expectedContent ) {
-				assert.deepEqual( parseContent, expectedContent, 'parsedContent' );
-				done();
-			} );
-		} );
+	QUnit.test.each( 'Parser test', {
+		'with correct tags': [ 'TextWithCorrectTags.txt', 'ExpectedTextWithCorrectTags.json' ],
+		'with some missing end tags': [ 'TextWithSomeMissingEndTag.txt', 'ExpectedTextWithSomeMissingEndTag.json' ],
+		'with no end tags': [ 'TextWithNoEndTags.txt', 'ExpectedTextWithNoEndTags.json' ],
+		'with multiple questions': [ 'TextWithMultipleQuestions.txt', 'ExpectedTextWithMultipleQuestions.json' ]
+	}, async ( assert, [ inputFile, expectedFile ] ) => {
+		const translationParser = new TranslationParser();
+
+		const [ data, expected ] = await Promise.all( [
+			getTestData( inputFile ),
+			getTestData( expectedFile )
+		] );
+
+		const parseContent = translationParser.parseContent( data );
+		assert.deepEqual( parseContent, expected, 'parsedContent' );
 	} );
-
-	QUnit.test( 'Parser test with some missing end tags', function ( assert ) {
-		var done = assert.async();
-		var translationParser = new TranslationParser();
-
-		var getOrigin = $.get( '../extensions/SecurePoll/tests/qunit/data/parser/TextWithSomeMissingEndTag.txt' );
-		getOrigin.done( function ( data ) {
-			var parseContent = translationParser.parseContent( data );
-			var getExpected = $.get( '../extensions/SecurePoll/tests/qunit/data/parser/ExpectedTextWithSomeMissingEndTag.json' );
-			getExpected.done( function ( expectedContent ) {
-				assert.deepEqual( parseContent, expectedContent, 'parsedContent' );
-				done();
-			} );
-		} );
-	} );
-
-	QUnit.test( 'Parser test with no end tags', function ( assert ) {
-		var done = assert.async();
-		var translationParser = new TranslationParser();
-
-		var getOrigin = $.get( '../extensions/SecurePoll/tests/qunit/data/parser/TextWithNoEndTags.txt' );
-		getOrigin.done( function ( data ) {
-			var parseContent = translationParser.parseContent( data );
-			var getExpected = $.get( '../extensions/SecurePoll/tests/qunit/data/parser/ExpectedTextWithNoEndTags.json' );
-			getExpected.done( function ( expectedContent ) {
-				assert.deepEqual( parseContent, expectedContent, 'parsedContent' );
-				done();
-			} );
-		} );
-	} );
-
-	QUnit.test( 'Parser test with multiple questions', function ( assert ) {
-		var done = assert.async();
-		var translationParser = new TranslationParser();
-
-		var getOrigin = $.get( '../extensions/SecurePoll/tests/qunit/data/parser/TextWithMultipleQuestions.txt' );
-		getOrigin.done( function ( data ) {
-			var parseContent = translationParser.parseContent( data );
-			var getExpected = $.get( '../extensions/SecurePoll/tests/qunit/data/parser/ExpectedTextWithMultipleQuestions.json' );
-			getExpected.done( function ( expectedContent ) {
-				assert.deepEqual( parseContent, expectedContent, 'parsedContent' );
-				done();
-			} );
-		} );
-	} );
-
 }() );

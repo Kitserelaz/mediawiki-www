@@ -1,7 +1,7 @@
 <template>
 	<!-- used for the drag event listener and prevents page interaction while dragging toolbar -->
 	<div
-		v-show="isDragging === true"
+		v-show="isDragging"
 		id="mwe-pt-toolbar-drag-area"
 		ref="dragArea"
 	></div>
@@ -10,17 +10,26 @@
 		id="mwe-pt-toolbar"
 		ref="toolbar"
 		:class="displayClass"
-		:style="style"
-		@pointerdown="dragEnable"
-	>
+		:style
+		@pointerdown="dragEnable">
 		<div v-show="display === 'maximized'" id="mwe-pt-toolbar-active">
 			<div id="mwe-pt-toolbar-main">
 				<tool-minimize
 					@minimize="minimize"
 				></tool-minimize>
-				<!-- Individual toolbar icons go here. You can place Vue components in bewteen them. -->
+				<!-- Individual toolbar icons go here. You can place Vue components in bewteen
+				them. -->
 				<span ref="articleInfoTool" class="mwe-pt-hidden"></span>
-				<span ref="wikiLoveTool" class="mwe-pt-hidden"></span>
+				<tool-wiki-love
+					v-if="pageTriageUi === 'wikilove' && isFlyoutEnabled( 'wikiLove' )"
+					:article
+					:event-bus
+				></tool-wiki-love>
+				<span
+					v-else
+					ref="wikiLoveTool"
+					class="mwe-pt-hidden"
+				></span>
 				<span ref="markTool" class="mwe-pt-hidden"></span>
 				<span ref="tagsTool" class="mwe-pt-hidden"></span>
 				<span ref="deleteTool" class="mwe-pt-hidden"></span>
@@ -50,8 +59,9 @@
 
 <script>
 /**
- * Curation Toolbar container that supports Vue components and backbone views to enable incremental migration.
- * Designed to completely replace ToolbarView.js upon promotion to the default toolbar experience.
+ * Curation Toolbar container that supports Vue components and backbone views to enable incremental
+ * migration. Designed to completely replace ToolbarView.js upon promotion to the default toolbar
+ * experience.
  */
 
 const { Article, contentLanguageMessages } = require( 'ext.pageTriage.util' );
@@ -78,11 +88,12 @@ const { ref } = require( 'vue' ),
 		}
 
 		// this flyout is disabled for current namespace
-		return ( modules[ flyout ].namespace.indexOf( mw.config.get( 'wgNamespaceNumber' ) ) !== -1 );
+		return ( modules[ flyout ].namespace.includes( mw.config.get( 'wgNamespaceNumber' ) ) );
 	};
 
 const ToolMinimize = require( './components/ToolMinimize.vue' );
 const ToolNext = require( './components/ToolNext.vue' );
+const ToolWikiLove = require( './components/ToolWikiLove.vue' );
 
 // Tracks position of toolbar during drag.
 const pos = {
@@ -94,7 +105,8 @@ const pos = {
 module.exports = {
 	components: {
 		ToolMinimize,
-		ToolNext
+		ToolNext,
+		ToolWikiLove
 	},
 	props: {
 		pageTriageUi: {
@@ -104,12 +116,18 @@ module.exports = {
 	},
 	setup: function () {
 		return {
+			currentTool: null,
+			currentFlyout: null,
+			currentPokey: null,
+
 			// placeholder references for inserting backbone tools
 			articleInfoTool: ref( null ),
 			wikiLoveTool: ref( null ),
 			markTool: ref( null ),
 			tagsTool: ref( null ),
 			deleteTool: ref( null ),
+			// placeholder reference for BackBone flyouts
+			flyout: ref( false ),
 			// placeholder reference for drag area
 			dragArea: ref( null ),
 			// placeholder reference for toolbar
@@ -131,9 +149,11 @@ module.exports = {
 		const isDragging = false;
 		return {
 			article,
+			eventBus,
 			display,
 			style,
-			isDragging
+			isDragging,
+			isFlyoutEnabled
 		};
 	},
 	computed: {
@@ -153,32 +173,48 @@ module.exports = {
 			mw.user.options.set( 'userjs-curationtoolbar', display );
 			new mw.Api().saveOption( 'userjs-curationtoolbar', display );
 		},
-		// records the starting position and enables dragging when the pointer is down on the toolbar
+		// records the starting position and enables dragging when the pointer is down on the
+		// toolbar
 		dragEnable: function ( event ) {
 			if ( event.which && event.which === 1 ) {
-				// starting pointer position
-				pos.start.x = event.clientX;
-				pos.start.y = event.clientY;
+				// starting toolbar position
+				const rect = this.$refs.toolbar.getBoundingClientRect();
+				pos.start.x = event.clientX - rect.left;
+				pos.start.y = event.clientY - rect.top;
+
 				this.isDragging = true;
 				// add move handler; set directly for immediate effect
-				this.dragArea.onpointermove = this.doDrag;
+				document.documentElement.onpointermove = this.doDrag;
 			}
 		},
 		// disables dragging when the pointer is released from the toolbar
 		dragDisable: function () {
 			this.isDragging = false;
 			// remove move handler; unset directly for immediate effect
-			this.dragArea.onpointermove = null;
+			document.documentElement.onpointermove = null;
 		},
 		// tracks the pointer while dragging
 		doDrag: function ( event ) {
+			if ( !this.isDragging ) {
+				return;
+			}
+
 			event.preventDefault();
+
+			// get extents of screen dimensions
+			const rect = this.$refs.toolbar.getBoundingClientRect();
+			const limitX = document.documentElement.clientWidth - rect.width;
+			const limitY = document.documentElement.clientHeight - rect.height;
+
 			// track pointer position
-			pos.new.x = pos.start.x - event.clientX;
-			pos.new.y = pos.start.y - event.clientY;
-			pos.start.x = event.clientX;
-			pos.start.y = event.clientY;
-			this.updatePosition();
+			const targetX = Math.max( Math.min( event.clientX - pos.start.x, limitX ), 0 );
+			const targetY = Math.max( Math.min( event.clientY - pos.start.y, limitY ), 0 );
+
+			// set new target position
+			this.style.left = targetX + 'px';
+			this.style.top = targetY + 'px';
+
+			this.$nextTick( this.refreshFlyout );
 		},
 		resize: function () {
 			pos.start = { x: 0, y: 0 };
@@ -252,6 +288,40 @@ module.exports = {
 				pageCurationLink.blur();
 				maximize();
 			} );
+		},
+		isVueComponent( component ) {
+			return component !== null && !Object.prototype.hasOwnProperty.call( component, 'cid' );
+		},
+		getToolComponents( tool ) {
+			const result = { flyout: null, pokey: null };
+
+			if ( tool !== null ) {
+				const element = tool.el || tool.$el || null;
+
+				if ( element !== null ) {
+					result.flyout = element.querySelector( '.mwe-pt-tool-flyout' );
+					result.pokey = element.querySelector( '.mwe-pt-tool-pokey' );
+				}
+			}
+
+			return result;
+		},
+		refreshFlyout() {
+			if ( this.currentFlyout === null || this.currentPokey === null ) {
+				return;
+			}
+
+			const rect = this.currentFlyout.getBoundingClientRect();
+			const corner = this.dir === 'ltr' ? rect.left :
+				document.documentElement.clientWidth - rect.right;
+
+			if ( corner <= 0 ) {
+				this.currentFlyout.className = 'mwe-pt-tool-flyout mwe-pt-tool-flyout-flipped';
+				this.currentPokey.className = 'mwe-pt-tool-pokey mwe-pt-tool-pokey-flipped';
+			} else if ( corner - rect.width > 57 ) {
+				this.currentFlyout.className = 'mwe-pt-tool-flyout mwe-pt-tool-flyout-not-flipped';
+				this.currentPokey.className = 'mwe-pt-tool-pokey mwe-pt-tool-pokey-not-flipped';
+			}
 		}
 	},
 	/*
@@ -262,38 +332,124 @@ module.exports = {
 		if ( document.querySelector( 'body.rtl' ) ) {
 			this.dir = 'rtl';
 		}
+
+		eventBus.bind( 'showTool', ( newTool ) => {
+			if ( newTool !== this.currentTool ) {
+				if ( this.isVueComponent( this.currentTool ) ) {
+					this.currentTool.active = false;
+				}
+
+				this.currentTool = newTool || null;
+
+				const { flyout, pokey } = this.getToolComponents( newTool );
+				this.currentFlyout = flyout;
+				this.currentPokey = pokey;
+			}
+
+			if ( this.isVueComponent( this.currentTool ) ) {
+				this.currentTool.active = !this.currentTool.active;
+				this.$nextTick( this.refreshFlyout );
+			}
+		} );
+
 		// Stop dragging any time the pointer is released, regardless of its location
 		document.addEventListener( 'pointerup', this.dragDisable );
 		// Update position on resize to keep the toolbar within the viewport
 		window.addEventListener( 'resize', this.resize );
-		// More verbose than the original loop, but it allows for individual migrations and allows for static module loading.
+		// More verbose than the original loop, but it allows for individual migrations and allows
+		// for static module loading.
 		if ( isFlyoutEnabled( 'articleInfo' ) ) {
 			require( '../../external/jquery.badge.js' );
 			const ArticleInfo = require( '../articleInfo.js' );
-			const articleInfo = new ArticleInfo( { eventBus: eventBus, model: this.article, moduleConfig: modules.articleInfo } );
+			const articleInfo = new ArticleInfo( {
+				eventBus: eventBus,
+				model: this.article,
+				moduleConfig: modules.articleInfo
+			} );
 			$( this.articleInfoTool ).before( articleInfo.place() );
+			// Override Backbone tool click handler
+			articleInfo.click = ( function () {
+				if ( articleInfo.visible ) {
+					articleInfo.hide();
+				} else {
+					articleInfo.show();
+					this.flyout = true;
+				}
+			} ).bind( this );
 		}
-		if ( isFlyoutEnabled( 'wikiLove' ) ) {
+		if ( this.pageTriageUi !== 'wikilove' && isFlyoutEnabled( 'wikiLove' ) ) {
 			const WikiLove = require( '../wikiLove.js' );
-			const wikiLove = new WikiLove( { eventBus: eventBus, model: this.article, moduleConfig: modules.wikiLove } );
+			const wikiLove = new WikiLove( {
+				eventBus: eventBus,
+				model: this.article,
+				moduleConfig: modules.wikiLove
+			} );
 			$( this.wikiLoveTool ).before( wikiLove.place() );
+			// Override Backbone tool click handler
+			wikiLove.click = ( function () {
+				if ( wikiLove.visible ) {
+					wikiLove.hide();
+				} else {
+					wikiLove.show();
+					this.flyout = true;
+				}
+			} ).bind( this );
 		}
 		if ( isFlyoutEnabled( 'mark' ) ) {
 			const Mark = require( '../mark.js' );
-			const mark = new Mark( { eventBus: eventBus, model: this.article, moduleConfig: modules.mark } );
+			const mark = new Mark( {
+				eventBus: eventBus,
+				model: this.article,
+				moduleConfig: modules.mark
+			} );
 			$( this.markTool ).before( mark.place() );
+			// Override Backbone tool click handler
+			mark.click = ( function () {
+				if ( mark.visible ) {
+					mark.hide();
+				} else {
+					mark.show();
+					this.flyout = true;
+				}
+			} ).bind( this );
 		}
 		// tags and deletion only available when enwiki features are enabled
 		if ( config.PageTriageEnableExtendedFeatures ) {
 			if ( isFlyoutEnabled( 'tags' ) ) {
 				const Tags = require( '../tags.js' );
-				const tags = new Tags( { eventBus: eventBus, model: this.article, moduleConfig: modules.tags } );
+				const tags = new Tags( {
+					eventBus: eventBus,
+					model: this.article,
+					moduleConfig: modules.tags
+				} );
 				$( this.tagsTool ).before( tags.place() );
+				// Override Backbone tool click handler
+				tags.click = ( function () {
+					if ( tags.visible ) {
+						tags.hide();
+					} else {
+						tags.show();
+						this.flyout = true;
+					}
+				} ).bind( this );
 			}
 			if ( isFlyoutEnabled( 'delete' ) ) {
 				const Delete = require( '../delete.js' );
-				const deletion = new Delete( { eventBus: eventBus, model: this.article, moduleConfig: modules.delete } );
+				const deletion = new Delete( {
+					eventBus: eventBus,
+					model: this.article,
+					moduleConfig: modules.delete
+				} );
 				$( this.deleteTool ).before( deletion.place() );
+				// Override Backbone tool click handler
+				deletion.click = ( function () {
+					if ( deletion.visible ) {
+						deletion.hide();
+					} else {
+						deletion.show();
+						this.flyout = true;
+					}
+				} ).bind( this );
 			}
 		}
 

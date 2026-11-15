@@ -14,7 +14,7 @@
  * @param {ve.ui.Surface} surface Surface to debug
  * @param {Object} [config] Configuration options
  */
-ve.ui.DebugBar = function VeUiDebugBar( surface, config ) {
+ve.ui.DebugBar = function VeUiDebugBar( surface, config = {} ) {
 	// Parent constructor
 	ve.ui.DebugBar.super.call( this, config );
 
@@ -40,6 +40,7 @@ ve.ui.DebugBar = function VeUiDebugBar( surface, config ) {
 	this.testSquasherToggle = new OO.ui.ToggleButtonWidget( { label: ve.msg( 'visualeditor-debugbar-testsquasher' ) } );
 	this.inputDebuggingToggle = new OO.ui.ToggleButtonWidget( { label: ve.msg( 'visualeditor-debugbar-inputdebug' ) } ).setValue( ve.inputDebug );
 	this.filibusterToggle = new OO.ui.ToggleButtonWidget( { label: ve.msg( 'visualeditor-debugbar-startfilibuster' ) } );
+	this.buildTestButton = new OO.ui.ButtonWidget( { label: ve.msg( 'visualeditor-debugbar-buildtest' ) } );
 
 	this.$dump =
 		$( '<div>' ).addClass( 've-ui-debugBar-dump' ).append(
@@ -58,6 +59,8 @@ ve.ui.DebugBar = function VeUiDebugBar( surface, config ) {
 			)
 		).addClass( 'oo-ui-element-hidden' );
 
+	this.$testCase = $( '<div>' ).addClass( 've-ui-debugBar-testCase oo-ui-element-hidden' );
+
 	this.$transactions = $( '<div>' ).addClass( 've-ui-debugBar-transactions' );
 
 	this.$filibuster = $( '<div>' ).addClass( [ 've-ui-debugBar-filibuster', 'oo-ui-element-hidden' ] );
@@ -70,6 +73,7 @@ ve.ui.DebugBar = function VeUiDebugBar( surface, config ) {
 	this.filibusterToggle.on( 'click', this.onFilibusterToggleClick.bind( this ) );
 	this.transactionsToggle.on( 'change', this.onTransactionsToggleChange.bind( this ) );
 	this.testSquasherToggle.on( 'change', this.onTestSquasherToggleChange.bind( this ) );
+	this.buildTestButton.on( 'click', this.onBuildTestButtonClick.bind( this ) );
 	closeButton.on( 'click', this.$element.remove.bind( this.$element ) );
 
 	this.onHistoryDebounced = ve.debounce( this.onHistory.bind( this ) );
@@ -91,10 +95,12 @@ ve.ui.DebugBar = function VeUiDebugBar( surface, config ) {
 			this.filibusterToggle.$element,
 			this.transactionsToggle.$element,
 			this.testSquasherToggle.$element,
+			this.buildTestButton.$element,
 			$( this.constructor.static.dividerTemplate ),
 			closeButton.$element
 		),
 		this.$dump,
+		this.$testCase,
 		this.$transactions,
 		this.$filibuster
 	);
@@ -155,10 +161,9 @@ ve.ui.DebugBar.prototype.onLogRangeButtonClick = function () {
 	const selection = this.getSurface().getModel().getSelection(),
 		documentModel = this.getSurface().getModel().getDocument();
 	if ( selection instanceof ve.dm.LinearSelection || selection instanceof ve.dm.TableSelection ) {
-		const ranges = selection.getRanges( documentModel );
-		for ( let i = 0; i < ranges.length; i++ ) {
-			ve.dir( this.getSurface().view.documentView.model.data.slice( ranges[ i ].start, ranges[ i ].end ) );
-		}
+		selection.getRanges( documentModel ).forEach( ( range ) => {
+			ve.dir( this.getSurface().view.documentView.model.data.slice( range.start, range.end ) );
+		} );
 	}
 };
 
@@ -196,7 +201,7 @@ ve.ui.DebugBar.prototype.updateDump = function () {
 /**
  * Get an ordered list representation of some linear data
  *
- * @param {ve.dm.ElementLinearData} linearData Linear data
+ * @param {ve.dm.LinearData} linearData Linear data
  * @return {jQuery} Ordered list
  */
 ve.ui.DebugBar.prototype.generateListFromLinearData = function ( linearData ) {
@@ -204,15 +209,15 @@ ve.ui.DebugBar.prototype.generateListFromLinearData = function ( linearData ) {
 		data = linearData.data;
 
 	let $chunk, prevType, prevAnnotations, $annotations;
-	for ( let i = 0; i < data.length; i++ ) {
+	data.forEach( ( element, i ) => {
 		const $label = $( '<span>' );
-		const element = data[ i ];
-		let annotations = null;
+		let annotations = null, attributes = null;
 		let text;
 		if ( element.type ) {
 			$label.addClass( 've-ui-debugBar-dump-element' );
 			text = element.type;
 			annotations = element.annotations;
+			attributes = element.attributes || null;
 		} else if ( Array.isArray( element ) ) {
 			$label.addClass( 've-ui-debugBar-dump-achar' );
 			text = element[ 0 ];
@@ -230,34 +235,55 @@ ve.ui.DebugBar.prototype.generateListFromLinearData = function ( linearData ) {
 		} else {
 			// End current chunk, if any.
 			if ( $chunk ) {
-				if ( $annotations ) {
-					$chunk.append( $annotations );
-				}
-				$ol.append( $chunk );
-				$chunk = null;
+				$ol.append( $chunk.append( $annotations ) );
 				$annotations = null;
 			}
 
 			// Begin a new chunk
-			$chunk = $( '<li>' ).attr( 'value', i );
-			$chunk.append( $label );
-			if ( annotations ) {
+			$chunk = $( '<li>' ).attr( 'value', i ).append( $label );
+			if ( annotations || attributes ) {
 				$annotations = $( '<span>' ).addClass( 've-ui-debugBar-dump-note' ).text(
-					'[' + this.getSurface().getModel().getDocument().getStore().values( annotations ).map( ( ann ) => JSON.stringify( ann.getComparableObject() ) ).join( ', ' ) + ']'
+					( annotations ?
+						JSON.stringify(
+							this.getSurface().getModel().getDocument().getStore().values( annotations )
+								.map( ( ann ) => ann.getComparableObject() )
+						) : '' ) +
+					( attributes ? JSON.stringify( attributes ) : '' )
+				);
+			}
+
+			if ( element.type === 'internalList' ) {
+				const internalList = this.getSurface().getModel().getDocument().internalList;
+
+				$chunk.append(
+					$( '<span>' ).addClass( 've-ui-debugBar-dump-note' ).text(
+						' keyIndexes: ' + JSON.stringify( internalList.keyIndexes )
+					)
+				);
+			}
+
+			if ( element.type === 'internalItem' ) {
+				const index = this.getSurface()
+					.getModel()
+					.getDocument()
+					.internalList
+					.listNode
+					.children
+					.findIndex( ( node ) => node.element === element );
+
+				$chunk.append(
+					$( '<span>' ).addClass( 've-ui-debugBar-dump-note' ).text( ' index: ' + index + ' ' )
 				);
 			}
 		}
 
 		prevType = element.type;
 		prevAnnotations = annotations;
-	}
+	} );
 
 	// End current chunk, if any.
 	if ( $chunk ) {
-		if ( $annotations ) {
-			$chunk.append( $annotations );
-		}
-		$ol.append( $chunk );
+		$ol.append( $chunk.append( $annotations ) );
 	}
 
 	return $ol;
@@ -272,26 +298,22 @@ ve.ui.DebugBar.prototype.generateListFromLinearData = function ( linearData ) {
 ve.ui.DebugBar.prototype.generateListFromNode = function ( node ) {
 	const $ol = $( '<ol>' ).attr( 'start', '0' );
 
-	for ( let i = 0; i < node.children.length; i++ ) {
-		const $li = $( '<li>' );
-		const $label = $( '<span>' ).addClass( 've-ui-debugBar-dump-element' );
-		const $note = $( '<span>' ).addClass( 've-ui-debugBar-dump-note' );
-		if ( node.children[ i ].length !== undefined ) {
-			$li.append(
-				$label.text( node.children[ i ].type ),
-				$note.text( '(' + node.children[ i ].length + ')' )
-			);
-		} else {
-			$li.append( $label.text( node.children[ i ].type ) );
+	node.children.forEach( ( child ) => {
+		const $li = $( '<li>' ).append( $( '<span>' ).addClass( 've-ui-debugBar-dump-element' )
+			.text( child.type ) );
+
+		if ( child.length !== undefined ) {
+			$li.append( $( '<span>' ).addClass( 've-ui-debugBar-dump-note' )
+				.text( '(' + child.length + ')' ) );
 		}
 
-		if ( node.children[ i ].children ) {
-			const $sublist = this.generateListFromNode( node.children[ i ] );
-			$li.append( $sublist );
+		if ( child.children ) {
+			// eslint-disable-next-line no-jquery/no-append-html
+			$li.append( this.generateListFromNode( child ) );
 		}
 
 		$ol.append( $li );
-	}
+	} );
 	return $ol;
 };
 
@@ -362,9 +384,7 @@ ve.ui.DebugBar.prototype.onFilibusterToggleClick = function () {
 				$li.toggleClass( 've-filibuster-frame-expanded' );
 			} else if ( $li.children( 'ul' ).length ) {
 				// eslint-disable-next-line no-jquery/no-class-state
-				$li.toggleClass( 've-filibuster-frame-collapsed' );
-				// eslint-disable-next-line no-jquery/no-class-state
-				$li.toggleClass( 've-filibuster-frame-expanded' );
+				$li.toggleClass( 've-filibuster-frame-collapsed ve-filibuster-frame-expanded' );
 			}
 		} );
 		this.filibusterToggle.setLabel( ve.msg( 'visualeditor-debugbar-startfilibuster' ) );
@@ -397,6 +417,138 @@ ve.ui.DebugBar.prototype.onTestSquasherToggleChange = function ( value ) {
 	} else {
 		doc.disconnect( this, { transact: 'testSquasher' } );
 	}
+};
+
+/**
+ * Handle click events on the build test button
+ *
+ * @param {jQuery.Event} e
+ */
+ve.ui.DebugBar.prototype.onBuildTestButtonClick = function () {
+	this.$testCase
+		.empty()
+		.append( $( '<h2>' ).text( 'Test case' ) )
+		.append( $( '<pre>' ).text( this.generateTestCase() ) );
+	this.$testCase.removeClass( 'oo-ui-element-hidden' );
+};
+
+ve.ui.DebugBar.prototype.generateTestCase = function () {
+	const surfaceModel = this.getSurface().getModel();
+	const currentDocument = surfaceModel.getDocument();
+	const transactions = surfaceModel.getHistory()
+		.map( ( item ) => item.transactions )
+		.reduce( ( acc, txs ) => acc.concat( txs ), [] );
+
+	const originalHtml = currentDocument.htmlDocument.body.innerHTML;
+	// FIXME: This all results in slightly different data than after the
+	// original MW Target load, which may cause transactions to line up
+	// incorrectly.
+	const originalDocument = ve.createDocumentFromHtml( originalHtml );
+	// Adapted from mw.libs.ve.unwrapParsoidSections
+	const unwrapSections = ( doc ) => {
+		Array.prototype.forEach.call( doc.querySelectorAll( 'section' ), ( section ) => {
+			const parent = section.parentNode;
+			while ( section.firstChild ) {
+				parent.insertBefore( section.firstChild, section );
+			}
+			parent.removeChild( section );
+		} );
+	};
+	unwrapSections( originalDocument );
+	const serializeToJson = ( data ) => JSON.stringify( data, null, '\t' );
+	const getBodyContent = ( htmlDocument ) => htmlDocument.body.innerHTML;
+	const wrapHtmlLiteral = ( htmlString ) => JSON.stringify( htmlString );
+	const indentLines = ( indentation, text ) => text.replace( /^.*$/gm, indentation + '$&' );
+	const repairAllUndefined = ( sub ) => sub.replace( /\bnull\b/g, 'undefined' );
+	const repairWhitespaceUndefined =
+		( text ) => text.replace( /whitespace([[:"{,\s]|\\.|null)+/gi, repairAllUndefined );
+
+	const serializeTransactionBuilder = ( txs ) => {
+		if ( txs.length === 0 ) {
+			return undefined;
+		}
+		const serializeTransaction = ( tx ) => 'model.commit( ve.dm.Transaction.static.deserialize( ' +
+				JSON.stringify( tx ) +
+			' ) );';
+		const txStatements = txs.map( serializeTransaction );
+		return '( model ) => {\n' +
+			indentLines( '\t', txStatements.join( '\n' ) ) +
+			'\n\t}';
+	};
+
+	const serializeStoreBuilder = ( store ) => {
+		const serializeDomElement = ( el ) => {
+			if ( Array.isArray( el ) ) {
+				const html = el.map( ( n ) => n.outerHTML );
+				return '// eslint-disable-next-line no-jquery/no-parse-html-literal\n' +
+					'$.parseHTML( ' + wrapHtmlLiteral( html ) + ' )';
+			} else if ( typeof el === 'object' ) {
+				return null;
+			}
+		};
+		const storeStatements = store.serialize( serializeDomElement ).hashStore;
+		return '{\n' +
+			indentLines( '\t', Object.entries( storeStatements )
+				.filter( ( [ /* key */, value ] ) => value !== null )
+				.map( ( [ key, value ] ) => `"${ key }":\n${ indentLines( '\t', value ) }` )
+				.join( ',\n' ) ) +
+			'\n}';
+	};
+
+	// Adapted from ve.test.utils: we want to run methods such as i18n message
+	// translation in the dummy context to match the way the test will eventually
+	// be run.
+	const swapDummyPlatform = ( next ) => {
+		const DummyPlatform = function DummyPlatform() {
+			DummyPlatform.super.apply( this, arguments );
+		};
+		OO.inheritClass( DummyPlatform, ve.init.platform.constructor );
+		DummyPlatform.prototype.getMessage = ( ...args ) => args.join( ',' );
+
+		const activePlatform = ve.init.platform;
+		ve.init.platform = new DummyPlatform();
+		try {
+			return next();
+		} finally {
+			ve.init.platform = activePlatform;
+			OO.ui.msg = ve.init.platform.getMessage.bind( ve.init.platform );
+		}
+	};
+
+	const testCaseData = {
+		data: repairWhitespaceUndefined( serializeToJson(
+			ve.dm.converter.getModelFromDom( originalDocument ).getFullData( undefined, 'roundTrip' ) ) ),
+		modify: serializeTransactionBuilder( transactions ),
+		// Original document as DOM from Parsoid.
+		body: wrapHtmlLiteral( getBodyContent( originalDocument ) ),
+		// Current document rendered to DOM in parser mode.
+		fromDataBody: wrapHtmlLiteral( getBodyContent(
+			ve.dm.converter.getDomFromModel( currentDocument ) ) ),
+		// Current document rendered including stored incoming HTML.
+		normalizedBody: wrapHtmlLiteral( getBodyContent(
+			ve.dm.converter.getDomFromModel( surfaceModel.getDocument() ) ) ),
+		// Current document rendered to DOM in clipboard mode.
+		clipboardBody: wrapHtmlLiteral( getBodyContent(
+			swapDummyPlatform(
+				() => ve.dm.converter.getDomFromModel( currentDocument, ve.dm.Converter.static.CLIPBOARD_MODE )
+			) ) ),
+		// Current document rendered to DOM in preview mode.
+		previewBody: wrapHtmlLiteral( getBodyContent(
+			swapDummyPlatform(
+				() => ve.dm.converter.getDomFromModel( currentDocument, ve.dm.Converter.static.PREVIEW_MODE )
+			) ) ),
+		innerWhitespace: repairAllUndefined( serializeToJson(
+			currentDocument.getInnerWhitespace() ) ),
+		preserveAnnotationDomElements: 'true',
+		storeItems: serializeStoreBuilder( currentDocument.getStore() )
+	};
+	return '{\n' +
+		indentLines( '\t',
+			Object.entries( testCaseData )
+				.filter( ( [ , value ] ) => value )
+				.map( ( [ key, value ] ) => key + ':\n' + indentLines( '\t', value ) )
+				.join( ',\n' )
+		) + '\n}';
 };
 
 /**
@@ -436,10 +588,7 @@ ve.ui.DebugBar.prototype.testSquasher = function () {
 	for ( let i = 1, iLen = transactions.length - 1; i < iLen; i++ ) {
 		const squashedBefore = squashTransactions( transactions.slice( 0, i ) );
 		const squashedAfter = squashTransactions( transactions.slice( i ) );
-		const doubleSquashed = squashTransactions( [].concat(
-			squashedBefore,
-			squashedAfter
-		) );
+		const doubleSquashed = squashTransactions( [ ...squashedBefore, ...squashedAfter ] );
 		const dump = JSON.stringify( squashed );
 		const doubleDump = JSON.stringify( doubleSquashed );
 		if ( dump !== doubleDump ) {

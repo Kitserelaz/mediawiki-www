@@ -22,6 +22,7 @@ use MediaWiki\Title\Title;
  * @ingroup MessageGroup
  */
 class AggregateMessageGroup extends MessageGroupBase {
+	public const UNDETERMINED_LANGUAGE_CODE = 'und';
 	/** @var MessageGroup[] */
 	private $groups;
 
@@ -86,7 +87,7 @@ class AggregateMessageGroup extends MessageGroupBase {
 		return $this->groups;
 	}
 
-	protected function loadMessagesFromCache( $groups ) {
+	protected function loadMessagesFromCache( array $groups ): array {
 		$messages = [];
 		foreach ( $groups as $group ) {
 			if ( $group instanceof self ) {
@@ -177,5 +178,12 @@ class AggregateMessageGroup extends MessageGroupBase {
 		}
 
 		return array_values( array_unique( $keys ) );
+	}
+
+	/** @inheritDoc */
+	public function getSourceLanguage(): string {
+		// Return undetermined language code (und) if no language is defined for the web configured
+		// aggregate group
+		return $this->conf['BASIC']['sourcelanguage'] ?? self::UNDETERMINED_LANGUAGE_CODE;
 	}
 }

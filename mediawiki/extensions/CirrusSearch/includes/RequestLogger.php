@@ -2,34 +2,22 @@
 
 namespace CirrusSearch;
 
-use ISearchResultSet;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Search\ISearchResultSet;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\WikiMap\WikiMap;
+use Wikimedia\Services\NoSuchServiceException;
 
 /**
  * Handles logging information about requests made to various destinations,
  * such as monolog, EventBus and statsd.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class RequestLogger {
 	/**
@@ -42,6 +30,11 @@ class RequestLogger {
 	// We still want to log the fact that the request set generated a hit
 	// for this title.  When this happens, the hit index field value will be this.
 	private const UNKNOWN_HIT_INDEX = '_UNKNOWN_';
+
+	/**
+	 * @const string EventBus stream to log requests to.
+	 */
+	private const STREAM = 'mediawiki.cirrussearch-request';
 
 	/**
 	 * @var RequestLog[] Set of requests made
@@ -89,13 +82,14 @@ class RequestLogger {
 	 */
 	private function reportLogs() {
 		if ( $this->logs ) {
-
-			// Build the mediawiki/search/requestset event and log it to the (json+EventBus)
-			// cirrussearch-request channel.
-			LoggerFactory::getInstance( 'cirrussearch-request' )->debug(
-				'', $this->buildCirrusSearchRequestEvent()
-			);
-
+			try {
+				$eventBusFactory = MediaWikiServices::getInstance()->getService( 'EventBus.EventBusFactory' );
+			} catch ( NoSuchServiceException ) {
+				return;
+			}
+			$stream = $eventBusFactory->getInstanceForStream( self::STREAM );
+			$event = $this->buildCirrusSearchRequestEvent();
+			$stream->send( [ $event ] );
 			// reset logs
 			$this->logs = [];
 		}
@@ -195,8 +189,8 @@ class RequestLogger {
 	 * @return array mediawiki/search/requestset event object
 	 */
 	private function buildCirrusSearchRequestEvent() {
-		global $wgRequest, $wgServerName;
-		$webrequest = $wgRequest;
+		global $wgServerName;
+		$webRequest = RequestContext::getMain()->getRequest();
 
 		// for the moment RequestLog::getRequests() is still created in the
 		// old format to serve the old log formats, so here we transform the
@@ -273,9 +267,7 @@ class RequestLogger {
 
 				Util::setIfDefined(
 					$requestContext, 'hits', $requestEntry, 'hits',
-					function ( $v ) {
-						return $this->encodeHits( $v );
-					}
+					$this->encodeHits( ... )
 				);
 				if ( isset( $requestEntry['hits'] ) ) {
 					$allHits = array_merge( $allHits, $requestEntry['hits'] );
@@ -314,16 +306,15 @@ class RequestLogger {
 			// The $schema URI here should be updated if we increment schema versions.
 			'$schema' => '/mediawiki/cirrussearch/request/0.0.1',
 			'meta' => [
-				'request_id' => $webrequest->getRequestId(),
+				'request_id' => $webRequest->getRequestId(),
 				'id' => $gen->newUUIDv4(),
-				'dt' => wfTimestamp( TS_ISO_8601 ),
 				'domain' => $wgServerName,
 				'stream' => 'mediawiki.cirrussearch-request',
 			],
 			'http' => [
-				'method' => $webrequest->getMethod(),
-				'client_ip' => $webrequest->getIP(),
-				'has_cookies' => $webrequest->getHeader( 'Cookie' ) ? true : false,
+				'method' => $webRequest->getMethod(),
+				'client_ip' => $webRequest->getIP(),
+				'has_cookies' => $webRequest->getHeader( 'Cookie' ) ? true : false,
 			],
 			'database' => WikiMap::getCurrentWikiId(),
 			'mediawiki_host' => gethostname(),
@@ -334,7 +325,7 @@ class RequestLogger {
 			'all_elasticsearch_requests_cached' => $allRequestsCached,
 		];
 
-		$webRequestValues = $webrequest->getValues();
+		$webRequestValues = $webRequest->getValues();
 		if ( $webRequestValues ) {
 			$requestEvent['params'] = [];
 			// Make sure all params are string keys and values
@@ -347,7 +338,7 @@ class RequestLogger {
 					// parameters can be parsed into.
 					$v = FormatJson::encode( $v );
 				}
-				$k = $webrequest->normalizeUnicode( $k );
+				$k = $webRequest->normalizeUnicode( $k );
 				$requestEvent['params'][(string)$k] = (string)$v;
 			}
 		}
@@ -374,9 +365,9 @@ class RequestLogger {
 		// If in webrequests, log these request headers in http.headers.
 		$httpRequestHeadersToLog = [ 'accept-language', 'referer', 'user-agent' ];
 		foreach ( $httpRequestHeadersToLog as $header ) {
-			if ( $webrequest->getHeader( $header ) ) {
+			if ( $webRequest->getHeader( $header ) ) {
 				$requestEvent['http']['request_headers'][$header] =
-					(string)$webrequest->normalizeUnicode( $webrequest->getHeader( $header ) );
+					(string)$webRequest->normalizeUnicode( $webRequest->getHeader( $header ) );
 			}
 		}
 

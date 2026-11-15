@@ -1,6 +1,5 @@
 <?php
 /**
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -15,15 +14,14 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  * http://www.gnu.org/copyleft/gpl.html
- *
  */
 
 namespace MediaWiki\Extension\EventBus\Rest;
 
-use Job;
-use JobRunner;
 use LogicException;
 use MediaWiki\Config\Config;
+use MediaWiki\JobQueue\Job;
+use MediaWiki\JobQueue\JobRunner;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Rest\Handler;
 use MediaWiki\Rest\HttpException;
@@ -31,10 +29,6 @@ use MediaWiki\Rest\Validator\Validator;
 use Psr\Log\LoggerInterface;
 use Wikimedia\Rdbms\ReadOnlyMode;
 
-/**
- * Class RunSingleJobHandler
- * @package MediaWiki\Extension\EventBus
- */
 class RunSingleJobHandler extends Handler {
 
 	/**

@@ -3,7 +3,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TranslatorInterface\Aid;
 
-use ApiBase;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Extension\Translate\TranslatorInterface\TranslationHelperException;
@@ -33,7 +34,7 @@ class TranslationAidsActionApi extends ApiBase {
 			$this->dieWithError( 'apierror-translate-nomessagefortitle', 'nomessagefortitle' );
 		}
 
-		if ( (string)$params['group'] !== '' ) {
+		if ( $params['group'] !== null && $params['group'] !== '' ) {
 			$group = MessageGroups::getGroup( $params['group'] );
 		} else {
 			$group = $handle->getGroup();
@@ -65,7 +66,7 @@ class TranslationAidsActionApi extends ApiBase {
 		// See: https://phabricator.wikimedia.org/T285830
 		// Identify and log.
 		if ( !$dataProvider->hasDefinition() ) {
-			LoggerFactory::getInstance( 'Translate' )->warning(
+			LoggerFactory::getInstance( LogNames::MAIN )->warning(
 				'Message definition is empty! Title: {title}, group: {group}, key: {key}',
 				[
 					'title' => $handle->getTitle()->getPrefixedText(),
@@ -145,7 +146,7 @@ class TranslationAidsActionApi extends ApiBase {
 		];
 	}
 
-	protected function getExamplesMessages() {
+	protected function getExamplesMessages(): array {
 		return [
 			'action=translationaids&title=MediaWiki:January/fi'
 				=> 'apihelp-translationaids-example-1',

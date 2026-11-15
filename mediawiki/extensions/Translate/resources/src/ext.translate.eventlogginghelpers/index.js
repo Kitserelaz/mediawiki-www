@@ -1,56 +1,51 @@
 ( function () {
 	'use strict';
 
-	const streamName = '/analytics/product_metrics/web/base/1.2.0';
-	const schemaId = 'mediawiki.product_metrics.translate_extension';
+	// Machine-readable name of the instrument registered in Test Kitchen.
+	// The instrument encapsulates the destination stream and the event schema
+	// so neither needs to be specified at the call site.
+	const INSTRUMENT_NAME = 'translate-click-actions';
 	const config = require( './config.json' );
 
+	let instrument;
+
 	const eventLoggingHelpers = {
+		isEventLoggingEnabled: function () {
+			return config.TranslateEnableEventLogging;
+		},
+
 		/**
 		 * @param {string|null} actionSubtype
 		 * @param {string|null} actionSource
-		 * @param {Object|null} actionContext
+		 * @param {Object|null} translation
 		 */
-		// eslint-disable-next-line no-unused-vars
-		logClickEvent: function ( actionSubtype, actionSource, actionContext ) {
-			if ( !config.TranslateEnableEventLogging ) {
-				return;
-			}
-
-			const interactionData = {};
-			if ( actionSubtype ) {
-				// eslint-disable-next-line camelcase
-				interactionData.action_subtype = actionSubtype;
-			}
-
-			if ( actionSource ) {
-				// eslint-disable-next-line camelcase
-				interactionData.action_source = actionSource;
-			}
-			/*
-			Implementation can be revisited after T369687 is resolved.
-			if (actionContext) {
-				// action_context is defined as a string under
-				// https://gitlab.wikimedia.org/repos/data-engineering/metrics-platform/-/blob/fcdc361d04792930e5b10f0fd6bd1f3150f34737/js/src/EventData.d.ts#L104
-				interactionData.action_context = JSON.stringify( actionContext );
-			}
-			*/
-			mw.eventLog.submitClick( streamName, interactionData );
+		logClickEvent: function ( actionSubtype, actionSource, translation ) {
+			this.logEvent( 'click', actionSubtype, actionSource, translation );
 		},
 
 		/**
 		 * @param {string} action
 		 * @param {string|null} actionSubtype
 		 * @param {string|null} actionSource
-		 * @param {Object|null} actionContext
+		 * @param {Object|null} translation
 		 */
-		// eslint-disable-next-line no-unused-vars
-		logEvent: function ( action, actionSubtype, actionSource, actionContext ) {
-			if ( !config.TranslateEnableEventLogging ) {
+		logEvent: function ( action, actionSubtype, actionSource, translation ) {
+			// Cheap config gate first, so getInstrument() is skipped entirely when
+			// event logging is disabled. Test Kitchen is a soft dependency: it
+			// loads its own SDK (mw.testKitchen) when installed and enabled, so we
+			// no-op when it is unavailable.
+			if ( !this.isEventLoggingEnabled() || !mw.testKitchen ) {
 				return;
 			}
 
-			const interactionData = {};
+			if ( !instrument ) {
+				instrument = mw.testKitchen.getInstrument( INSTRUMENT_NAME );
+			}
+
+			const interactionData = {
+				translation: translation || {}
+			};
+
 			if ( actionSubtype ) {
 				// eslint-disable-next-line camelcase
 				interactionData.action_subtype = actionSubtype;
@@ -60,17 +55,8 @@
 				// eslint-disable-next-line camelcase
 				interactionData.action_source = actionSource;
 			}
-			/*
-			Implementation can be revisited after T369687 is resolved.
-			if ( actionContext ) {
-				// action_context is defined as a string under
-				// https://gitlab.wikimedia.org/repos/data-engineering/metrics-platform/-/blob/fcdc361d04792930e5b10f0fd6bd1f3150f34737/js/src/EventData.d.ts#L104
-				// eg interactionData.action_context = JSON.stringify( actionContext );
-				// eslint-disable-next-line camelcase
-				interactionData.action_context = null;
-			}
-			*/
-			mw.eventLog.submitInteraction( streamName, schemaId, action, null );
+
+			instrument.send( action, interactionData );
 		}
 	};
 

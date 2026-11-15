@@ -2,8 +2,10 @@
 namespace Wikibase\Search\Elastic\Fields;
 
 use CirrusSearch\CirrusSearch;
-use SearchEngine;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchIndexField;
 use Wikibase\DataModel\Entity\EntityDocument;
+use Wikibase\DataModel\Term\LabelsProvider;
 
 /**
  * Field which contains combination of all labels.
@@ -11,7 +13,7 @@ use Wikibase\DataModel\Entity\EntityDocument;
  * @license GPL-2.0-or-later
  * @author Stas Malyshev
  */
-class AllLabelsField extends TermIndexField {
+class AllLabelsField extends TermIndexField implements WikibaseLabelsIndexField {
 
 	/**
 	 * Field name
@@ -19,7 +21,7 @@ class AllLabelsField extends TermIndexField {
 	public const NAME = 'labels_all';
 
 	public function __construct() {
-		parent::__construct( static::NAME, \SearchIndexField::INDEX_TYPE_TEXT );
+		parent::__construct( static::NAME, SearchIndexField::INDEX_TYPE_TEXT );
 	}
 
 	/**
@@ -51,7 +53,14 @@ class AllLabelsField extends TermIndexField {
 	 */
 	public function getFieldData( EntityDocument $entity ) {
 		// All-labels has no data, it is assembled from individual fields by Elastic via copy_to.
+		// TODO: we should add support for this kind of mapping only fields, this is not having
+		//  undesirable behaviors when searching but does pollute the indexed docs with a null
+		//  "labels_all" entry.
 		return null;
 	}
 
+	/** @inheritDoc */
+	public function getLabelsIndexedData( LabelsProvider $entity ) {
+		return null;
+	}
 }

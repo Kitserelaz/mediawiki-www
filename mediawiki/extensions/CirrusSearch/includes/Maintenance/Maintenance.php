@@ -6,11 +6,13 @@ use CirrusSearch\Connection;
 use CirrusSearch\MetaStore\MetaStoreIndex;
 use CirrusSearch\SearchConfig;
 use CirrusSearch\UserTestingEngine;
+use Elastica\Index;
 use MediaWiki\Maintenance\Maintenance as MWMaintenance;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Settings\SettingsBuilder;
 use MediaWiki\Status\Status;
 use RuntimeException;
+use StatusValue;
 
 // Maintenance class is loaded before autoload, so we need to pull the interface
 require_once __DIR__ . '/Printer.php';
@@ -18,20 +20,7 @@ require_once __DIR__ . '/Printer.php';
 /**
  * Cirrus helpful extensions to Maintenance.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 abstract class Maintenance extends MWMaintenance implements Printer {
 	/**
@@ -47,10 +36,13 @@ abstract class Maintenance extends MWMaintenance implements Printer {
 	/**
 	 * @var SearchConfig
 	 */
-	private $searchConfig;
+	protected $searchConfig;
 
-	public function __construct() {
+	public function __construct( ?SearchConfig $searchConfig = null ) {
 		parent::__construct();
+		if ( $searchConfig !== null ) {
+			$this->searchConfig = $searchConfig;
+		}
 		$this->addOption( 'cluster', 'Perform all actions on the specified elasticsearch cluster',
 			false, true );
 		$this->addOption( 'userTestTrigger', 'Use config var and profiles set in the user testing ' .
@@ -117,8 +109,9 @@ abstract class Maintenance extends MWMaintenance implements Printer {
 		return $connection;
 	}
 
-	public function getSearchConfig() {
+	public function getSearchConfig(): SearchConfig {
 		if ( $this->searchConfig == null ) {
+			// @phan-suppress-next-line PhanTypeMismatchProperty
 			$this->searchConfig = MediaWikiServices::getInstance()
 				->getConfigFactory()
 				->makeConfig( 'CirrusSearch' );
@@ -132,20 +125,29 @@ abstract class Maintenance extends MWMaintenance implements Printer {
 		return $this->searchConfig;
 	}
 
-	public function getMetaStore( ?Connection $conn = null ) {
+	public function getMetaStore( ?Connection $conn = null ): MetaStoreIndex {
 		return new MetaStoreIndex( $conn ?? $this->getConnection(), $this, $this->getSearchConfig() );
 	}
 
 	/**
 	 * @return string|null
 	 */
-	private function decideCluster() {
+	protected function decideCluster() {
+		$config = $this->getSearchConfig();
+		$assignment = $config->getClusterAssignment();
+
 		$cluster = $this->getOption( 'cluster', null );
-		if ( $cluster === null ) {
-			return null;
-		}
-		if ( $this->getSearchConfig()->has( 'CirrusSearchServers' ) ) {
+		if ( $cluster !== null && $config->has( 'CirrusSearchServers' ) ) {
 			$this->fatalError( 'Not configured for cluster operations.' );
+		}
+		if ( $cluster === null ) {
+			$cluster = $assignment->getSearchCluster();
+		}
+		if ( $this->requireManagedCluster() && !$assignment->canManageCluster( $cluster ) ) {
+			$this->fatalError(
+				"Named cluster ($cluster) is not configured for maintenance operations. " .
+				"Allowed clusters: " . implode( ", ", $assignment->getManagedClusters() )
+			);
 		}
 		return $cluster;
 	}
@@ -180,6 +182,7 @@ abstract class Maintenance extends MWMaintenance implements Printer {
 		parent::output( $message );
 	}
 
+	/** @inheritDoc */
 	public function outputIndented( $message ) {
 		$this->output( self::$indent . $message );
 	}
@@ -209,9 +212,6 @@ abstract class Maintenance extends MWMaintenance implements Printer {
 		// Don't skew the dashboards by logging these requests to
 		// the global request log.
 		$wgCirrusSearchLogElasticRequests = false;
-		// Disable statsd data collection.
-		$stats = MediaWikiServices::getInstance()->getStatsdDataFactory();
-		$stats->setEnabled( false );
 	}
 
 	/**
@@ -235,6 +235,15 @@ abstract class Maintenance extends MWMaintenance implements Printer {
 				"Cirrus meta store does not exist, you must index your data first"
 			);
 		}
+	}
+
+	/**
+	 * @return bool True if this script only operates on clusters specified
+	 *  in CirrusSearchManagedClusters. Can be set to false for read-only
+	 *  scripts that don't care where they read from.
+	 */
+	protected function requireManagedCluster() {
+		return true;
 	}
 
 	/**
@@ -267,14 +276,46 @@ abstract class Maintenance extends MWMaintenance implements Printer {
 	/**
 	 * Helper method for Status returning methods, such as via ConfigUtils
 	 *
-	 * @param Status $status
-	 * @return mixed
+	 * @template T
+	 * @param Status<T> $status
+	 * @return T
 	 */
 	protected function unwrap( Status $status ) {
 		if ( !$status->isGood() ) {
 			$this->fatalError( (string)$status );
 		}
 		return $status->getValue();
+	}
+
+	/**
+	 * Count the number of doc in this index.
+	 * @param Index $index
+	 * @return int
+	 */
+	protected function safeCount( Index $index, int $attempts = 3 ): int {
+		return ConfigUtils::safeCountOrFail(
+			$index,
+			function ( StatusValue $error ): never {
+				$this->fatalError( $error );
+			},
+			$attempts
+		);
+	}
+
+	/**
+	 * Refresh the index.
+	 * @param Index $index
+	 * @param int $attempts
+	 * @return void
+	 */
+	protected function safeRefresh( Index $index, int $attempts = 3 ): void {
+		ConfigUtils::safeRefreshOrFail(
+			$index,
+			function ( StatusValue $error ): never {
+				$this->fatalError( $error );
+			},
+			$attempts
+		);
 	}
 
 }

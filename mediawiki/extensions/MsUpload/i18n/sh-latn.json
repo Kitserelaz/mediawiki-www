@@ -1,11 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"Winston Sung"
 		]
 	},
 	"msu-desc": "Omogućava jednostavno postavljanje jednog ili više datoteka odjednom",
-	"msu-button-title": "Odaberi datoteke",
+	"msu-button-title": "Izaberite datoteke",
 	"msu-insert-link": "Umetni link",
 	"msu-insert-gallery": "Umetni sve kao galeriju",
 	"msu-insert-files": "Umetni sve kao datoteke",
@@ -14,7 +15,7 @@
 	"msu-insert-video": "Umetni video",
 	"msu-cancel-upload": "Prekini postavljanje",
 	"msu-continue": "Ipak nastaviti?",
-	"msu-clean-all": "Očisti spisak",
+	"msu-clean-all": "Očisti listu",
 	"msu-ext-not-allowed": "{{PLURAL:$1|Dopuštena je samo sljedeća vrsta:|Dopuštene su samo sljedeće vrste:}}",
 	"msu-upload-this": "Postavi ovu datoteku",
 	"msu-upload-all": "Postavi sve datoteke",

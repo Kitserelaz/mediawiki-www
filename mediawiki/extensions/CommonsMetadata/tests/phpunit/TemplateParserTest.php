@@ -2,8 +2,6 @@
 
 namespace CommonsMetadata;
 
-require_once __DIR__ . "/ParserTestHelper.php";
-
 /**
  * @covers \CommonsMetadata\TemplateParser
  * @group Extensions/CommonsMetadata
@@ -84,17 +82,16 @@ class TemplateParserTest extends \MediaWikiIntegrationTestCase {
 	 */
 	public function testDateInMultipleLanguages() {
 		$parser = $this->getParser( false );
-		$data = $this->parseTestHTML( 'multilang_date', $parser ); // en/de dates
+		// en/de dates
+		$data = $this->parseTestHTML( 'multilang_date', $parser );
 		$dataCollector = new DataCollector();
 		$dataCollector->setTemplateParser( $parser );
 		$dataCollector->setLicenseParser( new LicenseParser() );
 
 		$getTemplateMetadataMethod = new \ReflectionMethod(
 			$dataCollector, 'getTemplateMetadata' );
-		$getTemplateMetadataMethod->setAccessible( true );
 		$normalizeTimestampsMethod = new \ReflectionMethod(
 			$dataCollector, 'normalizeMetadataTimestamps' );
-		$normalizeTimestampsMethod->setAccessible( true );
 
 		$data = $getTemplateMetadataMethod->invokeArgs( $dataCollector, [ $data ] );
 		# ensure that normalizeMetadataTimestamps doesn't crash on this
@@ -115,7 +112,8 @@ class TemplateParserTest extends \MediaWikiIntegrationTestCase {
 	 * be returned, regardless of user language.
 	 */
 	public function testDescriptionInMultipleLanguages() {
-		$data = $this->parseTestHTML( 'multilang' ); // en/fr/de description
+		// en/fr/de description
+		$data = $this->parseTestHTML( 'multilang' );
 		$this->assertFieldContainsString( 'ImageDescription', 'Assembly', $data,
 			TemplateParser::INFORMATION_FIELDS_KEY );
 		$this->assertFieldNotContainsString( 'ImageDescription', 'Rassemblement', $data,
@@ -299,8 +297,6 @@ class TemplateParserTest extends \MediaWikiIntegrationTestCase {
 			TemplateParser::INFORMATION_FIELDS_KEY );
 	}
 
-	// -------------------- license tests --------------------
-
 	public function testSingleLicense() {
 		$data = $this->parseTestHTML( 'simple' );
 
@@ -383,6 +379,14 @@ class TemplateParserTest extends \MediaWikiIntegrationTestCase {
 	}
 
 	/**
+	 * Test invalid license urls being filtered out.
+	 */
+	public function testLicenseUrlFilter() {
+		$data = $this->parseTestHTML( 'invalid_licenseurl' );
+		$this->assertArrayNotHasKey( 'LicenseUrl', $data );
+	}
+
+	/**
 	 * Test deletion reason etraction from the {{Nuke}} template
 	 */
 	public function testNuke() {
@@ -393,17 +397,6 @@ class TemplateParserTest extends \MediaWikiIntegrationTestCase {
 			. '--[[User:G.dallorto|User:G.dallorto]] '
 			. '([[User talk:G.dallorto|<span class="signature-talk">talk</span>]]) '
 			. '00:25, 16 November 2014 (UTC)', $data, TemplateParser::DELETION_KEY );
-	}
-
-	/**
-	 * Manually executed speed test to compare performance of the two parsers.
-	 */
-	public function _testParsingSpeed() {
-		for ( $i = 0; $i < 100; $i++ ) {
-			foreach ( ParserTestHelper::$testHTMLFiles as $test => $_ ) {
-				$this->parseTestHTML( $test );
-			}
-		}
 	}
 
 	// -------------------- helpers --------------------

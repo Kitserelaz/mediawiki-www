@@ -6,17 +6,42 @@
  * @ingroup Extensions
  */
 
+use MediaWiki\Config\Config;
+use MediaWiki\EditPage\EditPage;
+use MediaWiki\Html\Html;
+use MediaWiki\Linker\Linker;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\ProperPageIdentity;
+use MediaWiki\Page\WikiPage;
+use MediaWiki\Permissions\Authority;
+use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Specials\SpecialMovePage;
+use MediaWiki\Storage\EditResult;
+use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 
-class DraftHooks {
+class DraftHooks implements
+	\MediaWiki\Hook\EditFilterHook,
+	\MediaWiki\Hook\EditPageBeforeEditButtonsHook,
+	\MediaWiki\Hook\EditPage__attemptSave_afterHook,
+	\MediaWiki\Hook\EditPage__showEditForm_initialHook,
+	\MediaWiki\Hook\SpecialMovepageAfterMoveHook,
+	\MediaWiki\Installer\Hook\LoadExtensionSchemaUpdatesHook,
+	\MediaWiki\Page\Hook\PageUndeleteCompleteHook,
+	\MediaWiki\Preferences\Hook\GetPreferencesHook,
+	\MediaWiki\ResourceLoader\Hook\ResourceLoaderGetConfigVarsHook,
+	\MediaWiki\Storage\Hook\PageSaveCompleteHook,
+	\MediaWiki\User\Hook\UserGetDefaultOptionsHook
+{
 	/**
 	 * Enable the Drafts preference by default for new user accounts (as well as
 	 * old ones that haven't explicitly disabled Drafts).
 	 *
 	 * @param array &$defaultOptions
 	 */
-	public static function onUserGetDefaultOptions( &$defaultOptions ) {
+	public function onUserGetDefaultOptions( &$defaultOptions ) {
 		$defaultOptions['extensionDrafts_enable'] = true;
 	}
 
@@ -26,7 +51,7 @@ class DraftHooks {
 	 * @param User $user
 	 * @param array &$preferences
 	 */
-	public static function onGetPreferences( User $user, array &$preferences ) {
+	public function onGetPreferences( $user, &$preferences ) {
 		$preferences['extensionDrafts_enable'] = [
 			'type' => 'toggle',
 			'label-message' => 'drafts-enable',
@@ -40,7 +65,7 @@ class DraftHooks {
 	 *
 	 * @param DatabaseUpdater $updater
 	 */
-	public static function schema( $updater ) {
+	public function onLoadExtensionSchemaUpdates( $updater ) {
 		$sqlDir = __DIR__ . '/../sql';
 		$updater->addExtensionTable( 'drafts', $sqlDir . '/Drafts.sql' );
 		if ( $updater->getDB()->getType() !== 'sqlite' ) {
@@ -53,11 +78,11 @@ class DraftHooks {
 	/**
 	 * SpecialMovepageAfterMove hook
 	 *
-	 * @param MovePageForm $mp
+	 * @param SpecialMovePage $mp
 	 * @param Title $ot
 	 * @param Title $nt
 	 */
-	public static function onSpecialMovepageAfterMove( $mp, $ot, $nt ) {
+	public function onSpecialMovepageAfterMove( $mp, $ot, $nt ) {
 		// Update all drafts of old article to new article for all users
 		Drafts::move( $ot, $nt );
 	}
@@ -69,8 +94,20 @@ class DraftHooks {
 	 *
 	 * @param WikiPage $wikiPage
 	 * @param UserIdentity $user
+	 * @param string $summary
+	 * @param int $flags
+	 * @param RevisionRecord $revisionRecord
+	 * @param EditResult $editResult
+	 * @return bool|void
 	 */
-	public static function onPageSaveComplete( WikiPage $wikiPage, UserIdentity $user ) {
+	public function onPageSaveComplete(
+		$wikiPage,
+		$user,
+		$summary,
+		$flags,
+		$revisionRecord,
+		$editResult,
+	) {
 		global $wgRequest;
 
 		// Check if the save occurred from a draft
@@ -99,9 +136,10 @@ class DraftHooks {
 	 * Load draft...
 	 *
 	 * @param EditPage $editpage
+	 * @param OutputPage $out
 	 * @return void
 	 */
-	public static function loadForm( EditPage $editpage ) {
+	public function onEditPage__showEditForm_initial( $editpage, $out ) {
 		$context = $editpage->getArticle()->getContext();
 		$userOptionsManager = MediaWikiServices::getInstance()->getUserOptionsManager();
 		$user = $context->getUser();
@@ -183,16 +221,16 @@ class DraftHooks {
 		// Show list of drafts
 		if ( $numDrafts > 0 ) {
 			if ( $request->getRawVal( 'action' ) !== 'submit' ) {
-				$out->addHTML( Xml::openElement(
+				$out->addHTML( Html::openElement(
 					'div', [ 'id' => 'drafts-list-box' ] )
 				);
-				$out->addHTML( Xml::element(
-					'h3', null, $context->msg( 'drafts-view-existing' )->text() )
+				$out->addHTML( Html::element(
+					'h3', [], $context->msg( 'drafts-view-existing' )->text() )
 				);
 				$out->addHTML( Drafts::display( $context->getTitle() ) );
-				$out->addHTML( Xml::closeElement( 'div' ) );
+				$out->addHTML( Html::closeElement( 'div' ) );
 			} else {
-				$link = Xml::element( 'a',
+				$link = Html::element( 'a',
 					[
 						'href' => $context->getTitle()->getFullURL( 'action=edit' ),
 						'class' => 'mw-discard-draft-link'
@@ -209,7 +247,7 @@ class DraftHooks {
 	 * This method handles clicks on the "Save draft" button when the user has
 	 * JavaScript disabled.
 	 *
-	 * @todo FIXME: The guts of this method kinda duplicate the loadForm() method's
+	 * @todo FIXME: The guts of this method kinda duplicate the onEditPage__showEditForm_initial() method's
 	 * internals, but such is life.
 	 *
 	 * @param EditPage $editPage
@@ -217,7 +255,7 @@ class DraftHooks {
 	 * @param array $resultDetails
 	 */
 	// phpcs:ignore MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-	public static function onEditPage__attemptSave_after( $editPage, $status, $resultDetails ) {
+	public function onEditPage__attemptSave_after( $editPage, $status, $resultDetails ) {
 		$article = $editPage->getArticle();
 		$ctx = $article->getContext();
 		$user = $ctx->getUser();
@@ -275,8 +313,9 @@ class DraftHooks {
 	 * @param string $text
 	 * @param string $section
 	 * @param string &$error
+	 * @param string $summary
 	 */
-	public static function onEditFilter( EditPage $editor, $text, $section, &$error ) {
+	public function onEditFilter( $editor, $text, $section, &$error, $summary ) {
 		// Don't save if the save draft button caused the submit
 		if ( $editor->getArticle()->getContext()->getRequest()->getText( 'wpDraftSave' ) !== '' ) {
 			// Modify the error so it's clear we want to remain in edit mode
@@ -292,7 +331,7 @@ class DraftHooks {
 	 * @param array &$buttons
 	 * @param int &$tabindex
 	 */
-	public static function onEditPageBeforeEditButtons( EditPage $editpage, &$buttons, &$tabindex ) {
+	public function onEditPageBeforeEditButtons( $editpage, &$buttons, &$tabindex ) {
 		$context = $editpage->getArticle()->getContext();
 		$userOptionsManager = MediaWikiServices::getInstance()->getUserOptionsManager();
 		$user = $context->getUser();
@@ -358,8 +397,10 @@ class DraftHooks {
 	 * Hook for ResourceLoaderGetConfigVars
 	 *
 	 * @param array &$vars
+	 * @param string $skin
+	 * @param Config $config
 	 */
-	public static function onResourceLoaderGetConfigVars( &$vars ) {
+	public function onResourceLoaderGetConfigVars( array &$vars, $skin, Config $config ): void {
 		global $egDraftsAutoSaveWait, $egDraftsAutoSaveTimeout,
 			   $egDraftsAutoSaveInputBased;
 		$vars['wgDraftAutoSaveWait'] = $egDraftsAutoSaveWait;
@@ -368,24 +409,41 @@ class DraftHooks {
 	}
 
 	/**
-	 * ArticleUndelete hook
+	 * PageUndeleteComplete hook
 	 *
 	 * If an article is undeleted, update the page ID we have stored internally
 	 *
 	 * @see https://phabricator.wikimedia.org/T21734
-	 * @todo FIXME: switch to the PageUndeleteComplete hook for MW 1.40+
 	 *
-	 * @param Title $title
-	 * @param bool $create
+	 * @param ProperPageIdentity $page
+	 * @param Authority $restorer
+	 * @param string $reason Undeletion reason
+	 * @param RevisionRecord $restoredRev
+	 * @param ManualLogEntry $logEntry
+	 * @param int $restoredRevisionCount
+	 * @param bool $created
+	 * @param array $restoredPageIds
 	 * @return void
 	 */
-	public static function onArticleUndelete( $title, $create ) {
-		if ( !$create ) {
+	public function onPageUndeleteComplete(
+		ProperPageIdentity $page,
+		Authority $restorer,
+		string $reason,
+		RevisionRecord $restoredRev,
+		ManualLogEntry $logEntry,
+		int $restoredRevisionCount,
+		bool $created,
+		array $restoredPageIds
+	): void {
+		if ( !$created ) {
 			// Only for restored pages
 			return;
 		}
 
-		$dbw = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_PRIMARY );
+		$services = MediaWikiServices::getInstance();
+		$title = $services->getTitleFactory()->newFromPageIdentity( $page );
+
+		$dbw = $services->getDBLoadBalancer()->getConnection( DB_PRIMARY );
 		$dbw->update(
 			'drafts',
 			[ 'draft_page' => $title->getArticleID() ],

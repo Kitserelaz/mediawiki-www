@@ -8,7 +8,7 @@ use CirrusSearch\BuildDocument\DocumentSizeLimiter;
 use CirrusSearch\Extra\MultiList\MultiListBuilder;
 use CirrusSearch\Profile\SearchProfileService;
 use CirrusSearch\Search\CirrusIndexField;
-use CirrusSearch\Wikimedia\WeightedTagsHooks;
+use CirrusSearch\Search\WeightedTagsHooks;
 use Elastica\Bulk\Action\AbstractDocument;
 use Elastica\Document;
 use Elastica\Exception\Bulk\ResponseException;
@@ -26,20 +26,7 @@ use Wikimedia\Stats\StatsFactory;
 /**
  * Handles non-maintenance write operations to the elastic search cluster.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class DataSender extends ElasticsearchIntermediary {
 
@@ -87,45 +74,6 @@ class DataSender extends ElasticsearchIntermediary {
 			$config->getProfileService()->loadProfile( SearchProfileService::DOCUMENT_SIZE_LIMITER ) );
 	}
 
-	/**
-	 * @deprecated use {@link sendWeightedTagsUpdate} instead.
-	 */
-	public function sendUpdateWeightedTags(
-		string $indexSuffix,
-		array $docIds,
-		string $tagField,
-		string $tagPrefix,
-		$tagNames = null,
-		?array $tagWeights = null,
-		int $batchSize = 30
-	): Status {
-		return $this->sendWeightedTagsUpdate(
-			$indexSuffix,
-			$tagPrefix,
-			is_array( $tagWeights ) ? array_reduce(
-				$docIds, static function ( $docTagsWeights, $docId ) use ( $tagNames, $tagWeights ) {
-					if ( array_key_exists( $docId, $tagWeights ) ) {
-						$docTagsWeights[$docId] = MultiListBuilder::buildTagWeightsFromLegacyParameters(
-						$tagNames,
-						$tagWeights[$docId]
-						);
-					}
-
-					return $docTagsWeights;
-				}, []
-			) : array_fill_keys( $docIds, MultiListBuilder::buildTagWeightsFromLegacyParameters( $tagNames ) ),
-			$batchSize
-		);
-	}
-
-	/**
-	 * @param string $indexSuffix
-	 * @param string $tagPrefix
-	 * @param int[][]|null[][] $tagWeights a map of `[ docId: string => [ tagName: string => tagWeight: int|null ] ]`
-	 * @param int $batchSize
-	 *
-	 * @return Status
-	 */
 	public function sendWeightedTagsUpdate(
 		string $indexSuffix,
 		string $tagPrefix,
@@ -200,24 +148,6 @@ class DataSender extends ElasticsearchIntermediary {
 	}
 
 	/**
-	 * @deprecated use {@link sendWeightedTagsUpdate} instead.
-	 */
-	public function sendResetWeightedTags(
-		string $indexSuffix,
-		array $docIds,
-		string $tagField,
-		string $tagPrefix,
-		int $batchSize = 30
-	): Status {
-		return $this->sendWeightedTagsUpdate(
-			$indexSuffix,
-			$tagPrefix,
-			array_fill_keys( $docIds, [ CirrusIndexField::MULTILIST_DELETE_GROUPING => null ] ),
-			$batchSize
-		);
-	}
-
-	/**
 	 * @param string $indexSuffix suffix of index to which to send $documents
 	 * @param \Elastica\Document[] $documents documents to send
 	 * @return Status
@@ -245,7 +175,8 @@ class DataSender extends ElasticsearchIntermediary {
 			$services->getBacklinkCacheFactory(),
 			$this->docSizeLimiter,
 			$services->getTitleFormatter(),
-			$services->getWikiPageFactory()
+			$services->getWikiPageFactory(),
+			$services->getTitleFactory()
 		);
 		try {
 			foreach ( $documents as $i => $doc ) {
@@ -326,7 +257,7 @@ class DataSender extends ElasticsearchIntermediary {
 			$responseSet = $bulk->send();
 		} catch ( ResponseException $e ) {
 			$justDocumentMissing = $this->bulkResponseExceptionIsJustDocumentMissing( $e,
-				function ( $docId ) use ( $e, $indexSuffix ) {
+				function ( $docId ) use ( $indexSuffix ) {
 					$this->log->info(
 						"Updating a page that doesn't yet exist in Elasticsearch: {docId}",
 						[ 'docId' => $docId, 'indexSuffix' => $indexSuffix ]
@@ -412,11 +343,8 @@ class DataSender extends ElasticsearchIntermediary {
 			$this->stats->getCounter( "update_total" )
 				->setLabel( "status", $what )
 				->setLabel( "search_cluster", $cluster )
-				->setLabel( "index_name", $indexSuffix )
-				->copyToStatsdAt( [
-					"$metricsPrefix.details.{$this->indexBaseName}.$indexSuffix.$what",
-					"$metricsPrefix.all.$what"
-				] )
+				->setLabel( "index_name", $this->indexBaseName )
+				->setLabel( "index_suffix", $indexSuffix )
 				->incrementBy( $num );
 		}
 	}
@@ -600,7 +528,7 @@ class DataSender extends ElasticsearchIntermediary {
 				if ( $action instanceof \Elastica\Bulk\Action\AbstractDocument ) {
 					$docId = $action->getData()->getId();
 				}
-				call_user_func( $logCallback, $docId );
+				$logCallback( $docId );
 			}
 		}
 		return $justDocumentMissing;
@@ -668,18 +596,6 @@ class DataSender extends ElasticsearchIntermediary {
 			'CirrusSearchUpdateConflictRetryCount' );
 	}
 
-	private function convertEncoding( $d ) {
-		if ( is_string( $d ) ) {
-			return mb_convert_encoding( $d, 'UTF-8', 'UTF-8' );
-		}
-
-		foreach ( $d as &$v ) {
-			$v = $this->convertEncoding( $v );
-		}
-
-		return $d;
-	}
-
 	private function reportDocSize( Document $doc ): void {
 		$cluster = $this->connection->getClusterName();
 		try {
@@ -692,7 +608,6 @@ class DataSender extends ElasticsearchIntermediary {
 			// to track abnormally large docs we might consider another approach (log a warning?)
 			$this->stats->getTiming( "update_doc_size_kb" )
 				->setLabel( "search_cluster", $cluster )
-				->copyToStatsdAt( "CirrusSearch.$cluster.updates.all.doc_size" )
 				->observe( $len );
 
 		} catch ( \JsonException $e ) {

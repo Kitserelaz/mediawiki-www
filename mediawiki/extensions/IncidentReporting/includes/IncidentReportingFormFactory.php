@@ -2,18 +2,18 @@
 
 namespace Miraheze\IncidentReporting;
 
-use ManualLogEntry;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\Linker\Linker;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Output\OutputPage;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\Platform\ISQLPlatform;
+use Wikimedia\Rdbms\SelectQueryBuilder;
 
 class IncidentReportingFormFactory {
 	/** @var Config */
@@ -28,15 +28,12 @@ class IncidentReportingFormFactory {
 	}
 
 	public function getFormDescriptor(
-		IDatabase $dbw,
 		int $id,
 		bool $edit,
-		IContextSource $context
+		IContextSource $context,
+		IDatabase $dbw
 	) {
-		OutputPage::setupOOUI(
-			strtolower( $context->getSkin()->getSkinName() ),
-			$context->getLanguage()->getDir()
-		);
+		$context->getOutput()->enableOOUI();
 
 		if ( !$id ) {
 			$action = 'create';
@@ -49,14 +46,12 @@ class IncidentReportingFormFactory {
 		if ( $action == 'create' ) {
 			$data = null;
 		} else {
-			$data = $dbw->selectRow(
-				'incidents',
-				'*',
-				[
-					'i_id' => $id
-				],
-				__METHOD__
-			);
+			$data = $dbw->newSelectQueryBuilder()
+				->select( ISQLPlatform::ALL_ROWS )
+				->from( 'incidents' )
+				->where( [ 'i_id' => $id ] )
+				->caller( __METHOD__ )
+				->fetchRow();
 		}
 
 		$irServices = [];
@@ -84,12 +79,17 @@ class IncidentReportingFormFactory {
 
 		$responders = [];
 
+		$linkRenderer = MediaWikiServices::getInstance()->getLinkRenderer();
+
 		if ( $data !== null ) {
 			$respArray = explode( "\n", $data->i_responders );
 
 			if ( count( $respArray ) != 0 ) {
 				foreach ( $respArray as $resp ) {
-					$responders[] = Linker::userLink( $userFactory->newFromName( $resp )->getId(), $resp );
+					$user = $userFactory->newFromName( $resp );
+					if ( $user ) {
+						$responders[] = $linkRenderer->makeUserLink( $user, $context );
+					}
 				}
 			}
 		}
@@ -101,20 +101,21 @@ class IncidentReportingFormFactory {
 		];
 
 		if ( $id ) {
-			$dbReviewers = $dbw->select(
-				'incidents_reviewer',
-				'*',
-				[
-					'r_incident' => $id
-				],
-				__METHOD__
-			);
+			$dbReviewers = $dbw->newSelectQueryBuilder()
+				->select( ISQLPlatform::ALL_ROWS )
+				->from( 'incidents_reviewer' )
+				->where( [ 'r_incident' => $id ] )
+				->caller( __METHOD__ )
+				->fetchResultSet();
 
 			foreach ( $dbReviewers as $db ) {
-				if ( $db->r_timestamp ) {
-					$reviewers['reviewed'][] = Linker::userLink( $userFactory->newFromName( $db->r_user )->getId(), $db->r_user );
-				} else {
-					$reviewers['unreviewed'][] = Linker::userLink( $userFactory->newFromName( $db->r_user )->getId(), $db->r_user );
+				$user = $userFactory->newFromName( $db->r_user );
+				if ( $user ) {
+					if ( $db->r_timestamp ) {
+						$reviewers['reviewed'][] = $linkRenderer->makeUserLink( $user, $context );
+					} else {
+						$reviewers['unreviewed'][] = $linkRenderer->makeUserLink( $user, $context );
+					}
 				}
 
 				$reviewers['all'][] = $db->r_user;
@@ -214,8 +215,6 @@ class IncidentReportingFormFactory {
 			],
 		];
 
-		$linkRenderer = MediaWikiServices::getInstance()->getLinkRenderer();
-
 		$viewDescriptor = [
 			'service' => [
 				'type' => 'info',
@@ -300,20 +299,16 @@ class IncidentReportingFormFactory {
 
 		// build a log like above
 		$buildLog = [];
-		$logData = $dbw->select(
-			'incidents_log',
-			'*',
-			[
-				'log_incident' => $id
-			],
-			__METHOD__,
-			[
-				'ORDER BY' => 'log_timestamp ASC'
-			]
-		);
+		$logData = $dbw->newSelectQueryBuilder()
+			->select( ISQLPlatform::ALL_ROWS )
+			->from( 'incidents_log' )
+			->where( [ 'log_incident' => $id ] )
+			->orderBy( 'log_timestamp', SelectQueryBuilder::SORT_ASC )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 
 		if ( $action == 'view' ) {
-			if ( $logData ) {
+			if ( $logData->numRows() ) {
 				foreach ( $logData as $ldata ) {
 					$buildLog[$ldata->log_id] = [
 						'type' => 'info',
@@ -333,7 +328,7 @@ class IncidentReportingFormFactory {
 		} else {
 			$logId = 0;
 
-			if ( $action == 'edit' && $logData ) {
+			if ( $action == 'edit' && $logData->numRows() ) {
 				foreach ( $logData as $ldata ) {
 					$logId = (int)$ldata->log_id;
 
@@ -361,6 +356,7 @@ class IncidentReportingFormFactory {
 						'type' => 'user',
 						'label' => wfMessage( 'incidentreporting-log-user', $logId )->text(),
 						'exists' => true,
+						'excludetemp' => true,
 						'section' => 'logs',
 						'subsection' => (string)$logId,
 						'default' => $ldata->log_actor,
@@ -482,8 +478,6 @@ class IncidentReportingFormFactory {
 			];
 		}
 
-		$formDescriptor = [];
-
 		if ( $action == 'view' ) {
 			$formDescriptor = array_merge( $viewDescriptor, $buildLog );
 		} else {
@@ -496,46 +490,46 @@ class IncidentReportingFormFactory {
 	public function getForm(
 		int $id,
 		bool $edit,
-		IDatabase $dbw,
 		IContextSource $context,
 		$formClass = IncidentReportingOOUIForm::class
 	) {
-		$formDescriptor = $this->getFormDescriptor( $dbw, $id, $edit, $context );
+		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()
+			->getPrimaryDatabase( 'virtual-incidentreporting' );
+
+		$formDescriptor = $this->getFormDescriptor( $id, $edit, $context, $dbw );
 
 		$htmlForm = new $formClass( $formDescriptor, $context, 'incidentreporting' );
 
 		$htmlForm->setId( 'incidentreporting-form' );
 		$htmlForm->suppressDefaultSubmit();
 		$htmlForm->setSubmitCallback(
-			function ( array $formData, HTMLForm $form ) use ( $id, $dbw, $context ) {
-				return $this->submitForm( $formData, $form, $id, $dbw, $context );
+			function ( array $formData, HTMLForm $form ) use ( $id, $context, $dbw ) {
+				return $this->submitForm( $formData, $form, $id, $context, $dbw );
 			}
 		);
 
 		$irUser = $context->getUser()->getName();
 
-		$isReviewer = $dbw->selectRow(
-			'incidents_reviewer',
-			'*',
-			[
+		$isReviewer = $dbw->newSelectQueryBuilder()
+			->select( ISQLPlatform::ALL_ROWS )
+			->from( 'incidents_reviewer' )
+			->where( [
+				'r_incident' => $id,
 				'r_user' => $irUser,
-				'r_incident' => $id
-			],
-			__METHOD__
-		);
+			] )
+			->caller( __METHOD__ )
+			->fetchRow();
 
 		if ( $isReviewer && !$isReviewer->r_timestamp ) {
-			$dbw->update(
-				'incidents_reviewer',
-				[
-					'r_timestamp' => $dbw->timestamp()
-				],
-				[
+			$dbw->newUpdateQueryBuilder()
+				->update( 'incidents_reviewer' )
+				->set( [ 'r_timestamp' => $dbw->timestamp() ] )
+				->where( [
+					'r_incident' => $id,
 					'r_user' => $irUser,
-					'r_incident' => $id
-				],
-				__METHOD__
-			);
+				] )
+				->caller( __METHOD__ )
+				->execute();
 		}
 
 		return $htmlForm;
@@ -545,12 +539,11 @@ class IncidentReportingFormFactory {
 		array $formData,
 		HTMLForm $form,
 		int $id,
-		IDatabase $dbw,
-		IContextSource $context
+		IContextSource $context,
+		IDatabase $dbw
 	) {
 		if ( isset( $formData['view'] ) && $formData['view'] ) {
 			header( 'Location: ' . SpecialPage::getTitleFor( 'IncidentReports' )->getFullURL() . '/' . $id . '/edit' );
-
 			return true;
 		}
 
@@ -571,56 +564,52 @@ class IncidentReportingFormFactory {
 		}
 
 		if ( $id != 0 ) {
-			$dbw->update(
-				'incidents',
-				$dbIncident,
-				[
-					'i_id' => $id
-				],
-				__METHOD__
-			);
+			$dbw->newUpdateQueryBuilder()
+				->update( 'incidents' )
+				->set( $dbIncident )
+				->where( [ 'i_id' => $id ] )
+				->caller( __METHOD__ )
+				->execute();
 		} else {
-			$dbw->insert(
-				'incidents',
-				$dbIncident,
-				__METHOD__
-			);
+			$dbw->newInsertQueryBuilder()
+				->insertInto( 'incidents' )
+				->row( $dbIncident )
+				->caller( __METHOD__ )
+				->execute();
 
-			$id = $dbw->selectRow(
-				'incidents',
-				'i_id',
-				$dbIncident,
-				__METHOD__
-			)->i_id;
+			$id = $dbw->newSelectQueryBuilder()
+				->select( 'i_id' )
+				->from( 'incidents' )
+				->where( $dbIncident )
+				->caller( __METHOD__ )
+				->fetchField();
 		}
 
 		// Handle reviewers
 		if ( $formData['review'] ) {
 			$reviewers = explode( "\n", $formData['review'] );
 
-			$dbReviewers = $dbw->select(
-				'incidents_reviewer',
-				'r_user',
-				[
-					'r_incident' => $id
-				],
-				__METHOD__
-			);
+			$dbReviewers = $dbw->newSelectQueryBuilder()
+				->select( 'r_user' )
+				->from( 'incidents_reviewer' )
+				->where( [ 'r_incident' => $id ] )
+				->caller( __METHOD__ )
+				->fetchResultSet();
 
 			foreach ( $dbReviewers as $db ) {
 				$reviewers = array_diff( $reviewers, (array)$db->r_user );
 			}
 
 			foreach ( $reviewers as $reviewer ) {
-				$dbw->insert(
-					'incidents_reviewer',
-					[
+				$dbw->newInsertQueryBuilder()
+					->insertInto( 'incidents_reviewer' )
+					->row( [
 						'r_incident' => $id,
 						'r_user' => $reviewer,
-						'r_timestamp' => null
-					],
-					__METHOD__
-				);
+						'r_timestamp' => null,
+					] )
+					->caller( __METHOD__ )
+					->execute();
 			}
 		}
 
@@ -641,47 +630,43 @@ class IncidentReportingFormFactory {
 				'log_state' => $formData["{$eId}-state"]
 			];
 
-			$exists = $dbw->selectRow(
-				'incidents_log',
-				'*',
-				[
+			$exists = $dbw->newSelectQueryBuilder()
+				->select( ISQLPlatform::ALL_ROWS )
+				->from( 'incidents_log' )
+				->where( [
 					'log_id' => $eId,
-					'log_incident' => $id
-				],
-				__METHOD__
-			);
+					'log_incident' => $id,
+				] )
+				->caller( __METHOD__ )
+				->fetchRow();
 
 			if ( $exists ) {
-				$dbw->update(
-					'incidents_log',
-					$dbEvent,
-					[
+				$dbw->newUpdateQueryBuilder()
+					->update( 'incidents_log' )
+					->set( $dbEvent )
+					->where( [
 						'log_id' => $eId,
-						'log_incident' => $id
-					],
-					__METHOD__
-				);
+						'log_incident' => $id,
+					] )
+					->caller( __METHOD__ )
+					->execute();
 			} else {
-				$dbw->insert(
-					'incidents_log',
-					$dbEvent,
-					__METHOD__
-				);
+				$dbw->newInsertQueryBuilder()
+					->insertInto( 'incidents_log' )
+					->row( $dbEvent )
+					->caller( __METHOD__ )
+					->execute();
 			}
 		}
 
 		// Outage data
-		$logData = $dbw->select(
-			'incidents_log',
-			'*',
-			[
-				'log_incident' => $id
-			],
-			__METHOD__,
-			[
-				'ORDER BY' => 'log_timestamp ASC'
-			]
-		);
+		$logData = $dbw->newSelectQueryBuilder()
+			->select( ISQLPlatform::ALL_ROWS )
+			->from( 'incidents_log' )
+			->where( [ 'log_incident' => $id ] )
+			->orderBy( 'log_timestamp', SelectQueryBuilder::SORT_ASC )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 
 		$outageTotal = 0;
 		$outageVisible = 0;
@@ -703,28 +688,24 @@ class IncidentReportingFormFactory {
 			$curTime = $odata->log_timestamp;
 		}
 
-		$dbw->update(
-			'incidents',
-			[
+		$dbw->newUpdateQueryBuilder()
+			->update( 'incidents' )
+			->set( [
 				'i_outage_total' => round( $outageTotal ),
-				'i_outage_visible' => round( $outageVisible )
-			],
-			[
-				'i_id' => $id
-			],
-			__METHOD__
-		);
+				'i_outage_visible' => round( $outageVisible ),
+			] )
+			->where( [ 'i_id' => $id ] )
+			->caller( __METHOD__ )
+			->execute();
 
-		$published = $dbw->selectRow(
-			'incidents',
-			'*',
-			[
-				'i_id' => $id
-			],
-			__METHOD__
-		)->i_published;
+		$published = $dbw->newSelectQueryBuilder()
+			->select( 'i_published' )
+			->from( 'incidents' )
+			->where( [ 'i_id' => $id ] )
+			->caller( __METHOD__ )
+			->fetchField();
 
-		if ( $published !== null ) {
+		if ( $published ) {
 			$mainTitle = substr( $form->getTitle()->getText(), 0, -5 );
 
 			$irLogEntry = new ManualLogEntry( 'incidentreporting', 'modify' );

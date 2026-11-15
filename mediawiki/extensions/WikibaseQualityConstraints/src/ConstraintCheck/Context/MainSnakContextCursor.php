@@ -1,5 +1,7 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace WikibaseQuality\ConstraintReport\ConstraintCheck\Context;
 
 /**
@@ -7,37 +9,19 @@ namespace WikibaseQuality\ConstraintReport\ConstraintCheck\Context;
  */
 class MainSnakContextCursor extends ApiV2ContextCursor {
 
-	/**
-	 * @var string
-	 */
-	private $entityId;
+	private string $entityId;
 
-	/**
-	 * @var string
-	 */
-	private $statementPropertyId;
+	private string $statementPropertyId;
 
-	/**
-	 * @var string
-	 */
-	private $statementGuid;
+	private string $statementGuid;
 
-	/**
-	 * @var string
-	 */
-	private $snakHash;
+	private string $snakHash;
 
-	/**
-	 * @param string $entityId
-	 * @param string $statementPropertyId
-	 * @param string $statementGuid
-	 * @param string $snakHash
-	 */
 	public function __construct(
-		$entityId,
-		$statementPropertyId,
-		$statementGuid,
-		$snakHash
+		string $entityId,
+		string $statementPropertyId,
+		string $statementGuid,
+		string $snakHash
 	) {
 		$this->entityId = $entityId;
 		$this->statementPropertyId = $statementPropertyId;
@@ -48,31 +32,31 @@ class MainSnakContextCursor extends ApiV2ContextCursor {
 	/**
 	 * @codeCoverageIgnore This method is purely declarative.
 	 */
-	public function getType() {
+	public function getType(): string {
 		return Context::TYPE_STATEMENT;
 	}
 
-	public function getEntityId() {
+	public function getEntityId(): string {
 		return $this->entityId;
 	}
 
-	public function getStatementPropertyId() {
+	public function getStatementPropertyId(): string {
 		return $this->statementPropertyId;
 	}
 
-	public function getStatementGuid() {
+	public function getStatementGuid(): string {
 		return $this->statementGuid;
 	}
 
-	public function getSnakPropertyId() {
+	public function getSnakPropertyId(): string {
 		return $this->statementPropertyId;
 	}
 
-	public function getSnakHash() {
+	public function getSnakHash(): string {
 		return $this->snakHash;
 	}
 
-	protected function &getMainArray( array &$container ) {
+	protected function &getMainArray( array &$container ): array {
 		$statementArray = &$this->getStatementArray( $container );
 
 		if ( !array_key_exists( 'mainsnak', $statementArray ) ) {

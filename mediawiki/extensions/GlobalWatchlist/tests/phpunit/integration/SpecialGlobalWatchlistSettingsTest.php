@@ -4,11 +4,11 @@ namespace MediaWiki\Extension\GlobalWatchlist\Tests\Integration;
 
 use MediaWiki\Config\HashConfig;
 use MediaWiki\Context\DerivativeContext;
+use MediaWiki\Exception\UserNotLoggedIn;
 use MediaWiki\Extension\GlobalWatchlist\SettingsFormValidator;
 use MediaWiki\Extension\GlobalWatchlist\SettingsManager;
 use MediaWiki\Extension\GlobalWatchlist\SpecialGlobalWatchlistSettings;
 use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Registration\ExtensionRegistry;
@@ -17,10 +17,10 @@ use MediaWiki\SpecialPage\SpecialPageFactory;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\User;
+use MediaWiki\Utils\UrlUtils;
 use MediaWikiIntegrationTestCase;
 use Psr\Log\LogLevel;
 use TestLogger;
-use UserNotLoggedIn;
 use Wikimedia\TestingAccessWrapper;
 
 /**
@@ -33,22 +33,19 @@ use Wikimedia\TestingAccessWrapper;
 class SpecialGlobalWatchlistSettingsTest extends MediaWikiIntegrationTestCase {
 
 	private function getSpecialPage( $options = [] ) {
-		$logger = $options['logger'] ??
-			LoggerFactory::getInstance( 'GlobalWatchlist' );
 		$extensionRegistry = $options['extensionRegistry'] ??
 			$this->createMock( ExtensionRegistry::class );
 		$settingsManager = $options['settingsManager'] ??
 			$this->createMock( SettingsManager::class );
-		$specialPageFactory = $options['specialPageFactory'] ??
-			$this->getSpecialPageFactory( false );
+		$urlUtils = $options['urlUtils'] ??
+			$this->createMock( UrlUtils::class );
 		$userOptionsLookup = $options['userOptionsLookup'] ??
 			$this->createMock( UserOptionsLookup::class );
 
 		$specialPage = new SpecialGlobalWatchlistSettings(
-			$logger,
 			$extensionRegistry,
 			$settingsManager,
-			$specialPageFactory,
+			$urlUtils,
 			$userOptionsLookup
 		);
 
@@ -103,19 +100,6 @@ class SpecialGlobalWatchlistSettingsTest extends MediaWikiIntegrationTestCase {
 		$this->assertArrayEquals( $expectedDefault, $sitesDefault );
 	}
 
-	public function testNewFromGlobalState() {
-		$specialPage = SpecialGlobalWatchlistSettings::newFromGlobalState(
-			$this->createMock( SettingsManager::class ),
-			$this->createMock( SpecialPageFactory::class ),
-			$this->createMock( UserOptionsLookup::class )
-		);
-
-		$this->assertInstanceOf(
-			SpecialGlobalWatchlistSettings::class,
-			$specialPage
-		);
-	}
-
 	public function testUserNotLoggedIn() {
 		$specialPage = $this->getSpecialPage();
 
@@ -136,6 +120,7 @@ class SpecialGlobalWatchlistSettingsTest extends MediaWikiIntegrationTestCase {
 
 		// Execute validates user settings, manually mocking the User is complicated
 		$user = $this->getTestUser()->getUser();
+		$title = SpecialPage::getTitleFor( 'GlobalWatchlistSettings' );
 
 		// ::execute results in creating the form, need to have the UserOptionsLookup available
 		// return false for user settings, because we aren't testing that right now,
@@ -148,11 +133,10 @@ class SpecialGlobalWatchlistSettingsTest extends MediaWikiIntegrationTestCase {
 				return $extensionName === 'GuidedTour';
 			} );
 
-		$specialPageFactory = $this->getSpecialPageFactory( true );
+		$this->setService( 'SpecialPageFactory', $this->getSpecialPageFactory( true ) );
 		$userOptionsLookup = $this->getOptionsLookup( $user, false );
 		$specialPage = $this->getSpecialPage( [
 			'extensionRegistry' => $extensionRegistry,
-			'specialPageFactory' => $specialPageFactory,
 			'userOptionsLookup' => $userOptionsLookup,
 		] );
 
@@ -165,7 +149,6 @@ class SpecialGlobalWatchlistSettingsTest extends MediaWikiIntegrationTestCase {
 		// Call ::setOutput to ensure that the reference we have remains the correct one
 		$output = $testContext->getOutput();
 		// Ensure output page has title set, T327342
-		$title = SpecialPage::getTitleFor( 'GlobalWatchlistSettings' );
 		$output->setTitle( $title );
 		$testContext->setOutput( $output );
 
@@ -277,9 +260,8 @@ class SpecialGlobalWatchlistSettingsTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testAlterForm() {
-		$specialPage = $this->getSpecialPage( [
-			'specialPageFactory' => $this->getSpecialPageFactory( true )
-		] );
+		$this->setService( 'SpecialPageFactory', $this->getSpecialPageFactory( true ) );
+		$specialPage = $this->getSpecialPage();
 
 		$form = $this->createMock( HTMLForm::class );
 		$form->expects( $this->once() )
@@ -353,9 +335,9 @@ class SpecialGlobalWatchlistSettingsTest extends MediaWikiIntegrationTestCase {
 			->with( $user, $expectedOptions );
 
 		$logger = new TestLogger( true );
+		$this->setLogger( 'GlobalWatchlist', $logger );
 
 		$specialPage = $this->getSpecialPage( [
-			'logger' => $logger,
 			'settingsManager' => $settingsManager
 		] );
 
@@ -409,11 +391,12 @@ class SpecialGlobalWatchlistSettingsTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * @dataProvider provideTestMaybeLoadTour
-	 * @param bool $configEnabled
-	 * @param bool $extensionEnabled
-	 * @param bool $expectLoad
 	 */
-	public function testMaybeLoadTour( $configEnabled, $extensionEnabled, $expectLoad ) {
+	public function testMaybeLoadTour(
+		bool $configEnabled,
+		bool $extensionEnabled,
+		bool $expectLoad
+	) {
 		$extensionRegistry = $this->createMock( ExtensionRegistry::class );
 		$extensionRegistry->method( 'isLoaded' )
 			->with( 'GuidedTour' )

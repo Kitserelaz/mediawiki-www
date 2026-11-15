@@ -8,8 +8,10 @@
  * @file
  */
 
-use MediaWiki\Languages\LanguageFallback;
+use MediaWiki\Language\LanguageFallback;
+use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Xml\Xml;
 
 // Standard boilerplate to define $IP
 if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
@@ -20,7 +22,9 @@ if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
 }
 require_once "$IP/maintenance/Maintenance.php";
 
-/// Creates graphml xml file of language fallbacks.
+/**
+ * Creates graphml xml file of language fallbacks.
+ */
 class FallbacksCompare extends Maintenance {
 	public function __construct() {
 		parent::__construct();
@@ -73,7 +77,7 @@ class FallbacksCompare extends Maintenance {
 		echo str_replace( '$1', $output, $template );
 	}
 
-	protected function createNode( $code ) {
+	protected function createNode( string $code ): string {
 		return Xml::openElement( 'node', [ 'id' => $code ] )
 			. Xml::openElement( 'data', [ 'key' => 'code' ] )
 			. Xml::openElement( 'y:Shapenode' )

@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Chaduvari"
+		]
+	},
+	"reportincident-dialog-violator-placeholder-text": "ఎవరి మీద ఫిర్యాదు {{GENDER:|చేస్తున్నారు?}}"
+}

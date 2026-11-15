@@ -3,7 +3,7 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Diagnostics;
 
-use LoggedUpdateMaintenance;
+use MediaWiki\Maintenance\LoggedUpdateMaintenance;
 
 /**
  * Remove redundant values from the translate_metadata table
@@ -27,7 +27,7 @@ class RemoveRedundantMessageGroupMetadataMaintenanceScript extends LoggedUpdateM
 
 	/** @inheritDoc */
 	protected function doDBUpdates(): bool {
-		$this->output( "... Removing empty values from the translate_metadata table ... " );
+		$this->output( '... Removing empty values from the translate_metadata table ... ' );
 		$dbw = $this->getDB( DB_PRIMARY );
 
 		$dbw->newDeleteQueryBuilder()

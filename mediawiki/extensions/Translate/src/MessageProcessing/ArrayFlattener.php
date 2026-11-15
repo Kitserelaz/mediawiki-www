@@ -17,10 +17,8 @@ use MediaWiki\Extension\Translate\Utilities\Utilities;
  * @since 2016.01
  */
 class ArrayFlattener {
-	protected string $sep;
-	protected bool $parseCLDRPlurals;
-	/** @var array For CLDR pluralization rules */
-	protected static $pluralWords = [
+	/** Names for plural groups used by CLDR */
+	private const PLURAL_WORDS = [
 		'zero' => 1,
 		'one' => 1,
 		'many' => 1,
@@ -29,9 +27,10 @@ class ArrayFlattener {
 		'two' => 1
 	];
 
-	public function __construct( string $sep = '.', bool $parseCLDRPlurals = false ) {
-		$this->sep = $sep;
-		$this->parseCLDRPlurals = $parseCLDRPlurals;
+	public function __construct(
+		private readonly string $sep = '.',
+		private readonly bool $parseCLDRPlurals = false,
+	) {
 	}
 
 	/**
@@ -86,7 +85,7 @@ class ArrayFlattener {
 			}
 
 			// Check if we find any reserved plural keyword
-			if ( isset( self::$pluralWords[$key] ) ) {
+			if ( isset( self::PLURAL_WORDS[$key] ) ) {
 				$pluralKeys[] = $key;
 			} else {
 				$hasNonPluralKeys = true;
@@ -100,7 +99,7 @@ class ArrayFlattener {
 
 		// Mixed plural keys with other keys, should not happen
 		if ( $hasNonPluralKeys ) {
-			 // Allow `other` with other keys, as long it is only one of the reserved ones
+			// Allow `other` with other keys, as long it is only one of the reserved ones
 			if ( $pluralKeys === [ 'other' ] ) {
 				return false;
 			}
@@ -230,7 +229,7 @@ class ArrayFlattener {
 		 * to construct the alternatives. Produces invalid output if there is
 		 * multiple plural bocks which don't have the same set of keys.
 		 */
-		$pluralChoice = implode( '|', array_keys( self::$pluralWords ) );
+		$pluralChoice = implode( '|', array_keys( self::PLURAL_WORDS ) );
 		$regex = "~($pluralChoice)\s*=\s*(.*)~s";
 		foreach ( $matches as $ph => $plu ) {
 			$forms = explode( '|', $plu[1] );

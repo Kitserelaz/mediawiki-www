@@ -4,12 +4,12 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\FileFormatSupport;
 
 use FileBasedMessageGroup;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Extension\Translate\MessageGroupConfiguration\MetaYamlSchemaExtender;
 use MediaWiki\Extension\Translate\MessageLoading\Message;
 use MediaWiki\Extension\Translate\MessageLoading\MessageCollection;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
 use RuntimeException;
-use TextContent;
 
 /**
  * JavaFormat class implements support for Java properties files.
@@ -49,22 +49,16 @@ class JavaFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 		foreach ( $lines as $line ) {
 			if ( $lineContinuation ) {
 				$lineContinuation = false;
-				$valuecont = $line;
-				$valuecont = str_replace( '\n', "\n", $valuecont );
-				$value .= $valuecont;
+				$value .= str_replace( '\n', "\n", $line );
 			} else {
 				if ( $line === '' ) {
 					continue;
 				}
 
-				if ( $line[0] === '#' || $line[0] === '!' ) {
-					$match = [];
-					$ok = preg_match( '/#\s*Author:\s*(.*)/', $line, $match );
-
-					if ( $ok ) {
+				if ( str_starts_with( $line, '#' ) || str_starts_with( $line, '!' ) ) {
+					if ( preg_match( '/#\s*Author:\s*(.*)/', $line, $match ) ) {
 						$authors[] = $match[1];
 					}
-
 					continue;
 				}
 
@@ -79,8 +73,8 @@ class JavaFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 			}
 
 			// @todo This doesn't handle the pathological case of even number of trailing \
-			if ( strlen( $value ) && $value[strlen( $value ) - 1] === "\\" ) {
-				$value = substr( $value, 0, strlen( $value ) - 1 );
+			if ( str_ends_with( $value, "\\" ) ) {
+				$value = substr( $value, 0, -1 );
 				$lineContinuation = true;
 			} else {
 				$messages[$key] = ltrim( $value );
@@ -110,14 +104,13 @@ class JavaFormat extends SimpleFormat implements MetaYamlSchemaExtender {
 				continue;
 			}
 
-			$value = str_replace( TRANSLATE_FUZZY, '', $value );
-
 			// Just to give an overview of translation quality.
 			if ( $message->hasTag( 'fuzzy' ) ) {
 				$output .= "# Fuzzy\n";
 			}
 
 			$key = $mangler->unmangle( $key );
+			$value = str_replace( TRANSLATE_FUZZY, '', $value );
 			$output .= $this->writeRow( $key, $value );
 		}
 

@@ -11,36 +11,16 @@ use Wikimedia\ParamValidator\ParamValidator;
 /**
  * Dumps CirrusSearch profiles for easy viewing.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class ProfilesDump extends ApiBase {
 	use ApiTrait;
 
-	/** @var SearchProfileService */
-	private $service;
+	private SearchProfileService $service;
 
-	/**
-	 * @param ApiMain $mainModule
-	 * @param string $moduleName
-	 * @param string $modulePrefix
-	 * @param SearchProfileService|null $service
-	 */
-	public function __construct( ApiMain $mainModule, $moduleName, $modulePrefix = '', ?SearchProfileService $service = null ) {
-		parent::__construct( $mainModule, $moduleName, $modulePrefix );
-		$this->service = $service ?: $this->getSearchConfig()->getProfileService();
+	public function __construct( ApiMain $mainModule, string $moduleName, ?SearchProfileService $service = null ) {
+		parent::__construct( $mainModule, $moduleName );
+		$this->service = $service ?? $this->getSearchConfig()->getProfileService();
 	}
 
 	public function execute() {
@@ -78,12 +58,21 @@ class ProfilesDump extends ApiBase {
 		}
 	}
 
+	/** @inheritDoc */
 	public function getAllowedParams() {
 		return [
 			'verbose' => [
 				ParamValidator::PARAM_DEFAULT => false,
 			],
 		];
+	}
+
+	/**
+	 * Mark as internal. This isn't meant to be used by normal api users
+	 * @return bool
+	 */
+	public function isInternal() {
+		return true;
 	}
 
 	/**

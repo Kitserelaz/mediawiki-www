@@ -2,13 +2,16 @@
 /**
  * Re-queue selected, or all, transcodes
  */
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
 require_once __DIR__ . "/TimedMediaMaintenance.php";
+// @codeCoverageIgnoreEnd
 
+use MediaWiki\FileRepo\File\File;
 use MediaWiki\TimedMediaHandler\WebVideoTranscode\WebVideoTranscode;
 
 class RequeueTranscodes extends TimedMediaMaintenance {
@@ -34,13 +37,10 @@ class RequeueTranscodes extends TimedMediaMaintenance {
 		$this->output( "Finished!\n" );
 	}
 
-	/**
-	 * @param File $file
-	 */
+	/** @inheritDoc */
 	public function processFile( File $file ) {
 		$this->output( $file->getName() . "\n" );
 
-		$transcodeSet = WebVideoTranscode::enabledTranscodes();
 		$dbw = $this->getServiceContainer()->getDBLoadBalancerFactory()->getReplicaDatabase();
 		$repo = $file->repo;
 		$dryRun = $this->hasOption( 'dry-run' );
@@ -141,5 +141,7 @@ class RequeueTranscodes extends TimedMediaMaintenance {
 }
 
 // Tells it to run the class
+// @codeCoverageIgnoreStart
 $maintClass = RequeueTranscodes::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

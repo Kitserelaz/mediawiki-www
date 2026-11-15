@@ -9,6 +9,7 @@ QUnit.module( 've.ui.TableAction' );
 /* Tests */
 
 QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelative', ( assert ) => {
+	const noChange = () => {};
 	const tableCellTail = [
 			{ type: 'paragraph', internal: { generated: 'wrapper' } },
 			{ type: '/paragraph' },
@@ -45,7 +46,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 					rows: 1,
 					attributes: { sortable: true }
 				} ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 0, 0,
 						{ type: 'table', attributes: { sortable: true } },
 						{ type: 'tableSection', attributes: { style: 'body' } },
@@ -74,7 +75,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 					rows: 1,
 					caption: true
 				} ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 0, 0,
 						{ type: 'table' },
 						{ type: 'tableCaption' },
@@ -109,7 +110,8 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 					toRow: 0
 				},
 				method: 'create',
-				expectedData: function () {},
+				expectedData: noChange,
+				expectedReturn: false,
 				expectedRangeOrSelection: {
 					type: 'table',
 					tableRange: new ve.Range( 5, 37 ),
@@ -124,7 +126,8 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				rangeOrSelection: new ve.Range( 1 ),
 				method: 'insert',
 				args: [ 'col', 'after' ],
-				expectedData: function () {},
+				expectedData: noChange,
+				expectedReturn: false,
 				expectedRangeOrSelection: new ve.Range( 1 ),
 				msg: 'insert with linear selection is no-op'
 			},
@@ -132,7 +135,8 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				rangeOrSelection: new ve.Range( 1 ),
 				method: 'moveRelative',
 				args: [ 'col', 'after' ],
-				expectedData: function () {},
+				expectedData: noChange,
+				expectedReturn: false,
 				expectedRangeOrSelection: new ve.Range( 1 ),
 				msg: 'moveRelative with linear selection is no-op'
 			},
@@ -140,7 +144,8 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				rangeOrSelection: new ve.Range( 1 ),
 				method: 'move',
 				args: [ 'col', 0 ],
-				expectedData: function () {},
+				expectedData: noChange,
+				expectedReturn: false,
 				expectedRangeOrSelection: new ve.Range( 1 ),
 				msg: 'move with linear selection is no-op'
 			},
@@ -148,7 +153,8 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				rangeOrSelection: new ve.Range( 1 ),
 				method: 'delete',
 				args: [ 'table' ],
-				expectedData: function () {},
+				expectedData: noChange,
+				expectedReturn: false,
 				expectedRangeOrSelection: new ve.Range( 1 ),
 				msg: 'delete with linear selection is no-op'
 			},
@@ -156,14 +162,16 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				rangeOrSelection: new ve.Range( 1 ),
 				method: 'delete',
 				args: [ 'header' ],
-				expectedData: function () {},
+				expectedData: noChange,
+				expectedReturn: false,
 				expectedRangeOrSelection: new ve.Range( 1 ),
 				msg: 'changeCellStyle with linear selection is no-op'
 			},
 			{
 				rangeOrSelection: new ve.Range( 1 ),
 				method: 'mergeCells',
-				expectedData: function () {},
+				expectedData: noChange,
+				expectedReturn: false,
 				expectedRangeOrSelection: new ve.Range( 1 ),
 				msg: 'mergeCells with linear selection is no-op'
 			},
@@ -175,7 +183,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 					rows: 2,
 					header: true
 				} ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 0, 0,
 						{ type: 'table' },
 						{ type: 'tableSection', attributes: { style: 'body' } },
@@ -212,7 +220,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'insert',
 				args: [ 'col', 'after' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 168, 0, ...tableData );
 					data.splice( 130, 0, ...tableData );
 					data.splice( 116, 0, ...tableData );
@@ -243,7 +251,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'insert',
 				args: [ 'col', 'before' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 150, 0, ...tableData );
 					data[ 90 ].attributes.colspan = 4;
 					data.splice( 76, 0, ...tableData );
@@ -264,7 +272,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'insert',
 				args: [ 'col', 'after' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 10, 0, ...tableData );
 				},
 				msg: 'insert column at middle of table with sparse row'
@@ -281,7 +289,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'insert',
 				args: [ 'col', 'after' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 15, 0, ...tableData );
 				},
 				msg: 'insert column at end of table with sparse row'
@@ -298,7 +306,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'insert',
 				args: [ 'row', 'after' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 19, 0,
 						{ type: 'tableRow' },
 						...tableData,
@@ -319,7 +327,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'insert',
 				args: [ 'col', 'after' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 8, 0, ...tableData );
 				},
 				msg: 'insert column after row containing cell with excessive rowspan'
@@ -336,7 +344,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'insert',
 				args: [ 'row', 'after' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 169, 0,
 						{ type: 'tableRow' },
 						...tableData,
@@ -362,7 +370,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'insert',
 				args: [ 'row', 'before' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data[ 45 ].attributes.rowspan = 5;
 					data.splice( 83, 0,
 						{ type: 'tableRow' },
@@ -388,7 +396,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'insert',
 				args: [ 'row', 'after' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 14, 0,
 						{ type: 'tableRow' },
 						...tableHeader,
@@ -397,6 +405,67 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 					);
 				},
 				msg: 'insert row of mixed styles'
+			},
+			{
+				html: '<table><tr><th style="text-align:left">a</th><th align="center">b</th><th style="text-align : right">c</th></tr></table>',
+				rangeOrSelection: {
+					type: 'table',
+					tableRange: new ve.Range( 0, 16 ),
+					fromCol: 0,
+					fromRow: 0,
+					toCol: 0,
+					toRow: 0
+				},
+				method: 'insert',
+				args: [ 'row', 'after' ],
+				expectedData: ( data ) => {
+					const insertedRow = data.slice( 2, 19 )
+						.filter( ( d ) => ![ 'a', 'b', 'c' ].includes( d ) )
+						.map( ( d ) => {
+							if ( d.type === 'tableCell' ) {
+								// possibly unexpected behaviour: the new row also has <th> elements; are <td> preferred instead?
+								const attributes = { ...d.attributes, colspan: 1, rowspan: 1 };
+								delete attributes.originalTextAlign;
+								d = { ...d, attributes };
+							}
+							return d;
+						} );
+					data.splice( 19, 0, ...insertedRow );
+				},
+				msg: 'insert row of mixed text alignment on th'
+			},
+			{
+				html: '<table><tr style="text-align:center; vertical-align:bottom"><td style="text-align:left">a</td><td align="center" valign="middle">b</td><td style="text-align : right">c</td></tr></table>',
+				rangeOrSelection: {
+					type: 'table',
+					tableRange: new ve.Range( 0, 16 ),
+					fromCol: 0,
+					fromRow: 0,
+					toCol: 0,
+					toRow: 0
+				},
+				method: 'insert',
+				args: [ 'row', 'after' ],
+				expectedData: ( data ) => {
+					const insertedRow = data.slice( 2, 19 )
+						.filter( ( d ) => ![ 'a', 'b', 'c' ].includes( d ) )
+						.map( ( d ) => {
+							if ( d.type === 'tableCell' ) {
+								const attributes = { ...d.attributes, colspan: 1, rowspan: 1 };
+								delete attributes.originalTextAlign;
+								delete attributes.originalVerticalAlign;
+								d = { ...d, attributes };
+							} else if ( d.type === 'tableRow' ) {
+								const attributes = { ...d.attributes };
+								delete attributes.originalTextAlign;
+								delete attributes.originalVerticalAlign;
+								d = { ...d, attributes };
+							}
+							return d;
+						} );
+					data.splice( 19, 0, ...insertedRow );
+				},
+				msg: 'insert row of mixed text alignment on tr and td'
 			},
 			{
 				html: ve.dm.example.mergedCellsHtml,
@@ -410,7 +479,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'mergeCells',
 				args: [],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data[ 3 ].attributes.colspan = 3;
 					data[ 3 ].attributes.rowspan = 2;
 					data.splice( 40, 5 );
@@ -432,7 +501,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'mergeCells',
 				args: [],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data[ 90 ].attributes.colspan = 1;
 					data[ 90 ].attributes.rowspan = 1;
 					data.splice( 124, 0, ...tableData, ...tableData, ...tableData );
@@ -452,7 +521,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 					toRow: 2
 				},
 				method: 'mergeCells',
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data[ 3 ].attributes.colspan = 1;
 					data[ 3 ].attributes.rowspan = 1;
 					data.splice( 8, 5 );
@@ -470,7 +539,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 					toRow: 2
 				},
 				method: 'mergeCells',
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data[ 3 ].attributes.colspan = 1;
 					data[ 3 ].attributes.rowspan = 1;
 				},
@@ -488,7 +557,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'mergeCells',
 				args: [],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data[ 3 ].attributes.colspan = 6;
 					data[ 3 ].attributes.rowspan = 1;
 					data.splice( 8, 122 );
@@ -507,7 +576,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'mergeCells',
 				args: [],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data[ 3 ].attributes.colspan = 1;
 					data[ 3 ].attributes.rowspan = 7;
 					data.splice( 132, 24 );
@@ -532,7 +601,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'mergeCells',
 				args: [],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 3, 4 );
 					data[ 3 ].attributes.colspan = 2;
 					data[ 3 ].attributes.rowspan = 1;
@@ -551,7 +620,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'delete',
 				args: [ 'table' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 0, 171,
 						{ type: 'paragraph' },
 						{ type: '/paragraph' }
@@ -571,7 +640,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'delete',
 				args: [ 'row' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data[ 90 ].attributes.rowspan = 2;
 					data[ 45 ].attributes.rowspan = 3;
 					data.splice(
@@ -607,7 +676,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'delete',
 				args: [ 'col' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data[ 90 ].attributes.colspan = 2;
 					data.splice( 150, 6 );
 					data.splice( 18, 5 );
@@ -627,7 +696,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'changeCellStyle',
 				args: [ 'header' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data[ 8 ].attributes.style = 'header';
 					data[ 13 ].attributes.style = 'header';
 					data[ 40 ].attributes.style = 'header';
@@ -646,7 +715,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'moveRelative',
 				args: [ 'row', 'before' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					const row = data.splice( 25, 25 );
 					data.splice( 2, 0, ...row );
 				},
@@ -672,7 +741,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'moveRelative',
 				args: [ 'row', 'after' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					const row = data.splice( 25, 25 );
 					data.splice( 2, 0, ...row );
 				},
@@ -698,7 +767,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'moveRelative',
 				args: [ 'col', 'before' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					const cell2 = data.splice( 34, 8 ),
 						cell1 = data.splice( 10, 7 );
 
@@ -727,7 +796,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'moveRelative',
 				args: [ 'col', 'after' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					const cell2 = data.splice( 26, 8 ),
 						cell1 = data.splice( 3, 7 );
 
@@ -756,7 +825,7 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 				},
 				method: 'moveRelative',
 				args: [ 'row', 'before' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					const row = data.splice( 4, 7 );
 					data.splice( 2, 0, ...row );
 				},
@@ -769,7 +838,6 @@ QUnit.test( 'create / insert / mergeCells / delete / changeCellStyle / moveRelat
 			assert,
 			{
 				actionName: 'table',
-				createView: true,
 				...caseItem
 			}
 		);

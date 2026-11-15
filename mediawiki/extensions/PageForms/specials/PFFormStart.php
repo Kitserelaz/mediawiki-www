@@ -41,7 +41,7 @@ class PFFormStart extends SpecialPage {
 		// If the query string did not contain a form name, try the URL.
 		if ( $form_name == '' && $query !== null ) {
 			$queryparts = explode( '/', $query, 2 );
-			$form_name = isset( $queryparts[0] ) ? $queryparts[0] : '';
+			$form_name = $queryparts[0] ?? '';
 			// If a target was specified, it means we should
 			// redirect to 'FormEdit' for this target page.
 			if ( isset( $queryparts[1] ) ) {
@@ -121,12 +121,12 @@ END;
 					return;
 				}
 				$formInputAttrs['data-possible-forms'] = implode( '|', $allForms );
-				$formInputAttrs['data-form-label'] = wfMessage( 'pf-formstart-formlabel' )->escaped();
+				$formInputAttrs['data-form-label'] = wfMessage( 'pf-formstart-formlabel' )->text();
 			} else {
 				$formInputAttrs['data-autofocus'] = true;
 			}
 
-			$text .= "\t" . Html::element( 'div', $formInputAttrs, null ) . "\n";
+			$text .= "\t" . Html::element( 'div', $formInputAttrs, '' ) . "\n";
 			$text .= "\t</form>\n";
 		}
 		$out->addHTML( $text );

@@ -48,7 +48,16 @@
 		} else {
 			q.action = 'edit';
 		}
-		return mw.util.getUrl( null, q );
+
+		var title = null;
+		if ( mw.config.get( 'wgIsMainPage' ) ) {
+			// In some situations MobileFrontend redirects the user to /w/index.php without a title,
+			// in which case we must determine the title from the Referrer.
+
+			title = new mw.Uri( document.referrer ).query.title || null;
+		}
+
+		return mw.util.getUrl( title, q );
 	}
 
 	/**
@@ -74,14 +83,14 @@
 		/* "Pending review" icon */
 		$div.append( $( '<div>' )
 			.attr( 'id', 'pending-review' )
-			.append( mw.msg( 'moderation-pending-review' ) ) );
+			.text( mw.msg( 'moderation-pending-review' ) ) );
 
 		/* "Success: your edit has been sent to moderation" */
-		$div.append( $( '<p>' ).append(
+		$div.append( $( '<div>' ).addClass( 'plainlinks' ).append(
 			mw.message(
 				'moderation-edit-queued',
 				getEditUrl()
-			).plain()
+			).parse()
 		) );
 
 		/* "To skip moderation in the future, please sign up" */

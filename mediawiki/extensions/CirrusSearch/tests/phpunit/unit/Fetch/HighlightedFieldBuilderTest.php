@@ -5,6 +5,7 @@ namespace CirrusSearch\Search\Fetch;
 use CirrusSearch\CirrusIntegrationTestCase;
 use CirrusSearch\CirrusTestCase;
 use CirrusSearch\CirrusTestCaseTrait;
+use CirrusSearch\HashSearchConfig;
 use CirrusSearch\Search\SearchQuery;
 use CirrusSearch\SearchConfig;
 use Elastica\Query\BoolQuery;
@@ -18,8 +19,8 @@ use Elastica\Query\MatchAll;
 class HighlightedFieldBuilderTest extends CirrusTestCase {
 	use CirrusTestCaseTrait;
 
-	public function provideTestFactories() {
-		$config = $this->newHashSearchConfig( [
+	public static function provideTestFactories() {
+		$config = new HashSearchConfig( [
 			'CirrusSearchFragmentSize' => 350,
 		] );
 		$baseFactories = BaseHighlightedField::getFactories();
@@ -213,8 +214,7 @@ class HighlightedFieldBuilderTest extends CirrusTestCase {
 				new ExperimentalHighlightedFieldBuilder( 'test', 'test', 123 )
 			],
 		];
-		foreach ( $fields as $couple ) {
-			[ $field1, $field2 ] = $couple;
+		foreach ( $fields as [ $field1, $field2 ] ) {
 			$field1->setHighlightQuery( new MatchAll() );
 			$field2->setHighlightQuery( new MatchAll() );
 			$field1 = $field1->merge( $field2 );

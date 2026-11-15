@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 
 namespace Maps\GeoJsonPages;
 
-use Html;
+use MediaWiki\Html\Html;
 use Maps\Presentation\OutputFacade;
 
 class GeoJsonMapPageUi {
@@ -20,22 +20,8 @@ class GeoJsonMapPageUi {
 	}
 
 	public function addToOutput( OutputFacade $output ) {
-		$output->addHtml( $this->getJavascript() . $this->getHtml() );
+		$output->addHtml( $this->getHtml() );
 		$output->addModules( 'ext.maps.geojson.page' );
-	}
-
-	private function getJavascript(): string {
-		return Html::element(
-			'script',
-			[],
-			$this->getJsonJs()
-		);
-	}
-
-	private function getJsonJs(): string {
-		return 'var GeoJson ='
-			. $this->json
-			. ';';
 	}
 
 	private function getHtml(): string {
@@ -45,14 +31,15 @@ class GeoJsonMapPageUi {
 				[
 					'id' => 'GeoJsonMap',
 					'style' => 'width: 100%; height: 600px; background-color: #eeeeee; overflow: hidden;',
-					'class' => 'maps-map maps-leaflet maps-geojson-editor'
+					'class' => 'maps-map maps-leaflet maps-geojson-editor',
+					'data-mw-maps-geojson' => $this->json
 				],
 				Html::element(
 					'div',
 					[
 						'class' => 'maps-loading-message'
 					],
-					wfMessage( 'maps-loading-map' )->inContentLanguage()->text()
+					wfMessage( 'maps-loading-map' )->text()
 				)
 			)
 		);

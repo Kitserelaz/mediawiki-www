@@ -3,17 +3,17 @@
 namespace ArticlePlaceholder\Tests;
 
 use ArticlePlaceholder\AboutTopicRenderer;
-use DerivativeContext;
+use MediaWiki\Context\DerivativeContext;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\Site\Site;
+use MediaWiki\Site\SiteLookup;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\MalformedTitleException;
 use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\User;
 use MediaWikiIntegrationTestCase;
-use RequestContext;
-use Site;
-use SiteLookup;
 use Wikibase\Client\Hooks\OtherProjectsSidebarGenerator;
 use Wikibase\Client\Hooks\OtherProjectsSidebarGeneratorFactory;
 use Wikibase\Client\RepoLinker;
@@ -42,17 +42,10 @@ class AboutTopicRendererTest extends MediaWikiIntegrationTestCase {
 		$this->insertPage( 'Template:AboutTopic', '(aboutTopic: {{{1}}})' );
 	}
 
-	/**
-	 * @param ItemId $itemId
-	 * @param bool $canCreate
-	 * @param TitleFactory|null $titleFactory
-	 *
-	 * @return OutputPage
-	 */
 	private function getInstanceOutput(
 		ItemId $itemId,
-		$canCreate = true,
-		TitleFactory $titleFactory = null
+		bool $canCreate = true,
+		?TitleFactory $titleFactory = null
 	): OutputPage {
 		$context = new DerivativeContext( RequestContext::getMain() );
 		$outputPage = $context->getOutput();
@@ -83,6 +76,7 @@ class AboutTopicRendererTest extends MediaWikiIntegrationTestCase {
 
 		$instance = new AboutTopicRenderer(
 			$this->getTermLookupFactory(),
+			$this->getServiceContainer()->getLanguageNameUtils(),
 			$this->getSiteLinkLookup(),
 			$this->getSiteLookup(),
 			'wikipedia',
@@ -116,7 +110,7 @@ class AboutTopicRendererTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testLanguageLinks() {
 		$output = $this->getInstanceOutput( new ItemId( 'Q123' ) );
-		$this->assertSame( [ 'eo' => 'eo:Unicorn' ], $output->getLanguageLinks() );
+		$this->assertSame( [ 'eo:Unicorn' ], $output->getLanguageLinks() );
 	}
 
 	/**
@@ -172,9 +166,6 @@ class AboutTopicRendererTest extends MediaWikiIntegrationTestCase {
 		);
 	}
 
-	/**
-	 * @return FallbackLabelDescriptionLookupFactory
-	 */
 	private function getTermLookupFactory(): FallbackLabelDescriptionLookupFactory {
 		$factory = $this->createMock( FallbackLabelDescriptionLookupFactory::class );
 		$factory->expects( $this->once() )
@@ -189,9 +180,6 @@ class AboutTopicRendererTest extends MediaWikiIntegrationTestCase {
 		return $factory;
 	}
 
-	/**
-	 * @return FallbackLabelDescriptionLookup
-	 */
 	private function getLabelDescriptionLookup(): FallbackLabelDescriptionLookup {
 		$labelDescriptionLookup = $this->createMock( FallbackLabelDescriptionLookup::class );
 		$labelDescriptionLookup->method( 'getLabel' )
@@ -207,9 +195,6 @@ class AboutTopicRendererTest extends MediaWikiIntegrationTestCase {
 		return $labelDescriptionLookup;
 	}
 
-	/**
-	 * @return SiteLinkLookup
-	 */
 	private function getSiteLinkLookup(): SiteLinkLookup {
 		$siteLinkLookup = $this->createMock( SiteLinkLookup::class );
 

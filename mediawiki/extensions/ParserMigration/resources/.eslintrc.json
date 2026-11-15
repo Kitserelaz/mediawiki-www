@@ -1,0 +1,12 @@
+{
+	"root": true,
+	"extends": [
+		"wikimedia/client",
+		"wikimedia/mediawiki",
+		"wikimedia/jquery"
+	],
+	"rules": {
+		"no-jquery/no-parse-html-literal": "warn",
+		"no-jquery/no-done-fail": "warn"
+	}
+}

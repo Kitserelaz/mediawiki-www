@@ -16,27 +16,33 @@
 
 namespace MediaWiki\GlobalUserPage;
 
-use Article;
-use ManualLogEntry;
+use MediaWiki\Config\Config;
+use MediaWiki\Config\ConfigException;
+use MediaWiki\Config\ConfigFactory;
 use MediaWiki\Content\Content;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Deferred\Hook\LinksUpdateCompleteHook;
 use MediaWiki\Deferred\LinksUpdate\LinksUpdate;
 use MediaWiki\Hook\GetDoubleUnderscoreIDsHook;
-use MediaWiki\Hook\LinksUpdateCompleteHook;
 use MediaWiki\Hook\TitleGetEditNoticesHook;
 use MediaWiki\Hook\TitleIsAlwaysKnownHook;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Http\HttpRequestFactory;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\Page\Article;
 use MediaWiki\Page\Hook\ArticleDeleteCompleteHook;
 use MediaWiki\Page\Hook\ArticleFromTitleHook;
 use MediaWiki\Page\Hook\WikiPageFactoryHook;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Storage\EditResult;
 use MediaWiki\Storage\Hook\PageSaveCompleteHook;
+use MediaWiki\Title\NamespaceInfo;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
+use MediaWiki\Utils\UrlUtils;
 use MediaWiki\WikiMap\WikiMap;
-use WikiPage;
+use Wikimedia\ObjectCache\WANObjectCache;
 
 class Hooks implements
 	TitleIsAlwaysKnownHook,
@@ -48,6 +54,31 @@ class Hooks implements
 	GetDoubleUnderscoreIDsHook,
 	WikiPageFactoryHook
 {
+	private readonly Config $config;
+
+	public function __construct(
+		private readonly GlobalUserPageManager $manager,
+		ConfigFactory $configFactory,
+		private readonly WANObjectCache $mainWANObjectCache,
+		private readonly HttpRequestFactory $httpRequestFactory,
+		private readonly UrlUtils $urlUtils,
+		private readonly NamespaceInfo $namespaceInfo,
+	) {
+		$this->config = $configFactory->makeConfig( 'globaluserpage' );
+	}
+
+	public static function onRegistration(): void {
+		// Use globals instead of Config, accessing it so early does not work (T255704)
+		global $wgGlobalUserPageDBname, $wgDBname;
+
+		if ( defined( 'MW_PHPUNIT_TEST' ) || defined( 'MW_QUIBBLE_CI' ) ) {
+			$wgGlobalUserPageDBname = $wgDBname;
+		}
+
+		if ( !$wgGlobalUserPageDBname ) {
+			throw new ConfigException( 'GlobalUserPage requires $wgGlobalUserPageDBname to be set' );
+		}
+	}
 
 	/**
 	 * @param Title $title
@@ -58,11 +89,16 @@ class Hooks implements
 		// If another extension's hook has already run, don't override it
 		if ( $page === null
 			&& $title->inNamespace( NS_USER ) && !$title->exists()
-			&& GlobalUserPage::shouldDisplayGlobalPage( $title )
+			&& $this->manager->shouldDisplayGlobalPage( $title )
 		) {
 			$page = new GlobalUserPage(
 				$title,
-				MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'globaluserpage' )
+				$this->config,
+				$this->mainWANObjectCache,
+				$this->manager,
+				$this->httpRequestFactory,
+				$this->urlUtils,
+				$this->namespaceInfo
 			);
 		}
 	}
@@ -74,7 +110,7 @@ class Hooks implements
 	 * @param bool &$isKnown Whether the page should be considered known
 	 */
 	public function onTitleIsAlwaysKnown( $title, &$isKnown ) {
-		if ( GlobalUserPage::shouldDisplayGlobalPage( $title ) ) {
+		if ( $this->manager->shouldDisplayGlobalPage( $title ) ) {
 			$isKnown = true;
 		}
 	}
@@ -88,9 +124,12 @@ class Hooks implements
 	protected static function isGlobalUserPage( Title $title ) {
 		global $wgGlobalUserPageDBname;
 
-		return $wgGlobalUserPageDBname === WikiMap::getCurrentWikiId() // On the central wiki
-			&& $title->inNamespace( NS_USER ) // is a user page
-			&& $title->getRootTitle()->equals( $title ); // and is a root page.
+		// On the central wiki
+		return $wgGlobalUserPageDBname === WikiMap::getCurrentWikiId()
+			// is a user page
+			&& $title->inNamespace( NS_USER )
+			// and is a root page.
+			&& $title->getRootTitle()->equals( $title );
 	}
 
 	/**
@@ -155,7 +194,7 @@ class Hooks implements
 	 * @param array &$notices
 	 */
 	public function onTitleGetEditNotices( $title, $oldid, &$notices ) {
-		if ( !$title->exists() && GlobalUserPage::shouldDisplayGlobalPage( $title ) ) {
+		if ( !$title->exists() && $this->manager->shouldDisplayGlobalPage( $title ) ) {
 			$notices['globaluserpage'] = '<p><strong>' .
 				wfMessage( 'globaluserpage-editnotice' )->parse()
 				. '</strong></p>';
@@ -177,10 +216,13 @@ class Hooks implements
 	 * @return bool
 	 */
 	public function onWikiPageFactory( $title, &$page ) {
-		if ( GlobalUserPage::shouldDisplayGlobalPage( $title ) ) {
+		if ( $this->manager->shouldDisplayGlobalPage( $title ) ) {
 			$page = new WikiGlobalUserPage(
 				$title,
-				MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'globaluserpage' )
+				$this->config,
+				$this->mainWANObjectCache,
+				$this->httpRequestFactory,
+				$this->urlUtils
 			);
 
 			return false;

@@ -15,6 +15,7 @@ use MediaWiki\Extension\SecurePoll\VoteRecord;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Session\SessionManager;
 use MediaWiki\Status\Status;
@@ -23,6 +24,7 @@ use MediaWiki\User\User;
 use MediaWiki\WikiMap\WikiMap;
 use MobileContext;
 use OOUI\ButtonInputWidget;
+use OOUI\DropdownInputWidget;
 use OOUI\FieldLayout;
 use OOUI\FieldsetLayout;
 use OOUI\FormLayout;
@@ -39,31 +41,27 @@ use Wikimedia\Rdbms\ILoadBalancer;
 class VotePage extends ActionPage {
 	/** @var Election|null */
 	public $election;
+
 	/** @var Auth|null */
 	public $auth;
+
 	/** @var User|null */
 	public $user;
+
 	/** @var Voter|null */
 	public $voter;
-	/** @var ILoadBalancer */
-	private $loadBalancer;
-	/** @var HookRunner */
-	private $hookRunner;
+
+	private HookRunner $hookRunner;
+
 	/** @var string */
 	private $mostActiveWikiFormField;
 
-	/**
-	 * @param SpecialSecurePoll $specialPage
-	 * @param ILoadBalancer $loadBalancer
-	 * @param HookContainer $hookContainer
-	 */
 	public function __construct(
 		SpecialSecurePoll $specialPage,
-		ILoadBalancer $loadBalancer,
-		HookContainer $hookContainer
+		private readonly ILoadBalancer $loadBalancer,
+		HookContainer $hookContainer,
 	) {
 		parent::__construct( $specialPage );
-		$this->loadBalancer = $loadBalancer;
 		$this->hookRunner = new HookRunner( $hookContainer );
 	}
 
@@ -194,7 +192,7 @@ class VotePage extends ActionPage {
 	public function showForm( $status = false ) {
 		$out = $this->specialPage->getOutput();
 
-		// Show introduction
+		// Show the introduction
 		if ( $this->election->hasVoted( $this->voter ) && $this->election->allowChange() ) {
 			$out->addWikiMsg( 'securepoll-change-allowed' );
 		}
@@ -207,7 +205,7 @@ class VotePage extends ActionPage {
 			'items' => $this->getBallot()->getForm( $status )
 		] );
 
-		// Show comments section
+		// Show the comments section
 		if ( $this->election->getProperty( 'request-comment' ) ) {
 			$form->addItems( [
 				new FieldsetLayout( [
@@ -232,18 +230,21 @@ class VotePage extends ActionPage {
 			] );
 		}
 
-		// Add most active wiki dropdown
-		$form->addItems( [ new \OOUI\FieldLayout(
-			$this->createMostActiveWikiDropdownWidget(),
-			[
-				'label' => $this->msg( 'securepoll-vote-most-active-wiki-dropdown-label' )->text(),
-				'align' => 'top',
-			]
-		) ] );
+		if ( $this->election->getProperty( 'prompt-active-wiki', true ) ) {
+			// Add most active wiki dropdown
+			$form->addItems( [ new FieldLayout(
+				$this->createMostActiveWikiDropdownWidget(),
+				[
+					'label' => $this->msg( 'securepoll-vote-most-active-wiki-dropdown-label' )->text(),
+					'align' => 'top',
+				]
+			) ] );
+		}
 
 		$form->addItems( [
 			new FieldLayout(
 				new ButtonInputWidget( [
+					'id' => 'submit-vote-button',
 					'label' => $this->msg( 'securepoll-submit' )->text(),
 					'flags' => [ 'primary', 'progressive' ],
 					'type' => 'submit',
@@ -257,7 +258,7 @@ class VotePage extends ActionPage {
 			] )
 		] );
 
-		$out->addHTML( $form );
+		$out->addHTML( (string)$form );
 	}
 
 	/**
@@ -275,7 +276,7 @@ class VotePage extends ActionPage {
 	}
 
 	/**
-	 * Submit the voting form. If successful, adds a record to the database.
+	 * Submit the voting form. If successful, a record is added to the database.
 	 * Shows an error message on failure.
 	 */
 	public function doSubmit() {
@@ -329,7 +330,6 @@ class VotePage extends ActionPage {
 			->caller( __METHOD__ )
 			->execute();
 
-		// Add vote to log
 		$xff = '';
 		if ( !empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
 			$xff = $_SERVER['HTTP_X_FORWARDED_FOR'];
@@ -337,7 +337,7 @@ class VotePage extends ActionPage {
 
 		$token = SessionManager::getGlobalSession()->getToken();
 		$tokenMatch = $token->match( $request->getVal( 'edit_token' ) );
-		$mostActiveWikiDomain = $request->getVal( $this->mostActiveWikiFormField );
+		$mostActiveWikiDomain = $request->getVal( $this->mostActiveWikiFormField ) ?? '';
 
 		$dbw->newInsertQueryBuilder()
 			->insertInto( 'securepoll_votes' )
@@ -372,9 +372,9 @@ class VotePage extends ActionPage {
 		}
 
 		$returnUrl = $this->election->getProperty( 'return-url' );
-		$returnText = $this->election->getMessage( 'return-text' );
 		if ( $returnUrl ) {
-			if ( strval( $returnText ) === '' ) {
+			$returnText = $this->election->getMessage( 'return-text' );
+			if ( $returnText === '' ) {
 				$returnText = $returnUrl;
 			}
 			$link = "[$returnUrl $returnText]";
@@ -383,7 +383,7 @@ class VotePage extends ActionPage {
 	}
 
 	/**
-	 * Get summary of voting in user readable version
+	 * Get a user-readable summary of voting
 	 *
 	 * @param array $votingData
 	 * @param string $languageCode
@@ -391,13 +391,10 @@ class VotePage extends ActionPage {
 	 */
 	public function getSummaryOfVotes( $votingData, $languageCode ) {
 		$data = $votingData['votes'];
-		$comment = $votingData['comment'];
 
-		/**
-		 * if record cannot be unpacked correctly, show error
-		 */
+		// if record cannot be unpacked correctly, show error
 		if ( !$data ) {
-			return new MessageWidget( [
+			return (string)new MessageWidget( [
 				'type' => 'error',
 				'label' => $this->msg( 'securepoll-vote-result-error-label' )
 			] );
@@ -405,11 +402,11 @@ class VotePage extends ActionPage {
 
 		$summary = new MessageWidget( [
 			'type' => 'success',
-			'label' => $this->msg( 'securepoll-thanks' )
+			'label' => new HtmlSnippet( $this->msg( 'securepoll-thanks' )->parse() ),
 		] );
 
 		$summary .= Html::element( 'h2', [ 'class' => 'securepoll-vote-result-heading' ],
-			$this->msg( 'securepoll-vote-result-intro-label' ) );
+			$this->msg( 'securepoll-vote-result-intro-label' )->text() );
 
 		foreach ( $data as $questionIndex => $votes ) {
 			$questionMsg = $this->getQuestionMessage( $languageCode, $questionIndex );
@@ -419,35 +416,40 @@ class VotePage extends ActionPage {
 			}
 			$questionText = $questionMsg[$questionIndex]['text'];
 			$html = Html::openElement( 'div', [ 'class' => 'securepoll-vote-result-question-cnt' ] );
-			$html .= Html::element(
+			$html .= Html::rawElement(
 				'p', [ 'class' => 'securepoll-vote-result-question' ],
-				$this->msg( 'securepoll-vote-result-question-label', $questionText )
+				$this->msg( 'securepoll-vote-result-question-label', $questionText )->parse()
 			);
 
+			$votedItems = [];
 			if ( $this->election->getTallyType() === 'droop-quota' ) {
-				$votedItems = [];
 				foreach ( $votes as $vote ) {
-					$votedItems[] = Html::rawElement( 'li', [], $optionsMsgs[$vote]['text'] );
+					// Manually implement Message->escape() to be consistent with the use of msg()
+					// in options implemented by other poll types.
+					// This is necessary to prevent XSS attacks because STV doesn't use any decorators for
+					// its option text displays and therefore doesn't use the msg() function which would
+					// have escaped the text as part of its operation.
+					$sanitizedText = Sanitizer::escapeCombiningChar(
+						htmlspecialchars( $optionsMsgs[$vote]['text'], ENT_QUOTES, 'UTF-8', false )
+					);
+					$bidirectionalText = Html::rawElement( 'bdi', [], $sanitizedText );
+					$votedItems[] = Html::rawElement( 'li', [], $bidirectionalText );
 				}
 				$html .= Html::rawElement( 'ol', [ 'class' => 'securepoll-vote-result-options' ],
 					implode( "\n", $votedItems )
 				);
 			} else {
-				$votedItems = [];
 				$notVotedItems = [];
 				foreach ( $optionsMsgs as $optionIndex => $option ) {
-					$optionText = $optionsMsgs[$optionIndex]['text'];
-					$count = $optionIndex;
-					if ( isset( $votes[ $optionIndex ] ) ) {
-						$count = $votes[ $optionIndex ];
-					}
+					$optionText = $option['text'] ?? '';
+					$count = $votes[$optionIndex] ?? $optionIndex;
 
 					if ( $this->election->getTallyType() === 'plurality' ||
 						$this->election->getTallyType() === 'histogram-range' ) {
 						if ( isset( $questionMsg[$questionIndex]['column' . $count ] ) ) {
 							$columnLabel = $questionMsg[$questionIndex]['column' . $count ];
-							$votedItems[] = Html::element( 'li', [],
-								$this->msg( 'securepoll-vote-result-voted-option-label', $optionText, $columnLabel )
+							$votedItems[] = Html::rawElement( 'li', [],
+								$this->msg( 'securepoll-vote-result-voted-option-label', $optionText, $columnLabel )->parse()
 							);
 							continue;
 						}
@@ -455,8 +457,8 @@ class VotePage extends ActionPage {
 							$positiveCount = '+' . $count;
 							if ( isset( $questionMsg[$questionIndex]['column' . $positiveCount ] ) ) {
 								$columnLabel = $questionMsg[$questionIndex]['column' . $positiveCount ];
-								$votedItems[] = Html::element( 'li', [],
-									$this->msg( 'securepoll-vote-result-voted-option-label', $optionText, $columnLabel )
+								$votedItems[] = Html::rawElement( 'li', [],
+									$this->msg( 'securepoll-vote-result-voted-option-label', $optionText, $columnLabel )->parse()
 								);
 								continue;
 							}
@@ -464,26 +466,26 @@ class VotePage extends ActionPage {
 					}
 
 					if ( $this->election->getTallyType() === 'schulze' && $count === 1000 ) {
-						$notVotedItems[] = Html::element( 'li', [],
-							$this->msg( 'securepoll-vote-result-not-voted-option-label', $optionText )
+						$notVotedItems[] = Html::rawElement( 'li', [],
+							$this->msg( 'securepoll-vote-result-not-voted-option-label', $optionText )->parse()
 						);
 						continue;
 					}
 
 					if ( $count === 0 ) {
-						$notVotedItems[] = Html::element( 'li', [],
-							$this->msg( 'securepoll-vote-result-not-checked-option-label', $optionText )
+						$notVotedItems[] = Html::rawElement( 'li', [],
+							$this->msg( 'securepoll-vote-result-not-checked-option-label', $optionText )->parse()
 						);
 						continue;
 					}
 					if ( $this->election->getTallyType() === 'plurality' ) {
-						$votedItems[] = Html::element( 'li', [],
-							$this->msg( 'securepoll-vote-result-checked-option-label', $optionText )
+						$votedItems[] = Html::rawElement( 'li', [],
+							$this->msg( 'securepoll-vote-result-checked-option-label', $optionText )->parse()
 						);
 						continue;
 					}
-					$votedItems[] = Html::element( 'li', [],
-						$this->msg( 'securepoll-vote-result-rated-option-label', $optionText, $count )
+					$votedItems[] = Html::rawElement( 'li', [],
+						$this->msg( 'securepoll-vote-result-rated-option-label', $optionText, $count )->parse()
 					);
 				}
 
@@ -500,6 +502,7 @@ class VotePage extends ActionPage {
 			$summary .= $html;
 		}
 
+		$comment = $votingData['comment'];
 		if ( $comment !== '' ) {
 			$summary .= Html::element( 'div', [ 'class' => 'securepoll-vote-result-comment' ],
 				$this->msg( 'securepoll-vote-result-comment', $comment )->plain()
@@ -515,10 +518,10 @@ class VotePage extends ActionPage {
 	public function getVoteDataFromRecord( $record ) {
 		$blob = VoteRecord::readBlob( $record );
 		$ballotData = $blob->value->getBallotData();
-		$data = [];
-		$data['votes'] = $this->getBallot()->unpackRecord( $ballotData );
-		$data['comment'] = $blob->value->getComment();
-		return $data;
+		return [
+			'votes' => $this->getBallot()->unpackRecord( $ballotData ),
+			'comment' => $blob->value->getComment(),
+		];
 	}
 
 	/**
@@ -611,7 +614,7 @@ class VotePage extends ActionPage {
 	 * Filtered by percentage of edits on each wiki, with a threshold configured in SecurePollMostActiveWikisThreshold.
 	 * This is used to log the domain of the wiki.
 	 *
-	 * @return \OOUI\DropdownInputWidget
+	 * @return DropdownInputWidget
 	 */
 	public function createMostActiveWikiDropdownWidget() {
 		$options = $this->populateUsersActiveWikiOptions();
@@ -627,7 +630,7 @@ class VotePage extends ActionPage {
 			'data' => $defaultDomain
 		] );
 
-		return new \OOUI\DropdownInputWidget( [
+		return new DropdownInputWidget( [
 			'infusable' => true,
 			'name' => $this->mostActiveWikiFormField,
 			'required' => true,
@@ -643,6 +646,11 @@ class VotePage extends ActionPage {
 	 * @return array
 	 */
 	private function populateUsersActiveWikiOptions() {
+		// This is a global exception we may want to let it pass.
+		// Even though $wgConf is an instance of MediaWiki\Config\SiteConfiguration,
+		// it’s not exposed as a service, so accessing it via
+		// `MediaWikiServices::getInstance()->getService( 'SiteConfiguration' )` is
+		// not possible.
 		global $wgConf;
 
 		if ( !ExtensionRegistry::getInstance()->isLoaded( 'CentralAuth' ) ) {
@@ -653,7 +661,7 @@ class VotePage extends ActionPage {
 		$centralUser = CentralAuthUser::getInstanceByName( $user->getName() );
 		$wikiInfos = $centralUser->queryAttached();
 
-		// Find and add corresponding domain
+		// Find and add the corresponding domain
 		$wikiInfos = array_map( static function ( $info ) use ( $wgConf ) {
 			$info['domain'] = $wgConf->get( 'wgServer', $info['wiki'] );
 

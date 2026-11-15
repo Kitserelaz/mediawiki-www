@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"Winston Sung"
 		]
 	},
@@ -8,7 +9,7 @@
 	"popups-desc": "Prikazuje iskočni pregled kada korisnik zadrži strelicu iznad linka",
 	"popups-settings-title": "Pretpregledi",
 	"popups-settings-option-page": "Pretpregledi stranice",
-	"popups-settings-option-page-description": "Brzi pregled neke teme prilikom čitanja stranice.",
+	"popups-settings-option-page-description": "Brzi pregled neke teme pri čitanju stranice.",
 	"popups-settings-option-reference": "Pretpregledi referenci",
 	"popups-settings-option-reference-description": "Brzo pregledanje referenci pri čitanju stranice.",
 	"popups-settings-save": "Sačuvaj",
@@ -18,5 +19,7 @@
 	"popups-preview-footer-read": "Idi na ovu stranicu",
 	"popups-preview-disambiguation": "Naslov se odnosi na više stranica",
 	"popups-preview-disambiguation-link": "Pogl. slične stranice",
-	"prefs-reading": "Postavke čitanja"
+	"prefs-reading": "Postavke čitanja",
+	"popups-prefs-optin": "Pregled stranica (brzi pregled bilo koje teme pri čitanju stranice)",
+	"popups-prefs-conflicting-gadgets-info": "Neke spravice i druga prilagođavanja mogu utjecati na rad ove funkcije. Ako naiđete na probleme, provjerite svoje spravice i korisničke skripte, među kojima i globalne."
 }

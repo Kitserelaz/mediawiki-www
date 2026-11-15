@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\Synchronization;
 
 use FileBasedMessageGroup;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroupCache;
 use MediaWiki\Extension\Translate\MessageLoading\Message;
 use MediaWiki\Extension\Translate\MessageLoading\MessageCollection;
@@ -23,18 +24,12 @@ use RuntimeException;
  * @license GPL-2.0-or-later
  */
 class ExternalMessageSourceStateComparator {
-	private StringComparator $stringComparator;
-	private RevisionLookup $revisionLookup;
-	private PageStore $pageStore;
 
 	public function __construct(
-		StringComparator $stringComparator,
-		RevisionLookup $revisionLookup,
-		PageStore $pageStore
+		private readonly StringComparator $stringComparator,
+		private readonly RevisionLookup $revisionLookup,
+		private readonly PageStore $pageStore,
 	) {
-		$this->stringComparator = $stringComparator;
-		$this->revisionLookup = $revisionLookup;
-		$this->pageStore = $pageStore;
 	}
 
 	/**
@@ -117,7 +112,7 @@ class ExternalMessageSourceStateComparator {
 	): void {
 		// initCollection returns empty list before first import
 		$wiki = $group->initCollection( $language );
-		$wiki->filter( 'hastranslation', false );
+		$wiki->filter( MessageCollection::FILTER_HAS_TRANSLATION, MessageCollection::INCLUDE_MATCHING );
 		$wiki->loadTranslations();
 		$wikiKeys = $wiki->getMessageKeys();
 
@@ -126,6 +121,9 @@ class ExternalMessageSourceStateComparator {
 		$ffs = $group->getFFS();
 		if ( $language === $sourceLanguage && !$ffs->exists( $language ) ) {
 			$path = $group->getSourceFilePath( $language );
+			// Warning: this exception message contains a local filesystem path. If this method
+			// is ever called from a web-facing context, the message must be sanitized to avoid
+			// disclosing server directory structure to end users.
 			throw new RuntimeException( "Source message file for {$group->getId()} does not exist: $path" );
 		}
 
@@ -447,7 +445,7 @@ class ExternalMessageSourceStateComparator {
 		$oldestRevision = $this->revisionLookup->getFirstRevision( $pageIdentity );
 		$latestRevision = $this->revisionLookup->getRevisionByTitle( $pageIdentity );
 
-		$logger = LoggerFactory::getInstance( 'Translate' );
+		$logger = LoggerFactory::getInstance( LogNames::GROUP_SYNCHRONIZATION );
 		// Here we are checking for the following:
 		// 1. New translation was added for a message on translatewiki.net
 		// 2. Translation was exported

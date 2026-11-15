@@ -1,17 +1,17 @@
 <?php
 namespace HitCounters;
 
-use DatabaseUpdater;
-use DeferredUpdates;
-use IContextSource;
+use MediaWiki\Context\IContextSource;
+use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
+use MediaWiki\Installer\DatabaseUpdater;
 use MediaWiki\MediaWikiServices;
-use Parser;
-use PPFrame;
-use SiteStats;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\PPFrame;
+use MediaWiki\SiteStats\SiteStats;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 use Skin;
-use Title;
-use User;
 use WikiPage;
 
 /**
@@ -103,7 +103,7 @@ class Hooks {
 	/**
 	 * @param array &$variableIDs
 	 */
-	public static function onMagicWordwgVariableIDs( array &$variableIDs ) {
+	public static function onGetMagicVariableIDs( array &$variableIDs ): void {
 		$variableIDs = array_merge( $variableIDs, array_keys( self::getMagicWords() ) );
 	}
 

@@ -1,5 +1,5 @@
 {
-	"name": "MatomoAnalytics-test",
+	"name": "MatomoAnalytics",
 	"author": [
 		"John Lewis",
 		"Southparkfan",
@@ -12,7 +12,7 @@
 	"license-name": "GPL-3.0-or-later",
 	"type": "specialpage",
 	"requires": {
-		"MediaWiki": ">= 1.43.0"
+		"MediaWiki": ">= 1.46.0"
 	},
 	"AvailableRights": [
 		"noanalytics",
@@ -38,9 +38,6 @@
 	"SpecialPages": {
 		"Analytics": {
 			"class": "Miraheze\\MatomoAnalytics\\Specials\\SpecialAnalytics"
-		},
-		"AnalyticsOptOut": {
-			"class": "Miraheze\\MatomoAnalytics\\Specials\\SpecialAnalyticsOptOut"
 		}
 	},
 	"Hooks": {
@@ -71,9 +68,19 @@
 			"class": "Miraheze\\MatomoAnalytics\\HookHandlers\\Installer"
 		},
 		"Main": {
-			"class": "Miraheze\\MatomoAnalytics\\HookHandlers\\Main"
+			"class": "Miraheze\\MatomoAnalytics\\HookHandlers\\Main",
+			"optional_services": [
+				"CookieConsent.CookiePreferences"
+			]
 		}
 	},
+	"RestRoutes": [
+		{
+			"path": "/matomoanalytics/v0/top_pages",
+			"method": "GET",
+			"class": "Miraheze\\MatomoAnalytics\\Rest\\TopPagesHandler"
+		}
+	],
 	"ResourceModules": {
 		"ext.matomoanalytics.charts": {
 			"scripts": "ext.matomoanalytics.charts.js"

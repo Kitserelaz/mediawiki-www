@@ -219,6 +219,5 @@
 	"tag-discussiontools-reply-description": "O usuário respondeu a um comentário com o DiscussionTools",
 	"tag-discussiontools-source-description": "O DiscussionTools estava no modo de código-fonte",
 	"tag-discussiontools-source-enhanced-description": "O DiscussionTools estava no modo de código-fonte aprimorado com a barra de ferramentas",
-	"tag-discussiontools-visual-description": "O DiscussionTools estava no modo visual",
-	"discussiontools-notification-added-topic-header-compact": "$3: <em>$4</em>"
+	"tag-discussiontools-visual-description": "O DiscussionTools estava no modo visual"
 }

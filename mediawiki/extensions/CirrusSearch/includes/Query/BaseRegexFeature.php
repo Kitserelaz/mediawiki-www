@@ -14,6 +14,7 @@ use CirrusSearch\Search\SearchContext;
 use CirrusSearch\SearchConfig;
 use CirrusSearch\WarningCollector;
 use Elastica\Query\AbstractQuery;
+use MediaWiki\MainConfigNames;
 use Wikimedia\Assert\Assert;
 
 /**
@@ -69,7 +70,7 @@ abstract class BaseRegexFeature extends SimpleKeywordFeature implements FilterQu
 	 */
 	public function __construct( SearchConfig $config, array $fields ) {
 		$this->enabled = $config->get( 'CirrusSearchEnableRegex' );
-		$this->languageCode = $config->get( 'LanguageCode' );
+		$this->languageCode = $config->get( MainConfigNames::LanguageCode );
 		$this->regexPlugin = $config->getElement( 'CirrusSearchWikimediaExtraPlugin', 'regex' );
 		$this->maxDeterminizedStates = $config->get( 'CirrusSearchRegexMaxDeterminizedStates' );
 		Assert::precondition( $fields !== [], 'must have at least one field' );
@@ -230,6 +231,12 @@ abstract class BaseRegexFeature extends SimpleKeywordFeature implements FilterQu
 	abstract protected function getNonRegexFilterQuery( KeywordFeatureNode $node, QueryBuildingContext $context );
 
 	/**
+	 * Determine the flavor of regex highlighting to apply.
+	 * @return string one of: java, lucene, lucene_extended, lucene_anchored
+	 */
+	abstract protected function getRegexHLFlavor(): string;
+
+	/**
 	 * @param string $pattern
 	 * @param bool $insensitive
 	 * @return AbstractQuery
@@ -262,9 +269,11 @@ abstract class BaseRegexFeature extends SimpleKeywordFeature implements FilterQu
 		if ( !$generator->supportsRegexFields() ) {
 			return $fields;
 		}
+		$regexFlavor = $this->getRegexHLFlavor();
 		foreach ( $this->fields as $field => $hlTarget ) {
 			$fields[] = $generator->newRegexField( "$field.plain", $hlTarget,
-				$pattern, $insensitive, HighlightedField::COSTLY_EXPERT_SYNTAX_PRIORITY );
+				$pattern, $insensitive, HighlightedField::COSTLY_EXPERT_SYNTAX_PRIORITY,
+				$regexFlavor );
 		}
 		return $fields;
 	}
@@ -351,6 +360,11 @@ GROOVY;
 		return Filters::booleanOr( $filters );
 	}
 
+	/**
+	 * @param KeywordFeatureNode $node
+	 * @param QueryBuildingContext $context
+	 * @return HighlightedField[]
+	 */
 	abstract public function buildNonRegexHLFields( KeywordFeatureNode $node, QueryBuildingContext $context );
 
 	/**
@@ -368,11 +382,11 @@ GROOVY;
 	 */
 	private function trimFirstOccurrenceOfSlash( string $quotedValue ) {
 		$pattern = $quotedValue;
-		if ( $pattern[0] == '/' ) {
-			$pattern = substr( $quotedValue, 1 );
+		if ( str_starts_with( $pattern, '/' ) ) {
+			$pattern = substr( $pattern, 1 );
 		}
-		if ( $pattern[strlen( $pattern ) - 1] == '/' ) {
-			$pattern = substr( $pattern, 0, strlen( $pattern ) - 1 );
+		if ( str_ends_with( $pattern, '/' ) ) {
+			$pattern = substr( $pattern, 0, -1 );
 		}
 
 		return $pattern;

@@ -79,7 +79,7 @@ class DeleteEqualTranslationsMaintenanceScript extends BaseMaintenanceScript {
 	}
 
 	private function getEqualMessages( MessageCollection $collection ): SplObjectStorage {
-		$collection->filter( 'translated', false );
+		$collection->filter( MessageCollection::FILTER_TRANSLATED, MessageCollection::INCLUDE_MATCHING );
 		$collection->loadTranslations();
 
 		$messages = new SplObjectStorage();
@@ -88,7 +88,7 @@ class DeleteEqualTranslationsMaintenanceScript extends BaseMaintenanceScript {
 			$message = $collection[$key];
 
 			if ( $message->definition() === $message->translation() ) {
-				$messages->attach( $titleValue, $message );
+				$messages[$titleValue] = $message;
 			}
 		}
 

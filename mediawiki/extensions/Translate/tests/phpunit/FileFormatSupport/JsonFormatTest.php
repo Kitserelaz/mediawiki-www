@@ -16,7 +16,7 @@ use MockMessageCollectionForExport;
  * @license GPL-2.0-or-later
  */
 
-/** @covers MediaWiki\Extension\Translate\FileFormatSupport\JsonFormat */
+/** @covers \MediaWiki\Extension\Translate\FileFormatSupport\JsonFormat */
 class JsonFormatTest extends MediaWikiIntegrationTestCase {
 
 	protected function setUp(): void {
@@ -132,5 +132,47 @@ class JsonFormatTest extends MediaWikiIntegrationTestCase {
 			$parsed['EXTRA']['METADATA']['metakey'],
 			'metadata is preserved'
 		);
+	}
+
+	public function testExportUsesTabIndentationByDefault(): void {
+		$collection = new MockMessageCollectionForExport();
+
+		/** @var FileBasedMessageGroup $group */
+		$group = MessageGroupBase::factory( $this->groupConfiguration );
+		$data = ( new JsonFormat( $group ) )->writeIntoVariable( $collection );
+
+		$this->assertStringContainsString( "\n\t\"translatedmsg\"", $data, 'indents with a tab when unconfigured' );
+	}
+
+	public function testExportWithCustomIndentString(): void {
+		$collection = new MockMessageCollectionForExport();
+
+		$this->groupConfiguration['FILES']['indentString'] = '  ';
+		/** @var FileBasedMessageGroup $group */
+		$group = MessageGroupBase::factory( $this->groupConfiguration );
+		$data = ( new JsonFormat( $group ) )->writeIntoVariable( $collection );
+
+		$this->assertStringContainsString( "\n  \"translatedmsg\"", $data, 'uses the configured indentation' );
+		$this->assertStringNotContainsString( "\t", $data, 'no tabs when a custom indentation is set' );
+	}
+
+	/** @dataProvider provideInvalidIndentStrings */
+	public function testExportWithInvalidIndentStringThrows( string $indent ): void {
+		$collection = new MockMessageCollectionForExport();
+
+		$this->groupConfiguration['FILES']['indentString'] = $indent;
+		/** @var FileBasedMessageGroup $group */
+		$group = MessageGroupBase::factory( $this->groupConfiguration );
+
+		$this->expectException( \InvalidArgumentException::class );
+		( new JsonFormat( $group ) )->writeIntoVariable( $collection );
+	}
+
+	public static function provideInvalidIndentStrings(): array {
+		return [
+			'non-whitespace' => [ 'xx' ],
+			'empty' => [ '' ],
+			'trailing newline' => [ "  \n" ],
+		];
 	}
 }

@@ -62,7 +62,7 @@ class UserGifts {
 		);
 		$ug_gift_id = $dbw->insertId();
 		$this->incGiftGivenCount( $gift_id );
-		$this->sendGiftNotificationEmail( $user_to, $gift_id, $type );
+		$this->sendGiftNotificationEmail( $user_to, $gift_id );
 
 		// Add to new gift count cache for receiving user
 		$cache = $services->getMainWANObjectCache();
@@ -100,9 +100,8 @@ class UserGifts {
 	 *
 	 * @param User $user User (object) receiving the gift
 	 * @param int $gift_id ID Number of the given gift
-	 * @param int $type Gift type; unused
 	 */
-	private function sendGiftNotificationEmail( $user, $gift_id, $type ) {
+	private function sendGiftNotificationEmail( $user, $gift_id ) {
 		$gift = Gifts::getGift( $gift_id );
 		$user->load();
 
@@ -179,18 +178,15 @@ class UserGifts {
 	 */
 	public function doesUserOwnGift( $user, $ug_id ) {
 		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
-		$s = $dbr->selectRow(
+		return (bool)$dbr->selectField(
 			'user_gift',
-			[ 'ug_actor_to' ],
-			[ 'ug_id' => $ug_id ],
+			'ug_actor_to',
+			[
+				'ug_id' => $ug_id,
+				'ug_actor_to' => $user->getActorId(),
+			],
 			__METHOD__
 		);
-		if ( $s !== false ) {
-			if ( $user->getActorId() == $s->ug_actor_to ) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	/**
@@ -227,23 +223,19 @@ class UserGifts {
 			[],
 			[ 'gift' => [ 'INNER JOIN', 'ug_gift_id = gift_id' ] ]
 		);
-		if ( !$row ) {
-			return false;
-		}
 
-		$gift = [];
-		$gift['id'] = $row->ug_id;
-		$gift['actor_from'] = $row->ug_actor_from;
-		$gift['actor_to'] = $row->ug_actor_to;
-		$gift['message'] = $row->ug_message;
-		$gift['gift_count'] = $row->gift_given_count;
-		$gift['timestamp'] = $row->ug_date;
-		$gift['gift_id'] = $row->gift_id;
-		$gift['name'] = $row->gift_name;
-		$gift['description'] = $row->gift_description;
-		$gift['status'] = $row->ug_status;
-
-		return $gift;
+		return $row ? [
+			'id' => $row->ug_id,
+			'actor_from' => $row->ug_actor_from,
+			'actor_to' => $row->ug_actor_to,
+			'message' => $row->ug_message,
+			'gift_count' => $row->gift_given_count,
+			'timestamp' => $row->ug_date,
+			'gift_id' => $row->gift_id,
+			'name' => $row->gift_name,
+			'description' => $row->gift_description,
+			'status' => $row->ug_status,
+		] : false;
 	}
 
 	public function getUserGiftList( $type, $limit = 0, $page = 0 ) {
@@ -313,20 +305,11 @@ class UserGifts {
 	 */
 	public function getGiftCountByUsername() {
 		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
-
-		$row = $dbr->selectRow(
+		return (int)$dbr->selectField(
 			'user_gift',
-			'COUNT(*) AS count',
+			'COUNT(*)',
 			[ 'ug_actor_to' => $this->user->getActorId() ],
 			__METHOD__
 		);
-
-		$giftCount = 0;
-
-		if ( $row ) {
-			$giftCount = $row->count;
-		}
-
-		return $giftCount;
 	}
 }

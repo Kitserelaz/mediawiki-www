@@ -6,7 +6,8 @@
 			"Darafsh",
 			"Iriman",
 			"Jeeputer",
-			"Ladsgroup"
+			"Ladsgroup",
+			"LProfo"
 		]
 	},
 	"codemirror-desc": "برجسته‌سازی نحوی در ویرایشگر متنی را ممکن می‌سازد",
@@ -55,7 +56,7 @@
 	"codemirror-match-case": "تطبیق بزرگی و کوچکی حروف",
 	"codemirror-regexp": "عبارت باقاعده",
 	"codemirror-regexp-invalid": "عبارت باقاعدهٔ نامعتبر",
-	"codemirror-by-word": "کل کلمه",
+	"codemirror-by-word": "کل واژه",
 	"codemirror-replace": "جایگزینی",
 	"codemirror-replace-placeholder": "جایگزینی",
 	"codemirror-replace-all": "جایگزینی همه",
@@ -219,6 +220,5 @@
 	"codemirror-potentially-slow": "بالقوه کم‌سرعت",
 	"codemirror-validate-js-syntaxerror": "خطای نحوی در ستون $1 در سطح $2: $3",
 	"codemirror-ve-limit-exceeded": "سند برای برجسته‌سازی نحوی بیش از حد بزرگ است و غیرفعال شده است.",
-	"codemirror-ve-limit-exceeded-info": "اطلاعات بیشتر",
-	"codemirror-v6-prefs-colorblind": "نمایش طرح سازگار با کوررنگی"
+	"codemirror-ve-limit-exceeded-info": "اطلاعات بیشتر"
 }

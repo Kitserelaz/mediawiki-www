@@ -2,30 +2,25 @@
 
 namespace MediaWiki\MassMessage\Job;
 
-use Job;
 use MediaWiki\Content\TextContent;
 use MediaWiki\Content\WikitextContent;
+use MediaWiki\JobQueue\Job;
 use MediaWiki\MassMessage\MassMessage;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use RuntimeException;
+use StatusValue;
 
 /**
  * JobQueue class for jobs queued server side.
  *
- * @file
  * @ingroup JobQueue
  * @author Kunal Mehta
  * @license GPL-2.0-or-later
  */
-
 class MassMessageServerSideJob extends MassMessageJob {
-	/**
-	 * @param Title $title
-	 * @param array $params
-	 */
+
 	public function __construct( Title $title, array $params ) {
 		Job::__construct( 'MassMessageServerSideJob', $title, $params );
 		$this->removeDuplicates = true;
@@ -45,10 +40,9 @@ class MassMessageServerSideJob extends MassMessageJob {
 	 * Don't add any hidden comments.
 	 *
 	 * @param bool $stripTildes ignored
-	 * @return Status
 	 */
-	protected function makeText( bool $stripTildes = false ): Status {
-		return Status::newGood( $this->params['message'] );
+	protected function makeText( bool $stripTildes = false ): StatusValue {
+		return StatusValue::newGood( $this->params['message'] );
 	}
 
 	/**

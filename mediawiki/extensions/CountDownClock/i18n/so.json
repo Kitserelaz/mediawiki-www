@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"AhmedG612"
+		]
+	},
+	"countDownClock-desc": "Ku dar shaqo parser ah oo muujisa tirinta waqtiga hoos u dhacaysa",
+	"countDownClock-invalidtime": "Fadlan bixi halbeegga dhammaadka waqtiga oo ansax ah",
+	"countDownClock-days": "$1 {{PLURAL:$1|Maalin|Maalmo}}",
+	"countDownClock-hours": "$1 {{PLURAL:$1|Saacad|Saacado}}",
+	"countDownClock-minutes": "$1 {{PLURAL:$1|daqiiqo|daqiiqado}}",
+	"countDownClock-seconds": "$1 {{PLURAL:$1|ilbiriqsi|ilbiriqsiyo}}",
+	"countDownClock-expired": "Dhacay"
+}

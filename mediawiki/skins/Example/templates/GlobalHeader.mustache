@@ -1,0 +1,13 @@
+<nav class="global-top-navigation" id="global-top-navigation" aria-label="{{msg-example-top-navigation}}">
+	<a href="{{link-mainpage}}" class="global-top-navigation__fandom-logo" aria-label="{{msg-mainpage}}">
+		<svg class="wds-icon" aria-hidden="true" focusable="false"><use class="example-theme-dark" href="#wds-brand-fandom-logo-light"/><use class="example-theme-light" href="#wds-brand-fandom-logo"/></svg>
+	</a>
+	{{>SearchBox}}
+	<div class="global-top-navigation__action-wrapper">
+		{{#is-anon}}
+		<div class="global-action__item sign-in"><a class="wds-button wds-is-secondary global-action__link" href="{{login-url}}">{{msg-example-sign-in}}</a></div>
+		{{#register-url}}<div class="global-action__item register"><a class="wds-button global-action__link" href="{{register-url}}">{{msg-example-create-account}}</a></div>{{/register-url}}
+		{{/is-anon}}
+		{{^is-anon}}{{#data-portlets.data-user-menu}}{{>Portlet}}{{/data-portlets.data-user-menu}}{{/is-anon}}
+	</div>
+</nav>

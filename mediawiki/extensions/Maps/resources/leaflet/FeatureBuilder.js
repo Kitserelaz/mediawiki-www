@@ -24,7 +24,7 @@
 					iconUrl: properties.icon,
 					iconSize: [ img.width, img.height ],
 					iconAnchor: [ img.width / 2, img.height ],
-					popupAnchor: [ -img.width % 2, -img.height*2/3 ]
+					popupAnchor: [ 0, -img.height*2/3 ]
 				});
 
 				marker.setIcon(icon);
@@ -150,18 +150,28 @@
 					return maps.leaflet.GeoJson.simpleStyleToLeafletPathOptions(feature.properties);
 				},
 				pointToLayer: function(feature, latlng) {
-					markerLayer.addLayer(
-						createMarker(
-							{
-								lat: latlng.lat,
-								lon: latlng.lng,
-								title: feature.properties.title || '',
-								text: maps.leaflet.GeoJson.popupContentFromProperties(feature.properties),
-								icon: ''
-							},
-							options
-						)
+					let marker = createMarker(
+						{
+							lat: latlng.lat,
+							lon: latlng.lng,
+							title: feature.properties.title || '',
+							text: maps.leaflet.GeoJson.popupContentFromProperties(feature.properties),
+							icon: ''
+						},
+						options
 					);
+
+					let color = feature.properties && feature.properties['marker-color'];
+					if (color) {
+						let icon = maps.leaflet.GeoJson.createColoredIcon(L, color);
+						if (icon) {
+							marker.setIcon(icon);
+						}
+					}
+
+					markerLayer.addLayer(marker);
+
+					return marker;
 				},
 				onEachFeature: function (feature, layer) {
 					if (feature.geometry.type !== 'Point') {
@@ -203,7 +213,7 @@
 			markers.addLayer(createMarker(properties, options));
 		});
 
-		if (options.geojson !== '') {
+		if (options.geojson.length > 0) {
 			features.addLayer(newGeoJsonLayer(options, markers));
 		}
 

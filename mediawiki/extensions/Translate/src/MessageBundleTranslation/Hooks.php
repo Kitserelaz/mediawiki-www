@@ -3,14 +3,17 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageBundleTranslation;
 
-use Article;
-use Content;
+use MediaWiki\Content\Content;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Extension\Translate\LogNames;
+use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Hook\EditFilterMergedContentHook;
 use MediaWiki\Html\Html;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\Article;
 use MediaWiki\Page\Hook\ArticleViewHeaderHook;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Revision\SlotRecord;
@@ -18,9 +21,9 @@ use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
 use MediaWiki\Storage\Hook\PageSaveCompleteHook;
 use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\User;
 use Psr\Log\LoggerInterface;
-use WANObjectCache;
 
 /**
  * @author Niklas Laxström
@@ -33,33 +36,25 @@ class Hooks implements ArticleViewHeaderHook, EditFilterMergedContentHook, PageS
 	];
 
 	private static self $instance;
-	private LoggerInterface $logger;
-	private MessageBundleStore $messageBundleStore;
-	private WANObjectCache $WANObjectCache;
-	private LinkRenderer $linkRenderer;
-	private bool $enableIntegration;
 
 	public function __construct(
-		LoggerInterface $logger,
-		WANObjectCache $WANObjectCache,
-		MessageBundleStore $messageBundleStore,
-		LinkRenderer $linkRenderer,
-		bool $enableIntegration
+		private readonly LoggerInterface $logger,
+		private readonly MessageBundleStore $messageBundleStore,
+		private readonly LinkRenderer $linkRenderer,
+		private readonly TitleFactory $titleFactory,
+		private readonly JobQueueGroup $jobQueueGroup,
+		private readonly bool $enableIntegration,
 	) {
-		$this->logger = $logger;
-		$this->WANObjectCache = $WANObjectCache;
-		$this->messageBundleStore = $messageBundleStore;
-		$this->linkRenderer = $linkRenderer;
-		$this->enableIntegration = $enableIntegration;
 	}
 
 	public static function getInstance(): self {
 		$services = MediaWikiServices::getInstance();
 		self::$instance ??= new self(
-			LoggerFactory::getInstance( 'Translate.MessageBundle' ),
-			$services->getMainWANObjectCache(),
+			LoggerFactory::getInstance( LogNames::MESSAGE_BUNDLE ),
 			$services->get( 'Translate:MessageBundleStore' ),
 			$services->getLinkRenderer(),
+			$services->getTitleFactory(),
+			$services->getJobQueueGroup(),
 			$services->getMainConfig()->get( 'TranslateEnableMessageBundleIntegration' )
 		);
 		return self::$instance;
@@ -100,6 +95,20 @@ class Hooks implements ArticleViewHeaderHook, EditFilterMergedContentHook, PageS
 			return;
 		}
 
+		$pageTitle = $wikiPage->getTitle();
+		$handle = new MessageHandle( $pageTitle );
+
+		// Check if it's a message bundle unit translation
+		if ( $handle->isValid() && $handle->isPageTranslation() ) {
+			$group = $handle->getGroup();
+			if ( $group instanceof MessageBundleMessageGroup ) {
+				$messageBundleTitle = $this->titleFactory->newFromID( $group->getBundlePageId() );
+				$this->jobQueueGroup->push( PurgeMessageBundleDependenciesJob::newJob( $messageBundleTitle ) );
+			}
+
+			return;
+		}
+
 		$method = __METHOD__;
 		$content = $revisionRecord->getContent( SlotRecord::MAIN );
 		$pageTitle = $wikiPage->getTitle();
@@ -125,6 +134,8 @@ class Hooks implements ArticleViewHeaderHook, EditFilterMergedContentHook, PageS
 			] );
 			return;
 		}
+
+		$this->jobQueueGroup->push( PurgeMessageBundleDependenciesJob::newJob( $pageTitle ) );
 	}
 
 	/** Hook: CodeEditorGetPageLanguage */

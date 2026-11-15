@@ -6,22 +6,37 @@
  * @ingroup Extensions
  */
 
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Config\Config;
+use MediaWiki\HookContainer\HookContainer;
+use MediaWiki\Html\Html;
+use MediaWiki\MainConfigNames;
 
-class PageSchemasHooks {
+class PageSchemasHooks implements
+	\MediaWiki\Hook\ParserFirstCallInitHook
+{
+	private Config $config;
+	private HookContainer $hookContainer;
+
+	public function __construct(
+		Config $config,
+		HookContainer $hookContainer
+	) {
+		$this->config = $config;
+		$this->hookContainer = $hookContainer;
+	}
 
 	/**
 	 * Initialization
 	 *
-	 * @param Parser &$parser
+	 * @param Parser $parser
 	 * @return true
 	 */
-	public static function register( &$parser ) {
+	public function onParserFirstCallInit( $parser ) {
 		// Register the hook with the parser.
-		$parser->setHook( 'PageSchema', [ 'PageSchemasHooks', 'render' ] );
+		$parser->setHook( 'PageSchema', [ $this, 'render' ] );
 
 		// Initialize the global array of "handler" classes.
-		MediaWikiServices::getInstance()->getHookContainer()->run( 'PageSchemasRegisterHandlers' );
+		$this->hookContainer->run( 'PageSchemasRegisterHandlers' );
 		return true;
 	}
 
@@ -34,7 +49,7 @@ class PageSchemasHooks {
 	 * @param PPFrame $frame
 	 * @return string|void
 	 */
-	public static function render( $input, $args, $parser, $frame ) {
+	public function render( $input, $args, $parser, $frame ) {
 		$parserOutput = $parser->getOutput();
 		// Disable cache so that CSS will get loaded.
 		$parserOutput->updateCacheExpiry( 0 );
@@ -56,24 +71,15 @@ class PageSchemasHooks {
 		$xml_object = PageSchemas::validateXML( $input, $error_msg );
 		if ( $xml_object ) {
 			// Store the XML in the page_props table
-			if ( method_exists( $parserOutput, 'setPageProperty' ) ) {
-				// MW 1.38
-				$parserOutput->setPageProperty( 'PageSchema', $input );
-			} else {
-				$parserOutput->setProperty( 'PageSchema', $input );
-			}
+			$parserOutput->setPageProperty( 'PageSchema', $input );
 			// Display the schema on the screen
-			global $wgOut, $wgScriptPath;
-			$wgOut->addStyle( $wgScriptPath . '/extensions/PageSchemas/resources/PageSchemas.css' );
+			global $wgOut;
+			$scriptPath = $this->config->get( MainConfigNames::ScriptPath );
+			$wgOut->addStyle( "$scriptPath/extensions/PageSchemas/resources/PageSchemas.css" );
 			$text = PageSchemas::displaySchema( $xml_object );
 		} else {
 			// Store error message in the page_props table
-			if ( method_exists( $parserOutput, 'setPageProperty' ) ) {
-				// MW 1.38
-				$parserOutput->setPageProperty( 'PageSchema', $error_msg );
-			} else {
-				$parserOutput->setProperty( 'PageSchema', $error_msg );
-			}
+			$parserOutput->setPageProperty( 'PageSchema', $error_msg );
 			$text = Html::element( 'p', null, "The (incorrect) XML definition for this template is:" ) . "\n";
 			$text .= Html::element( 'pre', null, $input );
 		}

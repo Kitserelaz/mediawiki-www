@@ -2,8 +2,8 @@
 
 namespace CirrusSearch\Search;
 
-use SearchEngine;
-use SearchIndexField;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchIndexField;
 
 class NestedIndexField extends CirrusIndexField {
 	/** @inheritDoc */
@@ -18,6 +18,7 @@ class NestedIndexField extends CirrusIndexField {
 		$this->subfields[$name] = $subfield;
 	}
 
+	/** @inheritDoc */
 	public function getMapping( SearchEngine $engine ) {
 		$fields = parent::getMapping( $engine );
 		foreach ( $this->subfields as $name => $sub ) {

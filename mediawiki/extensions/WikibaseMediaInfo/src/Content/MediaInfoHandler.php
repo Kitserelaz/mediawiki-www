@@ -11,7 +11,6 @@ use MediaWiki\Title\TitleFactory;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\EntityIdParser;
 use Wikibase\Lib\Store\EntityContentDataCodec;
-use Wikibase\Lib\Store\EntityIdLookup;
 use Wikibase\Lib\Store\NullEntityTermStoreWriter;
 use Wikibase\MediaInfo\DataModel\MediaInfo;
 use Wikibase\MediaInfo\DataModel\MediaInfoId;
@@ -19,6 +18,7 @@ use Wikibase\MediaInfo\Services\FilePageLookup;
 use Wikibase\MediaInfo\Services\MediaInfoIdLookup;
 use Wikibase\Repo\Content\EntityHandler;
 use Wikibase\Repo\Content\EntityHolder;
+use Wikibase\Repo\Hooks\WikibaseTextForSearchIndexHook;
 use Wikibase\Repo\Search\Fields\FieldDefinitions;
 use Wikibase\Repo\Validators\EntityConstraintProvider;
 use Wikibase\Repo\Validators\ValidatorErrorLocalizer;
@@ -33,34 +33,9 @@ use Wikimedia\Assert\Assert;
 class MediaInfoHandler extends EntityHandler {
 
 	/**
-	 * @var MissingMediaInfoHandler
-	 */
-	private $missingMediaInfoHandler;
-
-	/**
-	 * @var EntityIdLookup
-	 */
-	private $idLookup;
-
-	/**
-	 * @var FilePageLookup
-	 */
-	private $filePageLookup;
-
-	/**
 	 * @var array<string,Title|null>
 	 */
 	private $titleForIdCache = [];
-
-	/**
-	 * @var PageStore
-	 */
-	private $pageStore;
-
-	/**
-	 * @var TitleFactory
-	 */
-	private $titleFactory;
 
 	/**
 	 * @param EntityContentDataCodec $contentCodec
@@ -73,6 +48,7 @@ class MediaInfoHandler extends EntityHandler {
 	 * @param FieldDefinitions $mediaInfoFieldDefinitions
 	 * @param PageStore $pageStore
 	 * @param TitleFactory $titleFactory
+	 * @param WikibaseTextForSearchIndexHook $hookRunner
 	 * @param callable|null $legacyExportFormatDetector
 	 */
 	public function __construct(
@@ -80,12 +56,13 @@ class MediaInfoHandler extends EntityHandler {
 		EntityConstraintProvider $constraintProvider,
 		ValidatorErrorLocalizer $errorLocalizer,
 		EntityIdParser $entityIdParser,
-		MissingMediaInfoHandler $missingMediaInfoHandler,
-		MediaInfoIdLookup $idLookup,
-		FilePageLookup $filePageLookup,
+		private readonly MissingMediaInfoHandler $missingMediaInfoHandler,
+		private readonly MediaInfoIdLookup $idLookup,
+		private readonly FilePageLookup $filePageLookup,
 		FieldDefinitions $mediaInfoFieldDefinitions,
-		PageStore $pageStore,
-		TitleFactory $titleFactory,
+		private readonly PageStore $pageStore,
+		private readonly TitleFactory $titleFactory,
+		private readonly WikibaseTextForSearchIndexHook $hookRunner,
 		$legacyExportFormatDetector = null
 	) {
 		parent::__construct(
@@ -98,11 +75,6 @@ class MediaInfoHandler extends EntityHandler {
 			$mediaInfoFieldDefinitions,
 			$legacyExportFormatDetector
 		);
-		$this->missingMediaInfoHandler = $missingMediaInfoHandler;
-		$this->idLookup = $idLookup;
-		$this->filePageLookup = $filePageLookup;
-		$this->pageStore = $pageStore;
-		$this->titleFactory = $titleFactory;
 	}
 
 	/**
@@ -120,7 +92,7 @@ class MediaInfoHandler extends EntityHandler {
 	 * @return MediaInfoContent
 	 */
 	public function newEntityContent( ?EntityHolder $entityHolder ) {
-		return new MediaInfoContent( $entityHolder );
+		return new MediaInfoContent( $this->hookRunner, $entityHolder );
 	}
 
 	/**
@@ -178,10 +150,6 @@ class MediaInfoHandler extends EntityHandler {
 		return false;
 	}
 
-	/**
-	 * @param Content $content
-	 * @return array
-	 */
 	public function getContentDataForSearchIndex( Content $content ): array {
 		$fieldsData = parent::getContentDataForSearchIndex( $content );
 		if ( $content->isRedirect() || !( $content instanceof MediaInfoContent ) ) {
@@ -254,9 +222,8 @@ class MediaInfoHandler extends EntityHandler {
 
 		/** @var PageRecord $pageIdentity */
 		foreach ( $unindexedTitles as $pageIdentity ) {
-			$title = $this->titleFactory->castFromPageIdentity( $pageIdentity );
+			$title = $this->titleFactory->newFromPageIdentity( $pageIdentity );
 
-			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable
 			$idString = $this->getIdForTitle( $title )->getSerialization();
 			$this->titleForIdCache[$idString] = $title;
 			$titles[$idString] = $title;

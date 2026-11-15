@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"Acamicamacaraca",
 			"BadDog",
 			"Ladsgroup",
@@ -11,8 +12,7 @@
 			"Zenfiric",
 			"Zoranzoki21",
 			"Милан Јелисавчић",
-			"Сербијана",
-			"Aca"
+			"Сербијана"
 		]
 	},
 	"wikibasecirrus-search-bad-entity-type": "Погрешна врста ентитета: $1",

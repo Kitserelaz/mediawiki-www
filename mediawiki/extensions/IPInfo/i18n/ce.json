@@ -19,7 +19,7 @@
 	"ipinfo-property-label-connectiontypes": "ЗӀенан тайпанаш",
 	"ipinfo-property-label-tunneloperators": "Тоннелан оператор",
 	"ipinfo-property-label-proxies": "Прокси",
-	"ipinfo-property-label-usercount": "ХӀокху IP-адрес тӀехь болу декъашхой",
+	"ipinfo-property-label-usercount": "Интернетехь шатайпа гӀирсаш",
 	"ipinfo-property-value-connectiontype-cableordsl": "Кабель/DSL",
 	"ipinfo-property-value-connectiontype-cellular": "ЗӀе",
 	"ipinfo-property-value-connectiontype-corporate": "Корпоративан",

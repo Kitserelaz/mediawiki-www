@@ -2,25 +2,21 @@
 
 namespace MediaWiki\Extension\UnlinkedWikibase;
 
-use Config;
 use Job;
-use Title;
-use WANObjectCache;
+use MediaWiki\Config\Config;
+use MediaWiki\Title\Title;
 
 class FetchJob extends Job {
 
 	public const JOB_NAME = 'UnlinkedWikibaseFetch';
 
-	/** @var WANObjectCache */
-	private $cache;
-
-	/** @var Config */
-	private $config;
-
-	public function __construct( Title $title, array $params, WANObjectCache $cache, Config $config ) {
+	public function __construct(
+		Title $title,
+		array $params,
+		private readonly Config $config,
+		private readonly Wikibase $wikibase,
+	) {
 		parent::__construct( self::JOB_NAME, $params );
-		$this->cache = $cache;
-		$this->config = $config;
 	}
 
 	/**
@@ -28,24 +24,38 @@ class FetchJob extends Job {
 	 */
 	public function run() {
 		$url = $this->getParams()['url'];
-		$cacheKey = $this->cache->makeKey( 'ext-UnlinkedWikibase', $url );
+		$cache = $this->wikibase->getCache();
 
-		$data = $this->cache->get( $cacheKey );
-		if ( $data ) {
-			return true;
-		}
+		// These cache keys match what's used in `Wikibase::fetch()`.
+		$cacheKey = $this->wikibase->makeCacheKey( $url );
+		$cacheRefreshedKey = $this->wikibase->makeCacheKey( $url, 'refreshed' );
 
-		$ttl = $this->getParams()['ttl'];
+		$data = $cache->get( $cacheKey );
+		$dataRefreshed = $cache->get( $cacheRefreshedKey );
+
+		$ttl = $this->getParams()['ttl'] ?? null;
 		if ( !$ttl ) {
 			$ttl = $this->config->get( 'UnlinkedWikibaseEntityTTL' );
 		}
 		if ( $ttl === null ) {
-			$ttl = $this->cache::TTL_INDEFINITE;
+			$ttl = $cache::TTL_INDEFINITE;
 		}
 
-		$wikibase = new Wikibase();
-		$data = $wikibase->fetchWithoutCache( $url );
-		$this->cache->set( $cacheKey, $data, $ttl );
+		// If refreshed recently, do nothing.
+		if ( $data !== false && $dataRefreshed !== false && (int)$dataRefreshed >= (int)wfTimestamp() - $ttl ) {
+			return true;
+		}
+
+		$newData = $this->wikibase->fetchWithoutCache( $url );
+
+		// On failure, leave the existing (possibly stale) data and timestamp untouched,
+		// so Wikibase::fetch() keeps using it (another job will be queued when its next accessed).
+		if ( $newData === [] ) {
+			return true;
+		}
+
+		$cache->set( $cacheKey, $newData );
+		$cache->set( $cacheRefreshedKey, wfTimestamp() );
 
 		return true;
 	}

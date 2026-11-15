@@ -4,8 +4,8 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
 use InvalidArgumentException;
-use ManualLogEntry;
 use MediaWiki\Extension\Translate\HookRunner;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\User;
 use MessageGroup;
@@ -18,15 +18,15 @@ use Wikimedia\Rdbms\IResultWrapper;
  * @license GPL-2.0-or-later
  */
 class MessageGroupReviewStore {
-	private HookRunner $hookRunner;
-	private IConnectionProvider $dbProvider;
+
 	private const TABLE_NAME = 'translate_groupreviews';
 	/** Cache for message group priorities: (database group id => value) */
 	private ?array $priorityCache = null;
 
-	public function __construct( IConnectionProvider $dbProvider, HookRunner $hookRunner ) {
-		$this->dbProvider = $dbProvider;
-		$this->hookRunner = $hookRunner;
+	public function __construct(
+		private readonly IConnectionProvider $dbProvider,
+		private readonly HookRunner $hookRunner,
+	) {
 	}
 
 	/** @return mixed|false — The value from the field, or false if nothing was found */
@@ -36,7 +36,7 @@ class MessageGroupReviewStore {
 			->select( 'tgr_state' )
 			->from( self::TABLE_NAME )
 			->where( [
-				'tgr_group' => self::getGroupIdForDatabase( $group->getId() ),
+				'tgr_group' => MessageGroupSubscriptionStore::getGroupIdForDatabase( $group ),
 				'tgr_lang' => $code
 			] )
 			->caller( __METHOD__ )
@@ -51,7 +51,7 @@ class MessageGroupReviewStore {
 		}
 
 		$row = [
-			'tgr_group' => self::getGroupIdForDatabase( $group->getId() ),
+			'tgr_group' => MessageGroupSubscriptionStore::getGroupIdForDatabase( $group ),
 			'tgr_lang' => $code,
 			'tgr_state' => $newState,
 		];
@@ -85,13 +85,14 @@ class MessageGroupReviewStore {
 
 	public function getGroupPriority( string $group ): ?string {
 		$this->preloadGroupPriorities( __METHOD__ );
-		return $this->priorityCache[self::getGroupIdForDatabase( $group )] ?? null;
+		$dbGroupId = MessageGroupSubscriptionStore::getGroupIdForDatabase( $group );
+		return $this->priorityCache[$dbGroupId] ?? null;
 	}
 
 	/** Store priority for message group. Abusing this table that was intended to store message group states */
 	public function setGroupPriority( string $groupId, ?string $priority ): void {
-		$dbGroupId = self::getGroupIdForDatabase( $groupId );
-		if ( isset( $this->priorityCache ) ) {
+		$dbGroupId = MessageGroupSubscriptionStore::getGroupIdForDatabase( $groupId );
+		if ( $this->priorityCache !== null ) {
 			$this->priorityCache[$dbGroupId] = $priority;
 		}
 
@@ -120,7 +121,7 @@ class MessageGroupReviewStore {
 	}
 
 	private function preloadGroupPriorities( string $caller ): void {
-		if ( isset( $this->priorityCache ) ) {
+		if ( $this->priorityCache !== null ) {
 			return;
 		}
 
@@ -137,22 +138,26 @@ class MessageGroupReviewStore {
 
 	/**
 	 * Get the current workflow state for the given message group for the given language
-	 * @param string $groupId
+	 * @param MessageGroup $group
 	 * @param string $languageCode
 	 * @return string|null State id or null.
 	 */
-	public function getWorkflowState( string $groupId, string $languageCode ): ?string {
-		$result = $this->getWorkflowStates( [ $groupId ], [ $languageCode ] );
+	public function getWorkflowState( MessageGroup $group, string $languageCode ): ?string {
+		$result = $this->getWorkflowStates( [ $group ], [ $languageCode ] );
 		return $result->fetchRow()['tgr_state'] ?? null;
 	}
 
+	/**
+	 * @param string $languageCode
+	 * @param string[] $groupIds
+	 */
 	public function getWorkflowStatesForLanguage( string $languageCode, array $groupIds ): array {
 		$result = $this->getWorkflowStates( $groupIds, [ $languageCode ] );
 		$states = $this->result2map( $result, 'tgr_group', 'tgr_state' );
 
 		$finalResult = [];
 		foreach ( $groupIds as $groupId ) {
-			$dbGroupId = self::getGroupIdForDatabase( $groupId );
+			$dbGroupId = MessageGroupSubscriptionStore::getGroupIdForDatabase( $groupId );
 			if ( isset( $states[ $dbGroupId ] ) ) {
 				$finalResult[ $groupId ] = $states[ $dbGroupId ];
 			}
@@ -166,22 +171,27 @@ class MessageGroupReviewStore {
 		return $this->result2map( $result, 'tgr_lang', 'tgr_state' );
 	}
 
-	private function getWorkflowStates( ?array $groupIds, ?array $languageCodes ): IResultWrapper {
-		$dbr = $this->dbProvider->getReplicaDatabase();
-		$conditions = array_filter(
-			[ 'tgr_group' => $groupIds, 'tgr_lang' => $languageCodes ],
-			static fn ( $x ) => $x !== null && $x !== ''
-		);
-
-		if ( $conditions === [] ) {
+	/**
+	 * @param array<MessageGroup|string>|null $groups
+	 * @param string[]|null $languageCodes
+	 */
+	private function getWorkflowStates( ?array $groups, ?array $languageCodes ): IResultWrapper {
+		if ( $groups === null && $languageCodes === null ) {
 			throw new InvalidArgumentException( 'Either the $groupId or the $languageCode should be provided' );
 		}
 
-		if ( isset( $conditions['tgr_group'] ) ) {
-			$conditions['tgr_group'] = array_map( [ self::class, 'getGroupIdForDatabase' ], $groupIds );
+		$conditions = [];
+		if ( $groups ) {
+			$conditions['tgr_group'] = array_map(
+				MessageGroupSubscriptionStore::getGroupIdForDatabase( ... ),
+				$groups
+			);
+		}
+		if ( $languageCodes ) {
+			$conditions['tgr_lang'] = $languageCodes;
 		}
 
-		return $dbr->newSelectQueryBuilder()
+		return $this->dbProvider->getReplicaDatabase()->newSelectQueryBuilder()
 			->select( [ 'tgr_state', 'tgr_group', 'tgr_lang' ] )
 			->from( self::TABLE_NAME )
 			->where( $conditions )
@@ -198,15 +208,4 @@ class MessageGroupReviewStore {
 		return $map;
 	}
 
-	private static function getGroupIdForDatabase( $groupId ): string {
-		$groupId = strval( $groupId );
-
-		// Check if length is more than 200 bytes
-		if ( strlen( $groupId ) <= 200 ) {
-			return $groupId;
-		}
-
-		// We take 160 bytes of the original string and append the md5 hash (32 bytes)
-		return mb_strcut( $groupId, 0, 160 ) . '||' . hash( 'md5', $groupId );
-	}
 }

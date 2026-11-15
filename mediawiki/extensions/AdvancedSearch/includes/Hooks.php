@@ -3,21 +3,26 @@
 namespace AdvancedSearch;
 
 use MediaWiki\Config\Config;
-use MediaWiki\Hook\SpecialSearchResultsPrependHook;
 use MediaWiki\Html\Html;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\Language;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\Language\MessageLocalizer;
+use MediaWiki\MainConfigNames;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Request\WebRequest;
+use MediaWiki\Search\SearchEngineConfig;
+use MediaWiki\Search\SearchEngineFactory;
+use MediaWiki\SiteStats\SiteStats;
 use MediaWiki\SpecialPage\Hook\SpecialPageBeforeExecuteHook;
 use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Specials\Hook\SpecialSearchResultsPrependHook;
 use MediaWiki\Specials\SpecialSearch;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
-use MessageLocalizer;
-use SearchEngineConfig;
 use Wikimedia\Mime\MimeAnalyzer;
 
 /**
@@ -29,21 +34,13 @@ class Hooks implements
 	SpecialSearchResultsPrependHook
 {
 
-	private UserOptionsLookup $userOptionsLookup;
-	private LanguageNameUtils $languageNameUtils;
-	private SearchEngineConfig $searchEngineConfig;
-	private MimeAnalyzer $mimeAnalyzer;
-
 	public function __construct(
-		UserOptionsLookup $userOptionsLookup,
-		LanguageNameUtils $languageNameUtils,
-		SearchEngineConfig $searchEngineConfig,
-		MimeAnalyzer $mimeAnalyzer
+		private readonly UserOptionsLookup $userOptionsLookup,
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly SearchEngineConfig $searchEngineConfig,
+		private readonly SearchEngineFactory $searchEngineFactory,
+		private readonly MimeAnalyzer $mimeAnalyzer,
 	) {
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->languageNameUtils = $languageNameUtils;
-		$this->searchEngineConfig = $searchEngineConfig;
-		$this->mimeAnalyzer = $mimeAnalyzer;
 	}
 
 	/**
@@ -71,16 +68,6 @@ class Hooks implements
 			return;
 		}
 
-		/**
-		 * Ensure the current URL is specifying the namespaces which are to be used
-		 */
-		$redirect = $this->redirectToNamespacedRequest( $special );
-		if ( $redirect !== null ) {
-			$outputPage->redirect( $redirect );
-			// Abort execution of the SpecialPage by returning false since we are redirecting
-			return false;
-		}
-
 		$outputPage->addModules( [
 			'ext.advancedSearch.init',
 			'ext.advancedSearch.searchtoken',
@@ -89,36 +76,70 @@ class Hooks implements
 		$outputPage->addModuleStyles( 'ext.advancedSearch.initialstyles' );
 
 		$outputPage->addJsConfigVars( $this->getJsConfigVars(
+			$special->getRequest(),
+			$special->getUser(),
 			$special->getContext(),
+			$special->getLanguage(),
 			$special->getConfig(),
+			$this->getDefaultNamespaces( $user ),
 			ExtensionRegistry::getInstance()
 		) );
 	}
 
 	/**
+	 * @param WebRequest $request
+	 * @param User $user
 	 * @param MessageLocalizer $context
+	 * @param Language $userLang
 	 * @param Config $config
+	 * @param int[] $defaultNamespaces
 	 * @param ExtensionRegistry $extensionRegistry
-	 * @return array
+	 * @return array<string,mixed>
 	 */
 	private function getJsConfigVars(
+		WebRequest $request,
+		User $user,
 		MessageLocalizer $context,
+		Language $userLang,
 		Config $config,
+		array $defaultNamespaces,
 		ExtensionRegistry $extensionRegistry
 	): array {
+		$namespaceBuilder = new SearchableNamespaceListBuilder(
+			MediaWikiServices::getInstance()->getLanguageConverterFactory()
+				->getLanguageConverter( $userLang ),
+			static function ( int $ns ) use ( $defaultNamespaces ): bool {
+				// Skip the expensive query for all standard namespaces that are hard-coded in core
+				return $ns <= NS_CATEGORY_TALK ||
+					// Must include empty namespaces in $wgNamespacesToBeSearchedDefault
+					in_array( $ns, $defaultNamespaces ) ||
+					SiteStats::pagesInNs( $ns );
+			}
+		);
+
+		$sortMethods = array_values( array_intersect(
+			$config->get( 'AdvancedSearchEnabledSortMethods' ),
+			$this->searchEngineFactory->create()->getValidSorts()
+		) );
+
 		$vars = [
 			'advancedSearch.mimeTypes' =>
 				( new MimeTypeConfigurator( $this->mimeAnalyzer ) )->getMimeTypes(
-					$config->get( 'FileExtensions' )
+					$config->get( MainConfigNames::FileExtensions )
 				),
 			'advancedSearch.tooltips' => ( new TooltipGenerator( $context ) )->generateTooltips(),
 			'advancedSearch.namespacePresets' => $config->get( 'AdvancedSearchNamespacePresets' ),
 			'advancedSearch.deepcategoryEnabled' => $config->get( 'AdvancedSearchDeepcatEnabled' ),
 			'advancedSearch.searchableNamespaces' =>
-				SearchableNamespaceListBuilder::getCuratedNamespaces(
+				$namespaceBuilder->getCuratedNamespaces(
 					$this->searchEngineConfig->searchableNamespaces()
 				),
+			'advancedSearch.sortMethods' => $sortMethods,
 		];
+
+		if ( !self::isNamespacedSearch( $request ) ) {
+			$vars += [ 'advancedSearch.defaultNamespaces' => $this->getDefaultNamespaces( $user ) ];
+		}
 
 		if ( $extensionRegistry->isLoaded( 'Translate' ) ) {
 			$vars += [ 'advancedSearch.languages' =>
@@ -127,23 +148,6 @@ class Hooks implements
 		}
 
 		return $vars;
-	}
-
-	/**
-	 * If the request does not contain any namespaces, redirect to URL with user default namespaces
-	 * @param SpecialPage $special
-	 * @return string|null the URL to redirect to or null if not needed
-	 */
-	private function redirectToNamespacedRequest( SpecialPage $special ): ?string {
-		if ( !self::isNamespacedSearch( $special->getRequest() ) ) {
-			$namespacedSearchUrl = $special->getRequest()->getFullRequestURL();
-			$queryParts = [];
-			foreach ( $this->getDefaultNamespaces( $special->getUser() ) as $ns ) {
-				$queryParts['ns' . $ns] = '1';
-			}
-			return wfAppendQuery( $namespacedSearchUrl, $queryParts );
-		}
-		return null;
 	}
 
 	/**
@@ -158,6 +162,7 @@ class Hooks implements
 
 	/**
 	 * Checks if there is a search request, and it already specifies namespaces.
+	 *
 	 * @param WebRequest $request
 	 * @return bool
 	 */

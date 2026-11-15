@@ -26,6 +26,7 @@
 
 namespace MediaWiki\Extension\BetaFeatures;
 
+use MediaWiki\Api\ApiQuery;
 use MediaWiki\Api\ApiQueryBase;
 use MediaWiki\Extension\BetaFeatures\Hooks\HookRunner;
 use MediaWiki\HookContainer\HookContainer;
@@ -33,19 +34,14 @@ use MediaWiki\User\User;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 class ApiQueryBetaFeatures extends ApiQueryBase {
-	private IConnectionProvider $dbProvider;
-	private HookContainer $hookContainer;
 
-	/** @inheritDoc */
 	public function __construct(
-		$query,
-		$moduleName,
-		IConnectionProvider $dbProvider,
-		HookContainer $hookContainer
+		ApiQuery $query,
+		string $moduleName,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly HookContainer $hookContainer
 	) {
 		parent::__construct( $query, $moduleName, 'bf' );
-		$this->dbProvider = $dbProvider;
-		$this->hookContainer = $hookContainer;
 	}
 
 	public function execute() {
@@ -61,21 +57,9 @@ class ApiQueryBetaFeatures extends ApiQueryBase {
 			: [];
 		foreach ( $prefs as $key => $info ) {
 			$path = [ 'query', $this->getModuleName(), $key ];
-			$this->getResult()->addValue(
-				$path,
-				'name',
-				$key
-			);
-			if ( isset( $counts[$key] ) ) {
-				$count = (int)$counts[$key];
-			} else {
-				$count = 0;
-			}
-			$this->getResult()->addValue(
-				$path,
-				'count',
-				$count
-			);
+			$this->getResult()->addValue( $path, 'name', $key );
+			$count = (int)( $counts[$key] ?? 0 );
+			$this->getResult()->addValue( $path, 'count', $count );
 		}
 	}
 

@@ -10,20 +10,7 @@ use MediaWiki\MediaWikiServices;
 /**
  * Build a doc ready for the titlesuggest index.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
 /**
@@ -92,7 +79,7 @@ class SuggestBuilder {
 	 *
 	 * @var int
 	 */
-	private $targetNamespace = NS_MAIN; // @phan-suppress-current-line PhanUndeclaredConstant NS_MAIN is defined
+	private $targetNamespace = NS_MAIN;
 
 	/**
 	 * @param SuggestScoringMethod $scoringMethod the scoring function to use
@@ -108,10 +95,10 @@ class SuggestBuilder {
 	 * @param Connection $connection
 	 * @param string|null $scoreMethodName
 	 * @param string|null $indexBaseName
-	 * @return SuggestBuilder
+	 * @return self
 	 * @throws \Exception
 	 */
-	public static function create( Connection $connection, $scoreMethodName = null, $indexBaseName = null ): SuggestBuilder {
+	public static function create( Connection $connection, $scoreMethodName = null, $indexBaseName = null ): self {
 		$config  = $connection->getConfig();
 		$scoreMethodName = $scoreMethodName ?: $config->get( 'CirrusSearchCompletionDefaultScore' );
 		$scoreMethod = SuggestScoringMethodFactory::getScoringMethod( $scoreMethodName );
@@ -125,19 +112,18 @@ class SuggestBuilder {
 			$extraBuilders[] = NaiveSubphrasesSuggestionsBuilder::create( $subPhrasesConfig );
 		}
 		$scoreMethod->setMaxDocs( self::fetchMaxDoc( $connection, $indexBaseName ) );
-		return new SuggestBuilder( $scoreMethod, $extraBuilders );
+		return new self( $scoreMethod, $extraBuilders );
 	}
 
 	/**
 	 * @param array[] $inputDocs a batch of docs to build
 	 * @param bool $explain
-	 * @return \Elastica\Document[] a set of suggest documents
+	 * @return \Generator|\Elastica\Document[] a set of suggest documents
 	 */
 	public function build( $inputDocs, $explain = false ) {
 		$titleFactory = MediaWikiServices::getInstance()->getTitleFactory();
 		// Cross namespace titles
 		$crossNsTitles = [];
-		$docs = [];
 		foreach ( $inputDocs as $sourceDoc ) {
 			$inputDoc = $sourceDoc['source'];
 			$docId = $sourceDoc['id'];
@@ -153,7 +139,7 @@ class SuggestBuilder {
 					// Bad doc, nothing to do here.
 					continue;
 				}
-				$docs = array_merge( $docs, $this->buildNormalSuggestions( $docId, $inputDoc, $explain ) );
+				yield from $this->buildNormalSuggestions( $docId, $inputDoc, $explain );
 			} else {
 				if ( !isset( $inputDoc['redirect'] ) ) {
 					// Bad doc, nothing to do here.
@@ -186,29 +172,39 @@ class SuggestBuilder {
 					];
 				}
 			}
-		}
-
-		// Build cross ns suggestions
-		if ( $crossNsTitles ) {
-			$titles = array_column( $crossNsTitles, 'title' );
-			$lb = MediaWikiServices::getInstance()->getLinkBatchFactory()->newLinkBatch( $titles );
-			$lb->setCaller( __METHOD__ );
-			$lb->execute();
-			// This is far from perfect:
-			// - we won't try to group similar redirects since we don't know which one
-			// is the official one
-			// - we will certainly suggest multiple times the same pages
-			// - we must not run a second pass at query time: no redirect suggestion
-			foreach ( $crossNsTitles as $data ) {
-				$suggestion = [
-					'text' => $data['text'],
-					'variants' => []
-				];
-				$docs[] = $this->buildTitleSuggestion( (string)$data['title']->getArticleID(), $suggestion,
-					$data['score'], $data['inputDoc'], $data['explain'] );
+			if ( count( $crossNsTitles ) > 3000 ) {
+				yield from $this->buildCrossNsSuggestions( $crossNsTitles );
+				$crossNsTitles = [];
 			}
 		}
-		return $docs;
+
+		if ( $crossNsTitles ) {
+			yield from $this->buildCrossNsSuggestions( $crossNsTitles );
+		}
+	}
+
+	/**
+	 * @param array[] $crossNsTitles
+	 * @return \Generator|\Elastica\Document[]
+	 */
+	private function buildCrossNsSuggestions( array $crossNsTitles ) {
+		$titles = array_column( $crossNsTitles, 'title' );
+		$lb = MediaWikiServices::getInstance()->getLinkBatchFactory()->newLinkBatch( $titles );
+		$lb->setCaller( __METHOD__ );
+		$lb->execute();
+		// This is far from perfect:
+		// - we won't try to group similar redirects since we don't know which one
+		// is the official one
+		// - we will certainly suggest multiple times the same pages
+		// - we must not run a second pass at query time: no redirect suggestion
+		foreach ( $crossNsTitles as $data ) {
+			$suggestion = [
+				'text' => $data['text'],
+				'variants' => []
+			];
+			yield $this->buildTitleSuggestion( (string)$data['title']->getArticleID(), $suggestion,
+				$data['score'], $data['inputDoc'], $data['explain'] );
+		}
 	}
 
 	/**

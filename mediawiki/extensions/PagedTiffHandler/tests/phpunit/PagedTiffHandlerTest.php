@@ -1,6 +1,8 @@
 <?php
 
 use MediaWiki\Extension\PagedTiffHandler\PagedTiffHandler;
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\FileRepo\File\UnregisteredLocalFile;
 use MediaWiki\MainConfigNames;
 
 /**
@@ -92,7 +94,7 @@ class PagedTiffHandlerTest extends MediaWikiMediaTestCase {
 		$this->assertEquals( 'true', strtolower( $metaArray['page_data'][2]['alpha'] ) );
 
 		$interp = $metaArray['exif']['PhotometricInterpretation'];
-		$this->assertTrue( $interp == 2 || $interp == 'RGB' ); // RGB
+		$this->assertTrue( $interp == 2 || $interp == 'RGB' );
 	}
 
 	public function testValidateParam() {
@@ -163,11 +165,10 @@ class PagedTiffHandlerTest extends MediaWikiMediaTestCase {
 		// check
 		// TODO: check other images
 		$status = $this->handler->verifyUpload( $this->multipage_path );
-		$this->assertTrue( $status->isGood() );
+		$this->assertStatusGood( $status );
 
 		$status = $this->handler->verifyUpload( $this->truncated_path );
-		$this->assertFalse( $status->isGood() );
-		$this->assertTrue( $status->hasMessage( 'tiff_bad_file' ) );
+		$this->assertStatusError( 'tiff_bad_file', $status );
 	}
 
 	public function testDoTransform() {

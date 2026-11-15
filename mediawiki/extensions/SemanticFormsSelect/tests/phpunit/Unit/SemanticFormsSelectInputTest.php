@@ -2,13 +2,14 @@
 
 namespace SFS\Tests;
 
+use MediaWiki\Context\RequestContext;
 use SFS\SemanticFormsSelectInput;
 
 /**
  * @covers  \SFS\SemanticFormsSelectInput
  * @group   semantic-forms-select
  *
- * @license GNU GPL v2+
+ * @license GPL-2.0-or-later
  * @since   3.0.0
  *
  * @author  FelixAba
@@ -17,33 +18,22 @@ class SemanticFormsSelectInputTest extends \PHPUnit\Framework\TestCase {
 
 	private $SFSInput;
 
-
 	protected function setUp(): void {
 		parent::setUp();
-		$value = '';
-		$inputName = '';
-		$isMandatory = false;
-		$isDisabled = false;
 
 		$otherArgs = [ 'template' => 'Foo', 'field' => '',
-		                    'function' => 'Bar', 'is_list' => true ];
+							'function' => 'Bar', 'is_list' => true ];
 
-		$parserOutput = $this->getMockBuilder( '\ParserOutput' )
-			->disableOriginalConstructor()->getMock();
-
-		$parser = $this->getMockBuilder( '\Parser' )
-			->disableOriginalConstructor()->getMock();
-
-		$parser->expects( $this->any() )->method( 'getOutput' )->will(
-				$this->returnValue( $parserOutput )
-			);
+		// Page Forms 6.0.6+ takes the OutputPage as the leading constructor argument.
+		// $out, $inputNumber, $curValue, $inputName, $disabled, $otherArgs
+		$out = RequestContext::getMain()->getOutput();
 		$this->SFSInput = new SemanticFormsSelectInput(
-			$value, $inputName, $isMandatory, $isDisabled, $otherArgs
+			$out, 1, '', 'TestTemplate[Field]', false, $otherArgs
 		);
 	}
 
 	protected function tearDown(): void {
-		unset( $this->SelectField );
+		unset( $this->SFSInput );
 		parent::tearDown();
 	}
 
@@ -68,7 +58,6 @@ class SemanticFormsSelectInputTest extends \PHPUnit\Framework\TestCase {
 	public function testGetParameters() {
 		$this->assertIsArray( $this->SFSInput->getParameters() );
 	}
-
 
 	public function testGetResourceModuleNames() {
 		$result = $this->SFSInput->getResourceModuleNames();

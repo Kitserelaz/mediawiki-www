@@ -3,14 +3,14 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TranslatorInterface\Aid;
 
-use DifferenceEngine;
+use MediaWiki\Content\WikitextContent;
+use MediaWiki\Diff\DifferenceEngine;
 use MediaWiki\Extension\Translate\Services;
 use MediaWiki\Extension\Translate\TranslatorInterface\TranslationHelperException;
-use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
-use WikitextContent;
 
 /**
  * Translation aid that provides the message definition.
@@ -22,8 +22,6 @@ use WikitextContent;
  */
 class UpdatedDefinitionAid extends TranslationAid {
 	public function getData(): array {
-		$db = Utilities::getSafeReadDB();
-
 		$revTagStore = Services::getInstance()->getRevTagStore();
 
 		$translationRevision = $revTagStore->getTransver( $this->handle->getTitle() );
@@ -50,7 +48,7 @@ class UpdatedDefinitionAid extends TranslationAid {
 		}
 
 		// Escaping legacy issue (T330453)
-		if ( $oldRevRecord->getPageId() !== $definitionTitle->getArticleID() ) {
+		if ( $oldRevRecord->getPageId() !== $definitionTitle->getId() ) {
 			throw new TranslationHelperException(
 				'Translation unit definition id does not match old revision definition id'
 			);
@@ -71,11 +69,12 @@ class UpdatedDefinitionAid extends TranslationAid {
 			throw new TranslationHelperException( 'No changes' );
 		}
 
+		$newRevRecord = new MutableRevisionRecord( $definitionTitle );
+		$newRevRecord->setContent( SlotRecord::MAIN, $newContent );
+
 		$diff = new DifferenceEngine( $this->context );
-		$diff->setTextLanguage(
-			$mwInstance->getLanguageFactory()->getLanguage( $sourceLanguage )
-		);
-		$diff->setContent( $oldContent, $newContent );
+		$diff->setTextLanguage( $mwInstance->getLanguageFactory()->getLanguage( $sourceLanguage ) );
+		$diff->setRevisions( $oldRevRecord, $newRevRecord );
 		$diff->setReducedLineNumbers();
 		$diff->showDiffStyle();
 

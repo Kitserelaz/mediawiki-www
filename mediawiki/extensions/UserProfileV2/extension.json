@@ -1,6 +1,6 @@
 {
 	"name": "UserProfileV2",
-	"version": "1.0.5",
+	"version": "1.1.0",
 	"author": [
 		"Original Authority"
 	],
@@ -9,7 +9,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.41.0",
+		"MediaWiki": ">= 1.43.0",
 		"platform": {
 			"php": ">= 8.0"
 		}
@@ -40,17 +40,29 @@
 			"profilemanager": false
 		}
 	},
-	"namespaces": [
-		{
-			"id": 2,
-			"constant": "NS_USER",
-			"name": "User",
-			"protection": "edit"
-		}
+	"LogTypes": [
+		"userprofile"
 	],
+	"LogActionsHandlers": {
+		"userprofile/*": "LogFormatter"
+	},
+	"RateLimits": {
+		"userprofilev2-edit": {
+			"&can-bypass": false,
+			"user": [
+				10,
+				60
+			],
+			"newbie": [
+				5,
+				60
+			]
+		}
+	},
 	"Hooks": {
 		"ArticleFromTitle": "main",
-		"GetPreferences": "main"
+		"GetPreferences": "main",
+		"TitleIsAlwaysKnown": "main"
 	},
 	"HookHandlers": {
 		"main": {
@@ -191,6 +203,12 @@
 			"value": "",
 			"public": true,
 			"description": "The upload base url for the global wiki when using global avatars"
+		},
+		"UserProfileV2ProfileFields": {
+			"value": [],
+			"path": false,
+			"public": true,
+			"description": "Ordered list of profile field definitions. An empty list uses the built-in defaults; see ProfileFields::DEFAULT_FIELDS for the schema."
 		},
 		"UserProfileV2CacheType": {
 			"value": "",

@@ -1,9 +1,12 @@
 <?php
 
+use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\ContentHandlerFactory;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Title\Title;
 
 /**
  * Extension:CreateRedirect - MediaWiki extension.
@@ -43,10 +46,15 @@ class SpecialCreateRedirect extends FormSpecialPage {
 	 * @param PermissionManager $permissionManager
 	 */
 	public function __construct( ContentHandlerFactory $contentHandlerFactory, PermissionManager $permissionManager ) {
-		parent::__construct( 'CreateRedirect', 'edit' );
+		parent::__construct( 'CreateRedirect' );
 
 		$this->contentHandlerFactory = $contentHandlerFactory;
 		$this->permissionManager = $permissionManager;
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'edit';
 	}
 
 	/**
@@ -115,6 +123,20 @@ class SpecialCreateRedirect extends FormSpecialPage {
 
 		$content = $contentHandler->makeRedirectContent( $redirectTarget );
 
+		$tempUserCreator = MediaWikiServices::getInstance()->getTempUserCreator();
+		if ( $user->isAnon() && $tempUserCreator->shouldAutoCreate( $user, 'edit' ) ) {
+			$status = $tempUserCreator->create(
+				null,
+				$this->getRequest()
+			);
+			if ( !$status->isOK() ) {
+				$this->fail( $status->getMessage(), $title );
+				return;
+			}
+			$user = $status->getUser();
+			$this->getContext()->setUser( $user );
+		}
+
 		$pageUpdater = MediaWikiServices::getInstance()
 			->getWikiPageFactory()
 			->newFromTitle( $crOrigTitle )
@@ -128,7 +150,7 @@ class SpecialCreateRedirect extends FormSpecialPage {
 
 		if ( $saveStatus->isOK() ) {
 			$linkRenderer = $this->getLinkRenderer();
-			$this->getOutput()->addHTML( Xml::tags( 'div', [ 'class' => 'mw-createredirect-done' ],
+			$this->getOutput()->addHTML( Html::rawElement( 'div', [ 'class' => 'mw-createredirect-done' ],
 				$this->msg( 'createredirect-redirect-done' )->rawParams(
 					$linkRenderer->makeKnownLink( $crOrigTitle, null, [], [ 'redirect' => 'no' ] ),
 					$linkRenderer->makeKnownLink( $redirectTarget )

@@ -1,5 +1,8 @@
 <template>
-	<div class="mwe-vue-pt-article-row" :class="oddEvenClass">
+	<div
+		ref="listItem"
+		class="mwe-vue-pt-article-row"
+		:class="oddEvenClass">
 		<div class="mwe-vue-pt-status-icon">
 			<cdx-icon
 				:icon="statusIcon.icon"
@@ -10,8 +13,11 @@
 		<div class="mwe-vue-pt-info-pane">
 			<div class="mwe-vue-pt-info-row">
 				<div class="mwe-vue-pt-article">
-					<span class="mwe-vue-pt-bold">
-						<a :href="titleUrl" target="_blank">{{ title }}</a>
+					<span id="" class="mwe-vue-pt-bold">
+						<a
+							:data-page-title="title"
+							:href="titleUrl"
+							target="_blank">{{ title }}</a>
 					</span>
 					<span>
 						(<a :href="historyUrl">{{ $i18n( 'pagetriage-hist' ).text() }}</a>)
@@ -82,6 +88,7 @@
 				<div class="mwe-vue-pt-article-col-right mwe-vue-pt-bold">
 					<cdx-info-chip
 						v-if="newArticleWarning"
+						status="warning"
 						class="mwe-vue-pt-new-article-warning"
 						:title="$i18n( 'pagetriage-tag-warning-notice', articleAge ).text()"
 					>
@@ -111,6 +118,8 @@
 								:creator-auto-confirmed="creatorAutoConfirmed"
 								:creator-user-page-exists="creatorUserPageExists"
 								:creator-talk-page-exists="creatorTalkPageExists"
+								:creator-is-temp-account="creatorIsTempAccount"
+								:creator-is-expired-temp-account="creatorIsExpiredTempAccount"
 							></creator-byline>
 							<span v-if="creatorUserId > 0">
 								{{ $i18n( 'pagetriage-dot-separator' ).text() }}
@@ -246,7 +255,7 @@ module.exports = {
 					2, // pending
 					3, // under review
 					4 // declined
-				].indexOf( value ) !== -1;
+				].includes( value );
 			}
 		},
 		// copyvio tag; latest revision ID that has been tagged as a likely copyright violation.
@@ -263,7 +272,7 @@ module.exports = {
 					1, // reviewed
 					2, // patrolled
 					3 // autopatrolled
-				].indexOf( value ) !== -1;
+				].includes( value );
 			}
 		},
 		/*
@@ -298,7 +307,9 @@ module.exports = {
 		oresArticleQuality: { type: String, default: undefined },
 		oresDraftQuality: { type: String, default: undefined },
 		// optional toolbar feature flag
-		pageTriageUi: { type: String, default: null }
+		pageTriageUi: { type: String, default: null },
+		creatorIsTempAccount: { type: Boolean, default: false },
+		creatorIsExpiredTempAccount: { type: Boolean, default: false }
 	},
 	data: function () {
 		return {
@@ -438,6 +449,9 @@ module.exports = {
 				format
 			);
 		}
+	},
+	mounted() {
+		mw.hook( 'wikipage.content' ).fire( $( this.$refs.listItem ) );
 	}
 };
 </script>
@@ -497,15 +511,13 @@ module.exports = {
 	background: #f5f6f8;
 }
 
-@media screen {
-	html.skin-theme-clientpref-night {
-		.mwe-vue-pt-article-row-even {
-			background: @background-color-interactive-subtle;
-		}
+html.skin-theme-clientpref-night {
+	.mwe-vue-pt-article-row-even {
+		background: @background-color-interactive-subtle;
 	}
 }
 
-@media screen and ( prefers-color-scheme: dark ) {
+@media ( prefers-color-scheme: dark ) {
 	html.skin-theme-clientpref-os {
 		.mwe-vue-pt-article-row-even {
 			background: @background-color-interactive-subtle;
@@ -559,19 +571,6 @@ module.exports = {
 
 .ores-pt-issues {
 	height: 0.55em;
-}
-
-.mwe-vue-pt-new-article-warning .cdx-icon.cdx-info-chip__icon--warning {
-	color: @background-color-warning-subtle;
-}
-
-.mwe-vue-pt-new-article-warning.cdx-info-chip {
-	background-color: @color-warning;
-	border-color: @border-color-warning;
-}
-
-.mwe-vue-pt-new-article-warning > .cdx-info-chip--text {
-	color: @color-emphasized;
 }
 
 .mwe-vue-pt-redirect-icon {

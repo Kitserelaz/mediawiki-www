@@ -73,7 +73,7 @@
 	"codemirror-done": "Terminer",
 	"codemirror-find-results": "$1 sur $2",
 	"codemirror-goto-line": "Aller à la ligne",
-	"codemirror-goto-line-go": "Lancer",
+	"codemirror-goto-line-go": "Aller",
 	"codemirror-control-character": "Caractère de contrôle $1",
 	"codemirror-special-char-null": "Caractère de contrôle",
 	"codemirror-special-char-bell": "Caractère d'appel",
@@ -230,6 +230,5 @@
 	"codemirror-potentially-slow": "potentiellement lent",
 	"codemirror-validate-js-syntaxerror": "Erreur de syntaxe à la colonne $1 sur la ligne $2 : $3",
 	"codemirror-ve-limit-exceeded": "Le document est trop volumineux pour la coloration syntaxique et celle-ci a été désactivée.",
-	"codemirror-ve-limit-exceeded-info": "Plus d’informations",
-	"codemirror-fold-template": "Paramètres du modèle dépliable"
+	"codemirror-ve-limit-exceeded-info": "Plus d’informations"
 }

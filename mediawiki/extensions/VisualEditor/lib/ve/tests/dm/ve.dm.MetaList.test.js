@@ -25,7 +25,7 @@ ve.test.utils.validateMetaListCache = function ( assert, metaList, msg ) {
 		}
 	} );
 	let match = true;
-	for ( let i = 0, len = newList.length; i < len; i++ ) {
+	for ( let i = 0; i < newList.length; i++ ) {
 		if ( newList[ i ] !== oldList[ i ] ) {
 			match = false;
 			break;
@@ -85,7 +85,7 @@ QUnit.test( 'onNodeAttached/onNodeDetached', ( assert ) => {
 	cases.forEach( ( caseItem ) => {
 		const txBuilder = new ve.dm.TransactionBuilder();
 		for ( let j = 0; j < caseItem.calls.length; j++ ) {
-			txBuilder[ caseItem.calls[ j ][ 0 ] ].apply( txBuilder, caseItem.calls[ j ].slice( 1 ) );
+			txBuilder[ caseItem.calls[ j ][ 0 ] ]( ...caseItem.calls[ j ].slice( 1 ) );
 		}
 		const tx = txBuilder.getTransaction();
 		const caseDoc = ve.dm.example.createExampleDocument( 'withMeta' );

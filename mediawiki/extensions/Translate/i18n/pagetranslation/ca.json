@@ -3,6 +3,7 @@
 		"authors": [
 			"Alvaro Vidal-Abarca",
 			"Fitoschido",
+			"It's moon",
 			"Jaumeortola",
 			"Jmarchn",
 			"Joan manel",
@@ -15,6 +16,7 @@
 			"Ssola",
 			"Toniher",
 			"Vriullop",
+			"Yupik",
 			"පසිඳු කාවින්ද"
 		]
 	},
@@ -44,7 +46,7 @@
 	"tpt-old-pages": "L'última versió d'{{PLURAL:$1|aquesta pàgina s'ha|aquestes pàgines s'han}} marcat per a traduir.",
 	"tpt-select-prioritylangs": "Llista separada per comes dels codis de les llengües prioritàries:",
 	"tpt-select-prioritylangs-force": "Evita traduccions a llengües que no siguin les llengües prioritàries",
-	"tpt-select-prioritylangs-reason": "Motiu:",
+	"tpt-select-prioritylangs-reason": "Motiu",
 	"tpt-sections-prioritylangs": "Llengües prioritàries",
 	"tpt-rev-mark": "marca per traduir",
 	"tpt-rev-unmark": "suprimeix de la traducció",
@@ -57,7 +59,7 @@
 	"translate-tag-translate-link-desc": "Traduïu aquesta pàgina",
 	"translate-tag-markthis": "Marca la pàgina per traduir",
 	"translate-tag-hasnew": "Aquesta pàgina conté <span class=\"plainlinks\">[$1 modificacions]</span> que no estan marcades per a la traducció.",
-	"tpt-translation-intro": "Aquesta pàgina és una <span class=\"plainlinks\">[$1 versió traduïda]</span> de la pàgina [[$2]] i la traducció és completada al $3&nbsp;%.",
+	"tpt-translation-intro": "Aquesta pàgina és una <span class=\"plainlinks\">[$1 versió traduïda]</span> de la pàgina [[$2]] i la traducció està completa al $3%.",
 	"tpt-translation-intro-fuzzy": "Les traduccions obsoletes es marquen així.",
 	"tpt-languages-legend": "Altres idiomes:",
 	"tpt-languages-zero": "Inicia la traducció per a aquesta llengua",
@@ -71,14 +73,10 @@
 	"tpt-aggregategroup-save": "Desa",
 	"tpt-aggregategroup-add-new": "Afegeix un grup d'agregació nou",
 	"tpt-aggregategroup-select-source-language": "Idioma font personalitzat (opcional):",
-	"tpt-aggregategroup-new-name": "Nom:",
-	"tpt-aggregategroup-new-description": "Descripció (opcional):",
 	"tpt-aggregategroup-invalid-group": "El grup no existeix",
-	"tpt-aggregategroup-edit-name": "Nom:",
+	"tpt-aggregategroup-edit-name": "Nom",
 	"tpt-aggregategroup-edit-description": "Descripció:",
-	"tpt-aggregategroup-update": "Desa",
 	"tpt-aggregategroup-update-cancel": "Cancel·la",
-	"tpt-invalid-group": "El grup no és vàlid",
 	"log-action-filter-pagetranslation": "Tipus d'acció:",
 	"log-action-filter-pagetranslation-mark": "Marca per traduir",
 	"log-action-filter-pagetranslation-unmark": "Supressió de la traducció",
@@ -121,7 +119,6 @@
 	"pm-add-icon-hover-text": "Afegeix una unitat a sota",
 	"pm-swap-icon-hover-text": "Intercanvia amb la unitat a sota",
 	"pm-delete-icon-hover-text": "Elimina la unitat",
-	"pm-pagetitle-placeholder": "Introduïu el títol de la pàgina",
 	"pm-pagetitle-invalid": "Introduïu un títol vàlid per la pàgina. Ha d'estar en format <nom-de-pàgina>/<codi-d'idioma>.",
 	"pm-pagetitle-missing": "Introduïu el títol de la pàgina.",
 	"pm-langcode-missing": "Sembla que falta el codi d’idioma al títol. Introduïu un títol vàlid per la pàgina en format <nom-de-pàgina>/<codi-d'idioma>.",
@@ -137,7 +134,6 @@
 	"pp-diff-old-header": "Text font",
 	"pp-diff-new-header": "Text preparat",
 	"tpt-unlink-button": "Suprimeix de la traducció",
-	"tpt-unlink-summary": "S'ha suprimit la pàgina de la traducció",
-	"tpt-generic-confirm": "Confirmeu l'acció.",
-	"tpt-generic-button": "Confirma"
+	"tpt-generic-button": "Confirma",
+	"tpt-unlink-summary": "S'ha suprimit la pàgina de la traducció"
 }

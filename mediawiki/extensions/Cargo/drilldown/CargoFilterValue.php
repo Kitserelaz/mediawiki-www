@@ -46,25 +46,25 @@ class CargoFilterValue {
 			if ( strpos( $fv->text, ' - ' ) > 0 ) {
 				// If there's a dash, assume it's a year range
 				$years = explode( ' - ', $fv->text );
-				$fv->year = $years[0];
-				$fv->end_year = $years[1];
+				$fv->year = (int)$years[0];
+				$fv->end_year = (int)$years[1];
 				$fv->time_period = 'year range';
 			} else {
 				$date_parts = explode( ' ', $fv->text );
 				if ( count( $date_parts ) == 3 ) {
 					[ $month_str, $day_str, $year ] = explode( ' ', $fv->text );
 					$fv->month = CargoDrilldownUtils::stringToMonth( $month_str, $lang );
-					$fv->day = str_replace( ',', '', $day_str );
-					$fv->year = $year;
+					$fv->day = (int)str_replace( ',', '', $day_str );
+					$fv->year = (int)$year;
 					$fv->time_period = 'day';
 				} elseif ( count( $date_parts ) == 2 ) {
 					[ $month_str, $year ] = explode( ' ', $fv->text );
 					$fv->month = CargoDrilldownUtils::stringToMonth( $month_str, $lang );
-					$fv->year = $year;
+					$fv->year = (int)$year;
 					$fv->time_period = 'month';
 				} else {
 					$fv->month = null;
-					$fv->year = $fv->text;
+					$fv->year = (int)$fv->text;
 					$fv->time_period = 'year';
 				}
 			}

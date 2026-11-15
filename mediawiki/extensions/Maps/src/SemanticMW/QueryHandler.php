@@ -4,18 +4,18 @@ declare( strict_types = 1 );
 
 namespace Maps\SemanticMW;
 
-use Html;
-use Linker;
+use MediaWiki\Html\Html;
+use MediaWiki\Linker\Linker;
+use MediaWiki\Title\Title;
 use Maps\LegacyModel\Location;
 use Maps\MapsFunctions;
-use MediaWiki\MediaWikiServices;
+use Maps\Presentation\WikitextParser;
 use SMW\Query\PrintRequest;
 use SMW\Query\QueryResult;
 use SMW\Query\Result\ResultArray;
 use SMWDataValue;
 use SMWDIGeoCoord;
 use SMWWikiPageValue;
-use Title;
 
 /**
  * @licence GNU GPL v2+
@@ -47,6 +47,8 @@ class QueryHandler {
 	 * @var string|boolean false
 	 */
 	private $template = false;
+
+	private ?WikitextParser $templateParser = null;
 
 	/**
 	 * Should link targets be made absolute (instead of relative)?
@@ -93,8 +95,9 @@ class QueryHandler {
 		$this->linkAbsolute = $linkAbsolute;
 	}
 
-	public function setTemplate( string $template ) {
+	public function setTemplate( string $template, WikitextParser $templateParser ) {
 		$this->template = $template === '' ? false : $template;
+		$this->templateParser = $templateParser;
 	}
 
 	public function setUserParam( string $userParam ) {
@@ -214,10 +217,19 @@ class QueryHandler {
 					$locations[] = $this->locationFromDataItem( $dataValue->getDataItem() );
 				}
 				else {
-					$properties[$resultArray->getPrintRequest()->getCanonicalLabel()] = $this->handleResultProperty(
-						$dataValue,
-						$resultArray->getPrintRequest()
-					);
+					$label = $resultArray->getPrintRequest()->getCanonicalLabel();
+
+					if ( array_key_exists( $label, $properties ) ) {
+						$properties[$label] .= ', ' . $this->handleResultPropertyValue(
+							$dataValue,
+							$resultArray->getPrintRequest()
+						);
+					} else {
+						$properties[$label] = $this->handleResultProperty(
+							$dataValue,
+							$resultArray->getPrintRequest()
+						);
+					}
 				}
 			}
 		}
@@ -277,9 +289,23 @@ class QueryHandler {
 	}
 
 	/**
-	 * Handles a single property (SMWPrintRequest) to be displayed for a record (SMWDataValue).
+	 * Handles a single property (\SMW\Query\PrintRequest) to be displayed for a record (SMWDataValue).
+	 * Returns the full property display string including header (e.g., "Property Name: value").
 	 */
 	private function handleResultProperty( SMWDataValue $object, PrintRequest $printRequest ): string {
+		if ( $this->hasTemplate() ) {
+			return $this->handleResultPropertyValue( $object, $printRequest );
+		}
+
+		$propertyName = $this->getPropertyName( $printRequest );
+		return $propertyName . ( $propertyName === '' ? '' : ': ' ) . $this->getPropertyValue( $object );
+	}
+
+	/**
+	 * Returns just the value portion of a property, without the header.
+	 * Used for appending additional values of multi-valued properties.
+	 */
+	private function handleResultPropertyValue( SMWDataValue $object, PrintRequest $printRequest ): string {
 		if ( $this->hasTemplate() ) {
 			if ( $object instanceof SMWWikiPageValue ) {
 				return $object->getDataItem()->getTitle()->getPrefixedText();
@@ -288,8 +314,7 @@ class QueryHandler {
 			return $object->getLongText( SMW_OUTPUT_WIKI, null );
 		}
 
-		$propertyName = $this->getPropertyName( $printRequest );
-		return $propertyName . ( $propertyName === '' ? '' : ': ' ) . $this->getPropertyValue( $object );
+		return $this->getPropertyValue( $object );
 	}
 
 	private function getPropertyName( PrintRequest $printRequest ): string {
@@ -437,7 +462,7 @@ class QueryHandler {
 
 	private function buildPopupText( array $properties, string $title, Location $location ): string {
 		if ( $this->hasTemplate() ) {
-			return $this->getParser()->recursiveTagParseFully(
+			return $this->templateParser->wikitextToHtml(
 				$this->newTemplatedPopup()->getWikiText(
 					$title,
 					$this->getTitleOutput( $title ),
@@ -465,16 +490,6 @@ class QueryHandler {
 		}
 
 		return $this->hideNamespace ? $title->getText() : $title->getFullText();
-	}
-
-	private function getParser(): \Parser {
-		$parser = MediaWikiServices::getInstance()->getParser();
-		if ( !$parser->getOptions() ) {
-			$user = \RequestContext::getMain()->getUser();
-			$parser->setOptions( new \ParserOptions( $user ) );
-			$parser->clearState();
-		}
-		return $parser;
 	}
 
 	/**

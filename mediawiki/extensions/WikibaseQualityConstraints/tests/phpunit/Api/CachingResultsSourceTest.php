@@ -29,7 +29,7 @@ use WikibaseQuality\ConstraintReport\ConstraintCheck\Result\CheckResultSerialize
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Result\NullResult;
 use Wikimedia\ObjectCache\HashBagOStuff;
 use Wikimedia\ObjectCache\WANObjectCache;
-use Wikimedia\Stats\NullStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @covers WikibaseQuality\ConstraintReport\Api\CachingResultsSource
@@ -38,10 +38,7 @@ use Wikimedia\Stats\NullStatsdDataFactory;
  */
 class CachingResultsSourceTest extends \PHPUnit\Framework\TestCase {
 
-	/**
-	 * @param string $entityId entity ID serialization
-	 */
-	private function getCheckResult( $entityId, $status = CheckResult::STATUS_VIOLATION ) {
+	private function getCheckResult( string $entityId, string $status = CheckResult::STATUS_VIOLATION ): CheckResult {
 		return new CheckResult(
 			new MainSnakContextCursor(
 				$entityId,
@@ -95,12 +92,9 @@ class CachingResultsSourceTest extends \PHPUnit\Framework\TestCase {
 		return $mock;
 	}
 
-	/**
-	 * @return LoggingHelper
-	 */
 	private function getLoggingHelper() {
 		return new LoggingHelper(
-			new NullStatsdDataFactory(),
+			StatsFactory::newNull(),
 			new NullLogger(),
 			new HashConfig( [
 				'WBQualityConstraintsCheckDurationInfoSeconds' => 5.0,

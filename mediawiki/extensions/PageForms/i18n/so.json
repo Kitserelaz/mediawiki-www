@@ -25,6 +25,10 @@
 	"apihelp-pfautocomplete-param-base_cargo_table": "Jadwalka Cargo ee goob hore oo ku jirta foomka si loola isbarbar dhigo",
 	"apihelp-pfautocomplete-param-base_cargo_field": "Goobta Cargo ee goob hore oo ku jirta foomka si loola isbarbar dhigo",
 	"apihelp-pfautocomplete-param-basevalue": "Qiimaha lagu hubinayo hantida ama goobta hore",
+	"apihelp-pfautocomplete-param-mappingproperty": "Hanti Semantic MediaWiki ah oo loo isticmaalo in qiimayaasha loogu waafajiyo summado",
+	"apihelp-pfautocomplete-param-mappingtemplate": "tusmo loo isticmaalo in qiimayaasha loogu waafajiyo summado",
+	"apihelp-pfautocomplete-param-mappingcargotable": "Jadwalka Cargo ee loo isticmaalo in qiimayaasha loogu waafajiyo summado",
+	"apihelp-pfautocomplete-param-mappingcargofield": "Goobta Cargo ee loo isticmaalo in qiimayaasha loogu waafajiyo summado",
 	"apihelp-pfautoedit-summary": "Abuur ama tafatir bog adigoo isticmaalaya foom ay qeexday kordhinta Page Forms.",
 	"apihelp-pfautoedit-param-form": "Foomka ee Foomamka Bogga  la isticmaalayo",
 	"apihelp-pfautoedit-param-target": "Magaca bogga la abuurayo ama la tafatirayo",
@@ -308,5 +312,6 @@
 	"pf-invalidexturl": "Qiimaha URL-ka dibadda ah waa mid aan sax ahayn.",
 	"pf-blankexturl": "Qiimaha URL-ka dibadda ah waa madhan.",
 	"pf-externalpageempty": "Bogga dibadda ahi ma laha waxyaabo ku jira.",
-	"pf-externalpagebadjson": "Lama kala saari karin JSON-ka ku jira bogga dibadda ah."
+	"pf-externalpagebadjson": "Lama kala saari karin JSON-ka ku jira bogga dibadda ah.",
+	"pf-automatic-rename": "Magaca si toos ah loogu beddelo iyadoo lagu saleynayo qaacidada magaca bogga"
 }

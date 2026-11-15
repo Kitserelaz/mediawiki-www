@@ -4,9 +4,9 @@ namespace CirrusSearch\Sanity;
 
 use CirrusSearch\Assignment\ClusterAssignment;
 use CirrusSearch\UpdateGroup;
-use JobQueueGroup;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Title\Title;
-use WikiPage;
 
 /**
  * Remediator that forwards all actions to all writable clusters
@@ -25,10 +25,6 @@ class AllClustersQueueingRemediator implements Remediator {
 	 */
 	private $clusters;
 
-	/**
-	 * @param ClusterAssignment $clusterAssignment
-	 * @param JobQueueGroup $jobQueueGroup
-	 */
 	public function __construct( ClusterAssignment $clusterAssignment, JobQueueGroup $jobQueueGroup ) {
 		$this->clusters = $clusterAssignment->getWritableClusters( UpdateGroup::SANEITIZER );
 		$this->inner = new QueueingRemediator( null, $jobQueueGroup );

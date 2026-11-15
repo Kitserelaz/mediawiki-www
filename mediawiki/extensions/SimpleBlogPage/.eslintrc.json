@@ -1,7 +1,7 @@
 {
 	"root": true,
 	"extends": [
-		"wikimedia/client-es6",
+		"wikimedia/client",
 		"wikimedia/jquery",
 		"wikimedia/mediawiki"
 	],
@@ -14,7 +14,9 @@
 		"es-x/no-async-functions": "off",
 		"max-len": "off",
 		"no-jquery/no-global-selector": "off",
-		"no-prototype-builtins": "off"
+		"no-prototype-builtins": "off",
+		"no-jquery/no-done-fail": "warn",
+		"mediawiki/no-unlabeled-buttonwidget": "warn"
 	},
 	"parserOptions": {
 		"ecmaVersion": 8

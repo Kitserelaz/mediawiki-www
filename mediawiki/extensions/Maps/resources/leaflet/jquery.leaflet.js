@@ -43,8 +43,19 @@
 		return mapOptions;
 	}
 
+	// Map data from before the geojson parameter became a list holds a single GeoJSON object, and
+	// still reaches this code from the parser cache after an upgrade.
+	function geoJsonSources(geoJson) {
+		if (Array.isArray(geoJson)) {
+			return geoJson;
+		}
+
+		return geoJson ? [geoJson] : [];
+	}
+
 	$.fn.leafletmaps = function ( options ) {
 		let _this = this;
+		options.geojson = geoJsonSources(options.geojson);
 		_this.options = options; // needed by LeafletAjax.js
 
 		this.setup = function() {
@@ -87,7 +98,7 @@
 		};
 
 		this.shouldShowEditButton = function() {
-			if ( options.geojson === '' || options.GeoJsonSource === null ) {
+			if ( !options.GeoJsonSource ) {
 				return false;
 			}
 
@@ -127,7 +138,7 @@
 			maps.api.getLatestRevision('GeoJson:' + options.GeoJsonSource).done(
 				function(revision) {
 					if (revision.revid === options.GeoJsonRevisionId) {
-						_this.initializeEditor(options.geojson);
+						_this.initializeEditor(options.geojson[0]);
 					}
 					else {
 						_this.purgePage();
@@ -145,7 +156,8 @@
 				_this.purgePage();
 
 				editor.remove();
-				options.geojson = editor.getLayer().toGeoJSON();
+				// Replacing the whole list is safe because the editor only runs with a single source
+				options.geojson = [ editor.getLayer().toGeoJSON() ];
 				_this.mapContent = maps.leaflet.FeatureBuilder.contentLayerFromOptions(options).addTo(_this.map);
 
 				alert(mw.msg('maps-json-editor-changes-saved'));
@@ -241,7 +253,7 @@
 		this.getNormalBaseLayers = function() {
 			let layers = new Map();
 
-			$.each( options.layers.reverse(), function(index, layerName) {
+			$.each( [...options.layers].reverse(), function(index, layerName) {
 				layers.set(layerName, _this.newBaseLayerFromName(layerName));
 			});
 
@@ -249,6 +261,11 @@
 		};
 
 		this.newBaseLayerFromName = function(layerName) {
+			let definition = this.getLayerDefinition(layerName);
+			if (definition !== null) {
+				return this.newLayerFromDefinition(definition);
+			}
+
 			if (layerName === 'MapQuestOpen') {
 				return new window.MQ.TileLayer();
 			}
@@ -264,10 +281,28 @@
 			return new L.tileLayer.provider(layerName, layerOptions);
 		};
 
+		// Returns the custom layer definition for the given name, or null when there is none.
+		// Definitions are supplied per map via options.layerDefinitions (see LeafletService).
+		this.getLayerDefinition = function(layerName) {
+			if (options.layerDefinitions && Object.prototype.hasOwnProperty.call(options.layerDefinitions, layerName)) {
+				return options.layerDefinitions[layerName];
+			}
+
+			return null;
+		};
+
+		this.newLayerFromDefinition = function(definition) {
+			if (definition.wms) {
+				return L.tileLayer.wms(definition.url, definition.options);
+			}
+
+			return L.tileLayer(definition.url, definition.options);
+		};
+
 		this.getImageBaseLayers = function() {
 			let layers = new Map();
 
-			$.each( options.imageLayers.reverse(), function(index, layer) {
+			$.each( [...options.imageLayers].reverse(), function(index, layer) {
 				layers.set(
 					layer.name,
 					L.imageOverlay(
@@ -291,7 +326,12 @@
 			let overlays = {};
 
 			$.each(options.overlays, function(index, overlayName) {
-				overlays[overlayName] = new L.tileLayer.provider(overlayName).addTo(_this.map);
+				let definition = _this.getLayerDefinition(overlayName);
+				let overlay = definition !== null
+					? _this.newLayerFromDefinition(definition)
+					: new L.tileLayer.provider(overlayName);
+
+				overlays[mw.html.escape(overlayName)] = overlay.addTo(_this.map);
 			});
 
 			return overlays;
@@ -304,10 +344,11 @@
 			let overlays = this.addOverlays();
 
 			if (layers.size > 1 || options.overlays.length > 0) {
-				let control = L.control.layers([], overlays).addTo(this.map);
+				let baseLayers = {};
 				layers.forEach(function(layerObject, layerName) {
-					control.addBaseLayer(layerObject, layerName);
+					baseLayers[mw.html.escape(layerName)] = layerObject;
 				});
+				L.control.layers(baseLayers, overlays).addTo(this.map);
 			}
 		};
 
@@ -341,6 +382,15 @@
 		};
 
 		this.centerAndZoomMap = function() {
+			if (options.centre !== false && options.zoom !== false) {
+				this.map.setView(
+					new L.LatLng(options.centre.lat, options.centre.lon),
+					options.zoom,
+					{animate: false}
+				);
+				return;
+			}
+
 			this.fitContent();
 
 			if (options.zoom !== false) {
@@ -359,7 +409,7 @@
 		this.fitContent = function() {
 			let bounds = this.mapContent.getBounds();
 
-			$.each( options.imageLayers.reverse(), function(index, layer) {
+			$.each( [...options.imageLayers].reverse(), function(index, layer) {
 				bounds.extend(new L.LatLng(0, 0));
 				bounds.extend(new L.LatLng(layer.height, layer.width));
 			});

@@ -10,7 +10,11 @@
 	};
 
 	mw.translate = mw.translate || {};
+
 	var logger = require( 'ext.translate.eventlogginghelpers' );
+	if ( logger.isEventLoggingEnabled() ) {
+		trackUserExit();
+	}
 
 	mw.translate = $.extend( mw.translate, {
 
@@ -26,6 +30,17 @@
 				return;
 			}
 
+			var sourceType;
+			if ( group.id.startsWith( 'agg-' ) ) {
+				sourceType = 'aggregate-group';
+			} else if ( group.id.startsWith( 'page-' ) ) {
+				sourceType = 'translatable-page';
+			} else if ( group.id.startsWith( 'messagebundle-' ) ) {
+				sourceType = 'message-bundle';
+			} else {
+				sourceType = 'normal-message-group';
+			}
+
 			showAggregateSubgroupCount();
 
 			state.group = group.id;
@@ -33,7 +48,6 @@
 			var changes = {
 				group: group.id,
 				showMessage: null
-
 			};
 
 			mw.translate.changeUrl( changes );
@@ -41,6 +55,22 @@
 			removeGroupWarnings();
 			state.messageList.changeSettings( changes );
 			updateGroupInformation( state );
+			getTranslationStats( state.language ).done( function ( stats ) {
+				logger.logClickEvent(
+					'switch_translate_content',
+					'message_group_menu',
+					{
+						// eslint-disable-next-line camelcase
+						source_title: group.id,
+						// eslint-disable-next-line camelcase
+						source_type: sourceType,
+						// eslint-disable-next-line camelcase
+						translatable_count: stats.total,
+						// eslint-disable-next-line camelcase
+						translated_count: stats.translated
+					}
+				);
+			} );
 		},
 
 		/**
@@ -68,7 +98,7 @@
 					'language_selector',
 					{
 						// eslint-disable-next-line camelcase
-						target_lang: language,
+						target_language: language,
 						// eslint-disable-next-line camelcase
 						translatable_count: stats.total,
 						// eslint-disable-next-line camelcase
@@ -96,27 +126,27 @@
 		 * @param {Object} params
 		 */
 		changeUrl: function ( params ) {
-			var uri = new mw.Uri( window.location.href );
+			var url = new URL( location.href );
 
-			uri.extend( params );
-
-			// Support removing keys from the query
 			Object.keys( params ).forEach( function ( key ) {
 				if ( params[ key ] === null || params[ key ] === undefined ) {
-					delete uri.query[ key ];
+					// Support removing keys from the query
+					url.searchParams.delete( key );
+				} else {
+					url.searchParams.set( key, params[ key ] );
 				}
 			} );
 
 			mw.hook( 'mw.translate.translationView.stateChange' ).fire( state );
 
-			if ( uri.toString() === window.location.href ) {
+			if ( url.toString() === location.href ) {
 				return;
 			}
 
 			if ( $( '.tux-messagelist' ).length ) {
-				history.replaceState( uri, null, uri.toString() );
+				history.replaceState( url.toString(), null, url.toString() );
 			} else {
-				window.location.href = uri.toString();
+				location.href = url.toString();
 			}
 		},
 
@@ -130,9 +160,16 @@
 		updateTabLinks: function ( params ) {
 			$( '.tux-tab a' ).each( function () {
 				var $a = $( this );
-				var uri = new mw.Uri( $a.prop( 'href' ) );
-				uri.extend( params );
-				$a.prop( 'href', uri.toString() );
+				var url = new URL( $a.prop( 'href' ) );
+				Object.keys( params ).forEach( function ( key ) {
+					if ( params[ key ] === null || params[ key ] === undefined ) {
+						// Support removing keys from the query
+						url.searchParams.delete( key );
+					} else {
+						url.searchParams.set( key, params[ key ] );
+					}
+				} );
+				$a.prop( 'href', url.toString() );
 			} );
 		}
 	} );
@@ -156,14 +193,12 @@
 	}
 
 	function getActionSource() {
-		var uri = new mw.Uri( window.location.href );
-		return uri.query.action_source || 'direct_open';
+		return mw.util.getParamValue( 'action_source' ) || 'direct_open';
 	}
 
 	function getActualFilter( filter ) {
 		var realFilters = [ '!ignored' ];
-		var uri = new mw.Uri( window.location.href );
-		if ( uri.query.optional !== '1' ) {
+		if ( mw.util.getParamValue( 'optional' ) !== '1' ) {
 			realFilters.push( hideOptionalMessages );
 		}
 		if ( filter ) {
@@ -206,6 +241,7 @@
 			updateDescription( group );
 			updateGroupPriorityWarnings( group, stateInfo.language );
 			updateGroupSubscription( group );
+			document.title = mw.msg( 'pagetitle', mw.msg( 'translate-group', group.label ) );
 		} );
 	}
 
@@ -332,7 +368,7 @@
 			// CSS Classes:
 			// * tux-watch-group--watch
 			// * tux-watch-group--unwatch
-			.addClass( 'mw-ui-button tux-watch-button ' + watchClass )
+			.addClass( 'cdx-button tux-watch-button ' + watchClass )
 			.data( 'subscribed', group.subscription )
 			.on( 'click', toggleSubscription );
 
@@ -365,32 +401,77 @@
 			return true;
 		}
 
-		return priorityLanguages.indexOf( language ) !== -1;
+		return priorityLanguages.includes( language );
 	}
 
-	function setupLanguageSelector( $element ) {
-		var ulsOptions = {
-			languages: mw.config.get( 'wgTranslateLanguages' ),
-			showRegions: [ 'SP' ].concat( $.fn.lcd.defaults.showRegions ),
-			onSelect: function ( languageCode ) {
-				var languageDetails = mw.translate.getLanguageDetailsForHtml( languageCode );
-				mw.translate.changeLanguage( languageCode );
-				$element
-					.find( '.ext-translate-target-language' )
-					.text( languageDetails.autonym )
-					.prop( {
-						lang: languageDetails.code,
-						dir: languageDetails.direction
-					} );
-			},
-			ulsPurpose: 'translate-special-translate',
-			quickList: function () {
-				return mw.uls.getFrequentLanguageList();
+	/**
+	 * Setup the target language selector
+	 *
+	 * @param {Object} $element jQuery trigger element
+	 * @param {string|null} initialLanguage Language code to select by default, null to select none.
+	 */
+	function setupLanguageSelector( $element, initialLanguage ) {
+		const languages = mw.config.get( 'wgTranslateLanguages' );
+		mw.translate.addExtraLanguagesToLanguageData( languages, [ 'SP' ] );
+
+		let mountedVm = null;
+
+		const onLanguageChange = function ( languageCode ) {
+			mw.translate.changeLanguage( languageCode );
+			const languageDetails = mw.translate.getLanguageDetailsForHtml( languageCode );
+			$element
+				.find( '.ext-translate-target-language' )
+				.text( languageDetails.autonym )
+				.prop( {
+					lang: languageDetails.code,
+					dir: languageDetails.direction
+				} );
+
+			if ( mountedVm ) {
+				mountedVm.updateSelected( [ languageCode ] );
 			}
 		};
 
-		mw.translate.addExtraLanguagesToLanguageData( ulsOptions.languages, [ 'SP' ] );
-		$element.uls( ulsOptions );
+		if ( mw.config.get( 'wgULSLanguageSelectorV2Enabled' ) ) {
+			mw.loader.using( [ 'ext.uls.rewrite' ] ).then( function () {
+				const { createUniversalLanguageSelector } = require( 'ext.uls.rewrite' );
+
+				const mountPoint = document.createElement( 'div' );
+				document.body.appendChild( mountPoint );
+
+				const app = createUniversalLanguageSelector( {
+					triggerElement: $element[ 0 ],
+					selectableLanguages: languages,
+					selected: initialLanguage ? [ initialLanguage ] : [],
+					onSelect: function ( language ) {
+						const languageCode = language.code;
+						onLanguageChange( languageCode );
+					},
+					displayLanguageCode: mw.config.get( 'wgUserLanguage' ),
+					mode: 'interface'
+				} );
+
+				mountedVm = app.mount( mountPoint );
+
+				$element.on( 'click', function ( event ) {
+					event.preventDefault();
+					event.stopPropagation();
+					mountedVm.toggle();
+				} );
+			} );
+		} else {
+			var ulsOptions = {
+				languages: languages,
+				showRegions: [ 'SP' ].concat( $.fn.lcd.defaults.showRegions ),
+				onSelect: onLanguageChange,
+				ulsPurpose: 'translate-special-translate',
+				quickList: function () {
+					return mw.uls.getFrequentLanguageList();
+				}
+			};
+
+			$element.uls( ulsOptions );
+		}
 	}
 
 	function addTuxGroupWarningContainer() {
@@ -483,7 +564,8 @@
 				.find( '.tux-breadcrumb__item--aggregate-count' )
 				.remove();
 		} else {
-			var subGroups = mw.msg( 'translate-msggroupselector-view-subprojects', groupCounts );
+			var formattedGroupCounts = mw.language.convertNumber( groupCounts );
+			var subGroups = mw.msg( 'translate-msggroupselector-view-subprojects', formattedGroupCounts );
 			$selectedGroup.append(
 				$( '<span>' ).append( mw.message( 'parentheses', $( '<span>' ).text( subGroups ) ).parse() )
 					.addClass( 'tux-breadcrumb__item--aggregate-count' )
@@ -491,26 +573,76 @@
 		}
 	}
 
+	function trackUserExit() {
+		var timeout;
+		var timeoutDuration = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+		function resetTimer() {
+			// Clear the existing timeout
+			clearTimeout( timeout );
+			timeout = setTimeout( logInactivity, timeoutDuration );
+		}
+
+		function logInactivity() {
+			logger.logEvent( 'exit', 'inactivity' );
+		}
+
+		function throttle( func, delay ) {
+			var lastCall = 0;
+
+			return function () {
+				var now = Date.now();
+				if ( now - lastCall >= delay ) {
+					lastCall = now;
+					func();
+				}
+			};
+		}
+
+		// Create a throttled version of resetTimer
+		var throttledResetTimer = throttle( resetTimer, 3000 ); // 3 seconds between resets
+		// Add event listeners with throttled reset
+		var events = [
+			'mousemove',
+			'mousedown',
+			'touchstart',
+			'touchmove',
+			'click',
+			'keydown',
+			'scroll',
+			'wheel'
+		];
+
+		events.forEach( function ( eventName ) {
+			window.addEventListener( eventName, throttledResetTimer, true );
+		} );
+
+		resetTimer(); // Initial timer setup
+
+		window.addEventListener( 'unload', function () {
+			logger.logEvent( 'exit', 'browser_tab_close' );
+		} );
+	}
+
 	$( function () {
 		var $messageList = $( '.tux-messagelist' );
 		state.group = $( '.tux-messagetable-loader' ).data( 'messagegroup' );
 		state.language = $messageList.data( 'targetlangcode' );
-		var uri = new mw.Uri( window.location.href );
 
 		if ( $messageList.length ) {
 			$messageList.messagetable();
 			state.messageList = $messageList.data( 'messagetable' );
 
-			var filter = uri.query.filter;
-			var offset = uri.query.showMessage;
+			var filter = mw.util.getParamValue( 'filter' );
+			var offset = mw.util.getParamValue( 'showMessage' );
 			var limit;
 			if ( offset ) {
-				limit = uri.query.limit || 1;
+				limit = mw.util.getParamValue( 'limit' ) || 1;
 				// Default to no filters
 				filter = filter || '';
 			}
 
-			if ( filter === undefined ) {
+			if ( filter === null ) {
 				filter = '!translated';
 			}
 
@@ -522,13 +654,16 @@
 				}
 			} );
 
-			mw.translate.changeUrl( {
+			var newUrlParams = {
 				group: state.group,
 				language: state.language,
 				filter: filter,
-				showMessage: offset,
-				optional: offset ? 1 : undefined
-			} );
+				showMessage: offset
+			};
+			if ( offset ) {
+				newUrlParams.optional = 1;
+			}
+			mw.translate.changeUrl( newUrlParams );
 
 			// Start loading messages
 			var actualFilter = getActualFilter( filter );
@@ -540,7 +675,7 @@
 				filter: actualFilter
 			} );
 
-			if ( actualFilter.indexOf( hideOptionalMessages ) === -1 ) {
+			if ( !actualFilter.includes( hideOptionalMessages ) ) {
 				$( '#tux-option-optional' ).prop( 'checked', true );
 			}
 		}
@@ -577,7 +712,7 @@
 		$( '.ext-translate-language-selector .uls' ).one( 'click', function () {
 			var $target = $( this );
 			mw.loader.using( 'ext.uls.mediawiki' ).done( function () {
-				setupLanguageSelector( $target );
+				setupLanguageSelector( $target, state.language );
 				$target.trigger( 'click' );
 			} );
 		} ).on( 'keypress', function () {
@@ -608,7 +743,7 @@
 			var $this = $( this );
 
 			if ( $this.hasClass( 'more' ) ) {
-				return false;
+				return;
 			}
 
 			var newFilter = $this.data( 'filter' );
@@ -625,8 +760,14 @@
 			// TODO: this could should be in messagetable
 			$hideTranslatedButton.toggleClass( 'hide', translated )
 				.prop( 'disabled', !translated && !getTranslatedMessages( $translateContainer ).length );
+		} );
 
-			return false;
+		// Message filter keyboard handler for accessibility
+		$translateContainer.find( '.row.tux-message-selector > li > span' ).on( 'keydown', function ( e ) {
+			if ( e.key === 'Enter' || e.key === ' ' ) {
+				e.preventDefault();
+				$( this ).trigger( 'click' );
+			}
 		} );
 
 		// TODO: this could should be in messagetable
@@ -641,11 +782,10 @@
 			} );
 
 		$( '#tux-option-optional' ).on( 'change', function () {
-			var currentUri = new mw.Uri( window.location.href ),
-				checked = $( this ).prop( 'checked' );
+			var checked = $( this ).prop( 'checked' );
 
 			mw.translate.changeUrl( { optional: checked ? 1 : 0 } );
-			mw.translate.changeFilter( currentUri.query.filter );
+			mw.translate.changeFilter( mw.util.getParamValue( 'filter' ) );
 		} );
 
 		getTranslationStats( state.language ).done( function ( stats ) {
@@ -655,11 +795,11 @@
 				getActionSource(),
 				{
 					// eslint-disable-next-line camelcase
-					source_lang: $messageList.data( 'sourcelangcode' ),
+					source_language: $messageList.data( 'sourcelangcode' ),
 					// eslint-disable-next-line camelcase
-					target_lang: state.language,
+					target_language: state.language,
 					// eslint-disable-next-line camelcase
-					source_id: uri.query.group,
+					source_title: mw.util.getParamValue( 'group' ),
 					// eslint-disable-next-line camelcase
 					source_type: 'page',
 					// eslint-disable-next-line camelcase

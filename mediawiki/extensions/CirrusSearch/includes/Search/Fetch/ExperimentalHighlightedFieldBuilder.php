@@ -4,6 +4,7 @@ namespace CirrusSearch\Search\Fetch;
 
 use CirrusSearch\Search\SearchQuery;
 use CirrusSearch\SearchConfig;
+use MediaWiki\MainConfigNames;
 
 class ExperimentalHighlightedFieldBuilder extends BaseHighlightedField {
 	public const EXPERIMENTAL_HL_TYPE = 'experimental';
@@ -17,9 +18,6 @@ class ExperimentalHighlightedFieldBuilder extends BaseHighlightedField {
 		parent::__construct( $fieldName, self::EXPERIMENTAL_HL_TYPE, $target, $priority );
 	}
 
-	/**
-	 * @return callable
-	 */
 	public static function entireValue(): callable {
 		return static function ( SearchConfig $config, $fieldName, $target, $priority ) {
 			$self = new self( $fieldName, $target, $priority );
@@ -30,9 +28,6 @@ class ExperimentalHighlightedFieldBuilder extends BaseHighlightedField {
 		};
 	}
 
-	/**
-	 * @return callable
-	 */
 	public static function redirectAndHeadings(): callable {
 		return static function ( SearchConfig $config, $fieldName, $target, $priority ) {
 			$self = new self( $fieldName, $target, $priority );
@@ -45,9 +40,6 @@ class ExperimentalHighlightedFieldBuilder extends BaseHighlightedField {
 		};
 	}
 
-	/**
-	 * @return callable
-	 */
 	public static function text(): callable {
 		return static function ( SearchConfig $config, $fieldName, $target, $priority ) {
 			$self = new self( $fieldName, $target, $priority );
@@ -76,9 +68,6 @@ class ExperimentalHighlightedFieldBuilder extends BaseHighlightedField {
 		};
 	}
 
-	/**
-	 * @return callable
-	 */
 	protected static function mainText(): callable {
 		return function ( SearchConfig $config, $fieldName, $target, $priority ) {
 			$self = ( self::text() )( $config, $fieldName, $target, $priority );
@@ -95,6 +84,7 @@ class ExperimentalHighlightedFieldBuilder extends BaseHighlightedField {
 	 * @param string $pattern
 	 * @param bool $caseInsensitive
 	 * @param int $priority
+	 * @param string $regexFlavor
 	 * @return self
 	 */
 	public static function newRegexField(
@@ -103,14 +93,15 @@ class ExperimentalHighlightedFieldBuilder extends BaseHighlightedField {
 		$target,
 		$pattern,
 		$caseInsensitive,
-		$priority
+		$priority,
+		$regexFlavor = 'lucene'
 	): self {
 		// TODO: verify that we actually need to have all the text() options when running a regex
 		/** @var self $self */
 		$self = ( self::text() )( $config, $name, $target, $priority );
 		$self->addOption( 'regex', [ $pattern ] );
-		$self->addOption( 'locale', $config->get( 'LanguageCode' ) );
-		$self->addOption( 'regex_flavor', 'lucene' );
+		$self->addOption( 'locale', $config->get( MainConfigNames::LanguageCode ) );
+		$self->addOption( 'regex_flavor', $regexFlavor );
 		$self->addOption( 'skip_query', true );
 		$self->addOption( 'regex_case_insensitive', $caseInsensitive );
 		$self->addOption( 'max_determinized_states', $config->get( 'CirrusSearchRegexMaxDeterminizedStates' ) );
@@ -126,7 +117,7 @@ class ExperimentalHighlightedFieldBuilder extends BaseHighlightedField {
 	 */
 	public function merge( HighlightedField $other ): HighlightedField {
 		if ( isset( $this->options['regex'] ) &&
-			 $other instanceof ExperimentalHighlightedFieldBuilder &&
+			 $other instanceof self &&
 			 isset( $other->options['regex'] ) &&
 			 $this->getFieldName() === $other->getFieldName()
 		) {
@@ -140,7 +131,7 @@ class ExperimentalHighlightedFieldBuilder extends BaseHighlightedField {
 	}
 
 	/**
-	 * @return ExperimentalHighlightedFieldBuilder
+	 * @return $this
 	 */
 	public function skipIfLastMatched(): BaseHighlightedField {
 		$this->addOption( 'skip_if_last_matched', true );

@@ -19,19 +19,16 @@ interface Context {
 	/**
 	 * Type of a context for the main snak of a statement.
 	 * @see getType()
-	 * @var string
 	 */
 	public const TYPE_STATEMENT = 'statement';
 	/**
 	 * Type of a context for a qualifier of a statement.
 	 * @see getType()
-	 * @var string
 	 */
 	public const TYPE_QUALIFIER = 'qualifier';
 	/**
 	 * Type of a context for a snak of a reference of a statement.
 	 * @see getType()
-	 * @var string
 	 */
 	public const TYPE_REFERENCE = 'reference';
 
@@ -49,13 +46,11 @@ interface Context {
 	/**
 	 * Grouping mode to include the snaks of all non-deprecated statements.
 	 * @see getSnakGroup()
-	 * @var string
 	 */
 	public const GROUP_NON_DEPRECATED = 'non-deprecated';
 	/**
 	 * Grouping mode to include the snaks of the best-rank statement(s) per property.
 	 * @see getSnakGroup()
-	 * @var string
 	 */
 	public const GROUP_BEST_RANK = 'best-rank';
 
@@ -82,7 +77,7 @@ interface Context {
 	 * The rank of the snak that is being checked.
 	 * Only the main snak of a statement has a rank.
 	 *
-	 * @return integer|null One of the Statement::RANK_* constants
+	 * @return int|null One of the Statement::RANK_* constants
 	 * if this is a statement context,
 	 * or null if it’s any other type of context.
 	 */

@@ -20,15 +20,14 @@
  */
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Request\FauxRequest;
+use MediaWiki\Title\Title;
 
 /**
  * @covers SpecialCreateRedirect
  * @group Database
  */
 class SpecialCreateRedirectTest extends SpecialPageTestBase {
-	/** @var string[] */
-	protected $tablesUsed = [ 'page', 'objectcache' ];
-
 	protected function newSpecialPage() {
 		return MediaWikiServices::getInstance()->getSpecialPageFactory()->getPage( 'CreateRedirect' );
 	}
@@ -369,7 +368,7 @@ class SpecialCreateRedirectTest extends SpecialPageTestBase {
 		foreach ( $pageNames as $pageNameFrom ) {
 			$target = $redirectLookup->getRedirectTarget( Title::newFromText( $pageNameFrom ) );
 			$this->assertNotNull( $target, 'Newly created page is not a redirect.' );
-			$this->assertSame( $destinationPageName, $target->getFullText(),
+			$this->assertSame( $destinationPageName, $target->getText(),
 				'Newly created redirect points to the wrong page.' );
 		}
 	}

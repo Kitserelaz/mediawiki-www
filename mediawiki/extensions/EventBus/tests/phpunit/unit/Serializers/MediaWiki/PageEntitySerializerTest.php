@@ -4,11 +4,11 @@ use MediaWiki\Config\HashConfig;
 use MediaWiki\Extension\EventBus\Redirects\RedirectTarget;
 use MediaWiki\Extension\EventBus\Serializers\MediaWiki\PageEntitySerializer;
 use MediaWiki\Linker\LinkTarget;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFormatter;
 use MediaWiki\Title\TitleValue;
-use PHPUnit\Framework\MockObject\Invocation;
-use PHPUnit\Framework\MockObject\Stub\Stub;
 
 /**
  * @coversDefaultClass \MediaWiki\Extension\EventBus\Serializers\MediaWiki\PageEntitySerializer
@@ -51,22 +51,13 @@ class PageEntitySerializerTest extends MediaWikiUnitTestCase {
 		}
 
 		$config = new HashConfig( [
-			'CanonicalServer' => self::MOCK_CANONICAL_SERVER,
-			'ArticlePath' => self::MOCK_ARTICLE_PATH
+			MainConfigNames::CanonicalServer => self::MOCK_CANONICAL_SERVER,
+			MainConfigNames::ArticlePath => self::MOCK_ARTICLE_PATH,
 		] );
 
 		$titleFormatter = $this->createMock( TitleFormatter::class );
-		$titleFormatter->method( 'getPrefixedDBkey' )->will( new class() implements Stub {
-			public function invoke( Invocation $invocation ) {
-				if ( $invocation->getParameters()[0] instanceof LinkTarget ) {
-					return $invocation->getParameters()[0]->getDBkey();
-				}
-				throw new Exception( "Unknown link target: " . $invocation->getParameters()[0] );
-			}
-
-			public function toString(): string {
-				return "Stub returning link target DB key";
-			}
+		$titleFormatter->method( 'getPrefixedDBkey' )->willReturnCallback( static function ( $target ) {
+			return $target->getDBkey();
 		} );
 
 		$this->pageEntitySerializer = new PageEntitySerializer(
@@ -96,7 +87,7 @@ class PageEntitySerializerTest extends MediaWikiUnitTestCase {
 	/**
 	 * @covers ::toArray
 	 * @covers ::formatLinkTarget
-	 * @covers ::formatWikiPageTitle
+	 * @covers ::formatPageTitle
 	 */
 	public function testToArray() {
 		$expected = [
@@ -115,7 +106,7 @@ class PageEntitySerializerTest extends MediaWikiUnitTestCase {
 	/**
 	 * @covers ::toArray
 	 * @covers ::formatLinkTarget
-	 * @covers ::formatWikiPageTitle
+	 * @covers ::formatPageTitle
 	 */
 	public function testToArrayWithRedirectTarget() {
 		$expected = [

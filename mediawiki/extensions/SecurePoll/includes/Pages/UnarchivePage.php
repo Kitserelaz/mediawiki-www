@@ -2,9 +2,9 @@
 
 namespace MediaWiki\Extension\SecurePoll\Pages;
 
-use JobQueueGroup;
-use JobSpecification;
 use MediaWiki\Extension\SecurePoll\SpecialSecurePoll;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\SpecialPage\SpecialPage;
 use OOUI\MessageWidget;
 
@@ -12,15 +12,12 @@ use OOUI\MessageWidget;
  * SecurePoll subpage for archiving past elections
  */
 class UnarchivePage extends ActionPage {
-	/** @var JobQueueGroup */
-	private $jobQueueGroup;
 
 	public function __construct(
 		SpecialSecurePoll $specialPage,
-		JobQueueGroup $jobQueueGroup
+		private readonly JobQueueGroup $jobQueueGroup,
 	) {
 		parent::__construct( $specialPage );
-		$this->jobQueueGroup = $jobQueueGroup;
 	}
 
 	/**
@@ -34,7 +31,7 @@ class UnarchivePage extends ActionPage {
 		$out->returnToMain( false, SpecialPage::getTitleFor( 'SecurePoll' ) );
 
 		if ( !count( $params ) ) {
-			$out->prependHTML( ( new MessageWidget( [
+			$out->prependHTML( (string)( new MessageWidget( [
 				'label' => $this->msg( 'securepoll-too-few-params' )->text(),
 				'type' => 'error',
 			] ) ) );
@@ -44,7 +41,7 @@ class UnarchivePage extends ActionPage {
 		$electionId = intval( $params[0] );
 		$this->election = $this->context->getElection( $electionId );
 		if ( !$this->election ) {
-			$out->prependHTML( ( new MessageWidget( [
+			$out->prependHTML( (string)( new MessageWidget( [
 				'label' => $this->msg( 'securepoll-invalid-election', $electionId )->text(),
 				'type' => 'error',
 			] ) ) );
@@ -56,7 +53,7 @@ class UnarchivePage extends ActionPage {
 		$isAdmin = $this->election->isAdmin( $this->specialPage->getUser() );
 
 		if ( !$isAdmin ) {
-			$out->prependHTML( ( new MessageWidget( [
+			$out->prependHTML( (string)( new MessageWidget( [
 				'label' => $this->msg( 'securepoll-archive-private' )->text(),
 				'type' => 'error',
 			] ) ) );
@@ -64,8 +61,19 @@ class UnarchivePage extends ActionPage {
 		}
 
 		if ( !$this->election->isFinished() ) {
-			$out->prependHTML( ( new MessageWidget( [
+			$out->prependHTML( (string)( new MessageWidget( [
 				'label' => $this->msg( 'securepoll-archive-not-finished' )->text(),
+				'type' => 'error',
+			] ) ) );
+			return;
+		}
+
+		$token = $this->specialPage->getContext()->getCsrfTokenSet()->getToken();
+		$request = $this->specialPage->getRequest();
+		$tokenMatch = $token->match( $request->getVal( 'token' ) );
+		if ( !$tokenMatch ) {
+			$out->prependHTML( (string)( new MessageWidget( [
+				'label' => $this->msg( 'securepoll-unarchive-token-error' )->text(),
 				'type' => 'error',
 			] ) ) );
 			return;
@@ -91,13 +99,13 @@ class UnarchivePage extends ActionPage {
 					[]
 				)
 			);
-			$out->prependHTML( ( new MessageWidget( [
+			$out->prependHTML( (string)( new MessageWidget( [
 				'label' => $this->msg( 'securepoll-unarchive-in-progress' )->text(),
 				'type' => 'success',
 			] ) ) );
 		} else {
 			// Not archived
-			$out->prependHTML( ( new MessageWidget( [
+			$out->prependHTML( (string)( new MessageWidget( [
 				'label' => $this->msg( 'securepoll-already-unarchived-error' )->text(),
 				'type' => 'error',
 			] ) ) );

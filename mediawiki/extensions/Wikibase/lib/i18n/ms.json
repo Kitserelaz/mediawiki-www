@@ -20,6 +20,7 @@
 	"wikibase-error-ui-no-external-page": "Laman \"$2\" tidak dapat ditemui pada \"$1\".",
 	"wikibase-error-ui-edit-conflict": "Nilai yang sama telah disunting dalam masa yang sama, menyebabkan percanggahan suntingan. Sila muat semula laman ini.",
 	"wikibase-language-fallback-transliteration-hint": "$1 (dialih aksara)",
+	"wikibase-language-name-for-terms-mul": "lalai untuk semua bahasa",
 	"wikibase-sitelinks-wikipedia": "Wikipedia",
 	"wikibase-snakview-snaktypeselector-somevalue": "nilai tidak diketahui",
 	"wikibase-snakview-snaktypeselector-novalue": "tiada nilai",

@@ -265,8 +265,8 @@
 	"group-push-subscription-manager": "Menedżerowie subskrypcji push",
 	"group-push-subscription-manager-member": "{{GENDER:$1|menedżer|menedżerka}} subskrypcji push",
 	"grouppage-push-subscription-manager": "{{ns:project}}:Menedżerowie subskrypcji push",
-	"notification-subject-email-verify-email-reminder": "Potwierdź {{GENDER:$1|swój}} e-mail",
-	"notification-header-verify-email-reminder": "<strong>{{GENDER:$1|Zweryfikuj}} swój adres e-mail</strong>, abyśmy wiedzieli, że adres e-mail na Twoim koncie należy do Ciebie.",
+	"notification-subject-email-verify-email-reminder": "Potwierdź {{GENDER:$1|swój}} adres e-mail",
+	"notification-header-verify-email-reminder": "Cześć, $2,\n<strong>{{GENDER:$1|Zweryfikuj}} swój adres e-mail</strong>, abyśmy wiedzieli, że adres e-mail na Twoim koncie należy do Ciebie.",
 	"notification-link-text-verify-email-reminder": "Zarządzaj preferencjami e-mail",
 	"notification-verify-email-reminder-link-label": "Potwierdź adres e-mail"
 }

@@ -3,30 +3,38 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
-use JobQueueGroup;
+use EmptyIterator;
 use LogicException;
-use ManualLogEntry;
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\ContentHandler;
+use MediaWiki\Extension\Translate\HookRunner;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroupSubscription;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatablePageStore;
 use MediaWiki\Extension\Translate\MessageLoading\MessageIndex;
 use MediaWiki\Extension\Translate\MessageProcessing\MessageGroupMetadata;
+use MediaWiki\Extension\Translate\Utilities\Utilities;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Language\FormatterFactory;
+use MediaWiki\Language\MessageLocalizer;
+use MediaWiki\Language\RawMessage;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Message\Message;
 use MediaWiki\Page\PageRecord;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\Authority;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Status\Status;
+use MediaWiki\Storage\PageUpdater;
 use MediaWiki\Title\MalformedTitleException;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFormatter;
 use MediaWiki\Title\TitleParser;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
-use RecentChange;
+use Wikimedia\Message\ListType;
 use Wikimedia\Rdbms\IConnectionProvider;
 use WikiPageMessageGroup;
 
@@ -53,6 +61,8 @@ class TranslatablePageMarker {
 	private WikiPageFactory $wikiPageFactory;
 	private TranslatablePageView $translatablePageView;
 	private MessageGroupSubscription $messageGroupSubscription;
+	private FormatterFactory $formatterFactory;
+	private HookRunner $hookRunner;
 
 	public function __construct(
 		IConnectionProvider $dbProvider,
@@ -69,7 +79,9 @@ class TranslatablePageMarker {
 		MessageGroupMetadata $messageGroupMetadata,
 		WikiPageFactory $wikiPageFactory,
 		TranslatablePageView $translatablePageView,
-		MessageGroupSubscription $messageGroupSubscription
+		MessageGroupSubscription $messageGroupSubscription,
+		FormatterFactory $formatterFactory,
+		HookRunner $hookRunner,
 	) {
 		$this->dbProvider = $dbProvider;
 		$this->jobQueueGroup = $jobQueueGroup;
@@ -86,16 +98,24 @@ class TranslatablePageMarker {
 		$this->messageGroupMetadata = $messageGroupMetadata;
 		$this->translatablePageView = $translatablePageView;
 		$this->messageGroupSubscription = $messageGroupSubscription;
+		$this->formatterFactory = $formatterFactory;
+		$this->hookRunner = $hookRunner;
 	}
 
 	/**
 	 * Remove a page from translation.
 	 * @param TranslatablePage $page The page to remove from translation
 	 * @param User $user The user performing the action
+	 * @param MessageLocalizer $localizer
 	 * @param bool $removeMarkup Whether to remove markup from the translation page
 	 * @throws TranslatablePageMarkException If removing the markup from the translation page fails
 	 */
-	public function unmarkPage( TranslatablePage $page, User $user, bool $removeMarkup ): void {
+	public function unmarkPage(
+		TranslatablePage $page,
+		User $user,
+		MessageLocalizer $localizer,
+		bool $removeMarkup
+	): void {
 		if ( $removeMarkup ) {
 			$pageTitle = $page->getTitle();
 			$content = ContentHandler::makeContent( $page->getStrippedSourcePageText(), $pageTitle );
@@ -111,11 +131,7 @@ class TranslatablePageMarker {
 				$updater->setRcPatrolStatus( RecentChange::PRC_AUTOPATROLLED );
 			}
 			$updater->saveRevision( $summary, EDIT_FORCE_BOT | EDIT_UPDATE );
-			$status = $updater->getStatus();
-
-			if ( !$status->isOK() ) {
-				throw new TranslatablePageMarkException( [ 'tpt-edit-failed', $status->getWikiText() ] );
-			}
+			$this->throwIfEditFailed( $updater, $localizer );
 		}
 
 		$this->translatablePageStore->unmark( $page->getPageIdentity() );
@@ -133,6 +149,10 @@ class TranslatablePageMarker {
 	 * @param PageRecord $page
 	 * @param ?int $revision Revision to use, or null to use the latest
 	 *  revision of the given page (i.e. not do the latest revision check)
+	 * @param ?bool $translateTitle
+	 *  - true: The user explicitly said they wanted to translate the title
+	 *  - false: The user explicitly said they didn't want to translate the title
+	 *  - null: The user didn't say anything about whether to translate the title or not
 	 * @throws TranslatablePageMarkException If the revision was provided and was
 	 *  non-latest, or if the latest revision of the page is not ready to be marked
 	 * @throws ParsingFailure If the parse fails
@@ -140,7 +160,7 @@ class TranslatablePageMarker {
 	public function getMarkOperation(
 		PageRecord $page,
 		?int $revision,
-		bool $validateUnitTitle
+		?bool $translateTitle
 	): TranslatablePageMarkOperation {
 		$latestRevID = $page->getLatest();
 		if ( $revision === null ) {
@@ -175,13 +195,33 @@ class TranslatablePageMarker {
 			] );
 		}
 
+		// Check whether page title was previously marked for translation.
+		// If the page is marked for translation the first time, default to
+		// allowing title translation, unless the page is a template. T305240
+		$isFirstMark = $translatablePage->getMarkedTag() === null;
+		if ( $translateTitle === null ) {
+			$isTemplateNamespace = $translatablePage->getTitle()->inNamespace( NS_TEMPLATE );
+			$translateTitle = ( $isFirstMark && !$isTemplateNamespace ) || $translatablePage->hasPageDisplayTitle();
+		}
+
 		$parserOutput = $this->translatablePageParser->parse( $translatablePage->getText() );
 		[ $units, $deletedUnits ] = $this->prepareTranslationUnits( $translatablePage, $parserOutput );
+
+		// Give extensions a chance to disable title translation.
+		$reason = null;
+		$defaultState = $translateTitle ?
+			TranslateTitleEnum::DEFAULT_CHECKED :
+			TranslateTitleEnum::DEFAULT_UNCHECKED;
+		$this->hookRunner->onTranslateTitlePageTranslation(
+			$defaultState,
+			$translatablePage->getPageIdentity(),
+			$reason
+		);
 
 		$unitValidationStatus = $this->validateUnitNames(
 			$translatablePage,
 			$units,
-			$validateUnitTitle
+			$defaultState !== TranslateTitleEnum::DISABLED && $translateTitle
 		);
 
 		return new TranslatablePageMarkOperation(
@@ -189,8 +229,10 @@ class TranslatablePageMarker {
 			$parserOutput,
 			$units,
 			$deletedUnits,
-			$translatablePage->getMarkedTag() === null,
-			$unitValidationStatus
+			$isFirstMark,
+			$unitValidationStatus,
+			$defaultState,
+			$reason
 		);
 	}
 
@@ -227,7 +269,7 @@ class TranslatablePageMarker {
 							'tpt-unit-title-too-long',
 							$s->id,
 							Message::numParam( strlen( $longestUnitTitle ) ),
-							$e->getErrorMessageParameters()[ 0 ],
+							$e->getErrorMessageParameters()[0],
 							$pageTitle
 						);
 					} else {
@@ -269,13 +311,17 @@ class TranslatablePageMarker {
 	 * @param TranslatablePageMarkOperation $operation
 	 * @param TranslatablePageSettings $pageSettings Contains information about priority languages, units that should
 	 * not be fuzzed, whether title should be translated and other translatable page settings
+	 * @param MessageLocalizer $localizer
 	 * @param User $user User performing the action. Checking user
 	 * permissions is the caller’s responsibility
+	 * @throws TranslatablePageMarkException If marking the page for translation failed
+	 *  (because some extension hook interfered with the process)
 	 * @return int The number of translation units actually used
 	 */
 	public function markForTranslation(
 		TranslatablePageMarkOperation $operation,
 		TranslatablePageSettings $pageSettings,
+		MessageLocalizer $localizer,
 		User $user
 	): int {
 		if ( !$operation->isValid() ) {
@@ -284,7 +330,7 @@ class TranslatablePageMarker {
 
 		$page = $operation->getPage();
 		$title = $page->getTitle();
-		$newRevisionId = $this->updateSectionMarkers( $page, $user, $operation );
+		$newRevisionId = $this->updateSectionMarkers( $page, $user, $localizer, $operation );
 		// Probably a no-change edit, so no new revision was assigned. Get the latest revision manually
 		// Could also occur on the off chance $newRevisionRecord->getId() returns null
 		$newRevisionId ??= $title->getLatestRevID();
@@ -294,7 +340,16 @@ class TranslatablePageMarker {
 		$groupId = $page->getMessageGroupId();
 		$maxId = (int)$this->messageGroupMetadata->get( $groupId, 'maxid' );
 
-		$pageId = $title->getArticleID();
+		$pageId = $title->getId();
+		if ( $pageSettings->shouldTranslateTitle() &&
+			$operation->titleTranslationState === TranslateTitleEnum::DISABLED
+		) {
+			if ( $operation->titleTranslationStateReason ) {
+				throw new TranslatablePageMarkException( new RawMessage( $operation->titleTranslationStateReason ) );
+			} else {
+				throw new TranslatablePageMarkException( 'tpt-translate-title-disabled' );
+			}
+		}
 		$sections = $pageSettings->shouldTranslateTitle()
 			? $operation->getUnits()
 			: array_filter(
@@ -322,7 +377,7 @@ class TranslatablePageMarker {
 		$dbw = $this->dbProvider->getPrimaryDatabase();
 		$dbw->newDeleteQueryBuilder()
 			->deleteFrom( 'translate_sections' )
-			->where( [ 'trs_page' => $title->getArticleID() ] )
+			->where( [ 'trs_page' => $pageId ] )
 			->caller( __METHOD__ )
 			->execute();
 
@@ -368,7 +423,7 @@ class TranslatablePageMarker {
 		// Clear more caches
 		$title->invalidateCache();
 
-		$this->sendNotifications( $sections, $group, $groupId );
+		$this->sendNotifications( $sections, $group, $groupId, $operation->isFirstMark() );
 
 		return count( $sections );
 	}
@@ -394,6 +449,19 @@ class TranslatablePageMarker {
 		);
 
 		$this->handlePriorityLanguages( $operation->getPage(), $pageSettings, $user );
+	}
+
+	public function validatePriorityLanguages( array $codes ): Status {
+		$knownCodes = array_keys( Utilities::getLanguageNames( 'en' ) );
+		$invalidCodes = array_diff( $codes, $knownCodes );
+		if ( $invalidCodes ) {
+			return Status::newFatal(
+				'tpt-priority-languages-invalid',
+				Message::numParam( count( $invalidCodes ) ),
+				Message::listParam( array_values( $invalidCodes ), ListType::AND )
+			);
+		}
+		return Status::newGood();
 	}
 
 	private function handlePriorityLanguages(
@@ -486,6 +554,8 @@ class TranslatablePageMarker {
 						$s->type = 'changed';
 						$s->oldText = $storedText;
 					}
+				} else {
+					$s->type = 'new';
 				}
 			}
 		}
@@ -502,9 +572,11 @@ class TranslatablePageMarker {
 	private function updateSectionMarkers(
 		TranslatablePage $page,
 		Authority $authority,
+		MessageLocalizer $localizer,
 		TranslatablePageMarkOperation $operation
 	): ?int {
-		$pageUpdater = $this->wikiPageFactory->newFromTitle( $page->getTitle() )->newPageUpdater( $authority );
+		$pageUpdater = $this->wikiPageFactory->newFromTitle( $page->getPageIdentity() )
+			->newPageUpdater( $authority->getUser() );
 		$content = ContentHandler::makeContent(
 			$operation->getParserOutput()->sourcePageTextForSaving(),
 			$page->getTitle()
@@ -519,26 +591,53 @@ class TranslatablePageMarker {
 		}
 		$newRevisionRecord = $pageUpdater->saveRevision( $comment, EDIT_FORCE_BOT | EDIT_UPDATE );
 
-		$status = $pageUpdater->getStatus();
-		if ( !$status->isOK() ) {
-			throw new TranslatablePageMarkException( [ 'tpt-edit-failed', $status->getMessage() ] );
-		}
+		$this->throwIfEditFailed( $pageUpdater, $localizer );
 
 		return $newRevisionRecord !== null ? $newRevisionRecord->getId() : null;
+	}
+
+	/** @throws TranslatablePageMarkException */
+	private function throwIfEditFailed( PageUpdater $pageUpdater, MessageLocalizer $messageLocalizer ): void {
+		$status = $pageUpdater->getStatus();
+		if ( !$status->isOK() ) {
+			throw new TranslatablePageMarkException(
+				[
+					'tpt-edit-failed',
+					$this->formatterFactory->getStatusFormatter( $messageLocalizer )->getMessage( $status ),
+				]
+			);
+		}
 	}
 
 	/**
 	 * @param TranslationUnit[] $sections
 	 * @param WikiPageMessageGroup $group
 	 * @param string $groupId
+	 * @param bool $isFirstMark
 	 */
-	public function sendNotifications( array $sections, WikiPageMessageGroup $group, string $groupId ): void {
+	public function sendNotifications(
+		array $sections,
+		WikiPageMessageGroup $group,
+		string $groupId,
+		bool $isFirstMark
+	): void {
 		$changedMessages = array_filter( $sections, static function ( $section ) {
 			return $section->type !== 'old';
 		} );
 
 		if ( !$changedMessages ) {
 			return;
+		}
+
+		if ( $isFirstMark ) {
+			$subscribers = $this->messageGroupSubscription->getGroupSubscribers( $groupId );
+			if ( $subscribers instanceof EmptyIterator ) {
+				// A non-translatable page may have subscribers if it was marked for translation before, or
+				// if it was subscribed to from Special:ManageMessageGroupSubscriptions/raw.
+				// This page is being marked for the first time, and has no subscribers, so no need to
+				// send notifications
+				return;
+			}
 		}
 
 		$code = $group->getSourceLanguage();
@@ -551,7 +650,7 @@ class TranslatablePageMarker {
 				$message->type === 'new'
 				 ? MessageGroupSubscription::STATE_ADDED
 				 : MessageGroupSubscription::STATE_UPDATED,
-				[ $groupId ],
+				$groupId
 			);
 		}
 		$this->messageGroupSubscription->queueNotificationJob();

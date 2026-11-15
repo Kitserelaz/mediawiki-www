@@ -3,8 +3,6 @@
 namespace CirrusSearch;
 
 use CirrusSearch\Search\FancyTitleResultsType;
-use HtmlArmor;
-use ISearchResultSet;
 use MediaWiki\Actions\ActionEntryPoint;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
@@ -16,42 +14,32 @@ use MediaWiki\Config\ConfigFactory;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Hook\ApiBeforeMainHook;
 use MediaWiki\Hook\BeforeInitializeHook;
-use MediaWiki\Hook\SoftwareInfoHook;
-use MediaWiki\Hook\SpecialSearchResultsAppendHook;
-use MediaWiki\Hook\SpecialSearchResultsHook;
-use MediaWiki\Hook\SpecialStatsAddExtraHook;
 use MediaWiki\Html\Html;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\ResourceLoader\Hook\ResourceLoaderGetConfigVarsHook;
-use MediaWiki\Search\Hook\PrefixSearchExtractNamespaceHook;
 use MediaWiki\Search\Hook\SearchGetNearMatchHook;
 use MediaWiki\Search\Hook\ShowSearchHitTitleHook;
+use MediaWiki\Search\ISearchResultSet;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchResult;
+use MediaWiki\Specials\Hook\SoftwareInfoHook;
+use MediaWiki\Specials\Hook\SpecialSearchResultsAppendHook;
+use MediaWiki\Specials\Hook\SpecialSearchResultsHook;
+use MediaWiki\Specials\Hook\SpecialStatsAddExtraHook;
 use MediaWiki\Specials\SpecialSearch;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Hook\UserGetDefaultOptionsHook;
 use MediaWiki\User\User;
-use SearchResult;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * All CirrusSearch's external hooks.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class Hooks implements
 	UserGetDefaultOptionsHook,
@@ -60,7 +48,6 @@ class Hooks implements
 	ApiBeforeMainHook,
 	APIQuerySiteInfoStatisticsInfoHook,
 	BeforeInitializeHook,
-	PrefixSearchExtractNamespaceHook,
 	ResourceLoaderGetConfigVarsHook,
 	SearchGetNearMatchHook,
 	ShowSearchHitTitleHook,
@@ -72,11 +59,24 @@ class Hooks implements
 	/** @var ConfigFactory */
 	private $configFactory;
 
-	/**
-	 * @param ConfigFactory $configFactory
-	 */
 	public function __construct( ConfigFactory $configFactory ) {
 		$this->configFactory = $configFactory;
+	}
+
+	/**
+	 * Extension registration callback (https://www.mediawiki.org/wiki/Manual:Extension.json/Schema#callback), called
+	 * early on in the MW setup.
+	 */
+	public static function onRegistration(): void {
+		global $wgCirrusSearchClusters, $wgCirrusSearchWriteClusters;
+		if ( defined( 'MW_QUIBBLE_CI' ) && getenv( 'QUIBBLE_OPENSEARCH' ) !== 'true' ) {
+			// If running in quibble, disable writes unless OpenSearch is enabled.
+			// They will fail otherwise and potentially lead to timeouts (T389895).
+			$wgCirrusSearchClusters = [
+				'default' => [ 'localhost' ],
+			];
+			$wgCirrusSearchWriteClusters = [];
+		}
 	}
 
 	/**
@@ -103,8 +103,6 @@ class Hooks implements
 
 	/**
 	 * Initializes the portions of Cirrus that require the $request to be fully initialized
-	 *
-	 * @param WebRequest $request
 	 */
 	public static function initializeForRequest( WebRequest $request ) {
 		global $wgCirrusSearchPhraseRescoreWindowSize,
@@ -115,8 +113,13 @@ class Hooks implements
 			$wgCirrusSearchLogElasticRequests,
 			$wgCirrusSearchLogElasticRequestsSecret,
 			$wgCirrusSearchEnableAltLanguage,
-			$wgCirrusSearchUseCompletionSuggester;
+			$wgCirrusSearchUseCompletionSuggester,
+			$wgCirrusSearchCompletionSuggesterUseAltIndexId,
+			$wgCirrusSearchMustTrackTotalHits;
 
+		if ( $request->getCheck( 'cirrusApproxTotalHits' ) ) {
+			$wgCirrusSearchMustTrackTotalHits = [ 'default' => false ];
+		}
 		self::overrideMoreLikeThisOptionsFromMessage();
 
 		self::overrideNumeric( $wgCirrusSearchPhraseRescoreWindowSize,
@@ -135,6 +138,8 @@ class Hooks implements
 			self::overrideYesNo( $wgCirrusSearchUseCompletionSuggester,
 				$request, 'cirrusUseCompletionSuggester' );
 		}
+		self::overrideNumeric( $wgCirrusSearchCompletionSuggesterUseAltIndexId,
+			$request, 'cirrusCompletionAltIndexId' );
 		self::overrideMoreLikeThisOptions( $request );
 		self::overrideSecret( $wgCirrusSearchLogElasticRequests,
 			$wgCirrusSearchLogElasticRequestsSecret, $request, 'cirrusLogElasticRequests', false );
@@ -262,7 +267,6 @@ class Hooks implements
 						$wgCirrusSearchMoreLikeThisAllowedFields );
 					break;
 			}
-			// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset
 			if ( $wgCirrusSearchMoreLikeThisConfig['max_query_terms'] > $wgCirrusSearchMoreLikeThisMaxQueryTermsLimit ) {
 				$wgCirrusSearchMoreLikeThisConfig['max_query_terms'] = $wgCirrusSearchMoreLikeThisMaxQueryTermsLimit;
 			}
@@ -292,8 +296,6 @@ class Hooks implements
 
 	/**
 	 * Override more like this settings from request URI parameters
-	 *
-	 * @param WebRequest $request
 	 */
 	private static function overrideMoreLikeThisOptions( WebRequest $request ) {
 		global $wgCirrusSearchMoreLikeThisConfig,
@@ -305,7 +307,6 @@ class Hooks implements
 			$request, 'cirrusMltMinDocFreq' );
 		self::overrideNumeric( $wgCirrusSearchMoreLikeThisConfig['max_doc_freq'],
 			$request, 'cirrusMltMaxDocFreq' );
-		// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset
 		self::overrideNumeric( $wgCirrusSearchMoreLikeThisConfig['max_query_terms'],
 			$request, 'cirrusMltMaxQueryTerms', $wgCirrusSearchMoreLikeThisMaxQueryTermsLimit );
 		self::overrideNumeric( $wgCirrusSearchMoreLikeThisConfig['min_term_freq'],
@@ -317,7 +318,7 @@ class Hooks implements
 		self::overrideNumeric( $wgCirrusSearchMoreLikeThisConfig['max_word_length'],
 			$request, 'cirrusMltMaxWordLength' );
 		$fields = $request->getVal( 'cirrusMltFields' );
-		if ( isset( $fields ) ) {
+		if ( $fields !== null ) {
 			$wgCirrusSearchMoreLikeThisFields = array_intersect(
 				array_map( 'trim', explode( ',', $fields ) ),
 				$wgCirrusSearchMoreLikeThisAllowedFields );
@@ -331,9 +332,22 @@ class Hooks implements
 	public function onSoftwareInfo( &$software ) {
 		$version = new Version( self::getConnection() );
 		$status = $version->get();
+		// We've already logged if this isn't ok and there is no need to warn the user on this page.
 		if ( $status->isOK() ) {
-			// We've already logged if this isn't ok and there is no need to warn the user on this page.
-			$software[ '[https://www.elastic.co/elasticsearch Elasticsearch]' ] = $status->getValue();
+			$distributions = [
+				'elasticsearch' => '[https://www.elastic.co/elasticsearch Elasticsearch]',
+				'opensearch' => '[https://opensearch.org OpenSearch]',
+			];
+			$value = $status->getValue();
+			$desc = $distributions[$value['distribution']] ?? null;
+			if ( $desc === null ) {
+				LoggerFactory::getInstance( 'CirrusSearch' )->warning(
+					'Unexpected software distribution [{name}] returned by Version check',
+					[ 'name' => $value['distribution'] ]
+				);
+			} else {
+				$software[$desc] = $value['version'];
+			}
 		}
 	}
 
@@ -371,53 +385,7 @@ class Hooks implements
 		$out->addHTML( $block );
 	}
 
-	/**
-	 * Extract namespaces from query string.
-	 * @param array &$namespaces
-	 * @param string &$search
-	 * @return bool
-	 */
-	public function onPrefixSearchExtractNamespace( &$namespaces, &$search ) {
-		global $wgSearchType;
-		if ( $wgSearchType !== 'CirrusSearch' ) {
-			return true;
-		}
-		return self::prefixSearchExtractNamespaceWithConnection( self::getConnection(), $namespaces, $search );
-	}
-
-	/**
-	 * @param Connection $connection
-	 * @param array &$namespaces
-	 * @param string &$search
-	 * @return false
-	 */
-	public static function prefixSearchExtractNamespaceWithConnection(
-		Connection $connection,
-		&$namespaces,
-		&$search
-	) {
-		$method = $connection->getConfig()->get( 'CirrusSearchNamespaceResolutionMethod' );
-		if ( $method === 'elastic' ) {
-			$searcher =
-				new Searcher( $connection, 0, 1, $connection->getConfig(), $namespaces );
-			$searcher->updateNamespacesFromQuery( $search );
-			$namespaces = $searcher->getSearchContext()->getNamespaces();
-		} else {
-			$colon = strpos( $search, ':' );
-			if ( $colon === false ) {
-				return false;
-			}
-			$namespaceName = substr( $search, 0, $colon );
-			$ns = Util::identifyNamespace( $namespaceName, $method );
-			if ( $ns !== false ) {
-				$namespaces = [ $ns ];
-				$search = substr( $search, $colon + 1 );
-			}
-		}
-
-		return false;
-	}
-
+	/** @inheritDoc */
 	public function onSearchGetNearMatch( $term, &$titleResult ) {
 		return self::handleSearchGetNearMatch( $term, $titleResult );
 	}
@@ -571,10 +539,6 @@ class Hooks implements
 		] );
 	}
 
-	/**
-	 * @param array &$extraStats
-	 * @return void
-	 */
 	private static function addWordCount( array &$extraStats ): void {
 		$search = new CirrusSearch();
 
@@ -591,7 +555,7 @@ class Hooks implements
 	/** @inheritDoc */
 	public function onGetPreferences( $user, &$prefs ) {
 		$search = new CirrusSearch();
-		$profiles = $search->getProfiles( \SearchEngine::COMPLETION_PROFILE_TYPE, $user );
+		$profiles = $search->getProfiles( SearchEngine::COMPLETION_PROFILE_TYPE, $user );
 		if ( !$profiles ) {
 			return;
 		}
@@ -643,10 +607,12 @@ class Hooks implements
 			$this->configFactory->makeConfig( 'CirrusSearch' )->get( 'CirrusSearchCompletionSettings' );
 	}
 
+	/** @inheritDoc */
 	public function onSpecialStatsAddExtra( &$extraStats, $context ) {
 		self::addWordCount( $extraStats );
 	}
 
+	/** @inheritDoc */
 	public function onAPIQuerySiteInfoStatisticsInfo( &$extraStats ) {
 		self::addWordCount( $extraStats );
 	}

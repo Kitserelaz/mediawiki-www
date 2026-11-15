@@ -9,26 +9,16 @@ use Elastica\Query\MatchPhrase;
 use Elastica\Query\MatchQuery;
 
 class PhraseQueryNodeHandler implements ParsedNodeHandlerInterface {
-	/** @var PhraseQueryNode */
-	private $node;
-
-	/** @var WikibaseEntitiesHandler */
-	private $entitiesHandler;
-
-	/** @var FieldIterator */
-	private $termScoringFieldIterator;
+	private readonly FieldIterator $termScoringFieldIterator;
 
 	public function __construct(
-		PhraseQueryNode $node,
-		WikibaseEntitiesHandler $entitiesHandler,
+		private readonly PhraseQueryNode $node,
+		private readonly WikibaseEntitiesHandler $entitiesHandler,
 		array $languages,
 		array $stemmingSettings,
 		array $boosts,
 		array $decays
 	) {
-		$this->node = $node;
-		$this->entitiesHandler = $entitiesHandler;
-
 		$fields = array_keys( $boosts );
 		$fields = $node->isStem() ?
 			array_intersect( $fields, FieldIterator::STEMMED_FIELDS ) :
@@ -87,11 +77,16 @@ class PhraseQueryNodeHandler implements ParsedNodeHandlerInterface {
 			/** @var int */
 			private $slop;
 
+			/**
+			 * @param string $phrase
+			 * @param int $slop
+			 */
 			public function __construct( $phrase, $slop ) {
 				$this->phrase = $phrase;
 				$this->slop = $slop;
 			}
 
+			/** @inheritDoc */
 			public function getQuery( $field, $boost ): AbstractQuery {
 				return ( new MatchQuery() )
 					->setFieldQuery( $field, $this->phrase )

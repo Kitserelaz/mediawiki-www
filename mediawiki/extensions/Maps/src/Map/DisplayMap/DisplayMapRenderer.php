@@ -12,9 +12,8 @@ use Maps\Map\MapOutput;
 use Maps\Map\MapOutputBuilder;
 use Maps\MappingService;
 use Maps\Presentation\ElementJsonSerializer;
-use Maps\Presentation\WikitextParser;
 use Maps\WikitextParsers\LocationParser;
-use Parser;
+use MediaWiki\Parser\Parser;
 
 /**
  * Class handling the #display_map rendering.
@@ -28,10 +27,9 @@ class DisplayMapRenderer {
 	public ?MappingService $service;
 	private LocationParser $locationParser;
 	private FileUrlFinder $fileUrlFinder;
-	private WikitextParser $wikitextParser;
 	private ElementJsonSerializer $elementSerializer;
 
-	public function __construct( MappingService $service = null ) {
+	public function __construct( ?MappingService $service = null ) {
 		$this->service = $service;
 	}
 
@@ -50,8 +48,7 @@ class DisplayMapRenderer {
 		$this->locationParser = $factory->newLocationParser();
 		$this->fileUrlFinder = $factory->getFileUrlFinder();
 
-		$this->wikitextParser = new WikitextParser( clone $parser );
-		$this->elementSerializer = new ElementJsonSerializer( $this->wikitextParser );
+		$this->elementSerializer = new ElementJsonSerializer( $factory->newWikitextParser( $parser ) );
 
 		$mapData->setParameters( $this->handleMarkerData( $mapData->getParameters() ) );
 
@@ -129,13 +126,7 @@ class DisplayMapRenderer {
 		$jsonObj = $location->getJSONObject( $params['title'], $params['label'], $iconUrl, '', '', $visitedIconUrl );
 
 		$this->elementSerializer->titleAndText( $jsonObj );
-
-		if ( isset( $jsonObj['inlineLabel'] ) ) {
-			$jsonObj['inlineLabel'] = strip_tags(
-				$this->wikitextParser->wikitextToHtml( $jsonObj['inlineLabel'] ),
-				'<a><img>'
-			);
-		}
+		$this->elementSerializer->inlineLabel( $jsonObj );
 
 		return $jsonObj;
 	}

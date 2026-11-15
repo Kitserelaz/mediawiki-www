@@ -4,6 +4,9 @@ namespace MediaWiki\Extension\EventBus\Adapters\Monolog;
 
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Extension\EventBus\EventBus;
+use MediaWiki\Extension\EventBus\EventBusFactory;
+use MediaWiki\Extension\EventBus\EventBusSendUpdate;
+use MediaWiki\MediaWikiServices;
 use Monolog\Handler\AbstractProcessingHandler;
 use Psr\Log\LogLevel;
 
@@ -11,18 +14,19 @@ use Psr\Log\LogLevel;
  * Log handler that supports sending messages to Kafka over
  * EventBus and EventGate service.
  *
- * @file
  * @since 1.33
  * @copyright © 2019 Wikimedia Foundation and contributors
  * @author Petr Pchelko <ppchelko@wikimedia.org>
  */
 class EventBusMonologHandler extends AbstractProcessingHandler {
 
+	private EventBusFactory $eventBusFactory;
+
 	/**
-	 * The instance of EventBus to use for logging
-	 * @var EventBus
+	 * The name of the event service to use.
+	 * @var string
 	 */
-	private $eventBus;
+	private string $eventServiceName;
 
 	/**
 	 * EventBusHandler constructor.
@@ -34,7 +38,9 @@ class EventBusMonologHandler extends AbstractProcessingHandler {
 	public function __construct( $eventServiceName, $level = LogLevel::DEBUG, $bubble = true ) {
 		parent::__construct( $level, $bubble );
 
-		$this->eventBus = EventBus::getInstance( $eventServiceName );
+		$this->eventBusFactory = MediaWikiServices::getInstance()
+			->get( 'EventBus.EventBusFactory' );
+		$this->eventServiceName = $eventServiceName;
 	}
 
 	/**
@@ -54,14 +60,16 @@ class EventBusMonologHandler extends AbstractProcessingHandler {
 		// it would do is exactly this.
 		unset( $event['private'] );
 
-		DeferredUpdates::addCallableUpdate(
-			function () use ( $event ) {
-				// Events via Monolog might have binary strings in them.
-				// We need to be sure that any binary data is first encoded.
-				//
-				EventBus::replaceBinaryValuesRecursive( $event );
-				$this->eventBus->send( [ $event ] );
-			}
+		// Events via Monolog might have binary strings in them.
+		// We need to be sure that any binary data is first encoded.
+		EventBus::replaceBinaryValuesRecursive( $event );
+
+		DeferredUpdates::addUpdate(
+			new EventBusSendUpdate(
+				$this->eventBusFactory,
+				$this->eventServiceName,
+				[ $event ]
+			)
 		);
 	}
 }

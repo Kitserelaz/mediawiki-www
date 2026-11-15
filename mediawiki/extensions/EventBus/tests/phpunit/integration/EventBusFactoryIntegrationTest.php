@@ -5,7 +5,6 @@ use MediaWiki\Debug\MWDebug;
 use MediaWiki\Extension\EventBus\EventBusFactory;
 use MediaWiki\Extension\EventBus\EventFactory;
 use MediaWiki\Extension\EventStreamConfig\StreamConfigs;
-use MediaWiki\Registration\ExtensionRegistry;
 use Psr\Log\NullLogger;
 use Wikimedia\Http\MultiHttpClient;
 use Wikimedia\TestingAccessWrapper;
@@ -160,11 +159,8 @@ class EventBusFactoryIntegrationTest extends MediaWikiIntegrationTestCase {
 		?string $expectedUrl,
 		?bool $forwardXClientIP
 	) {
-		if (
-			$useStreamConfigs &&
-			!ExtensionRegistry::getInstance()->isLoaded( 'EventStreamConfig' )
-		) {
-			$this->markTestSkipped( 'EventStreamConfig is not loaded.' );
+		if ( $useStreamConfigs ) {
+			$this->markTestSkippedIfExtensionNotLoaded( 'EventStreamConfig' );
 		}
 
 		if ( !$expectedUrl ) {
@@ -207,5 +203,44 @@ class EventBusFactoryIntegrationTest extends MediaWikiIntegrationTestCase {
 			$this->createNoOpMock( MultiHttpClient::class ),
 			$logger
 		);
+	}
+
+	/**
+	 * @covers \MediaWiki\Extension\EventBus\EventBusFactory
+	 * @dataProvider provideGetEventServiceNameData
+	 */
+	public function testGetEventServiceName( string $stream, string $expected ): void {
+		$this->markTestSkippedIfExtensionNotLoaded( 'EventStreamConfig' );
+
+		$factory = new EventBusFactory(
+			new ServiceOptions(
+				EventBusFactory::CONSTRUCTOR_OPTIONS,
+				self::MW_CONFIG
+			),
+			new StreamConfigs(
+				self::MW_CONFIG['EventStreams'],
+				self::MW_CONFIG['EventStreamsDefaultSettings'],
+				new NullLogger()
+			),
+			$this->createNoOpMock( EventFactory::class ),
+			$this->createNoOpMock( MultiHttpClient::class ),
+			new NullLogger()
+		);
+
+		$this->assertSame( $expected, $factory->getEventServiceNameForStream( $stream ) );
+	}
+
+	public static function provideGetEventServiceNameData(): iterable {
+		yield 'disabled service' => [ 'disabled_stream', EventBusFactory::EVENT_SERVICE_DISABLED_NAME ];
+		yield 'stream without destination event service' => [
+			'stream_without_destination_event_service',
+			'intake-main'
+		];
+		yield 'stream with explicit event service' => [ 'other_stream', 'intake-other' ];
+
+		yield 'stream with T321557 BC setting' => [
+			'stream_with_destination_event_service_backwards_compatible_setting',
+			'intake-main'
+		];
 	}
 }

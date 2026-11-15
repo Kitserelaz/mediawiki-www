@@ -3,22 +3,21 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate;
 
-use ChangesListStringOptionsFilterGroup;
-use ChangeTags;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
-use MediaWiki\Hook\SpecialRecentChangesPanelHook;
 use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\RecentChanges\ChangesListStringOptionsFilterGroup;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\SpecialPage\Hook\ChangesListSpecialPageQueryHook;
 use MediaWiki\SpecialPage\Hook\ChangesListSpecialPageStructuredFiltersHook;
+use MediaWiki\Specials\Hook\SpecialRecentChangesPanelHook;
 use MediaWiki\Specials\SpecialRecentChanges;
 use MediaWiki\Storage\NameTableAccessException;
-use RecentChange;
-use Wikimedia\Rdbms\ILoadBalancer;
+use MediaWiki\Xml\XmlSelect;
+use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IReadableDatabase;
-use XmlSelect;
 
 /**
  * Class to add a new filter to Special:RecentChanges which makes it possible to filter
@@ -33,14 +32,14 @@ class RecentChangesTranslationFilterHookHandler implements
 	ChangesListSpecialPageStructuredFiltersHook,
 	ChangesListSpecialPageQueryHook
 {
-	private ILoadBalancer $loadBalancer;
-	private Config $config;
 
-	public function __construct( ILoadBalancer $loadBalancer, Config $config ) {
-		$this->loadBalancer = $loadBalancer;
-		$this->config = $config;
+	public function __construct(
+		private readonly IConnectionProvider $dbProvider,
+		private readonly Config $config,
+	) {
 	}
 
+	/** @inheritDoc */
 	public function onChangesListSpecialPageQuery(
 		$pageName,
 		&$tables,
@@ -61,7 +60,7 @@ class RecentChangesTranslationFilterHookHandler implements
 		$opts->add( 'translations', $translateRcFilterDefault );
 		$opts->setValue( 'translations', $translations );
 
-		$dbr = $this->loadBalancer->getConnection( DB_REPLICA );
+		$dbr = $this->dbProvider->getReplicaDatabase();
 
 		$namespaces = $this->getTranslateNamespaces();
 
@@ -156,7 +155,7 @@ class RecentChangesTranslationFilterHookHandler implements
 							$namespaces = $this->getTranslateNamespaces();
 
 							return in_array( $rc->getAttribute( 'rc_namespace' ), $namespaces ) &&
-								!str_contains( $rc->getAttribute( 'rc_title' ), '/' );
+								str_contains( $rc->getAttribute( 'rc_title' ), '/' );
 						}
 					],
 					[
@@ -216,15 +215,14 @@ class RecentChangesTranslationFilterHookHandler implements
 						$changeTagDefStore = MediaWikiServices::getInstance()->getChangeTagDefStore();
 						try {
 							$renderedPage = $changeTagDefStore->getId( 'translate-translation-pages' );
-							// The recommended replacement is for this deprecared method is `ChangeTags::CHANGE_TAG`.
-							// However, ChangeTags::CHANGE_TAG is a private const.
-							$tables['translatetags'] = ChangeTags::getDisplayTableName();
+							// Hard-coded string, as ChangeTags::CHANGE_TAG is a private const.
+							$tables['translatetags'] = 'change_tag';
 							$join_conds['translatetags'] = [
 								'LEFT JOIN',
 								[ 'translatetags.ct_rc_id=rc_id', 'translatetags.ct_tag_id' => $renderedPage ]
 							];
 							$conds['translatetags.ct_tag_id'] = null;
-						} catch ( NameTableAccessException $exception ) {
+						} catch ( NameTableAccessException ) {
 							// Tag name does not yet exist in DB.
 						}
 					}

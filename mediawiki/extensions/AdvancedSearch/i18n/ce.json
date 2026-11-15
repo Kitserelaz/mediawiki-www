@@ -1,11 +1,10 @@
 {
 	"@metadata": {
 		"authors": [
-			"Amire80",
 			"Умар"
 		]
 	},
-	"advancedsearch-desc": "[[Special:Search]] тӀехь шуьйрачу лахаран атта тӀекхачар.",
+	"advancedsearch-desc": "[[{{#Special:Search}}]] тӀехь шуьйрачу лахаран атта тӀекхачар.",
 	"advancedsearch-options-pane-head": "Шуьйра лахар:",
 	"advancedsearch-options-pane-preview-list": "ХӀинца йолу ханна лелош йолу лахаран терминаш",
 	"advancedsearch-optgroup-text": "АгӀонан текстан йукъехь лаха",
@@ -18,6 +17,7 @@
 	"advancedsearch-field-not": "ХӀара дешнаш дац",
 	"advancedsearch-field-subpageof": "ХӀокху агӀонан бухара агӀонаш",
 	"advancedsearch-field-intitle": "АгӀонан кортан чулацам",
+	"advancedsearch-field-incategory": "ХӀокху категореш чуьра агӀонаш",
 	"advancedsearch-field-deepcategory": "ХӀокху категореш чуьра агӀонаш",
 	"advancedsearch-field-hastemplate": "ХӀокху кепашца агӀонаш",
 	"advancedsearch-field-inlanguage": "ХӀокху маттахь агӀонаш",
@@ -27,8 +27,8 @@
 	"advancedsearch-field-sort": "Къепе листар",
 	"advancedsearch-field-preview-sort": "Къастадан $1",
 	"advancedsearch-help-general-instruction": "Ма-йарра инструкцеш $1",
-	"advancedsearch-help-plain": ";Хаам\n:Лоьху хӀара дешнаш коьртехь йа йозанехь.\n:Тидаме эца рогӀераниг\n:* Кхузахь мега масийтта дош йаздан.\n:* Сацаран хьаьркаш а, кхидолу аьлпаш-терахьаш доцу хьаьркаш (ши тӀадам а, цӀоьмалг а йукъахь боцуш) тергал дира дац.\n:* Хила мега цхьаа йа масайтта лахаран биллам боцуш.\n:* Лелош ду дешнийн цхьаьнакхетар. Масала: «автомобиль» йаздинехь, лахаро схьагойтура ду «автомобилаш». Матте хьажжина.\n;ГӀоьнан агӀо\n:[https://www.mediawiki.org/wiki/Special:MyLanguage/Help:CirrusSearch#Full_text_search Полнотекстан лахар]\n;Синтаксин эквивалент лахаран чохь\n:<code>кунжутан ураман автомобиль</code>",
-	"advancedsearch-help-phrase": ";Хаам\n:Лоьху билгала цхьаьнадогӀу хьаьркаш. Сацаран хьаьркаш тергал ца до.\n;Тидаме эца рогӀераниг\n:(болх бо къовларш лелича, масала лахь ду)\n:* Лоьхуш долу фразаш декъа цӀоьмалгашца йа йукъаца, масала <code>\"Ӏуьйре дика хуьлда\"</code>, <code>\"маршалла, доттагӀ!\"</code>.\n:* Сацаран хьаьркаш а, кхидолу аьлпаш-терахьаш доцу хьаьркаш (ши тӀадам а, цӀоьмалг а йукъахь боцуш) тергал дира дац.\n:* Лахар регистрна хаалуш дац.\n:* Дешнийн цхьаьнакхетар кхузахь болх беш дац.\n;ГӀоьнан агӀо\n: [https://www.mediawiki.org/wiki/Special:MyLanguage/Help:CirrusSearch#Words.2C_phrases.2C_and_modifiers Дешнаш, фразаш, модификаторш]\n;Синтаксин эквивалент лахаран чохь\n: Шалха къовларш йукъахь дош, масала <code>\"Доладе йухьегера\"</code>.",
+	"advancedsearch-help-plain": ";Хаам\n:Лоьху хӀара дешнаш коьртехь йа йозанехь.\n:Тидаме эца рогӀераниг\n:* Кхузахь мега масийтта дош йаздан.\n:* Сацаран символаш а, кхидолу аьлпаш-терахьаш доцу символаш (ши тӀадам а, цӀоьмалг а йукъахь боцуш) тергал дира дац.\n:* Хила мега цхьаа йа масайтта лахаран биллам боцуш.\n:* Лелош ду дешнийн цхьаьнакхетар. Масала: «автомобиль» йаздинехь, лахаро схьагойтура ду «автомобилаш». Матте хьажжина.\n;ГӀоьнан агӀо\n:[https://www.mediawiki.org/wiki/Special:MyLanguage/Help:CirrusSearch#Full_text_search Полнотекстан лахар]\n;Синтаксин эквивалент лахаран чохь\n:<code>кунжутан ураман автомобиль</code>",
+	"advancedsearch-help-phrase": ";Хаам\n:Лоьху билгала цхьаьнадогӀу символаш. Сацаран символаш тергал ца до.\n;Тидаме эца рогӀераниг\n:(болх бо къовларш лелича, масала лахь ду)\n:* Лоьхуш долу фразаш декъа цӀоьмалгашца йа йукъаца, масала <code>\"Ӏуьйре дика хуьлда\"</code>, <code>\"маршалла, доттагӀ!\"</code>.\n:* Сацаран символаш а, кхидолу аьлпаш-терахьаш доцу символаш (ши тӀадам а, цӀоьмалг а йукъахь боцуш) тергал дира дац.\n:* Лахар регистрна хаалуш дац.\n:* Дешнийн цхьаьнакхетар кхузахь болх беш дац.\n;ГӀоьнан агӀо\n: [https://www.mediawiki.org/wiki/Special:MyLanguage/Help:CirrusSearch#Words.2C_phrases.2C_and_modifiers Дешнаш, фразаш, модификаторш]\n;Синтаксин эквивалент лахаран чохь\n: Шалха къовларш йукъахь дош, масала <code>\"Доладе йухьегера\"</code>.",
 	"advancedsearch-help-or": ";Хаам\n:Лахаран цхаъ биллам мукъа агӀонгахь хила беза.\n;ГӀоьнан агӀо\n:[https://www.mediawiki.org/wiki/Special:MyLanguage/Help:CirrusSearch#Words.2C_phrases.2C_and_modifiers Дешнаш, фразаш, модификаторш]\n;Синтаксин эквивалент лахаран чохь\n:<code>OR</code> йукъахь долу дешнаш, масала <code>Laptop OR Notebook</code>.",
 	"advancedsearch-help-not": ";Хаам\n:ХӀара дешнаш чохь долу агӀонаш лахаран йукъара дӀайаха.\n;Тидаме эца рогӀераниг \n:* Лелош ду дешнийн цхьаьнакхетар. Масала: «автомобиль» йаздинехь, лахаро схьагойтура ду «автомобилаш». Матте хьажжина.\n;ГӀоьнан агӀо\n:[https://www.mediawiki.org/wiki/Special:MyLanguage/Help:CirrusSearch#Words.2C_phrases.2C_and_modifiers Дешнаш, фразаш, модификаторш]\n;Синтаксин эквивалент лахаран чохь:\n:<code>-</code> йукъахь долу дешнаш хьалхахь, масала <code>-пил</code>.",
 	"advancedsearch-help-intitle": ";Хаам\n:Лоху кортош болу агӀонаш, чохь хӀара дош а долуш\n;Тидаме эца рогӀераниг:\n:* Лахаран йукъахь йу дӀасахьажорг\n:* Лелош йу дешнийн стемминг. Масала: «автомобиль» йаздинехь, лахаро схьагойтура ду «автомобилаш». Дешнийн стемминг матте хьаьжна.\n;ГӀоьнан агӀо\n:[https://www.mediawiki.org/wiki/Special:MyLanguage/Help:CirrusSearch#Intitle_and_incategory \"intitle\" а, \"incategory\" а лелор]\n;Синтаксин эквивалент лахаран чохь\n:<code>intitle:</code> префикс йолу дешнаш, масала, <code>intitle:queen</code>.",
@@ -41,11 +41,11 @@
 	"advancedsearch-help-fileh": ";Хаам\n:ХӀокху меттигаш аьтту бо файлан локхалла билгалйан.\n;Тидаме эца рогӀераниг\n:* ХӀара шоралла а, дохалла долу файлийн тайпанашна бен лелош йац, масала видео а, суьрташ а.\n;ГӀоьнан агӀо\n:[https://www.mediawiki.org/wiki/Special:MyLanguage/Help:CirrusSearch#File_measures Filemeasures]\n;Синтаксин эквивалент лахаран чохь\n:<code>fileh</code> терахь царна хьалхахь, масала, <code>fileh:>600</code>.",
 	"advancedsearch-help-sort": "Хаам\n:Карийнарш дӀанисйар хийцар. ЙогӀуш йолу агӀонаш Ӏад йитаран кепаца гойту лакхахь.\n;ГӀо\n:[https://www.mediawiki.org/wiki/Special:MyLanguage/Help:CirrusSearch#Explicit_sort_orders Билгала къастина дӀанисйар]\n;Синтаксин эквивалент лахаран чохь\n:ХӀокху функцин коьрта дош дац, ахьа лахаран меттиге йаздан мегар долу, хӀунда аьлча иза билгалдо URL-адресан параметрехула.",
 	"advancedsearch-placeholder-exact-text": "\"цициган йеза газа\"",
-	"advancedsearch-inlanguage-default": "Харжа мотт",
+	"advancedsearch-inlanguage-default": "Мотт харжа",
 	"advancedsearch-filetype-section-types": "Файлийн йукъара тайпанаш",
 	"advancedsearch-filetype-section-image": "Суьртийн форматаш",
-	"advancedsearch-filetype-section-video": "Видеофайлийн форматаш",
 	"advancedsearch-filetype-section-audio": "Аудиофайлийн форматаш",
+	"advancedsearch-filetype-section-video": "Видеофайлийн форматаш",
 	"advancedsearch-filetype-section-document": "Документийн форматаш",
 	"advancedsearch-filetype-section-other": "Кхин форматаш",
 	"advancedsearch-filetype-default": "Харжа файлан тайпа",
@@ -76,6 +76,6 @@
 	"advancedsearch-namespaces-preset-discussion": "Дийцарш",
 	"advancedsearch-namespaces-placeholder": "ТӀетоха цӀерийн меттиг...",
 	"prefs-advancedsearch": "Шуьйра лахар",
-	"advancedsearch-preference-help": "Шуьйрачу лахаро Белхан:лахар агӀонан тӀетуху кхин сов меттигаш йолуш форма. Оцо йиш хуьлуьйту леррина лаха, хьуна лахаран синтаксис хууш йацахь а. Цул совнах оцу хуьлуьйту меттигийн цӀерш харжаран кеп.",
-	"advancedsearch-preference-disable": "Шуьйра лахаран интерфейс ма гайта Special:Search лелош йелахь"
+	"advancedsearch-preference-help": "Кхиаме лехамо {{#Special:Search}} агӀонна тӀетоьхна кеп кхин а меттигаш йолуш. Цо аьтто бо леррина лехамаш бан, лехаман синтаксис ца хаахь а. Иштта хийцало цӀерийн меттигаш хаьржина кеп.",
+	"advancedsearch-preference-disable": "{{#Special:Search}} лелош хилча кхиаме лехаман интерфейс ма гайта"
 }

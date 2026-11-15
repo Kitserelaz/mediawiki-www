@@ -5,38 +5,14 @@ namespace Wikibase\MediaInfo\Search;
 use Wikimedia\ObjectCache\WANObjectCache;
 
 class MediaSearchCachingEntitiesFetcher extends MediaSearchEntitiesFetcher {
-	/** @var MediaSearchEntitiesFetcher */
-	protected $fetcher;
-
-	/** @var WANObjectCache */
-	protected $objectCache;
-
-	/** @var string */
-	protected $inputLanguage;
-
-	/** @var string */
-	protected $outputLanguage;
-
-	/** @var string */
-	protected $queryKeyspace;
-
-	/** @var int */
-	protected $ttl;
-
 	public function __construct(
-		MediaSearchEntitiesFetcher $fetcher,
-		WANObjectCache $objectCache,
-		string $inputLanguage,
-		string $outputLanguage,
-		string $queryKeyspace = '*',
-		int $ttl = WANObjectCache::TTL_DAY
+		protected readonly MediaSearchEntitiesFetcher $fetcher,
+		protected readonly WANObjectCache $objectCache,
+		protected readonly string $inputLanguage,
+		protected readonly string $outputLanguage,
+		protected readonly string $queryKeyspace = '*',
+		protected readonly int $ttl = WANObjectCache::TTL_DAY,
 	) {
-		$this->fetcher = $fetcher;
-		$this->objectCache = $objectCache;
-		$this->inputLanguage = $inputLanguage;
-		$this->outputLanguage = $outputLanguage;
-		$this->queryKeyspace = $queryKeyspace;
-		$this->ttl = $ttl;
 	}
 
 	/**
@@ -59,7 +35,7 @@ class MediaSearchCachingEntitiesFetcher extends MediaSearchEntitiesFetcher {
 				return $this->objectCache->makeKey(
 					'wbmi-mediasearch-entities',
 					$this->queryKeyspace,
-					$this->objectCache->hash256( $query ),
+					$query,
 					$this->inputLanguage,
 					$this->outputLanguage
 				);

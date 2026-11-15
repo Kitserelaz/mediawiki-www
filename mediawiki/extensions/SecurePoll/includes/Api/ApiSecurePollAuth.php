@@ -35,16 +35,13 @@ use Wikimedia\ParamValidator\ParamValidator;
  * @ingroup API
  */
 class ApiSecurePollAuth extends ApiBase {
-	/** @var UserFactory */
-	private $userFactory;
 
 	public function __construct(
 		ApiMain $mainModule,
-		$moduleName,
-		UserFactory $userFactory
+		string $moduleName,
+		private readonly UserFactory $userFactory
 	) {
 		parent::__construct( $mainModule, $moduleName );
-		$this->userFactory = $userFactory;
 	}
 
 	public function execute() {
@@ -70,6 +67,7 @@ class ApiSecurePollAuth extends ApiBase {
 		$this->getResult()->addValue( null, $this->getModuleName(), $result );
 	}
 
+	/** @inheritDoc */
 	public function getAllowedParams() {
 		return [
 			'token' => [
@@ -83,6 +81,7 @@ class ApiSecurePollAuth extends ApiBase {
 		];
 	}
 
+	/** @inheritDoc */
 	protected function getExamplesMessages() {
 		return [
 			'action=securepollauth&token=123ABC&id=1&format=json' =>
@@ -90,10 +89,12 @@ class ApiSecurePollAuth extends ApiBase {
 		];
 	}
 
+	/** @inheritDoc */
 	public function mustBePosted() {
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function isInternal() {
 		return true;
 	}

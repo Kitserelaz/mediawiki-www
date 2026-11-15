@@ -8,10 +8,13 @@ use Maps\DataAccess\PageContentFetcher;
 use Maps\Tests\MapsTestFactory;
 use Maps\Tests\Util\PageCreator;
 use Maps\Tests\Util\TestFactory;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 use PHPUnit\Framework\TestCase;
-use Title;
 
 /**
+ * @covers \Maps\Map\SemanticFormat\MapPrinter
+ *
  * @licence GNU GPL v2+
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
@@ -49,12 +52,30 @@ class SemanticQueryTest extends TestCase {
 	public function testLeafletQueryWithGeoJson() {
 		$this->createDataPages();
 
-		$content = $this->getResultForQuery( '{{#ask:[[Coordinates::+]]|?Coordinates|format=leaflet|geojson=TestGeoJson}}' );
+		// The map data is embedded as an HTML-escaped data attribute, so decode before asserting on the JSON.
+		$content = htmlspecialchars_decode(
+			$this->getResultForQuery( '{{#ask:[[Coordinates::+]]|?Coordinates|format=leaflet|geojson=TestGeoJson}}' )
+		);
 
 		$this->assertStringContainsString( '<div id="map_leaflet_', $content );
 		$this->assertStringContainsString( '"GeoJsonSource":"TestGeoJson"', $content );
 		$this->assertStringContainsString( '"GeoJsonRevisionId":', $content );
-		$this->assertStringContainsString( '"geojson":{"type":"FeatureCollection"', $content );
+		$this->assertStringContainsString( '"geojson":[{"type":"FeatureCollection"', $content );
+	}
+
+	public function testGoogleMapsQueryContainsImageOverlayData() {
+		$this->createDataPages();
+
+		$content = htmlspecialchars_decode(
+			$this->getResultForQuery(
+				'{{#ask:[[Coordinates::+]]|?Coordinates|format=googlemaps3'
+				. '|imageoverlays=52.1,13.1:51.9,12.9:TestOverlay.png}}'
+			)
+		);
+
+		$this->assertStringContainsString( '"image":"TestOverlay.png"', $content );
+		$this->assertStringContainsString( '"ne":{"lon":13.1,"lat":52.1}', $content );
+		$this->assertStringContainsString( '"sw":{"lon":12.9,"lat":51.9}', $content );
 	}
 
 	private function getResultForQuery( string $query ): string {
@@ -63,8 +84,12 @@ class SemanticQueryTest extends TestCase {
 			$query
 		);
 
-		// TODO: saner way
-		return $this->contentFetcher->getPageContent( 'MapQuery' )->getParserOutput( Title::newFromText( 'MapQuery' ) )->getText();
+		$title = Title::newFromText( 'MapQuery' );
+		$content = $this->contentFetcher->getPageContent( 'MapQuery' );
+
+		return MediaWikiServices::getInstance()->getContentRenderer()
+			->getParserOutput( $content, $title )
+			->getContentHolderText();
 	}
 
 	private function createDataPages() {

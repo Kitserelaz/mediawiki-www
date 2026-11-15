@@ -2,40 +2,26 @@
 
 namespace MediaWiki\TimedMediaHandler;
 
-use File;
 use MediaWiki\Config\Config;
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\FileRepo\RepoGroup;
 use MediaWiki\Linker\LinkTarget;
-use RepoGroup;
+use MediaWiki\Page\PageIdentity;
 
 /**
- * @file
  * @ingroup Extensions
  */
 class TranscodableChecker {
-	/** @var Config */
-	private $config;
-
-	/** @var RepoGroup */
-	private $repoGroup;
-
-	/**
-	 * @param Config $config
-	 * @param RepoGroup $repoGroup
-	 */
 	public function __construct(
-		Config $config,
-		RepoGroup $repoGroup
+		private readonly Config $config,
+		private readonly RepoGroup $repoGroup,
 	) {
-		$this->config = $config;
-		$this->repoGroup = $repoGroup;
 	}
 
 	/**
 	 * Wraps the isTranscodableFile function
-	 * @param LinkTarget $title
-	 * @return bool
 	 */
-	public function isTranscodableTitle( $title ) {
+	public function isTranscodableTitle( PageIdentity|LinkTarget $title ): bool {
 		if ( $title->getNamespace() !== NS_FILE ) {
 			return false;
 		}
@@ -46,19 +32,14 @@ class TranscodableChecker {
 	/**
 	 * Utility function to check if a given file can be "transcoded"
 	 * @param File|false $file File object
-	 * @return bool
 	 */
-	public function isTranscodableFile( $file ) {
+	public function isTranscodableFile( $file ): bool {
 		// don't show the transcode table if transcode is disabled
 		if ( !$this->config->get( 'EnableTranscode' ) ) {
 			return false;
 		}
-		// Can't find file
-		if ( !$file ) {
-			return false;
-		}
 		// We can only transcode local files
-		if ( !$file->isLocal() ) {
+		if ( !$file || !$file->isLocal() ) {
 			return false;
 		}
 

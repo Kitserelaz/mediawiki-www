@@ -26,13 +26,13 @@ namespace MediaWiki\Extension\GlobalWatchlist;
 
 use MediaWiki\Api\ApiOptions;
 use MediaWiki\Api\Hook\ApiOptionsHook;
-use MediaWiki\Hook\LoginFormValidErrorMessagesHook;
-use MediaWiki\Hook\SidebarBeforeOutputHook;
 use MediaWiki\HTMLForm\Field\HTMLInfoField;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
+use MediaWiki\Skin\Hook\SidebarBeforeOutputHook;
+use MediaWiki\Skin\Skin;
 use MediaWiki\SpecialPage\SpecialPageFactory;
+use MediaWiki\Specials\Hook\LoginFormValidErrorMessagesHook;
 use MediaWiki\User\User;
-use Skin;
 use Wikimedia\Stats\IBufferingStatsdDataFactory;
 
 /**
@@ -45,22 +45,10 @@ class GlobalWatchlistHooks implements
 	SidebarBeforeOutputHook
 {
 
-	/** @var SpecialPageFactory */
-	private $specialPageFactory;
-
-	/** @var IBufferingStatsdDataFactory */
-	private $statsdDataFactory;
-
-	/**
-	 * @param SpecialPageFactory $specialPageFactory
-	 * @param IBufferingStatsdDataFactory $statsdDataFactory
-	 */
 	public function __construct(
-		SpecialPageFactory $specialPageFactory,
-		IBufferingStatsdDataFactory $statsdDataFactory
+		private readonly SpecialPageFactory $specialPageFactory,
+		private readonly IBufferingStatsdDataFactory $statsdDataFactory,
 	) {
-		$this->specialPageFactory = $specialPageFactory;
-		$this->statsdDataFactory = $statsdDataFactory;
 	}
 
 	/**
@@ -79,7 +67,7 @@ class GlobalWatchlistHooks implements
 	 * @param User $user
 	 * @param array &$preferences
 	 */
-	public function onGetPreferences( $user, &$preferences ) {
+	public function onGetPreferences( $user, &$preferences ): void {
 		$preferences[ SettingsManager::PREFERENCE_NAME ] = [
 			'type' => 'api'
 		];

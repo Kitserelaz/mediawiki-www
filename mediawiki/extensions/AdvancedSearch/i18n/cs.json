@@ -7,10 +7,11 @@
 			"Mormegil",
 			"Patriccck",
 			"Patrik L.",
+			"Polda18",
 			"Spotter"
 		]
 	},
-	"advancedsearch-desc": "Jednoduchý přístup k pokročilým možnostem vyhledávání na stránce [[Special:Search]]",
+	"advancedsearch-desc": "Jednoduchý přístup k pokročilým možnostem vyhledávání na stránce [[{{#Special:Search}}]]",
 	"advancedsearch-options-pane-head": "Pokročilé hledání:",
 	"advancedsearch-optgroup-text": "Hledat v textu stránky",
 	"advancedsearch-optgroup-structure": "Struktura",
@@ -47,8 +48,8 @@
 	"advancedsearch-inlanguage-default": "Vyberte jazyk",
 	"advancedsearch-filetype-section-types": "Obecné typy souborů",
 	"advancedsearch-filetype-section-image": "Formáty obrázků",
-	"advancedsearch-filetype-section-video": "Formáty videa",
 	"advancedsearch-filetype-section-audio": "Formáty zvuku",
+	"advancedsearch-filetype-section-video": "Formáty videa",
 	"advancedsearch-filetype-section-document": "Formáty dokumentů",
 	"advancedsearch-filetype-section-other": "Ostatní formáty",
 	"advancedsearch-filetype-default": "Zvolit typ souboru",

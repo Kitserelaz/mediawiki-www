@@ -6,9 +6,9 @@ namespace WikibaseQuality\ConstraintReport\Tests\Api;
 
 use DataValues\UnknownValue;
 use MediaWiki\Config\HashConfig;
-use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Tests\Api\ApiTestCase;
+use Psr\Log\NullLogger;
 use ValueFormatters\FormatterOptions;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
@@ -38,7 +38,7 @@ use WikibaseQuality\ConstraintReport\ConstraintCheck\Result\CheckResult;
 use WikibaseQuality\ConstraintReport\Tests\Fake\FakeChecker;
 use WikibaseQuality\ConstraintReport\Tests\Fake\InMemoryConstraintLookup;
 use Wikimedia\Assert\Assert;
-use Wikimedia\Stats\NullStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @covers \WikibaseQuality\ConstraintReport\Api\CheckConstraints
@@ -128,7 +128,9 @@ class CheckConstraintsTest extends ApiTestCase {
 					->getDatabaseSourceForEntityType( 'item' )
 					->getConceptBaseUri()
 			);
-			$dataFactory = new NullStatsdDataFactory();
+
+			$statsFactory = StatsFactory::newNull();
+
 			$constraintChecker = new DelegatingConstraintChecker(
 				self::$entityLookup,
 				self::$checkerMap,
@@ -136,8 +138,8 @@ class CheckConstraintsTest extends ApiTestCase {
 				$constraintParameterParser,
 				WikibaseRepo::getStatementGuidParser(),
 				new LoggingHelper(
-					$dataFactory,
-					LoggerFactory::getInstance( 'WikibaseQualityConstraints' ),
+					$statsFactory,
+					new NullLogger(),
 					$config
 				),
 				false,
@@ -165,7 +167,7 @@ class CheckConstraintsTest extends ApiTestCase {
 						$valueFormatterFactory
 					)
 				),
-				$dataFactory
+				$statsFactory
 			);
 		};
 	}
@@ -306,6 +308,7 @@ class CheckConstraintsTest extends ApiTestCase {
 	 * @return array Array of violations
 	 */
 	private function doRequest( array $params ): array {
+		$this->setGroupPermissions( '*', 'wbqc-check-constraints', true );
 		$params['action'] = 'wbcheckconstraints';
 		return $this->doApiRequest( $params, [], false, null )[0];
 	}

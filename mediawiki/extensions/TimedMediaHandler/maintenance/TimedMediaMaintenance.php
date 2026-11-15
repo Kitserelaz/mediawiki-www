@@ -1,5 +1,7 @@
 <?php
 
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\TimedMediaHandler\TimedMediaHandler;
 use MediaWiki\Title\Title;
@@ -11,6 +13,8 @@ abstract class TimedMediaMaintenance extends Maintenance {
 		parent::__construct();
 		$this->addOption( "file", "process only the given file", false, true );
 		$this->addOption( "start", "(re)start batch at the given file", false, true );
+		$this->addOption( "uploader", "process only last version of files uploaded by this user", false, true );
+		$this->addOption( "category", "process only files in the given category", false, true );
 		$this->addOption( "audio", "process audio files (defaults to all media types)" );
 		$this->addOption( "video", "process video files (defaults to all media types)" );
 		$this->addOption( "mime", "mime type to filter on (e.g. audio/midi)", false, true );
@@ -30,12 +34,37 @@ abstract class TimedMediaMaintenance extends Maintenance {
 			// Default to all if none specified
 			$types = [ 'AUDIO', 'VIDEO' ];
 		}
-		$where = [ 'img_media_type' => $types ];
+		$migrationStage = $this->getConfig()->get(
+			MainConfigNames::FileSchemaMigrationStage
+		);
+		if ( $migrationStage & SCHEMA_COMPAT_READ_OLD ) {
+			$queryBuilder = $dbr->newSelectQueryBuilder()
+				->select( [ 'img_name' ] )
+				->from( 'image' )
+				->where( [ 'img_media_type' => $types ] )
+				->orderBy( [ 'img_media_type', 'img_name' ], SelectQueryBuilder::SORT_ASC );
+		} else {
+			$queryBuilder = $dbr->newSelectQueryBuilder()
+				->field( 'file_name', 'img_name' )
+				->from( 'file' )
+				->join( 'filetypes', null, 'file_type = ft_id' )
+				->where( [ 'ft_media_type' => $types, 'file_deleted' => 0 ] )
+				->orderBy( [ 'file_type', 'file_name' ], SelectQueryBuilder::SORT_ASC );
+		}
 
 		if ( $this->hasOption( 'mime' ) ) {
 			[ $major, $minor ] = File::splitMime( $this->getOption( 'mime' ) );
-			$where['img_major_mime'] = $major;
-			$where['img_minor_mime'] = $minor;
+			if ( $migrationStage & SCHEMA_COMPAT_READ_OLD ) {
+				$queryBuilder->andWhere( [
+					'img_major_mime' => $major,
+					'img_minor_mime' => $minor
+				] );
+			} else {
+				$queryBuilder->andWhere( [
+					'ft_major_mime' => $major,
+					'ft_minor_mime' => $minor
+				] );
+			}
 		}
 
 		if ( $this->hasOption( 'file' ) ) {
@@ -44,7 +73,11 @@ abstract class TimedMediaMaintenance extends Maintenance {
 				$this->error( "Invalid --file option provided" );
 				return;
 			}
-			$where['img_name'] = $title->getDBkey();
+			if ( $migrationStage & SCHEMA_COMPAT_READ_OLD ) {
+				$queryBuilder->andWhere( [ 'img_name' => $title->getDBkey() ] );
+			} else {
+				$queryBuilder->andWhere( [ 'file_name' => $title->getDBkey() ] );
+			}
 		}
 		if ( $this->hasOption( 'start' ) ) {
 			$title = Title::newFromText( $this->getOption( 'start' ), NS_FILE );
@@ -52,15 +85,59 @@ abstract class TimedMediaMaintenance extends Maintenance {
 				$this->error( "Invalid --start option provided" );
 				return;
 			}
-			$where[] = $dbr->expr( 'img_name', '>=', $title->getDBkey() );
+			if ( $migrationStage & SCHEMA_COMPAT_READ_OLD ) {
+				$queryBuilder->andWhere( $dbr->expr( 'img_name', '>=', $title->getDBkey() ) );
+			} else {
+				$queryBuilder->andWhere( $dbr->expr( 'file_name', '>=', $title->getDBkey() ) );
+			}
 		}
-		$res = $dbr->newSelectQueryBuilder()
-			->select( [ 'img_name' ] )
-			->from( 'image' )
-			->where( $where )
-			->orderBy( [ 'img_media_type', 'img_name' ], SelectQueryBuilder::SORT_ASC )
-			->caller( __METHOD__ )->fetchResultSet();
 
+		if ( $this->hasOption( 'uploader' ) ) {
+			$user = $this->getServiceContainer()->getUserFactory()->newFromName( $this->getOption( 'uploader' ) );
+			if ( !$user || !$user->isRegistered() ) {
+				$this->error( "Invalid --uploader option provided" );
+				return;
+			}
+			if ( $migrationStage & SCHEMA_COMPAT_READ_OLD ) {
+				$queryBuilder->andWhere( [ 'img_actor' => $user->getActorId() ] );
+			} else {
+				$queryBuilder->join( 'filerevision', null, 'file_latest = fr_id' )
+					->andWhere( [ 'fr_actor' => $user->getActorId() ] );
+			}
+		}
+
+		if ( $this->hasOption( 'category' ) ) {
+			$category = Title::newFromText( $this->getOption( 'category' ), NS_CATEGORY );
+			if ( !$category ) {
+				$this->error( "Invalid --category option provided" );
+				return;
+			}
+			if ( $migrationStage & SCHEMA_COMPAT_READ_OLD ) {
+				$queryBuilder->join( 'page', null, [
+					'page_title = img_name',
+					'page_namespace' => NS_FILE
+				] )
+					->join( 'categorylinks', null, 'page_id = cl_from' )
+					->join( 'linktarget', null, 'lt_id = cl_target_id' )
+					->andWhere( [
+						'lt_title' => $category->getDBkey(),
+						'lt_namespace' => NS_CATEGORY
+					] );
+			} else {
+				$queryBuilder->join( 'page', null, [
+					'page_title = file_name',
+					'page_namespace' => NS_FILE
+				] )
+					->join( 'categorylinks', null, 'page_id = cl_from' )
+					->join( 'linktarget', null, 'lt_id = cl_target_id' )
+					->andWhere( [
+						'lt_title' => $category->getDBkey(),
+						'lt_namespace' => NS_CATEGORY
+					] );
+			}
+		}
+
+		$res = $queryBuilder->caller( __METHOD__ )->fetchResultSet();
 		$localRepo = $this->getServiceContainer()->getRepoGroup()->getLocalRepo();
 		foreach ( $res as $row ) {
 			$title = Title::newFromText( $row->img_name, NS_FILE );
@@ -74,6 +151,7 @@ abstract class TimedMediaMaintenance extends Maintenance {
 
 	/**
 	 * @param File $file
+	 * @return void
 	 */
 	abstract public function processFile( File $file );
 }

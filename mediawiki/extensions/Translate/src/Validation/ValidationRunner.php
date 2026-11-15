@@ -12,12 +12,12 @@
 namespace MediaWiki\Extension\Translate\Validation;
 
 use Exception;
-use FormatJson;
 use InvalidArgumentException;
 use MediaWiki\Extension\Translate\MessageLoading\Message;
 use MediaWiki\Extension\Translate\Services;
 use MediaWiki\Extension\Translate\TranslatorInterface\Insertable\InsertablesSuggester;
 use MediaWiki\Extension\Translate\Utilities\PHPVariableLoader;
+use MediaWiki\Json\FormatJson;
 use RuntimeException;
 
 /**
@@ -39,18 +39,16 @@ use RuntimeException;
 class ValidationRunner {
 	/** @var array List of validator data */
 	protected $validators = [];
-	/** @var string Message group id */
-	protected $groupId;
 	/** @var string[][]|null */
 	private static $ignorePatterns;
 
-	public function __construct( string $groupId ) {
+	public function __construct(
+		private readonly string $groupId,
+	) {
 		if ( self::$ignorePatterns === null ) {
 			// TODO: Review if this logic belongs in this class.
 			self::reloadIgnorePatterns();
 		}
-
-		$this->groupId = $groupId;
 	}
 
 	/** Normalise validator keys. */
@@ -73,7 +71,10 @@ class ValidationRunner {
 		}
 	}
 
-	/** Add a validator for this group. */
+	/**
+	 * Add a validator for this group.
+	 * @throws InvalidArgumentException
+	 */
 	public function addValidator( array $validatorConfig ): void {
 		$validatorId = $validatorConfig['id'] ?? null;
 		$className = $validatorConfig['class'] ?? null;
@@ -106,7 +107,7 @@ class ValidationRunner {
 			'instance' => $validator,
 			'insertable' => $isInsertable,
 			'enforce' => $validatorConfig['enforce'] ?? false,
-			'include' => $validatorConfig['keymatch'] ?? $validatorConfig['include'] ?? false,
+			'include' => $validatorConfig['include'] ?? false,
 			'exclude' => $validatorConfig['exclude'] ?? false
 		];
 	}
@@ -347,11 +348,6 @@ class ValidationRunner {
 		$validator = $validatorData['instance'];
 
 		$definition = $message->definition();
-		if ( $definition === null ) {
-			// This should NOT happen, but add a check since it seems to be happening
-			// See: https://phabricator.wikimedia.org/T255669
-			return;
-		}
 
 		try {
 			$includedKeys = $validatorData['include'];

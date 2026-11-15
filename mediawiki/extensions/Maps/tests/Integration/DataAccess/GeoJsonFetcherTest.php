@@ -12,13 +12,19 @@ use FileFetcher\ThrowingFileFetcher;
 use Maps\DataAccess\GeoJsonFetcher;
 use Maps\GeoJsonPages\GeoJsonContent;
 use Maps\Tests\MapsTestFactory;
+use Maps\Tests\Util\DeprecationWarnings;
 use Maps\Tests\Util\PageCreator;
+use Maps\Tests\Util\RefusingParserOptions;
+use MediaWiki\Content\JsonContent;
 use MediaWiki\MediaWikiServices;
 use PHPUnit\Framework\TestCase;
-use Title;
 
 /**
+ * Needs the database: the fetcher reads GeoJSON pages that the tests create.
+ *
  * @covers \Maps\DataAccess\GeoJsonFetcher
+ * @covers \Maps\MapsFactory::getRenderingParser
+ * @covers \Maps\MapsFactory::getGeoJsonFileFetcher
  * @licence GNU GPL v2+
  * @author Jeroen De Dauw < jeroendedauw@gmail.com >
  */
@@ -43,7 +49,13 @@ class GeoJsonFetcherTest extends TestCase {
 	 */
 	private $fileFetcher;
 
+	private bool $originalAllowExternalDataFiles;
+
 	public function setUp(): void {
+		$this->originalAllowExternalDataFiles = $GLOBALS['egMapsAllowExternalDataFiles'] ?? false;
+		// Most tests here fetch from a url, which only happens when the wiki allows it.
+		$this->setAllowExternalDataFiles( true );
+
 		$this->fileFetcher = new StubFileFetcher( json_encode( self::VALID_FILE_JSON ) );
 
 		$pageCreator = new PageCreator();
@@ -53,8 +65,22 @@ class GeoJsonFetcherTest extends TestCase {
 		);
 	}
 
+	protected function tearDown(): void {
+		MapsTestFactory::$geoJsonFileFetcher = null;
+		$this->setAllowExternalDataFiles( $this->originalAllowExternalDataFiles );
+
+		parent::tearDown();
+	}
+
+	private function setAllowExternalDataFiles( bool $allow ): void {
+		$GLOBALS['egMapsAllowExternalDataFiles'] = $allow;
+		MapsTestFactory::newTestInstance();
+	}
+
 	private function newJsonFileParser(): GeoJsonFetcher {
-		return MapsTestFactory::newTestInstance()->newGeoJsonFetcher( $this->fileFetcher );
+		MapsTestFactory::$geoJsonFileFetcher = $this->fileFetcher;
+
+		return MapsTestFactory::newTestInstance()->newGeoJsonFetcher();
 	}
 
 	public function testWhenFileRetrievalFails_emptyJsonIsReturned() {
@@ -62,7 +88,7 @@ class GeoJsonFetcherTest extends TestCase {
 
 		$this->assertSame(
 			[],
-			$this->newJsonFileParser()->parse( 'http://such.a/file' )
+			$this->newJsonFileParser()->parse( 'http://example.com/file' )
 		);
 	}
 
@@ -71,7 +97,16 @@ class GeoJsonFetcherTest extends TestCase {
 
 		$this->assertEquals(
 			self::VALID_FILE_JSON,
-			$this->newJsonFileParser()->parse( 'http://such.a/file' )
+			$this->newJsonFileParser()->parse( 'http://example.com/file' )
+		);
+	}
+
+	public function testWhenFileContainsJsonThatIsNotAnObject_emptyJsonIsReturned() {
+		$this->fileFetcher = new StubFileFetcher( '42' );
+
+		$this->assertSame(
+			[],
+			$this->newJsonFileParser()->parse( 'http://example.com/file' )
 		);
 	}
 
@@ -80,7 +115,7 @@ class GeoJsonFetcherTest extends TestCase {
 
 		$this->assertSame(
 			[],
-			$this->newJsonFileParser()->parse( 'http://such.a/file' )
+			$this->newJsonFileParser()->parse( 'http://example.com/file' )
 		);
 	}
 
@@ -93,9 +128,37 @@ class GeoJsonFetcherTest extends TestCase {
 		$this->assertSame( [], $this->newJsonFileParser()->parse( $jsonFilePath ) );
 	}
 
-	public function testWhenPageExists_itsContentsIsReturned() {
+	public function testWhenUrlIsNotAValidPageName_itsFileIsReturned() {
 		$this->assertSame(
-			self::VALID_PAGE_JSON,
+			self::VALID_FILE_JSON,
+			$this->newJsonFileParser()->parse( 'http://example.com/my%20file' )
+		);
+	}
+
+	public function testWhenPageExists_itIsReadWithoutDeprecationWarnings() {
+		$fetcher = $this->newJsonFileParser();
+
+		$this->assertSame(
+			[],
+			DeprecationWarnings::during( fn () => $fetcher->parse( self::EXISTING_GEO_JSON_PAGE_WITH_PREFIX ) )
+		);
+	}
+
+	public function testWhenPageWasEdited_itsCurrentContentIsReturned() {
+		$editedJson = [
+			'type' => 'FeatureCollection',
+			'features' => [
+				[ 'type' => 'Feature', 'geometry' => null, 'properties' => [ 'title' => 'Edited' ] ]
+			]
+		];
+
+		( new PageCreator() )->createPageWithContent(
+			self::EXISTING_GEO_JSON_PAGE_WITH_PREFIX,
+			new GeoJsonContent( json_encode( $editedJson ) )
+		);
+
+		$this->assertSame(
+			$editedJson,
 			$this->newJsonFileParser()->parse( self::EXISTING_GEO_JSON_PAGE_WITH_PREFIX )
 		);
 	}
@@ -104,6 +167,13 @@ class GeoJsonFetcherTest extends TestCase {
 		$this->assertSame(
 			[],
 			$this->newJsonFileParser()->parse( self::NON_EXISTING_GEO_JSON_PAGE )
+		);
+	}
+
+	public function testWhenPageNameHasInterwikiPrefix_emptyJsonIsReturned() {
+		$this->assertSame(
+			[],
+			$this->newJsonFileParser()->parse( 'wikipedia:' . self::EXISTING_GEO_JSON_PAGE )
 		);
 	}
 
@@ -119,6 +189,100 @@ class GeoJsonFetcherTest extends TestCase {
 			self::EXISTING_GEO_JSON_PAGE,
 			$this->newJsonFileParser()->fetch( self::EXISTING_GEO_JSON_PAGE_WITH_PREFIX )->getTitleValue()->getText()
 		);
+	}
+
+	/**
+	 * The GeoJSON editor saves against this revision.
+	 */
+	public function testCurrentRevisionOfThePageIsReturned(): void {
+		$this->assertSame(
+			MediaWikiServices::getInstance()->getPageStore()
+				->getExistingPageByText( self::EXISTING_GEO_JSON_PAGE_WITH_PREFIX )->getLatest(),
+			$this->newJsonFileParser()->fetch( self::EXISTING_GEO_JSON_PAGE_WITH_PREFIX )->getRevisionId()
+		);
+	}
+
+	public function testPageInAnotherNamespaceIsReturnedAsSourceInThatNamespace() {
+		( new PageCreator() )->createPageWithContent(
+			'MediaWiki:GeoJsonFetcherTest.json',
+			new JsonContent( json_encode( self::VALID_PAGE_JSON ) )
+		);
+
+		$this->assertSame(
+			NS_MEDIAWIKI,
+			$this->newJsonFileParser()->fetch( 'MediaWiki:GeoJsonFetcherTest.json' )->getTitleValue()->getNamespace()
+		);
+	}
+
+	public function testWithoutAParserPagesAreReadAsAnAnonymousReader(): void {
+		RefusingParserOptions::whileDefaultsRefuseAnonymousReaders( function (): void {
+			$this->assertSame(
+				[],
+				$this->newJsonFileParser()->parse( self::EXISTING_GEO_JSON_PAGE_WITH_PREFIX )
+			);
+		} );
+	}
+
+	public function testWhenExternalDataFilesAreNotAllowed_urlIsNotFetched() {
+		$this->setAllowExternalDataFiles( false );
+
+		$this->assertSame(
+			[],
+			$this->newJsonFileParser()->parse( 'http://example.com/file' )
+		);
+	}
+
+	public function testWhenExternalDataFilesAreNotAllowed_pageContentIsStillReturned() {
+		$this->setAllowExternalDataFiles( false );
+
+		$this->assertSame(
+			self::VALID_PAGE_JSON,
+			$this->newJsonFileParser()->parse( self::EXISTING_GEO_JSON_PAGE_WITH_PREFIX )
+		);
+	}
+
+	/**
+	 * Through the fetcher as production wires it, guard and all, unlike the stub the other tests
+	 * inject. A server listening on the address the URL points at makes this fail if the guard lets
+	 * such a URL through, rather than passing on a connection that fails anyway.
+	 *
+	 * @dataProvider loopbackHostProvider
+	 */
+	public function testWhenUrlPointsToPrivateNetwork_theServerIsNotContacted( string $host ) {
+		$this->setAllowExternalDataFiles( true );
+
+		$server = stream_socket_server( 'tcp://127.0.0.1:0' );
+
+		MapsTestFactory::newTestInstance()->newGeoJsonFetcher()->parse(
+			'http://' . $host . ':' . $this->portOf( $server ) . '/secret.geojson'
+		);
+
+		$this->assertFalse( $this->wasConnectedTo( $server ) );
+
+		fclose( $server );
+	}
+
+	public static function loopbackHostProvider(): iterable {
+		yield 'loopback' => [ '127.0.0.1' ];
+		yield 'loopback written as IPv6' => [ '[::ffff:127.0.0.1]' ];
+	}
+
+	/**
+	 * @param resource $server
+	 */
+	private function portOf( $server ): int {
+		return (int)explode( ':', stream_socket_get_name( $server, false ) )[1];
+	}
+
+	/**
+	 * @param resource $server
+	 */
+	private function wasConnectedTo( $server ): bool {
+		$pending = [ $server ];
+		$write = null;
+		$except = null;
+
+		return stream_select( $pending, $write, $except, 0 ) > 0;
 	}
 
 }

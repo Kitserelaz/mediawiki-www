@@ -255,16 +255,13 @@ class ParsedQuery {
 	public function getCrossSearchStrategy() {
 		if ( $this->crossSearchStrategy === null ) {
 			$visitor = new class() extends KeywordNodeVisitor {
-				public $strategy;
+				public CrossSearchStrategy $strategy;
 
 				public function __construct( array $excludeOccurs = [], array $keywordClasses = [] ) {
 					parent::__construct( $excludeOccurs, $keywordClasses );
 					$this->strategy = CrossSearchStrategy::allWikisStrategy();
 				}
 
-				/**
-				 * @param KeywordFeatureNode $node
-				 */
 				public function doVisitKeyword( KeywordFeatureNode $node ) {
 					$this->strategy = $this->strategy
 						->intersect( $node->getKeyword()->getCrossSearchStrategy( $node ) );
@@ -318,11 +315,8 @@ class ParsedQuery {
 	public function getFeaturesUsed() {
 		if ( $this->featuresUsed === null ) {
 			$visitor = new class() extends KeywordNodeVisitor {
-				public $features = [];
+				public array $features = [];
 
-				/**
-				 * @param KeywordFeatureNode $node
-				 */
 				public function doVisitKeyword( KeywordFeatureNode $node ) {
 					$name = $node->getKeyword()
 						->getFeatureName( $node->getKey(), $node->getDelimiter() );

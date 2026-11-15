@@ -95,3 +95,101 @@ document.querySelectorAll( '.fandom-community-header__local-navigation' ).forEac
 		}
 	} );
 } );
+
+const themeToggle = document.querySelector( '.wiki-tools__theme-switch' );
+const widthToggle = document.querySelector( '.content-size-toggle' );
+const themeRoot = document.documentElement;
+
+function setTheme( theme ) {
+	themeRoot.dataset.theme = theme;
+	themeToggle.setAttribute( 'aria-label',
+		theme === 'light' ? themeToggle.dataset.labelDark : themeToggle.dataset.labelLight
+	);
+}
+
+const initialTheme = themeRoot.dataset.theme || mw.storage.get( 'example-theme' );
+setTheme( initialTheme === 'light' ? 'light' : 'dark' );
+themeToggle.addEventListener( 'click', () => {
+	const theme = themeRoot.dataset.theme === 'light' ? 'dark' : 'light';
+	setTheme( theme );
+	mw.storage.set( 'example-theme', theme );
+} );
+
+widthToggle.addEventListener( 'click', () => {
+	const expanded = document.body.classList.toggle( 'is-content-expanded' );
+	widthToggle.setAttribute( 'aria-pressed', String( expanded ) );
+} );
+
+const disclosures = new Map();
+document.querySelectorAll( '.example-disclosure' ).forEach( ( menu ) => {
+	const toggle = menu.querySelector( 'button' );
+	const panel = document.getElementById( toggle.getAttribute( 'aria-controls' ) );
+	const setOpen = ( open ) => {
+		menu.classList.toggle( 'wds-is-active', open );
+		toggle.setAttribute( 'aria-expanded', String( open ) );
+		panel.hidden = !open;
+	};
+	disclosures.set( toggle.id, setOpen );
+
+	toggle.addEventListener( 'click', () => setOpen( panel.hidden ) );
+	document.addEventListener( 'click', ( event ) => {
+		if ( !menu.contains( event.target ) &&
+			event.target.closest( '.example-page-tools-trigger' )?.dataset.disclosure !== toggle.id
+		) {
+			setOpen( false );
+		}
+	} );
+	menu.addEventListener( 'keydown', ( event ) => {
+		if ( event.key === 'Escape' && !panel.hidden ) {
+			setOpen( false );
+			toggle.focus();
+		}
+	} );
+} );
+
+document.querySelector( '#example-contents' )?.addEventListener( 'click', ( event ) => {
+	if ( event.target.closest( 'a' ) ) {
+		document.querySelector( '[aria-controls="example-contents"]' ).click();
+	}
+} );
+
+document.querySelectorAll( '.example-page-tools-trigger' ).forEach( ( trigger ) => {
+	trigger.addEventListener( 'click', () => {
+		const toggle = document.getElementById( trigger.dataset.disclosure );
+		disclosures.get( toggle.id )( true );
+		toggle.focus();
+	} );
+} );
+
+document.querySelector( '.example-toolbar-close' )?.addEventListener( 'click', ( event ) => {
+	event.currentTarget.closest( '.example-article-toolbar' ).hidden = true;
+} );
+
+const recentActivity = document.querySelector( '.example-recent-activity' );
+if ( recentActivity ) {
+	new mw.Api().get( {
+		action: 'query',
+		list: 'recentchanges',
+		rctype: 'edit|new',
+		rcprop: 'title|user',
+		rclimit: 4,
+		formatversion: 2
+	} ).then( ( response ) => {
+		( response.query?.recentchanges || [] ).forEach( ( change ) => {
+			const item = document.createElement( 'li' );
+			const link = document.createElement( 'a' );
+			link.href = mw.util.getUrl( change.title );
+			link.textContent = change.title;
+			item.append( link );
+			if ( change.user ) {
+				const editor = document.createElement( 'span' );
+				editor.className = 'example-editor';
+				editor.textContent = change.user;
+				item.append( editor );
+			}
+			recentActivity.append( item );
+		} );
+	} ).catch( () => {
+		// The link to Special:RecentChanges remains available.
+	} );
+}

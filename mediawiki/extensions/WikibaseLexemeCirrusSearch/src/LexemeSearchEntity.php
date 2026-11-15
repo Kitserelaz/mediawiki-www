@@ -19,7 +19,7 @@ use Wikibase\Repo\Api\EntitySearchException;
 use Wikibase\Repo\Api\EntitySearchHelper;
 use Wikibase\Search\Elastic\EntitySearchElastic;
 use Wikibase\Search\Elastic\EntitySearchUtils;
-use Wikibase\Search\Elastic\WikibasePrefixSearcher;
+use Wikibase\Search\Elastic\WikibaseEntitySearcher;
 
 /**
  * Implementation of ElasticSearch prefix/completion search for Lexemes
@@ -193,7 +193,7 @@ class LexemeSearchEntity implements EntitySearchHelper {
 		?string $profileContext = null
 	) {
 		$profileContext ??= self::CONTEXT_LEXEME_PREFIX;
-		$searcher = new WikibasePrefixSearcher( 0, $limit, $this->debugOptions );
+		$searcher = new WikibaseEntitySearcher( 0, $limit, 'wikibase_prefix', 'wikibase-prefix', $this->debugOptions );
 		$searcher->getSearchContext()->setProfileContext( $profileContext );
 		$query = $this->getElasticSearchQuery( $text, $entityType, $searcher->getSearchContext() );
 

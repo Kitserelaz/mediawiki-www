@@ -7,6 +7,7 @@ use CirrusSearch\CirrusSearchHookRunner;
 use CirrusSearch\CirrusTestCase;
 use CirrusSearch\CrossSearchStrategy;
 use CirrusSearch\Fallbacks\FallbackRunner;
+use CirrusSearch\HashSearchConfig;
 use CirrusSearch\Parser\AST\ParsedQuery;
 use CirrusSearch\Parser\BasicQueryClassifier;
 use CirrusSearch\Profile\SearchProfileService;
@@ -14,6 +15,7 @@ use CirrusSearch\Query\Builder\ContextualFilter;
 use CirrusSearch\Query\Builder\FilterBuilder;
 use CirrusSearch\Query\PrefixFeature;
 use CirrusSearch\SearchConfig;
+use Generator;
 use PHPUnit\Framework\Assert;
 
 /**
@@ -24,7 +26,7 @@ use PHPUnit\Framework\Assert;
  */
 class SearchQueryTest extends CirrusTestCase {
 
-	public function provildeGetNamespaces() {
+	public static function provideGetNamespaces() {
 		return [
 			'all' => [
 				[],
@@ -71,7 +73,7 @@ class SearchQueryTest extends CirrusTestCase {
 	}
 
 	/**
-	 * @dataProvider provildeGetNamespaces
+	 * @dataProvider provideGetNamespaces
 	 * @param int[] $initialNs
 	 * @param int[] $namespacesInContextualFilters
 	 * @param int[] $expected
@@ -199,7 +201,7 @@ class SearchQueryTest extends CirrusTestCase {
 	 */
 	private function getContextualFilter( ?array $namespaces = null ) {
 		return new class( $namespaces ) implements ContextualFilter {
-			private $namespaces;
+			private ?array $namespaces;
 
 			public function __construct( $namespaces ) {
 				$this->namespaces = $namespaces;
@@ -412,6 +414,55 @@ class SearchQueryTest extends CirrusTestCase {
 			CirrusDebugOptions::forDumpingQueriesInUnitTests(), 'common' );
 	}
 
+	public function testForCrossProjectSearchWithDefaultNsToBeSearched() {
+		$hostWikiConfig = $this->newHashSearchConfig( [
+			'CirrusSearchNumCrossProjectSearchResults' => 1,
+			'CirrusSearchEnableCrossProjectSearch' => true,
+			'NamespacesToBeSearchedDefault' => [ NS_MAIN => 1, "1" /* NS_TALK */ => 0, "14" /* NS_CATEGORY */ => 1 ],
+			'CirrusSearchRescoreProfiles' => [
+				'foo' => [],
+				'common' => []
+			]
+		] );
+		$targetWikiConfig = $this->newHashSearchConfig( [
+			'_wikiID' => 'target',
+			'NamespacesToBeSearchedDefault' => [ "12" /* NS_HELP */ => 1, NS_MAIN => 1, NS_FILE_TALK => 0 ],
+			'CirrusSearchRescoreProfiles' => [
+				'common' => []
+			]
+		] );
+
+		$hostWikiQuery = $this->getNewFTSearchQueryBuilder( $hostWikiConfig, 'myquery' )
+			->setInitialNamespaces( [ NS_MAIN, NS_CATEGORY ] )
+			->build();
+
+		$crossSearchQuery = SearchQueryBuilder::forCrossProjectSearch( $targetWikiConfig, $hostWikiQuery )->build();
+		$this->assertArrayEquals( [ NS_MAIN, NS_HELP ], $crossSearchQuery->getNamespaces() );
+
+		$hostWikiQuery = $this->getNewFTSearchQueryBuilder( $hostWikiConfig, 'all:myquery' )
+			->setInitialNamespaces( [ NS_MAIN, NS_CATEGORY ] )
+			->build();
+
+		$crossSearchQuery = SearchQueryBuilder::forCrossProjectSearch( $targetWikiConfig, $hostWikiQuery )->build();
+
+		$this->assertArrayEquals( [], $crossSearchQuery->getNamespaces() );
+
+		$targetWikiConfig = $this->newHashSearchConfig( [
+			'_wikiID' => 'target',
+			'NamespacesToBeSearchedDefault' => [ 1 ], // cryptic version of NS_MAIN => 1 as returned by the cirrus config dump API
+			'CirrusSearchRescoreProfiles' => [
+				'common' => []
+			]
+		] );
+
+		$hostWikiQuery = $this->getNewFTSearchQueryBuilder( $hostWikiConfig, 'myquery' )
+			->setInitialNamespaces( [ NS_MAIN, NS_CATEGORY ] )
+			->build();
+
+		$crossSearchQuery = SearchQueryBuilder::forCrossProjectSearch( $targetWikiConfig, $hostWikiQuery )->build();
+		$this->assertArrayEquals( [ NS_MAIN ], $crossSearchQuery->getNamespaces() );
+	}
+
 	public function testForCrossLanguageSearch() {
 		$hostWikiConfig = $this->newHashSearchConfig( [
 			'CirrusSearchEnableAltLanguage' => true,
@@ -547,5 +598,28 @@ class SearchQueryTest extends CirrusTestCase {
 	): SearchQueryBuilder {
 		return SearchQueryBuilder::forRewrittenQuery( $query, $term, $this->namespacePrefixParser(),
 			$this->createCirrusSearchHookRunner() );
+	}
+
+	public static function provideMustTrackTotalHits(): Generator {
+		yield 'always true' => [ 'foo', [ 'CirrusSearchMustTrackTotalHits' => [ 'default' => true ] ], true ];
+		yield 'always false' => [ 'foo', [ 'CirrusSearchMustTrackTotalHits' => [ 'default' => false ] ], false ];
+		yield 'true on simple bag of words with a bag of words' => [
+			'foo',
+			[ 'CirrusSearchMustTrackTotalHits' => [ 'default' => false, 'simple_bag_of_words' => true ] ],
+			true
+		];
+		yield 'true on simple bag of words without a bag of words' => [
+			'foo OR bar',
+			[ 'CirrusSearchMustTrackTotalHits' => [ 'default' => false, 'simple_bag_of_words' => true ] ],
+			false
+		];
+	}
+
+	/**
+	 * @dataProvider provideMustTrackTotalHits
+	 */
+	public function testMustTrackTotalHits( string $query, array $mustTrackTotalHitsConfig, $expectedMustTrackTotalHits ): void {
+		$searchQuery = $this->getNewFTSearchQueryBuilder( new HashSearchConfig( $mustTrackTotalHitsConfig ), $query )->build();
+		$this->assertEquals( $expectedMustTrackTotalHits, $searchQuery->mustTrackTotalHits() );
 	}
 }

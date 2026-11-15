@@ -82,7 +82,7 @@ class SchulzeTallier extends PairwiseTallier {
 		return $strengths;
 	}
 
-	private function convertStrengthMatrixToRanks( $strengths ) {
+	private function convertStrengthMatrixToRanks( array $strengths ): array {
 		$unusedIds = $this->optionIds;
 		$ranks = [];
 		$currentRank = 1;
@@ -138,20 +138,21 @@ class SchulzeTallier extends PairwiseTallier {
 
 	/**
 	 * @inheritDoc
-	 *
 	 */
 	public function finishTally() {
 		$this->strengths = $this->getPathStrengths( $this->victories );
 		$this->ranks = $this->convertStrengthMatrixToRanks( $this->strengths );
 	}
 
+	/**
+	 * @return array|null
+	 */
 	public function getRanks() {
 		return $this->ranks;
 	}
 
 	/**
 	 * @inheritDoc
-	 *
 	 */
 	public function loadJSONResult( $data ) {
 		$this->ranks = $data['ranks'];
@@ -161,7 +162,6 @@ class SchulzeTallier extends PairwiseTallier {
 
 	/**
 	 * @inheritDoc
-	 *
 	 */
 	public function getJSONResult() {
 		return [
@@ -173,7 +173,6 @@ class SchulzeTallier extends PairwiseTallier {
 
 	/**
 	 * @inheritDoc
-	 *
 	 */
 	public function getHtmlResult() {
 		$s = '<h2>' . wfMessage( 'securepoll-ranks' )->parse() . "</h2>\n";
@@ -191,18 +190,14 @@ class SchulzeTallier extends PairwiseTallier {
 
 	/**
 	 * @inheritDoc
-	 *
 	 */
 	public function getTextResult() {
 		$rankedIds = array_keys( $this->ranks );
 
-		return wfMessage( 'securepoll-ranks' )->text() . "\n" . $this->convertRanksToText(
-				$this->ranks
-			) . "\n\n" . wfMessage( 'securepoll-pairwise-victories' )->text(
-			) . "\n" . $this->convertMatrixToText(
-				$this->victories,
-				$rankedIds
-			) . "\n\n" . wfMessage( 'securepoll-strength-matrix' )->text(
-			) . "\n" . $this->convertMatrixToText( $this->strengths, $rankedIds );
+		return wfMessage( 'securepoll-ranks' )->text() . "\n" .
+			$this->convertRanksToText( $this->ranks ) . "\n\n" .
+			wfMessage( 'securepoll-pairwise-victories' )->text() . "\n" . $this->convertMatrixToText( $this->victories, $rankedIds ) . "\n\n" .
+			wfMessage( 'securepoll-strength-matrix' )->text() . "\n" .
+			$this->convertMatrixToText( $this->strengths, $rankedIds );
 	}
 }

@@ -4,7 +4,6 @@ namespace SD;
 
 use ALItem;
 use ALRow;
-use MagicWordFactory;
 use MediaWiki\MediaWikiServices;
 use SMW\SQLStore\SQLStore;
 
@@ -13,7 +12,6 @@ use SMW\SQLStore\SQLStore;
  *
  * @author Yaron Koren
  */
-
 class Utils {
 
 	public static function setGlobalJSVariables( &$vars ) {
@@ -134,18 +132,16 @@ class Utils {
 	 * @return bool true or false
 	 */
 	public static function handleShowAndHide( &$parser, &$text ) {
-		if ( class_exists( MagicWordFactory::class ) ) {
-			// MW 1.32+
-			$factory = MediaWikiServices::getInstance()->getMagicWordFactory();
-			$mw_hide = $factory->get( 'MAG_HIDEFROMDRILLDOWN' );
-			$mw_show = $factory->get( 'MAG_SHOWINDRILLDOWN' );
-		}
+		$factory = MediaWikiServices::getInstance()->getMagicWordFactory();
+		$mw_hide = $factory->get( 'MAG_HIDEFROMDRILLDOWN' );
+		$mw_show = $factory->get( 'MAG_SHOWINDRILLDOWN' );
+
 		$parserOutput = $parser->getOutput();
 		if ( $mw_hide->matchAndRemove( $text ) ) {
-			Compat::setPageProperty( $parserOutput, 'hidefromdrilldown', 'y' );
+			$parserOutput->setPageProperty( 'hidefromdrilldown', 'y' );
 		}
 		if ( $mw_show->matchAndRemove( $text ) ) {
-			Compat::setPageProperty( $parserOutput, 'showindrilldown', 'y' );
+			$parserOutput->setPageProperty( 'showindrilldown', 'y' );
 		}
 		return true;
 	}
@@ -164,7 +160,9 @@ class Utils {
 		$sd_row->addItem( ALItem::newFromSpecialPage( 'BrowseData' ) );
 		$sd_name = wfMessage( 'specialpages-group-sd_group' )->text();
 		$sd_docu_label = wfMessage( 'adminlinks_documentation', $sd_name )->text();
-		$sd_row->addItem( ALItem::newFromExternalLink( "https://www.mediawiki.org/wiki/Extension:Semantic_Drilldown", $sd_docu_label ) );
+		$sd_row->addItem( ALItem::newFromExternalLink(
+			"https://www.mediawiki.org/wiki/Extension:Semantic_Drilldown", $sd_docu_label
+		) );
 
 		$browse_search_section->addRow( $sd_row );
 

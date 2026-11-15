@@ -12,16 +12,17 @@ use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePage;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\Html\Html;
-use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Html\TemplateParser;
 use MediaWiki\Language\FormatterFactory;
 use MediaWiki\Message\Message;
+use MediaWiki\Parser\ParserFactory;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
 use MediaWiki\Status\StatusFormatter;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFormatter;
+use MediaWiki\Widget\LanguageSelectWidget;
 use MessageGroup;
-use ParserFactory;
 use WikiPageMessageGroup;
 
 /**
@@ -38,21 +39,19 @@ class ExportTranslationsSpecialPage extends SpecialPage {
 	protected string $language;
 	protected string $format;
 	protected string $groupId;
-	private TitleFormatter $titleFormatter;
-	private ParserFactory $parserFactory;
 	private StatusFormatter $statusFormatter;
 	/** @var string[] */
 	private const VALID_FORMATS = [ 'export-as-po', 'export-to-file', 'export-as-csv' ];
+	private readonly TemplateParser $templateParser;
 
 	public function __construct(
-		TitleFormatter $titleFormatter,
-		ParserFactory $parserFactory,
+		private readonly TitleFormatter $titleFormatter,
+		private readonly ParserFactory $parserFactory,
 		FormatterFactory $formatterFactory
 	) {
 		parent::__construct( 'ExportTranslations' );
-		$this->titleFormatter = $titleFormatter;
-		$this->parserFactory = $parserFactory;
 		$this->statusFormatter = $formatterFactory->getStatusFormatter( $this );
+		$this->templateParser = new TemplateParser( __DIR__ . '/templates/' );
 	}
 
 	/** @param null|string $par */
@@ -69,13 +68,17 @@ class ExportTranslationsSpecialPage extends SpecialPage {
 
 		$this->outputForm();
 		$out->addModules( 'ext.translate.special.exporttranslations' );
+		$out->addModuleStyles( [
+			'ext.translate.special.exporttranslations.styles',
+			'mediawiki.codex.messagebox.styles',
+			'codex-styles'
+		] );
 
 		if ( $this->groupId ) {
 			$status = $this->checkInput();
 			if ( !$status->isGood() ) {
-				$out->wrapWikiTextAsInterface(
-					'error',
-					$this->statusFormatter->getWikiText( $status )
+				$out->addHTML(
+					Html::errorBox( $this->statusFormatter->getHTML( $status, [ 'lang' => $lang ] ) )
 				);
 				return;
 			}
@@ -90,41 +93,52 @@ class ExportTranslationsSpecialPage extends SpecialPage {
 	}
 
 	private function outputForm(): void {
-		$fields = [
-			'group' => [
-				'type' => 'select',
-				'name' => 'group',
-				'id' => 'group',
-				'label-message' => 'translate-page-group',
-				'options' => $this->getGroupOptions(),
-				'default' => $this->groupId,
-			],
-			'language' => [
-				// @todo Apply ULS to this field
-				'type' => 'select',
-				'name' => 'language',
-				'id' => 'language',
-				'label-message' => 'translate-page-language',
-				'options' => $this->getLanguageOptions(),
-				'default' => $this->language,
-			],
-			'format' => [
-				'type' => 'radio',
-				'name' => 'format',
-				'id' => 'format',
-				'label-message' => 'translate-export-form-format',
-				'flatlist' => true,
-				'options' => $this->getFormatOptions(),
-				'default' => $this->format,
-			],
+		$hiddenFields = [
+			[ 'name' => 'x', 'value' => 'D' ]
 		];
-		HTMLForm::factory( 'ooui', $fields, $this->getContext() )
-			->setMethod( 'get' )
-			->setId( 'mw-export-message-group-form' )
-			->setWrapperLegendMsg( 'translate-page-settings-legend' )
-			->setSubmitTextMsg( 'translate-submit' )
-			->prepareForm()
-			->displayForm( false );
+
+		$formatOptions = [];
+		foreach ( $this->getFormatOptions() as $label => $value ) {
+			$formatOptions[] = [
+				'label' => $label,
+				'value' => $value,
+				'checked' => $value === $this->format
+			];
+		}
+
+		$languages = Utilities::getLanguageNames( 'en' );
+		$languageSelectWidget = new LanguageSelectWidget( [
+			'name' => 'language',
+			'value' => $this->language,
+			'languages' => $languages,
+			'cssclass' => 'cdx-select'
+		] );
+
+		$groupOptions = [];
+		foreach ( $this->getGroupOptions() as $label => $value ) {
+			$groupOptions[] = [
+				'label' => $label,
+				'value' => $value,
+				'selected' => $value === $this->groupId
+			];
+		}
+		$data = [
+			'action' => $this->getPageTitle()->getLocalURL(),
+			'languageLabel' => $this->msg( 'translate-language-field-name' )->text(),
+			'languageSelectHtml' => $languageSelectWidget->toString(),
+			'groupLabel' => $this->msg( 'translate-page-group' )->text(),
+			'groupOptions' => $groupOptions,
+			'formatLabel' => $this->msg( 'translate-export-form-format' )->text(),
+			'formatOptions' => $formatOptions,
+			'hiddenFields' => $hiddenFields,
+			'submitLabel' => $this->msg( 'translate-submit' )->text(),
+			'selectedGroup' => $this->groupId,
+			'selectedFormat' => $this->format,
+		];
+
+		$this->getOutput()->addHTML(
+			$this->templateParser->processTemplate( 'ExportTranslationsForm', $data )
+		);
 	}
 
 	private function getGroupOptions(): array {
@@ -138,17 +152,6 @@ class ExportTranslationsSpecialPage extends SpecialPage {
 			}
 
 			$options[$group->getLabel()] = $id;
-		}
-
-		return $options;
-	}
-
-	/** @return string[] */
-	private function getLanguageOptions(): array {
-		$languages = Utilities::getLanguageNames( 'en' );
-		$options = [];
-		foreach ( $languages as $code => $name ) {
-			$options["$code - $name"] = $code;
 		}
 
 		return $options;
@@ -287,13 +290,10 @@ class ExportTranslationsSpecialPage extends SpecialPage {
 					$text = "{{DISPLAYTITLE:$displayTitle}}$text";
 				}
 
-				$box = Html::element(
-					'textarea',
-					[ 'id' => 'wpTextbox', 'rows' => 40, ],
-					$text
-				);
-				$out->addHTML( $box );
-
+				$out->addHTML( Html::textarea( '', $text, [
+					'id' => 'wpTextbox',
+					'rows' => 40,
+				] ) );
 		}
 
 		return Status::newGood();
@@ -307,7 +307,7 @@ class ExportTranslationsSpecialPage extends SpecialPage {
 		if ( $this->language !== $translateDocCode
 			&& $this->language !== $group->getSourceLanguage()
 		) {
-			$collection->filter( 'ignored' );
+			$collection->filter( MessageCollection::FILTER_IGNORED, MessageCollection::EXCLUDE_MATCHING );
 		}
 
 		$collection->loadTranslations();
@@ -356,7 +356,7 @@ class ExportTranslationsSpecialPage extends SpecialPage {
 		fclose( $fp );
 	}
 
-	protected function getGroupName() {
+	protected function getGroupName(): string {
 		return 'translation';
 	}
 }

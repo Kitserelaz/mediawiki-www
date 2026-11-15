@@ -11,8 +11,8 @@ use MediaWiki\Extension\Translate\MessageLoading\Message;
 use MediaWiki\Extension\Translate\MessageLoading\MessageCollection;
 use MediaWiki\Extension\Translate\Services;
 use RuntimeException;
-use StringUtils;
 use UtfNormal\Validator;
+use Wikimedia\StringUtils\StringUtils;
 
 /**
  * A very basic FileFormatSupport module that implements some basic functionality and
@@ -175,10 +175,14 @@ class SimpleFormat implements FileFormatSupport {
 		}
 
 		if ( !file_exists( $writePath ) ) {
+			// Warning: this exception message contains a local filesystem path. If this method
+			// is ever called from a web-facing context, the message must be sanitized to avoid
+			// disclosing server directory structure to end users.
 			throw new InvalidArgumentException( "Write path '$writePath' does not exist." );
 		}
 
 		if ( !is_writable( $writePath ) ) {
+			// Warning: this exception message contains a local filesystem path (see above).
 			throw new InvalidArgumentException( "Write path '$writePath' is not writable." );
 		}
 
@@ -292,10 +296,9 @@ class SimpleFormat implements FileFormatSupport {
 
 	/** Remove excluded authors. */
 	public function filterAuthors( array $authors, string $code ): array {
-		$groupId = $this->group->getId();
 		$configHelper = Services::getInstance()->getConfigHelper();
 		foreach ( $authors as $i => $v ) {
-			if ( $configHelper->isAuthorExcluded( $groupId, $code, (string)$v ) ) {
+			if ( $configHelper->isAuthorExcluded( $this->group, $code, (string)$v ) ) {
 				unset( $authors[$i] );
 			}
 		}

@@ -5,17 +5,15 @@ namespace CirrusSearch;
 use CirrusSearch\Job\CirrusTitleJob;
 use CirrusSearch\Job\DeletePages;
 use CirrusSearch\Job\LinksUpdate;
-use JobQueueGroup;
-use ManualLogEntry;
 use MediaWiki\Config\ConfigFactory;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Deferred\Hook\LinksUpdateCompleteHook;
 use MediaWiki\Deferred\LinksUpdate\LinksTable;
-use MediaWiki\Hook\ArticleRevisionVisibilitySetHook;
-use MediaWiki\Hook\LinksUpdateCompleteHook;
 use MediaWiki\Hook\PageMoveCompleteHook;
 use MediaWiki\Hook\TitleMoveHook;
-use MediaWiki\Hook\UploadCompleteHook;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Page\Hook\PageDeleteCompleteHook;
 use MediaWiki\Page\Hook\PageDeleteHook;
 use MediaWiki\Page\PageReference;
@@ -23,8 +21,11 @@ use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Page\RedirectLookup;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\RevisionDelete\Hook\ArticleRevisionVisibilitySetHook;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
+use MediaWiki\Upload\Hook\UploadCompleteHook;
+use MediaWiki\Upload\UploadBase;
 use MediaWiki\User\User;
 use MediaWiki\Utils\MWTimestamp;
 use Wikimedia\Assert\Assert;
@@ -178,7 +179,7 @@ class ChangeListener extends PageChangeTracker implements
 	 * we need to refresh the search index when a file is overwritten on an
 	 * existing title.
 	 *
-	 * @param \UploadBase $uploadBase
+	 * @param UploadBase $uploadBase
 	 */
 	public function onUploadComplete( $uploadBase ) {
 		if ( !$this->isEnabled() ) {
@@ -254,7 +255,7 @@ class ChangeListener extends PageChangeTracker implements
 			DeletePages::build(
 				$title,
 				$this->searchConfig->makeId( $pageID ),
-				$logEntry->getTimestamp() !== false ? MWTimestamp::convert( TS_UNIX, $logEntry->getTimestamp() ) : MWTimestamp::time()
+				$logEntry->getTimestamp() !== false ? (int)MWTimestamp::convert( TS_UNIX, $logEntry->getTimestamp() ) : MWTimestamp::time()
 			)
 		);
 	}

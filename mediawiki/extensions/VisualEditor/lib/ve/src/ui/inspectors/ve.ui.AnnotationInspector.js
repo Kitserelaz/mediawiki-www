@@ -95,7 +95,7 @@ ve.ui.AnnotationInspector.prototype.getInsertionText = function () {
  * but existing annotations won't be removed either.
  *
  * @abstract
- * @return {ve.dm.Annotation} Annotation to apply
+ * @return {ve.dm.Annotation|null} Annotation to apply
  */
 ve.ui.AnnotationInspector.prototype.getAnnotation = null;
 
@@ -230,14 +230,13 @@ ve.ui.AnnotationInspector.prototype.getSetupProcess = function ( data ) {
 			if ( this.isNew && this.isReadOnly() ) {
 				return ve.createDeferred().reject().promise();
 			}
-		}, this );
+		} );
 };
 
 /**
  * @inheritdoc
  */
-ve.ui.AnnotationInspector.prototype.getTeardownProcess = function ( data ) {
-	data = data || {};
+ve.ui.AnnotationInspector.prototype.getTeardownProcess = function ( data = {} ) {
 	return ve.ui.AnnotationInspector.super.prototype.getTeardownProcess.call( this, data )
 		.first( () => {
 			const annotation = this.getAnnotation(),
@@ -250,15 +249,11 @@ ve.ui.AnnotationInspector.prototype.getTeardownProcess = function ( data ) {
 
 			let insertionAnnotation = false;
 			let replace = false;
-			let annotations;
 			let insertion;
 
 			const clear = () => {
 				// Clear all existing annotations
-				annotations = this.getMatchingAnnotations( fragment, true ).get();
-				for ( let i = 0, len = annotations.length; i < len; i++ ) {
-					fragment.annotateContent( 'clear', annotations[ i ] );
-				}
+				this.getMatchingAnnotations( fragment, true ).get().forEach( ( ann ) => fragment.annotateContent( 'clear', ann ) );
 			};
 
 			if ( remove ) {

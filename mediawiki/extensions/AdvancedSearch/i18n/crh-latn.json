@@ -29,8 +29,8 @@
 	"advancedsearch-inlanguage-default": "Til sayla",
 	"advancedsearch-filetype-section-types": "Fayllarnıñ umumiy türleri",
 	"advancedsearch-filetype-section-image": "Resim formatları",
-	"advancedsearch-filetype-section-video": "Video formatları",
 	"advancedsearch-filetype-section-audio": "Audio formatları",
+	"advancedsearch-filetype-section-video": "Video formatları",
 	"advancedsearch-filetype-section-document": "Vesiqa formatları",
 	"advancedsearch-filetype-section-other": "Başqa formatlar",
 	"advancedsearch-filetype-default": "Fayl türüni saylañız",
@@ -60,5 +60,7 @@
 	"advancedsearch-namespaces-preset-general-help": "Umumiy yardım",
 	"advancedsearch-namespaces-preset-discussion": "Muzakere",
 	"advancedsearch-namespaces-placeholder": "İsimler fezaları qoş...",
-	"prefs-advancedsearch": "İnkişaflı Qıdıruv"
+	"prefs-advancedsearch": "İnkişaflı Qıdıruv",
+	"advancedsearch-preference-help": "İnkişaflı Qıdıruv, {{#Special:Search}} saifesine bir forma qoşa. Bu, qıdıruv sintaksisini iç bilmeseñiz bile hususiyleştirilgen qıdıruv qullanmağa imkân bere. Ayrıca, isim fezalarınıñ saylanuv formatını da deñiştire.",
+	"advancedsearch-preference-disable": "{{#Special:Search}} qullanğanda İnkişaflı Qıdıruv interfeysini kösterme"
 }

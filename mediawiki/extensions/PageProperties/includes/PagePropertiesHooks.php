@@ -23,6 +23,7 @@
  */
 
 use MediaWiki\Extension\PageProperties\Aliases\Title as TitleClass;
+use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 
 class PagePropertiesHooks {
@@ -50,9 +51,6 @@ class PagePropertiesHooks {
 
 			$GLOBALS['wgContentHandlers']["pageproperties-jsondata"] = "PagePropertiesJsonDataContentHandler";
 			$GLOBALS['wgContentHandlers']["pageproperties-semantic"] = "PagePropertiesJsonDataContentHandler";
-
-			include_once __DIR__ . '/content/PagePropertiesJsonDataContentHandler.php';
-			include_once __DIR__ . '/content/PagePropertiesJsonDataContent.php';
 		}
 	}
 

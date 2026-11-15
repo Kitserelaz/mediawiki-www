@@ -4,14 +4,12 @@
 			"Artsiom91",
 			"Chadyka",
 			"Kapatych",
-			"Plaga med"
+			"Plaga med",
+			"Ucukor"
 		]
 	},
 	"templatewizard-add-all": "Дадаць усе параметры",
-	"templatewizard-cancel": "Адмена",
-	"templatewizard-close-dialog": "Выйсці з майстра?",
-	"templatewizard-close-dialog-body": "Выхад з Майстру шаблонаў прывядзе да страты ўсіх звестак, якія былі дададзены ў шаблон.",
-	"templatewizard-close-dialog-retry": "Адмяніць змяненні",
+	"templatewizard-cancel": "Скасаваць",
 	"templatewizard-default": "Прадвызначана: $1",
 	"templatewizard-desc": "Праграма WikiEditor, якая прадастаўляе майстар устаўкі шаблонаў",
 	"templatewizard-dialog-title": "Уставіць шаблон",
@@ -33,7 +31,7 @@
 	"templatewizard-placeholder-example": "Напрыклад: $1",
 	"templatewizard-remove-all": "Выдаліць усе параметры",
 	"templatewizard-remove-template": "Выдаліць шаблон?",
-	"templatewizard-remove-template-body": "Шаблон, які Вы хочаце выдаліць, змяшчае ўведзеныя Вамі звесткі. Выдаленне шаблона таксама выдаліць інфармацыю, якую Вы дадалі ў яго. Гэта дзеянне нельга будзе адмяніць.",
+	"templatewizard-remove-template-body": "Шаблон, які Вы хочаце выдаліць, змяшчае ўведзеныя Вамі звесткі. Выдаленне шаблона таксама выдаліць інфармацыю, якую Вы дадалі ў яго. Гэта дзеянне нельга будзе адрабіць.",
 	"templatewizard-remove-template-retry": "Выдаліць шаблон",
 	"templatewizard-search-placeholder": "Шукаць шаблон",
 	"templatewizard-parambutton-add-title": "Дадаць параметр '$1'",

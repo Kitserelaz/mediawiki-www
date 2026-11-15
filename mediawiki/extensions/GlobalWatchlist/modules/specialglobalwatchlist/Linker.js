@@ -26,7 +26,22 @@ GlobalWatchlistLinker.prototype.fixLocalLinks = function ( comment ) {
 	// use /wiki/$1 and /w/index.php?
 	return comment.replace(
 		/<a href="(\/wiki\/|\/w\/index\.php\?)/g,
-		'<a href="//' + this.site + '$1'
+		( _, p1 ) => '<a href="//' + mw.html.escape( this.site ) + p1
+	);
+};
+
+/**
+ * Parsed comments or tags, but the links open in the same tab there.
+ * Ensure that they will open in a new tab instead.
+ *
+ * @param {string} commentTag The original comment or tag with local links
+ * @return {string} Updated comment or tag
+ */
+GlobalWatchlistLinker.prototype.newTabLinks = function ( commentTag ) {
+	// Add target="_blank" to <a> tags that do not already have a target attribute
+	return commentTag.replace(
+		/<a(?![^>]*\btarget=)([^>]*?)>/g,
+		'<a target="_blank"$1>'
 	);
 };
 

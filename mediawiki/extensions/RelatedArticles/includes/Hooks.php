@@ -6,34 +6,32 @@ use MediaWiki\Config\Config;
 use MediaWiki\Config\ConfigFactory;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\Disambiguator\Lookup;
-use MediaWiki\Hook\ParserFirstCallInitHook;
-use MediaWiki\Hook\SkinAfterContentHook;
 use MediaWiki\Html\Html;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
-use MediaWiki\Output\Hook\OutputPageParserOutputHook;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Parser\Hook\ParserFirstCallInitHook;
 use MediaWiki\Parser\Parser;
-use MediaWiki\Parser\ParserOutput;
 use MediaWiki\ResourceLoader\Hook\ResourceLoaderGetConfigVarsHook;
+use MediaWiki\Settings\SettingsBuilder;
+use MediaWiki\Skin\Hook\SkinAfterContentHook;
+use MediaWiki\Skin\Skin;
 use MediaWiki\Title\Title;
-use Skin;
 
 class Hooks implements
 	ParserFirstCallInitHook,
-	OutputPageParserOutputHook,
 	BeforePageDisplayHook,
 	ResourceLoaderGetConfigVarsHook,
 	SkinAfterContentHook
 {
 
-	private Config $relatedArticlesConfig;
+	private readonly Config $relatedArticlesConfig;
 
-	/** Either a Lookup from the Disambiguator extension, or null if that is not installed */
-	private ?Lookup $disambiguatorLookup;
-
-	public function __construct( ConfigFactory $configFactory, ?Lookup $disambiguatorLookup ) {
+	public function __construct(
+		ConfigFactory $configFactory,
+		private readonly ?Lookup $disambiguatorLookup,
+	) {
 		$this->relatedArticlesConfig = $configFactory->makeConfig( 'RelatedArticles' );
-		$this->disambiguatorLookup = $disambiguatorLookup;
 	}
 
 	/**
@@ -90,7 +88,7 @@ class Hooks implements
 	private function hasRelatedArticles( Skin $skin ): bool {
 		$title = $skin->getTitle();
 		$action = $skin->getRequest()->getRawVal( 'action' ) ?? 'view';
-		return $title->inNamespace( NS_MAIN ) &&
+		return $title->inNamespaces( $this->relatedArticlesConfig->get( 'RelatedArticlesFooterAllowedNamespaces' ) ) &&
 			// T120735
 			$action === 'view' &&
 			!$title->isMainPage() &&
@@ -109,7 +107,7 @@ class Hooks implements
 	 * <ol>
 	 *   <li>On mobile, the output is being rendered with
 	 *     <code>SkinMinervaBeta<code></li>
-	 *   <li>The page is in mainspace</li>
+	 *   <li>The page is in a namespace listed in $wgRelatedArticlesFooterAllowedNamespaces</li>
 	 *   <li>The action is 'view'</li>
 	 *   <li>The page is not the Main Page</li>
 	 *   <li>The page is not a disambiguation page</li>
@@ -137,7 +135,9 @@ class Hooks implements
 	 */
 	public function onResourceLoaderGetConfigVars( array &$vars, $skin, Config $config ): void {
 		$limit = $this->relatedArticlesConfig->get( 'RelatedArticlesCardLimit' );
+
 		$vars['wgRelatedArticlesCardLimit'] = $limit;
+
 		if ( $limit < 1 || $limit > 20 ) {
 			throw new \RuntimeException(
 				'The value of wgRelatedArticlesCardLimit is not valid. It should be between 1 and 20.'
@@ -183,23 +183,6 @@ class Hooks implements
 	}
 
 	/**
-	 * Passes the related pages list from the cached parser output
-	 * object to the output page for rendering.
-	 *
-	 * The list of related pages will be retrieved using
-	 * <code>ParserOutput#getExtensionData</code>.
-	 *
-	 * @param OutputPage $outputPage the OutputPage object
-	 * @param ParserOutput $parserOutput ParserOutput object
-	 */
-	public function onOutputPageParserOutput( $outputPage, $parserOutput ): void {
-		// Backwards-compatibility with old cached content (T371421)
-		// This hook can be removed once this is no longer needed.
-		$related = $parserOutput->getExtensionData( 'RelatedArticles' ) ?? [];
-		$outputPage->addJsConfigVars( 'wgRelatedArticlesCompat', $related );
-	}
-
-	/**
 	 * Create container for ReadMore cards so that they're correctly placed in all skins.
 	 *
 	 * @param string &$data
@@ -208,6 +191,21 @@ class Hooks implements
 	public function onSkinAfterContent( &$data, $skin ) {
 		if ( $this->hasRelatedArticles( $skin ) ) {
 			$data .= Html::element( 'div', [ 'class' => 'read-more-container' ] );
+		}
+	}
+
+	/**
+	 * Default allowed namespaces to $wgContentNamespaces if set to false.
+	 * @param array $extInfo
+	 * @param SettingsBuilder $settings
+	 * @return void
+	 */
+	public static function onRegistration( array $extInfo, SettingsBuilder $settings ) {
+		if ( $settings->getConfig()->get( 'RelatedArticlesFooterAllowedNamespaces' ) === false ) {
+			$settings->overrideConfigValue(
+				'RelatedArticlesFooterAllowedNamespaces',
+				$settings->getConfig()->get( MainConfigNames::ContentNamespaces )
+			);
 		}
 	}
 }

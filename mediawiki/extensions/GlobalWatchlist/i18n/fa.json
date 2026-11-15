@@ -5,8 +5,10 @@
 			"Ebrahim",
 			"Ebraminio",
 			"Jeeputer",
+			"LordProfo",
 			"Mohammad ebz",
-			"Reza koulivand"
+			"Reza koulivand",
+			"LProfo"
 		]
 	},
 	"globalwatchlist": "فهرست پیگیری سراسری",
@@ -53,7 +55,7 @@
 	"globalwatchlist-refresh": "تازه‌سازی",
 	"globalwatchlist-remove": "حذف",
 	"globalwatchlist-resetchanges": "بازنشانی تغییرات اعمال‌شده",
-	"globalwatchlist-rewatch": "پیگیری مجدد",
+	"globalwatchlist-rewatch": "پیگیری دوباره",
 	"globalwatchlist-save": "ذخیرهٔ تنظیمات",
 	"globalwatchlist-settings-error-anon-bot": "کاربران ناشناس قادر به انجام ویرایش‌های رباتیک نیستند",
 	"globalwatchlist-settings-error-anon-minor": "کاربران ناشناس قادر به انجام ویرایش‌های جزئی نیستند",
@@ -65,7 +67,7 @@
 	"globalwatchlist-show-logentries": "نمایش مدخل‌های سیاهه",
 	"globalwatchlist-show-newpages": "نمایش صفحه‌های تازه",
 	"globalwatchlist-sitelist": "فهرست وبگاه‌های مشخص‌شده توسط کاربر",
-	"globalwatchlist-tags": "{{PLURAL:$1|برچسب|برچسب‌ها}}: $2",
+	"globalwatchlist-tags": "<bdi>{{PLURAL:$1|برچسب|برچسب‌ها}}</bdi>: $2",
 	"globalwatchlist-tour-addsite": "افزودن یک وبگاه",
 	"globalwatchlist-tour-addsite-description": "برای افزودن یک ردیف دیگر برای یک وبگاه در بالا کلیک کنید.",
 	"globalwatchlist-tour-fastmode": "حالت سریع",

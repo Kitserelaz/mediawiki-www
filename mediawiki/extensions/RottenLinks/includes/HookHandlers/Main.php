@@ -2,11 +2,11 @@
 
 namespace Miraheze\RottenLinks\HookHandlers;
 
-use JobSpecification;
+use MediaWiki\Deferred\Hook\LinksUpdateCompleteHook;
 use MediaWiki\Deferred\LinksUpdate\LinksUpdate;
-use MediaWiki\Hook\LinksUpdateCompleteHook;
-use MediaWiki\Hook\ParserFirstCallInitHook;
 use MediaWiki\JobQueue\JobQueueGroupFactory;
+use MediaWiki\JobQueue\JobSpecification;
+use MediaWiki\Parser\Hook\ParserFirstCallInitHook;
 use MediaWiki\Parser\Parser;
 use Miraheze\RottenLinks\Jobs\RottenLinksJob;
 use Miraheze\RottenLinks\RottenLinksParserFunctions;
@@ -32,7 +32,7 @@ class Main implements
 	 * Handler for LinksUpdateComplete hook.
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/LinksUpdateComplete
 	 * @param LinksUpdate $linksUpdate
-	 * @param mixed $ticket
+	 * @param mixed $ticket @phan-unused-param
 	 */
 	public function onLinksUpdateComplete( $linksUpdate, $ticket ) {
 		$addedExternalLinks = $linksUpdate->getAddedExternalLinks();

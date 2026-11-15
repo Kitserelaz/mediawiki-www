@@ -7,9 +7,9 @@ use MediaWiki\Content\TextContent;
 use MediaWiki\MassMessage\LanguageAwareText;
 use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Revision\SlotRecord;
-use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\WikiMap\WikiMap;
+use StatusValue;
 
 /**
  * Fetches content from the local wiki
@@ -18,16 +18,11 @@ use MediaWiki\WikiMap\WikiMap;
  * @license GPL-2.0-or-later
  */
 class LocalMessageContentFetcher {
-	/** @var RevisionStore */
-	private $revisionStore;
-	/** @var string */
-	private $currentWikiId;
+	private readonly string $currentWikiId;
 
-	/**
-	 * @param RevisionStore $revisionStore
-	 */
-	public function __construct( RevisionStore $revisionStore ) {
-		$this->revisionStore = $revisionStore;
+	public function __construct(
+		private readonly RevisionStore $revisionStore,
+	) {
 		$this->currentWikiId = WikiMap::getCurrentWikiId();
 	}
 
@@ -35,11 +30,11 @@ class LocalMessageContentFetcher {
 	 * Fetch the page content with the given title from the same wiki.
 	 *
 	 * @param Title $pageTitle
-	 * @return Status Value is LanguageAwareText or null on failure
+	 * @return StatusValue Value is LanguageAwareText or null on failure
 	 */
-	public function getContent( Title $pageTitle ): Status {
+	public function getContent( Title $pageTitle ): StatusValue {
 		if ( !$pageTitle->exists() ) {
-			return Status::newFatal(
+			return StatusValue::newFatal(
 				'massmessage-page-message-not-found',
 				$pageTitle->getPrefixedText(),
 				$this->currentWikiId
@@ -49,7 +44,7 @@ class LocalMessageContentFetcher {
 		$revision = $this->revisionStore->getRevisionByTitle( $pageTitle );
 
 		if ( $revision === null ) {
-			return Status::newFatal(
+			return StatusValue::newFatal(
 				'massmessage-page-message-no-revision',
 				$pageTitle->getPrefixedText()
 			);
@@ -62,7 +57,7 @@ class LocalMessageContentFetcher {
 		}
 
 		if ( $wikitext === null ) {
-			return Status::newFatal(
+			return StatusValue::newFatal(
 				'massmessage-page-message-no-revision-content',
 				$pageTitle->getPrefixedText(),
 				$revision->getId()
@@ -75,30 +70,30 @@ class LocalMessageContentFetcher {
 			$pageTitle->getPageLanguage()->getDir()
 		);
 
-		return Status::newGood( $content );
+		return StatusValue::newGood( $content );
 	}
 
 	/**
 	 * Fetch the page title given the title string
 	 *
 	 * @param string $title
-	 * @return Status
+	 * @return StatusValue
 	 */
-	public function getTitle( string $title ): Status {
+	public function getTitle( string $title ): StatusValue {
 		$pageTitle = Title::newFromText( $title );
 
 		if ( $pageTitle === null ) {
-			return Status::newFatal(
+			return StatusValue::newFatal(
 				'massmessage-page-message-invalid', $title
 			);
 		} elseif ( !$pageTitle->exists() ) {
-			return Status::newFatal(
+			return StatusValue::newFatal(
 				'massmessage-page-message-not-found',
 				$pageTitle->getPrefixedText(),
 				$this->currentWikiId
 			);
 		}
 
-		return Status::newGood( $pageTitle );
+		return StatusValue::newGood( $pageTitle );
 	}
 }

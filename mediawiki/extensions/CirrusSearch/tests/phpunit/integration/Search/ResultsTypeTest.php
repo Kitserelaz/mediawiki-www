@@ -5,7 +5,6 @@ namespace CirrusSearch\Search;
 use CirrusSearch\CirrusIntegrationTestCase;
 use CirrusSearch\HashSearchConfig;
 use CirrusSearch\Search\Fetch\FetchPhaseConfigBuilder;
-use CirrusSearch\Searcher;
 use Elastica\Query;
 use Elastica\Response;
 use MediaWiki\Title\Title;
@@ -13,20 +12,7 @@ use MediaWiki\Title\Title;
 /**
  * Test escaping search strings.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  *
  * @covers \CirrusSearch\Search\FullTextResultsType
  * @covers \CirrusSearch\Search\Fetch\FetchPhaseConfigBuilder
@@ -56,7 +42,7 @@ class ResultsTypeTest extends CirrusIntegrationTestCase {
 				[
 					'highlight' => [
 						'title.prefix' => [
-							Searcher::HIGHLIGHT_PRE . 'Trebu' . Searcher::HIGHLIGHT_POST . 'chet',
+							'Trebuchet',
 						],
 					],
 					'_source' => [
@@ -72,7 +58,7 @@ class ResultsTypeTest extends CirrusIntegrationTestCase {
 				[
 					'highlight' => [
 						'redirect.title.prefix' => [
-							Searcher::HIGHLIGHT_PRE . 'Pierriere' . Searcher::HIGHLIGHT_POST,
+							'Pierriere',
 						],
 					],
 					'_source' => [
@@ -91,7 +77,7 @@ class ResultsTypeTest extends CirrusIntegrationTestCase {
 				[
 					'highlight' => [
 						'redirect.title.prefix' => [
-							Searcher::HIGHLIGHT_PRE . 'Pierriere' . Searcher::HIGHLIGHT_POST,
+							'Pierriere',
 						],
 					],
 					'_source' => [
@@ -110,7 +96,7 @@ class ResultsTypeTest extends CirrusIntegrationTestCase {
 				[
 					'highlight' => [
 						'redirect.title.prefix' => [
-							Searcher::HIGHLIGHT_PRE . 'Pi' . Searcher::HIGHLIGHT_POST . 'erriere',
+							'Pierriere',
 						],
 					],
 					'_source' => [
@@ -129,7 +115,7 @@ class ResultsTypeTest extends CirrusIntegrationTestCase {
 				[
 					'highlight' => [
 						'redirect.title.prefix' => [
-							Searcher::HIGHLIGHT_PRE . 'Pierriere' . Searcher::HIGHLIGHT_POST,
+							'Pierriere',
 						],
 					],
 					'_source' => [
@@ -152,7 +138,7 @@ class ResultsTypeTest extends CirrusIntegrationTestCase {
 	 * @dataProvider fancyRedirectHandlingProvider
 	 */
 	public function testFancyRedirectHandling( $expectedNs, $expected, $hit, array $namespaces = [] ) {
-		$type = new FancyTitleResultsType( 'prefix', $this->newTitleHelper() );
+		$type = new FancyTitleResultsType( 'prefix', self::newTitleHelper() );
 		$result = new \Elastica\Result( $hit );
 		$matches = $type->transformOneElasticResult( $result, $namespaces );
 		$title = FancyTitleResultsType::chooseBestTitleOrRedirect( $matches );
@@ -164,12 +150,12 @@ class ResultsTypeTest extends CirrusIntegrationTestCase {
 	 */
 	public function testFullTextSyntax() {
 		$res = new \Elastica\ResultSet( new Response( [] ), new Query( [] ), [] );
-		$fullTextRes = new FullTextResultsType( new FetchPhaseConfigBuilder( new HashSearchConfig( [] ) ), true, $this->newTitleHelper() );
+		$fullTextRes = new FullTextResultsType( new FetchPhaseConfigBuilder( new HashSearchConfig( [] ) ), true, self::newTitleHelper() );
 		$this->assertTrue( $fullTextRes->transformElasticsearchResult( $res )->searchContainedSyntax() );
 
-		$fullTextRes = new FullTextResultsType( new FetchPhaseConfigBuilder( new HashSearchConfig( [] ) ), false, $this->newTitleHelper() );
+		$fullTextRes = new FullTextResultsType( new FetchPhaseConfigBuilder( new HashSearchConfig( [] ) ), false, self::newTitleHelper() );
 		$this->assertFalse( $fullTextRes->transformElasticsearchResult( $res )->searchContainedSyntax() );
-		$fullTextRes = new FullTextResultsType( new FetchPhaseConfigBuilder( new HashSearchConfig( [] ) ), false, $this->newTitleHelper() );
+		$fullTextRes = new FullTextResultsType( new FetchPhaseConfigBuilder( new HashSearchConfig( [] ) ), false, self::newTitleHelper() );
 		$this->assertFalse( $fullTextRes->transformElasticsearchResult( $res )->searchContainedSyntax() );
 	}
 
@@ -178,13 +164,13 @@ class ResultsTypeTest extends CirrusIntegrationTestCase {
 	 */
 	public function testExtraFields() {
 		$fullTextRes = new FullTextResultsType( new FetchPhaseConfigBuilder( new HashSearchConfig( [] ) ),
-			true, $this->newTitleHelper(), [ 'extra_field1', 'extra_field2' ] );
+			true, self::newTitleHelper(), [ 'extra_field1', 'extra_field2' ] );
 		$this->assertContains( 'extra_field1', $fullTextRes->getSourceFiltering() );
 		$this->assertContains( 'extra_field2', $fullTextRes->getSourceFiltering() );
 	}
 
 	public function testEmptyResultSet() {
-		$fullTextRes = new FullTextResultsType( new FetchPhaseConfigBuilder( new HashSearchConfig( [] ) ), true, $this->newTitleHelper() );
+		$fullTextRes = new FullTextResultsType( new FetchPhaseConfigBuilder( new HashSearchConfig( [] ) ), true, self::newTitleHelper() );
 		$results = $fullTextRes->createEmptyResult();
 		$this->assertSame( 0, $results->numRows() );
 		$this->assertFalse( $results->hasMoreResults() );

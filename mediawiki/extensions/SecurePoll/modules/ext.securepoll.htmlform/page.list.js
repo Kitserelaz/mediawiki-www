@@ -1,5 +1,4 @@
 function StrikePopupWidget( config ) {
-	var content;
 	config = config || {};
 
 	this.strikeButton = new OO.ui.ButtonWidget( {
@@ -10,7 +9,7 @@ function StrikePopupWidget( config ) {
 		placeholder: mw.msg( 'securepoll-strike-reason' )
 	} );
 
-	content = new OO.ui.ActionFieldLayout(
+	const content = new OO.ui.ActionFieldLayout(
 		this.reasonInput,
 		this.strikeButton,
 		{
@@ -48,7 +47,7 @@ StrikePopupWidget.prototype.onStrikeClick = function () {
 };
 
 StrikePopupWidget.prototype.makeRequest = function ( action, voteid, reason ) {
-	var widget = this;
+	const widget = this;
 	new mw.Api().postWithToken( 'csrf', {
 		action: 'strikevote', // API action module
 		option: action, // 'strike' or 'unstrike'
@@ -56,15 +55,14 @@ StrikePopupWidget.prototype.makeRequest = function ( action, voteid, reason ) {
 		reason: reason
 	} )
 		.then(
-			function ( response ) {
-				var $row;
+			( response ) => {
 				if ( response.strikevote.status === 'good' ) {
 					widget.toggle( false );
 				} else {
 					widget.$result.text( response.error.info );
 				}
 
-				$row = $( '#securepoll-popup-' + voteid ).closest( 'tr' );
+				const $row = $( '#securepoll-popup-' + voteid ).closest( 'tr' );
 				if ( action === 'strike' ) {
 					widget.action = 'unstrike';
 					$row.addClass( 'securepoll-struck-vote' );
@@ -76,11 +74,11 @@ StrikePopupWidget.prototype.makeRequest = function ( action, voteid, reason ) {
 				}
 				widget.reasonInput.setValue( '' );
 			},
-			function ( code, response ) { // fail callback
+			( code, response ) => { // fail callback
 				widget.$result.text( response.error.info );
 			}
 		)
-		.always( function () {
+		.always( () => {
 			widget.$spinner.hide();
 			widget.strikeButton.setDisabled( false );
 		} );
@@ -89,8 +87,8 @@ StrikePopupWidget.prototype.makeRequest = function ( action, voteid, reason ) {
 };
 
 $( '.TablePager_col_strike > .oo-ui-buttonWidget a' ).on( 'click', function ( e ) {
-	var $widget = $( this ).parent(),
-		popup = $widget.data( 'popup' );
+	const $widget = $( this ).parent();
+	let popup = $widget.data( 'popup' );
 	e.preventDefault();
 
 	if ( !popup ) {

@@ -4,14 +4,14 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\MessageLoading;
 
 use Generator;
-use HashBagOStuff;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\Services;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use MockWikiMessageGroup;
-use WANObjectCache;
+use Wikimedia\ObjectCache\HashBagOStuff;
+use Wikimedia\ObjectCache\WANObjectCache;
 
 /**
  * Tests for different MessageIndex backends.
@@ -20,7 +20,7 @@ use WANObjectCache;
  * @license GPL-2.0-or-later
  * @group Database
  * @group large
- * @covers MediaWiki\Extension\Translate\MessageLoading\MessageIndex
+ * @covers \MediaWiki\Extension\Translate\MessageLoading\MessageIndex
  */
 class MessageIndexTest extends MediaWikiIntegrationTestCase {
 	protected function setUp(): void {
@@ -184,10 +184,10 @@ class MessageIndexTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public static function provideMessageIndexImplementation(): Generator {
-		yield [ 'TestableDatabaseMessageIndex' => [ 'class' => TestableDatabaseMessageIndex::class ] ];
-		yield [ 'TestableCDBMessageIndex' => [ 'class' => TestableCDBMessageIndex::class ] ];
-		yield [ 'TestableSerializedMessageIndex' => [ 'class' => TestableSerializedMessageIndex::class ] ];
-		yield [ 'TestableHashMessageIndex' => [ 'class' => TestableHashMessageIndex::class ] ];
+		yield 'TestableDatabaseMessageIndex' => [ [ 'class' => TestableDatabaseMessageIndex::class ] ];
+		yield 'TestableCDBMessageIndex' => [ [ 'class' => TestableCDBMessageIndex::class ] ];
+		yield 'TestableSerializedMessageIndex' => [ [ 'class' => TestableSerializedMessageIndex::class ] ];
+		yield 'TestableHashMessageIndex' => [ [ 'class' => TestableHashMessageIndex::class ] ];
 	}
 
 	public function testInterimCache(): void {

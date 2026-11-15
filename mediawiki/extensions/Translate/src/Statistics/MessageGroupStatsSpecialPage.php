@@ -3,7 +3,6 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Statistics;
 
-use JobQueueGroup;
 use MediaWiki\Config\Config;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Deferred\DeferredUpdates;
@@ -12,7 +11,8 @@ use MediaWiki\Extension\Translate\MessageProcessing\MessageGroupMetadata;
 use MediaWiki\Extension\Translate\TranslatorInterface\EntitySearch;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\SpecialPage\SpecialPage;
 use MessagePrefixMessageGroup;
 
@@ -35,12 +35,6 @@ class MessageGroupStatsSpecialPage extends SpecialPage {
 	/** The target type of stats requested: */
 	private ?string $targetType = null;
 	private ServiceOptions $options;
-	private JobQueueGroup $jobQueueGroup;
-	private MessageGroupStatsTableFactory $messageGroupStatsTableFactory;
-	private EntitySearch $entitySearch;
-	private MessagePrefixStats $messagePrefixStats;
-	private LanguageNameUtils $languageNameUtils;
-	private MessageGroupMetadata $messageGroupMetadata;
 
 	private const GROUPS = 'group';
 	private const MESSAGES = 'messages';
@@ -51,35 +45,32 @@ class MessageGroupStatsSpecialPage extends SpecialPage {
 
 	public function __construct(
 		Config $config,
-		JobQueueGroup $jobQueueGroup,
-		MessageGroupStatsTableFactory $messageGroupStatsTableFactory,
-		EntitySearch $entitySearch,
-		MessagePrefixStats $messagePrefixStats,
-		LanguageNameUtils $languageNameUtils,
-		MessageGroupMetadata $messageGroupMetadata
+		private readonly JobQueueGroup $jobQueueGroup,
+		private readonly MessageGroupStatsTableFactory $messageGroupStatsTableFactory,
+		private readonly EntitySearch $entitySearch,
+		private readonly MessagePrefixStats $messagePrefixStats,
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly MessageGroupMetadata $messageGroupMetadata,
 	) {
 		parent::__construct( 'MessageGroupStats' );
 		$this->options = new ServiceOptions( self::CONSTRUCTOR_OPTIONS, $config );
-		$this->jobQueueGroup = $jobQueueGroup;
-		$this->messageGroupStatsTableFactory = $messageGroupStatsTableFactory;
-		$this->entitySearch = $entitySearch;
-		$this->messagePrefixStats = $messagePrefixStats;
-		$this->languageNameUtils = $languageNameUtils;
-		$this->messageGroupMetadata = $messageGroupMetadata;
 	}
 
+	/** @inheritDoc */
 	public function getDescription() {
 		return $this->msg( 'translate-mgs-pagename' );
 	}
 
+	/** @inheritDoc */
 	public function isIncludable() {
 		return true;
 	}
 
-	protected function getGroupName() {
+	protected function getGroupName(): string {
 		return 'translation';
 	}
 
+	/** @inheritDoc */
 	public function execute( $par ) {
 		$request = $this->getRequest();
 
@@ -97,6 +88,7 @@ class MessageGroupStatsSpecialPage extends SpecialPage {
 		$out->addModules( 'ext.translate.special.languagestats' );
 		$out->addModuleStyles( 'ext.translate.statstable' );
 		$out->addModuleStyles( 'ext.translate.special.groupstats' );
+		$out->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
 
 		$params = $par ? explode( '/', $par ) : [];
 
@@ -144,18 +136,23 @@ class MessageGroupStatsSpecialPage extends SpecialPage {
 			$stats = $this->loadStatistics( $this->target, MessageGroupStats::FLAG_CACHE_ONLY );
 
 			$messageGroupStatsTable = $this->messageGroupStatsTableFactory->newFromContext( $this->getContext() );
-			$output = $messageGroupStatsTable->get(
+			$group = MessageGroups::getGroup( $this->target );
+			$description = $group ? $group->getDescription( $this->getContext() ) : '';
+			$output = $group ? $messageGroupStatsTable->get(
 				$stats,
-				MessageGroups::getGroup( $this->target ),
+				$group,
 				$this->noComplete,
 				$this->noEmpty
-			);
+			) : '';
+			// If description is present parse it to HTML and show it above the stats
+			if ( $description ) {
+				$this->getOutput()->addWikiTextAsContent( $description );
+			}
 
 			$incomplete = $messageGroupStatsTable->areStatsIncomplete();
 			if ( $incomplete ) {
-				$out->wrapWikiMsg(
-					"<div class='error'>$1</div>",
-					'translate-langstats-incomplete'
+				$out->addHTML(
+					Html::warningBox( $this->msg( 'translate-langstats-incomplete' )->parse() )
 				);
 			}
 
@@ -251,9 +248,8 @@ class MessageGroupStatsSpecialPage extends SpecialPage {
 	}
 
 	private function invalidTarget(): void {
-		$this->getOutput()->wrapWikiMsg(
-			"<div class='error'>$1</div>",
-			[ 'translate-mgs-invalid-group', $this->target ]
+		$this->getOutput()->addHTML(
+			Html::errorBox( $this->msg( 'translate-mgs-invalid-group', $this->target )->parse() )
 		);
 	}
 

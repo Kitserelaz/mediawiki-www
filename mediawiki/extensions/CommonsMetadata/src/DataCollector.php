@@ -2,15 +2,17 @@
 
 namespace CommonsMetadata;
 
-use File;
-use ForeignAPIFile;
 use InvalidArgumentException;
-use Language;
-use LocalFile;
 use LogicException;
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\FileRepo\File\ForeignAPIFile;
+use MediaWiki\FileRepo\File\LocalFile;
+use MediaWiki\Language\Language;
+use MediaWiki\Linker\Linker;
 use MediaWiki\MediaWikiServices;
-use ParserOutput;
-use WikiFilePage;
+use MediaWiki\Page\WikiFilePage;
+use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Parser\ParserOutputLinkTypes;
 
 /**
  * Class to handle metadata collection and formatting, and manage more specific data extraction
@@ -123,7 +125,7 @@ class DataCollector {
 		if ( !$parserOutput->hasText() ) {
 			$descriptionText = '';
 		} else {
-			$descriptionText = $parserOutput->getText();
+			$descriptionText = $parserOutput->getRawText();
 		}
 
 		$templateData = $this->templateParser->parsePage( $descriptionText );
@@ -161,13 +163,14 @@ class DataCollector {
 		}
 
 		// Certain uploads (3D objects) need a patent license
-		$templates = $parserOutput->getTemplates();
-		$templates = $templates[NS_TEMPLATE] ?? [];
-		if (
-			!array_key_exists( '3dpatent', $templates ) &&
-			$file->getMimeType() === 'application/sla'
-		) {
-			$problems[] = 'no-patent';
+		if ( $file->getMimeType() === 'application/sla' ) {
+			$foundPatent = array_any(
+				$parserOutput->getLinkList( ParserOutputLinkTypes::TEMPLATE, NS_TEMPLATE ),
+				static fn ( $item ) => $item['link']->getDBkey() === '3dpatent'
+			);
+			if ( !$foundPatent ) {
+				$problems[] = 'no-patent';
+			}
 		}
 
 		return $problems;
@@ -264,11 +267,11 @@ class DataCollector {
 		# descriptionCacheExpiry (disabled on Wikimedia).
 		$text = $file->getDescriptionText( $language );
 
-		if ( get_class( $file ) == 'LocalFile' || get_class( $file ) == 'LocalFileMock' ) {
+		if ( get_class( $file ) == LocalFile::class || get_class( $file ) == 'LocalFileMock' ) {
 			// LocalFile gets the text in a different way, and ends up with different output
 			// (specifically, relative instead of absolute URLs), so transform local URLs
 			// to absolute URLs after parse.
-			$text = ( new ParserOutput( $text ) )->getText( [ 'absoluteURLs' => true ] );
+			$text = Linker::expandLocalLinks( $text );
 		}
 
 		return $text;
@@ -342,7 +345,8 @@ class DataCollector {
 				unset( $categories[$i] );
 			}
 		}
-		$categories = array_merge( $categories ); // renumber to avoid holes in array
+		// renumber to avoid holes in array
+		$categories = array_merge( $categories );
 		return $licenses;
 	}
 
@@ -362,8 +366,10 @@ class DataCollector {
 				}
 			}
 		}
-		$categories = array_merge( $categories ); // renumber to avoid holes in array
-		return array_unique( $assessments ); // potd/poty can happen multiple times
+		// renumber to avoid holes in array
+		$categories = array_merge( $categories );
+		// potd/poty can happen multiple times
+		return array_unique( $assessments );
 	}
 
 	/**

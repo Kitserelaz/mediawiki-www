@@ -42,6 +42,67 @@ via [Professional.Wiki](https://professional.wiki/). Discounts for work that is 
 * Ask a question on [the mailing list](https://www.semantic-mediawiki.org/wiki/Mailing_list)
 * File an issue on [our issue tracker](https://github.com/JeroenDeDauw/Maps/issues)
 
+## On-wiki configuration
+
+Most settings can be configured in `LocalSettings.php` (see the
+[configuration documentation](https://maps.extension.wiki/wiki/Configuration)) or, for wiki
+administrators without server access, on the `MediaWiki:Maps` page. It holds JSON and, like other
+site configuration, is editable only by users with the `editinterface` and `editsitejson` rights.
+Settings are grouped by service and topic:
+
+```json
+{
+	"general": {
+		"mapWidth": "100%",
+		"mapHeight": "500px",
+		"distanceUnit": "km"
+	},
+	"coordinates": {
+		"notation": "float",
+		"directional": false
+	},
+	"geocoding": {
+		"service": "google"
+	},
+	"leaflet": {
+		"defaultZoom": 5,
+		"layerDefinitions": {
+			"Historic 1904": {
+				"url": "https://tiles.example.org/historic1904/{z}/{x}/{y}.png",
+				"options": { "attribution": "Historic map tiles", "maxZoom": 18 }
+			}
+		}
+	},
+	"googleMaps": {
+		"zoom": 5,
+		"type": "satellite"
+	}
+}
+```
+
+The available groups and keys correspond to `LocalSettings.php` settings:
+
+* **general**: `mapWidth`, `mapHeight`, `defaultTitle`, `defaultLabel`, `resizableByDefault`,
+  `rezoomForKml`, `allowExternalDataFiles`, `pagesWithMapsCategory`, `distanceUnits`,
+  `distanceUnit`, `distanceDecimals`
+* **coordinates**: `availableNotations`, `notation`, `directional`
+* **geocoding**: `service` (`geonames`, `google` or `nominatim`)
+* **semanticMediaWiki**: `showTitle`, `hideNamespace`, `template`, `coordinateFormat`,
+  `coordinateDirectional`
+* **leaflet**: `layerDefinitions`, `defaultLayers`, `defaultOverlays`, `availableLayers`,
+  `availableOverlays`, `defaultZoom`
+* **googleMaps**: `zoom`, `type`, `types`, `controls`, `typeControlStyle`, `zoomControlStyle`,
+  `autoInfoWindows`, `layers`, `showPoi`, `language`
+
+The page is validated when saved and combined with `LocalSettings.php`, with the wiki value taking
+precedence. Most settings are replaced wholesale; only `layerDefinitions`, `availableLayers` and
+`availableOverlays` are merged per name, so the wiki only needs to list the entries it changes.
+Changes take effect the next time a page with a map is parsed.
+
+Secrets (API keys), settings that run before a wiki page can be read, and other server-only options
+stay exclusive to `LocalSettings.php`. Set `$egMapsEnableInWikiConfig` to `false` to ignore the page
+entirely.
+
 ## Project status
 
 * Latest version [![Latest Stable Version](https://poser.pugx.org/mediawiki/maps/v/stable)](https://packagist.org/packages/mediawiki/maps)
@@ -88,7 +149,6 @@ The `src/` contains the PHP code and follows PSR-4 autoloading.
 * `src/DataAccess` - Persistence layer code that does not belong to a more specific directory
 * `src/GeoJsonPages` - Code that deals with pages in the GeoJson namespace
 * `src/LegacyModel` - Badly designed and deprecated representations of map elements (markers, polygons, etc)
-* `src/LegacyMapEditor` - Deprecated and Google Maps only Special:MapEditor page
 * `src/SemanticMW` - Semantic MediaWiki code except for the map entry point (which is in `Map\SemanticFormat`)
 * `src/WikitextParsers` - Parsers for the wikitext definitions of map elements (like the `LegacyModel`)
 
@@ -112,16 +172,16 @@ Alternatively, you can execute commands from the MediaWiki root directory:
 * PHPStan: `vendor/bin/phpstan analyse --configuration=extensions/Maps/phpstan.neon --memory-limit=2G`
 * Psalm: `php vendor/bin/psalm --config=extensions/Maps/psalm.xml`
 
-Beware that due to technical debt, some tests access the network.
+Be aware that, due to technical debt, some tests access the network.
 
 ## Links
 
 * [Maps documentation wiki](https://maps.extension.wiki)
+* [Maps on Professional Wiki](https://professional.wiki/en/extension/maps)
 * [Maps on OpenHub](https://www.openhub.net/p/maps/)
 * [Maps on Packagist](https://packagist.org/packages/mediawiki/maps)
 * [Maps on WikiApiary](https://wikiapiary.com/wiki/Extension:Maps)
 * [Maps on MediaWiki.org](https://www.mediawiki.org/wiki/Extension:Maps)
-* [Sponsor Maps development](https://github.com/sponsors/JeroenDeDauw)
 
 [Leaflet maps]: https://maps.extension.wiki/wiki/Displaying_Leaflet_maps
 [Google Maps]: https://maps.extension.wiki/wiki/Displaying_Google_Maps

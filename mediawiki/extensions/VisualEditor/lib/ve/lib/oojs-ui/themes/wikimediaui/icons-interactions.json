@@ -18,7 +18,7 @@
 			"color": "#d73333"
 		},
 		"warning": {
-			"color": "#edab00"
+			"color": "#ab7f2a"
 		},
 		"success": {
 			"color": "#14866d"
@@ -138,6 +138,9 @@
 		},
 		"pageSettings": {
 			"file": "images/icons/pageSettings.svg"
+		},
+		"power": {
+			"file": "images/icons/power.svg"
 		},
 		"printer": {
 			"file": "images/icons/printer.svg"

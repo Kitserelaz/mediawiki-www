@@ -2,16 +2,16 @@
 
 $cfg = require __DIR__ . '/../vendor/mediawiki/mediawiki-phan-config/src/config.php';
 
-$cfg['minimum_target_php_version'] = '8.0';
-
 $cfg['directory_list'] = array_merge(
 	$cfg['directory_list'], [
+		'../../extensions/CookieConsent',
 		'../../extensions/CreateWiki',
 	]
 );
 
 $cfg['exclude_analysis_directory_list'] = array_merge(
 	$cfg['exclude_analysis_directory_list'], [
+		'../../extensions/CookieConsent',
 		'../../extensions/CreateWiki',
 	]
 );
@@ -19,6 +19,8 @@ $cfg['exclude_analysis_directory_list'] = array_merge(
 $cfg['suppress_issue_types'] = [
 	'PhanAccessMethodInternal',
 	'SecurityCheck-LikelyFalsePositive',
+	// Remove after MatomoAnalytics requires 1.47
+	'UnusedPluginSuppression',
 ];
 
 return $cfg;

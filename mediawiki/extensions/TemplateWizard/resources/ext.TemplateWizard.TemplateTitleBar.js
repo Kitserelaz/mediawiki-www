@@ -1,7 +1,6 @@
 /**
  * @class
  * @constructor
- * @param {mw.TemplateWizard.TemplateForm} templateForm
  * @param {mw.Title} title
  * @param {Object} templateData
  * @param {string|boolean} [templateData.notemplatedata]
@@ -9,12 +8,12 @@
  * @param {Object<string,Object>} [templateData.params]
  */
 mw.TemplateWizard.TemplateTitleBar = function MWTemplateWizardTemplateTitleBar(
-	templateForm, title, templateData
+	title, templateData
 ) {
 	mw.TemplateWizard.TemplateTitleBar.super.call( this );
 
 	// Link button.
-	const linkButton = new OO.ui.ButtonWidget( {
+	this.linkButton = new OO.ui.ButtonWidget( {
 		label: '',
 		title: mw.msg( 'templatewizard-link-to-template-title' ),
 		flags: 'progressive',
@@ -24,19 +23,20 @@ mw.TemplateWizard.TemplateTitleBar = function MWTemplateWizardTemplateTitleBar(
 		target: '_blank'
 	} );
 
-	// Close button.
-	const trashButton = new OO.ui.ButtonWidget( {
-		id: 'ext-templatewizard-close-template-button',
-		label: '',
-		flags: 'destructive',
-		framed: false,
-		icon: 'trash',
-		title: mw.msg( 'templatewizard-remove-template-title' )
-	} );
-	trashButton.connect( templateForm, { click: 'closeForm' } );
-
 	// Button group.
-	this.buttons = new OO.ui.ButtonGroupWidget( { items: [ linkButton, trashButton ] } );
+	this.buttons = new OO.ui.ButtonGroupWidget( { items: [ this.linkButton ] } );
+
+	// Favorite button.
+	if ( mw.templateData !== undefined &&
+		mw.templateData.FavoriteButton !== undefined &&
+		templateData.pageId
+	) {
+		const favoriteButton = new mw.templateData.FavoriteButton( {
+			pageId: templateData.pageId
+		} );
+		this.buttons.addItems( [ favoriteButton ], 0 );
+	}
+
 	this.buttons.$element.addClass( 'ext-templatewizard-buttons' );
 
 	// Template title.
@@ -57,6 +57,13 @@ mw.TemplateWizard.TemplateTitleBar = function MWTemplateWizardTemplateTitleBar(
 };
 
 OO.inheritClass( mw.TemplateWizard.TemplateTitleBar, OO.ui.PanelLayout );
+
+/**
+ * Give focus to the link button.
+ */
+mw.TemplateWizard.TemplateTitleBar.prototype.focus = function () {
+	this.linkButton.focus();
+};
 
 /**
  * Get the description div element, which may contain zero to two paragraphs.

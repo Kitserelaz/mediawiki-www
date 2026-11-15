@@ -3,7 +3,7 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
-use Collation;
+use MediaWiki\Collation\Collation;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePage;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePageStatus;
 use MediaWiki\Title\Title;
@@ -49,7 +49,7 @@ class TranslatableBundleStatusStoreTest extends MediaWikiUnitTestCase {
 			->method( 'getPrefixedDBkey' )
 			->willReturn( $prefixedDbKey );
 
-		$mock->method( 'getArticleID' )
+		$mock->method( 'getId' )
 			->willReturn( 1 );
 
 		return $mock;

@@ -3,31 +3,37 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
-use ContentHandler;
-use DifferenceEngine;
-use ErrorPageError;
-use IDBAccessObject;
 use InvalidArgumentException;
-use JobQueueGroup;
-use ManualLogEntry;
-use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\Content\ContentHandler;
+use MediaWiki\Diff\DifferenceEngine;
+use MediaWiki\Exception\ErrorPageError;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Exception\UserBlockedError;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\RevTagStore;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundleState;
 use MediaWiki\Extension\Translate\MessageProcessing\MessageGroupMetadata;
 use MediaWiki\Extension\Translate\Statistics\RebuildMessageGroupStatsJob;
 use MediaWiki\Extension\Translate\Synchronization\MessageWebImporter;
-use MediaWiki\Extension\Translate\Utilities\LanguagesMultiselectWidget;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\Extension\TranslationNotifications\SpecialNotifyTranslators;
 use MediaWiki\Html\Html;
-use MediaWiki\Languages\LanguageFactory;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Language\FormatterFactory;
+use MediaWiki\Language\LanguageFactory;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Page\PageRecord;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Request\WebRequest;
+use MediaWiki\Revision\MutableRevisionRecord;
+use MediaWiki\Revision\SlotRecord;
 use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Status\StatusFormatter;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
+use MediaWiki\Widget\LanguageSelectWidget;
+use MediaWiki\Widget\ToggleSwitchWidget;
 use OOUI\ButtonInputWidget;
 use OOUI\CheckboxInputWidget;
 use OOUI\DropdownInputWidget;
@@ -36,11 +42,9 @@ use OOUI\FieldsetLayout;
 use OOUI\HtmlSnippet;
 use OOUI\RadioInputWidget;
 use OOUI\TextInputWidget;
-use PermissionsError;
 use UnexpectedValueException;
-use UserBlockedError;
+use Wikimedia\Rdbms\IDBAccessObject;
 use Wikimedia\Rdbms\IResultWrapper;
-use Xml;
 use function count;
 use function wfEscapeWikiText;
 
@@ -71,6 +75,7 @@ class PageTranslationSpecialPage extends SpecialPage {
 	private MessageGroupMetadata $messageGroupMetadata;
 	private TranslatablePageView $translatablePageView;
 	private TranslatablePageStateStore $translatablePageStateStore;
+	private StatusFormatter $statusFormatter;
 
 	public function __construct(
 		LanguageFactory $languageFactory,
@@ -81,7 +86,8 @@ class PageTranslationSpecialPage extends SpecialPage {
 		TranslatablePageParser $translatablePageParser,
 		MessageGroupMetadata $messageGroupMetadata,
 		TranslatablePageView $translatablePageView,
-		TranslatablePageStateStore $translatablePageStateStore
+		TranslatablePageStateStore $translatablePageStateStore,
+		FormatterFactory $formatterFactory
 	) {
 		parent::__construct( 'PageTranslation' );
 		$this->languageFactory = $languageFactory;
@@ -93,8 +99,10 @@ class PageTranslationSpecialPage extends SpecialPage {
 		$this->messageGroupMetadata = $messageGroupMetadata;
 		$this->translatablePageView = $translatablePageView;
 		$this->translatablePageStateStore = $translatablePageStateStore;
+		$this->statusFormatter = $formatterFactory->getStatusFormatter( $this );
 	}
 
+	/** @inheritDoc */
 	public function doesWrites(): bool {
 		return true;
 	}
@@ -103,6 +111,7 @@ class PageTranslationSpecialPage extends SpecialPage {
 		return 'translation';
 	}
 
+	/** @inheritDoc */
 	public function execute( $parameters ) {
 		$this->setHeaders();
 
@@ -114,7 +123,11 @@ class PageTranslationSpecialPage extends SpecialPage {
 		$action = $request->getVal( 'do' );
 		$out = $this->getOutput();
 		$out->addModules( 'ext.translate.special.pagetranslation' );
-		$out->addModuleStyles( 'ext.translate.specialpages.styles' );
+		$out->addModuleStyles( [
+			'codex-styles',
+			'ext.translate.specialpages.styles',
+			'mediawiki.codex.messagebox.styles',
+		] );
 		$out->addHelpLink( 'Help:Extension:Translate/Page_translation_example' );
 		$out->enableOOUI();
 
@@ -166,7 +179,7 @@ class PageTranslationSpecialPage extends SpecialPage {
 		}
 
 		if ( $action === 'settings' && $request->wasPosted() ) {
-			$this->handleTranslationState( $title, $request->getRawVal( 'translatable-page-state' ) );
+			$this->handleTranslationState( $title, $request->getRawVal( 'translatable-page-state' ) ?? '' );
 			return;
 		}
 
@@ -184,17 +197,26 @@ class PageTranslationSpecialPage extends SpecialPage {
 
 		// On GET requests, show form which has token
 		if ( !$request->wasPosted() ) {
-			if ( $action === 'unlink' ) {
-				$this->showUnlinkConfirmation( $title );
-			} else {
-				$params = [
-					'do' => $action,
-					'target' => $title->getPrefixedText(),
-					'revision' => $revision,
-				];
-				$this->showGenericConfirmation( $params );
+			$params = [
+				'do' => $action,
+				'target' => $title->getPrefixedText(),
+				'revision' => $revision,
+			];
+			switch ( $action ) {
+				case 'unlink':
+				case 'unmark':
+					$this->showConfirmation( $params, 'tpt-unlink-button', 'cdx-button--action-destructive' );
+					break;
+				case 'discourage':
+				case 'encourage':
+					$this->showConfirmation( $params );
+					break;
+				default:
+					$out->wrapWikiMsg(
+						Html::errorBox( '$1' ),
+						[ 'tpt-nosuchaction', $action ]
+					);
 			}
-
 			return;
 		}
 
@@ -222,10 +244,12 @@ class PageTranslationSpecialPage extends SpecialPage {
 			// groups out, or use MessageGroups::getParentGroups, though it has an inconvenient
 			// return value format for this use case.
 			$group = MessageGroups::getGroup( $id );
-			$sharedGroupIds = MessageGroups::getSharedGroups( $group );
-			if ( $sharedGroupIds !== [] ) {
-				$job = RebuildMessageGroupStatsJob::newRefreshGroupsJob( $sharedGroupIds );
-				$this->jobQueueGroup->push( $job );
+			if ( $group ) {
+				$sharedGroupIds = MessageGroups::getSharedGroups( $group );
+				if ( $sharedGroupIds !== [] ) {
+					$job = RebuildMessageGroupStatsJob::newRefreshGroupsJob( $sharedGroupIds );
+					$this->jobQueueGroup->push( $job );
+				}
 			}
 
 			// Show updated page with a notice
@@ -239,6 +263,7 @@ class PageTranslationSpecialPage extends SpecialPage {
 				$this->translatablePageMarker->unmarkPage(
 					TranslatablePage::newFromTitle( $title ),
 					$user,
+					$this,
 					$action === 'unlink'
 				);
 
@@ -254,7 +279,12 @@ class PageTranslationSpecialPage extends SpecialPage {
 			}
 
 			$out->addWikiMsg( 'tpt-list-pages-in-translations' );
+			return;
 		}
+		$out->wrapWikiMsg(
+			Html::errorBox( '$1' ),
+			[ 'tpt-nosuchaction', $action ]
+		);
 	}
 
 	protected function onActionMark( Title $title, ?int $revision ): void {
@@ -268,9 +298,14 @@ class PageTranslationSpecialPage extends SpecialPage {
 					$request->wasPosted() ? IDBAccessObject::READ_LATEST : IDBAccessObject::READ_NORMAL
 				),
 				$revision,
-				// If the request was not posted, validate all the units so that initially we display all the errors
-				// and then the user can choose whether they want to translate the title
-				!$request->wasPosted() || $translateTitle
+				// This parameter does double-duty; it specifies both whether to validate that the title can be
+				// translated and tells the TranslateTitlePageTranslation hook what title translation settings the user
+				// requested on form load, no settings were requested (null), so the hook should have the ability to
+				// specify whether the checkbox defaults to checked or unchecked on the basis of the default state
+				// (whether it has pre-existing title translations, is a template, etc.)
+				// This also means the page display title translatability won't be validated if it isn't checked by
+				// default which may or may not be a good thing
+				$request->wasPosted() ? $translateTitle : null
 			);
 		} catch ( TranslatablePageMarkException $e ) {
 			$out->addHTML( Html::errorBox( $this->msg( $e->getMessageObject() )->parse() ) );
@@ -284,6 +319,15 @@ class PageTranslationSpecialPage extends SpecialPage {
 			// Fetch priority language related information
 			[ $priorityLanguages, $forcePriorityLanguage, $priorityLanguageReason ] =
 				$this->getPriorityLanguage( $this->getRequest() );
+
+			$priorityLangStatus = $this->translatablePageMarker->validatePriorityLanguages( $priorityLanguages );
+			if ( !$priorityLangStatus->isOK() ) {
+				$out->addHTML(
+					Html::errorBox( $this->statusFormatter->getHTML( $priorityLangStatus ) )
+				);
+				$this->showPage( $operation );
+				return;
+			}
 
 			$unitFuzzySelector = $request->getRawVal( 'unit-fuzzy-selector' );
 			if ( $unitFuzzySelector === 'all' ) {
@@ -324,6 +368,7 @@ class PageTranslationSpecialPage extends SpecialPage {
 				$unitCount = $this->translatablePageMarker->markForTranslation(
 					$operation,
 					$translatablePageSettings,
+					$this,
 					$this->getUser()
 				);
 				$this->showSuccess( $operation->getPage(), $operation->isFirstMark(), $unitCount );
@@ -336,9 +381,7 @@ class PageTranslationSpecialPage extends SpecialPage {
 		} else {
 			if ( !$unitNameValidationResult->isOK() ) {
 				$out->addHTML(
-					Html::errorBox(
-						$unitNameValidationResult->getHTML( false, false, $this->getLanguage() )
-					)
+					Html::errorBox( $this->statusFormatter->getHTML( $unitNameValidationResult ) )
 				);
 			}
 
@@ -379,7 +422,7 @@ class PageTranslationSpecialPage extends SpecialPage {
 			$this->getUser()->isAllowed( SpecialNotifyTranslators::$right )
 		) {
 			$link = SpecialPage::getTitleFor( 'NotifyTranslators' )->getFullURL(
-				[ 'tpage' => $page->getTitle()->getArticleID() ]
+				[ 'tpage' => $page->getPageIdentity()->getId() ]
 			);
 			$this->getOutput()->addWikiMsg( 'tpt-offer-notify', $link );
 		}
@@ -387,10 +430,15 @@ class PageTranslationSpecialPage extends SpecialPage {
 		$this->getOutput()->addWikiMsg( 'tpt-list-pages-in-translations' );
 	}
 
-	private function showGenericConfirmation( array $params ): void {
+	private function showConfirmation(
+		array $params,
+		string $buttonKey = 'tpt-generic-button',
+		string $buttonClass = 'cdx-button--action-progressive',
+	): void {
 		$formParams = [
 			'method' => 'post',
 			'action' => $this->getPageTitle()->getLocalURL(),
+			'class' => 'mw-htmlform-codex',
 		];
 
 		$params['title'] = $this->getPageTitle()->getPrefixedText();
@@ -400,35 +448,20 @@ class PageTranslationSpecialPage extends SpecialPage {
 		foreach ( $params as $key => $value ) {
 			$hidden .= Html::hidden( $key, $value );
 		}
+		$action = $params['do'];
 
 		$this->getOutput()->addHTML(
 			Html::openElement( 'form', $formParams ) .
 			$hidden .
-			$this->msg( 'tpt-generic-confirm' )->parseAsBlock() .
-			Html::submitButton(
-				$this->msg( 'tpt-generic-button' )->text(),
-				[ 'class' => 'mw-ui-button mw-ui-progressive' ]
-			) .
-			Html::closeElement( 'form' )
-		);
-	}
-
-	private function showUnlinkConfirmation( Title $target ): void {
-		$formParams = [
-			'method' => 'post',
-			'action' => $this->getPageTitle()->getLocalURL(),
-		];
-
-		$this->getOutput()->addHTML(
-			Html::openElement( 'form', $formParams ) .
-			Html::hidden( 'do', 'unlink' ) .
-			Html::hidden( 'title', $this->getPageTitle()->getPrefixedText() ) .
-			Html::hidden( 'target', $target->getPrefixedText() ) .
-			Html::hidden( 'token', $this->getContext()->getCsrfTokenSet()->getToken() ) .
-			$this->msg( 'tpt-unlink-confirm', $target->getPrefixedText() )->parseAsBlock() .
-			Html::submitButton(
-				$this->msg( 'tpt-unlink-button' )->text(),
-				[ 'class' => 'mw-ui-button mw-ui-destructive' ]
+			// tpt-discourage-confirm tpt-encourage-confirm tpt-unlink-confirm tpt-unmark-confirm
+			$this->msg( "tpt-$action-confirm" )->params( $params[ 'target' ] )->parseAsBlock() .
+			Html::element(
+				'button',
+				[
+					'type' => 'submit',
+					'class' => "cdx-button cdx-button--weight-primary $buttonClass",
+				],
+				$this->msg( $buttonKey )->text()
 			) .
 			Html::closeElement( 'form' )
 		);
@@ -517,7 +550,11 @@ class PageTranslationSpecialPage extends SpecialPage {
 		foreach ( $pages as $page ) {
 			$groupId = $page['groupid'];
 			$group = MessageGroups::getGroup( $groupId );
-			$page['discouraged'] = MessageGroups::getPriority( $group ) === 'discouraged';
+
+			$page['discouraged'] = false;
+			if ( $group ) {
+				$page['discouraged'] = MessageGroups::getPriority( $group ) === 'discouraged';
+			}
 			$page['version'] = $metadata[$groupId]['version'] ?? TranslatablePageMarker::DEFAULT_SYNTAX_VERSION;
 			$page['transclusion'] = $metadata[$groupId]['transclusion'] ?? false;
 
@@ -627,9 +664,6 @@ class PageTranslationSpecialPage extends SpecialPage {
 		$title = $page['title'];
 		$user = $this->getUser();
 
-		// Class to allow one-click POSTs
-		$js = [ 'class' => 'mw-translate-jspost' ];
-
 		if ( $user->isAllowed( 'pagetranslation' ) ) {
 			// Enable re-marking of all pages to allow changing of priority languages
 			// or migration to the new syntax version
@@ -651,7 +685,10 @@ class PageTranslationSpecialPage extends SpecialPage {
 					$actions[] = $this->getLinkRenderer()->makeKnownLink(
 						$this->getPageTitle(),
 						$messageCache['encourage'],
-						[ 'title' => $messageCache['encourage-tooltip'] ] + $js,
+						[
+							'title' => $messageCache['encourage-tooltip'],
+							'class' => [ 'mw-translate-encourage' ],
+						],
 						[
 							'do' => 'encourage',
 							'target' => $title->getPrefixedText(),
@@ -662,7 +699,10 @@ class PageTranslationSpecialPage extends SpecialPage {
 					$actions[] = $this->getLinkRenderer()->makeKnownLink(
 						$this->getPageTitle(),
 						$messageCache['discourage'],
-						[ 'title' => $messageCache['discourage-tooltip'] ] + $js,
+						[
+							'title' => $messageCache['discourage-tooltip'],
+							'class' => [ 'mw-translate-discourage' ],
+						],
 						[
 							'do' => 'discourage',
 							'target' => $title->getPrefixedText(),
@@ -698,7 +738,7 @@ class PageTranslationSpecialPage extends SpecialPage {
 
 		$this->addPageForm(
 			$page->getTitle(),
-			'mw-tpt-sp-markform',
+			'mw-tpt-sp-markform mw-tpt-hide-unchanged',
 			'mark',
 			$page->getRevision()
 		);
@@ -709,23 +749,33 @@ class PageTranslationSpecialPage extends SpecialPage {
 		$diffNew = $this->msg( 'tpt-diff-new' )->escaped();
 		$hasChanges = false;
 
-		// Check whether page title was previously marked for translation.
-		// If the page is marked for translation the first time, default to checked,
-		// unless the page is a template. T305240
-		$defaultChecked = (
-			$operation->isFirstMark() &&
-			!$page->getTitle()->inNamespace( NS_TEMPLATE )
-		) || $page->hasPageDisplayTitle();
-
 		$sourceLanguage = $this->languageFactory->getLanguage( $page->getSourceLanguageCode() );
 
+		$hideUnchangedUnitToggle = '';
+		// Toggle for unchanged translation units
+		if ( array_filter(
+			$operation->getUnits(),
+			static fn ( $unit ) => $unit->type === 'old' && $unit->id !== TranslatablePage::DISPLAY_TITLE_UNIT_ID
+		) ) {
+			$hideUnchangedUnitToggle = ( new FieldLayout(
+				new ToggleSwitchWidget( [
+					'name' => 'unchanged-translation-units',
+					'selected' => true
+				] ),
+				[
+					'label' => $this->msg( 'tpt-translate-hide-unchanged-units' )->text(),
+					'align' => 'left',
+				]
+			) )->toString();
+		}
+
 		// Check if there are changed units
+		$requireUpdatesDropdown = '';
 		if ( array_filter(
 			$operation->getUnits(),
 			static fn ( $unit ) => $unit->type === 'changed'
 		) ) {
-			// General Area
-			$dropdown = new FieldLayout(
+			$requireUpdatesDropdown = ( new FieldLayout(
 				new DropdownInputWidget( [
 					'name' => 'unit-fuzzy-selector',
 					'options' => [
@@ -748,29 +798,45 @@ class PageTranslationSpecialPage extends SpecialPage {
 					'label' => $this->msg( 'tpt-fuzzy-select-label' )->text(),
 					'align' => 'left',
 				]
-			);
+			) )->toString();
+		}
+
+		// General area
+		if ( $hideUnchangedUnitToggle !== '' || $requireUpdatesDropdown !== '' ) {
 			$out->addHTML( MessageWebImporter::makeSectionElement(
 				$this->msg( 'tpt-general-area-header' )->text(),
-				'dropdown',
-				$dropdown->toString()
+				'general',
+				$hideUnchangedUnitToggle . $requireUpdatesDropdown
 			) );
+
+			$out->addHTML( '<hr>' );
 		}
 
 		foreach ( $operation->getUnits() as $s ) {
 			if ( $s->id === TranslatablePage::DISPLAY_TITLE_UNIT_ID ) {
 				// Set section type as new if title previously unchecked
-				$s->type = $defaultChecked ? $s->type : 'new';
+				if ( !$page->hasPageDisplayTitle() ) {
+					$s->type = 'new';
+				}
+				$translationTitleStateReason = null;
+				if ( $operation->titleTranslationState === TranslateTitleEnum::DISABLED ) {
+					$translationTitleStateReason = $operation->titleTranslationStateReason ??
+						$this->msg( 'tpt-translate-title-disabled' )->text();
+				}
 
 				// Checkbox for page title optional translation
 				$checkBox = new FieldLayout(
 					new CheckboxInputWidget( [
 						'name' => 'translatetitle',
-						'selected' => $defaultChecked,
+						'selected' => $operation->titleTranslationState === TranslateTitleEnum::DEFAULT_CHECKED,
+						'disabled' => $operation->titleTranslationState === TranslateTitleEnum::DISABLED,
 					] ),
 					[
 						'label' => $this->msg( 'tpt-translate-title' )->text(),
 						'align' => 'inline',
-						'classes' => [ 'mw-tpt-m-vertical' ]
+						'classes' => [ 'mw-tpt-m-vertical' ],
+						'help' => $translationTitleStateReason,
+						'helpInline' => true,
 					]
 				);
 				$out->addHTML( $checkBox->toString() );
@@ -778,9 +844,9 @@ class PageTranslationSpecialPage extends SpecialPage {
 
 			if ( $s->type === 'new' ) {
 				$hasChanges = true;
-				$name = $this->msg( 'tpt-section-new', $s->id )->escaped();
+				$name = $this->msg( 'tpt-section-new', $s->id )->parse();
 			} else {
-				$name = $this->msg( 'tpt-section', $s->id )->escaped();
+				$name = $this->msg( 'tpt-section', $s->id, $this->getTranslationsLink( $page, $s ) )->parse();
 			}
 
 			if ( $s->type === 'changed' ) {
@@ -789,10 +855,16 @@ class PageTranslationSpecialPage extends SpecialPage {
 				$diff->setTextLanguage( $sourceLanguage );
 				$diff->setReducedLineNumbers();
 
-				$oldContent = ContentHandler::makeContent( $s->getOldText(), $diff->getTitle() );
-				$newContent = ContentHandler::makeContent( $s->getText(), $diff->getTitle() );
+				$tpTitle = $page->getTitle();
+				$oldContent = ContentHandler::makeContent( $s->getOldText(), $tpTitle );
+				$oldRevision = new MutableRevisionRecord( $tpTitle );
+				$oldRevision->setContent( SlotRecord::MAIN, $oldContent );
 
-				$diff->setContent( $oldContent, $newContent );
+				$newContent = ContentHandler::makeContent( $s->getText(), $tpTitle );
+				$newRevision = new MutableRevisionRecord( $tpTitle );
+				$newRevision->setContent( SlotRecord::MAIN, $newContent );
+
+				$diff->setRevisions( $oldRevision, $newRevision );
 
 				$text = $diff->getDiff( $diffOld, $diffNew );
 				$diffOld = $diffNew = null;
@@ -821,7 +893,10 @@ class PageTranslationSpecialPage extends SpecialPage {
 				$name,
 				$s->type,
 				$text,
-				$lang
+				$lang,
+				$s->id === TranslatablePage::DISPLAY_TITLE_UNIT_ID ?
+					[ 'mw-tpt-sp-section-type-title' ] :
+					[]
 			) );
 
 			foreach ( $s->getIssues() as $issue ) {
@@ -845,7 +920,7 @@ class PageTranslationSpecialPage extends SpecialPage {
 			$out->wrapWikiMsg( '==$1==', 'tpt-sections-deleted' );
 
 			foreach ( $operation->getDeletedUnits() as $s ) {
-				$name = $this->msg( 'tpt-section-deleted', $s->id )->escaped();
+				$name = $this->msg( 'tpt-section-deleted', $s->id, $this->getTranslationsLink( $page, $s ) )->parse();
 				$text = Utilities::convertWhiteSpaceToHTML( $s->getText() );
 				$out->addHTML( MessageWebImporter::makeSectionElement(
 					$name,
@@ -856,15 +931,16 @@ class PageTranslationSpecialPage extends SpecialPage {
 			}
 		}
 
+		if ( !$hasChanges ) {
+			$out->wrapWikiMsg( Html::successBox( '$1' ), 'tpt-mark-nochanges' );
+		}
+
 		// Display template changes if applicable
 		$markedTag = $page->getMarkedTag();
 		if ( $markedTag !== null ) {
-			$hasChanges = true;
 			$newTemplate = $operation->getParserOutput()->sourcePageTemplateForDiffs();
-			$oldPage = TranslatablePage::newFromRevision(
-				$page->getTitle(),
-				$markedTag
-			);
+			$tpTitle = $page->getTitle();
+			$oldPage = TranslatablePage::newFromRevision( $tpTitle, $markedTag );
 			$oldTemplate = $this->translatablePageParser
 				->parse( $oldPage->getText() )
 				->sourcePageTemplateForDiffs();
@@ -875,10 +951,15 @@ class PageTranslationSpecialPage extends SpecialPage {
 				$diff = new DifferenceEngine();
 				$diff->setTextLanguage( $sourceLanguage );
 
-				$oldContent = ContentHandler::makeContent( $oldTemplate, $diff->getTitle() );
-				$newContent = ContentHandler::makeContent( $newTemplate, $diff->getTitle() );
+				$oldContent = ContentHandler::makeContent( $oldTemplate, $tpTitle );
+				$oldRevision = new MutableRevisionRecord( $tpTitle );
+				$oldRevision->setContent( SlotRecord::MAIN, $oldContent );
 
-				$diff->setContent( $oldContent, $newContent );
+				$newContent = ContentHandler::makeContent( $newTemplate, $tpTitle );
+				$newRevision = new MutableRevisionRecord( $tpTitle );
+				$newRevision->setContent( SlotRecord::MAIN, $newContent );
+
+				$diff->setRevisions( $oldRevision, $newRevision );
 
 				$text = $diff->getDiff(
 					$this->msg( 'tpt-diff-old' )->escaped(),
@@ -887,12 +968,8 @@ class PageTranslationSpecialPage extends SpecialPage {
 				$diff->showDiffStyle();
 				$diff->setReducedLineNumbers();
 
-				$out->addHTML( Xml::tags( 'div', [], $text ) );
+				$out->addHTML( Html::rawElement( 'div', [], $text ) );
 			}
-		}
-
-		if ( !$hasChanges ) {
-			$out->wrapWikiMsg( Html::successBox( '$1' ), 'tpt-mark-nochanges' );
 		}
 
 		$this->priorityLanguagesForm( $page );
@@ -922,6 +999,15 @@ class PageTranslationSpecialPage extends SpecialPage {
 		$out->addHTML( '</form>' );
 	}
 
+	private function getTranslationsLink( TranslatablePage $page, TranslationUnit $section ): string {
+		$unitTitle = Title::makeTitle(
+			NS_TRANSLATIONS,
+			$page->getTitle()->getPrefixedDBkey() . '/' . $section->id
+		);
+		return SpecialPage::getTitleFor( 'Translations', $unitTitle->getPrefixedText() )
+			->getPrefixedText();
+	}
+
 	private function priorityLanguagesForm( TranslatablePage $page ): void {
 		$groupId = $page->getMessageGroupId();
 		$interfaceLanguage = $this->getLanguage()->getCode();
@@ -934,16 +1020,20 @@ class PageTranslationSpecialPage extends SpecialPage {
 		$form = new FieldsetLayout( [
 			'items' => [
 				new FieldLayout(
-					new LanguagesMultiselectWidget( [
-						'infusable' => true,
-						'name' => 'prioritylangs',
-						'id' => 'mw-translate-SpecialPageTranslation-prioritylangs',
-						'languages' => Utilities::getLanguageNames( $interfaceLanguage ),
-						'default' => $default,
+					new \OOUI\Widget( [
+						'content' => new HtmlSnippet( ( new LanguageSelectWidget( [
+							'name' => 'prioritylangs[]',
+							'languages' => $this->getLanguageOptions( $interfaceLanguage ),
+							'cssclass' => 'cdx-select',
+							'value' => $default,
+							'multiple' => true,
+							'size' => 8
+						] ) )->toString() )
 					] ),
 					[
 						'label' => $this->msg( 'tpt-select-prioritylangs' )->text(),
 						'align' => 'top',
+						'helpInline' => true,
 					]
 				),
 				new FieldLayout(
@@ -954,7 +1044,8 @@ class PageTranslationSpecialPage extends SpecialPage {
 					[
 						'label' => $this->msg( 'tpt-select-prioritylangs-force' )->text(),
 						'align' => 'inline',
-						'help' => new HtmlSnippet( $this->msg( 'tpt-select-no-prioritylangs-force' )->parse() ),
+						'help' => $this->msg( 'tpt-select-no-prioritylangs-force' )->text(),
+						'helpInline' => true,
 					]
 				),
 				new FieldLayout(
@@ -973,6 +1064,16 @@ class PageTranslationSpecialPage extends SpecialPage {
 
 		$this->getOutput()->wrapWikiMsg( '==$1==', 'tpt-sections-prioritylangs' );
 		$this->getOutput()->addHTML( $form->toString() );
+	}
+
+	private function getLanguageOptions( ?string $interfaceLanguage = null ): array {
+		$languages = Utilities::getLanguageNames( $interfaceLanguage );
+		$options = [];
+		foreach ( $languages as $code => $name ) {
+			$options[$code] = $name;
+		}
+
+		return $options;
 	}
 
 	private function syntaxVersionForm( string $version, bool $firstMark ): void {
@@ -1026,12 +1127,11 @@ class PageTranslationSpecialPage extends SpecialPage {
 
 	private function getPriorityLanguage( WebRequest $request ): array {
 		// Get the priority languages from the request
-		// We've to do some extra work here because if JS is disabled, we will be getting
-		// the values split by newline.
-		$priorityLanguages = rtrim( trim( $request->getVal( 'prioritylangs', '' ) ), ',' );
-		$priorityLanguages = str_replace( "\n", ',', $priorityLanguages );
-		$priorityLanguages = array_map( 'trim', explode( ',', $priorityLanguages ) );
-		$priorityLanguages = array_unique( array_filter( $priorityLanguages ) );
+		// The form field uses prioritylangs[] which returns an array
+		$priorityLanguages = $request->getArray( 'prioritylangs', [] );
+		if ( $priorityLanguages ) {
+			$priorityLanguages = array_unique( array_filter( $priorityLanguages ) );
+		}
 
 		$forcePriorityLanguage = $request->getCheck( 'forcelimit' );
 		$priorityLanguageReason = trim( $request->getText( 'priorityreason' ) );
@@ -1041,11 +1141,22 @@ class PageTranslationSpecialPage extends SpecialPage {
 
 	private function getPageList( array $pages, string $type ): string {
 		$items = [];
-		$tagsTextCache = [];
 
-		$tagDiscouraged = $this->msg( 'tpt-tag-discouraged' )->escaped();
-		$tagOldSyntax = $this->msg( 'tpt-tag-oldsyntax' )->escaped();
-		$tagNoTransclusionSupport = $this->msg( 'tpt-tag-no-transclusion-support' )->escaped();
+		$tagDiscouraged = Html::element(
+			'li',
+			[ 'class' => 'mw-tpt-actions-discouraged' ],
+			$this->msg( 'tpt-tag-discouraged' )->text()
+		);
+		$tagOldSyntax = Html::element(
+			'li',
+			[ 'class' => 'mw-tpt-actions-oldsyntax' ],
+			$this->msg( 'tpt-tag-oldsyntax' )->text()
+		);
+		$tagNoTransclusionSupport = Html::element(
+			'li',
+			[ 'class' => 'mw-tpt-actions-notransclusion-support' ],
+			$this->msg( 'tpt-tag-no-transclusion-support' )->text()
+		);
 
 		foreach ( $pages as $page ) {
 			$link = $this->getLinkRenderer()->makeKnownLink( $page['title'] );
@@ -1064,22 +1175,20 @@ class PageTranslationSpecialPage extends SpecialPage {
 				}
 			}
 
-			$tagList = '';
-			if ( $tags ) {
-				// Performance optimization to avoid calling $this->msg in a loop
-				$tagsKey = implode( '', $tags );
-				$tagsTextCache[$tagsKey] ??= $this->msg( 'parentheses' )
-					->rawParams( $this->getLanguage()->pipeList( $tags ) )
-					->escaped();
-
-				$tagList = Html::rawElement(
-					'span',
-					[ 'class' => 'mw-tpt-actions' ],
-					$tagsTextCache[$tagsKey]
-				);
-			}
-
-			$items[] = "<li class='mw-tpt-pagelist-item'>$link $tagList $acts</li>";
+			// Include an actions list even if there are no tags so that JS discouragement can find it
+			$tags = Html::rawElement(
+				'ul',
+				[ 'class' => 'mw-tpt-actions' ],
+				implode( '', $tags )
+			);
+			$items[] = Html::rawElement(
+				'li',
+				[
+					'class' => 'mw-tpt-pagelist-item',
+					'data-target' => $page['title']->getPrefixedText(),
+				],
+				"$link $tags $acts"
+			);
 		}
 
 		return '<ol>' . implode( '', $items ) . '</ol>';
@@ -1129,7 +1238,7 @@ class PageTranslationSpecialPage extends SpecialPage {
 			Html::rawElement(
 				'p',
 				[ 'class' => 'mw-tpt-vm' ],
-				Html::element( 'strong', [], $this->msg( 'tpt-translation-settings-subtitle' ) )
+				Html::element( 'strong', [], $this->msg( 'tpt-translation-settings-subtitle' )->text() )
 			)
 		);
 
@@ -1231,7 +1340,7 @@ class PageTranslationSpecialPage extends SpecialPage {
 		];
 
 		$this->getOutput()->addHTML(
-			Xml::openElement( 'form', $formParams ) .
+			Html::openElement( 'form', $formParams ) .
 			Html::hidden( 'do', $action ) .
 			Html::hidden( 'title', $this->getPageTitle()->getPrefixedText() ) .
 			( $revision ? Html::hidden( 'revision', $revision ) : '' ) .

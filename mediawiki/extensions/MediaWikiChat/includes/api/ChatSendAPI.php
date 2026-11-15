@@ -1,5 +1,11 @@
 <?php
 
+use MediaWiki\Api\ApiBase;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\SpecialPage\SpecialPage;
+use Wikimedia\ParamValidator\ParamValidator;
+
 class ChatSendAPI extends ApiBase {
 
 	public function execute() {
@@ -13,7 +19,7 @@ class ChatSendAPI extends ApiBase {
 			$message = MediaWikiChat::parseMessage( $originalMessage, $user );
 
 			if ( $message != '' ) {
-				$dbw = MediaWikiChat::getDBHandle( 'write' );
+				$dbw = MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase();
 				$dbr = $this->getDB();
 
 				$id = $user->getId();
@@ -63,7 +69,8 @@ class ChatSendAPI extends ApiBase {
 				if ( ExtensionRegistry::getInstance()->isLoaded( 'CheckUser' ) ) {
 					$rc = $logEntry->getRecentChange( $logID );
 
-					MediaWiki\CheckUser\Hooks::updateCheckUserData( $rc );
+					MediaWikiServices::getInstance()->get( 'CheckUserInsert' )
+						->updateCheckUserData( $rc );
 				}
 
 				MediaWikiChat::deleteEntryIfNeeded();
@@ -93,8 +100,8 @@ class ChatSendAPI extends ApiBase {
 	public function getAllowedParams() {
 		return [
 			'message' => [
-				ApiBase::PARAM_TYPE => 'string',
-				ApiBase::PARAM_REQUIRED => true
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => true
 			]
 		];
 	}

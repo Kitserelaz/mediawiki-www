@@ -3,10 +3,10 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\FileFormatSupport;
 
-use FormatJson;
 use MediaWiki\Extension\Translate\MessageLoading\Message;
 use MediaWiki\Extension\Translate\MessageLoading\MessageCollection;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
+use MediaWiki\Json\FormatJson;
 
 /**
  * Support for the AMD i18n message file format (used by require.js and Dojo). See:
@@ -86,9 +86,7 @@ class AmdFormat extends SimpleFormat {
 				continue;
 			}
 
-			if ( $m->hasTag( 'fuzzy' ) ) {
-				$value = str_replace( TRANSLATE_FUZZY, '', $value );
-			}
+			$value = str_replace( TRANSLATE_FUZZY, '', $value );
 
 			$key = $mangler->unmangle( $key );
 			$messages[$key] = $value;
@@ -107,7 +105,7 @@ class AmdFormat extends SimpleFormat {
 		$dataStart = strpos( $data, 'define(' ) + 6;
 		$dataEnd = strrpos( $data, ')' );
 
-		// Strip everything outside of the data section.
+		// Strip everything outside the data section.
 		return substr( $data, $dataStart + 1, $dataEnd - $dataStart - 1 );
 	}
 

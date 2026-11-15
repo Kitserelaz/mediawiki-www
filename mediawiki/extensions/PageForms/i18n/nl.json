@@ -22,7 +22,7 @@
 			"Sjoerddebruin"
 		]
 	},
-	"pageforms-name": "Page Forms",
+	"pageforms-name": "Paginaformulieren",
 	"pageforms-desc": "Formulieren voor het aanmaken en bewerken van wikipagina’s",
 	"specialpages-group-pf_group": "Paginaformulieren",
 	"apihelp-pfautocomplete-summary": "Automatisch aanvullen gebruikt door de uitbreiding Paginaformulieren.",
@@ -42,6 +42,10 @@
 	"apihelp-pfautocomplete-param-base_cargo_table": "De Cargo-gegevenstabel voor een vorig veld in het formulier waarmee vergeleken moet worden",
 	"apihelp-pfautocomplete-param-base_cargo_field": "Het Cargo-veld voor een vorig veld in het formulier waarmee vergeleken moet worden",
 	"apihelp-pfautocomplete-param-basevalue": "De te controleren waarde voor de vorige eigenschap of het vorige veld",
+	"apihelp-pfautocomplete-param-mappingproperty": "Een Semantic MediaWiki-eigenschap die wordt gebruikt om waarden aan labels te koppelen",
+	"apihelp-pfautocomplete-param-mappingtemplate": "Een sjabloon dat wordt gebruikt om waarden aan labels te koppelen",
+	"apihelp-pfautocomplete-param-mappingcargotable": "Een Cargo-tabel die wordt gebruikt om waarden aan labels te koppelen",
+	"apihelp-pfautocomplete-param-mappingcargofield": "Een Cargo-veld dat wordt gebruikt om waarden aan labels te koppelen",
 	"apihelp-pfautoedit-summary": "Maak of bewerk een pagina met behulp van een formulier dat is gedefinieerd door de uitbreiding Paginaformulieren.",
 	"apihelp-pfautoedit-param-form": "Het te gebruiken paginaformulier",
 	"apihelp-pfautoedit-param-target": "De naam van de aan te maken of te bewerken pagina",
@@ -96,7 +100,7 @@
 	"pf_forms_docu": "De onderstaande formulieren bestaan in de wiki.",
 	"pf_forminputs_mandatory": "Er moet een waarde ingevoerd worden voor deze invoer",
 	"pf_forminputs_restricted": "Alleen beheerders kunnen deze invoer bewerken",
-	"pf_forminputs_class": "Het HTML-\"class\"-attribuut voor deze invoer",
+	"pf_forminputs_class": "Het HTML-\"klasse\"-attribuut voor deze invoer",
 	"pf_forminputs_default": "De standaardwaarde voor deze invoer",
 	"pf_forminputs_preload": "Eeen wikipagina waarvan de inhoud de standaardwaarde wordt",
 	"pf_forminputs_property": "Een semantische eigenschap waar dit veld mee overeenkomt",
@@ -324,8 +328,9 @@
 	"pf-missingnamespace": "Kon naamruimte $1 niet vinden",
 	"pf-nocompletionurls": "Er zijn geen externe URL’s gespecificeerd voor automatisch aanvullen op deze wiki.",
 	"pf-resultstoshow": "Resultaten om weer te geven",
-	"pf-invalidexturl": "Incorrecte externe URL-waarde.",
-	"pf-blankexturl": "Lege externe URL-waarde.",
+	"pf-invalidexturl": "Incorrecte externe url-waarde.",
+	"pf-blankexturl": "Lege externe url-waarde.",
 	"pf-externalpageempty": "Externe pagina bevat geen inhoud.",
-	"pf-externalpagebadjson": "Kan JSON op externe pagina niet verwerken."
+	"pf-externalpagebadjson": "Kan JSON op externe pagina niet verwerken.",
+	"pf-automatic-rename": "Automatische hernoemen op basis van paginanaamformule"
 }

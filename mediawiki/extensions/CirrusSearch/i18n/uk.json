@@ -15,7 +15,7 @@
 			"Ата"
 		]
 	},
-	"cirrussearch-desc": "Пошук для MediaWiki на базі Elasticsearch",
+	"cirrussearch-desc": "Пошук для MediaWiki на базі OpenSearch",
 	"cirrussearch-backend-error": "Нам не вдалося завершити ваш пошук через тимчасову проблему. Спробуйте ще раз пізніше.",
 	"cirrussearch-parse-error": "Запит не зрозуміли. Будь ласка, зробіть його простішим. Запит був записаний для поліпшення пошукової системи.",
 	"cirrussearch-too-busy-error": "Пошукова система перевантажена запитами. Спробуйте пізніше.",
@@ -70,7 +70,7 @@
 	"cirrussearch-feature-deepcat-endpoint": "$wgCirrusSearchCategoryEndpoint має бути встановлено як дійсна кінцева точка SPARQL для використання глибокого пошуку категорії.",
 	"cirrussearch-feature-deepcat-exception": "Запит SPARQL на пошук глибокої категорії зазнав невдачі",
 	"cirrussearch-feature-deepcat-timeout": "Час очікування глибокого пошуку за категоріями скінчився. Швидше за все, категорія має забагато підкатегорій",
-	"cirrussearch-feature-deepcat-toomany": "Запит глибокої категорії повернув надто багато категорій",
+	"cirrussearch-feature-deepcat-toomany": "Глибокий запит категорії повернув забагато категорій. Було застосовано лише підмножину категорій.",
 	"cirrussearch-feature-deepcat-invalid-title": "Некоректно вказана категорія.",
 	"cirrussearch-feature-pageid-invalid-id": "Неправильні {{PLURAL:$2|ідентифікатори|1=ідентифікатор}}: $1",
 	"cirrussearch-incategory-feature-no-valid-categories": "Не задано жодних дійсних категорій для «$1».",
@@ -82,6 +82,6 @@
 	"cirrussearch-autoselect-profile": "Нехай пошукова програма самостійно підбере найкращий профіль для використання.",
 	"cirrussearch-offset-too-large": "Не вдалося отримати результати. Підтримується до $1 пошукових результатів, але запитано результати, що починаються з $2.",
 	"cirrussearch-offset-not-allowed-with-random-sort": "Запит пагінації буде ігноровано, оскільки результати відсортовано випадково.",
-	"cirrussearch-articletopic-invalid-topic": "{{PLURAL:$2|Нерозпізнана назва теми|Нерозпізнані назви тем}} для <kbd>articletopic:</kbd>, ключове слово: $1",
+	"cirrussearch-articleprediction-invalid-keyword": "{{PLURAL:$2|Нерозпізнане|Нерозпізнані}} значення для ключового слова <kbd>$3</kbd>: $1",
 	"cirrussearch-inlanguage-deprecate-comma": "Використання коми як роздільника для ключового слова inlanguage застаріло. Будь ласка, використовуйте | (вертикальну риску), щоб розділяти мови."
 }

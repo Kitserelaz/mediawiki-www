@@ -18,17 +18,17 @@ use MediaWiki\User\Options\UserOptionsManager;
 class WikimediaIncubatorSecondaryAuthenticationProvider
 	extends AbstractSecondaryAuthenticationProvider {
 
-	/** @var UserOptionsManager */
-	private $userOptionsManager;
-
 	/**
 	 * @param UserOptionsManager $userOptionsManager
 	 * @param array $params
 	 */
-	public function __construct( UserOptionsManager $userOptionsManager, $params = [] ) {
-		$this->userOptionsManager = $userOptionsManager;
+	public function __construct(
+		private readonly UserOptionsManager $userOptionsManager,
+		$params = [],
+	) {
 	}
 
+	/** @inheritDoc */
 	public function getAuthenticationRequests( $action, array $options ) {
 		if ( $action === AuthManager::ACTION_CREATE ) {
 			return [ new WikimediaIncubatorAuthenticationRequest ];
@@ -37,12 +37,14 @@ class WikimediaIncubatorSecondaryAuthenticationProvider
 		return [];
 	}
 
+	/** @inheritDoc */
 	public function beginSecondaryAuthentication( $user, array $reqs ) {
 		return AuthenticationResponse::newAbstain();
 	}
 
+	/** @inheritDoc */
 	public function beginSecondaryAccountCreation( $user, $creator, array $reqs ) {
-		global $wmincPref;
+		global $wgWmincPref;
 
 		$req = AuthenticationRequest::getRequestByClass(
 			$reqs, WikimediaIncubatorAuthenticationRequest::class
@@ -50,8 +52,8 @@ class WikimediaIncubatorSecondaryAuthenticationProvider
 
 		if ( $req ) {
 			'@phan-var WikimediaIncubatorAuthenticationRequest $req';
-			$this->userOptionsManager->setOption( $user, $wmincPref . '-project', $req->testwikiproject );
-			$this->userOptionsManager->setOption( $user, $wmincPref . '-code', $req->testwikicode );
+			$this->userOptionsManager->setOption( $user, $wgWmincPref . '-project', $req->testwikiproject );
+			$this->userOptionsManager->setOption( $user, $wgWmincPref . '-code', $req->testwikicode );
 			$this->userOptionsManager->saveOptions( $user );
 		}
 

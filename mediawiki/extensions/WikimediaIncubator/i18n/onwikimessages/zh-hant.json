@@ -4,7 +4,8 @@
 			"Cwlin0416",
 			"Kly",
 			"Winston Sung",
-			"列维劳德"
+			"列维劳德",
+			"LowensteinYang"
 		]
 	},
 	"wminc-code-macrolanguage": "[[wikipedia:$2 language|\"$3\" 語言]] 是 [[wikipedia:ISO 639 macrolanguage|巨集語言]]，由以下成員語言所組成：",
@@ -51,13 +52,16 @@
 	"wminc-gadget-twpref-setlang-tooltip": "將您的介面語言設定成$1",
 	"wminc-gadget-twpref-setwiki": "設定$1成您的測試專案",
 	"wminc-gadget-twpref-setwiki-tooltip": "設定$1成您的測試專案，您建立的新頁面將成為該專案的一部分",
+	"gadget-language-banner": "添加一個橫幅，讓您知道您的測試 wiki 語言何時可以當作介面語言使用。",
+	"wminc-gadget-language-banner-available": "{{GENDER:$1|您}}現在可以使用<bdi>$2</bdi>作為您在 Wikimedia Incubator 裡的介面語言。",
+	"wminc-gadget-language-banner-switch": "現在切換",
 	"wminc-infopage-title-status-approved": "這是維基孵育場的一個已批准測試 wiki。",
 	"wminc-infopage-title-status-default": "這是維基孵育場的一個測試 wiki。",
 	"wminc-infopage-title-status-imported": "這是一個在維基孵育場的已匯入測試 wiki。",
 	"wminc-infopage-title-status-invalidcode": "此測試 wiki 有無效的 [[$1|ISO 639]] 語言代碼，因此已被刪除。",
 	"wminc-infopage-title-status-open": "這是維基孵育場的一個開放測試 wiki。",
 	"wminc-infopage-title-status-rejected": "此測試 wiki 已被語言委員會拒絕及刪除。",
-	"wminc-infopage-title-status-tocreate": "這是維基孵育場的一個開放測試 wiki。",
+	"wminc-infopage-title-status-tocreate": "此測試 wiki 尚未啟用。",
 	"wminc-infopage-title-status-toimport": "這是維基孵育場中的一個測試 wiki，即將匯入於此。",
 	"wminc-infopage-text-approved-prelangcom": "所請求的專案已建立。請注意此請求是在實施標準化[[$3|語言提案方針]]之前獲得批准，所以不應作為往後請求的參照對象（另請參閱 [[$1|站台建立日誌]]）。",
 	"wminc-infopage-text-approved": "[[$2|語言委員會]]已批准此測試 wiki（另請參閱[[$1|站台建立日誌]]）。",

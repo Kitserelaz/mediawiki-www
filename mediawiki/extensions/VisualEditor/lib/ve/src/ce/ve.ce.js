@@ -11,14 +11,16 @@
  */
 ve.ce = {
 	// nodeFactory: Initialized in ve.ce.NodeFactory.js
+	// pasteSourceDetectors: Initialized in ve.ce.PasteSourceDetectorRegistry.js
 };
 
 /* Static Properties */
 
 /**
- * Data URI for minimal GIF image. This is the smallest technically-valid 1x1px transparent GIF it's possible to create.
+ * Data URI for minimal GIF image. This is the smallest widely-supported 1x1px transparent GIF
+ * it's possible to create. There are smaller ones, but they don't work in Safari (T400116).
  */
-ve.ce.minImgDataUri = 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+ve.ce.minImgDataUri = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAIBAAA=';
 
 /* Static Methods */
 
@@ -112,8 +114,7 @@ ve.ce.getDomHash = function ( element ) {
 };
 
 /**
- * @typedef {Object} NodeAndOffset
- * @memberof ve.ce
+ * @typedef {Object} ve.ce.NodeAndOffset
  * @return {Node} node
  * @return {number} offset
  */
@@ -132,7 +133,7 @@ ve.ce.nextCursorOffset = function ( node ) {
 		nextNode = node.parentNode;
 		offset = 1 + ve.parentIndex( node );
 	}
-	return { node: nextNode, offset: offset };
+	return { node: nextNode, offset };
 };
 
 /**
@@ -150,7 +151,7 @@ ve.ce.previousCursorOffset = function ( node ) {
 		previousNode = node.parentNode;
 		offset = ve.parentIndex( node );
 	}
-	return { node: previousNode, offset: offset };
+	return { node: previousNode, offset };
 };
 
 /**

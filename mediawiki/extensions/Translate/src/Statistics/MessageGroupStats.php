@@ -6,6 +6,7 @@ namespace MediaWiki\Extension\Translate\Statistics;
 use AggregateMessageGroup;
 use FileBasedMessageGroup;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageLoading\MessageCollection;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
@@ -15,8 +16,7 @@ use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MessageGroup;
 use stdClass;
-use WANObjectCache;
-use Wikimedia\Rdbms\Database;
+use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\IDatabase;
 
 /**
@@ -138,34 +138,30 @@ class MessageGroupStats {
 
 	/**
 	 * Returns stats for all languages in given group.
-	 * @param string $groupId
+	 * @param MessageGroup|string $group
 	 * @param int $flags Combination of FLAG_* constants.
 	 * @return array[]
 	 */
-	public static function forGroup( string $groupId, int $flags = 0 ): array {
-		$group = MessageGroups::getGroup( $groupId );
-		if ( !self::isValidMessageGroup( $group ) ) {
-			$languages = self::getLanguages();
-			$stats = [];
-			foreach ( $languages as $code ) {
-				$stats[$code] = self::getUnknownStats();
-			}
+	public static function forGroup( MessageGroup|string $group, int $flags = 0 ): array {
+		if ( !( $group instanceof MessageGroup ) ) {
+			$group = MessageGroups::getGroup( $group );
+		}
 
-			return $stats;
+		if ( !self::isValidMessageGroup( $group ) ) {
+			return array_fill_keys( self::getLanguages(), self::getUnknownStats() );
 		}
 
 		$stats = self::forGroupInternal( $group, [], $flags );
 
 		self::queueUpdates( $flags );
 
-		return $stats[$groupId];
+		return $stats[$group->getId()];
 	}
 
 	/**
 	 * Recalculate stats for all groups associated with the message.
 	 *
 	 * Hook: TranslateEventTranslationReview
-	 * @param MessageHandle $handle
 	 */
 	public static function clear( MessageHandle $handle ): void {
 		$code = $handle->getCode();
@@ -203,10 +199,7 @@ class MessageGroupStats {
 		return $cache->getWithSetCallback(
 			self::LANGUAGE_STATS_KEY,
 			WANObjectCache::TTL_INDEFINITE,
-			function ( $oldValue, &$ttl, array &$setOpts ) {
-				$dbr = Utilities::getSafeReadDB();
-				$setOpts += Database::getCacheSetOptions( $dbr );
-
+			function () {
 				return self::getAllLanguageStats();
 			},
 			[
@@ -231,8 +224,8 @@ class MessageGroupStats {
 			->caller( __METHOD__ )
 			->fetchResultSet();
 
-		$allLanguages = self::getLanguages();
-		$languagesCodes = array_flip( $allLanguages );
+		/** @var array<string,int> $languagesCodes */
+		$languagesCodes = array_flip( self::getLanguages() );
 
 		$allStats = [];
 		foreach ( $res as $row ) {
@@ -597,20 +590,14 @@ class MessageGroupStats {
 			return;
 		}
 
-		$lb = $mwInstance->getDBLoadBalancer();
-		$dbw = $lb->getConnection( DB_PRIMARY ); // avoid connecting yet
+		$dbw = $mwInstance->getConnectionProvider()->getPrimaryDatabase(); // avoid connecting yet
 		$callers = wfGetAllCallers( 50 );
 		$functionName = __METHOD__;
 		$callback = static function ( IDatabase $dbw, $method ) use ( $callers, $mwInstance ) {
-			// Maybe another deferred update already processed these
-			if ( self::$updates === [] ) {
-				return;
-			}
-
 			// This path should only be hit during web requests
 			if ( count( self::$updates ) > 100 ) {
 				$groups = array_unique( array_column( self::$updates, 'tgs_group' ) );
-				LoggerFactory::getInstance( 'Translate' )->warning(
+				LoggerFactory::getInstance( LogNames::MAIN )->warning(
 					"Huge translation update of {count} rows for group(s) {groups}",
 					[
 						'count' => count( self::$updates ),
@@ -631,20 +618,34 @@ class MessageGroupStats {
 			$mwInstance->getMainWANObjectCache()->touchCheckKey( self::LANGUAGE_STATS_KEY );
 		};
 		$updateOp = static function () use ( $dbw, $functionName, $callback ) {
+			// Maybe another deferred update already processed these
+			if ( self::$updates === [] ) {
+				return;
+			}
+
 			$lockName = 'MessageGroupStats:updates';
 			if ( !$dbw->lock( $lockName, $functionName, 1 ) ) {
+				$groups = array_unique( array_column( self::$updates, 'tgs_group' ) );
+				LoggerFactory::getInstance( LogNames::MAIN )->warning(
+					'Message group stats update of {count} rows failed for group(s) {groups} due to lock',
+					[
+						'count' => count( self::$updates ),
+						'groups' => implode( ', ', $groups ),
+					]
+				);
+
 				return; // raced out
 			}
 
 			$dbw->commit( $functionName, 'flush' );
-			call_user_func( $callback, $dbw, $functionName );
+			$callback( $dbw, $functionName );
 			$dbw->commit( $functionName, 'flush' );
 
 			$dbw->unlock( $lockName, $functionName );
 		};
 
 		if ( $flags & self::FLAG_IMMEDIATE_WRITES ) {
-			call_user_func( $updateOp );
+			$updateOp();
 		} else {
 			DeferredUpdates::addCallableUpdate( $updateOp );
 		}
@@ -662,22 +663,22 @@ class MessageGroupStats {
 
 	/** @return int[] */
 	public static function getStatsForCollection( MessageCollection $collection ): array {
-		$collection->filter( 'ignored' );
+		$collection->filter( MessageCollection::FILTER_IGNORED, MessageCollection::EXCLUDE_MATCHING );
 		$collection->filterUntranslatedOptional();
 		// Store the count of real messages for later calculation.
 		$total = count( $collection );
 
 		// Count fuzzy first.
-		$collection->filter( 'fuzzy' );
+		$collection->filter( MessageCollection::FILTER_FUZZY, MessageCollection::EXCLUDE_MATCHING );
 		$fuzzy = $total - count( $collection );
 
 		// Count the completed translations.
-		$collection->filter( 'hastranslation', false );
+		$collection->filter( MessageCollection::FILTER_HAS_TRANSLATION, MessageCollection::INCLUDE_MATCHING );
 		$translated = count( $collection );
 
 		// Count how many of the completed translations
 		// have been proofread
-		$collection->filter( 'reviewer', false );
+		$collection->filter( MessageCollection::FILTER_REVIEWER, MessageCollection::INCLUDE_MATCHING );
 		$proofread = count( $collection );
 
 		return [

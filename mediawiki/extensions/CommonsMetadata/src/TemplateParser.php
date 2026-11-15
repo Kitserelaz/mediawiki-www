@@ -4,6 +4,7 @@ namespace CommonsMetadata;
 
 use DOMElement;
 use DOMNode;
+use MediaWiki\MediaWikiServices;
 
 /**
  * Class to parse metadata from commons formatted wiki pages.
@@ -138,7 +139,8 @@ class TemplateParser {
 	 * @return array The properties extracted from the page.
 	 */
 	public function parsePage( $html ) {
-		if ( !$html ) { // DOMDocument does not like empty strings
+		if ( !$html ) {
+			// DOMDocument does not like empty strings
 			return [];
 		}
 
@@ -397,6 +399,19 @@ class TemplateParser {
 				break;
 			}
 		}
+
+		// Filter out non-http(s) license urls
+		// https://phabricator.wikimedia.org/T435999
+		if (
+			isset( $data[ 'LicenseUrl' ] ) &&
+			!in_array(
+				strtolower( parse_url( $data[ 'LicenseUrl' ], PHP_URL_SCHEME ) ?: '' ),
+				[ 'http', 'https' ]
+			)
+		) {
+			unset( $data[ 'LicenseUrl' ] );
+		}
+
 		return $data;
 	}
 
@@ -408,13 +423,14 @@ class TemplateParser {
 	 */
 	protected function parseNuke( DomNavigator $domNavigator ) {
 		$deletions = [];
+		$urlUtils = MediaWikiServices::getInstance()->getUrlUtils();
 
 		foreach ( $domNavigator->findElementsWithClass( '*', 'nuke' ) as $nukeNode ) {
 			$nukeLink = $nukeNode->firstChild;
 			if ( $nukeLink
 				&& $nukeLink instanceof DOMElement && $nukeLink->hasAttribute( 'href' )
 			) {
-				$urlBits = wfParseUrl( $nukeLink->getAttribute( 'href' ) );
+				$urlBits = $urlUtils->parse( $nukeLink->getAttribute( 'href' ) ) ?? [];
 				if ( isset( $urlBits['query'] ) ) {
 					$params = wfCgiToArray( $urlBits['query'] );
 					if ( isset( $params['action'] ) && $params['action'] === 'delete'
@@ -459,7 +475,8 @@ class TemplateParser {
 	 */
 	protected function parseContents( DomNavigator $domNavigator, DOMNode $node ) {
 		$languageNodes = $domNavigator->findElementsWithClassAndLang( 'div', 'description', $node );
-		if ( !$languageNodes->length ) { // no language templates at all
+		if ( !$languageNodes->length ) {
+			// no language templates at all
 			return $this->cleanedInnerHtml( $node );
 		}
 		$languages = [];
@@ -490,7 +507,8 @@ class TemplateParser {
 		foreach ( $languageNames as $languageName ) {
 			$parentNode = $languageName->parentNode;
 			if ( $parentNode !== null && !$node->isSameNode( $parentNode ) ) {
-				continue; // language names are direct children
+				// language names are direct children
+				continue;
 			}
 			$node->removeChild( $languageName );
 		}

@@ -2,8 +2,8 @@
 	"@metadata": {
 		"authors": [
 			"BaRaN6161 TURK",
-			"SaldırganSincap",
-			"HakanIST"
+			"HakanIST",
+			"SaldırganSincap"
 		]
 	},
 	"apihelp-cargoquery-summary": "Kargo verilerinde bir sorgu çalıştırır.",

@@ -2,12 +2,12 @@
 
 namespace MediaWiki\Extension\PageTriage\Api;
 
-use ManualLogEntry;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiUsageException;
 use MediaWiki\Extension\PageTriage\ArticleMetadata;
 use MediaWiki\Extension\PageTriage\PageTriageUtil;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Request\DerivativeRequest;
 use MediaWiki\Title\Title;
@@ -202,7 +202,6 @@ class ApiPageTriageTagging extends ApiBase {
 			$this->dieWithError( 'apierror-missingtitle', 'bad-page' );
 		}
 
-		// @phan-suppress-next-line PhanTypeMismatchReturnNullable Still T240141
 		return $title;
 	}
 }

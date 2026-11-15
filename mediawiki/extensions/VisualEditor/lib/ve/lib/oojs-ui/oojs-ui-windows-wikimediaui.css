@@ -1,14 +1,16 @@
 /*!
- * OOUI v0.51.1
+ * OOUI v0.53.2
  * https://www.mediawiki.org/wiki/OOUI
  *
- * Copyright 2011–2024 OOUI Team and other contributors.
+ * Copyright 2011–2026 OOUI Team and other contributors.
  * Released under the MIT license
  * http://oojs.mit-license.org
  *
- * Date: 2024-09-19T17:13:45Z
+ * Date: 2026-04-21T12:46:11Z
  */
+/* stylelint-disable-next-line @stylistic/indentation */
 
+/* stylelint-disable-next-line @stylistic/indentation */
 .oo-ui-window {
   background: transparent;
 }
@@ -31,7 +33,6 @@
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -moz-user-select: none;
-  -ms-user-select: none;
   user-select: none;
 }
 .oo-ui-window-body {
@@ -54,6 +55,7 @@
   display: block;
 }
 
+/* stylelint-disable-next-line @stylistic/indentation */
 .oo-ui-dialog-content > .oo-ui-window-head,
 .oo-ui-dialog-content > .oo-ui-window-body,
 .oo-ui-dialog-content > .oo-ui-window-foot {
@@ -79,6 +81,7 @@
   bottom: 0;
 }
 
+/* stylelint-disable-next-line @stylistic/indentation */
 .oo-ui-messageDialog-actions .oo-ui-actionWidget {
   position: relative;
   text-align: center;
@@ -177,6 +180,7 @@
   border-radius: 0 0 2px 2px;
 }
 
+/* stylelint-disable-next-line @stylistic/indentation */
 .oo-ui-processDialog-location {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -309,7 +313,8 @@
   min-height: 5em;
 }
 .oo-ui-processDialog-errors {
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: var(--background-color-backdrop-light, rgba(255, 255, 255, 0.65));
+  background-image: linear-gradient(to bottom, var(--background-color-backdrop-light, rgba(255, 255, 255, 0.65)), var(--background-color-backdrop-light, rgba(255, 255, 255, 0.65)));
   padding: 3em 3em 0 3em;
 }
 .oo-ui-processDialog-errors-title {
@@ -355,6 +360,7 @@
   padding-left: 2.42857143em;
 }
 
+/* stylelint-disable-next-line @stylistic/indentation */
 .oo-ui-windowManager-modal > .oo-ui-dialog {
   position: fixed;
   width: 0;

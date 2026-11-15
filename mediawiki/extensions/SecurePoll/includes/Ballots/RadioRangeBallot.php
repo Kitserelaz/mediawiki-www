@@ -37,6 +37,7 @@ class RadioRangeBallot extends Ballot {
 	/** @var int[]|null */
 	public $minMax;
 
+	/** @inheritDoc */
 	public static function getTallyTypes() {
 		return [
 			'plurality',
@@ -44,6 +45,7 @@ class RadioRangeBallot extends Ballot {
 		];
 	}
 
+	/** @inheritDoc */
 	public static function getCreateDescriptors() {
 		$ret = parent::getCreateDescriptors();
 		$ret['election'] += [
@@ -58,25 +60,31 @@ class RadioRangeBallot extends Ballot {
 			'min-score' => [
 				'label-message' => 'securepoll-create-label-min_score',
 				'type' => 'int',
+				'default' => -1,
 				'validation-callback' => [
 					CreatePage::class,
 					'checkRequired',
 				],
 				'SecurePoll_type' => 'property',
+				'cssclass' => 'securepoll-narrow-number-input',
 			],
 			'max-score' => [
 				'label-message' => 'securepoll-create-label-max_score',
 				'type' => 'int',
+				'default' => 1,
 				'validation-callback' => [
 					CreatePage::class,
 					'checkRequired',
 				],
 				'SecurePoll_type' => 'property',
+				'cssclass' => 'securepoll-narrow-number-input',
 			],
 			'default-score' => [
 				'label-message' => 'securepoll-create-label-default_score',
 				'type' => 'int',
+				'default' => 0,
 				'SecurePoll_type' => 'property',
+				'cssclass' => 'securepoll-narrow-number-input',
 			],
 			'column-order' => [
 				'label-message' => 'securepoll-create-label-column_order',
@@ -184,6 +192,7 @@ class RadioRangeBallot extends Ballot {
 		return $labels;
 	}
 
+	/** @inheritDoc */
 	public function getMessageNames( ?Entity $entity = null ) {
 		if ( $entity === null || $entity->getType() !== 'question' ) {
 			return [];
@@ -207,6 +216,11 @@ class RadioRangeBallot extends Ballot {
 		return $msgs;
 	}
 
+	/**
+	 * @param Question $question
+	 * @param int|string $score
+	 * @return string
+	 */
 	public function addSign( $question, $score ) {
 		[ $min, ] = $this->getMinMax( $question );
 		if ( $min < 0 && $score > 0 ) {
@@ -233,7 +247,8 @@ class RadioRangeBallot extends Ballot {
 		$tr = new Tag( 'tr' );
 		$tr->appendContent( new Tag( 'th' ) );
 		foreach ( $labels as $lab ) {
-			$tr->appendContent( ( new Tag( 'th' ) )->appendContent( $lab ) );
+			// @phan-suppress-next-line SecurityCheck-XSS Problematic only if score is NAN, which won't be the case
+			$tr->appendContent( ( new Tag( 'th' ) )->appendContent( new HtmlSnippet( $lab ) ) );
 		}
 		$thead->appendContent( $tr );
 		$tbody = new Tag( 'tbody' );
@@ -380,6 +395,7 @@ class RadioRangeBallot extends Ballot {
 		return $scores;
 	}
 
+	/** @inheritDoc */
 	public function convertScores( $scores, $params = [] ) {
 		$result = [];
 		foreach ( $this->election->getQuestions() as $question ) {

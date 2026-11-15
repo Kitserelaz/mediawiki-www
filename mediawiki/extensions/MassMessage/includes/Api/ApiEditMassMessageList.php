@@ -5,11 +5,16 @@ namespace MediaWiki\MassMessage\Api;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiWatchlistTrait;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MassMessage\Content\MassMessageListContent;
 use MediaWiki\MassMessage\Content\MassMessageListContentHandler;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\MassMessage\MassMessage;
+use MediaWiki\Page\LinkBatchFactory;
+use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
+use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\Watchlist\WatchlistManager;
 use Wikimedia\ParamValidator\ParamValidator;
 
 /**
@@ -17,17 +22,26 @@ use Wikimedia\ParamValidator\ParamValidator;
  *
  * @ingroup API
  */
-
 class ApiEditMassMessageList extends ApiBase {
 
 	use ApiWatchlistTrait;
 
-	/** @inheritDoc */
-	public function __construct( ApiMain $mainModule, $moduleName, $modulePrefix = '' ) {
-		parent::__construct( $mainModule, $moduleName, $modulePrefix );
+	public function __construct(
+		ApiMain $mainModule,
+		string $moduleName,
+		private readonly RevisionLookup $revisionLookup,
+		private readonly LinkBatchFactory $linkBatchFactory,
+		WatchlistManager $watchlistManager,
+		UserOptionsLookup $userOptionsLookup
+	) {
+		parent::__construct( $mainModule, $moduleName );
 
-		// Needed for ApiWatchlistTrait.
+		// Variables needed in ApiWatchlistTrait trait
 		$this->watchlistExpiryEnabled = false;
+		$this->watchlistMaxDuration =
+			$this->getConfig()->get( MainConfigNames::WatchlistExpiryMaxDuration );
+		$this->watchlistManager = $watchlistManager;
+		$this->userOptionsLookup = $userOptionsLookup;
 	}
 
 	public function execute() {
@@ -47,9 +61,7 @@ class ApiEditMassMessageList extends ApiBase {
 		/**
 		 * @var MassMessageListContent $content
 		 */
-		$content = MediaWikiServices::getInstance()
-			->getRevisionLookup()
-			->getRevisionByTitle( $spamlist )
+		$content = $this->revisionLookup->getRevisionByTitle( $spamlist )
 			->getContent( SlotRecord::MAIN );
 		'@phan-var MassMessageListContent $content';
 		$description = $content->getDescription();
@@ -146,21 +158,35 @@ class ApiEditMassMessageList extends ApiBase {
 		if ( isset( $data['add'] ) ) {
 			$resultArray['added'] = $added;
 
-			// Use a LinkBatch to look up and cache existence for all local targets
-			$lb = MediaWikiServices::getInstance()->getLinkBatchFactory()->newLinkBatch();
-			foreach ( $resultArray['added'] as $target ) {
-				if ( !isset( $target['site'] ) ) {
-					$lb->addObj( Title::newFromText( $target['title'] ) );
+			// Use a LinkBatch to look up and cache existence for all local targets.
+			// But, process them in batches of LINK_BATCH_SIZE (See T388935).
+			$numTargets = count( $resultArray['added'] );
+			$i = 0;
+			while ( $i < $numTargets ) {
+				$startOffset = $i;
+				$lb = $this->linkBatchFactory->newLinkBatch();
+				$count = 0;
+				while ( $i < $numTargets && $count < MassMessage::LINK_BATCH_SIZE ) {
+					$target = $resultArray['added'][$i];
+					if ( !isset( $target['site'] ) ) {
+						$lb->addObj( Title::newFromText( $target['title'] ) );
+						$count++;
+					}
+					$i++;
 				}
-			}
-			$lb->execute();
+				$endOffset = $i;
+				$lb->execute();
 
-			// Add an empty "missing" attribute to new local targets that do not exist
-			foreach ( $resultArray['added'] as &$target ) {
-				if ( !isset( $target['site'] )
-					&& !Title::newFromText( $target['title'] )->exists()
-				) {
-					$target['missing'] = '';
+				// Add an empty "missing" attribute to new local targets that do not exist
+				$i = $startOffset;
+				while ( $i < $endOffset ) {
+					$target = &$resultArray['added'][$i];
+					if ( !isset( $target['site'] )
+						&& !Title::newFromText( $target['title'] )->exists()
+					) {
+						$target['missing'] = '';
+					}
+					$i++;
 				}
 			}
 

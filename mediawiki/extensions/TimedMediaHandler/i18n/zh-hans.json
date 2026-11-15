@@ -8,6 +8,7 @@
 			"Hanyanbo98",
 			"Hehua",
 			"Hzy980512",
+			"Lakejason0",
 			"Liangent",
 			"Liuxinyu970226",
 			"NeverBehave",
@@ -26,7 +27,9 @@
 			"佛壁灯",
 			"沈澄心",
 			"神樂坂秀吉",
-			"铁桶"
+			"铁桶",
+			"GuoPC",
+			"Villager-bloc-h"
 		]
 	},
 	"timedmediahandler-extensionname": "TimedMediaHandler",
@@ -76,15 +79,15 @@
 	"timedmedia-error-on": "于$1错误",
 	"timedmedia-started-transcode": "已开始$1。$2",
 	"timedmedia-percent-done": "大约$1%已完成",
-	"timedmedia-in-job-queue": "添加到工作队列$1",
+	"timedmedia-in-job-queue": "已于$1添加到作业队列",
 	"timedmedia-unknown-target-size": "未知目标大小，$1已编码",
 	"timedmedia-reset": "重置转码",
 	"timedmedia-reset-areyousure": "您确定要继续么？",
 	"timedmedia-reset-button-cancel": "不要重置",
 	"timedmedia-reset-button-dismiss": "关闭",
 	"timedmedia-reset-button-reset": "重置",
-	"timedmedia-reset-error": "重置转码工作时发生错误。",
-	"timedmedia-reset-explanation": "重置转码将会尽可能移除所有现有文件，并将其重新加入到转码工作队列。这将需要一些时间来重新转码。",
+	"timedmedia-reset-error": "重置转码作业时发生错误。",
+	"timedmedia-reset-explanation": "重置转码将会尽可能移除所有现有文件，并将其重新加入到转码作业队列。重新转码需要一些时间。",
 	"timedmedia-error-details": "转码错误详细信息",
 	"timedmedia-error-dismiss": "关闭",
 	"timedmedia-source-original": "来源",
@@ -234,5 +237,13 @@
 	"timedmedia-timedtext-title-create-subtitles": "没有找到片段$2的$1字幕",
 	"m3u8-error-create-temp": "无法创建$1的临时文件",
 	"m3u8-error-write-temp": "无法写入$1的临时文件",
-	"m3u8-error-save-playlist": "保存HLS播放列表$1时出错"
+	"m3u8-error-save-playlist": "保存HLS播放列表$1时出错",
+	"videojs-endcard-share-title": "链接到此媒体",
+	"videojs-endcard-copy-link": "复制链接",
+	"videojs-endcard-share": "分享",
+	"videojs-endcard-share-not-possible": "无法使用分享功能",
+	"videojs-endcard-embed-title": "将此媒体嵌入到您的网站",
+	"videojs-endcard-embed-copy": "复制",
+	"videojs-endcard-copied": "已复制到剪贴板！",
+	"videojs-endcard-copy-failed": "无法复制到剪贴板"
 }

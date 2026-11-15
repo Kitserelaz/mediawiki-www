@@ -10,6 +10,7 @@ use CirrusSearch\Search\Filters;
 use CirrusSearch\Search\SearchContext;
 use CirrusSearch\SearchConfig;
 use Elastica\Query\AbstractQuery;
+use MediaWiki\MainConfigNames;
 
 /**
  * Applies a filter against the title field in elasticsearch. When not negated
@@ -46,7 +47,10 @@ class InTitleFeature extends BaseRegexFeature {
 				'redirect.title' => HighlightedField::TARGET_REDIRECT_SNIPPET
 			]
 		);
-		$this->escaper = new Escaper( $config->get( 'LanguageCode' ), $config->get( 'CirrusSearchAllowLeadingWildcard' ) );
+		$this->escaper = new Escaper(
+			$config->get( MainConfigNames::LanguageCode ),
+			$config->get( 'CirrusSearchAllowLeadingWildcard' )
+		);
 	}
 
 	/**
@@ -54,6 +58,10 @@ class InTitleFeature extends BaseRegexFeature {
 	 */
 	protected function getKeywords() {
 		return [ 'intitle' ];
+	}
+
+	protected function getRegexHLFlavor(): string {
+		return "lucene_anchored";
 	}
 
 	/**
@@ -82,6 +90,7 @@ class InTitleFeature extends BaseRegexFeature {
 		return Filters::intitle( $this->escaper, $node->getQuotedValue(), $node->getValue() !== $node->getQuotedValue() );
 	}
 
+	/** @inheritDoc */
 	public function buildNonRegexHLFields( KeywordFeatureNode $node, QueryBuildingContext $context ) {
 		// we highlight this field a bit differently as it's part of the main query
 		return [];

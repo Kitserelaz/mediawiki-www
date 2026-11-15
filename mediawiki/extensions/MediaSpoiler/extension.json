@@ -9,7 +9,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "parserhook",
 	"requires": {
-		"MediaWiki": ">= 1.41.0"
+		"MediaWiki": ">= 1.45.0"
 	},
 	"MessagesDirs": {
 		"MediaSpoiler": [
@@ -61,7 +61,7 @@
 		}
 	},
 	"ConfigRegistry": {
-		"MediaSpoiler": "GlobalVarConfig::newInstance"
+		"MediaSpoiler": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"manifest_version": 2
 }

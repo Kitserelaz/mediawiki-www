@@ -8,9 +8,11 @@
  *
  * @param {GlobalWatchlistDebugger} globalWatchlistDebug Debugger instance to log to
  * @param {mw.ForeignApi} api Instance of mw.ForeignApi to use
- * @param {string} userLang language to fetch labels in
+ * @param {string} userLang Language to fetch labels in
+ * @param {Array<Array<number>>} namespaces All the namespaces with wikibase default content model
+ * @param {Array<Array<string>>} nsNames All the names of namespaces with wikibase default content model
  */
-function GlobalWatchlistWikibaseHandler( globalWatchlistDebug, api, userLang ) {
+function GlobalWatchlistWikibaseHandler( globalWatchlistDebug, api, userLang, namespaces, nsNames ) {
 	// Logger to send debug info to
 	this.debugLogger = globalWatchlistDebug;
 
@@ -19,6 +21,22 @@ function GlobalWatchlistWikibaseHandler( globalWatchlistDebug, api, userLang ) {
 
 	// Language to fetch the labels in
 	this.userLang = userLang;
+
+	// Wikibase namespaces
+	this.namespaces = namespaces.wikibase;
+
+	// Wikibase namespaces names
+	this.nsNames = nsNames.wikibase;
+
+	// Entity Schema namespaces
+	this.esNamespaces = namespaces.entity;
+
+	// EntitySchema namespaces names
+	this.esNsNames = nsNames.entity;
+
+	// EntitySchema caches
+	this.esCache = {};
+	this.esPromiseCache = {};
 }
 
 /**
@@ -94,23 +112,28 @@ GlobalWatchlistWikibaseHandler.prototype.debug = function ( msg, extraInfo ) {
  * @return {Promise} Promise of api result
  */
 GlobalWatchlistWikibaseHandler.prototype.getRawLabels = function ( entityIds ) {
-	var that = this;
+	const that = this;
 
-	return new Promise( function ( resolve ) {
-		var query = {
+	if ( !entityIds || entityIds.length === 0 ) {
+		return Promise.resolve( {} );
+	}
+
+	return new Promise( ( resolve ) => {
+		const query = {
 			action: 'wbgetentities',
 			formatversion: 2,
 			ids: entityIds.slice( 0, 50 ),
 			languages: that.userLang,
-			props: 'labels'
+			props: 'labels',
+			languagefallback: 1
 		};
-		that.api.get( query ).then( function ( response ) {
+		that.api.get( query ).then( ( response ) => {
 			that.debug( 'getRawLabels - api response', response );
-			var labels = response.entities;
+			const labels = response.entities;
 			if ( entityIds.length > 50 ) {
 				// Recursive processing
-				that.getRawLabels( entityIds.slice( 50 ) ).then( function ( extraLabels ) {
-					var bothLabels = Object.assign( {}, labels, extraLabels );
+				that.getRawLabels( entityIds.slice( 50 ) ).then( ( extraLabels ) => {
+					const bothLabels = Object.assign( {}, labels, extraLabels );
 					that.debug( 'getRawLabels - bothLabels', bothLabels );
 					resolve( bothLabels );
 				} );
@@ -144,13 +167,17 @@ GlobalWatchlistWikibaseHandler.prototype.getRawLabels = function ( entityIds ) {
 GlobalWatchlistWikibaseHandler.prototype.cleanupRawLabels = function ( rawLabels ) {
 	this.debug( 'cleanupRawLabels - starting (raw)', rawLabels );
 
-	var cleanedLabels = {};
-	var entityIds = Object.keys( rawLabels );
-	var that = this;
-	var entityInfo,
+	if ( !rawLabels || Object.keys( rawLabels ).length === 0 ) {
+		return {};
+	}
+
+	const cleanedLabels = {};
+	const entityIds = Object.keys( rawLabels );
+	const that = this;
+	let entityInfo,
 		labelKey;
 
-	entityIds.forEach( function ( entityId ) {
+	entityIds.forEach( ( entityId ) => {
 		// Object.keys -> known to be a valid key
 		entityInfo = rawLabels[ entityId ];
 
@@ -174,29 +201,27 @@ GlobalWatchlistWikibaseHandler.prototype.cleanupRawLabels = function ( rawLabels
 };
 
 /**
- * Set entities' titleMsg (title without the `Property:` or `Lexeme:` prefix) and
+ * Set entities' $titleMsg (title without the `Property:` or `Lexeme:` prefix) and
  * get a list of the ids to fetch in the form of Q1/P2/L3
  *
  * @param {GlobalWatchlistEntryBase[]} entries Original summary entries
  * @return {Object} updated entries and ids
  */
 GlobalWatchlistWikibaseHandler.prototype.getEntityIds = function ( entries ) {
-	var ids = [];
+	const ids = [];
 
-	entries.forEach( function ( entry ) {
-		entry.titleMsg = entry.title.replace(
-			/^(?:Property|Lexeme):/,
-			''
-		);
-
-		if ( entry.ns === 0 || entry.title !== entry.titleMsg ) {
-			// Either:
-			// * main namespace, title doesn't have a prefix to remove
-			// * property/lexeme, prefix removed
-			// Add the Q/P/L id, without duplication
-			if ( ids.indexOf( entry.titleMsg ) === -1 ) {
-				ids.push( entry.titleMsg );
+	entries.forEach( ( entry ) => {
+		if ( this.namespaces.includes( entry.ns ) || this.esNamespaces.includes( entry.ns ) ) {
+			const prefixw = this.nsNames.find( ( name ) => entry.title.startsWith( name + ':' ) );
+			const prefixe = prefixw ? null : this.esNsNames.find( ( name ) => entry.title.startsWith( name + ':' ) );
+			const titleMsgRaw = prefixw ? entry.title.slice( prefixw.length + 1 ) :
+				( prefixe ? entry.title.slice( prefixe.length + 1 ) : entry.title );
+			entry.$titleMsg = $( document.createTextNode( titleMsgRaw ) );
+			if ( !ids.includes( titleMsgRaw ) ) {
+				ids.push( titleMsgRaw );
 			}
+		} else {
+			entry.$titleMsg = $( document.createTextNode( entry.title ) );
 		}
 	} );
 
@@ -207,42 +232,90 @@ GlobalWatchlistWikibaseHandler.prototype.getEntityIds = function ( entries ) {
 };
 
 /**
- * Entry point - alter the entities given to have titleMsg that reflects the labels
+ * Entry point - alter the entities given to have $titleMsg that reflects the labels
  *
  * Promise resolves to the summary entries with updated info
  *
- * @param {GlobalWatchlistEntryBase[]} summaryEntries Original summary, entries have titleMsg as
+ * @param {GlobalWatchlistEntryBase[]} summaryEntries Original summary, entries have $titleMsg as
  *   just the plain title (Q1, P2, L3, etc.)
  * @return {Promise} Promise of updated summary, with labels
  */
 GlobalWatchlistWikibaseHandler.prototype.addWikibaseLabels = function ( summaryEntries ) {
-	var that = this;
+	const that = this;
 
-	return new Promise( function ( resolve ) {
-		var extractedInfo = that.getEntityIds( summaryEntries );
+	return new Promise( ( resolve ) => {
+		const extractedInfo = that.getEntityIds( summaryEntries );
 		that.debug( 'addLabels - extractedInfo', extractedInfo );
 
-		var updatedEntries = extractedInfo.entries;
-		var entityIds = extractedInfo.ids;
+		const updatedEntries = extractedInfo.entries;
+		const entityIds = extractedInfo.ids.filter( ( id ) => !id.startsWith( 'E' ) );
 
-		if ( entityIds.length === 0 ) {
-			// Nothing to fetch
-			resolve( updatedEntries );
-			return;
-		}
+		that.getRawLabels( entityIds ).then( ( rawLabels ) => {
+			const cleanedLabels = that.cleanupRawLabels( rawLabels );
 
-		that.getRawLabels( entityIds ).then( function ( rawLabels ) {
-			var cleanedLabels = that.cleanupRawLabels( rawLabels );
-
-			updatedEntries.forEach( function ( entry ) {
-				if ( cleanedLabels[ entry.titleMsg ] ) {
-					entry.titleMsg += ' ' + mw.msg( 'parentheses', cleanedLabels[ entry.titleMsg ] );
+			updatedEntries.forEach( ( entry ) => {
+				const cleanedLabelsData = cleanedLabels[ mw.html.escape( entry.$titleMsg.text() ) ];
+				if ( cleanedLabelsData ) {
+					entry.$titleMsg = $( '<span>' ).append(
+						entry.$titleMsg,
+						[ ' (', $( '<bdi>' ).text( cleanedLabelsData ), ')' ] );
+				} else {
+					const titleEs = entry.$titleMsg.text();
+					const $esElem = $( '<bdi>' );
+					if ( that.esCache[ titleEs ] ) {
+						$esElem.text( that.esCache[ titleEs ] );
+						entry.$titleMsg = $( '<span>' ).append( entry.$titleMsg, ' (', $esElem, ')' );
+					} else {
+						let promise = that.esPromiseCache[ titleEs ];
+						entry.$titleMsg = $( '<span>' ).append( entry.$titleMsg, $esElem );
+						if ( !promise ) {
+							promise = that.calculateRealTextAsync( titleEs )
+								.then( ( realText ) => {
+									delete that.esPromiseCache[ titleEs ];
+									if ( realText && realText !== '' ) {
+										that.esCache[ titleEs ] = realText;
+										that.debug( 'new cache', that.esCache );
+										return realText;
+									}
+								} )
+								.catch( () => {
+									delete that.esPromiseCache[ titleEs ];
+								} );
+							that.esPromiseCache[ titleEs ] = promise;
+						}
+						promise.then( ( realText ) => {
+							that.debug( 'saving realText to', $esElem );
+							if ( realText && realText !== '' ) {
+								$esElem.text( that.esCache[ titleEs ] );
+								entry.$titleMsg.append( ' (', $esElem, ')' );
+							}
+						} );
+					}
 				}
 			} );
 
 			resolve( updatedEntries );
 		} );
 	} );
+};
+
+GlobalWatchlistWikibaseHandler.prototype.calculateRealTextAsync = function ( id ) {
+	this.debug( 'Calculating', id );
+
+	return this.api.get( {
+		action: 'wbsearchentities',
+		search: id,
+		language: this.userLang,
+		uselang: this.userLang,
+		type: 'entity-schema',
+		formatversion: 2
+	} ).then( ( data ) => {
+		const match = data.search.find( ( result ) => this.esNsNames
+			.some( ( ns ) => result.title === `${ ns }:${ id }` )
+		);
+
+		return match ? match.label : false;
+	} ).catch( () => false );
 };
 
 module.exports = GlobalWatchlistWikibaseHandler;

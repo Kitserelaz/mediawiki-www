@@ -26,7 +26,7 @@ class MaxQueryLengthExceptionsTest extends CirrusIntegrationTestCase {
 		$config = new HashSearchConfig( [] );
 
 		$registry = new class( $config ) implements KeywordRegistry {
-			private $config;
+			private SearchConfig $config;
 
 			public function __construct( SearchConfig $config ) {
 				$this->config = $config;
@@ -36,9 +36,9 @@ class MaxQueryLengthExceptionsTest extends CirrusIntegrationTestCase {
 				return [
 					new InCategoryFeature( $this->config ),
 					new InSourceFeature( $this->config ),
-					new ArticleTopicFeature(),
+					new ArticlePredictionKeyword(),
 					new PageIdFeature(),
-					new HasRecommendationFeature(),
+					new HasRecommendationFeature( 1000 ),
 					new HasTemplateFeature(),
 				];
 			}
@@ -68,7 +68,7 @@ class MaxQueryLengthExceptionsTest extends CirrusIntegrationTestCase {
 		yield [ 10, str_repeat( 'a', 10 ), true ];
 		yield [ 10, str_repeat( 'a', 11 ), false ];
 
-		$keywordTests = [ 'incategory', 'articletopic', 'pageid',
+		$keywordTests = [ 'incategory', 'articletopic', 'articlecountry', 'pageid',
 						  'hastemplate', 'hasrecommendation', 'insource' ];
 
 		foreach ( $keywordTests as $exemptedKeyword ) {

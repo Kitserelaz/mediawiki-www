@@ -7,13 +7,14 @@ use CirrusSearch\Connection;
 use CirrusSearch\SearchConfig;
 use Elastica\Document;
 use MediaWiki\Cache\BacklinkCacheFactory;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
 use MediaWiki\Title\TitleFormatter;
 use Wikimedia\Rdbms\IReadableDatabase;
-use WikiPage;
 
 /**
  * @covers \CirrusSearch\BuildDocument\BuildDocument
@@ -46,7 +47,10 @@ class BuildDocumentTest extends \MediaWikiUnitTestCase {
 		$this->revStore->method( 'getTitle' )
 			->willReturn( $title );
 		$this->revision->method( 'getPage' )
-			->willReturn( $title );
+			->willReturn( $title->toPageIdentity() );
+
+		$titleFactory = $this->createMock( TitleFactory::class );
+		$titleFactory->method( 'castFromPageIdentity' )->willReturn( $title );
 
 		return new class(
 			$connection,
@@ -55,12 +59,13 @@ class BuildDocumentTest extends \MediaWikiUnitTestCase {
 			$this->createNoOpMock( BacklinkCacheFactory::class ),
 			new DocumentSizeLimiter( [] ),
 			$this->createNoOpMock( TitleFormatter::class ),
-			$this->createNoOpMock( WikiPageFactory::class )
+			$this->createNoOpMock( WikiPageFactory::class ),
+			$titleFactory
 		) extends BuildDocument {
 			/** Override create builders to avoid testing those implementations */
 			protected function createBuilders( int $flags ): array {
 				return [ new class() implements PagePropertyBuilder {
-					private $doc;
+					private ?Document $doc = null;
 
 					public function initialize( Document $doc, WikiPage $page, ?RevisionRecord $revision ): void {
 						$this->doc = $doc;
@@ -68,7 +73,9 @@ class BuildDocumentTest extends \MediaWikiUnitTestCase {
 					}
 
 					public function finishInitializeBatch(): void {
-						$this->doc->set( 'phpunit_finish_batch', true );
+						if ( $this->doc !== null ) {
+							$this->doc->set( 'phpunit_finish_batch', true );
+						}
 					}
 
 					public function finalize( Document $doc, Title $title, ?RevisionRecord $revision ): void {
@@ -77,6 +84,27 @@ class BuildDocumentTest extends \MediaWikiUnitTestCase {
 				} ];
 			}
 		};
+	}
+
+	public function testIgnoresRedirectPages() {
+		$title = $this->createMock( Title::class );
+		$title->method( 'getLatestRevID' )->willReturn( 42 );
+
+		$page = $this->createMock( WikiPage::class );
+		$page->method( 'getId' )->willReturn( 1 );
+		$page->method( 'getTitle' )->willReturn( $title );
+		$page->method( 'getLatest' )->willReturn( 42 );
+		$page->method( 'getRevisionRecord' )->willReturn( $this->revStore->getRevisionById( 42 ) );
+		$page->method( 'exists' )->willReturn( true );
+		$page->method( 'isRedirect' )->willReturn( true );
+		$pages[] = $page;
+
+		$builder = $this->mockBuilder( $title );
+		$docs = $builder->initialize(
+			$pages, BuildDocument::INDEX_EVERYTHING
+		);
+
+		$this->assertCount( 0, $docs );
 	}
 
 	public function testHappyPath() {

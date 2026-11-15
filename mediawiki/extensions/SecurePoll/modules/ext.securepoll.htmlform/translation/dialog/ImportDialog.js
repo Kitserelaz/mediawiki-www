@@ -1,11 +1,12 @@
-var ImportPage = require( './../pages/ImportPage.js' );
-var ResultPage = require( './../pages/ResultPage.js' );
-var SelectSourcePage = require( './../pages/SelectSourcePage.js' );
+const ImportPage = require( './../pages/ImportPage.js' );
+const ResultPage = require( './../pages/ResultPage.js' );
+const SelectSourcePage = require( './../pages/SelectSourcePage.js' );
 
 function ImportDialog( cfg ) {
-	this.source = cfg.source;
+	this.source = '';
 	ImportDialog.super.call( this, cfg );
 	this.sourcePages = [];
+	this.sourceApiValidated = false;
 }
 
 OO.inheritClass( ImportDialog, OO.ui.ProcessDialog );
@@ -36,7 +37,7 @@ ImportDialog.static.actions = [
 ];
 
 ImportDialog.prototype.getSetupProcess = function () {
-	return ImportDialog.parent.prototype.getSetupProcess.call( this )
+	return ImportDialog.super.prototype.getSetupProcess.call( this )
 		.next( function () {
 			// Prevent flickering, disable all actions before init is done
 			this.actions.setMode( 'INVALID' );
@@ -51,17 +52,14 @@ ImportDialog.prototype.initialize = function () {
 
 	this.pages = [
 		new SelectSourcePage( 'SelectSourcePage', {
-			source: this.source,
 			expanded: false
 		} ),
 		new ImportPage( 'ImportPage', {
 			expanded: false,
-			source: this.source,
 			electionId: this.electionId
 		} ),
 		new ResultPage( 'ResultPage', {
 			expanded: false,
-			sourceWiki: this.source,
 			sourceId: this.electionId
 		} )
 	];
@@ -79,7 +77,7 @@ ImportDialog.prototype.initialize = function () {
 };
 
 ImportDialog.prototype.switchPage = function ( name, data ) {
-	var page = this.booklet.getPage( name );
+	const page = this.booklet.getPage( name );
 	if ( !page ) {
 		return;
 	}
@@ -88,18 +86,45 @@ ImportDialog.prototype.switchPage = function ( name, data ) {
 	this.actions.setMode( name );
 	this.popPending();
 
+	// disconnect first to prevent duplicate handlers
+	page.disconnect( this );
 	switch ( name ) {
 		case 'SelectSourcePage':
 			this.actions.setAbilities( { cancel: true, import: false, done: false } );
 			page.connect( this, {
 				sourceSelected: function () {
-					this.actions.setAbilities( { import: true } );
+					const pageTitle = page.getPageTitle();
+					const enableImport = !!pageTitle && this.sourceApiValidated;
+					this.actions.setAbilities( { import: enableImport } );
+				},
+				sourceApiSelected: function () {
+					const pageTitle = page.getPageTitle();
+					this.source = page.getSourceApi();
+					if ( !this.source ) {
+						return;
+					}
+
+					this.validateSourceApi( this.source ).then( ( validated ) => {
+						this.sourceApiValidated = validated;
+						if ( validated ) {
+							this.actions.setAbilities( { import: !!pageTitle } );
+						} else {
+							this.actions.setAbilities( { import: false } );
+							this.showErrors(
+								new OO.ui.Error(
+									mw.message( 'securepoll-translation-error-invalid-source-api' ).text(),
+									{ recoverable: false }
+								)
+							);
+						}
+					} );
 				}
 			} );
 			this.updateSize();
 			break;
 		case 'ImportPage':
 			this.actions.setAbilities( { cancel: true, import: false, done: false } );
+			page.setSource( this.source );
 			page.setSourcePages( data );
 			page.connect( this, {
 				imported: function ( results ) {
@@ -112,6 +137,7 @@ ImportDialog.prototype.switchPage = function ( name, data ) {
 			break;
 		case 'ResultPage':
 			this.actions.setAbilities( { cancel: false, import: false, done: true } );
+			page.setSource( this.source );
 			page.addSourceTitle( this.pageTitle );
 			page.setResults( data );
 			break;
@@ -119,7 +145,7 @@ ImportDialog.prototype.switchPage = function ( name, data ) {
 };
 
 ImportDialog.prototype.getReadyProcess = function ( data ) {
-	return ImportDialog.parent.prototype.getReadyProcess.call(
+	return ImportDialog.super.prototype.getReadyProcess.call(
 		this, data
 	).next(
 		function () {
@@ -131,15 +157,15 @@ ImportDialog.prototype.getReadyProcess = function ( data ) {
 };
 
 ImportDialog.prototype.getActionProcess = function ( action ) {
-	var page = this.booklet.getCurrentPage();
-	return ImportDialog.parent.prototype.getActionProcess.call(
+	const page = this.booklet.getCurrentPage();
+	return ImportDialog.super.prototype.getActionProcess.call(
 		this, action
 	).next(
 		function () {
 			switch ( action ) {
-				case 'import':
+				case 'import': {
 					this.popPending();
-					var me = this;
+					const me = this;
 					me.pageTitle = page.getPageTitle();
 					if ( !me.pageTitle ) {
 						me.showErrors(
@@ -151,13 +177,13 @@ ImportDialog.prototype.getActionProcess = function ( action ) {
 						me.updateSize();
 						break;
 					}
-					var dfdSourcePages = me.getSourcePages( me.pageTitle.getMain(), me.pageTitle.getNamespaceId(), '' );
+					const dfdSourcePages = me.getSourcePages( me.pageTitle.getMain(), me.pageTitle.getNamespaceId(), '' );
 
-					$.when( dfdSourcePages ).done( function () {
+					$.when( dfdSourcePages ).done( () => {
 						if ( me.sourcePages.length > 0 ) {
 							me.switchPage( 'ImportPage', me.sourcePages );
 						}
-					} ).fail( function ( error ) {
+					} ).fail( ( error ) => {
 						me.showErrors(
 							new OO.ui.Error(
 								error,
@@ -167,6 +193,7 @@ ImportDialog.prototype.getActionProcess = function ( action ) {
 						me.updateSize();
 					} );
 					break;
+				}
 				case 'done':
 					this.close();
 					break;
@@ -183,15 +210,15 @@ ImportDialog.prototype.getBodyHeight = function () {
 	}
 	if ( this.booklet.getCurrentPageName() === 'SelectSourcePage' ||
 			this.booklet.getCurrentPageName() === 'ImportPage' ) {
-		return 100;
+		return 150;
 	}
 	return 400;
 };
 
 ImportDialog.prototype.getSourcePages = function ( pageName, namespace, continueVal ) {
-	var me = this;
-	var dfd = new $.Deferred();
-	var params = {
+	const me = this;
+	const dfd = new $.Deferred();
+	const params = {
 		action: 'query',
 		list: 'allpages',
 		apprefix: pageName + '/',
@@ -203,30 +230,30 @@ ImportDialog.prototype.getSourcePages = function ( pageName, namespace, continue
 	}
 
 	// foreign api to get page from different wiki
-	mw.loader.using( 'mediawiki.ForeignApi' ).done( function () {
-		var mwApi = new mw.ForeignApi( me.source, { anonymous: true } );
+	mw.loader.using( 'mediawiki.ForeignApi' ).done( () => {
+		const mwApi = new mw.ForeignApi( me.source, { anonymous: true } );
 
-		var dfdResponse = mwApi.get( params );
-		dfdResponse.done( function ( resp ) {
+		const dfdResponse = mwApi.get( params );
+		dfdResponse.done( ( resp ) => {
 			if ( resp.query.allpages.length === 0 ) {
 				dfd.reject( mw.message( 'securepoll-translation-error-no-page-title' ).text() );
 			}
-			resp.query.allpages.forEach( function ( page ) {
+			resp.query.allpages.forEach( ( page ) => {
 				me.sourcePages.push( page );
 			} );
 			if ( resp.continue ) {
-				var recursiveCall = me.getSourcePages(
+				const recursiveCall = me.getSourcePages(
 					pageName,
 					namespace,
 					resp.continue.apcontinue
 				);
-				recursiveCall.done( function () {
+				recursiveCall.done( () => {
 					dfd.resolve( resp );
 				} );
 			} else {
 				dfd.resolve( resp );
 			}
-		} ).fail( function ( error ) {
+		} ).fail( ( error ) => {
 			dfd.reject( error );
 		} );
 
@@ -236,28 +263,38 @@ ImportDialog.prototype.getSourcePages = function ( pageName, namespace, continue
 };
 
 ImportDialog.prototype.getElectionId = function () {
-	var url = mw.util.getUrl();
-	var translate = url.slice( url.indexOf( 'translate' ), url.length );
-	var params = translate.split( '/' );
+	const url = mw.util.getUrl();
+	const translate = url.slice( url.indexOf( 'translate' ), url.length );
+	const params = translate.split( '/' );
 	return params[ 1 ];
 };
 
-$( function () {
-	var sourceUrl = mw.config.get( 'SecurePollTranslationImportSourceUrl' );
-	var $translationButton = $( '#import-trans-btn' );
+ImportDialog.prototype.validateSourceApi = function ( sourceUrl ) {
+	// Make a simple ping to confirm the source API is valid
+	const mwApi = new mw.ForeignApi(
+		`${ sourceUrl }?action=query&meta=siteinfo&format=json`,
+		{ anonymous: true }
+	);
+
+	return mwApi.get().then(
+		( response ) => !!( response && response.query ) )
+		.catch( () => false );
+};
+
+$( () => {
+	const $translationButton = $( '#import-trans-btn' );
 
 	if ( $translationButton.length < 1 ) {
 		return;
 	}
-	var importBtn = OO.ui.infuse( $translationButton );
+	const importBtn = OO.ui.infuse( $translationButton );
 
 	function openDialog() {
-		var windowManager = new OO.ui.WindowManager();
+		const windowManager = new OO.ui.WindowManager();
 		$( document.body ).append( windowManager.$element );
 
-		var dialog = new ImportDialog( {
-			id: 'securepoll-import-translations',
-			source: sourceUrl
+		const dialog = new ImportDialog( {
+			id: 'securepoll-import-translations'
 		} );
 		windowManager.addWindows( [ dialog ] );
 		windowManager.openWindow( dialog );
@@ -266,3 +303,5 @@ $( function () {
 	importBtn.on( 'click', openDialog );
 
 } );
+
+module.exports = ImportDialog;

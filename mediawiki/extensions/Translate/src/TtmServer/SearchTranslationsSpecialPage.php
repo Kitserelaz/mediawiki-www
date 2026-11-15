@@ -3,8 +3,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TtmServer;
 
-use ErrorPageError;
-use FormatJson;
+use MediaWiki\Exception\ErrorPageError;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Extension\Translate\TranslatorInterface\Aid\CurrentTranslationAid;
@@ -12,14 +12,16 @@ use MediaWiki\Extension\Translate\TranslatorInterface\Aid\TranslationAidDataProv
 use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\Html\FormOptions;
 use MediaWiki\Html\Html;
-use MediaWiki\Languages\LanguageFactory;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Json\FormatJson;
+use MediaWiki\Language\LanguageFactory;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use MediaWiki\Utils\UrlUtils;
 use MediaWiki\WikiMap\WikiMap;
+use Psr\Log\LoggerInterface;
 
 /**
  * Contains logic to search for translations
@@ -39,14 +41,12 @@ class SearchTranslationsSpecialPage extends SpecialPage {
 	private array $hl;
 	/** How many search results to display per page */
 	protected int $limit = 25;
-	private TtmServerFactory $ttmServerFactory;
-	private LanguageFactory $languageFactory;
-	private UrlUtils $urlUtils;
+	private LoggerInterface $logger;
 
 	public function __construct(
-		TtmServerFactory $ttmServerFactory,
-		LanguageFactory $languageFactory,
-		UrlUtils $urlUtils
+		private readonly TtmServerFactory $ttmServerFactory,
+		private readonly LanguageFactory $languageFactory,
+		private readonly UrlUtils $urlUtils,
 	) {
 		parent::__construct( 'SearchTranslations' );
 		$this->hl = [
@@ -54,11 +54,10 @@ class SearchTranslationsSpecialPage extends SpecialPage {
 			Utilities::getPlaceholder(),
 		];
 
-		$this->ttmServerFactory = $ttmServerFactory;
-		$this->languageFactory = $languageFactory;
-		$this->urlUtils = $urlUtils;
+		$this->logger = LoggerFactory::getInstance( LogNames::MAIN );
 	}
 
+	/** @inheritDoc */
 	public function execute( $subPage ) {
 		$this->setHeaders();
 		$this->checkPermissions();
@@ -72,13 +71,9 @@ class SearchTranslationsSpecialPage extends SpecialPage {
 		$out->addModuleStyles( 'jquery.uls.grid' );
 		$out->addModuleStyles( 'ext.translate.specialpages.styles' );
 		$out->addModuleStyles( 'ext.translate.special.translate.styles' );
-		$out->addModuleStyles( [ 'mediawiki.ui.button', 'mediawiki.ui.input', 'mediawiki.ui.checkbox' ] );
+		$out->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
 		$out->addModules( 'ext.translate.special.searchtranslations' );
 		$out->addHelpLink( 'Help:Extension:Translate#searching' );
-		$out->addJsConfigVars(
-			'wgTranslateLanguages',
-			Utilities::getLanguageNames( LanguageNameUtils::AUTONYMS )
-		);
 
 		$this->opts = $opts = new FormOptions();
 		$opts->add( 'query', '' );
@@ -95,6 +90,12 @@ class SearchTranslationsSpecialPage extends SpecialPage {
 		$opts->fetchValuesFromRequest( $this->getRequest() );
 
 		$queryString = $opts->getValue( 'query' );
+		if ( $queryString === '' && $subPage !== null ) {
+			// When searching with subpage, its more likely that the user is searching with spaces
+			// rather than underscores
+			$queryString = str_replace( '_', ' ', $subPage );
+			$opts->setValue( 'query', $queryString );
+		}
 
 		if ( $queryString === '' ) {
 			$this->showEmptySearch();
@@ -103,12 +104,20 @@ class SearchTranslationsSpecialPage extends SpecialPage {
 
 		$search = $this->getSearchInput( $queryString );
 
+		$crossLanguageSearch = false;
 		$options = $params = $opts->getAllValues();
 		$filter = $opts->getValue( 'filter' );
 		try {
 			if ( $opts->getValue( 'language' ) === '' ) {
 				$options['language'] = $this->getLanguage()->getCode();
+			} elseif ( !Utilities::isSupportedLanguageCode( $options['language'] ) ) {
+				$this->showSearchError(
+					$search,
+					$this->msg( 'tux-sst-error-unsupported-language' )->plaintextParams( $options['language'] )
+				);
+				return;
 			}
+
 			$translationSearch = new CrossLanguageTranslationSearchQuery( $options, $server );
 			if ( in_array( $filter, $translationSearch->getAvailableFilters() ) ) {
 				if ( $options['language'] === $options['sourcelanguage'] ) {
@@ -120,6 +129,8 @@ class SearchTranslationsSpecialPage extends SpecialPage {
 				$documents = $translationSearch->getDocuments();
 				$total = $translationSearch->getTotalHits();
 				$resultSet = $translationSearch->getResultSet();
+
+				$crossLanguageSearch = true;
 			} else {
 				$resultSet = $server->search( $queryString, $params, $this->hl );
 				$documents = $server->getDocuments( $resultSet );
@@ -132,9 +143,20 @@ class SearchTranslationsSpecialPage extends SpecialPage {
 				$this->showSearchError( $search, $this->msg( 'tux-sst-error-offset' ) );
 				return;
 			}
+			if ( $e->getCode() === TtmServerException::TRANSIENT_SEARCH_BACKEND_FAILURE ) {
+				$this->showSearchError( $search, $this->msg( 'tux-sst-search-backend-error' ) );
+				$this->logger->warning(
+					'Translation search server failed: {exception}',
+					[ 'exception' => $e ]
+				);
+				return;
+			}
 
 			// Other exceptions
-			error_log( 'Translation search server unavailable: ' . $e->getMessage() );
+			$this->logger->error(
+				'Translation search server unavailable: {exception}',
+				[ 'exception' => $e ]
+			);
 			throw new ErrorPageError( 'tux-sst-solr-offline-title', 'tux-sst-solr-offline-body' );
 		}
 
@@ -205,9 +227,14 @@ class SearchTranslationsSpecialPage extends SpecialPage {
 			$text = str_replace( $pre, '<strong class="tux-search-highlight">', $text );
 			$text = str_replace( $post, '</strong>', $text );
 
-			$title = Title::newFromText( $document['localid'] . '/' . $document['language'] );
+			$titleText = $document['localid'] . '/' . $document['language'];
+			$title = Title::newFromText( $titleText );
 			if ( !$title ) {
 				// Should not ever happen but who knows...
+				$this->logger->warning(
+					'SearchTranslationsSpecialPage: Invalid title: {title}',
+					[ 'title' => $titleText, 'document' => json_encode( $document ) ]
+				);
 				continue;
 			}
 
@@ -227,6 +254,14 @@ class SearchTranslationsSpecialPage extends SpecialPage {
 					$this->msg( 'tux-sst-edit' )->text()
 				);
 			} else {
+				if ( $crossLanguageSearch ) {
+					$this->logger->warning(
+						'SearchTranslationsSpecialPage: Expected valid handle: {title}',
+						[ 'title' => $title->getPrefixedText() ]
+					);
+					continue;
+				}
+
 				$url = $this->urlUtils->parse( $document['uri'] );
 				if ( !$url ) {
 					continue;
@@ -258,11 +293,11 @@ class SearchTranslationsSpecialPage extends SpecialPage {
 				'dir' => $language->getDir(),
 			];
 
-			$resultsHtml .= Html::openElement( 'div', $resultAttribs )
-				. Html::rawElement( 'div', $textAttribs, $text )
+			$resultsHtml .= Html::rawElement( 'div', $resultAttribs,
+				Html::rawElement( 'div', $textAttribs, $text )
 				. Html::element( 'div', $titleAttribs, $titleText )
 				. $access
-				. Html::closeElement( 'div' );
+			);
 		}
 
 		$resultsHtml .= Html::rawElement( 'hr', [ 'class' => 'tux-pagination-line' ] );
@@ -274,7 +309,7 @@ class SearchTranslationsSpecialPage extends SpecialPage {
 		if ( $total - $offset > $this->limit ) {
 			$newParams = [ 'offset' => $offset + $this->limit ] + $params;
 			$attribs = [
-				'class' => 'mw-ui-button pager-next',
+				'class' => 'cdx-button cdx-button--fake-button cdx-button--fake-button--enabled pager-next',
 				'href' => $this->getPageTitle()->getLocalURL( $newParams ),
 			];
 			$next = Html::element( 'a', $attribs, $this->msg( 'tux-sst-next' )->text() );
@@ -282,7 +317,7 @@ class SearchTranslationsSpecialPage extends SpecialPage {
 		if ( $offset ) {
 			$newParams = [ 'offset' => max( 0, $offset - $this->limit ) ] + $params;
 			$attribs = [
-				'class' => 'mw-ui-button pager-prev',
+				'class' => 'cdx-button cdx-button--fake-button cdx-button--fake-button--enabled pager-prev',
 				'href' => $this->getPageTitle()->getLocalURL( $newParams ),
 			];
 			$prev = Html::element( 'a', $attribs, $this->msg( 'tux-sst-prev' )->text() );
@@ -459,7 +494,7 @@ class SearchTranslationsSpecialPage extends SpecialPage {
 	private function showSearchError( string $search, Message $message ): void {
 		$messageSelector = $this->messageSelector();
 		$messageHTML = Html::errorBox(
-			$message->escaped(),
+			$message->parse(),
 			'',
 			'row'
 		);
@@ -579,36 +614,88 @@ class SearchTranslationsSpecialPage extends SpecialPage {
 	private function getSearchInput( string $query ): string {
 		$attribs = [
 			'placeholder' => $this->msg( 'tux-sst-search-ph' )->text(),
-			'class' => 'searchinputbox mw-ui-input',
+			'class' => 'searchinputbox cdx-text-input__input',
 			'dir' => $this->getLanguage()->getDir()
 		];
 
 		$title = Html::hidden( 'title', $this->getPageTitle()->getPrefixedText() );
-		$input = Html::input( 'query', $query, 'text', $attribs );
-		$submit = Html::submitButton(
-			$this->msg( 'tux-sst-search' )->text(),
-			[ 'class' => 'mw-ui-button mw-ui-progressive' ]
+
+		// 1. Text input
+		$textInput = Html::rawElement(
+			'div',
+			[ 'class' => 'cdx-text-input cdx-text-input--has-start-icon' ],
+			Html::input( 'query', $query, 'search', $attribs ) .
+			Html::element( 'span', [ 'class' => 'cdx-text-input__icon cdx-text-input__start-icon' ] )
 		);
 
-		$typeHint = Html::rawElement(
+		// 2. Input wrapper
+		$inputWrapper = Html::rawElement(
 			'div',
-			[ 'class' => 'tux-searchinputbox-hint' ],
-			$this->msg( 'tux-sst-search-info' )->parse()
+			[ 'class' => 'cdx-search-input__input-wrapper' ],
+			$textInput
+		);
+
+		// 3. Search button
+		$searchButton = Html::element(
+			'button',
+			[
+				'class' => 'cdx-button cdx-search-input__end-button ' .
+					'cdx-button--action-progressive cdx-button--weight-primary',
+				'type' => 'submit',
+			],
+			$this->msg( 'tux-sst-search' )->text()
+		);
+
+		// 4. Integrated search input
+		$searchInput = Html::rawElement(
+			'div',
+			[ 'class' => 'cdx-search-input cdx-search-input--has-end-button' ],
+			$inputWrapper . $searchButton
+		);
+
+		// 5. Wrap everything in a field
+		$field = Html::rawElement(
+			'div',
+			[ 'class' => 'cdx-field' ],
+			Html::rawElement( 'div', [ 'class' => 'cdx-field__control' ], $searchInput )
+			. Html::rawElement(
+				'div',
+				[ 'class' => 'cdx-field__help-text' ],
+				$this->msg( 'tux-sst-search-info' )->parse()
+			)
 		);
 
 		$nonDefaults = $this->opts->getChangedValues();
-		$checkLabel = Html::element( 'input', [
-			'type' => 'checkbox', 'name' => 'case', 'value' => '1',
-			'checked' => isset( $nonDefaults['case'] ),
+		$checkbox = Html::element( 'input', [
+			'type' => 'checkbox',
+			'name' => 'case',
+			'class' => 'cdx-checkbox__input',
+			'value' => '1',
 			'id' => 'tux-case-sensitive',
-		] ) . "\u{00A0}" . Html::label(
-			$this->msg( 'tux-sst-case-sensitive' )->text(),
-			'tux-case-sensitive'
-		);
+			'checked' => isset( $nonDefaults['case'] ),
+		] );
 		$checkLabel = Html::rawElement(
 			'div',
-			[ 'class' => 'tux-search-operators mw-ui-checkbox' ],
-			$checkLabel
+			[ 'class' => 'cdx-checkbox' ],
+			Html::rawElement(
+				'div',
+				[ 'class' => 'cdx-checkbox__wrapper' ],
+				$checkbox
+				. Html::element( 'span', [ 'class' => 'cdx-checkbox__icon' ] )
+				. Html::rawElement(
+					'div',
+					[ 'class' => 'cdx-checkbox__label cdx-label' ],
+					Html::rawElement(
+						'label',
+						[ 'class' => 'cdx-label__label', 'for' => 'tux-case-sensitive' ],
+						Html::element(
+							'span',
+							[ 'class' => 'cdx-label__label__text' ],
+							$this->msg( 'tux-sst-case-sensitive' )->text()
+						)
+					)
+				)
+			)
 		);
 
 		$lang = $this->getRequest()->getVal( 'language' );
@@ -616,12 +703,16 @@ class SearchTranslationsSpecialPage extends SpecialPage {
 
 		return Html::rawElement(
 			'form',
-			[ 'action' => wfScript(), 'name' => 'searchform' ],
-			$title . $input . $submit . $typeHint . $checkLabel . $language
+			[
+				'action' => wfScript(),
+				'name' => 'searchform',
+				'class' => 'mw-htmlform-codex',
+			],
+			$title . $field . $checkLabel . $language
 		);
 	}
 
-	protected function getGroupName() {
+	protected function getGroupName(): string {
 		return 'translation';
 	}
 }

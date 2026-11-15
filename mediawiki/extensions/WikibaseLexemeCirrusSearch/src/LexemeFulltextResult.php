@@ -5,6 +5,7 @@ use CirrusSearch\Search\BaseCirrusSearchResultSet;
 use CirrusSearch\Search\BaseResultsType;
 use Elastica\ResultSet;
 use MediaWiki\Language\Language;
+use MediaWiki\Search\ISearchResultSet;
 use Wikibase\DataModel\Entity\EntityIdParser;
 use Wikibase\Lexeme\DataAccess\LexemeDescription;
 use Wikibase\Lib\Store\FallbackLabelDescriptionLookupFactory;
@@ -207,7 +208,7 @@ class LexemeFulltextResult extends BaseResultsType {
 	 * the label lookup that has necessary item labels already loaded.
 	 *
 	 * @param ResultSet $result ElasticSearch results
-	 * @return \ISearchResultSet
+	 * @return ISearchResultSet
 	 */
 	public function transformElasticsearchResult( ResultSet $result ) {
 		$rawResults = $entityIds = [];

@@ -1,10 +1,11 @@
-/* eslint-disable no-implicit-globals */
 /* eslint-disable no-jquery/no-global-selector */
 
-var titleInput, submitButton, actionField, api, panelLayout;
+const TitleInputWidget = require( 'ext.TemplateSandbox.TemplateSandboxTitleWidget' );
+
+let titleInput, submitButton, actionField, api, panelLayout;
 
 function showPreview() {
-	var saveDialog = ve.init.target.saveDialog;
+	const saveDialog = ve.init.target.saveDialog;
 
 	saveDialog.pushPending();
 	submitButton.setDisabled( true );
@@ -13,16 +14,19 @@ function showPreview() {
 		api = new mw.Api();
 	}
 
-	var apiParams = {
+	const templateTitle = new mw.Title( mw.config.get( 'wgPageName' ) )
+		.getPrefixedText();
+
+	const apiParams = {
 		action: 'parse',
 		page: titleInput.getQueryValue(),
 		pst: true,
 		preview: true,
-		templatesandboxtitle: mw.config.get( 'wgPageName' ),
+		templatesandboxtitle: templateTitle,
 		templatesandboxtext: $( '#wpTextbox1' ).textSelection( 'getContents' ),
 		templatesandboxcontentmodel: mw.config.get( 'wgPageContentModel' ),
 		disableeditsection: true,
-		prop: [ 'text', 'categorieshtml', 'displaytitle' ],
+		prop: [ 'text', 'categorieshtml', 'displaytitle', 'templates' ],
 		errorformat: 'html',
 		errorlang: mw.config.get( 'wgUserLanguage' ),
 		errorsuselocal: true,
@@ -35,11 +39,18 @@ function showPreview() {
 		apiParams.variant = mw.config.get( 'wgUserVariant' );
 	}
 
-	api.post( apiParams ).always( function () {
+	api.post( apiParams ).always( () => {
 		saveDialog.popPending();
 		submitButton.setDisabled( false );
-	} ).then( function ( res ) {
-		var veConfig = mw.config.get( 'wgVisualEditor' ),
+	} ).then( ( res ) => {
+		if ( !res.parse.templates.some( ( tpl ) => tpl.title === templateTitle ) ) {
+			saveDialog.showErrors( new OO.ui.Error(
+				OO.ui.msg( 'templatesandbox-template-not-used' ),
+				{ recoverable: false } )
+			);
+			return;
+		}
+		const veConfig = mw.config.get( 'wgVisualEditor' ),
 			$heading = $( '<h1>' )
 				.addClass( [ 'firstHeading', 'mw-first-heading' ] )
 				.html( res.parse.displaytitle ),
@@ -78,8 +89,8 @@ function showPreview() {
 
 		// Fire hook to allow scripts to process the new content
 		mw.hook( 'wikipage.content' ).fire( panelLayout.$element );
-	}, function ( code, data ) {
-		var msg;
+	}, ( code, data ) => {
+		let msg;
 		switch ( code ) {
 			case 'missingtitle':
 				msg = OO.ui.msg( 'templatesandbox-editform-title-not-exists' );
@@ -97,13 +108,14 @@ function showPreview() {
 
 if (
 	new URL( location.href ).searchParams.has( 'wpTemplateSandboxShow' ) ||
-	require( './namespaces.json' ).indexOf( mw.config.get( 'wgNamespaceNumber' ) ) !== -1
+	require( './namespaces.json' ).includes( mw.config.get( 'wgNamespaceNumber' ) )
 ) {
-	mw.hook( 've.saveDialog.stateChanged' ).add( function () {
+	mw.hook( 've.saveDialog.stateChanged' ).add( () => {
 		if ( $( '#wpTextbox1' ).length && !$( '#templatesandbox-editform' ).length ) {
-			titleInput = new mw.widgets.TitleInputWidget( {
+			titleInput = new TitleInputWidget( {
 				placeholder: OO.ui.msg( 'templatesandbox-editform-page-label' ),
-				value: titleInput ? titleInput.getValue() : undefined
+				value: titleInput ? titleInput.getValue() : undefined,
+				templateTitleFunc: () => mw.config.get( 'wgPageName' )
 			} );
 			submitButton = new OO.ui.ButtonWidget( {
 				label: OO.ui.msg( 'templatesandbox-editform-view-label' )
@@ -116,6 +128,10 @@ if (
 				expanded: false,
 				padded: true
 			} );
+			if ( mw.config.get( 'skin' ) === 'vector-2022' ) {
+				// HACK: T333665
+				panelLayout.$element.addClass( 've-ui-mwSaveDialog-preview' );
+			}
 
 			submitButton.on( 'click', showPreview );
 			titleInput.on( 'enter', showPreview );
@@ -126,7 +142,7 @@ if (
 		}
 	} );
 
-	mw.hook( 've.deactivationComplete' ).add( function () {
+	mw.hook( 've.deactivationComplete' ).add( () => {
 		// Set to undefined so value cannot be restored
 		titleInput = undefined;
 	} );

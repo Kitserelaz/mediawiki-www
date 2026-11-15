@@ -18,6 +18,7 @@ use MediaWiki\Extension\SecurePoll\User\Auth;
 use MediaWiki\Extension\SecurePoll\User\LocalAuth;
 use MediaWiki\Extension\SecurePoll\User\RemoteMWAuth;
 use MediaWiki\Extension\SecurePoll\User\Voter;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\SpecialPage\SpecialPage;
@@ -115,7 +116,7 @@ class Context {
 	 * @return Store
 	 */
 	public function getStore() {
-		if ( !isset( $this->store ) ) {
+		if ( $this->store === null ) {
 			$this->store = new DBStore(
 				MediaWikiServices::getInstance()->getDBLoadBalancer(),
 				false
@@ -132,6 +133,30 @@ class Context {
 	 */
 	public function getSpecialTitle( $subpage = false ) {
 		return SpecialPage::getTitleFor( 'SecurePoll', $subpage );
+	}
+
+	/**
+	 * Returns whether logging election configurations to on-wiki pages is enabled.
+	 */
+	public static function isNamespacedLoggingEnabled(): bool {
+		$config = MediaWikiServices::getInstance()->getMainConfig();
+		return $config->get( 'SecurePollUseNamespace' ) || $config->get( 'SecurePollUseMediaWikiNamespace' );
+	}
+
+	/**
+	 * Returns whether the given title is a SecurePoll configuration page.
+	 */
+	public static function isSecurePollPage( Title $title ): bool {
+		$config = MediaWikiServices::getInstance()->getMainConfig();
+		if ( $config->get( 'SecurePollUseNamespace' ) && $title->getNamespace() === NS_SECUREPOLL ) {
+			return true;
+		}
+		if ( $config->get( 'SecurePollUseMediaWikiNamespace' ) && $title->getNamespace() === NS_MEDIAWIKI &&
+			// Not using $title->getRootText() because we want it to work even with subpages disabled
+			str_starts_with( $title->getText(), 'SecurePoll/' ) ) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -371,7 +396,7 @@ class Context {
 	 * Get a map of ballot type names to classes. Include all the ballot
 	 * types that may be found in the securepoll_votes table.
 	 *
-	 * @return string[]
+	 * @return array<string,class-string<Ballot>>
 	 */
 	public function getBallotTypesForTally() {
 		return Ballot::BALLOT_TYPES;
@@ -381,7 +406,7 @@ class Context {
 	 * Get a map of ballot type names to classes, for all ballot types which
 	 * are valid for new votes and election creation.
 	 *
-	 * @return string[]
+	 * @return array<string,class-string<Ballot>>
 	 */
 	public function getBallotTypesForVote() {
 		if ( $this->ballotTypesForVote === null ) {
@@ -390,10 +415,6 @@ class Context {
 			// Archived (T300087)
 			unset( $types['radio-range-comment' ] );
 
-			// Remove STV from options if flag is not set
-			if ( !RequestContext::getMain()->getConfig()->get( 'SecurePollSingleTransferableVoteEnabled' ) ) {
-				unset( $types['stv'] );
-			}
 			$this->ballotTypesForVote = $types;
 		}
 		return $this->ballotTypesForVote;
@@ -475,8 +496,9 @@ class Context {
 	 * @return string
 	 */
 	public function getResourceUrl( $resource ) {
-		global $wgExtensionAssetsPath;
+		$config = MediaWikiServices::getInstance()->getMainConfig();
+		$extensionAssetsPath = $config->get( MainConfigNames::ExtensionAssetsPath );
 
-		return "$wgExtensionAssetsPath/SecurePoll/resources/$resource";
+		return "$extensionAssetsPath/SecurePoll/resources/$resource";
 	}
 }

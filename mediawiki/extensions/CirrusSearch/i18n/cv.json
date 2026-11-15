@@ -4,7 +4,7 @@
 			"Astahar"
 		]
 	},
-	"cirrussearch-desc": "Elasticsearch никӗсӗ ҫинчи MediaWiki валли шырав",
+	"cirrussearch-desc": "OpenSearch никӗсӗ ҫинчи MediaWiki валли шырав",
 	"cirrussearch-backend-error": "Вӑхӑтлӑха тӑсӑлакан йывӑрлӑха пула шырава вӗҫлеме май килмерӗ. Тархасшӑн, кӑштахран тепре туса пӑхӑр.",
 	"cirrussearch-parse-error": "Эсир ыйтнине ӑнланма май килмерӗ. Тархасшӑн, ансатрах ыйтӑр. Шырав системине лайӑхлатас тӗллевпе эсир ыйтнине упраса хӑвартӑмӑр.",
 	"cirrussearch-too-busy-error": "Хальхи вӑхӑтра нумаййӑн шыраҫҫӗ, ҫавна май йывӑрлӑх сиксе тухрӗ. Тархасшӑн, каярах тепӗр хут ыйтса пӑхӑр.",
@@ -51,6 +51,5 @@
 	"cirrussearch-mlt-not-configured": "'$1' функцие ӗнерлесе ҫитермен. Администратора  $wgCirrusSearchMoreLikeThisFields юсама ыйтӑр",
 	"cirrussearch-explore-similar-related-none": "Ҫыхӑннӑ страницӑсемпе усӑ курма май ҫук",
 	"cirrussearch-article-words": "Пӗтӗм статьясенчи сӑмахсем",
-	"cirrussearch-offset-not-allowed-with-random-sort": "Ӑнсӑртран сортланӑ результатсене страницӑсем ҫине пайлама ыйтнине шута илмен.",
-	"cirrussearch-articletopic-invalid-topic": "<kbd>Статья теми валли</kbd> {{PLURAL:$2|палласа илеймен тема ячӗ|палласа илеймен темӑсен ячӗсем}}: ҫыхӑну сӑмахӗ: $1"
+	"cirrussearch-offset-not-allowed-with-random-sort": "Ӑнсӑртран сортланӑ результатсене страницӑсем ҫине пайлама ыйтнине шута илмен."
 }

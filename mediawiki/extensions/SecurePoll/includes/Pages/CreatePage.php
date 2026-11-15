@@ -4,27 +4,30 @@ namespace MediaWiki\Extension\SecurePoll\Pages;
 
 use DateTime;
 use DateTimeZone;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Extension\SecurePoll\Ballots\Ballot;
 use MediaWiki\Extension\SecurePoll\Context;
 use MediaWiki\Extension\SecurePoll\Crypt\Crypt;
+use MediaWiki\Extension\SecurePoll\Entities\Election;
 use MediaWiki\Extension\SecurePoll\Entities\Entity;
 use MediaWiki\Extension\SecurePoll\Exceptions\InvalidDataException;
 use MediaWiki\Extension\SecurePoll\SecurePollContentHandler;
 use MediaWiki\Extension\SecurePoll\SpecialSecurePoll;
+use MediaWiki\Extension\SecurePoll\Store\DBStore;
 use MediaWiki\Extension\SecurePoll\Store\FormStore;
 use MediaWiki\Extension\SecurePoll\Talliers\Tallier;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Language\LanguageCode;
-use MediaWiki\Languages\LanguageNameUtils;
-use MediaWiki\Linker\Linker;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Message\Message;
-use MediaWiki\Page\WikiPageFactory;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\Revision\SlotRecord;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
+use MediaWiki\Storage\PageUpdaterFactory;
 use MediaWiki\User\UserFactory;
-use MediaWiki\User\UserGroupManager;
 use MediaWiki\Utils\MWTimestamp;
 use MediaWiki\WikiMap\WikiMap;
-use PermissionsError;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\ILoadBalancer;
 use Wikimedia\Rdbms\LBFactory;
@@ -33,43 +36,15 @@ use Wikimedia\Rdbms\LBFactory;
  * Special:SecurePoll subpage for creating or editing a poll
  */
 class CreatePage extends ActionPage {
-	/** @var LBFactory */
-	private $lbFactory;
 
-	/** @var UserGroupManager */
-	private $userGroupManager;
-
-	/** @var LanguageNameUtils */
-	private $languageNameUtils;
-
-	/** @var WikiPageFactory */
-	private $wikiPageFactory;
-
-	/** @var UserFactory */
-	private $userFactory;
-
-	/**
-	 * @param SpecialSecurePoll $specialPage
-	 * @param LBFactory $lbFactory
-	 * @param UserGroupManager $userGroupManager
-	 * @param LanguageNameUtils $languageNameUtils
-	 * @param WikiPageFactory $wikiPageFactory
-	 * @param UserFactory $userFactory
-	 */
 	public function __construct(
 		SpecialSecurePoll $specialPage,
-		LBFactory $lbFactory,
-		UserGroupManager $userGroupManager,
-		LanguageNameUtils $languageNameUtils,
-		WikiPageFactory $wikiPageFactory,
-		UserFactory $userFactory
+		private readonly LBFactory $lbFactory,
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly UserFactory $userFactory,
+		private readonly PageUpdaterFactory $pageUpdaterFactory,
 	) {
 		parent::__construct( $specialPage );
-		$this->lbFactory = $lbFactory;
-		$this->userGroupManager = $userGroupManager;
-		$this->languageNameUtils = $languageNameUtils;
-		$this->wikiPageFactory = $wikiPageFactory;
-		$this->userFactory = $userFactory;
 	}
 
 	/**
@@ -100,29 +75,7 @@ class CreatePage extends ActionPage {
 				return;
 			}
 
-			$jumpUrl = $this->election->getProperty( 'jump-url' );
-			if ( $jumpUrl ) {
-				$jumpId = $this->election->getProperty( 'jump-id' );
-				if ( !$jumpId ) {
-					throw new InvalidDataException( 'Configuration error: no jump-id' );
-				}
-				$jumpUrl .= "/edit/$jumpId";
-				if ( count( $params ) > 1 ) {
-					$jumpUrl .= '/' . implode( '/', array_slice( $params, 1 ) );
-				}
-
-				$wiki = $this->election->getProperty( 'main-wiki' );
-				if ( $wiki ) {
-					$wiki = WikiMap::getWikiName( $wiki );
-				} else {
-					$wiki = $this->msg( 'securepoll-edit-redirect-otherwiki' )->text();
-				}
-
-				$out->addWikiMsg(
-					'securepoll-edit-redirect',
-					Message::rawParam( Linker::makeExternalLink( $jumpUrl, $wiki ) )
-				);
-
+			if ( $this->showRedirectMessage( 'edit', $params ) ) {
 				return;
 			}
 		} else {
@@ -180,8 +133,11 @@ class CreatePage extends ActionPage {
 			}
 		}
 
+		// Should we show or hide the "For Wiki:" drop-down list?
 		// If the only option is WikiMap::getCurrentWikiId() don't show it; otherwise...
-		if ( count( $wikiNames ) > 1 || count( $options ) > 1 ) {
+		$securePollEditOtherWikis = $this->specialPage->getConfig()->get( 'SecurePollEditOtherWikis' );
+		$otherWikisExist = count( $wikiNames ) > 1 || count( $options ) > 1;
+		if ( $securePollEditOtherWikis && $otherWikisExist ) {
 			$opts = [];
 			foreach ( $options as $msg => $value ) {
 				$opts[$this->msg( $msg )->plain()] = $value;
@@ -301,10 +257,10 @@ class CreatePage extends ActionPage {
 			'type' => 'usersmultiselect',
 			'exists' => true,
 			'required' => true,
-			'default' => '',
+			'default' => $this->specialPage->getUser()->getName(),
 			'validation-callback' => [
 				$this,
-				'checkIfInElectionAdminUserGroup'
+				'checkEditPollRight'
 			],
 		];
 
@@ -325,6 +281,15 @@ class CreatePage extends ActionPage {
 				'1'
 			]
 		];
+
+		if ( $securePollEditOtherWikis && $otherWikisExist &&
+			ExtensionRegistry::getInstance()->isLoaded( 'CentralAuth' ) ) {
+			$formItems['prompt-active-wiki'] = [
+				'label-message' => 'securepoll-create-label-prompt-active-wiki',
+				'type' => 'check',
+				'disabled' => $isRunning
+			];
+		}
 
 		$questionFields = [
 			'id' => [
@@ -379,9 +344,7 @@ class CreatePage extends ActionPage {
 		$tallyTypes = [];
 		foreach ( $this->context->getBallotTypesForVote() as $ballotType => $ballotClass ) {
 			$types = [];
-			foreach (
-				call_user_func_array( [ $ballotClass, 'getTallyTypes' ], [] ) as $tallyType
-			) {
+			foreach ( $ballotClass::getTallyTypes() as $tallyType ) {
 				$type = "$ballotType+$tallyType";
 				$types[] = $type;
 				$tallyTypes[$tallyType][] = $type;
@@ -494,7 +457,7 @@ class CreatePage extends ActionPage {
 			'disabled' => $isRunning,
 		];
 
-		if ( $this->specialPage->getConfig()->get( 'SecurePollUseNamespace' ) ) {
+		if ( Context::isNamespacedLoggingEnabled() ) {
 			$formItems['comment'] = [
 				'type' => 'text',
 				'label-message' => 'securepoll-create-label-comment',
@@ -554,6 +517,10 @@ class CreatePage extends ActionPage {
 		}
 	}
 
+	/**
+	 * @param array $formData
+	 * @return Status
+	 */
 	public function processInputDuringElection( $formData ) {
 		// If editing a poll while it's running, only allow certain fields to be updated
 		// For now only property_admins and return-url can be edited
@@ -589,17 +556,32 @@ class CreatePage extends ActionPage {
 			$this->logAdminChanges( $originalFormData, $formData, $this->election->getId() );
 		}
 
-		$this->recordElectionToNamespace( $this->election->getId(), $formData );
+		// Ensure the latest properties are written to JSON log
+		$this->election->loadProperties();
+		$this->election->properties = array_merge( $this->election->properties, $fields );
+		$this->recordElectionToNamespace( $this->election, $formData );
 
 		return Status::newGood( $this->election->getId() );
 	}
 
+	/**
+	 * @param array $formData
+	 * @param HtmlForm|null $form
+	 * @return Status
+	 */
 	public function processInput( $formData, $form ) {
 		try {
 			$context = new Context;
 			$userId = $this->specialPage->getUser()->getId();
 			$store = new FormStore;
 			$context->setStore( $store );
+			$eId = (int)$formData['election_id'];
+			if ( $eId > 0 ) {
+				// Load any existing properties up front, to avoid them getting removed from JSON logging
+				$dbStore = new DBStore( $this->lbFactory->getLoadBalancer() );
+				$props = $dbStore->getProperties( [ $eId ] );
+				$store->properties[$eId] = $props[$eId];
+			}
 			$store->setFormData( $context, $formData, $userId );
 			$election = $context->getElection( $store->eId );
 
@@ -609,8 +591,7 @@ class CreatePage extends ActionPage {
 
 			// Get a connection in autocommit mode so that it is possible to do
 			// explicit transactions on it (T287859)
-			$dbw = $this->lbFactory->getMainLB()->getConnection( ILoadBalancer::DB_PRIMARY,
-				[], false, ILoadBalancer::CONN_TRX_AUTOCOMMIT );
+			$dbw = $this->lbFactory->getAutoCommitPrimaryConnection();
 
 			// Check for duplicate titles on the local wiki
 			$id = $dbw->newSelectQueryBuilder()
@@ -627,18 +608,16 @@ class CreatePage extends ActionPage {
 				);
 			}
 
-			// Check for duplicate titles on jump wikis too
+			// Check for duplicate titles on redirect poll wikis too
 			// (There's the possibility for a race here, but hopefully it won't
 			// matter in practice)
 			if ( $store->rId ) {
 				foreach ( $store->remoteWikis as $dbname ) {
-					$lb = $this->lbFactory->getMainLB( $dbname );
 					// Use autocommit mode so that we can share connections with
 					// the write code below
-					$rdbw = $lb->getConnection( DB_PRIMARY, [], $dbname,
-						ILoadBalancer::CONN_TRX_AUTOCOMMIT );
+					$rdbw = $this->lbFactory->getAutoCommitPrimaryConnection( $dbname );
 
-					// Find an existing dummy election, if any
+					// Find an existing redirect poll, if any
 					$rId = $rdbw->newSelectQueryBuilder()
 						->select( 'p1.pr_entity' )
 						->from( 'securepoll_properties', 'p1' )
@@ -713,6 +692,8 @@ class CreatePage extends ActionPage {
 		];
 		if ( $election->getId() < 0 ) {
 			$eId = self::insertEntity( $dbw, 'election' );
+			$store->replaceVirtualId( $election->getId(), $eId );
+			$election->setId( $eId );
 			$qIds = [];
 			$oIds = [];
 			$fields['el_entity'] = $eId;
@@ -732,6 +713,7 @@ class CreatePage extends ActionPage {
 				] )
 				->caller( __METHOD__ )
 				->execute();
+			$store->properties[$eId]['not-sitewide-blocked'] = 1;
 		} else {
 			$eId = $election->getId();
 			$dbw->newUpdateQueryBuilder()
@@ -795,6 +777,8 @@ class CreatePage extends ActionPage {
 			$qId = $question->getId();
 			if ( !in_array( $qId, $qIds ) ) {
 				$qId = self::insertEntity( $dbw, 'question' );
+				$store->replaceVirtualId( $question->getId(), $qId );
+				$question->setId( $qId );
 			}
 			$dbw->newReplaceQueryBuilder()
 				->replaceInto( 'securepoll_questions' )
@@ -812,6 +796,8 @@ class CreatePage extends ActionPage {
 				$oId = $option->getId();
 				if ( !in_array( $oId, $oIds ) ) {
 					$oId = self::insertEntity( $dbw, 'option' );
+					$store->replaceVirtualId( $option->getId(), $oId );
+					$option->setId( $oId );
 				}
 				$dbw->newReplaceQueryBuilder()
 					->replaceInto( 'securepoll_options' )
@@ -832,16 +818,14 @@ class CreatePage extends ActionPage {
 			$this->logAdminChanges( $originalFormData, $formData, $eId );
 		}
 
-		// Create the "redirect" polls on foreign wikis
+		// Create the redirect polls on foreign wikis
 		if ( $store->rId ) {
 			$election = $context->getElection( $store->rId );
 			foreach ( $store->remoteWikis as $dbname ) {
-				$lb = $this->lbFactory->getMainLB( $dbname );
 				// As for the local wiki, request autocommit mode to get outer transaction scope
-				$dbw = $lb->getConnection( ILoadBalancer::DB_PRIMARY, [], $dbname,
-					ILoadBalancer::CONN_TRX_AUTOCOMMIT );
+				$dbw = $this->lbFactory->getAutoCommitPrimaryConnection( $dbname );
 				$dbw->startAtomic( __METHOD__ );
-				// Find an existing dummy election, if any
+				// Find an existing redirect poll, if any
 				$rId = $dbw->newSelectQueryBuilder()
 					->select( 'p1.pr_entity' )
 					->from( 'securepoll_properties', 'p1' )
@@ -891,46 +875,31 @@ class CreatePage extends ActionPage {
 			}
 		}
 
-		$this->recordElectionToNamespace( $eId, $formData );
+		$this->recordElectionToNamespace( $election, $formData );
 
 		return Status::newGood( $eId );
 	}
 
 	/**
 	 * Record this election to the SecurePoll namespace, if so configured.
-	 *
-	 * @param int $eId election id
-	 * @param array $formData
 	 */
-	private function recordElectionToNamespace( $eId, $formData ) {
-		if ( $this->specialPage->getConfig()->get( 'SecurePollUseNamespace' ) ) {
-			// Create a new context to bypass caching.
-			$context = new Context;
-			// We may be inside a transaction, so force a primary DB connection (T209804)
-			$context->getStore()->setForcePrimary( true );
+	private function recordElectionToNamespace( Election $election, array $formData ) {
+		if ( Context::isNamespacedLoggingEnabled() ) {
+			[ $title, $content ] = SecurePollContentHandler::makeContentFromElection( $election );
 
-			$election = $context->getElection( $eId );
-
-			[ $title, $content ] = SecurePollContentHandler::makeContentFromElection(
-				$election
-			);
-			$wp = $this->wikiPageFactory->newFromTitle( $title );
-			$wp->doUserEditContent(
-				$content,
-				$this->specialPage->getUser(),
-				$formData['comment']
-			);
+			$performer = $this->specialPage->getAuthority();
+			$this->pageUpdaterFactory->newPageUpdater( $title, $performer->getUser() )
+				->setContent( SlotRecord::MAIN, $content )
+				->saveRevision( $formData['comment'] ?? '' );
 
 			[ $title, $content ] = SecurePollContentHandler::makeContentFromElection(
 				$election,
 				'msg/' . $election->getLanguage()
 			);
-			$wp = $this->wikiPageFactory->newFromTitle( $title );
-			$wp->doUserEditContent(
-				$content,
-				$this->specialPage->getUser(),
-				$formData['comment']
-			);
+
+			$this->pageUpdaterFactory->newPageUpdater( $title, $performer->getUser() )
+				->setContent( SlotRecord::MAIN, $content )
+				->saveRevision( $formData['comment'] ?? '' );
 		}
 	}
 
@@ -1019,6 +988,7 @@ class CreatePage extends ActionPage {
 			'voter-privacy' => isset( $p['voter-privacy'] ) ? (bool)$p['voter-privacy'] : null,
 			'property_admins' => '',
 			'request-comment' => isset( $p['request-comment'] ) ? (bool)$p['request-comment'] : null,
+			'prompt-active-wiki' => isset( $p['prompt-active-wiki'] ) ? (bool)$p['prompt-active-wiki'] : null,
 			'comment-prompt' => $m['comment-prompt'] ?? null,
 			'questions' => [],
 			'comment' => '',
@@ -1033,7 +1003,7 @@ class CreatePage extends ActionPage {
 		$tallyTypes = [];
 		foreach ( $this->context->getBallotTypesForVote() as $class ) {
 			$classes[] = $class;
-			foreach ( call_user_func_array( [ $class, 'getTallyTypes' ], [] ) as $type ) {
+			foreach ( $class::getTallyTypes() as $type ) {
 				$tallyTypes[$type] = true;
 			}
 		}
@@ -1161,7 +1131,7 @@ class CreatePage extends ActionPage {
 	 * @param array &$outItems Array to insert the descriptors into
 	 * @param string $field Owning field name, for hide-if
 	 * @param string|array $types Type value(s) in the field, for hide-if
-	 * @param class-string|false $class Class with the ::getCreateDescriptors static method
+	 * @param class-string<Ballot|Crypt|Tallier>|false $class
 	 * @param string|null $category If given, ::getCreateDescriptors is
 	 *    expected to return an array with subarrays for different categories
 	 *    of descriptors, and this selects which subarray to process.
@@ -1176,13 +1146,7 @@ class CreatePage extends ActionPage {
 			return;
 		}
 
-		$items = call_user_func_array(
-			[
-				$class,
-				'getCreateDescriptors'
-			],
-			[]
-		);
+		$items = $class::getCreateDescriptors();
 
 		if ( !is_array( $types ) ) {
 			$types = [ $types ];
@@ -1231,7 +1195,7 @@ class CreatePage extends ActionPage {
 	 *
 	 * @param array &$formData Form data array
 	 * @param array $data Input data array
-	 * @param class-string|false $class Class with the ::getCreateDescriptors static method
+	 * @param class-string<Ballot|Crypt|Tallier>|false $class
 	 * @param string|null $category If given, ::getCreateDescriptors is
 	 *    expected to return an array with subarrays for different categories
 	 *    of descriptors, and this selects which subarray to process.
@@ -1241,13 +1205,7 @@ class CreatePage extends ActionPage {
 			return;
 		}
 
-		$items = call_user_func_array(
-			[
-				$class,
-				'getCreateDescriptors'
-			],
-			[]
-		);
+		$items = $class::getCreateDescriptors();
 
 		if ( $category ) {
 			if ( !isset( $items[$category] ) ) {
@@ -1292,18 +1250,18 @@ class CreatePage extends ActionPage {
 	}
 
 	/**
-	 * Check that the user is part of the electionadmin group
+	 * Check that the user has the securepoll-edit-poll right
 	 *
 	 * @param string $value Username
 	 * @param array $alldata All form data
 	 * @param HTMLForm $containingForm Containing HTMLForm
 	 * @return bool|string true on success, string on error
 	 */
-	public function checkIfInElectionAdminUserGroup( $value, $alldata, HTMLForm $containingForm ) {
+	public function checkEditPollRight( $value, $alldata, HTMLForm $containingForm ) {
 		$user = $this->userFactory->newFromName( $value );
-		if ( !$user || !in_array( 'electionadmin', $this->userGroupManager->getUserEffectiveGroups( $user ) ) ) {
+		if ( !$user || !$user->isAllowed( 'securepoll-edit-poll' ) ) {
 			return $this->msg(
-				'securepoll-create-user-not-in-electionadmin-group',
+				'securepoll-create-user-missing-edit-right',
 				$value
 			)->parse();
 		}
@@ -1311,6 +1269,11 @@ class CreatePage extends ActionPage {
 		return true;
 	}
 
+	/**
+	 * @param string $value
+	 * @param array $formData
+	 * @return string|true
+	 */
 	public function checkElectionEndDate( $value, $formData ) {
 		$startDate = new DateTime( $formData['election_startdate'], new DateTimeZone( 'GMT' ) );
 		$endDate = new DateTime( $value, new DateTimeZone( 'GMT' ) );

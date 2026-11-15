@@ -4,8 +4,10 @@ declare( strict_types = 1 );
 
 namespace Maps\Tests\Util;
 
-use CommentStoreComment;
-use Title;
+use Maps\GeoJsonPages\GeoJsonContent;
+use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Title\Title;
+use StatusValue;
 use User;
 
 /**
@@ -18,7 +20,7 @@ class PageCreator {
 		return new self();
 	}
 
-	public function createPage( string $title, string $content = null ) {
+	public function createPage( string $title, ?string $content = null ) {
 		$titleObject = Title::newFromText( $title );
 
 		$this->createPageWithContent(
@@ -27,13 +29,31 @@ class PageCreator {
 		);
 	}
 
-	public function createPageWithContent( string $title, \Content $content ) {
+	public function createGeoJsonPage( string $pageName, string $featureTitle ): void {
+		$this->createPageWithContent(
+			'GeoJson:' . $pageName,
+			new GeoJsonContent( json_encode( [
+				'type' => 'FeatureCollection',
+				'features' => [
+					[
+						'type' => 'Feature',
+						'geometry' => [ 'type' => 'Point', 'coordinates' => [ 4.35, 50.85 ] ],
+						'properties' => [ 'title' => $featureTitle ],
+					],
+				],
+			] ) )
+		);
+	}
+
+	public function createPageWithContent( string $title, \Content $content ): StatusValue {
 		$titleObject = Title::newFromText( $title );
 		$page = new \WikiPage( $titleObject );
 
 		$updater = $page->newPageUpdater( User::newSystemUser( 'TestUser' ) );
 		$updater->setContent( 'main', $content );
 		$updater->saveRevision( CommentStoreComment::newUnsavedComment( __CLASS__ . ' creating page ' . $title ) );
+
+		return $updater->getStatus();
 	}
 
 }

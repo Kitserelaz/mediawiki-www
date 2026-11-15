@@ -3,23 +3,24 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TtmServer;
 
+/** @defgroup TtmServer The Translate extension translation memory interface */
+
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\MediaWikiServices;
-use WikiPage;
+use MediaWiki\Page\WikiPage;
 
 /**
  * TtmServer - The Translate extension translation memory interface
  * Some general static methods for instantiating TtmServer and helpers.
  * @author Niklas Laxström
  * @license GPL-2.0-or-later
- * @defgroup TtmServer The Translate extension translation memory interface
- * @ingroup TTMServerp
+ * @ingroup TTMServer
  */
 abstract class TtmServer {
-	protected array $config;
 
-	public function __construct( array $config ) {
-		$this->config = $config;
+	public function __construct(
+		protected array $config,
+	) {
 	}
 
 	/**
@@ -54,6 +55,6 @@ abstract class TtmServer {
 		}
 
 		$job = TtmServerMessageUpdateJob::newJob( $handle, 'rebuild' );
-		MediaWikiServices::getInstance()->getJobQueueGroup()->push( $job );
+		MediaWikiServices::getInstance()->getJobQueueGroup()->lazyPush( $job );
 	}
 }

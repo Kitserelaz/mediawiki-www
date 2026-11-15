@@ -1,11 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
+			"EGobi",
 			"Eduardo Addad de Oliveira",
 			"Eduardoaddad",
 			"TheEduGobi",
-			"Trigonometria87",
-			"EGobi"
+			"Trigonometria87"
 		]
 	},
 	"apihelp-wbsgetsuggestions-summary": "Módulo da API para obter sugestões de propriedades suplementares a adicionar a uma entidade Wikibase. O módulo da API destina-se a ser usado principalmente pelo widget de sugestões quando os utilizadores estão a editar entidades Wikibase.",

@@ -13,10 +13,10 @@
 		]
 	},
 	"codemirror-desc": "يوفر إبراز التركيب في محرر نص الويكي",
-	"codemirror-toggle-label": "إبراز التركيب",
-	"codemirror-toggle-label-short": "تركيب",
+	"codemirror-toggle-label": "إبراز الألوان السياقية",
+	"codemirror-toggle-label-short": "تلوين سياقي",
 	"codemirror-prefs-summary": "يمكنك معرفة المزيد عن هذه الميزة عبر قراءة [https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Extension:CodeMirror صفحة المساعدة].",
-	"codemirror-prefs-enable": "فعّل إبراز التركيب لنص الويكي",
+	"codemirror-prefs-enable": "تمكين إضفاء الضوء على النصوص النصية للويكيتكس",
 	"codemirror-prefs-enable-help": "ينطبق هذا عند تحرير صفحات المحتوى والقوالب.",
 	"codemirror-prefs-enable-code": "تفعيل تمييز بناء الجملة للتعليمات البرمجية",
 	"codemirror-prefs-enable-code-help": "ينطبق هذا عند تعديل التعليمات البرمجية مثل JavaScript أو CSS أو وحدات Lua.",
@@ -150,7 +150,7 @@
 	"codemirror-keymap-lint": "لينتر",
 	"codemirror-keymap-next-diagnostic": "حدد التشخيص التالي",
 	"prefs-accessibility": "إمكانية الوصول",
-	"prefs-syntax-highlighting": "إبراز التركيب",
+	"prefs-syntax-highlighting": "إبراز الألوان السياقية",
 	"codemirror-wikilint-attributes-of-closing-tag": "سمات علامة الإغلاق",
 	"codemirror-wikilint-bold-apostrophes": "علامات اقتباس جريئة",
 	"codemirror-wikilint-bold-in-header": "نص غامق في رأس القسم",
@@ -222,6 +222,5 @@
 	"codemirror-potentially-slow": "بطيئًا محتملًا",
 	"codemirror-validate-js-syntaxerror": "خطأ في بناء الجملة في العمود $1 في السطر $2 : $3",
 	"codemirror-ve-limit-exceeded": "حجم المستند كبير جدًا بحيث لا يمكن تمييز الصيغة، ولذلك تم تعطيل هذه الميزة.",
-	"codemirror-ve-limit-exceeded-info": "للمزيد من المعلومات",
-	"codemirror-v6-prefs-colorblind": "استخدم مخططًا صديقًا لعمى الألوان"
+	"codemirror-ve-limit-exceeded-info": "للمزيد من المعلومات"
 }

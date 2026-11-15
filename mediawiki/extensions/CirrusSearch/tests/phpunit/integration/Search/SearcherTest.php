@@ -8,12 +8,12 @@ use CirrusSearch\Test\DummyConnection;
 use CirrusSearch\Test\SearchConfigUsageDecorator;
 use Elastica\Query;
 use Elastica\Response;
-use HtmlArmor;
 use LinkCacheTestTrait;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Title\Title;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * @covers \CirrusSearch\Searcher
@@ -59,7 +59,7 @@ class SearcherTest extends CirrusIntegrationTestCase {
 			}
 		}
 
-		return self::randomizeFixtures( $tests );
+		return self::randomizeFixtures( $tests, "browsertest_" );
 	}
 
 	/**
@@ -81,7 +81,8 @@ class SearcherTest extends CirrusIntegrationTestCase {
 			'CirrusSearchQueryStringMaxDeterminizedStates' => 500,
 			'CirrusSearchLanguageWeight' => [],
 			'CirrusSearchAllowLeadingWildcard' => true,
-			'ContentNamespaces' => [ NS_MAIN ],
+			MainConfigNames::CapitalLinks => true,
+			MainConfigNames::ContentNamespaces => [ NS_MAIN ],
 		] );
 
 		// Override the list of namespaces to give more deterministic results
@@ -167,7 +168,7 @@ class SearcherTest extends CirrusIntegrationTestCase {
 		try {
 			$notInApi = [];
 			$notInSearchConfig = [];
-			foreach ( array_keys( SearchConfigUsageDecorator::getUsedConfigKeys() ) as $k ) {
+			foreach ( SearchConfigUsageDecorator::getUsedConfigKeys() as $k ) {
 				if ( in_array( $k, self::$CONFIG_VARS_FALSE_POSITIVES ) ) {
 					continue;
 				}
@@ -256,6 +257,7 @@ class SearcherTest extends CirrusIntegrationTestCase {
 			'CirrusSearchIndexBaseName' => 'wiki',
 			'CirrusSearchQueryStringMaxDeterminizedStates' => 500,
 			MainConfigNames::ContentNamespaces => [ NS_MAIN ],
+			MainConfigNames::CapitalLinks => true,
 			'CirrusSearchEnableArchive' => true,
 		] );
 
@@ -360,7 +362,7 @@ class SearcherTest extends CirrusIntegrationTestCase {
 	}
 
 	/**
-	 * @dataProvider provideTestSuggestQueries()
+	 * @dataProvider provideTestSuggestQueries
 	 */
 	public function testPhraseSuggest( $expectedFile, $query, $namespaces, $offset, $withDym, $config ) {
 		$engine = new CirrusSearch( new HashSearchConfig( $config + [

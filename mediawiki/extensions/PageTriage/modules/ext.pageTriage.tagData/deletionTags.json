@@ -1,8 +1,7 @@
 {
 	"multiple": {
 		"tag": "Db-multiple",
-		"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-		"talkpagenotiftpl": "Db-notice-multiple-NPF"
+		"talkpagenotiftpl": "Db-notice-multiple"
 	},
 	"main": {
 		"speedydeletioncommon": {
@@ -14,18 +13,19 @@
 				"dba1": {
 					"label": "No context",
 					"tag": "speedy deletion-no context",
+					"articleonly": true,
 					"code": "A1",
 					"desc": "Articles lacking sufficient context to identify the subject of the article. (A1)",
 					"params": {},
 					"anchor": "nocontext",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Empty-warn-NPF"
+					"talkpagenotiftpl": "Db-empty-notice"
 				},
 
 				"dba2": {
 					"label": "Foreign language articles that exist on another Wikimedia project",
 					"tag": "speedy deletion-foreign language",
 					"code": "A2",
+					"articleonly": true,
 					"desc": "Articles having essentially the same content as an article on another Wikimedia project. (A2)",
 					"params": {
 						"source": {
@@ -36,113 +36,113 @@
 						}
 					},
 					"anchor": "notenglish",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-foreign-notice-NPF"
+					"talkpagenotiftpl": "Db-foreign-notice"
 				},
 
 				"dba3": {
 					"label": "No content",
 					"tag": "speedy deletion-no content",
 					"code": "A3",
+					"articleonly": true,
 					"desc": "Any article (other than disambiguation pages, redirects, or soft redirects) consisting only of external links, category tags and \"see also\" sections, a rephrasing of the title, attempts to correspond with the person or group named by its title, a question that should have been asked at the help or reference desks, chat-like comments, template tags, and/or images. (A3)",
 					"params": {},
 					"anchor": "nocontent",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Nocontent-warn-NPF"
+					"talkpagenotiftpl": "Db-nocontent-notice"
 				},
 
 				"dba7Person": {
 					"label": "No indication of importance (person)",
 					"tag": "db-person",
 					"code": "A7",
+					"articleonly": true,
 					"desc": "An article about a real person that does not assert the importance or significance of its subject. If controversial, or if there has been a previous AfD that resulted in the article being kept, the article should be nominated for AfD instead. (A7)",
 					"params": {},
 					"anchor": "importance",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-significance-notice-NPF"
+					"talkpagenotiftpl": "Db-significance-notice"
 				},
 
 				"dba7Band": {
 					"label": "No indication of importance (musician(s) or band)",
 					"tag": "db-band",
 					"code": "A7",
+					"articleonly": true,
 					"desc": "Article about a band, singer, musician, or musical ensemble that does not assert the importance or significance of the subject. (A7)",
 					"params": {},
 					"anchor": "importance",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-significance-notice-NPF"
+					"talkpagenotiftpl": "Db-significance-notice"
 				},
 
 				"dba7Club": {
 					"label": "No indication of importance (club, society or group)",
 					"tag": "db-club",
 					"code": "A7",
+					"articleonly": true,
 					"desc": "Article about a club that does not assert the importance or significance of the subject. (A7)",
 					"params": {},
 					"anchor": "importance",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-significance-notice-NPF"
+					"talkpagenotiftpl": "Db-significance-notice"
 				},
 
 				"dba7Corp": {
 					"label": "No indication of importance (company or organization)",
 					"tag": "db-corp",
 					"code": "A7",
+					"articleonly": true,
 					"desc": "Article about a company or organization that does not assert the importance or significance of the subject. (A7)",
 					"params": {},
 					"anchor": "importance",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-significance-notice-NPF"
+					"talkpagenotiftpl": "Db-significance-notice"
 				},
 
 				"dba7Web": {
 					"label": "No indication of importance (website or web content)",
 					"tag": "db-web",
 					"code": "A7",
+					"articleonly": true,
 					"desc": "Article about a web site, blog, online forum, webcomic, podcast, or similar web content that does not assert the importance or significance of its subject. (A7)",
 					"params": {},
 					"anchor": "importance",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-significance-notice-NPF"
+					"talkpagenotiftpl": "Db-significance-notice"
 				},
 
 				"dba7Animal": {
 					"label": "No indication of importance (individual animal)",
 					"tag": "db-animal",
 					"code": "A7",
+					"articleonly": true,
 					"desc": "Article about an individual animal (e.g. pet) that does not assert the importance or significance of its subject. (A7)",
 					"params": {},
 					"anchor": "importance",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-significance-notice-NPF"
+					"talkpagenotiftpl": "Db-significance-notice"
 				},
 
 				"dba7Event": {
 					"label": "No indication of importance (organized event)",
 					"tag": "db-event",
 					"code": "A7",
+					"articleonly": true,
 					"desc": "Article about an organized event (tour, function, meeting, party, etc.) that does not assert the importance or significance of its subject. (A7)",
 					"params": {},
 					"anchor": "importance",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-significance-notice-NPF"
+					"talkpagenotiftpl": "Db-significance-notice"
 				},
 
 				"dba9": {
 					"label": "No indication of importance (musical recordings)",
 					"tag": "speedy deletion-musical recording",
 					"code": "A9",
+					"articleonly": true,
 					"desc": "An article about a musical recording that does not indicate why its subject is important or significant and where the artist\"s article does not exist (both conditions must be true). (A9)",
 					"params": {},
 					"anchor": "music",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-a9-notice-NPF"
+					"talkpagenotiftpl": "Db-a9-notice"
 				},
 
 				"dba10": {
 					"label": "Recently created article that duplicates an existing topic",
 					"tag": "speedy deletion-duplicate article",
 					"code": "A10",
+					"articleonly": true,
 					"desc": "A recently created article with no relevant page history that duplicates an existing English Wikipedia topic, and that does not expand upon, detail or improve information within any existing article(s) on the subject, and where the title is not a plausible redirect. (A10)",
 					"params": {
 						"article": {
@@ -153,30 +153,29 @@
 						}
 					},
 					"anchor": "duplicate",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-a10-notice-NPF"
+					"talkpagenotiftpl": "Db-a10-notice"
 				},
 
 				"dba11": {
 					"label": "Obviously made up by creator, and no claim of significance",
 					"tag": "db-a11",
 					"code": "A11",
+					"articleonly": true,
 					"desc": "An article which plainly indicates that the subject was invented/coined/discovered by the article\"s creator or someone they know personally, and does not credibly indicate why its subject is important or significant. (A11)",
 					"params": {},
 					"anchor": "",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-invented-notice-NPF"
+					"talkpagenotiftpl": "Db-invented-notice"
 				},
 
 				"dbg1": {
 					"label": "Patent nonsense",
 					"tag": "speedy deletion-nonsense",
 					"code": "G1",
+					"articleonly": true,
 					"desc": "A page that is patent nonsense, consisting purely of incoherent text or gibberish with no meaningful content or history. (G1)",
 					"params": {},
 					"anchor": "nonsense",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-nonsense-notice-NPF"
+					"talkpagenotiftpl": "Db-nonsense-notice"
 				},
 
 				"dbg2": {
@@ -186,8 +185,7 @@
 					"desc": "A page created to test editing or other Wikipedia functions. (G2)",
 					"params": {},
 					"anchor": "test",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-test-notice-NPF"
+					"talkpagenotiftpl": "Db-test-notice"
 				},
 
 				"dbg3Vandalism": {
@@ -197,8 +195,7 @@
 					"desc": "Plain pure vandalism including redirects left behind by page move vandalism. (G3)",
 					"params": {},
 					"anchor": "vandalism",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-vandalism-notice-NPF"
+					"talkpagenotiftpl": "Db-vandalism-notice"
 				},
 
 				"dbg3Hoax": {
@@ -208,8 +205,7 @@
 					"desc": "Blatant and obvious misinformation to the point of vandalism. (G3)",
 					"params": {},
 					"anchor": "vandalism",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-vandalism-notice-NPF"
+					"talkpagenotiftpl": "Db-vandalism-notice"
 				},
 
 				"dbg4": {
@@ -226,8 +222,7 @@
 						}
 					},
 					"anchor": "repost",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Uw-repost-NPF"
+					"talkpagenotiftpl": "Db-repost-notice"
 				},
 
 				"dbg5": {
@@ -262,6 +257,24 @@
 					"tag": "speedy deletion-technical"
 				},
 
+				"dbg6Copypaste": {
+					"label": "Cut-and-paste page move",
+					"anchor": "Copy paste move",
+					"tag": "db-copypaste",
+					"code": "G6",
+					"articleonly": true,
+					"desc": "Cut-and-paste page moves that need to be temporarily deleted to make room for a clean page move. (G6)",
+					"params": {
+						"1": {
+							"input": "optional",
+							"label": "The page from where the content was copied.",
+							"type": "text",
+							"value": ""
+						}
+					},
+					"talkpagenotiftpl": "Db-copypaste-notice"
+				},
+
 				"dbg7": {
 					"label": "Author requests deletion",
 					"tag": "speedy deletion-author request",
@@ -277,39 +290,40 @@
 					"label": "Attack pages",
 					"tag": "speedy deletion-attack",
 					"code": "G10",
+					"blank": true,
 					"desc": "Pages that disparage, threaten, intimidate or harass their subject or some other entity, and serve no other purpose. (G10)",
 					"params": {},
 					"anchor": "attack",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-without-article-name",
-					"talkpagenotiftpl": "Db-attack-notice-NPF"
+					"talkpagenotiftpl": "Db-attack-notice"
 				},
 
 				"dbg10Negublp": {
 					"label": "Wholly negative, unsourced BLP",
 					"tag": "db-negublp",
 					"code": "G10",
+					"articleonly": true,
 					"desc": "A biography of a living person that is entirely negative in tone and unsourced, where there is no neutral version in the history to revert to. (G10)",
 					"params": {},
 					"anchor": "",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-without-article-name",
-					"talkpagenotiftpl": "Db-negublp-notice-NPF"
+					"talkpagenotiftpl": "Db-negublp-notice"
 				},
 
 				"dbg11": {
 					"label": "Unambiguous advertising or promotion",
 					"tag": "speedy deletion-advertising",
 					"code": "G11",
+					"articleonly": true,
 					"desc": "Pages that are exclusively promotional, and would need to be fundamentally rewritten to become encyclopedic. (G11)",
 					"params": {},
 					"anchor": "spam",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Spam-warn-NPF"
+					"talkpagenotiftpl": "Db-spam-notice"
 				},
 
 				"dbg12": {
 					"label": "Unambiguous copyright infringement",
 					"tag": "speedy deletion-copyright violation",
 					"code": "G12",
+					"articleonly": true,
 					"desc": "Text pages that contain copyrighted material with no credible assertion of public domain, fair use, or a compatible free license, where there is no non-infringing content on the page worth saving. (G12)",
 					"params": {
 						"url": {
@@ -320,47 +334,65 @@
 						}
 					},
 					"anchor": "copyvio",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Nothanks-sd-NPF"
+					"talkpagenotiftpl": "Db-copyvio-notice"
 				},
 
 				"dbg14": {
 					"label": "Unnecessary disambiguation page",
 					"tag": "db-disambig",
 					"code": "G14",
+					"articleonly": true,
 					"desc": "This only applies to disambiguation pages which \"either\": (1) disambiguate only one existing Wikipedia page and whose title ends in \"(disambiguation)\" (i.e., there is a primary topic); or (2) disambiguate no (zero) existing Wikipedia pages, regardless of its title. (G14)",
 					"params": {},
 					"anchor": "",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Db-disambig-notice-NPF"
+					"talkpagenotiftpl": "Db-disambig-notice"
+				},
+
+				"dbg15": {
+					"label": "LLM-generated pages without human review",
+					"tag": "db-llm",
+					"code": "G15",
+					"articleonly": true,
+					"desc": "This applies to any page that exhibits one or more of the following signs indicating that the page has been generated by large language models and would have been removed by any reasonable human review: (1) Collaborative communication (e.g., \"Here is your Wikipedia article on...\"); (2) Implausible non-existent references; or (3) Nonsensical citations. (G15)",
+					"params": {
+						"rationale": {
+							"label": "Rationale:",
+							"input": "required",
+							"type": "text",
+							"value": ""
+						}
+					},
+					"anchor": "",
+					"talkpagenotiftpl": "Db-llm-notice"
 				},
 
 				"dbr2": {
 					"label": "Redirect to non-permitted namespaces",
 					"tag": "Db-r2",
 					"code": "R2",
+					"redirectonly": true,
 					"desc": "Redirect from mainspace to any other namespace except the Category:, Template:, Wikipedia:, \"Help\": and \"Portal\": namespaces. (R2)",
 					"params": {},
 					"anchor": "rediruser",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "CSD R2-warn-NPF"
+					"talkpagenotiftpl": "Db-rediruser-notice"
 				},
 
 				"dbr3": {
 					"label": "Redirect from implausible typo or misnomer",
 					"tag": "Db-r3",
 					"code": "R3",
+					"redirectonly": true,
 					"desc": "Recently created redirect from an implausible typo or misnomer. (R3)",
 					"params": {},
 					"anchor": "redirtypo",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-speedy-deletion-nomination-notify-topic-title",
-					"talkpagenotiftpl": "Redirtypo-warn-NPF"
+					"talkpagenotiftpl": "Db-redirtypo-notice"
 				},
 
 				"dbg8Redirnone": {
 					"label": "Redirect to non-existent/deleted page",
 					"tag": "Db-redirnone",
 					"code": "G8",
+					"redirectonly": true,
 					"desc": "Redirect to a page that does not exist or has been deleted. (G8)",
 					"params": {},
 					"anchor": "redirnone",
@@ -382,8 +414,7 @@
 					"desc": "An article about a living person that has no sources",
 					"params": {},
 					"anchor": "",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-prod-notify-topic-title",
-					"talkpagenotiftpl": "ProdwarningBLP-NPF",
+					"talkpagenotiftpl": "ProdwarningBLP",
 					"subst": true
 				},
 
@@ -400,8 +431,7 @@
 						}
 					},
 					"anchor": "",
-					"talkpagenotiftopictitle": "pagetriage-del-tags-prod-notify-topic-title",
-					"talkpagenotiftpl": "Proposed_deletion_notify-NPF",
+					"talkpagenotiftpl": "Proposed_deletion_notify",
 					"articletalkpagenotiftpl": "Old prod",
 					"rejectionTemplates": {
 						"article": [ "Article for deletion/dated" ],
@@ -441,8 +471,7 @@
 							"skip": true
 						}
 					},
-					"talkpagenotiftopictitle": "pagetriage-del-tags-xfd-notify-topic-title",
-					"talkpagenotiftpl": "AfD-notice-NPF",
+					"talkpagenotiftpl": "AfD-notice",
 					"subst": true
 				},
 
@@ -459,8 +488,7 @@
 							"value": ""
 						}
 					},
-					"talkpagenotiftopictitle": "pagetriage-del-tags-xfd-notify-topic-title",
-					"talkpagenotiftpl": "RFDNote-NPF",
+					"talkpagenotiftpl": "RFD notice",
 					"subst": true
 				}
 			}

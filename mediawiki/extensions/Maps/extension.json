@@ -1,10 +1,10 @@
 {
 	"name": "Maps",
-	"version": "10.3.0",
+	"version": "15.1.0",
 
 	"author": [
 		"[https://EntropyWins.wtf/mediawiki Jeroen De Dauw]",
-		"[https://professional.wiki/ Professional.Wiki]"
+		"[https://professional.wiki/ Professional Wiki]"
 	],
 	"url": "https://maps.extension.wiki",
 	"descriptionmsg": "maps-desc",
@@ -12,10 +12,7 @@
 	"type": "parserhook",
 
 	"requires": {
-		"MediaWiki": ">= 1.35.0",
-		"platform": {
-			"php": ">= 7.4"
-		}
+		"MediaWiki": ">= 1.43.0"
 	},
 
 	"AutoloadNamespaces": {
@@ -29,7 +26,6 @@
 		]
 	},
 	"ExtensionMessagesFiles": {
-		"MapsAlias": "i18n/aliases/Aliases.php",
 		"MapsMagic": "i18n/magic/MagicWords.php"
 	},
 
@@ -109,6 +105,13 @@
 			],
 			"scripts": [
 				"api.js"
+			],
+			"targets": [ "desktop", "mobile" ]
+		},
+
+		"ext.maps.dompurify": {
+			"scripts": [
+				"lib/dompurify/purify.js"
 			],
 			"targets": [ "desktop", "mobile" ]
 		},
@@ -225,6 +228,9 @@
 				"maps-json-editor-edit-other",
 				"maps-json-editor-edit-failed",
 
+				"maps-json-editor-edit-summary-default",
+				"maps-json-editor-edit-summary-prompt",
+
 				"maps-json-editor-toolbar-save-title",
 				"maps-json-editor-toolbar-save-text",
 				"maps-json-editor-toolbar-cancel-title",
@@ -288,7 +294,8 @@
 
 		"ext.maps.gm3.geoxml": {
 			"dependencies": [
-				"ext.maps.googlemaps3"
+				"ext.maps.googlemaps3",
+				"ext.maps.dompurify"
 			],
 			"scripts": [
 				"GoogleMaps/geoxml3/geoxml3.js",
@@ -307,37 +314,6 @@
 				"GoogleMaps/googlemaps3ajax.js"
 			],
 			"targets": [ "desktop", "mobile" ]
-		},
-
-		"ext.maps.wikitext.editor": {
-			"dependencies": [
-				"jquery.ui",
-				"jquery.ui",
-				"jquery.ui"
-			],
-			"scripts": [
-				"WikitextEditor/js/jquery.miniColors.js",
-				"WikitextEditor/js/mapeditor.iefixes.js",
-				"WikitextEditor/js/mapeditor.js"
-			],
-			"styles": [
-				"WikitextEditor/css/jquery.miniColors.css",
-				"WikitextEditor/css/mapeditor.css"
-			],
-			"messages": [
-				"mapeditor-parser-error",
-				"mapeditor-none-text",
-				"mapeditor-done-button",
-				"mapeditor-remove-button",
-				"mapeditor-import-button",
-				"mapeditor-export-button",
-				"mapeditor-import-button2",
-				"mapeditor-select-button",
-				"mapeditor-mapparam-button",
-				"mapeditor-clear-button",
-				"mapeditor-imageoverlay-button"
-			],
-			"targets": [ "desktop", "mobile" ]
 		}
 	},
 
@@ -345,10 +321,18 @@
 		"localBasePath": "tests/js/",
 		"remoteExtPath": "Maps/tests/js/",
 		"scripts": [
-			"leaflet/GeoJsonTest.js"
+			"leaflet/GeoJsonTest.js",
+			"leaflet/FeatureBuilderTest.js",
+			"leaflet/JQueryLeafletTest.js",
+			"GoogleMaps/geoxml3/KmlRenderingTest.js",
+			"MapSaverTest.js",
+			"GeoJsonPageTest.js"
 		],
 		"dependencies": [
-			"ext.maps.leaflet.geojson"
+			"ext.maps.leaflet.geojson",
+			"ext.maps.leaflet.loader",
+			"ext.maps.leaflet.editor",
+			"ext.maps.geojson.page"
 		]
 	},
 

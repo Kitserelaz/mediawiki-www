@@ -8,14 +8,15 @@ use CirrusSearch\SearchConfig;
 use Elastica\Document;
 use MediaWiki\Cache\BacklinkCacheFactory;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Revision\RevisionAccessException;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
-use MediaWiki\Title\Title;
+use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Title\TitleFactory;
 use MediaWiki\Title\TitleFormatter;
 use Wikimedia\Rdbms\IReadableDatabase;
-use WikiPage;
 
 /**
  * Orchestrate the process of building an elasticsearch document out of a
@@ -35,20 +36,7 @@ use WikiPage;
  * content, potentially megabytes, from mediawiki ParserOutput into the
  * documents.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class BuildDocument {
 	private const HINT_FLAGS = 'BuildDocument_flags';
@@ -75,6 +63,8 @@ class BuildDocument {
 	private $titleFormatter;
 	/** @var WikiPageFactory */
 	private $wikiPageFactory;
+	/** @var TitleFactory */
+	private TitleFactory $titleFactory;
 
 	/**
 	 * @param Connection $connection Cirrus connection to read page properties from
@@ -92,7 +82,8 @@ class BuildDocument {
 		BacklinkCacheFactory $backlinkCacheFactory,
 		DocumentSizeLimiter $docSizeLimiter,
 		TitleFormatter $titleFormatter,
-		WikiPageFactory $wikiPageFactory
+		WikiPageFactory $wikiPageFactory,
+		TitleFactory $titleFactory
 	) {
 		$this->config = $connection->getConfig();
 		$this->connection = $connection;
@@ -102,10 +93,11 @@ class BuildDocument {
 		$this->documentSizeLimiter = $docSizeLimiter;
 		$this->titleFormatter = $titleFormatter;
 		$this->wikiPageFactory = $wikiPageFactory;
+		$this->titleFactory = $titleFactory;
 	}
 
 	/**
-	 * @param \WikiPage[]|RevisionRecord[] $pagesOrRevs List of pages to build documents for. These
+	 * @param WikiPage[]|RevisionRecord[] $pagesOrRevs List of pages to build documents for. These
 	 *  pages must represent concrete pages with content. It is expected that
 	 *  redirects and non-existent pages have been resolved.
 	 * @param int $flags Bitfield of class constants
@@ -118,9 +110,11 @@ class BuildDocument {
 			if ( $pageOrRev instanceof RevisionRecord ) {
 				$revision = $pageOrRev;
 				$page = $this->wikiPageFactory->newFromTitle( $revision->getPage() );
+				$isRedirect = $revision->getContent( SlotRecord::MAIN )->isRedirect();
 			} else {
 				$revision = $pageOrRev->getRevisionRecord();
 				$page = $pageOrRev;
+				$isRedirect = $page->isRedirect();
 			}
 			if ( !$page->exists() ) {
 				LoggerFactory::getInstance( 'CirrusSearch' )->warning(
@@ -128,6 +122,18 @@ class BuildDocument {
 					"earlier but wasn't.  Page: {title}",
 					[ 'title' => (string)$page->getTitle() ]
 				);
+				continue;
+			}
+
+			if ( $isRedirect ) {
+				LoggerFactory::getInstance( 'CirrusSearch' )->warning(
+					'Attempted to build a document for a redirect.  This should be caught ' .
+					"earlier but wasn't.  Page: {title}",
+					[ 'title' => (string)$page->getTitle() ]
+				);
+				// We could return the document for the redirect target, but
+				// that seems a bit too magical.  The document representation
+				// of a redirect is nothing at all, simply skip this page.
 				continue;
 			}
 
@@ -170,10 +176,11 @@ class BuildDocument {
 			if ( $revision !== null && $docRevision !== $revision->getId() ) {
 				throw new \RuntimeException( "Revision id mismatch: {$revision->getId()} != $docRevision" );
 			}
+			$title = null;
 			try {
 				$revision ??= $this->revStore->getRevisionById( $docRevision );
-				$title = $revision ? Title::castFromPageIdentity( $revision->getPage() ) : null;
-			} catch ( RevisionAccessException $e ) {
+				$title = $revision ? $this->titleFactory->castFromPageIdentity( $revision->getPage() ) : null;
+			} catch ( RevisionAccessException ) {
 				$revision = null;
 			}
 			if ( !$title || !$revision ) {

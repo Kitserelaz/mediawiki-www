@@ -5,10 +5,13 @@ namespace AdvancedSearch\Tests;
 use AdvancedSearch\Hooks;
 use MediaWiki\Config\HashConfig;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Language\Language;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Request\FauxRequest;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchEngineFactory;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\User;
@@ -43,6 +46,7 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 			$services->getUserOptionsLookup(),
 			$services->getLanguageNameUtils(),
 			$services->getSearchEngineConfig(),
+			$services->getSearchEngineFactory(),
 			$services->getMimeAnalyzer()
 		);
 	}
@@ -60,7 +64,7 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 			'anonymous user' => [
 				'expected' => [ NS_MAIN ],
 				'isNamed' => false,
-				'userOptionsns' => [],
+				'userOptions' => [],
 				'namespacesToBeSearchedDefault' => [ NS_MAIN => true, NS_TALK => false ],
 			],
 			'registered user, no user options' => [
@@ -119,8 +123,7 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public function testSpecialPageHookHandler_wrongSpecialPage() {
-		$specialPage = $this->createMock( SpecialPage::class );
-		$specialPage->expects( $this->never() )->method( 'getUser' );
+		$specialPage = $this->createNoOpMock( SpecialPage::class, [ 'getName' ] );
 		$this->newInstance()->onSpecialPageBeforeExecute( $specialPage, null );
 	}
 
@@ -137,22 +140,29 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 
 	public function testGetJsConfigVars() {
 		$this->mockMimeAnalyser();
+		$this->mockSearchEngineFactory( [ SearchEngine::DEFAULT_SORT, 'create_timestamp_desc', 'last_edit_desc' ] );
 
 		$extensionRegistry = $this->createMock( ExtensionRegistry::class );
 		$extensionRegistry->method( 'isLoaded' )
 			->with( 'Translate' )
 			->willReturn( true );
 
+		$special = $this->newSpecialSearchPage(
+			$this->newAnonymousUser(),
+			'/wiki/Special%3ASearch',
+			[ 'search' => 'test' ]
+		);
+
 		/** @var Hooks $hook */
 		$hook = TestingAccessWrapper::newFromObject( $this->newInstance() );
+
 		$vars = $hook->getJsConfigVars(
+			$special->getRequest(),
+			$special->getUser(),
 			new RequestContext(),
-			new HashConfig( [
-				'AdvancedSearchNamespacePresets' => '<NAMESPACEPRESETS>',
-				MainConfigNames::ExtensionAssetsPath => '<PATH>',
-				MainConfigNames::FileExtensions => [ '<EXT>' ],
-				'AdvancedSearchDeepcatEnabled' => true
-			] ),
+			$this->createMock( Language::class ),
+			$this->newHashConfig(),
+			[],
 			$extensionRegistry
 		);
 
@@ -163,6 +173,7 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 
 		$this->assertSame( '<NAMESPACEPRESETS>', $vars['advancedSearch.namespacePresets'] );
 		$this->assertSame( true, $vars['advancedSearch.deepcategoryEnabled'] );
+		$this->assertSame( [ SearchEngine::DEFAULT_SORT, 'last_edit_desc' ], $vars['advancedSearch.sortMethods'] );
 
 		$this->assertArrayHasKey( 'advancedSearch.languages', $vars );
 	}
@@ -192,12 +203,20 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 			[ 'search' => 'test' ]
 		);
 
-		$ret = $this->newInstance()->onSpecialPageBeforeExecute( $special, null );
-		$this->assertFalse( $ret );
-		$this->assertSame(
-			'http://hooks.test/w/index.php?search=test&title=Special%3ASearch&go=Go&ns0=1',
-			$special->getOutput()->getRedirect()
+		/** @var Hooks $hook */
+		$hook = TestingAccessWrapper::newFromObject( $this->newInstance() );
+
+		$vars = $hook->getJsConfigVars(
+			$special->getRequest(),
+			$special->getUser(),
+			new RequestContext(),
+			$this->createMock( Language::class ),
+			$this->newHashConfig(),
+			[],
+			$this->createMock( ExtensionRegistry::class )
 		);
+
+		$this->assertSame( [ 0 ], $vars['advancedSearch.defaultNamespaces'] );
 	}
 
 	public function testAdvancedSearchForcesNamespacedUrlsForDirectPageAccess() {
@@ -210,13 +229,20 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 			[ 'search' => 'test' ]
 		);
 
-		$ret = $this->newInstance()->onSpecialPageBeforeExecute( $special, null );
-		$this->assertFalse( $ret );
+		/** @var Hooks $hook */
+		$hook = TestingAccessWrapper::newFromObject( $this->newInstance() );
 
-		$this->assertSame(
-			'http://hooks.test/wiki/Special%3ASearch?ns0=1',
-			$special->getOutput()->getRedirect()
+		$vars = $hook->getJsConfigVars(
+			$special->getRequest(),
+			$special->getUser(),
+			new RequestContext(),
+			$this->createMock( Language::class ),
+			$this->newHashConfig(),
+			[],
+			$this->createMock( ExtensionRegistry::class )
 		);
+
+		$this->assertSame( [ 0 ], $vars['advancedSearch.defaultNamespaces'] );
 	}
 
 	public function testAdvancedSearchForcesUserSpecificNamespacedUrls() {
@@ -229,13 +255,31 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 			[ 'search' => 'test' ]
 		);
 
-		$ret = $this->newInstance()->onSpecialPageBeforeExecute( $special, null );
-		$this->assertFalse( $ret );
+		/** @var Hooks $hook */
+		$hook = TestingAccessWrapper::newFromObject( $this->newInstance() );
 
-		$this->assertSame(
-			'http://hooks.test/w/index.php?search=test&title=Special%3ASearch&go=Go&ns0=1&ns6=1&ns10=1',
-			$special->getOutput()->getRedirect()
+		$vars = $hook->getJsConfigVars(
+			$special->getRequest(),
+			$special->getUser(),
+			new RequestContext(),
+			$this->createMock( Language::class ),
+			$this->newHashConfig(),
+			[],
+			$this->createMock( ExtensionRegistry::class ),
 		);
+
+		$this->assertSame( [ 0, 6, 10 ], $vars['advancedSearch.defaultNamespaces'] );
+	}
+
+	private function newHashConfig( array $overrides = [] ): HashConfig {
+		return new HashConfig( [
+			'AdvancedSearchNamespacePresets' => '<NAMESPACEPRESETS>',
+			MainConfigNames::ExtensionAssetsPath => '<PATH>',
+			MainConfigNames::FileExtensions => [ '<EXT>' ],
+			'AdvancedSearchDeepcatEnabled' => true,
+			'AdvancedSearchEnabledSortMethods' => [ SearchEngine::DEFAULT_SORT, 'last_edit_desc', 'boogie' ],
+		],
+		...$overrides );
 	}
 
 	/**
@@ -252,7 +296,11 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 		$context->setOutput( $output );
 		$context->setUser( $user );
 		$context->setRequest( $request );
-		$special = new SpecialPage( 'Search' );
+		$special = new class() extends SpecialPage {
+			public function __construct() {
+				parent::__construct( 'Search' );
+			}
+		};
 		$special->setContext( $context );
 		return $special;
 	}
@@ -280,5 +328,18 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 		$mock = $this->createNoOpMock( MimeAnalyzer::class, [ 'getMimeTypeFromExtensionOrNull' ] );
 		$mock->method( 'getMimeTypeFromExtensionOrNull' )->willReturn( '<MIME>' );
 		$this->setService( 'MimeAnalyzer', $mock );
+	}
+
+	/**
+	 * @param string[] $validSorts
+	 */
+	private function mockSearchEngineFactory( array $validSorts ) {
+		$searchEngine = $this->createMock( SearchEngine::class );
+		$searchEngine->method( 'getValidSorts' )->willReturn( $validSorts );
+
+		$factory = $this->createMock( SearchEngineFactory::class );
+		$factory->method( 'create' )->willReturn( $searchEngine );
+
+		$this->setService( 'SearchEngineFactory', $factory );
 	}
 }

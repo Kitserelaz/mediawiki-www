@@ -197,13 +197,6 @@ class PFUtilsTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @covers \PFUtils::makeLink
 	 */
-	public function testMakeLinkReturnsNullForNullTitle(): void {
-		$this->assertNull( \PFUtils::makeLink( $this->getLinkRenderer(), null ) );
-	}
-
-	/**
-	 * @covers \PFUtils::makeLink
-	 */
 	public function testMakeLinkReturnsSelfLinkForCurrentTitle(): void {
 		$title = Title::newFromText( 'Current PFUtils Page' );
 		$this->setMwGlobals( [ 'wgTitle' => $title ] );
@@ -312,8 +305,9 @@ class PFUtilsTest extends MediaWikiIntegrationTestCase {
 	public function testPrintRedirectFormForSaveWithTitleObject(): void {
 		$title = Title::newFromText( 'PFUtils Redirect Target' );
 		$user = self::getTestUser()->getUser();
+		$out = $this->getFreshOutputPage();
 
-		$html = \PFUtils::printRedirectForm( $title, 'Body text', 'Summary text', true, $user );
+		$html = \PFUtils::printRedirectForm( $title, 'Body text', 'Summary text', true, $user, $out );
 
 		$this->assertStringContainsString( 'loading.gif', $html );
 		$this->assertStringContainsString( 'name="wpTextbox1"', $html );
@@ -334,8 +328,9 @@ class PFUtilsTest extends MediaWikiIntegrationTestCase {
 	public function testPrintRedirectFormForPreviewWithRawUrl(): void {
 		$user = self::getTestUser()->getUser();
 		$url = '/wiki/Special:FormEdit/TestPage';
+		$out = $this->getFreshOutputPage();
 
-		$html = \PFUtils::printRedirectForm( $url, 'Preview body', 'Preview summary', false, $user );
+		$html = \PFUtils::printRedirectForm( $url, 'Preview body', 'Preview summary', false, $user, $out );
 
 		$this->assertStringContainsString( 'name="wpPreview"', $html );
 		$this->assertStringContainsString( 'action="' . htmlspecialchars( $url ) . '"', $html );
@@ -348,13 +343,15 @@ class PFUtilsTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testPrintRedirectFormUsesAnonymousTokenSuffixForAnonymousUser(): void {
 		$user = $this->getServiceContainer()->getUserFactory()->newAnonymous( '127.0.0.1' );
+		$out = $this->getFreshOutputPage();
 
 		$html = \PFUtils::printRedirectForm(
 			'/wiki/Special:FormEdit/Anon',
 			'Anon body',
 			'Anon summary',
 			true,
-			$user
+			$user,
+			$out,
 		);
 
 		$this->assertStringContainsString( 'name="wpEditToken"', $html );
@@ -366,9 +363,9 @@ class PFUtilsTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testAddFormRLModulesUsesOutputPageWhenParserMissing(): void {
 		$output = $this->getFreshOutputPage();
-		$this->setMwGlobals( [ 'wgOut' => $output, 'wgPageFormsSimpleUpload' => false ] );
+		$this->setMwGlobals( [ 'wgPageFormsSimpleUpload' => false ] );
 
-		\PFUtils::addFormRLModules();
+		\PFUtils::addFormRLModules( $output );
 
 		$metaTags = $output->getMetaTags();
 		$metaTagsString = '';
@@ -393,16 +390,15 @@ class PFUtilsTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testAddFormRLModulesUsesParserOutputWhenParserProvided(): void {
 		$output = $this->getFreshOutputPage();
-		$this->setMwGlobals( [ 'wgOut' => $output, 'wgPageFormsSimpleUpload' => false ] );
-		$parser = $this->getInitializedParser();
+		$this->setMwGlobals( [ 'wgPageFormsSimpleUpload' => false ] );
+		$parserOutput = $this->getInitializedParser()->getOutput();
 
-		$parserOutput = $parser->getOutput();
+		\PFUtils::addFormRLModules( $output, true );
 
-		\PFUtils::addFormRLModules( $parser );
-
-		$this->assertContains( 'ext.pageforms.main', $parserOutput->getModules() );
-		$this->assertContains( 'ext.pageforms.main.styles', $parserOutput->getModuleStyles() );
-		$this->assertNotContains( 'ext.pageforms.main', $output->getModules() );
+		$this->assertNotContains( 'ext.pageforms.main', $parserOutput->getModules() );
+		$this->assertNotContains( 'ext.pageforms.main.styles', $parserOutput->getModuleStyles() );
+		$this->assertContains( 'ext.pageforms.main', $output->getModules() );
+		$this->assertContains( 'ext.pageforms.main.styles', $output->getModuleStyles() );
 	}
 
 	/**
@@ -410,9 +406,9 @@ class PFUtilsTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testAddFormRLModulesAddsSimpleUploadModuleWhenEnabled(): void {
 		$output = $this->getFreshOutputPage();
-		$this->setMwGlobals( [ 'wgOut' => $output, 'wgPageFormsSimpleUpload' => true ] );
+		$this->setMwGlobals( [ 'wgPageFormsSimpleUpload' => true ] );
 
-		\PFUtils::addFormRLModules();
+		\PFUtils::addFormRLModules( $output );
 
 		$this->assertContains( 'ext.pageforms.simpleupload', $output->getModules() );
 	}

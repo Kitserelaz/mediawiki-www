@@ -2,6 +2,7 @@
 
 use MediaWiki\Extension\EventBus\Adapters\RCFeed\EventBusRCFeedFormatter;
 use MediaWiki\Json\FormatJson;
+use MediaWiki\Logging\LogEntryBase;
 use MediaWiki\MainConfigNames;
 use MediaWiki\RCFeed\FormattedRCFeed;
 use MediaWiki\SpecialPage\SpecialPage;
@@ -58,8 +59,9 @@ class EventBusRCFeedIntegrationTest extends MediaWikiIntegrationTestCase {
 
 				// meta and $schema might change, only assert that a few values are correct.
 				$this->assertNotEmpty( $line['meta'] );
-				$this->assertEquals( $line['meta']['dt'], wfTimestamp( TS_ISO_8601, 1301644800 ) );
 				$this->assertEquals( EventBusRCFeedFormatter::STREAM, $line['meta']['stream'] );
+				// meta.dt should not be set after T267648
+				$this->assertArrayNotHasKey( 'dt', $line['meta'] );
 
 				// Unset meta and $schema and verify assert that the rest of the event is correct.
 				unset( $line['meta'] );
@@ -103,7 +105,7 @@ class EventBusRCFeedIntegrationTest extends MediaWikiIntegrationTestCase {
 		] );
 		$logpage = SpecialPage::getTitleFor( 'Log', 'move' );
 		$user = $this->getTestSysop()->getUser();
-		$rc = RecentChange::newLogEntry(
+		$rc = $this->getServiceContainer()->getRecentChangeFactory()->createLogRecentChange(
 			'20110401080000',
 			$logpage,
 			$user,
@@ -119,6 +121,6 @@ class EventBusRCFeedIntegrationTest extends MediaWikiIntegrationTestCase {
 				'pet' => 'cat',
 			] )
 		);
-		$rc->notifyRCFeeds();
+		$this->getServiceContainer()->getRecentChangeRCFeedNotifier()->notifyRCFeeds( $rc );
 	}
 }

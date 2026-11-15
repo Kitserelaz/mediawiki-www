@@ -1,7 +1,7 @@
 {
 	"name": "UniversalLanguageSelector",
 	"namemsg": "uls-extensionname",
-	"version": "2025-03-15",
+	"version": "2026-09-08",
 	"author": [
 		"Alolita Sharma",
 		"Amir Aharoni",
@@ -18,7 +18,14 @@
 	"descriptionmsg": "uls-desc",
 	"license-name": "GPL-2.0-or-later OR MIT",
 	"requires": {
-		"MediaWiki": ">= 1.43.0"
+		"MediaWiki": ">= 1.44.0"
+	},
+	"attributes": {
+		"GlobalPreferences": {
+			"AutoPrefs": [
+				"mw-preferred-languages"
+			]
+		}
 	},
 	"Hooks": {
 		"BeforePageDisplay": "main",
@@ -42,7 +49,6 @@
 		}
 	},
 	"APIModules": {
-		"languagesearch": "UniversalLanguageSelector\\Api\\ApiLanguageSearch",
 		"ulslocalization": {
 			"class": "UniversalLanguageSelector\\Api\\ApiULSLocalization",
 			"services": [
@@ -60,19 +66,17 @@
 	"MessagesDirs": {
 		"UniversalLanguageSelector": [
 			"i18n",
-			"i18n/api"
+			"i18n/api",
+			"i18n/api/languagesearch"
 		]
-	},
-	"AutoloadClasses": {
-		"LanguageNameSearch": "data/LanguageNameSearch.php",
-		"LanguageNameSearchData": "data/LanguageNameSearchData.php"
 	},
 	"AutoloadNamespaces": {
 		"UniversalLanguageSelector\\": "includes/"
 	},
 	"DefaultUserOptions": {
 		"uls-preferences": "",
-		"compact-language-links": true
+		"compact-language-links": true,
+		"mw-preferred-languages": ""
 	},
 	"config": {
 		"ULSGeoService": {
@@ -136,6 +140,17 @@
 		"ULSCompactLanguageLinksBetaFeature": {
 			"description": "Set compact interlanguage links as beta feature or not. If set false, compact interlanguage links will be available by default to all users.",
 			"value": false
+		},
+		"ULSCompactLinksPrepend": {
+			"description": "Show these language links on top of the rest in compact language links feature",
+			"value": []
+		},
+		"ULSLanguageSelectorV2SupportedSkins": {
+			"description": "Skins on which the new language selector is used. On any other skin the old language selector is used. Set to an empty array to disable the new language selector everywhere.",
+			"value": [
+				"minerva",
+				"vector-2022"
+			]
 		}
 	},
 	"callback": "UniversalLanguageSelector\\Hooks::setVersionConstant",
@@ -284,6 +299,38 @@
 				"jquery.uls.grid"
 			]
 		},
+		"ext.uls.preferredlanguages": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"codexComponents": [
+				"CdxField"
+			],
+			"packageFiles": [
+				"js/ext.uls.preferredlanguages.js",
+				"ext.uls.rewrite/PreferredLanguagesTab.vue",
+				{
+					"name": "supportedLanguages.json",
+					"callback": "UniversalLanguageSelector\\Hooks::getSupportedLanguages"
+				}
+			],
+			"styles": [
+				"ext.uls.rewrite/preferred-languages-tab.less"
+			],
+			"messages": [
+				"ext-uls-preferred-languages-title",
+				"ext-uls-preferred-languages-desc",
+				"ext-uls-preferred-languages-label",
+				"ext-uls-preferred-languages-help",
+				"ext-uls-preferred-languages-input-placeholder",
+				"ext-uls-preferred-languages-status",
+				"ext-uls-preferred-languages-limit-reached",
+				"ext-uls-preferred-languages-save-error"
+			],
+			"dependencies": [
+				"ext.uls.languagesettings",
+				"vue",
+				"mediawiki.languageselector.lookup"
+			]
+		},
 		"ext.uls.mediawiki": {
 			"scripts": "js/ext.uls.mediawiki.js",
 			"dependencies": [
@@ -407,6 +454,115 @@
 			"scripts": "rangy/rangy-core.js",
 			"localBasePath": "lib",
 			"remoteExtPath": "UniversalLanguageSelector/lib"
+		},
+		"ext.uls.rewrite": {
+			"class": "MediaWiki\\ResourceLoader\\CodexModule",
+			"codexComponents": [
+				"CdxSearchInput",
+				"CdxButton",
+				"CdxIcon",
+				"CdxProgressBar"
+			],
+			"packageFiles": [
+				"ext.uls.rewrite/index.js",
+				"ext.uls.rewrite/UniversalLanguageSelector.vue",
+				"ext.uls.rewrite/LanguageSelectorPanelHeader.vue",
+				"ext.uls.rewrite/entrypoints/QuickActionTrigger.vue",
+				"ext.uls.rewrite/entrypoints/EmptyListEntrypoint.vue",
+				"ext.uls.rewrite/entrypoints/EmptySearchEntrypoint.vue",
+				"ext.uls.rewrite/entrypoints/MissingLanguagesEntrypoint.vue",
+				"ext.uls.rewrite/entrypoints/MissingLanguagesPanel.vue",
+				"ext.uls.rewrite/entrypoints/QuickActionsPanel.vue",
+				"ext.uls.rewrite/entrypoints/EntrypointActionButton.vue",
+				"ext.uls.rewrite/LanguageList.vue",
+				"ext.uls.rewrite/dist/floating-ui.js",
+				"ext.uls.rewrite/composables/useKeyboardNavigation.js",
+				"ext.uls.rewrite/composables/useClickOutside.js",
+				"ext.uls.rewrite/composables/useFocusTrap.js",
+				"ext.uls.rewrite/composables/useTypeahead.js",
+				"ext.uls.rewrite/composables/useLanguageHistory.js",
+				"ext.uls.rewrite/composables/useCountryCode.js",
+				"ext.uls.rewrite/composables/useSuggestedLanguages.js",
+				"ext.uls.rewrite/composables/useEntrypoints.js",
+				"ext.uls.rewrite/composables/useEntrypointActions.js",
+				"ext.uls.rewrite/composables/usePreferredLanguages.js",
+				"ext.uls.rewrite/composables/useProgressiveRender.js",
+				{
+					"name": "icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconEllipsis",
+						"cdxIconClose",
+						"cdxIconNext",
+						"cdxIconArrowPrevious"
+					]
+				},
+				{
+					"name": "language-data.json",
+					"callback": "UniversalLanguageSelector\\Hooks::getLanguageData",
+					"versionCallback": "UniversalLanguageSelector\\Hooks::getLanguageDataSummary"
+				}
+			],
+			"styles": [
+				"ext.uls.rewrite/index.less"
+			],
+			"skinStyles": {
+				"vector-2022": "ext.uls.rewrite/vector-2022.less"
+			},
+			"messages": [
+				"ext-uls-placeholder-search",
+				"ext-uls-language-title",
+				"ext-uls-close-button-label",
+				"ext-uls-suggested-languages-title",
+				"ext-uls-all-languages-title",
+				"ext-uls-search-results-count",
+				"ext-uls-search-results-none",
+				"ext-uls-variants-title",
+				"ext-uls-no-languages-title",
+				"ext-uls-no-languages-description",
+				"ext-uls-empty-state-entrypoint-description",
+				"ext-uls-invalid-language-search-title",
+				"ext-uls-invalid-language-search-description",
+				"ext-uls-unsupported-language-title",
+				"ext-uls-unsupported-language-description",
+				"ext-uls-open-language-selector",
+				"ext-uls-open-quick-actions",
+				"ext-uls-missing-languages-label-single",
+				"ext-uls-missing-languages-label-multiple",
+				"ext-uls-missing-languages-panel-title",
+				"ext-uls-missing-languages-panel-description",
+				"ext-uls-quick-actions-panel-title",
+				"ext-uls-preferred-languages-title",
+				"ext-uls-preferred-languages-settings-title"
+			],
+			"dependencies": [
+				"vue",
+				"mediawiki.jqueryMsg",
+				"mediawiki.languageselector.core",
+				"mediawiki.storage",
+				"ext.uls.rewrite.entrypoints"
+			]
+		},
+		"ext.uls.rewrite.languagesettings.entrypoint": {
+			"packageFiles": [
+				"ext.uls.rewrite/LanguageSettingsEntrypoint.js",
+				{
+					"name": "icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconSettings"
+					]
+				}
+			],
+			"messages": [
+				"ext-uls-open-language-settings"
+			],
+			"dependencies": [
+				"ext.uls.rewrite.entrypoints"
+			]
+		},
+		"ext.uls.rewrite.entrypoints": {
+			"packageFiles": "ext.uls.rewrite/EntrypointRegistry.js"
 		}
 	},
 	"QUnitTestModule": {

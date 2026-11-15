@@ -1,29 +1,18 @@
 <?php
-/**
- * Form for translation managers to send a notification
- * to registered translators.
- *
- * @file
- * @author Amir E. Aharoni
- * @author Santhosh Thottingal
- * @author Niklas Laxström
- * @author Siebrand Mazeland
- * @copyright Copyright © 2012, Amir E. Aharoni, Santhosh Thottingal
- * @license GPL-2.0-or-later
- */
+declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\TranslationNotifications;
 
-use ErrorPageError;
-use JobQueueGroup;
 use LogicException;
+use MediaWiki\Exception\ErrorPageError;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePage;
 use MediaWiki\Extension\TranslationNotifications\Jobs\TranslationNotificationsSubmitJob;
 use MediaWiki\Extension\TranslationNotifications\Utilities\LanguageSet;
 use MediaWiki\Extension\TranslationNotifications\Utilities\NotificationMessageBuilder;
 use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\SpecialPage\FormSpecialPage;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
@@ -33,23 +22,30 @@ use WikiPageMessageGroup;
  * Form for translation managers to send a notification
  * to registered translators.
  *
+ * @author Amir E. Aharoni
+ * @author Santhosh Thottingal
+ * @author Niklas Laxström
+ * @author Siebrand Mazeland
+ * @copyright Copyright © 2012, Amir E. Aharoni, Santhosh Thottingal
+ * @license GPL-2.0-or-later
  * @ingroup SpecialPage TranslateSpecialPage
  */
 class SpecialNotifyTranslators extends FormSpecialPage {
 	public static string $right = 'translate-manage';
-	private LanguageNameUtils $languageNameUtils;
-	private JobQueueGroup $jobQueueGroup;
 
 	public function __construct(
-		LanguageNameUtils $languageNameUtils,
-		JobQueueGroup $jobQueueGroup
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly JobQueueGroup $jobQueueGroup,
 	) {
-		parent::__construct( 'NotifyTranslators', self::$right );
-		$this->languageNameUtils = $languageNameUtils;
-		$this->jobQueueGroup = $jobQueueGroup;
+		parent::__construct( 'NotifyTranslators' );
 	}
 
-	public function doesWrites() {
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return self::$right;
+	}
+
+	public function doesWrites(): bool {
 		return true;
 	}
 
@@ -80,6 +76,8 @@ class SpecialNotifyTranslators extends FormSpecialPage {
 	 */
 	protected function getFormFields(): array {
 		$this->getOutput()->addModules( 'ext.translationnotifications.notifytranslators' );
+		// the style isn't in the modules because it contains no js styling
+		$this->getOutput()->addModuleStyles( 'ext.translationnotifications.notifytranslators.styles' );
 
 		$formFields = [];
 
@@ -100,9 +98,7 @@ class SpecialNotifyTranslators extends FormSpecialPage {
 			'required' => true
 		];
 
-		$languages = array_flip(
-			$this->languageNameUtils->getLanguageNames( $this->getLanguage()->getCode() )
-		);
+		$languages = $this->languageNameUtils->getLanguageNames( $this->getLanguage()->getCode() );
 
 		$formFields['LanguageSet'] = [
 			'name' => 'notifiable-languages-options',
@@ -120,12 +116,15 @@ class SpecialNotifyTranslators extends FormSpecialPage {
 		];
 
 		// Selected languages input box
-		$formFields['SelectedLanguages'] = [
-			'type' => 'multiselect',
-			'dropdown' => true,
+		$formFields['SelectedLanguages[]'] = [
+			'type' => 'language',
+			'multiple' => true,
+			'useCodex' => true,
+			'size' => 8,
+			'default' => [],
 			'label-message' => 'translationnotifications-languages-to-notify-label',
 			'help-message' => 'translationnotifications-languages-to-notify-label-help-message',
-			'options' => $languages,
+			'languages' => $languages,
 			'hide-if' => [ '===', 'LanguageSet', (string)LanguageSet::ALL ]
 		];
 
@@ -198,7 +197,7 @@ class SpecialNotifyTranslators extends FormSpecialPage {
 		$notificationText = $formData['NotificationText'];
 		$priority = $formData['Priority'];
 		$deadlineDate = $formData['DeadlineDate'];
-		$selectedLanguages = $formData['SelectedLanguages'];
+		$selectedLanguages = $formData['SelectedLanguages[]'];
 		$pageSourceLangCode = $this->getSourceLanguage( $translatablePageTitle );
 		$notificationLanguages = [];
 
@@ -217,7 +216,7 @@ class SpecialNotifyTranslators extends FormSpecialPage {
 				return Status::newFatal( 'translationnotifications-sourcelang-only' );
 			}
 		}
-		$languageSet = new LanguageSet( $formData['LanguageSet'] );
+		$languageSet = new LanguageSet( (int)$formData['LanguageSet'] );
 
 		$requestData = [
 			'notificationText' => $notificationText,
@@ -238,7 +237,7 @@ class SpecialNotifyTranslators extends FormSpecialPage {
 		return Status::newGood();
 	}
 
-	public function onSuccess() {
+	public function onSuccess(): void {
 		$this->getOutput()->addWikiMsg( 'translationnotifications-submit-ok' );
 	}
 }

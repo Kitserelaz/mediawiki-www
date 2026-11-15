@@ -6,25 +6,22 @@ use DateTime;
 use DateTimeZone;
 use Exception;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Exception\MWExceptionHandler;
 use MediaWiki\Extension\SecurePoll\Context;
-use MediaWiki\Extension\SecurePoll\Exceptions\InvalidDataException;
 use MediaWiki\Extension\SecurePoll\Jobs\PopulateVoterListJob;
 use MediaWiki\Extension\SecurePoll\SecurePollContentHandler;
 use MediaWiki\Extension\SecurePoll\SpecialSecurePoll;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Json\FormatJson;
-use MediaWiki\Linker\Linker;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Message\Message;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
-use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\UserGroupManager;
 use MediaWiki\WikiMap\WikiMap;
-use MWExceptionHandler;
 use Wikimedia\Rdbms\DBConnectionError;
-use Wikimedia\Rdbms\ILoadBalancer;
+use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\LBFactory;
 use Wikimedia\RequestTimeout\TimeoutException;
 
@@ -39,43 +36,14 @@ class VoterEligibilityPage extends ActionPage {
 		'exclude' => 'exclude-list',
 	];
 
-	/** @var LBFactory */
-	private $lbFactory;
-
-	/** @var LinkRenderer */
-	private $linkRenderer;
-
-	/** @var TitleFactory */
-	private $titleFactory;
-
-	/** @var UserGroupManager */
-	private $userGroupManager;
-
-	/** @var WikiPageFactory */
-	private $wikiPageFactory;
-
-	/**
-	 * @param SpecialSecurePoll $specialPage
-	 * @param LBFactory $lbFactory
-	 * @param LinkRenderer $linkRenderer
-	 * @param TitleFactory $titleFactory
-	 * @param UserGroupManager $userGroupManager
-	 * @param WikiPageFactory $wikiPageFactory
-	 */
 	public function __construct(
 		SpecialSecurePoll $specialPage,
-		LBFactory $lbFactory,
-		LinkRenderer $linkRenderer,
-		TitleFactory $titleFactory,
-		UserGroupManager $userGroupManager,
-		WikiPageFactory $wikiPageFactory
+		private readonly LBFactory $lbFactory,
+		private readonly LinkRenderer $linkRenderer,
+		private readonly UserGroupManager $userGroupManager,
+		private readonly WikiPageFactory $wikiPageFactory,
 	) {
 		parent::__construct( $specialPage );
-		$this->lbFactory = $lbFactory;
-		$this->linkRenderer = $linkRenderer;
-		$this->titleFactory = $titleFactory;
-		$this->userGroupManager = $userGroupManager;
-		$this->wikiPageFactory = $wikiPageFactory;
 	}
 
 	/**
@@ -104,29 +72,7 @@ class VoterEligibilityPage extends ActionPage {
 			return;
 		}
 
-		$jumpUrl = $this->election->getProperty( 'jump-url' );
-		if ( $jumpUrl ) {
-			$jumpId = $this->election->getProperty( 'jump-id' );
-			if ( !$jumpId ) {
-				throw new InvalidDataException( 'Configuration error: no jump-id' );
-			}
-			$jumpUrl .= "/votereligibility/$jumpId";
-			if ( count( $params ) > 1 ) {
-				$jumpUrl .= '/' . implode( '/', array_slice( $params, 1 ) );
-			}
-
-			$wiki = $this->election->getProperty( 'main-wiki' );
-			if ( $wiki ) {
-				$wiki = WikiMap::getWikiName( $wiki );
-			} else {
-				$wiki = $this->msg( 'securepoll-votereligibility-redirect-otherwiki' )->text();
-			}
-
-			$out->addWikiMsg(
-				'securepoll-votereligibility-redirect',
-				Message::rawParam( Linker::makeExternalLink( $jumpUrl, $wiki ) )
-			);
-
+		if ( $this->showRedirectMessage( 'votereligibility', $params ) ) {
 			return;
 		}
 
@@ -149,6 +95,11 @@ class VoterEligibilityPage extends ActionPage {
 		}
 	}
 
+	/**
+	 * @param string[] $properties
+	 * @param array $delete
+	 * @param string $comment
+	 */
 	private function saveProperties( $properties, $delete, $comment ) {
 		$localWiki = WikiMap::getCurrentWikiId();
 		$wikis = $this->election->getProperty( 'wikis' );
@@ -163,28 +114,10 @@ class VoterEligibilityPage extends ActionPage {
 			$wikis = [ $localWiki ];
 		}
 
-		$dbw = null;
 		foreach ( $wikis as $dbname ) {
-
-			if ( $dbname === $localWiki ) {
-				$lb = $this->lbFactory->getMainLB();
-				$dbw = $lb->getConnection( ILoadBalancer::DB_PRIMARY,
-					[], false, ILoadBalancer::CONN_TRX_AUTOCOMMIT );
-			} else {
-				unset( $dbw );
-				$lb = $this->lbFactory->getMainLB( $dbname );
-				$dbw = $lb->getConnection( ILoadBalancer::DB_PRIMARY,
-					[], $dbname, ILoadBalancer::CONN_TRX_AUTOCOMMIT );
-
-				try {
-					// Connect to the DB and check if the LB is in read-only mode
-					if ( $dbw->isReadOnly() ) {
-						continue;
-					}
-				} catch ( DBConnectionError $e ) {
-					MWExceptionHandler::logException( $e );
-					continue;
-				}
+			$dbw = $this->getAutoCommitPrimaryConnectionForWiki( $dbname );
+			if ( $dbw === null ) {
+				continue;
 			}
 
 			$dbw->startAtomic( __METHOD__ );
@@ -227,10 +160,15 @@ class VoterEligibilityPage extends ActionPage {
 		}
 
 		// Record this election to the SecurePoll namespace, if so configured.
-		if ( $this->specialPage->getConfig()->get( 'SecurePollUseNamespace' ) ) {
-			// Create a new context to bypass caching
-			$context = new Context;
-			$election = $context->getElection( $this->election->getId() );
+		if ( Context::isNamespacedLoggingEnabled() ) {
+			$election = $this->context->getElection( $this->election->getId() );
+			$election->loadProperties();
+			// Explicitly overwrite the values that have been changed, since the loaded
+			// values could be out-of-date
+			$election->properties = array_merge( $election->properties, $properties );
+			foreach ( $delete as $key ) {
+				unset( $election->properties[$key] );
+			}
 
 			[ $title, $content ] = SecurePollContentHandler::makeContentFromElection(
 				$election
@@ -240,6 +178,38 @@ class VoterEligibilityPage extends ActionPage {
 		}
 	}
 
+	/**
+	 * Gets a primary autocommit connection for the given wiki. If this is not the local
+	 * wiki then it only returns a primary DB connection if the wiki is not in read only mode.
+	 *
+	 * @param string $dbname The DB name which we want to get the primary DB connection for
+	 * @return IDatabase|null A primary DB connection, or null only if the DB is in read-only mode
+	 *   and is not a local wiki
+	 */
+	private function getAutoCommitPrimaryConnectionForWiki( string $dbname ): ?IDatabase {
+		$dbw = $this->lbFactory->getAutoCommitPrimaryConnection( $dbname );
+
+		// If the wiki is not the current wiki then we need to check if the wiki is in read-only mode
+		// before we try to use the DB connection to perform updates.
+		if ( $dbname !== WikiMap::getCurrentWikiId() ) {
+			try {
+				if ( $dbw->isReadOnly() ) {
+					return null;
+				}
+			} catch ( DBConnectionError $e ) {
+				MWExceptionHandler::logException( $e );
+				return null;
+			}
+		}
+
+		return $dbw;
+	}
+
+	/**
+	 * @param string $property
+	 * @param int $db
+	 * @return string[]
+	 */
 	private function fetchList( $property, $db = DB_REPLICA ) {
 		$wikis = $this->election->getProperty( 'wikis' );
 		$localWiki = WikiMap::getCurrentWikiId();
@@ -300,6 +270,11 @@ class VoterEligibilityPage extends ActionPage {
 		return $names;
 	}
 
+	/**
+	 * @param string $property
+	 * @param string $names
+	 * @param string $comment
+	 */
 	private function saveList( $property, $names, $comment ) {
 		$localWiki = WikiMap::getCurrentWikiId();
 
@@ -331,27 +306,13 @@ class VoterEligibilityPage extends ActionPage {
 		} else {
 			$wikis = [ $localWiki ];
 		}
+		$localWikiPropertiesChanged = [];
+		$userNamesForLog = [];
 
-		$dbw = null;
 		foreach ( $wikis as $dbname ) {
-			if ( $dbname === $localWiki ) {
-				$lb = $this->lbFactory->getMainLB();
-				$dbw = $lb->getConnection( ILoadBalancer::DB_PRIMARY,
-					[], false, ILoadBalancer::CONN_TRX_AUTOCOMMIT );
-			} else {
-				unset( $dbw );
-				$lb = $this->lbFactory->getMainLB( $dbname );
-				$dbw = $lb->getConnection( ILoadBalancer::DB_PRIMARY,
-					[], $dbname, ILoadBalancer::CONN_TRX_AUTOCOMMIT );
-				try {
-					// Connect to the DB and check if the LB is in read-only mode
-					if ( $dbw->isReadOnly() ) {
-						continue;
-					}
-				} catch ( DBConnectionError $e ) {
-					MWExceptionHandler::logException( $e );
-					continue;
-				}
+			$dbw = $this->getAutoCommitPrimaryConnectionForWiki( $dbname );
+			if ( $dbw === null ) {
+				continue;
 			}
 
 			$dbw->startAtomic( __METHOD__ );
@@ -373,6 +334,9 @@ class VoterEligibilityPage extends ActionPage {
 					] )
 					->caller( __METHOD__ )
 					->execute();
+				if ( $dbname === $localWiki ) {
+					$localWikiPropertiesChanged[$property] = $list;
+				}
 
 				if ( isset( $wikiNames[$dbname] ) ) {
 					$queryNames = array_merge( $wikiNames['*'], $wikiNames[$dbname] );
@@ -396,6 +360,21 @@ class VoterEligibilityPage extends ActionPage {
 						[ 'user_name' => $queryNames ],
 						__METHOD__
 					);
+					if ( Context::isNamespacedLoggingEnabled() ) {
+						$names = $dbw->newSelectQueryBuilder()
+							->select( 'user_name' )
+							->from( 'securepoll_lists' )
+							->join( 'user', null, 'user_id=li_member' )
+							->where( [
+								'li_name' => $list,
+							] )
+							->caller( __METHOD__ )
+							->fetchFieldValues();
+						foreach ( $names as &$name ) {
+							$name .= "@{$dbname}";
+						}
+						$userNamesForLog = array_merge( $userNamesForLog, $names );
+					}
 				}
 			}
 
@@ -403,10 +382,12 @@ class VoterEligibilityPage extends ActionPage {
 		}
 
 		// Record this election to the SecurePoll namespace, if so configured.
-		if ( $this->specialPage->getConfig()->get( 'SecurePollUseNamespace' ) ) {
-			// Create a new context to bypass caching
-			$context = new Context;
-			$election = $context->getElection( $this->election->getId() );
+		if ( Context::isNamespacedLoggingEnabled() ) {
+			$election = $this->context->getElection( $this->election->getId() );
+			$election->loadProperties();
+			// Explicitly overwrite the values that have been changed, since the loaded
+			// values could be outdated
+			$election->properties = array_merge( $election->properties, $localWikiPropertiesChanged );
 
 			[ $title, $content ] = SecurePollContentHandler::makeContentFromElection(
 				$election
@@ -415,11 +396,11 @@ class VoterEligibilityPage extends ActionPage {
 			$wp->doUserEditContent( $content, $this->specialPage->getUser(), $comment );
 
 			$json = FormatJson::encode(
-				$this->fetchList( $property, DB_PRIMARY ),
+				$userNamesForLog,
 				false,
 				FormatJson::ALL_OK
 			);
-			$title = $this->titleFactory->makeTitle( NS_SECUREPOLL, $list );
+			$title = SecurePollContentHandler::getTitleForPage( $list );
 			$wp = $this->wikiPageFactory->newFromTitle( $title );
 			$wp->doUserEditContent(
 				SecurePollContentHandler::makeContent( $json, $title, 'SecurePoll' ),
@@ -452,14 +433,14 @@ class VoterEligibilityPage extends ActionPage {
 			'type' => 'int',
 			'min' => 0,
 			'default' => $this->election->getProperty( 'min-edits', '' ),
+			'cssclass' => 'securepoll-medium-number-input',
 		];
 
-		$date = $this->election->getProperty( 'max-registration', '' );
-		if ( $date !== '' ) {
+		$date = $this->election->getProperty( 'max-registration', null );
+		if ( $date !== null ) {
 			$date = gmdate( 'Y-m-d', (int)wfTimestamp( TS_UNIX, $date ) );
-		} else {
-			$date = gmdate( 'Y-m-d', strtotime( 'yesterday' ) );
 		}
+
 		$formItems['max-registration'] = [
 			'section' => 'basic',
 			'label-message' => 'securepoll-votereligibility-label-max_registration',
@@ -493,16 +474,16 @@ class VoterEligibilityPage extends ActionPage {
 			'section' => 'basic',
 			'label-message' => 'securepoll-votereligibility-label-central_block_threshold',
 			'type' => 'int',
-			'validation-callback' => [
-				$this,
-				'checkCentralBlockThreshold',
-			],
+			'min' => 1,
+			'validation-callback' => fn ( $value, $formData ) =>
+				$formData['not-centrally-blocked'] ? $this->checkRequired( $value ) : true,
 			'hide-if' => [
 				'===',
 				'not-centrally-blocked',
 				''
 			],
 			'default' => $this->election->getProperty( 'central-block-threshold', '' ),
+			'cssclass' => 'securepoll-medium-number-input',
 		];
 
 		$formItems['not-bot'] = [
@@ -513,13 +494,22 @@ class VoterEligibilityPage extends ActionPage {
 			'default' => $this->election->getProperty( 'not-bot', false ),
 		];
 
-		$formItems['allow-usergroups'] = [
+		$userGroupOptions = [];
+		$userGroups = array_merge( $this->userGroupManager->listAllGroups(),
+			$this->userGroupManager->listAllImplicitGroups() );
+		// Remove '*' (no group- message exists) and 'user' (have to be logged in to vote)
+		$userGroups = array_diff( $userGroups, [ '*', 'user' ] );
+		foreach ( $userGroups as $group ) {
+			$userGroupOptions[ 'group-' . $group ] = $group;
+		}
+
+		$formItems['need-group'] = [
 			'section' => 'basic',
-			'label-message' => 'securepoll-votereligibility-label-include_groups',
-			'allowArbitrary' => false,
-			'type' => 'tagmultiselect',
-			'allowedValues' => $this->userGroupManager->listAllGroups(),
-			'default' => implode( "\n", explode( '|', $this->election->getProperty( 'allow-usergroups', "" ) ) )
+			'label-message' => 'securepoll-votereligibility-label-need_group',
+			'type' => 'multiselect',
+			'dropdown' => true,
+			'options-messages' => $userGroupOptions,
+			'default' => explode( '|', $this->election->getProperty( 'need-group', "" ) )
 		];
 
 		foreach ( self::$lists as $list => $property ) {
@@ -557,8 +547,19 @@ class VoterEligibilityPage extends ActionPage {
 			$prefix = 'votereligibility/' . $this->election->getId();
 			foreach ( $links as $action ) {
 				$title = SpecialPage::getTitleFor( 'SecurePoll', "$prefix/$action/$list" );
-				$link = $this->linkRenderer->makeLink( $title,
-					$this->msg( "securepoll-votereligibility-label-$action" )->text() );
+				$queryParams = [];
+
+				if ( $action === 'clear' ) {
+					$queryParams[ 'token' ] = $this->specialPage->getContext()
+						->getCsrfTokenSet()->getToken();
+				}
+
+				$link = $this->linkRenderer->makeLink(
+					$title,
+					$this->msg( "securepoll-votereligibility-label-$action" )->text(),
+					[],
+					$queryParams
+				);
 				$formItems[] = [
 					'section' => "lists/$list",
 					'type' => 'info',
@@ -592,10 +593,9 @@ class VoterEligibilityPage extends ActionPage {
 					'section' => "lists/$list",
 					'label-message' => 'securepoll-votereligibility-label-edits_before_count',
 					'type' => 'int',
-					'validation-callback' => [
-						$this,
-						'checkEditsBeforeCount',
-					],
+					'min' => 1,
+					'validation-callback' => fn ( $value, $formData ) =>
+						$formData['list_edits-before'] ? $this->checkRequired( $value ) : true,
 					'hide-if' => [
 						'OR',
 						[
@@ -610,6 +610,7 @@ class VoterEligibilityPage extends ActionPage {
 						],
 					],
 					'default' => $this->election->getProperty( 'list_edits-before-count', '' ),
+					'cssclass' => 'securepoll-narrow-number-input',
 				];
 
 				$date = $this->election->getProperty( 'list_edits-before-date', '' );
@@ -656,10 +657,9 @@ class VoterEligibilityPage extends ActionPage {
 					'section' => "lists/$list",
 					'label-message' => 'securepoll-votereligibility-label-edits_between_count',
 					'type' => 'int',
-					'validation-callback' => [
-						$this,
-						'checkEditsBetweenCount',
-					],
+					'min' => 1,
+					'validation-callback' => fn ( $value, $formData ) =>
+						$formData['list_edits-between'] ? $this->checkRequired( $value ) : true,
 					'hide-if' => [
 						'OR',
 						[
@@ -674,6 +674,7 @@ class VoterEligibilityPage extends ActionPage {
 						],
 					],
 					'default' => $this->election->getProperty( 'list_edits-between-count', '' ),
+					'cssclass' => 'securepoll-narrow-number-input',
 				];
 
 				$editCountStartDate = $this->election->getProperty( 'list_edits-startdate', '' );
@@ -797,10 +798,21 @@ class VoterEligibilityPage extends ActionPage {
 						''
 					],
 				];
+
+			} elseif ( $list === 'include' ) {
+				$formItems['allow-usergroups'] = [
+					'section' => "lists/$list",
+					'label-message' => 'securepoll-votereligibility-label-include_groups',
+					'allowArbitrary' => false,
+					'type' => 'multiselect',
+					'dropdown' => true,
+					'options-messages' => $userGroupOptions,
+					'default' => explode( '|', $this->election->getProperty( 'allow-usergroups', "" ) )
+				];
 			}
 		}
 
-		if ( $this->specialPage->getConfig()->get( 'SecurePollUseNamespace' ) ) {
+		if ( Context::isNamespacedLoggingEnabled() ) {
 			$formItems['comment'] = [
 				'type' => 'text',
 				'label-message' => 'securepoll-votereligibility-label-comment',
@@ -857,7 +869,7 @@ class VoterEligibilityPage extends ActionPage {
 			// Unfortunately DateTime throws a generic Exception, but we can't
 			// ignore an exception generated by the RequestTimeout library.
 			throw $ex;
-		} catch ( Exception $ex ) {
+		} catch ( Exception ) {
 			return 0;
 		}
 	}
@@ -869,7 +881,6 @@ class VoterEligibilityPage extends ActionPage {
 	 * because the browser will prevent submission if fields that
 	 * would be hidden by JS are required but not filled.
 	 *
-	 * @internal For use by the HTMLFormField
 	 * @param string $value
 	 * @return true|Message true on success, Message on error
 	 */
@@ -881,99 +892,8 @@ class VoterEligibilityPage extends ActionPage {
 	}
 
 	/**
-	 * Check that a field has a minimum value
-	 *
-	 * This is a hack that reimplements input[min] because the
-	 * browser implementation implicitly makes the field required
-	 * as well. Since the hide-if infrastructure doesn't manage
-	 * conditional requirements, this re-implementation allows
-	 * for hide-if-affected fields to display errors when they are
-	 * relevant (as opposed to all the time, even if the field
-	 * is not in use)
-	 *
-	 * @internal For use by the HTMLFormField
-	 * @param int $value
-	 * @param int $min
-	 * @return bool|string true on success, string on error
-	 */
-	public function checkMin( $value, $min ) {
-		if ( $value < $min ) {
-			return $this->msg( 'htmlform-int-toolow', $min )->parse();
-		}
-
-		return true;
-	}
-
-	/**
-	 * Pass input automatically if the parent input is not checked
-	 * Otherwise check that input exists and is not less than 1
-	 *
-	 * @internal For use by the HTMLFormField
-	 * @param string $value
-	 * @param mixed[] $formData
-	 * @return bool|string true on success, string on error
-	 */
-	public function checkCentralBlockThreshold( $value, $formData ) {
-		if ( !$formData['not-centrally-blocked'] ) {
-			return true;
-		}
-
-		$exists = $this->checkRequired( $value );
-		if ( $exists !== true ) {
-			return $exists;
-		}
-
-		return $this->checkMin( (int)$value, 1 );
-	}
-
-	/**
-	 * Pass input automatically if the parent input is not checked
-	 * Otherwise check that input exists and is not less than 1
-	 *
-	 * @internal For use by the HTMLFormField
-	 * @param string $value
-	 * @param mixed[] $formData
-	 * @return bool|string true on success, string on error
-	 */
-	public function checkEditsBeforeCount( $value, $formData ) {
-		if ( !$formData['list_edits-before'] ) {
-			return true;
-		}
-
-		$exists = $this->checkRequired( $value );
-		if ( $exists !== true ) {
-			return $exists;
-		}
-
-		return $this->checkMin( (int)$value, 1 );
-	}
-
-	/**
-	 * Pass input automatically if the parent input is not checked
-	 * Otherwise check that input exists and is not less than 1
-	 *
-	 * @internal For use by the HTMLFormField
-	 * @param string $value
-	 * @param mixed[] $formData
-	 * @return bool|string true on success, string on error
-	 */
-	public function checkEditsBetweenCount( $value, $formData ) {
-		if ( !$formData['list_edits-between'] ) {
-			return true;
-		}
-
-		$exists = $this->checkRequired( $value );
-		if ( $exists !== true ) {
-			return $exists;
-		}
-
-		return $this->checkMin( (int)$value, 1 );
-	}
-
-	/**
 	 * Check the end date exists and is after the start date
 	 *
-	 * @internal For use by the HTMLFormField
 	 * @param string $value
 	 * @param mixed[] $formData
 	 * @return bool|string true on success, string on error
@@ -993,6 +913,11 @@ class VoterEligibilityPage extends ActionPage {
 		return true;
 	}
 
+	/**
+	 * @param array $formData
+	 * @param HtmlForm $form
+	 * @return Status
+	 */
 	public function processConfig( $formData, $form ) {
 		static $props = [
 			'min-edits',
@@ -1018,7 +943,8 @@ class VoterEligibilityPage extends ActionPage {
 			'list_include-groups',
 		];
 		static $multiselectProps = [
-			'allow-usergroups'
+			'allow-usergroups',
+			'need-group',
 		];
 
 		static $propPrereqs = [
@@ -1103,7 +1029,7 @@ class VoterEligibilityPage extends ActionPage {
 
 		foreach ( $multiselectProps as $prop ) {
 			if ( $formData[$prop] ) {
-				$properties[$prop] = implode( '|', explode( "\n", $formData[$prop] ) );
+				$properties[$prop] = implode( '|', $formData[$prop] );
 			} else {
 				$deleteProperties[] = $prop;
 			}
@@ -1135,7 +1061,7 @@ class VoterEligibilityPage extends ActionPage {
 		return Status::newGood();
 	}
 
-	private function executeEdit( $which ) {
+	private function executeEdit( string $which ) {
 		$out = $this->specialPage->getOutput();
 
 		if ( !isset( self::$lists[$which] ) ) {
@@ -1168,7 +1094,7 @@ class VoterEligibilityPage extends ActionPage {
 			'default' => implode( "\n", $this->fetchList( $property ) ),
 		];
 
-		if ( $this->specialPage->getConfig()->get( 'SecurePollUseNamespace' ) ) {
+		if ( Context::isNamespacedLoggingEnabled() ) {
 			$formItems['comment'] = [
 				'type' => 'text',
 				'label-message' => 'securepoll-votereligibility-label-comment',
@@ -1176,13 +1102,12 @@ class VoterEligibilityPage extends ActionPage {
 			];
 		}
 
-		$form = new HTMLForm(
-			$formItems, $this->specialPage->getContext(), 'securepoll-votereligibility'
+		$form = HTMLForm::factory(
+			'ooui', $formItems, $this->specialPage->getContext(), 'securepoll-votereligibility'
 		);
 		$form->addHeaderHtml(
 			$this->msg( 'securepoll-votereligibility-edit-header' )->parseAsBlock()
 		);
-		$form->setDisplayFormat( 'div' );
 		$form->setSubmitTextMsg( 'securepoll-votereligibility-edit-action' );
 		$form->setSubmitCallback(
 			function ( $formData, $form ) use ( $property ) {
@@ -1206,9 +1131,17 @@ class VoterEligibilityPage extends ActionPage {
 		}
 	}
 
-	private function executeClear( $which ) {
+	private function executeClear( string $which ) {
 		$out = $this->specialPage->getOutput();
 		$localWiki = WikiMap::getCurrentWikiId();
+
+		$token = $this->specialPage->getContext()->getCsrfTokenSet()->getToken();
+		$request = $this->specialPage->getRequest();
+		$tokenMatch = $token->match( $request->getVal( 'token' ) );
+		if ( !$tokenMatch ) {
+			$out->addWikiMsg( 'securepoll-votereligibility-token-mismatch' );
+			return;
+		}
 
 		if ( !isset( self::$lists[$which] ) ) {
 			$out->addWikiMsg( 'securepoll-votereligibility-invalid-list' );
@@ -1232,22 +1165,10 @@ class VoterEligibilityPage extends ActionPage {
 		} else {
 			$wikis = [ $localWiki ];
 		}
+		$localWikiPropertiesDeleted = [];
 
-		$dbw = null;
 		foreach ( $wikis as $dbname ) {
-
-			if ( $dbname === $localWiki ) {
-				$lb = $this->lbFactory->getMainLB();
-				$dbw = $lb->getConnection( ILoadBalancer::DB_PRIMARY,
-					[], false, ILoadBalancer::CONN_TRX_AUTOCOMMIT );
-			} else {
-
-				unset( $dbw );
-				$lb = $this->lbFactory->getMainLB( $dbname );
-				$dbw = $lb->getConnection( ILoadBalancer::DB_PRIMARY,
-					[], $dbname, ILoadBalancer::CONN_TRX_AUTOCOMMIT );
-			}
-
+			$dbw = $this->lbFactory->getAutoCommitPrimaryConnection( $dbname );
 			$dbw->startAtomic( __METHOD__ );
 
 			$id = $dbw->newSelectQueryBuilder()
@@ -1282,23 +1203,29 @@ class VoterEligibilityPage extends ActionPage {
 						] )
 						->caller( __METHOD__ )
 						->execute();
+					if ( $dbname === $localWiki ) {
+						$localWikiPropertiesDeleted[] = $property;
+					}
 				}
 
 				if ( $which === 'voter' ) {
+					$properties = [
+						'list_populate',
+						'list_job-key',
+						'list_total-count',
+						'list_complete-count',
+					];
 					$dbw->newDeleteQueryBuilder()
 						->deleteFrom( 'securepoll_properties' )
 						->where( [
 							'pr_entity' => $id,
-							'pr_key' => [
-								'list_populate',
-								'list_job-key',
-								'list_total-count',
-								'list_complete-count',
-								'list_job-key',
-							],
+							'pr_key' => $properties,
 						] )
 						->caller( __METHOD__ )
 						->execute();
+					if ( $dbname === $localWiki ) {
+						$localWikiPropertiesDeleted = array_merge( $localWikiPropertiesDeleted, $properties );
+					}
 				}
 			}
 
@@ -1306,10 +1233,14 @@ class VoterEligibilityPage extends ActionPage {
 		}
 
 		// Record this election to the SecurePoll namespace, if so configured.
-		if ( $this->specialPage->getConfig()->get( 'SecurePollUseNamespace' ) ) {
-			// Create a new context to bypass caching
-			$context = new Context;
-			$election = $context->getElection( $this->election->getId() );
+		if ( Context::isNamespacedLoggingEnabled() ) {
+			$election = $this->context->getElection( $this->election->getId() );
+			$election->loadProperties();
+			// Explicitly unset properties that are being deleted, as the loaded
+			// values could be outdated
+			foreach ( $localWikiPropertiesDeleted as $propToDelete ) {
+				unset( $election->properties[$propToDelete] );
+			}
 
 			[ $title, $content ] = SecurePollContentHandler::makeContentFromElection(
 				$election
@@ -1321,7 +1252,7 @@ class VoterEligibilityPage extends ActionPage {
 				$this->msg( 'securepoll-votereligibility-cleared-comment', $name )->text()
 			);
 
-			$title = $this->titleFactory->makeTitle( NS_SECUREPOLL, "{$election->getId()}/list/$property" );
+			$title = SecurePollContentHandler::getTitleForPage( "{$election->getId()}/list/$property" );
 			$wp = $this->wikiPageFactory->newFromTitle( $title );
 			$wp->doUserEditContent(
 				SecurePollContentHandler::makeContent( '[]', $title, 'SecurePoll' ),

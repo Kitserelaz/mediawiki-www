@@ -1,9 +1,9 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"BadDog",
-			"Milicevic01",
-			"Aca"
+			"Milicevic01"
 		]
 	},
 	"apihelp-parser-migration-summary": "Рашчлањује страницу са две различите прасер конфигурације.",

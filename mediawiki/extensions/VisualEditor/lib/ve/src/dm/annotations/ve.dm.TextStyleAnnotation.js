@@ -24,17 +24,13 @@ OO.inheritClass( ve.dm.TextStyleAnnotation, ve.dm.Annotation );
 
 /* Static Properties */
 
-ve.dm.TextStyleAnnotation.static.name = 'textStyle';
-
 ve.dm.TextStyleAnnotation.static.matchTagNames = [];
 
 ve.dm.TextStyleAnnotation.static.toDataElement = function ( domElements, converter ) {
 	const nodeName = converter.isFromClipboard() ? this.matchTagNames[ 0 ] : domElements[ 0 ].nodeName.toLowerCase();
 	return {
 		type: this.name,
-		attributes: {
-			nodeName: nodeName
-		}
+		attributes: { nodeName }
 	};
 };
 
@@ -68,7 +64,3 @@ ve.dm.TextStyleAnnotation.prototype.describeRemoved = function () {
 	}
 	return [];
 };
-
-/* Registration */
-
-ve.dm.modelRegistry.register( ve.dm.TextStyleAnnotation );

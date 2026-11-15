@@ -10,7 +10,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "parserhook",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"Hooks": {
 		"ParserFirstCallInit": "main"
@@ -35,6 +35,8 @@
 		"Hieroglyphs": {
 			"class": "WikiHiero\\SpecialHieroglyphs",
 			"services": [
+				"LanguageConverterFactory",
+				"MainWANObjectCache",
 				"UserOptionsLookup"
 			]
 		}
@@ -46,8 +48,8 @@
 	"ResourceModules": {
 		"ext.wikihiero": {
 			"styles": [
-				"ext.wikihiero/content.css",
-				"ext.wikihiero/special.css"
+				"ext.wikihiero/content.less",
+				"ext.wikihiero/special.less"
 			]
 		},
 		"ext.wikihiero.special": {

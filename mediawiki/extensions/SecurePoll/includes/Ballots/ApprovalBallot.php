@@ -2,6 +2,7 @@
 
 namespace MediaWiki\Extension\SecurePoll\Ballots;
 
+use MediaWiki\Extension\SecurePoll\Entities\Option;
 use MediaWiki\Extension\SecurePoll\Entities\Question;
 use OOUI\CheckboxInputWidget;
 use OOUI\FieldLayout;
@@ -12,6 +13,7 @@ use OOUI\HtmlSnippet;
  * Checkbox approval voting.
  */
 class ApprovalBallot extends Ballot {
+	/** @inheritDoc */
 	public static function getTallyTypes() {
 		return [ 'plurality' ];
 	}
@@ -65,6 +67,12 @@ class ApprovalBallot extends Ballot {
 		return $record;
 	}
 
+	/**
+	 * @param Question $question
+	 * @param Option $option
+	 * @param bool $checked
+	 * @return string
+	 */
 	public function packRecord( $question, $option, $checked ) {
 		return sprintf(
 			'Q%08X-A%08X-%s--',
@@ -74,6 +82,7 @@ class ApprovalBallot extends Ballot {
 		);
 	}
 
+	/** @inheritDoc */
 	public function unpackRecord( $record ) {
 		$scores = [];
 		$itemLength = 2 * 8 + 7;
@@ -99,6 +108,7 @@ class ApprovalBallot extends Ballot {
 		return $scores;
 	}
 
+	/** @inheritDoc */
 	public function convertScores( $scores, $params = [] ) {
 		$result = [];
 		foreach ( $this->election->getQuestions() as $question ) {

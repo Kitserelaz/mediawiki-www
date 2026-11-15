@@ -3,7 +3,9 @@
 namespace MediaWiki\Extension\SecurePoll\Talliers;
 
 use MediaWiki\Extension\SecurePoll\Ballots\Ballot;
+use MediaWiki\Extension\SecurePoll\Context;
 use MediaWiki\Extension\SecurePoll\Crypt\Crypt;
+use MediaWiki\Extension\SecurePoll\Entities\Election;
 use MediaWiki\Extension\SecurePoll\Store\Store;
 use MediaWiki\Status\Status;
 
@@ -22,11 +24,17 @@ class CommentDumper extends ElectionTallier {
 	/** @var int|null */
 	private $countSoFar;
 
+	/**
+	 * @param Context $context
+	 * @param Election $election
+	 * @param bool $skipEmptyComments
+	 */
 	public function __construct( $context, $election, $skipEmptyComments = true ) {
 		parent::__construct( $context, $election );
 		$this->skipEmptyComments = $skipEmptyComments;
 	}
 
+	/** @inheritDoc */
 	public function execute() {
 		$this->csvHandle = fopen( 'php://temp', 'r+' );
 		$this->countSoFar = 0;
@@ -93,7 +101,6 @@ class CommentDumper extends ElectionTallier {
 
 	/**
 	 * @inheritDoc
-	 *
 	 */
 	public function getTextResult() {
 		return stream_get_contents( $this->csvHandle, -1, 0 );

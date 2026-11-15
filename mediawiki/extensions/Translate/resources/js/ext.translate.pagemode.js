@@ -50,15 +50,15 @@
 				beforeSave: function ( translation ) {
 					that.$message.find( '.tux-pagemode-translation' )
 						.html( mw.translate.formatMessageGently( translation || '', that.message.key ) )
-						.addClass( 'highlight' );
+						.addClass( 'tux-highlight' );
 				},
 				onSave: function ( translation ) {
 					that.$message.find( '.tux-pagemode-translation' )
-						.removeClass( 'highlight' );
+						.removeClass( 'tux-highlight' );
 					that.message.translation = translation;
 
 					// `status` class is documented elsewhere
-					// eslint-disable-next-line mediawiki/class-doc
+
 					that.$message.find( '.tux-pagemode-status' )
 						.removeClass( 'translated fuzzy proofread untranslated' )
 						.addClass( that.message.properties.status );
@@ -83,7 +83,7 @@
 			var targetLangDir = $.uls.data.getDir( targetLangAttrib );
 
 			// `status` class is documented elsewhere
-			// eslint-disable-next-line mediawiki/class-doc
+
 			this.$message.append(
 				// `status` class is documented elsewhere
 				// eslint-disable-next-line mediawiki/class-doc
@@ -135,7 +135,7 @@
 	 *
 	 * @internal
 	 * @param {Object} options
-	 * @returns {jQuery}
+	 * @return {jQuery}
 	 */
 	$.fn.pagemode = function ( options ) {
 		return this.each( function () {

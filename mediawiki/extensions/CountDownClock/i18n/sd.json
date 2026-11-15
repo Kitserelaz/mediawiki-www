@@ -4,5 +4,6 @@
 			"Mehtab ahmed"
 		]
 	},
-	"countDownClock-minutes": "{{PLURAL:$1|منٽ}}"
+	"countDownClock-minutes": "{{PLURAL:$1|منٽ}}",
+	"countDownClock-seconds": "$1 {{PLURAL:$1|سيڪنڊ}}"
 }

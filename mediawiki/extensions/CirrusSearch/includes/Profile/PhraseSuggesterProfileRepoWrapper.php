@@ -32,10 +32,6 @@ class PhraseSuggesterProfileRepoWrapper implements SearchProfileRepository {
 	 */
 	private $bagOStuff;
 
-	/**
-	 * @param SearchProfileRepository $wrapped
-	 * @param BagOStuff $bagOStuff
-	 */
 	public function __construct( SearchProfileRepository $wrapped, BagOStuff $bagOStuff ) {
 		$this->wrapped = $wrapped;
 		$this->bagOStuff = $bagOStuff;
@@ -58,9 +54,9 @@ class PhraseSuggesterProfileRepoWrapper implements SearchProfileRepository {
 	 * @param string $configEntry
 	 * @param Config $config
 	 * @param BagOStuff $cache
-	 * @return PhraseSuggesterProfileRepoWrapper
+	 * @return self
 	 */
-	public static function fromConfig( $type, $name, $configEntry, Config $config, BagOStuff $cache ) {
+	public static function fromConfig( $type, $name, $configEntry, Config $config, BagOStuff $cache ): self {
 		return new self( new ConfigProfileRepository( $type, $name, $configEntry, $config ), $cache );
 	}
 
@@ -179,14 +175,12 @@ class PhraseSuggesterProfileRepoWrapper implements SearchProfileRepository {
 		}
 
 		// Apply smoothing model options, if none provided we'll use elasticsearch defaults
-		if ( isset( $settings['smoothing_model']['laplace'] ) &&
-			 isset( $laplaceAlpha ) ) {
+		if ( isset( $settings['smoothing_model']['laplace'] ) && $laplaceAlpha !== null ) {
 			$settings['smoothing_model']['laplace'] = [
 				'alpha' => $laplaceAlpha
 			];
 		}
-		if ( isset( $settings['smoothing_model']['stupid_backoff'] ) &&
-			 isset( $stupidBackoffDiscount ) ) {
+		if ( isset( $settings['smoothing_model']['stupid_backoff'] ) && $stupidBackoffDiscount !== null ) {
 			$settings['smoothing_model']['stupid_backoff'] = [
 				'discount' => $stupidBackoffDiscount
 			];

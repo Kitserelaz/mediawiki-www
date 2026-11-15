@@ -1,6 +1,8 @@
 {
 	"@metadata": {
 		"authors": [
+			"Bayahiu",
+			"Bennylin",
 			"Hidayatsrf",
 			"Robfirstname",
 			"Veracious"
@@ -13,7 +15,7 @@
 	"blog-comments-of-day": "Komentar hari ini",
 	"blog-created": "membuat $1",
 	"blog-created-ago": "dibuat $1 lalu",
-	"blog-in-the-news": "Dalam berita",
+	"blog-in-the-news": "Peristiwa terkini",
 	"blog-login": "Anda harus [[Special:UserLogin|masuk]] untuk membuat artikel.",
 	"blog-login-edit": "Anda harus [[Special:UserLogin|masuk]] untuk menyunting artikel blog.",
 	"blog-new-articles": "Artikel baru",
@@ -33,7 +35,7 @@
 	"blog-create-categories": "Kategori",
 	"blog-create-button": "Buat!",
 	"blog-more": "lainnya",
-	"blog-time-ago": "$1 yang lalu",
+	"blog-time-ago": "$1 lalu",
 	"blog-time-days": "{{PLURAL:$1|satu hari|$1 hari}}",
 	"blog-time-hours": "{{PLURAL:$1|satu jam|$1 jam}}",
 	"blog-time-minutes": "{{PLURAL:$1|satu menit|$1 menit}}",

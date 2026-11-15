@@ -3,6 +3,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TranslatorInterface\Aid;
 
+/** @defgroup TranslationAids Translation Aids */
+
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Extension\Translate\TranslatorInterface\TranslationHelperException;
@@ -13,31 +15,18 @@ use MessageGroup;
  *  - interface for translation aid classes
  *  - listing of available translation aids
  *
- * @defgroup TranslationAids Translation Aids
  * @author Niklas Laxström
  * @license GPL-2.0-or-later
  * @since 2013-01-01
  */
 abstract class TranslationAid {
-	/** @var MessageGroup */
-	protected $group;
-	/** @var MessageHandle */
-	protected $handle;
-	/** @var IContextSource */
-	protected $context;
-	/** @var TranslationAidDataProvider */
-	protected $dataProvider;
 
 	public function __construct(
-		MessageGroup $group,
-		MessageHandle $handle,
-		IContextSource $context,
-		TranslationAidDataProvider $dataProvider
+		protected readonly MessageGroup $group,
+		protected readonly MessageHandle $handle,
+		protected readonly IContextSource $context,
+		protected readonly TranslationAidDataProvider $dataProvider,
 	) {
-		$this->group = $group;
-		$this->handle = $handle;
-		$this->context = $context;
-		$this->dataProvider = $dataProvider;
 	}
 
 	/**
@@ -58,8 +47,6 @@ abstract class TranslationAid {
 	/**
 	 * List of available message types mapped to the classes
 	 * implementing them.
-	 *
-	 * @return array
 	 */
 	public static function getTypes(): array {
 		return [

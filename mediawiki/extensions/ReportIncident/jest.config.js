@@ -14,6 +14,7 @@ module.exports = {
 	// which coverage information should be collected
 	collectCoverageFrom: [
 		'resources/ext.reportIncident/components/*.(js|vue)',
+		'resources/ext.reportIncident/composables/*.js',
 		'resources/ext.reportIncident/stores/*.js'
 	],
 

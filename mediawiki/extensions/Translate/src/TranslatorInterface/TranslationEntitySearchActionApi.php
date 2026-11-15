@@ -3,8 +3,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TranslatorInterface;
 
-use ApiBase;
-use ApiMain;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\TypeDef\NumericDef;
 
@@ -14,13 +14,16 @@ use Wikimedia\ParamValidator\TypeDef\NumericDef;
  * @license GPL-2.0-or-later
  */
 class TranslationEntitySearchActionApi extends ApiBase {
-	private EntitySearch $entitySearch;
+
 	private const GROUPS = 'groups';
 	private const MESSAGES = 'messages';
 
-	public function __construct( ApiMain $mainModule, $moduleName, EntitySearch $entitySearch ) {
+	public function __construct(
+		ApiMain $mainModule,
+		string $moduleName,
+		private readonly EntitySearch $entitySearch,
+	) {
 		parent::__construct( $mainModule, $moduleName );
-		$this->entitySearch = $entitySearch;
 	}
 
 	public function execute() {

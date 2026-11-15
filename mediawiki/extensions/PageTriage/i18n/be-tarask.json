@@ -2,7 +2,9 @@
 	"@metadata": {
 		"authors": [
 			"Renessaince",
-			"Wizardist"
+			"Ucukor",
+			"Wizardist",
+			"Red Winged Duck"
 		]
 	},
 	"pagetriage": "Page Triage",
@@ -10,6 +12,13 @@
 	"pagetriage-desc": "Прылады для прагляду і зацьверджаньня новых старонак",
 	"pagetriage-pagecuration": "Куратарства старонкамі",
 	"pagetriage-reviewed": "Праверана",
+	"pagetriage-sort-by": "Сартаваць паводле:",
+	"pagetriage-filter-show-heading": "Стан:",
+	"pagetriage-filter-tag-heading": "З тэгам:",
+	"pagetriage-filter-stat-state": "Стан",
 	"pagetriage-filter-stat-reviewed": "Правераныя",
-	"pagetriage-mark-as-reviewed": "Пазначыць як праверанае"
+	"pagetriage-add-a-note-for-options-instruction-label": "Абраць атрымальніка:",
+	"pagetriage-add-a-note-for-option-reviewer": "рэцэнзэнт (Карыстальнік: $1 )",
+	"pagetriage-mark-as-reviewed": "Пазначыць як праверанае",
+	"pagetriage-afc-state": "Стан"
 }

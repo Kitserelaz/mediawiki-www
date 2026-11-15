@@ -10,6 +10,9 @@ use CirrusSearch\Search\FancyTitleResultsType;
 use CirrusSearch\Search\MSearchRequests;
 use CirrusSearch\Search\SearchContext;
 use CirrusSearch\Search\SearchRequestBuilder;
+use CirrusSearch\SecondTry\SecondTryRunner;
+use CirrusSearch\SecondTry\SecondTryRunnerFactory;
+use CirrusSearch\SecondTry\SecondTrySearchFactory;
 use Closure;
 use Elastica\Index;
 use Elastica\Multi\Search as MultiSearch;
@@ -17,28 +20,16 @@ use Elastica\Query;
 use Elastica\ResultSet;
 use Elastica\Search;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Search\SearchSuggestion;
+use MediaWiki\Search\SearchSuggestionSet;
 use MediaWiki\Status\Status;
 use MediaWiki\User\User;
-use SearchSuggestionSet;
 use Wikimedia\Assert\Assert;
 
 /**
  * Performs search as you type queries using Completion Suggester.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
 /**
@@ -133,6 +124,8 @@ class CompletionSuggester extends ElasticsearchIntermediary {
 	 */
 	private $prefixSearchRequestBuilder;
 
+	private SecondTryRunner $secondTryRunner;
+
 	/**
 	 * @param Connection $conn
 	 * @param int $limit Limit the results to this many
@@ -141,12 +134,22 @@ class CompletionSuggester extends ElasticsearchIntermediary {
 	 * @param int[]|null $namespaces Array of namespace numbers to search or null to search all namespaces.
 	 * @param User|null $user user for which this search is being performed.  Attached to slow request logs.
 	 * @param string|bool $index Base name for index to search from, defaults to $wgCirrusSearchIndexBaseName
-	 * @param string|null $profileName force the profile to use otherwise SearchProfileService defaults will be used
+	 * @param null $profileName force the profile to use otherwise SearchProfileService defaults will be used
 	 * @param CirrusDebugOptions|null $debugOptions
+	 * @param SecondTryRunnerFactory|null $secondTryRunnerFactory the SecondTryRunner factory
 	 */
-	public function __construct( Connection $conn, $limit, $offset = 0, ?SearchConfig $config = null, ?array $namespaces = null,
-		?User $user = null, $index = false, $profileName = null,
-								 ?CirrusDebugOptions $debugOptions = null ) {
+	public function __construct(
+		Connection $conn,
+		$limit,
+		$offset = 0,
+		?SearchConfig $config = null,
+		?array $namespaces = null,
+		?User $user = null,
+		$index = false,
+		$profileName = null,
+		?CirrusDebugOptions $debugOptions = null,
+		?SecondTryRunnerFactory $secondTryRunnerFactory = null
+	) {
 		if ( $config === null ) {
 			// @todo connection has an embedded config ... reuse that? somehow should
 			// at least ensure they are the same.
@@ -154,25 +157,50 @@ class CompletionSuggester extends ElasticsearchIntermediary {
 				->getConfigFactory()
 				->makeConfig( 'CirrusSearch' );
 		}
-
 		parent::__construct( $conn, $user, $config->get( 'CirrusSearchSlowSearch' ) );
-		$this->config = $config;
+		if ( $secondTryRunnerFactory === null ) {
+			$secondTryRunnerFactory = new SecondTryRunnerFactory(
+				new SecondTrySearchFactory(
+					MediaWikiServices::getInstance()
+						->getLanguageConverterFactory(),
+				),
+				$config
+			);
+		}
+		$this->secondTryRunner = $secondTryRunnerFactory->create( SearchProfileService::CONTEXT_COMPLETION );
+
 		$this->limit = $limit;
 		$this->offset = $offset;
 		$this->indexBaseName = $index ?: $config->get( SearchConfig::INDEX_BASE_NAME );
-		$this->completionIndex = $this->connection->getIndex( $this->indexBaseName,
-			Connection::TITLE_SUGGEST_INDEX_SUFFIX );
+		$altIndexId = $config->get( 'CirrusSearchCompletionSuggesterUseAltIndexId' );
+		// Check if the alternate index id is actually setup
+		$altIndex = null;
+		if ( $altIndexId !== null && AlternativeIndices::isValidAltIndexId( $altIndexId ) ) {
+			$altIndex = AlternativeIndices::build( $config )->getAlternativeIndexById( AlternativeIndices::COMPLETION, (int)$altIndexId );
+			if ( $altIndex !== null && !$altIndex->isUse() ) {
+				$altIndex = null;
+			}
+		}
+		if ( $altIndex !== null ) {
+			$this->completionIndex = $altIndex->getIndex( $this->connection );
+			$this->config = $altIndex->getConfig();
+		} else {
+			$this->completionIndex = $this->connection->getIndex( $this->indexBaseName, Connection::TITLE_SUGGEST_INDEX_SUFFIX );
+			$this->config = $config;
+		}
 		$this->searchContext = new SearchContext( $this->config, $namespaces, $debugOptions );
 
 		$profileDefinition = $this->config->getProfileService()
-			->loadProfile( SearchProfileService::COMPLETION, SearchProfileService::CONTEXT_DEFAULT, $profileName );
+			->loadProfile( SearchProfileService::COMPLETION, SearchProfileService::CONTEXT_COMPLETION, $profileName );
 		$this->compSuggestBuilder = new CompSuggestQueryBuilder(
 			$this->searchContext,
 			$profileDefinition,
+			$this->secondTryRunner,
 			$limit,
 			$offset
 		);
-		$this->prefixSearchQueryBuilder = new PrefixSearchQueryBuilder();
+
+		$this->prefixSearchQueryBuilder = new PrefixSearchQueryBuilder( $this->secondTryRunner );
 	}
 
 	/**
@@ -182,19 +210,18 @@ class CompletionSuggester extends ElasticsearchIntermediary {
 	 * WARNING: experimental API
 	 *
 	 * @param string $text Search term
-	 * @param string[]|null $variants Search term variants
-	 *  Usually issued via LanguageConverter::autoConvertToAllVariants( $text ) for the content language.
 	 * @return Status
 	 */
-	public function suggest( $text, $variants = null ) {
-		$suggestSearch = $this->getSuggestSearchRequest( $text, $variants );
+	public function suggest( $text ) {
+		$secondTryCandidates = $this->secondTryRunner->candidates( $text );
+		$suggestSearch = $this->getSuggestSearchRequest( $text, $secondTryCandidates );
 		$mSearchRequests = new MSearchRequests();
 
 		if ( $suggestSearch !== null ) {
 			$mSearchRequests->addRequest( self::MSEARCH_KEY_SUGGEST, $suggestSearch );
 		}
 
-		$prefixSearch = $this->getPrefixSearchRequest( $text, $variants );
+		$prefixSearch = $this->getPrefixSearchRequest( $text, $secondTryCandidates );
 		if ( $prefixSearch !== null ) {
 			$mSearchRequests->addRequest( self::MSEARCH_KEY_PREFIX, $prefixSearch );
 		}
@@ -308,7 +335,7 @@ class CompletionSuggester extends ElasticsearchIntermediary {
 			if ( $title === false ) {
 				continue;
 			}
-			$suggestion = new \SearchSuggestion( $score--, $title->getPrefixedText(), $title, $pageId );
+			$suggestion = new SearchSuggestion( $score--, $title->getPrefixedText(), $title, $pageId );
 			if ( !$collector->collect( $suggestion, 'prefix', $indexName ) && $collector->isFull() ) {
 				break;
 			}
@@ -318,16 +345,15 @@ class CompletionSuggester extends ElasticsearchIntermediary {
 
 	/**
 	 * @param string $text Search term
-	 * @param string[]|null $variants Search term variants
-	 *  Usually issued via LanguageConverter::autoConvertToAllVariants( $text ) for the content language.
+	 * @param array<string, string[]> $secondTryCandidates second try search candidates
 	 * @return Search|null
 	 */
-	private function getSuggestSearchRequest( $text, $variants ) {
+	private function getSuggestSearchRequest( string $text, array $secondTryCandidates ): ?Search {
 		if ( !$this->compSuggestBuilder->areResultsPossible() ) {
 			return null;
 		}
 
-		$suggest = $this->compSuggestBuilder->build( $text, $variants );
+		$suggest = $this->compSuggestBuilder->build( $text, $secondTryCandidates );
 		$query = new Query( new Query\MatchNone() );
 		$query->setSize( 0 );
 		$query->setSuggest( $suggest );
@@ -340,11 +366,10 @@ class CompletionSuggester extends ElasticsearchIntermediary {
 
 	/**
 	 * @param string $term Search term
-	 * @param string[]|null $variants Search term variants
-	 *  Usually issued via LanguageConverter::autoConvertToAllVariants( $text ) for the content language.
+	 * @param array<string, string[]> $secondTryCandidates second try candidates
 	 * @return Search|null
 	 */
-	private function getPrefixSearchRequest( $term, $variants ) {
+	private function getPrefixSearchRequest( $term, array $secondTryCandidates ): ?Search {
 		$namespaces = $this->searchContext->getNamespaces();
 		if ( $namespaces === null ) {
 			return null;
@@ -366,7 +391,7 @@ class CompletionSuggester extends ElasticsearchIntermediary {
 		}
 		$prefixSearchContext = new SearchContext( $this->config, $namespaces );
 		$prefixSearchContext->setResultsType( new FancyTitleResultsType( 'prefix' ) );
-		$this->prefixSearchQueryBuilder->build( $prefixSearchContext, $term, $variants );
+		$this->prefixSearchQueryBuilder->build( $prefixSearchContext, $term, $secondTryCandidates );
 		if ( !$prefixSearchContext->areResultsPossible() ) {
 			// $prefixSearchContext might contain warnings, but these are lost.
 			return null;

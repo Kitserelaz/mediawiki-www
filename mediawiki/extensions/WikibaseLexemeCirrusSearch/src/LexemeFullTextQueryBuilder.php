@@ -8,6 +8,7 @@ use Elastica\Query\BoolQuery;
 use Elastica\Query\DisMax;
 use Elastica\Query\MatchQuery;
 use Elastica\Query\Term;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Language\Language;
 use Wikibase\DataModel\Entity\EntityIdParser;
 use Wikibase\Lib\Store\FallbackLabelDescriptionLookupFactory;
@@ -73,7 +74,7 @@ class LexemeFullTextQueryBuilder implements FullTextQueryBuilder {
 			$settings,
 			WikibaseRepo::getFallbackLabelDescriptionLookupFactory(),
 			WikibaseRepo::getEntityIdParser(),
-			WikibaseRepo::getUserLanguage()
+			RequestContext::getMain()->getLanguage()
 		);
 	}
 

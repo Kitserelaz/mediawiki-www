@@ -3,7 +3,7 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
-use ManualLogEntry;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
@@ -16,12 +16,11 @@ use MediaWiki\User\User;
  * @license GPL-2.0-or-later
  */
 class PageMoveLogger {
-	private string $logType;
-	private Title $baseSourceTitle;
 
-	public function __construct( Title $baseSourceTitle, string $logType ) {
-		$this->baseSourceTitle = $baseSourceTitle;
-		$this->logType = $logType;
+	public function __construct(
+		private readonly Title $baseSourceTitle,
+		private readonly string $logType,
+	) {
 	}
 
 	public function logSuccess( User $performer, Title $target, string $reason ): void {

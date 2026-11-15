@@ -37,7 +37,7 @@ class MigrateOldUserGiftsUserColumnsToActor extends LoggedUpdateMaintenance {
 	 *
 	 * @return string
 	 */
-	protected function updateSkippedMessage() {
+	public function updateSkippedMessage() {
 		return 'user_gift has already been migrated to use the actor columns.';
 	}
 
@@ -61,12 +61,7 @@ class MigrateOldUserGiftsUserColumnsToActor extends LoggedUpdateMaintenance {
 			);
 			foreach ( $res as $row ) {
 				$user = User::newFromId( $row->ug_user_id_to );
-				if ( interface_exists( '\MediaWiki\User\ActorNormalization' ) ) {
-					// MW 1.36+
-					$actorId = MediaWikiServices::getInstance()->getActorNormalization()->acquireActorId( $user, $dbw );
-				} else {
-					$actorId = $user->getActorId( $dbw );
-				}
+				$actorId = MediaWikiServices::getInstance()->getActorNormalization()->acquireActorId( $user, $dbw );
 				$dbw->update(
 					'user_gift',
 					[
@@ -93,12 +88,7 @@ class MigrateOldUserGiftsUserColumnsToActor extends LoggedUpdateMaintenance {
 			);
 			foreach ( $res as $row ) {
 				$user = User::newFromId( $row->ug_user_id_from );
-				if ( interface_exists( '\MediaWiki\User\ActorNormalization' ) ) {
-					// MW 1.36+
-					$actorId = MediaWikiServices::getInstance()->getActorNormalization()->acquireActorId( $user, $dbw );
-				} else {
-					$actorId = $user->getActorId( $dbw );
-				}
+				$actorId = MediaWikiServices::getInstance()->getActorNormalization()->acquireActorId( $user, $dbw );
 				$dbw->update(
 					'user_gift',
 					[

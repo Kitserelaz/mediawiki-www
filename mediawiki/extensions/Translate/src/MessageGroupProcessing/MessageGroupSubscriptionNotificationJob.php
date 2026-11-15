@@ -3,9 +3,9 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
-use GenericParameterJob;
-use Job;
 use MediaWiki\Extension\Translate\Services;
+use MediaWiki\JobQueue\GenericParameterJob;
+use MediaWiki\JobQueue\Job;
 
 /**
  * Send Echo notifications to subscribed users
@@ -14,6 +14,7 @@ use MediaWiki\Extension\Translate\Services;
  * @author Abijeet Patro
  */
 class MessageGroupSubscriptionNotificationJob extends Job implements GenericParameterJob {
+	/** @param array<string,array<string,array<int,string>>> $messageChanges */
 	public static function newJob( array $messageChanges ): self {
 		$params = [ 'changes' => $messageChanges ];
 		return new self( $params );

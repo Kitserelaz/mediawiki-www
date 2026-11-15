@@ -12,14 +12,7 @@
  * @return {boolean} Object inherits from one or more of the classes
  */
 ve.isInstanceOfAny = function ( subject, classes ) {
-	let i = classes.length;
-
-	while ( classes[ --i ] ) {
-		if ( subject instanceof classes[ i ] ) {
-			return true;
-		}
-	}
-	return false;
+	return subject && classes.some( ( c ) => subject instanceof c );
 };
 
 /**
@@ -175,6 +168,29 @@ ve.copy = OO.copy;
 ve.debounce = OO.ui.debounce;
 
 /**
+ * Return a debounced function that will only be called if a test function passes
+ *
+ * A common pattern when using debounce is that you'll need to verify it's
+ * still appropriate to perform the debounced action, e.g. when an object
+ * might be torn down. This lets the test for that condition be centralized,
+ * so it doesn't need to be repeated in multiple functions across a class.
+ *
+ * @method
+ * @see ve.debounce
+ * @param {Function} test Callback which must return true if func is to be called
+ * @param {Function} func Debounced function
+ * @param {...any} debounceArgs Passed into ve.debounce
+ * @return {Function} Debounced function from ve.debounce
+ */
+ve.debounceWithTest = function ( test, func, ...debounceArgs ) {
+	return ve.debounce( ( ...args ) => {
+		if ( test( ...args ) ) {
+			return func( ...args );
+		}
+	}, ...debounceArgs );
+};
+
+/**
  * @method
  * @see OO.ui.throttle
  */
@@ -243,9 +259,7 @@ ve.isEqualDomElements = function ( domElements1, domElements2 ) {
  * @return {boolean} Class lists are equivalent
  */
 ve.compareClassLists = function ( classList1, classList2 ) {
-	const removeEmpty = function ( c ) {
-		return c !== '';
-	};
+	const removeEmpty = ( c ) => c;
 
 	classList1 = Array.isArray( classList1 ) ? classList1 : classList1.trim().split( /\s+/ );
 	classList2 = Array.isArray( classList2 ) ? classList2 : classList2.trim().split( /\s+/ );
@@ -491,10 +505,10 @@ ve.deepFreeze = ve.deepFreeze || function ( obj ) {
  * @param {...any} [params] Message parameters
  * @return {string} Localized message
  */
-ve.msg = function () {
+ve.msg = function ( key, ...params ) {
 	// Avoid using bind because ve.init.platform doesn't exist yet.
 	// TODO: Fix dependency issues between ve.js and ve.init.platform
-	return ve.init.platform.getMessage.apply( ve.init.platform, arguments );
+	return ve.init.platform.getMessage( key, ...params );
 };
 
 /**
@@ -504,20 +518,47 @@ ve.msg = function () {
  * @param {...any} [params] Message parameters
  * @return {Node[]} Localized message
  */
-ve.htmlMsg = function () {
+ve.htmlMsg = function ( key, ...params ) {
 	// Avoid using bind because ve.init.platform doesn't exist yet.
 	// TODO: Fix dependency issues between ve.js and ve.init.platform
-	return ve.init.platform.getHtmlMessage.apply( ve.init.platform, arguments );
+	return ve.init.platform.getHtmlMessage( key, ...params );
+};
+
+/**
+ * Package a message and arguments for deferred resolution.
+ *
+ * Identical to OO.ui.deferMsg, but for ve.htmlMsg.
+ *
+ * @param {string} key Message key
+ * @param {...any} [params] Message parameters
+ * @return {Function} Function that returns the resolved message when executed
+ */
+ve.deferHtmlMsg = function () {
+	return () => ve.htmlMsg( ...arguments );
+};
+
+/**
+ * Package a message and arguments for deferred resolution.
+ *
+ * Identical to ve.deferHtmlMsg, but for jQuery-wrapped messages.
+ *
+ * @param {string} key Message key
+ * @param {...any} [params] Message parameters
+ * @return {Function} Function that returns the resolved message when executed
+ */
+ve.deferJQueryMsg = function () {
+	return () => $( ve.htmlMsg( ...arguments ) );
 };
 
 /**
  * Get platform config value(s)
  *
- * @param {string|string[]} key Config key, or list of keys
+ * @param {string|string[]} keys Config key, or list of keys
+ * @param {any} [fallback=null] Value for keys that don't exist
  * @return {any|Object} Config value, or keyed object of config values if list of keys provided
  */
-ve.config = function () {
-	return ve.init.platform.getConfig.apply( ve.init.platform, arguments );
+ve.config = function ( keys, fallback ) {
+	return ve.init.platform.getConfig( keys, fallback );
 };
 
 /**
@@ -528,15 +569,15 @@ ve.config = function () {
  * @return {any|Object|boolean} Config value, keyed object of config values if list of keys provided,
  *  or success boolean if setting.
  */
-ve.userConfig = function ( key ) {
+ve.userConfig = function ( key, value ) {
 	if ( arguments.length <= 1 && ( typeof key === 'string' || Array.isArray( key ) ) ) {
 		// get( string key )
 		// get( Array keys )
-		return ve.init.platform.getUserConfig.apply( ve.init.platform, arguments );
+		return ve.init.platform.getUserConfig( key );
 	} else {
 		// set( Object values )
 		// set( key, value )
-		return ve.init.platform.setUserConfig.apply( ve.init.platform, arguments );
+		return ve.init.platform.setUserConfig( key, value );
 	}
 };
 
@@ -602,26 +643,13 @@ ve.graphemeSafeSubstring = function ( text, start, end, outer ) {
  * @param {string} value Attribute value to escape
  * @return {string} Escaped attribute value
  */
-ve.escapeHtml = ( function () {
-	function escape( value ) {
-		switch ( value ) {
-			case '\'':
-				return '&#039;';
-			case '"':
-				return '&quot;';
-			case '<':
-				return '&lt;';
-			case '>':
-				return '&gt;';
-			case '&':
-				return '&amp;';
-		}
-	}
-
-	return function ( value ) {
-		return value.replace( /['"<>&]/g, escape );
-	};
-}() );
+ve.escapeHtml = ( value ) => value.replace( /['"<>&]/g, ( c ) => ( {
+	'\'': '&#039;',
+	'"': '&quot;',
+	'<': '&lt;',
+	'>': '&gt;',
+	'&': '&amp;'
+}[ c ] ) );
 
 /**
  * Get the attributes of a DOM element as an object with key/value pairs.
@@ -631,8 +659,8 @@ ve.escapeHtml = ( function () {
  */
 ve.getDomAttributes = function ( element ) {
 	const result = {};
-	for ( let i = 0; i < element.attributes.length; i++ ) {
-		result[ element.attributes[ i ].name ] = element.attributes[ i ].value;
+	for ( const attr of element.attributes ) {
+		result[ attr.name ] = attr.value;
 	}
 	return result;
 };
@@ -652,7 +680,7 @@ ve.setDomAttributes = function ( element, attributes, allowedAttributes ) {
 		return;
 	}
 	for ( const key in attributes ) {
-		if ( allowedAttributes && allowedAttributes.indexOf( key.toLowerCase() ) === -1 ) {
+		if ( allowedAttributes && !allowedAttributes.includes( key.toLowerCase() ) ) {
 			continue;
 		}
 		if ( attributes[ key ] === undefined || attributes[ key ] === null ) {
@@ -707,22 +735,22 @@ ve.getDomElementSummary = function ( element, includeHtml, getAttributeSummary )
 
 	// Gather attributes
 	if ( element.attributes ) {
-		for ( let i = 0; i < element.attributes.length; i++ ) {
-			const name = element.attributes[ i ].name;
+		for ( const attr of element.attributes ) {
+			const name = attr.name;
 			if ( name === 'about' ) {
 				// The about attribute is non-deterministic as we generate a new random
 				// one whenever a node is cloned (see ve.dm.Node.static.cloneElement).
 				// Exclude it from node comparisons.
 				continue;
 			}
-			const value = element.attributes[ i ].value;
+			const value = attr.value;
 			summary.attributes[ name ] = getAttributeSummary ? getAttributeSummary( name, value ) : value;
 		}
 	}
 	// Summarize children
 	if ( element.childNodes ) {
-		for ( let i = 0; i < element.childNodes.length; i++ ) {
-			summary.children.push( ve.getDomElementSummary( element.childNodes[ i ], includeHtml ) );
+		for ( const child of element.childNodes ) {
+			summary.children.push( ve.getDomElementSummary( child, includeHtml, getAttributeSummary ) );
 		}
 	}
 	return summary;
@@ -800,15 +828,14 @@ ve.resolveAttributes = function ( elementsOrJQuery, doc, attrs ) {
 		elements = [ elements ];
 	}
 
-	let attr;
-
 	/**
-	 * Resolves the value of attr to the computed property value.
+	 * Resolves an attribute to the computed property value.
 	 *
 	 * @private
 	 * @param {HTMLElement} el Element
+	 * @param {string} attr Attribute
 	 */
-	function resolveAttribute( el ) {
+	function resolveAttribute( el, attr ) {
 		const nodeInDoc = doc.createElement( el.nodeName );
 		nodeInDoc.setAttribute( attr, el.getAttribute( attr ) );
 		if ( nodeInDoc[ attr ] ) {
@@ -816,28 +843,15 @@ ve.resolveAttributes = function ( elementsOrJQuery, doc, attrs ) {
 		}
 	}
 
-	for ( let i = 0, iLen = elements.length; i < iLen; i++ ) {
-		const element = elements[ i ];
-		for ( let j = 0, jLen = attrs.length; j < jLen; j++ ) {
-			attr = attrs[ j ];
+	elements.forEach( ( element ) => {
+		attrs.forEach( ( attr ) => {
 			if ( element.hasAttribute( attr ) ) {
-				resolveAttribute( element );
+				resolveAttribute( element, attr );
 			}
-			Array.prototype.forEach.call( element.querySelectorAll( '[' + attr + ']' ), resolveAttribute );
-		}
-	}
-};
-
-/**
- * Make all links within a DOM element open in a new window
- *
- * @param {HTMLElement} container DOM element to search for links
- */
-ve.targetLinksToNewWindow = function ( container ) {
-	// Make all links open in a new window
-	Array.prototype.forEach.call( container.querySelectorAll( 'a[href]' ), ( el ) => {
-		ve.appendToRel( el, 'noopener' );
-		el.setAttribute( 'target', '_blank' );
+			for ( const el of element.querySelectorAll( '[' + attr + ']' ) ) {
+				resolveAttribute( el, attr );
+			}
+		} );
 	} );
 };
 
@@ -857,7 +871,7 @@ ve.appendToRel = function ( element, value ) {
 	if ( !rel ) {
 		// Avoid all that string-creation if it's not needed
 		element.setAttribute( 'rel', value );
-	} else if ( ( ' ' + rel + ' ' ).indexOf( ' ' + value + ' ' ) === -1 ) {
+	} else if ( !( ' ' + rel + ' ' ).includes( ' ' + value + ' ' ) ) {
 		element.setAttribute( 'rel', rel + ' ' + value );
 	}
 };
@@ -916,7 +930,7 @@ ve.getCommonStartSequenceLength = function ( sequences ) {
 			break;
 		}
 		const val = sequences[ 0 ][ commonLength ];
-		for ( let i = 1, len = sequences.length; i < len; i++ ) {
+		for ( let i = 1; i < sequences.length; i++ ) {
 			if (
 				sequences[ i ].length <= commonLength ||
 				sequences[ i ][ commonLength ] !== val
@@ -1067,8 +1081,7 @@ ve.compareDocumentOrder = function ( node1, offset1, node2, offset2 ) {
 };
 
 /**
- * @typedef {Object} DomPosition
- * @memberof ve
+ * @typedef {Object} ve.DomPosition
  * @property {Node|null} node The node, or null if we stepped past the root node
  * @property {number|null} offset The offset, or null if we stepped past the root node
  * @property {ve.PositionStep[]} steps Steps taken
@@ -1125,16 +1138,16 @@ ve.adjacentDomPosition = function ( position, direction, options ) {
 				return {
 					node: null,
 					offset: null,
-					steps: steps
+					steps
 				};
 			}
 			offset = ve.parentIndex( node ) + ( forward ? 1 : 0 );
 			node = node.parentNode;
 			if ( stop( step ) ) {
 				return {
-					node: node,
-					offset: offset,
-					steps: steps
+					node,
+					offset,
+					steps
 				};
 			}
 			// Else take another step
@@ -1153,9 +1166,9 @@ ve.adjacentDomPosition = function ( position, direction, options ) {
 			offset += direction;
 			if ( stop( step ) ) {
 				return {
-					node: node,
-					offset: offset,
-					steps: steps
+					node,
+					offset,
+					steps
 				};
 			}
 			continue;
@@ -1176,9 +1189,9 @@ ve.adjacentDomPosition = function ( position, direction, options ) {
 			offset += forward ? 1 : -1;
 			if ( stop( step ) ) {
 				return {
-					node: node,
-					offset: offset,
-					steps: steps
+					node,
+					offset,
+					steps
 				};
 			}
 			// Else take another step
@@ -1192,9 +1205,9 @@ ve.adjacentDomPosition = function ( position, direction, options ) {
 		steps.push( posStep );
 		if ( stop( posStep ) ) {
 			return {
-				node: node,
-				offset: offset,
-				steps: steps
+				node,
+				offset,
+				steps
 			};
 		}
 	}
@@ -1240,8 +1253,7 @@ ve.rejectsCursor = function ( node ) {
 };
 
 /**
- * @typedef {Object} ChangeOffsets
- * @memberof ve
+ * @typedef {Object} ve.ChangeOffsets
  * @return {number} start Offset from start of first changed element
  * @return {number} end Offset from end of last changed element (nonoverlapping with start)
  */
@@ -1256,9 +1268,7 @@ ve.rejectsCursor = function ( node ) {
  */
 ve.countEdgeMatches = function ( before, after, equals ) {
 	if ( !equals ) {
-		equals = function ( x, y ) {
-			return x === y;
-		};
+		equals = ( x, y ) => x === y;
 	}
 
 	let start, end;
@@ -1281,14 +1291,31 @@ ve.countEdgeMatches = function ( before, after, equals ) {
 			break;
 		}
 	}
-	return { start: start, end: end };
+	return { start, end };
 };
 
 /**
- * Same as Object.entries, because we don't yet presume ES2017
+ * Wait for a transitionend on an element
  *
- * @param {Object} ob The object
- * @return {Array[]} Entries, in the form [string, any]
+ * @param {jQuery} $element
+ * @param {function} callback
+ * @param {number} [timeout=500] fallback timer to run the callback regardless
  */
-// eslint-disable-next-line es-x/no-object-entries
-ve.entries = Object.entries || ( ( ob ) => Object.keys( ob ).map( ( k ) => [ k, ob[ k ] ] ) );
+ve.waitForTransition = function ( $element, callback, timeout = 500 ) {
+	if ( window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches ) {
+		// The transition won't happen
+		callback();
+		return;
+	}
+	let fallback;
+	$element.one( 'transitionend.waitForTransition', () => {
+		clearTimeout( fallback );
+		callback();
+	} );
+	if ( timeout ) {
+		fallback = setTimeout( () => {
+			$element.off( 'transitionend.waitForTransition' );
+			callback();
+		}, timeout );
+	}
+};

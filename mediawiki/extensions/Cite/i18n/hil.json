@@ -11,11 +11,11 @@
 	"cite_error_ref_conflicting_dir": "Ang isa sa mga <code><ref></code> nga mga tag nga may ngalan nga \" $1 \" may yara sang nagasumpakilay nga dir attribute.",
 	"cite_error_ref_numeric_key": "Indi balido nga <code><ref></code> tag; ang ngalan indi mahimo nga isa ka simple nga integer. Maggamit sang nagalaragway nga titulo",
 	"cite_error_ref_no_key": "Ang nagabukas nga <code><ref></code> nga tag may diperensya ukon may malain nga ngalan",
-	"cite_error_ref_too_many_keys": "Indi balido nga parameter sa <code><ref></code> tag",
+	"cite_error_ref_too_many_keys": "Indi balido nga parameter \"$1\" sa <code>&lt;ref></code> tag. Ang mga ginasuportahan nga mga parametro amo ang: $2.",
 	"cite_error_ref_follow_conflicts": "Ang <code><ref follow=\"…\"></code> nga tag nga amo ang pagpadayon sang isa ka nauna nga isa indi mahimo nga hingalanan sing indibiduwal",
 	"cite_error_ref_no_input": "Indi balido nga <code><ref></code> tag; ang mga ref nga wala sing ngalan dapat may kaundan",
 	"cite_error_references_duplicate_key": "Indi balido nga <code><ref></code> tag; ang ngalan \" $1 \" ginhatagan kahulugan sing madamo nga beses nga may lainlain nga kaundan",
-	"cite_error_references_invalid_parameters": "Indi balido nga parameter sa <code><references></code> tag",
+	"cite_error_references_invalid_parameters": "Indi balido nga parameter \"$1\" sa <code>&lt;references></code> tag. Ang mga ginasuportahan nga mga parametro amo ang: $2.",
 	"cite_error_references_no_text": "Indi balido nga <code><ref></code> tag; wala sing teksto nga ginhatag para sa mga ref nga ginhingalanan <code>$1</code>",
 	"cite_error_included_ref": "Ang pagsira sang <code></ref></code> wala para sa <code><ref></code> nga tag",
 	"cite_error_included_references": "Nadula ang nagasira nga tag para sa <code><references></code>",
@@ -51,7 +51,7 @@
 	"cite-wikieditor-help-content-reference-example-text1": "Teksto sang pahina. $1",
 	"cite-wikieditor-help-content-reference-example-text2": "[$1 Link text], dugang nga teksto.",
 	"cite-wikieditor-help-content-reference-example-text3": "Isa ka libro",
-	"cite-wikieditor-help-content-reference-example-extra-details": "Dugang nga mga detalye",
+	"cite-wikieditor-help-content-reference-example-extra-details": "Pahina 76",
 	"communityconfiguration-cite-title": "Cite",
 	"communityconfiguration-cite-description": "Ipasadya ang pormat kag hitsura sang mga reperensya.",
 	"cite-configuration-title": "Cite configuration",
@@ -62,6 +62,5 @@
 	"cite-configuration-backlink-marker-label": "Backlink symbol set",
 	"cite-configuration-backlink-marker-description": "Ang mga karakter sa idalom pagagamiton para sa mga backlink sa imo wiki.",
 	"cite-configuration-backlink-marker-help": "Isulod ang imo pinasahi nga set sang karakter, nga may espasyo sa tunga sang tagsa ka karakter. Siguraduhon nga ang suludlan nagaunod sang XX nga mga karakter.",
-	"cite-configuration-submit": "I-save ang mga pagbag-o",
-	"cite_warning": "Paandam: $1"
+	"cite-configuration-submit": "I-save ang mga pagbag-o"
 }

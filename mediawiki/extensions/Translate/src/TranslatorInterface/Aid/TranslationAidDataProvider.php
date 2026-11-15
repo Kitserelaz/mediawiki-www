@@ -3,17 +3,17 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TranslatorInterface\Aid;
 
-use Content;
-use ContentHandler;
+use InvalidArgumentException;
+use MediaWiki\Content\Content;
+use MediaWiki\Content\ContentHandler;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\RevTagStore;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Extension\Translate\TranslatorInterface\TranslationHelperException;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MessageGroup;
-use TextContent;
-use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
  * @author Niklas Laxström
@@ -21,8 +21,7 @@ use Wikimedia\Rdbms\IDatabase;
  * @since 2018.01
  */
 class TranslationAidDataProvider {
-	/** @var MessageHandle */
-	private $handle;
+
 	/** @var MessageGroup */
 	private $group;
 	/** @var string|null */
@@ -30,14 +29,22 @@ class TranslationAidDataProvider {
 	/** @var array */
 	private $translations;
 
-	public function __construct( MessageHandle $handle ) {
-		$this->handle = $handle;
-		$this->group = $handle->getGroup();
+	public function __construct(
+		private readonly MessageHandle $handle,
+	) {
+		$group = $handle->getGroup();
+		if ( !$group ) {
+			throw new InvalidArgumentException(
+				'Message handle ' . $handle->getTitle()->getPrefixedDbKey() . ' has no associated group'
+			);
+		}
+		$this->group = $group;
 	}
 
 	/**
 	 * Get the message definition. Cached for performance.
-	 * @return string
+	 *
+	 * @throws TranslationHelperException
 	 */
 	public function getDefinition(): string {
 		if ( $this->definition !== null ) {
@@ -68,7 +75,7 @@ class TranslationAidDataProvider {
 		try {
 			$this->getDefinition();
 			return true;
-		} catch ( TranslationHelperException $e ) {
+		} catch ( TranslationHelperException ) {
 			return false;
 		}
 	}
@@ -89,7 +96,7 @@ class TranslationAidDataProvider {
 
 		$mwServices = MediaWikiServices::getInstance();
 		$data = self::loadTranslationData(
-			$mwServices->getDBLoadBalancer()->getConnection( DB_REPLICA ),
+			$mwServices->getConnectionProvider()->getReplicaDatabase(),
 			$this->handle
 		);
 		$translations = [];
@@ -112,7 +119,7 @@ class TranslationAidDataProvider {
 		return $translations;
 	}
 
-	private static function loadTranslationData( IDatabase $db, MessageHandle $handle ): array {
+	private static function loadTranslationData( IReadableDatabase $db, MessageHandle $handle ): array {
 		$revisionStore = MediaWikiServices::getInstance()->getRevisionStore();
 		$conditions = [];
 
@@ -141,10 +148,9 @@ class TranslationAidDataProvider {
 		$revisions = $revisionStore->newRevisionsFromBatch( $rows, [ 'slots' => [ SlotRecord::MAIN ] ] )
 			->getValue();
 		foreach ( $rows as $row ) {
-			/** @var RevisionRecord|null $rev */
-			$rev = $revisions[$row->rev_id];
-			if ( $rev && $rev->getContent( SlotRecord::MAIN ) instanceof TextContent ) {
-				$pages[$row->page_title] = $rev->getContent( SlotRecord::MAIN )->getText();
+			$content = $revisions[$row->rev_id]?->getContent( SlotRecord::MAIN );
+			if ( $content instanceof TextContent ) {
+				$pages[$row->page_title] = $content->getText();
 			}
 		}
 

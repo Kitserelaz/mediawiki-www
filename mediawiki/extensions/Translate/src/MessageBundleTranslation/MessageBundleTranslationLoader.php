@@ -4,14 +4,15 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\MessageBundleTranslation;
 
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
-use MediaWiki\Languages\LanguageFallback;
+use MediaWiki\Extension\Translate\MessageLoading\MessageCollection;
+use MediaWiki\Language\LanguageFallback;
 use RuntimeException;
 
 class MessageBundleTranslationLoader {
-	private LanguageFallback $languageFallback;
 
-	public function __construct( LanguageFallback $languageFallback ) {
-		$this->languageFallback = $languageFallback;
+	public function __construct(
+		private readonly LanguageFallback $languageFallback,
+	) {
 	}
 
 	/**
@@ -28,9 +29,10 @@ class MessageBundleTranslationLoader {
 	): array {
 		$translations = $this->getTranslationsWithFallback( $messageBundle, $languageCode, $skipFallbacks );
 		$normalizedTranslations = [];
+		$prefixToReplace = '/^' . preg_quote( $messageBundle->getTitle()->getPrefixedDBkey() . '/', '/' ) . '/';
 		foreach ( $translations as $key => $translation ) {
 			$normalizedTranslations[
-				str_replace( "{$messageBundle->getTitle()->getDBkey()}/", '', $key )
+				preg_replace( $prefixToReplace, '', $key )
 			] = $translation;
 		}
 
@@ -66,13 +68,13 @@ class MessageBundleTranslationLoader {
 			$collection->resetForNewLanguage( $fallbackLanguageCode );
 			// TODO use custom tag after fixing MessageCollection::filter
 			$collection->setTags( 'ignored', array_keys( $translations ) );
-			$collection->filter( 'ignored' );
+			$collection->filter( MessageCollection::FILTER_IGNORED, MessageCollection::EXCLUDE_MATCHING );
 			if ( count( $collection ) === 0 ) {
 				break;
 			}
 
 			$collection->loadTranslations();
-			$collection->filter( 'hastranslation', false );
+			$collection->filter( MessageCollection::FILTER_HAS_TRANSLATION, MessageCollection::INCLUDE_MATCHING );
 			foreach ( $collection as $key => $message ) {
 				if ( $message->translation() !== null ) {
 					$translations[ $key ] = $message->translation();

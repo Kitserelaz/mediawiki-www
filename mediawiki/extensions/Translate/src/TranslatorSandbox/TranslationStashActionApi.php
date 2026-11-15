@@ -3,12 +3,12 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TranslatorSandbox;
 
-use ApiBase;
-use ApiMain;
-use FormatJson;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Extension\Translate\MessageLoading\MessageIndex;
+use MediaWiki\Json\FormatJson;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserFactory;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -22,21 +22,15 @@ use Wikimedia\Rdbms\IConnectionProvider;
  * @since 2013.06
  */
 class TranslationStashActionApi extends ApiBase {
-	private IConnectionProvider $dbProvider;
-	private UserFactory $userFactory;
-	private MessageIndex $messageIndex;
 
 	public function __construct(
 		ApiMain $mainModule,
 		string $moduleName,
-		IConnectionProvider $dbProvider,
-		UserFactory $userFactory,
-		MessageIndex $messageIndex
+		private readonly IConnectionProvider $dbProvider,
+		private readonly UserFactory $userFactory,
+		private readonly MessageIndex $messageIndex,
 	) {
 		parent::__construct( $mainModule, $moduleName );
-		$this->dbProvider = $dbProvider;
-		$this->userFactory = $userFactory;
-		$this->messageIndex = $messageIndex;
 	}
 
 	public function execute(): void {
@@ -141,10 +135,6 @@ class TranslationStashActionApi extends ApiBase {
 			],
 			'metadata' => [
 				ParamValidator::PARAM_TYPE => 'string',
-			],
-			'token' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true,
 			],
 			'username' => [
 				ParamValidator::PARAM_TYPE => 'string',

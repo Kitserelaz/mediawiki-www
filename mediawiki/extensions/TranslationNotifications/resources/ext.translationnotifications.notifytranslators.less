@@ -1,3 +1,20 @@
-.mw-tns-translatable-page-selector .mw-tns-hidden {
-	display: none;
+.mw-tns-translatable-page-selector {
+	.mw-tns-hidden {
+		display: none;
+	}
+
+	.tes-entity-selector {
+		max-width: 50em;
+	}
+}
+
+// apply to both JS and JS-disable cases
+.mw-widgets-languageSelectWidget-vue-container,
+.mw-widgets-languageSelectWidget {
+	max-width: 50em;
+}
+
+.client-nojs .mw-widgets-languageSelectWidget {
+	height: unset;
+	max-height: unset;
 }

@@ -52,6 +52,16 @@ ve.dm.Annotation.static.enableAboutGrouping = false;
 ve.dm.Annotation.static.applyToAppendedContent = true;
 
 /**
+ * Automatically apply annotation to content inserted within it.
+ *
+ * This includes content inserted after the annotation (appended content).
+ *
+ * @property {boolean}
+ * @see ve.ce.TextState#getChangeTransaction
+ */
+ve.dm.Annotation.static.applyToInsertedContent = true;
+
+/**
  * Accept this annotation when the browser spontaneously adds it to view's DOM.
  *
  * @property {boolean}
@@ -87,15 +97,22 @@ ve.dm.Annotation.static.trimWhitespace = true;
  * @static
  * @inheritable
  * @method
- * @param {Object|Array} dataElement Linear model element or array of linear model data
+ * @param {ve.dm.LinearData.Element|ve.dm.LinearData.Item[]} dataElement Linear model element or array of linear model data
  * @param {HTMLDocument} doc HTML document for creating elements
- * @param {ve.dm.Converter} converter Converter object to optionally call .getDomSubtreeFromData() on
+ * @param {ve.dm.DomFromModelConverter} converter Converter object to optionally call .getDomSubtreeFromData() on
  * @param {Node[]} childDomElements Children that will be appended to the returned element
  * @return {HTMLElement[]} Array of DOM elements; only the first element is used; may be empty
  */
 ve.dm.Annotation.static.toDomElements = null;
 
 /* Methods */
+
+/**
+ * @inheritdoc
+ */
+ve.dm.Annotation.prototype.getStore = function () {
+	return this.store;
+};
 
 /**
  * Get an object containing comparable annotation properties.
@@ -119,9 +136,10 @@ ve.dm.Annotation.prototype.getComparableObject = function () {
  * @return {Object} An object all HTML attributes except data-parsoid & RESTBase IDs
  */
 ve.dm.Annotation.prototype.getComparableHtmlAttributes = function () {
-	const domElements = this.store && this.getOriginalDomElements( this.store );
+	const domElements = this.getOriginalDomElements();
 
-	if ( domElements && domElements[ 0 ] ) {
+	/* istanbul ignore next */
+	if ( domElements.length ) {
 		const comparableAttributes = ve.getDomAttributes( domElements[ 0 ] );
 		delete comparableAttributes[ 'data-parsoid' ];
 

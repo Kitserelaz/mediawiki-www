@@ -22,6 +22,7 @@
                 "near_space_flattener"
             ],
             "filter": [
+                "truncate_keyword",
                 "icu_normalizer"
             ],
             "tokenizer": "no_splitting",
@@ -157,13 +158,13 @@
                 "acronym_fixer",
                 "camelCase_splitter",
                 "word_break_helper",
-                "arabic_extended_norm",
-                "gujarati_norm"
+                "arabic_extended_norm"
             ],
             "filter": [
                 "icu_token_repair",
                 "homoglyph_norm",
                 "icu_normalizer",
+                "indic_normalization",
                 "icu_folding",
                 "remove_empty"
             ],
@@ -176,13 +177,13 @@
                 "acronym_fixer",
                 "camelCase_splitter",
                 "word_break_helper",
-                "arabic_extended_norm",
-                "gujarati_norm"
+                "arabic_extended_norm"
             ],
             "filter": [
                 "icu_token_repair",
                 "homoglyph_norm",
                 "icu_normalizer",
+                "indic_normalization",
                 "icu_folding",
                 "remove_empty"
             ],
@@ -197,6 +198,16 @@
             "type": "custom"
         },
         "trigram": {
+            "filter": [
+                "icu_normalizer"
+            ],
+            "tokenizer": "trigram",
+            "type": "custom"
+        },
+        "trigram_anchored": {
+            "char_filter": [
+                "add_regex_start_end_anchors"
+            ],
             "filter": [
                 "icu_normalizer"
             ],
@@ -296,16 +307,19 @@
                 "\\u05F1=>\\u05D5\\u05D9",
                 "\\u05F2=>\\u05D9\\u05D9",
                 "\\uFB1F=>\\u05D9\\u05D9\\u05B7",
-                "\\u05D9\\u05B7\\u05D9=>\\u05D9\\u05D9\\u05B7"
+                "\\u05D9\\u05B7\\u05D9=>\\u05D9\\u05D9\\u05B7",
+                "\u0d23\u0d4d\\u200D=>\u0d7a",
+                "\u0d28\u0d4d\\u200D=>\u0d7b",
+                "\u0d30\u0d4d\\u200D=>\u0d7c",
+                "\u0d32\u0d4d\\u200D=>\u0d7d",
+                "\u0d33\u0d4d\\u200D=>\u0d7e",
+                "\u09a4\u09cd\\u200D=>\u09ce",
+                "\\u061C=>"
             ]
         },
-        "gujarati_norm": {
-            "type": "mapping",
-            "mappings": [
-                "\u0abe\u0ac5=>\u0ac9",
-                "\u0abe\u0ac7=>\u0acb",
-                "\u0abe\u0ac8=>\u0acc"
-            ]
+        "icu_normalizer": {
+            "type": "icu_normalizer",
+            "name": "nfkc_cf"
         },
         "near_space_flattener": {
             "type": "limited_mapping",
@@ -392,7 +406,7 @@
             "type": "lowercase"
         },
         "prefix_ngram_filter": {
-            "type": "edgeNGram",
+            "type": "edge_ngram",
             "max_gram": 255
         },
         "remove_empty": {
@@ -406,8 +420,23 @@
             "output_unigrams": true
         },
         "truncate_keyword": {
-            "type": "truncate",
+            "type": "truncate_norm",
             "length": 5000
+        }
+    },
+    "normalizer": {
+        "keyword": {
+            "type": "custom",
+            "filter": [
+                "truncate_keyword"
+            ]
+        },
+        "lowercase_keyword": {
+            "type": "custom",
+            "filter": [
+                "truncate_keyword",
+                "icu_normalizer"
+            ]
         }
     },
     "tokenizer": {
@@ -415,7 +444,7 @@
             "type": "keyword"
         },
         "prefix": {
-            "type": "edgeNGram",
+            "type": "edge_ngram",
             "max_gram": 255
         },
         "trigram": {

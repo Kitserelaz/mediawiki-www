@@ -2,8 +2,9 @@
 
 namespace MediaWiki\Extension\SecurePoll\Talliers;
 
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\SecurePoll\Exceptions\InvalidDataException;
-use MediaWiki\Xml\Xml;
+use MediaWiki\Html\Html;
 
 class HistogramRangeTallier extends Tallier {
 	/** @var array */
@@ -19,6 +20,7 @@ class HistogramRangeTallier extends Tallier {
 	/** @var int */
 	public $maxScore;
 
+	/** @inheritDoc */
 	public function __construct( $context, $electionTallier, $question ) {
 		parent::__construct( $context, $electionTallier, $question );
 		$this->minScore = intval( $question->getProperty( 'min-score' ) );
@@ -40,7 +42,6 @@ class HistogramRangeTallier extends Tallier {
 
 	/**
 	 * @inheritDoc
-	 *
 	 */
 	public function addVote( $scores ) {
 		foreach ( $scores as $oid => $score ) {
@@ -54,7 +55,6 @@ class HistogramRangeTallier extends Tallier {
 
 	/**
 	 * @inheritDoc
-	 *
 	 */
 	public function finishTally() {
 		$this->averages = [];
@@ -70,7 +70,6 @@ class HistogramRangeTallier extends Tallier {
 
 	/**
 	 * @inheritDoc
-	 *
 	 */
 	public function loadJSONResult( $data ) {
 		$this->averages = $data['averages'];
@@ -79,7 +78,6 @@ class HistogramRangeTallier extends Tallier {
 
 	/**
 	 * @inheritDoc
-	 *
 	 */
 	public function getJSONResult() {
 		return [
@@ -93,6 +91,7 @@ class HistogramRangeTallier extends Tallier {
 	 * @throws InvalidDataException
 	 */
 	public function getHtmlResult() {
+		/** @var Ballot */
 		$ballot = $this->election->getBallot();
 		if ( !method_exists( $ballot, 'getColumnLabels' ) ) {
 			throw new InvalidDataException( __METHOD__ . ': ballot type not supported by this tallier' );
@@ -102,25 +101,30 @@ class HistogramRangeTallier extends Tallier {
 			$optionLabels[$option->getId()] = $option->parseMessageInline( 'text' );
 		}
 
+		$ballot->initRequest(
+			RequestContext::getMain()->getRequest(),
+			RequestContext::getMain()->getOutput(),
+			RequestContext::getMain()->getLanguage()
+		);
 		// @phan-suppress-next-line PhanUndeclaredMethod Checked by is_callable
 		$labels = $ballot->getColumnLabels( $this->question );
 		$s = "<table class=\"securepoll-table\">\n" . "<tr>\n" . "<th>&#160;</th>\n";
 		foreach ( $labels as $label ) {
-			$s .= Xml::element( 'th', [], $label ) . "\n";
+			$s .= Html::element( 'th', [], $label ) . "\n";
 		}
-		$s .= Xml::element( 'th', [], wfMessage( 'securepoll-average-score' )->text() );
+		$s .= Html::element( 'th', [], wfMessage( 'securepoll-average-score' )->text() );
 		$s .= "</tr>\n";
 
 		foreach ( $this->averages as $oid => $average ) {
-			$s .= "<tr>\n" . Xml::tags(
+			$s .= "<tr>\n" . Html::rawElement(
 					'td',
 					[ 'class' => 'securepoll-results-row-heading' ],
 					$optionLabels[$oid]
 				) . "\n";
 			foreach ( $labels as $score => $label ) {
-				$s .= Xml::element( 'td', [], $this->histogram[$oid][$score] ) . "\n";
+				$s .= Html::element( 'td', [], $this->histogram[$oid][$score] ) . "\n";
 			}
-			$s .= Xml::element( 'td', [], $average ) . "\n";
+			$s .= Html::element( 'td', [], $average ) . "\n";
 			$s .= "</tr>\n";
 		}
 		$s .= "</table>\n";
@@ -130,7 +134,6 @@ class HistogramRangeTallier extends Tallier {
 
 	/**
 	 * @inheritDoc
-	 *
 	 */
 	public function getTextResult() {
 		return $this->getHtmlResult();

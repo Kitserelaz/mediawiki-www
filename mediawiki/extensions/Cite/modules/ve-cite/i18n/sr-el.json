@@ -48,9 +48,5 @@
 	"cite-ve-referenceslist-missingref-in-list": "Ova referenca je definisana u šablonu ili drugom generisanom bloku i za sada može da se pregleda samo u izvornom režimu.",
 	"cite-ve-referenceslist-missingreflist": "Ovaj spisak referenci je generisao šablon.",
 	"cite-ve-toolbar-group-label": "Referenca",
-	"cite-ve-othergroup-item": "$1 izvor",
-	"cite-ve-dialog-reference-editing-extends": "Ovo je referisanje na postojeću referencu.",
-	"cite-ve-dialog-reference-title-add-details": "Dodaj detalje referenci",
-	"cite-ve-dialog-reference-title-edit-details": "Uredi dodatne detalje",
-	"cite-ve-dialog-reference-useexisting-long-tool": "Upotrebi referencu ponovo"
+	"cite-ve-othergroup-item": "$1 izvor"
 }

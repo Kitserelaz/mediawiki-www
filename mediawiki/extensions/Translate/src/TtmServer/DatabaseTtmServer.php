@@ -10,6 +10,7 @@ use MediaWiki\Title\Title;
 use MediaWiki\WikiMap\WikiMap;
 use Wikimedia\Rdbms\DBQueryError;
 use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IReadableDatabase;
 use Wikimedia\Rdbms\IResultWrapper;
 
 /**
@@ -22,10 +23,14 @@ use Wikimedia\Rdbms\IResultWrapper;
 class DatabaseTtmServer extends TtmServer implements WritableTtmServer, ReadableTtmServer {
 	private array $sids;
 
-	private function getDB( int $mode = DB_REPLICA ): IDatabase {
-		return MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection(
-			$mode, 'ttmserver', $this->config['database']
-		);
+	private function getDB( int $mode = DB_REPLICA ): IDatabase|IReadableDatabase {
+		$connectionProvider = MediaWikiServices::getInstance()->getConnectionProvider();
+
+		if ( $mode === DB_REPLICA ) {
+			return $connectionProvider->getReplicaDatabase( $this->config['database'] );
+		}
+
+		return $connectionProvider->getPrimaryDatabase( $this->config['database'] );
 	}
 
 	public function update( MessageHandle $handle, ?string $targetText ): bool {
@@ -169,7 +174,7 @@ class DatabaseTtmServer extends TtmServer implements WritableTtmServer, Readable
 		$table = $dbw->tableName( 'translate_tmf' );
 		try {
 			$dbw->query( "DROP INDEX tmf_text ON $table", __METHOD__ );
-		} catch ( DBQueryError $e ) {
+		} catch ( DBQueryError ) {
 			// Perhaps the script was aborted before it got
 			// chance to add the index back.
 		}

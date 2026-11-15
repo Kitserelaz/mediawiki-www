@@ -18,10 +18,9 @@
  * @file
  * @author Andrew Otto <otto@wikimedia.org>
  */
+
 namespace MediaWiki\Extension\EventBus\Serializers;
 
-use MediaWiki\Config\Config;
-use MediaWiki\Http\Telemetry;
 use MediaWiki\WikiMap\WikiMap;
 use Wikimedia\UUID\GlobalIdGenerator;
 
@@ -31,29 +30,17 @@ use Wikimedia\UUID\GlobalIdGenerator;
  */
 class EventSerializer {
 	/**
-	 * @var Config
-	 */
-	private Config $mainConfig;
-	/**
 	 * @var GlobalIdGenerator
 	 */
 	private GlobalIdGenerator $globalIdGenerator;
 
-	private Telemetry $telemetry;
-
 	/**
-	 * @param Config $mainConfig
 	 * @param GlobalIdGenerator $globalIdGenerator
-	 * @param Telemetry $telemetry
 	 */
 	public function __construct(
-		Config $mainConfig,
 		GlobalIdGenerator $globalIdGenerator,
-		Telemetry $telemetry
 	) {
-		$this->mainConfig = $mainConfig;
 		$this->globalIdGenerator = $globalIdGenerator;
-		$this->telemetry = $telemetry;
 	}
 
 	/**
@@ -70,7 +57,7 @@ class EventSerializer {
 	 * Adds a meta subobject to $eventAttrs based on uri and stream.
 	 *
 	 * @param string $schema
-	 * 	Schema URI for '$schema' field.
+	 *  Schema URI for '$schema' field.
 	 *
 	 * @param string $stream
 	 *  Name of stream for meta.stream field.
@@ -82,7 +69,13 @@ class EventSerializer {
 	 *  Additional event attributes to include.
 	 *
 	 * @param string|null $wikiId
-	 *  wikiId to use for meta.domain. If null ServerName will be used.
+	 *  wikiId to use when looking up value for meta.domain.
+	 *  If null, meta.domain will not be set.
+	 *  NOTE: It would be better if wiki domain name was fetched and passed into createEvent,
+	 *        rather than forcing createEvent to look up the domain itself.
+	 *        However, this would require changing the createEvent method signature, which is used
+	 *        by CirrusSearch extension.
+	 *        See: https://phabricator.wikimedia.org/T392516
 	 *
 	 * @param bool|string|null $ingestionTimestamp
 	 *  If true, meta.dt will be set to the current timestamp.
@@ -93,6 +86,10 @@ class EventSerializer {
 	 *  to its ingestion time.
 	 *  See: https://phabricator.wikimedia.org/T267648
 	 *
+	 * @param string|null $requestId
+	 *  Will be set as meta.request_id if provided.
+	 *  This should typically be obtained via Telemetry::getInstance()->getRequestId();
+	 *
 	 * @return array $eventAttrs + $schema + meta sub object
 	 */
 	public function createEvent(
@@ -101,28 +98,29 @@ class EventSerializer {
 		string $uri,
 		array $eventAttrs,
 		?string $wikiId = null,
-		$ingestionTimestamp = null
+		$ingestionTimestamp = null,
+		?string $requestId = null,
 	): array {
-		// If $wikiId is provided, and we can get a $wikiRef, then use $wikiRef->getDisplayName().
-		// Else just use ServerName.
-		$domain = $this->mainConfig->get( 'ServerName' );
-		$wikiRef = $wikiId ? WikiMap::getWiki( $wikiId ) : null;
-		if ( $wikiRef ) {
-			$domain = $wikiRef->getDisplayName();
+		// Get canonical wiki domain 'display name' via wikiId.
+		// If WikiMap::getWiki is null, then we can't get a domain (and are likely in a unit test).
+		// In that case, don't provide a domain name.
+		$wikiDomainName = null;
+		if ( $wikiId !== null ) {
+			$wikiReference = WikiMap::getWiki( $wikiId );
+			$wikiDomainName = $wikiReference ? $wikiReference->getDisplayName() : null;
 		}
 
 		$metaDt = null;
 		if ( $ingestionTimestamp === true ) {
 			$metaDt = self::timestampToDt();
-		} elseif ( $ingestionTimestamp !== false ) {
+		} elseif ( $ingestionTimestamp !== null ) {
 			$metaDt = self::timestampToDt( $ingestionTimestamp );
 		}
-
 		return array_merge(
 			$eventAttrs,
 			[
 				'$schema' => $schema,
-				'meta' => $this->createMeta( $stream, $uri, $domain, $metaDt )
+				'meta' => $this->createMeta( $stream, $uri, $wikiDomainName, $metaDt, $requestId )
 			]
 		);
 	}
@@ -132,27 +130,37 @@ class EventSerializer {
 	 *
 	 * @param string $stream
 	 * @param string $uri
-	 * @param string $domain
+	 * @param string|null $domain
+	 *    If null, 'domain' will not be set.
 	 * @param string|null $dt
-	 * 	If this is null, 'dt' will not be set.
+	 *    If null, 'dt' will not be set.
+	 * @param string|null $requestId
+	 *    If null, 'request_id' will not be set.
 	 * @return array
 	 */
 	private function createMeta(
 		string $stream,
 		string $uri,
-		string $domain,
-		?string $dt = null
+		?string $domain = null,
+		?string $dt = null,
+		?string $requestId = null,
 	): array {
 		$metaAttrs = [
-			'stream'     => $stream,
-			'uri'        => $uri,
-			'id'         => $this->globalIdGenerator->newUUIDv4(),
-			'request_id' => $this->telemetry->getRequestId(),
-			'domain'     => $domain,
+			'stream' => $stream,
+			'uri' => $uri,
+			'id' => $this->globalIdGenerator->newUUIDv4(),
 		];
+
+		if ( $domain !== null ) {
+			$metaAttrs['domain'] = $domain;
+		}
 
 		if ( $dt !== null ) {
 			$metaAttrs['dt'] = $dt;
+		}
+
+		if ( $requestId !== null ) {
+			$metaAttrs['request_id'] = $requestId;
 		}
 
 		return $metaAttrs;

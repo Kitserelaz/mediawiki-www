@@ -42,7 +42,7 @@
 	"nuke-associated-talk": "Keskustelusivut",
 	"nuke-associated-redirect": "Ohjaukset",
 	"nuke-date-limited": "Vain viimeisen {{PLURAL:$1|päivän|$1 päivän}} aikana luotuja sivuja voi poistaa. Vaihda päivää siten, että olet tämän aikajakson sisällä.",
-	"nuke-editby": "Luonut [[Special:Contributions/$1|{{GENDER:$1|$1}}]].",
+	"nuke-editby": "Luonut [[Special:Contributions/$1|{{GENDER:$1|$1}}]]",
 	"nuke-redirectsto": "ohjaus:[[$1]]",
 	"nuke-delete-summary": "'''{{PLURAL:$1|Yksi sivu|$1 sivua}}''' lisätty poistojonoon.",
 	"nuke-delete-summary-user": "Lisätty '''{{PLURAL:$1|yksi|$1}}''' käyttäjän [[{{ns:user}}:$2|$2]] ([[{{ns:user_talk}}:$2|{{int:talkpagelinktext}}]] {{int:pipe-separator}} [[{{ns:special}}:Contributions/$2|{{int:contribslink}}]] {{int:pipe-separator}} [[{{ns:special}}:Block/$2|{{int:blocklink}}]]) '''{{PLURAL:$1|luoma sivu|luomaa sivua}}''' poistojonoon.",

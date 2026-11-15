@@ -1,7 +1,8 @@
 {
 	"@metadata": {
 		"authors": [
-			"Banjo"
+			"Banjo",
+			"Toliño"
 		]
 	},
 	"userpageeditprotection-desc": "Permite restrinxir a edición nas páxinas de usuario ó propio usuario e ós editores con permiso",

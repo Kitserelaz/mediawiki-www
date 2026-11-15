@@ -2,49 +2,33 @@
 
 namespace MediaWiki\TimedMediaHandler;
 
-use File;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\FileRepo\File\File;
 use MediaWiki\Html\Html;
 use MediaWiki\Html\TemplateParser;
 use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\TimedMediaHandler\WebVideoTranscode\WebVideoTranscode;
 use MediaWiki\Utils\MWTimestamp;
+use Wikimedia\Timestamp\TimestampFormat;
 
 /**
  * TranscodeStatusTable outputs a "transcode" status table to the ImagePage
  *
  * If logged in as autoconfirmed users can reset transcode states
  * via the transcode api entry point
- *
  */
 class TranscodeStatusTable {
-	/** @var IContextSource */
-	private $context;
+	private readonly TemplateParser $templateParser;
 
-	/** @var LinkRenderer */
-	private $linkRenderer;
-
-	/** @var TemplateParser */
-	private $templateParser;
-
-	/**
-	 * @param IContextSource $context
-	 * @param LinkRenderer $linkRenderer
-	 */
 	public function __construct(
-		IContextSource $context,
-		LinkRenderer $linkRenderer
+		private readonly IContextSource $context,
+		private readonly LinkRenderer $linkRenderer,
 	) {
-		$this->context = $context;
-		$this->linkRenderer = $linkRenderer;
 		$this->templateParser = new TemplateParser( __DIR__ . '/../templates' );
 	}
 
-	/**
-	 * @param File $file
-	 * @return string
-	 */
-	public function getHTML( $file ) {
+	public function getHTML( File $file ): string {
 		// Add transcode table css and javascript:
 		$this->context->getOutput()->addModules( [ 'ext.tmh.transcodetable' ] );
 
@@ -65,21 +49,20 @@ class TranscodeStatusTable {
 	/**
 	 * Get the video or audio codec for the defined transcode,
 	 * for grouping/sorting purposes.
-	 * @param string $key
-	 * @return string
 	 */
-	public static function codecFromTranscodeKey( $key ) {
-		if ( isset( WebVideoTranscode::$derivativeSettings[$key] ) ) {
-			$settings = WebVideoTranscode::$derivativeSettings[$key];
-			if ( isset( $settings['videoCodec'] ) ) {
-				return $settings['videoCodec'];
+	public static function codecFromTranscodeKey( string $key ): string {
+		$transcodePresets = MediaWikiServices::getInstance()->getService( 'TimedMediaHandler.TranscodePresets' );
+		$settings = $transcodePresets->findByKey( $key );
+		if ( $settings ) {
+			if ( $settings->videoCodec ) {
+				return $settings->videoCodec;
 			}
 
-			if ( isset( $settings['audioCodec'] ) ) {
-				return $settings['audioCodec'];
+			if ( $settings->audioCodec ) {
+				return $settings->audioCodec;
 			}
 			// else
-			// this this shouldn't happen...
+			// this shouldn't happen...
 			// fall through
 		}
 		// else
@@ -88,11 +71,7 @@ class TranscodeStatusTable {
 		return $key;
 	}
 
-	/**
-	 * @param File $file
-	 * @return string
-	 */
-	public function getTranscodesTable( $file ) {
+	public function getTranscodesTable( File $file ): string {
 		$transcodeRows = WebVideoTranscode::getTranscodeState( $file );
 
 		if ( !$transcodeRows ) {
@@ -119,7 +98,7 @@ class TranscodeStatusTable {
 			if ( $aIndex === $bIndex ) {
 				return -strnatcmp( $a, $b );
 			}
-			return ( $aIndex - $bIndex );
+			return $aIndex - $bIndex;
 		} );
 
 		return $this->templateParser->processTemplate(
@@ -128,19 +107,14 @@ class TranscodeStatusTable {
 		);
 	}
 
-	/**
-	 * @param array $transcodeRows
-	 * @param File $file
-	 * @return array
-	 */
-	private function transcodeRowsToTemplateParams( $transcodeRows, $file ) {
+	private function transcodeRowsToTemplateParams( array $transcodeRows, File $file ): array {
 		$transcodeRowsForTemplate = [];
 		foreach ( $transcodeRows as $transcodeKey => $state ) {
 			$transcodeRowsForTemplate[] = [
 				'transcodeKey' => $transcodeKey,
 				'msg-derivative-key' => wfMessage( 'timedmedia-derivative-' . $transcodeKey ),
 				'bitrate' => $this->getTranscodeBitrate( $file, $state ),
-				'transcode-success' => $state['time_success'] !== null,
+				'transcode-success' => (int)( $state['state'] ?? -1 ) === WebVideoTranscode::STATE_SUCCESS,
 				'msg-timedmedia-download' => wfMessage( 'timedmedia-download' ),
 				// Download file
 				//
@@ -159,7 +133,7 @@ class TranscodeStatusTable {
 			];
 		}
 
-		$templateParams = [
+		return [
 			'msg-timedmedia-transcodeinfo' => wfMessage( 'timedmedia-transcodeinfo' ),
 			'msg-timedmedia-transcodebitrate' => wfMessage( 'timedmedia-transcodebitrate' ),
 			'msg-timedmedia-not-ready' => wfMessage( 'timedmedia-not-ready' ),
@@ -170,58 +144,38 @@ class TranscodeStatusTable {
 			'has-reset' => $this->context->getUser()->isAllowed( 'transcode-reset' ),
 			'transcodeRows' => $transcodeRowsForTemplate,
 		];
-		return $templateParams;
 	}
 
-	/**
-	 * @param File $file
-	 * @param string $transcodeKey
-	 * @return string
-	 */
-	public static function getSourceUrl( $file, $transcodeKey ) {
+	public static function getSourceUrl( File $file, string $transcodeKey ): string {
 		return WebVideoTranscode::getTranscodedUrlForFile( $file, $transcodeKey );
 	}
 
-	/**
-	 * @param File $file
-	 * @param array $state
-	 * @return string
-	 */
-	public function getTranscodeDuration( File $file, array $state ) {
-		if ( $state['time_success'] !== null ) {
-			$startTime = (int)wfTimestamp( TS_UNIX, $state['time_startwork'] );
-			$endTime = (int)wfTimestamp( TS_UNIX, $state['time_success'] );
+	public function getTranscodeDuration( File $file, array $state ): string {
+		if ( (int)( $state['state'] ?? -1 ) === WebVideoTranscode::STATE_SUCCESS ) {
+			$startTime = (int)wfTimestamp( TimestampFormat::UNIX, $state['time_startwork'] );
+			$endTime = (int)wfTimestamp( TimestampFormat::UNIX, $state['time_success'] );
 			$delta = $endTime - $startTime;
 			return $this->context->getLanguage()->formatTimePeriod( $delta );
 		}
 		return '';
 	}
 
-	/**
-	 * @param File $file
-	 * @param array $state
-	 * @return string
-	 */
-	public function getTranscodeBitrate( File $file, array $state ) {
-		if ( $state['time_success'] !== null ) {
+	public function getTranscodeBitrate( File $file, array $state ): string {
+		if ( (int)( $state['state'] ?? -1 ) === WebVideoTranscode::STATE_SUCCESS ) {
 			return $this->context->getLanguage()->formatBitrate( $state['final_bitrate'] );
 		}
 		return '';
 	}
 
-	/**
-	 * @param File $file
-	 * @param array $state
-	 * @return string
-	 */
-	public static function getStatusMsg( $file, $state ) {
+	public static function getStatusMsg( File $file, array $state ): string {
+		$transcodeState = (int)( $state['state'] ?? -1 );
 		// Check for success:
-		if ( $state['time_success'] !== null ) {
+		if ( $transcodeState === WebVideoTranscode::STATE_SUCCESS ) {
 			return wfMessage( 'timedmedia-completed-on' )
-				->dateTimeParams( $state[ 'time_success' ] )->escaped();
+				->dateTimeParams( $state[ 'touched' ] )->escaped();
 		}
 		// Check for error:
-		if ( $state['time_error'] !== null ) {
+		if ( $transcodeState === WebVideoTranscode::STATE_FAILED ) {
 			$attribs = [];
 			if ( $state['error'] !== null ) {
 				$attribs = [
@@ -232,42 +186,24 @@ class TranscodeStatusTable {
 
 			return Html::rawElement( 'span', $attribs,
 				wfMessage( 'timedmedia-error-on' )
-					->dateTimeParams( $state['time_error'] )->escaped()
+					->dateTimeParams( $state['touched'] )->escaped()
 			);
 		}
 
 		// Check for started encoding
-		if ( $state['time_startwork'] !== null ) {
-			// Get the rough estimate of time done: ( this is not very costly considering everything else
-			// that happens in an action=purge video page request )
-			/*$filePath = WebVideoTranscode::getTargetEncodePath( $file, $state['key'] );
-			if ( is_file( $filePath ) ) {
-				$targetSize = WebVideoTranscode::getProjectedFileSize( $file, $state['key'] );
-				if ( $targetSize === false ) {
-					$doneMsg = wfMessage(
-						'timedmedia-unknown-target-size'
-						)->sizeParams(
-							filesize( $filePath )
-						)->escaped();
-				} else {
-					$doneMsg = wfMessage(
-						'timedmedia-percent-done',
-						round( filesize( $filePath ) / $targetSize, 2 )
-						)->escaped();
-				}
-			}	*/
-			// Predicting percent done is not working well right now ( disabled for now )
+		if ( $transcodeState === WebVideoTranscode::STATE_ACTIVE ) {
+			// Predicting percent done is not working well right now (disabled for now)
 			$doneMsg = '';
 			return wfMessage(
 				'timedmedia-started-transcode',
-				( new MWTimestamp( $state['time_startwork'] ) )->getRelativeTimestamp(), $doneMsg
+				( new MWTimestamp( $state['touched'] ) )->getRelativeTimestamp(), $doneMsg
 			)->escaped();
 		}
-		// Check for job added ( but not started encoding )
-		if ( $state['time_addjob'] !== null ) {
+		// Check for job added (but not started encoding)
+		if ( $transcodeState === WebVideoTranscode::STATE_QUEUED ) {
 			return wfMessage(
 				'timedmedia-in-job-queue',
-				( new MWTimestamp( $state['time_addjob'] ) )->getRelativeTimestamp()
+				( new MWTimestamp( $state['touched'] ) )->getRelativeTimestamp()
 			)->escaped();
 		}
 		// Return unknown status error:

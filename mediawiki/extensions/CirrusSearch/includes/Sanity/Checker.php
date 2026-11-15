@@ -1,4 +1,7 @@
 <?php
+/**
+ * @license GPL-2.0-or-later
+ */
 
 namespace CirrusSearch\Sanity;
 
@@ -7,31 +10,15 @@ use CirrusSearch\Connection;
 use CirrusSearch\SearchConfig;
 use CirrusSearch\Searcher;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Title\Title;
 use Wikimedia\Stats\Metrics\CounterMetric;
 use Wikimedia\Stats\Metrics\NullMetric;
 use Wikimedia\Stats\StatsFactory;
-use WikiPage;
 
 /**
  * Checks if a WikiPage's representation in search index is sane.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
  */
-
 class Checker {
 	/**
 	 * @var SearchConfig
@@ -142,7 +129,7 @@ class Checker {
 	 */
 	public static function makeIsOldClosure( $loopId, $numCycles ) {
 		$loopMod = $loopId % $numCycles;
-		return static function ( \WikiPage $page ) use ( $numCycles, $loopMod ) {
+		return static function ( WikiPage $page ) use ( $numCycles, $loopMod ) {
 			$pageIdMod = $page->getId() % $numCycles;
 			return $pageIdMod == $loopMod;
 		};
@@ -171,7 +158,7 @@ class Checker {
 			if ( isset( $pagesFromDb[$pageId] ) ) {
 				$page = $pagesFromDb[$pageId];
 				$updated = $this->checkExisitingPage( $docId, $pageId, $page, $fromIndex );
-				if ( !$updated && ( $this->isOldFn )( $page ) ) {
+				if ( !$updated && ( $this->isOldFn )( $page ) && !$page->isRedirect() ) {
 					$this->remediator->oldDocument( $page );
 					$nbPagesOld++;
 				}
@@ -199,8 +186,7 @@ class Checker {
 		return $this->statsFactory->getCounter( "sanitization_total" )
 			->setLabel( "problem", $problem )
 			->setLabel( "search_cluster", $cluster )
-			->setLabel( "action", $action )
-			->copyToStatsdAt( "CirrusSearch.$cluster.sanitization.$action" );
+			->setLabel( "action", $action );
 	}
 
 	/**
@@ -289,9 +275,9 @@ class Checker {
 	 * @return bool true if a modification was needed
 	 */
 	private function checkPageInIndex( $docId, $pageId, WikiPage $page, array $fromIndex ) {
-		$insane = $this->checkIndexMismatch( $docId, $pageId, $page, $fromIndex );
+		$insane = $this->checkIndexMismatch( $docId, $page, $fromIndex );
 		if ( !$insane ) {
-			$insane = $this->checkIndexedVersion( $docId, $pageId, $page, $fromIndex );
+			$insane = $this->checkIndexedVersion( $docId, $page, $fromIndex );
 		}
 
 		if ( !$insane ) {
@@ -307,12 +293,11 @@ class Checker {
 	 * namespace.
 	 *
 	 * @param string $docId
-	 * @param int $pageId
 	 * @param WikiPage $page
 	 * @param \Elastica\Result[] $fromIndex
 	 * @return bool true if a modification was needed
 	 */
-	private function checkIndexMismatch( $docId, $pageId, WikiPage $page, array $fromIndex ) {
+	private function checkIndexMismatch( $docId, WikiPage $page, array $fromIndex ) {
 		$foundInsanityInIndex = false;
 		$expectedSuffix = $this->connection->getIndexSuffixForNamespace(
 			$page->getTitle()->getNamespace()
@@ -338,12 +323,11 @@ class Checker {
 	 * latest version in the database.
 	 *
 	 * @param string $docId
-	 * @param int $pageId
 	 * @param WikiPage $page
 	 * @param \Elastica\Result[] $fromIndex
 	 * @return bool true if a modification was needed
 	 */
-	private function checkIndexedVersion( $docId, $pageId, WikiPage $page, array $fromIndex ) {
+	private function checkIndexedVersion( $docId, WikiPage $page, array $fromIndex ) {
 		$latest = $page->getLatest();
 		$foundInsanityInIndex = false;
 		foreach ( $fromIndex as $indexInfo ) {
@@ -425,7 +409,7 @@ class Checker {
 		return $indexedPages;
 	}
 
-	private function sane( $pageId, $reason ) {
+	private function sane( int $pageId, string $reason ) {
 		if ( $this->logSane ) {
 			printf( "%30s %10d\n", $reason, $pageId );
 		}

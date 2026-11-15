@@ -3,6 +3,7 @@
 namespace CirrusSearch\Maintenance;
 
 use CirrusSearch\Connection;
+use CirrusSearch\SearchConfig;
 use Elastica\IndexTemplate;
 use Wikimedia\Assert\Assert;
 
@@ -59,14 +60,14 @@ class IndexTemplateBuilder {
 	 * @param Connection $connection
 	 * @param array $templateDefinition
 	 * @param string[] $availablePlugins
-	 * @return IndexTemplateBuilder
+	 * @return self
 	 * @throws \InvalidArgumentException
 	 */
 	public static function build(
 		Connection $connection,
 		array $templateDefinition,
 		array $availablePlugins
-	): IndexTemplateBuilder {
+	): self {
 		$templateName = $templateDefinition['template_name'] ?? null;
 		$langCode = $templateDefinition['language_code'] ?? 'int';
 		if ( $templateName === null ) {
@@ -102,18 +103,20 @@ class IndexTemplateBuilder {
 		return $this->templateName;
 	}
 
-	private function getSearchConfig() {
+	private function getSearchConfig(): SearchConfig {
 		return $this->connection->getConfig();
 	}
 
 	private function createIndexTemplate(): IndexTemplate {
 		// Can go back to plain IndexTemplate when upgrading to Elastica 7
 		return new class( $this->connection->getClient(), $this->templateName ) extends IndexTemplate {
+			/** @inheritDoc */
 			public function request( $method, $data = [], array $query = [] ) {
 				$path = '_template/' . $this->getName();
 				return $this->getClient()->request( $path, $method, $data, $query );
 			}
 
+			/** @inheritDoc */
 			public function create( array $args = [] ) {
 				return $this->request( \Elastica\Request::PUT, $args );
 			}

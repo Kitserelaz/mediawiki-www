@@ -1,6 +1,6 @@
-/*! jquery.ime - v0.2.0+20250530
+/*! jquery.ime - v0.2.0+20260903
 * https://github.com/wikimedia/jquery.ime
-* Copyright (c) 2025 Santhosh Thottingal; License: (GPL-2.0-or-later OR MIT) */
+* Copyright (c) 2026 Santhosh Thottingal; License: (GPL-2.0-or-later OR MIT) */
 ( function ( $ ) {
 	'use strict';
 
@@ -1486,7 +1486,7 @@
 
 	$.fn.imeselector.Constructor = IMESelector;
 
-	selectorTemplate = '<div class="imeselector imeselector-toggle">' +
+	selectorTemplate = '<div class="imeselector imeselector-toggle notheme skin-invert">' +
 		'<a class="ime-name imeselector-toggle" href="#"></a>' +
 		'<b class="ime-setting-caret imeselector-toggle"></b></div>';
 
@@ -2058,6 +2058,10 @@
 			name: 'लिप्यंतरण',
 			source: 'rules/hi/hi-transliteration.js'
 		},
+		'hoc-latn-semicolon': {
+			name: 'Ho Latin Semicolon',
+			source: 'rules/hoc-latn/hoc-latn-semicolon.js'
+		},
 		'hoc-latn-tilde': {
 			name: 'Ho Latin Tilde',
 			source: 'rules/hoc-latn/hoc-latn-tilde.js'
@@ -2126,6 +2130,14 @@
 			name: 'Esan Awain tilde',
 			source: 'rules/ish/ish-tilde.js'
 		},
+		'izr-tilde': {
+			name: 'Izere tilde',
+			source: 'rules/izr/izr-tilde.js'
+		},
+		'jab-tilde': {
+			name: 'Hyam tilde',
+			source: 'rules/jab/jab-tilde.js'
+		},
 		'jac-tilde': {
 			name: 'Jakaltek tilde',
 			source: 'rules/jac/jac-tilde.js'
@@ -2169,6 +2181,10 @@
 		'ki-tilde': {
 			name: 'Gĩkũyũ',
 			source: 'rules/ki/ki-tilde.js'
+		},
+		'kix-tilde': {
+			name: 'Khiamniungan tilde',
+			source: 'rules/kix/kix-tilde.js'
 		},
 		'kk-arabic': {
 			name: 'Kazakh Arabic transliteration',
@@ -2377,7 +2393,7 @@
 			source: 'rules/my/my-xkb.js'
 		},
 		'nan-latn-pehoeji-transliteration': {
-			name: '閩南語白話字IME / Bân-lâm-gú Pe̍h-ōe-jī IME',
+			name: '閩南語白話字IME / Bân-lâm-gí Pe̍h-ōe-jī IME',
 			source: 'rules/nan/nan-latn-pehoeji-transliteration.js'
 		},
 		'nb-normforms': {
@@ -2492,6 +2508,10 @@
 			name: 'Pontic tilde',
 			source: 'rules/pnt/pnt-tilde.js'
 		},
+		'pwo-tilde': {
+			name: 'ဖျိၩ့ၡိ',
+			source: 'rules/pwo/pwo-tilde.js'
+		},
 		'roa-tara-GVU': {
 			name: 'Tarandine',
 			source: 'rules/roa-tara/roa-tara.js'
@@ -2563,6 +2583,10 @@
 		'sg-tilde': {
 			name: 'Sängö',
 			source: 'rules/sg/sg-tilde.js'
+		},
+		'sgh-tilde': {
+			name: 'xuɣ̌nůni',
+			source: 'rules/sgh/sgh-tilde.js'
 		},
 		'shn-standard': {
 			name: 'တႆး',
@@ -2664,9 +2688,17 @@
 			name: 'Tigre GeezIM',
 			source: 'rules/tig/tig-geezim.js'
 		},
+		'tiv-tilde': {
+			name: 'Tiv Tilde',
+			source: 'rules/tiv/tiv-tilde.js'
+		},
 		'tn-tilde': {
 			name: 'Setswana tilde',
 			source: 'rules/tn/tn-tilde.js'
+		},
+		'tsw-tilde': {
+			name: 'Tsishingini tilde',
+			source: 'rules/tsw/tsw-tilde.js'
 		},
 		'tum-tilde': {
 			name: 'ChiTumbuka tilde',
@@ -3062,7 +3094,7 @@
 		},
 		'hoc-latn': {
 			autonym: 'Ho',
-			inputmethods: [ 'hoc-latn-tilde' ]
+			inputmethods: [ 'hoc-latn-tilde', 'hoc-latn-semicolon' ]
 		},
 		hr: {
 			autonym: 'Hrvatski',
@@ -3099,6 +3131,14 @@
 		ish: {
 			autonym: 'awain',
 			inputmethods: [ 'ish-tilde' ]
+		},
+		izr: {
+			autonym: 'Izere',
+			inputmethods: [ 'izr-tilde' ]
+		},
+		jab: {
+			autonym: 'Hyam',
+			inputmethods: [ 'jab-tilde' ]
 		},
 		jac: {
 			autonym: 'Abꞌxubꞌal Poptiꞌ',
@@ -3143,6 +3183,10 @@
 		ki: {
 			autonym: 'Gĩkũyũ',
 			inputmethods: [ 'ki-tilde' ]
+		},
+		kix: {
+			autonym: 'Khiamniungan',
+			inputmethods: [ 'kix-tilde' ]
 		},
 		kk: {
 			autonym: 'Қазақша',
@@ -3277,7 +3321,7 @@
 			inputmethods: [ 'my-mm3', 'my-xkb' ]
 		},
 		nan: {
-			autonym: '閩南語 / Bân-lâm-gú',
+			autonym: '閩南語 / Bân-lâm-gí',
 			inputmethods: [ 'nan-latn-pehoeji-transliteration' ]
 		},
 		'nan-hani': {
@@ -3289,11 +3333,11 @@
 			inputmethods: [ 'nan-latn-pehoeji-transliteration' ]
 		},
 		'nan-latn-pehoeji': {
-			autonym: 'Bân-lâm-gú (Pe̍h-ōe-jī)',
+			autonym: 'Bân-lâm-gí (Pe̍h-ōe-jī)',
 			inputmethods: [ 'nan-latn-pehoeji-transliteration' ]
 		},
 		'nan-latn-tailo': {
-			autonym: 'Bân-lâm-gú (Tâi-lô)',
+			autonym: 'Bân-lâm-gí (Tâi-lô)',
 			inputmethods: [ 'nan-latn-pehoeji-transliteration' ]
 		},
 		naq: {
@@ -3364,6 +3408,14 @@
 			autonym: 'Ποντιακά',
 			inputmethods: [ 'pnt-tilde' ]
 		},
+		pwo: {
+			autonym: 'ဖျိၩ့ၡိ',
+			inputmethods: [ 'pwo-tilde' ]
+		},
+		raj: {
+			autonym: 'राजस्थानी',
+			inputmethods: [ 'hi-transliteration', 'hi-inscript', 'hi-bolnagri', 'hi-phonetic', 'hi-inscript2' ]
+		},
 		rif: {
 			autonym: 'ⵜⴰⵔⵉⴼⵉⵜ',
 			inputmethods: [ 'ber-tfng' ]
@@ -3407,6 +3459,10 @@
 		sg: {
 			autonym: 'Sängö',
 			inputmethods: [ 'sg-tilde' ]
+		},
+		sgh: {
+			autonym: 'xuɣ̌nůni',
+			inputmethods: [ 'sgh-tilde' ]
 		},
 		shi: {
 			autonym: 'ⵜⴰⵛⵍⵃⵉⵜ',
@@ -3476,6 +3532,10 @@
 			autonym: 'ትግሬ',
 			inputmethods: [ 'tig-geezim' ]
 		},
+		tiv: {
+			autonym: 'tiv',
+			inputmethods: [ 'tiv-tilde' ]
+		},
 		tkr: {
 			autonym: 'цӀаӀхна миз',
 			inputmethods: [ 'cyrl-palochka' ]
@@ -3483,6 +3543,10 @@
 		tn: {
 			autonym: 'Setswana',
 			inputmethods: [ 'tn-tilde' ]
+		},
+		tsw: {
+			autonym: 'Tsishingini',
+			inputmethods: [ 'tsw-tilde' ]
 		},
 		tum: {
 			autonym: 'ChiTumbuka',

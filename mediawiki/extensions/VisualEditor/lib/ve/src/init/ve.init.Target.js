@@ -16,14 +16,11 @@
  * @param {Object} [config] Configuration options
  * @param {Object} [config.toolbarConfig={}] Configuration options for the toolbar
  * @param {Object} [config.toolbarGroups] Toolbar groups, defaults to this.constructor.static.toolbarGroups
- * @param {Object} [config.actionGroups] Toolbar groups, defaults to this.constructor.static.actionGroups
  * @param {string[]} [config.modes] Available editing modes. Defaults to static.modes
  * @param {string} [config.defaultMode] Default mode for new surfaces. Must be in this.modes and defaults to first item.
- * @param {boolean} [register=true] Register the target at ve.init.target
+ * @param {boolean} [config.register=true] Register the target at ve.init.target
  */
-ve.init.Target = function VeInitTarget( config ) {
-	config = config || {};
-
+ve.init.Target = function VeInitTarget( config = {} ) {
 	// Parent constructor
 	ve.init.Target.super.call( this, config );
 
@@ -41,7 +38,6 @@ ve.init.Target = function VeInitTarget( config ) {
 	this.toolbar = null;
 	this.toolbarConfig = config.toolbarConfig || {};
 	this.toolbarGroups = config.toolbarGroups || this.constructor.static.toolbarGroups;
-	this.actionGroups = config.actionGroups || this.constructor.static.actionGroups;
 	this.$scrollContainer = this.getScrollContainer();
 	this.$scrollListener = this.$scrollContainer.is( 'html, body' ) ?
 		$( OO.ui.Element.static.getWindow( this.$scrollContainer[ 0 ] ) ) :
@@ -70,6 +66,7 @@ ve.init.Target = function VeInitTarget( config ) {
 	this.onDocumentVisibilityChangeHandler = this.onDocumentVisibilityChange.bind( this );
 	this.onTargetKeyDownHandler = this.onTargetKeyDown.bind( this );
 	this.onContainerScrollHandler = this.onContainerScroll.bind( this );
+	this.onVirtualKeyboardChangeThrottled = OO.ui.throttle( this.onVirtualKeyboardChange.bind( this ), 100 );
 	this.bindHandlers();
 };
 
@@ -85,6 +82,13 @@ OO.mixinClass( ve.init.Target, OO.EventEmitter );
  * Must be fired after the surface is initialized
  *
  * @event ve.init.Target#surfaceReady
+ */
+
+/**
+ * The virtual keyboard has been opened or closed
+ *
+ * @event ve.init.Target#virtualKeyboardChange
+ * @param {boolean} isOpen The virtual keyboard is open
  */
 
 /* Static Properties */
@@ -158,6 +162,7 @@ ve.init.Target.static.toolbarGroups = [
 		name: 'pageMenu',
 		type: 'list',
 		align: 'after',
+		excludeFromTargetWidget: true,
 		icon: 'menu',
 		indicator: null,
 		header: OO.ui.deferMsg( 'visualeditor-pagemenu-tooltip' ),
@@ -170,16 +175,6 @@ ve.init.Target.static.toolbarGroups = [
 	// visualeditor-help-tool message.
 	// TODO: Consider downstreaming this message.
 ];
-
-/**
- * Toolbar definition for the actions side of the toolbar
- *
- * @deprecated Use align:'after' in the regular toolbarGroups instead.
- * @static
- * @property {Array}
- * @inheritable
- */
-ve.init.Target.static.actionGroups = [];
 
 /**
  * List of commands which can be triggered anywhere from within the document
@@ -212,11 +207,24 @@ ve.init.Target.static.includeCommands = null;
 ve.init.Target.static.excludeCommands = [];
 
 /**
+ * Enforce interactive-widget=resizes-content
+ *
+ * When this target is setup, enforce interactive-widget=resizes-content
+ * in the <meta name=viewport> tag.
+ *
+ * This should be done if the target uses a position:fixed toolbar
+ * on a device which may have a virtual keyboard.
+ *
+ * @type {boolean}
+ */
+ve.init.Target.static.enforceResizesContent = false;
+
+/**
  * Surface import rules
  *
  * One set for external (non-VE) paste sources and one for all paste sources.
  *
- * Most rules are handled in ve.dm.ElementLinearData#sanitize, but htmlBlacklist
+ * Most rules are handled in ve.dm.LinearData#sanitize, but htmlBlacklist
  * is handled in ve.ce.Surface#afterPaste.
  *
  * @type {Object}
@@ -256,6 +264,22 @@ ve.init.Target.static.importRules = {
 	},
 	all: null
 };
+
+/**
+ * Allow changing focus from target surfaces with tab/shift+tab
+ *
+ * Prevents any ve.ui.Trigger's using these shortcuts from running.
+ *
+ * @type {boolean}
+ */
+ve.init.Target.static.allowTabFocusChange = false;
+
+/**
+ * Apply the meta/importedData annotation to pasted/dropped data
+ *
+ * @type {boolean}
+ */
+ve.init.Target.static.annotateImportedData = false;
 
 /* Static methods */
 
@@ -343,7 +367,7 @@ ve.init.Target.prototype.getDefaultMode = function () {
  * @return {boolean} Editing mode is available
  */
 ve.init.Target.prototype.isModeAvailable = function ( mode ) {
-	return this.modes.indexOf( mode ) !== -1;
+	return this.modes.includes( mode );
 };
 
 /**
@@ -357,6 +381,14 @@ ve.init.Target.prototype.bindHandlers = function () {
 	} );
 	this.$element.on( 'keydown', this.onTargetKeyDownHandler );
 	this.$scrollListener[ 0 ].addEventListener( 'scroll', this.onContainerScrollHandler, { passive: true } );
+
+	if ( 'virtualKeyboard' in navigator ) {
+		$( navigator.virtualKeyboard ).on( 'geometrychange', this.onVirtualKeyboardChangeThrottled );
+	} else if ( 'visualViewport' in window ) {
+		this.viewportScrollContainer = OO.ui.Element.static.getClosestScrollableContainer( document.body );
+		this.initialClientHeight = this.viewportScrollContainer.clientHeight;
+		$( visualViewport ).on( 'resize', this.onVirtualKeyboardChangeThrottled );
+	}
 };
 
 /**
@@ -370,6 +402,11 @@ ve.init.Target.prototype.unbindHandlers = function () {
 	} );
 	this.$element.off( 'keydown', this.onTargetKeyDownHandler );
 	this.$scrollListener[ 0 ].removeEventListener( 'scroll', this.onContainerScrollHandler );
+	if ( 'virtualKeyboard' in navigator ) {
+		$( navigator.virtualKeyboard ).off( 'geometrychange', this.onVirtualKeyboardChangeThrottled );
+	} else if ( 'visualViewport' in window ) {
+		$( visualViewport ).off( 'resize', this.onVirtualKeyboardChangeThrottled );
+	}
 };
 
 /**
@@ -423,8 +460,7 @@ ve.init.Target.prototype.getScrollContainer = function () {
  * Handle scroll container scroll events
  */
 ve.init.Target.prototype.onContainerScroll = function () {
-	// Don't use getter as it creates the toolbar
-	const toolbar = this.toolbar;
+	const toolbar = this.getToolbar();
 
 	if ( toolbar && toolbar.isFloatable() ) {
 		const wasFloating = toolbar.isFloating();
@@ -508,9 +544,22 @@ ve.init.Target.prototype.onToolbarResize = function () {
 	if ( !this.getSurface() ) {
 		return;
 	}
-	this.getSurface().setPadding( {
-		top: this.getToolbar().getHeight() + this.toolbarScrollOffset
-	} );
+	this.getSurface().getView().emit( 'position', true );
+};
+
+/**
+ * Get an object describing the amount of padding the toolbar adds to the surface.
+ *
+ * @return {ve.ui.Surface.Padding|null} Padding object, or null
+ */
+ve.init.Target.prototype.getToolbarSurfacePadding = function () {
+	const toolbar = this.getToolbar();
+	if ( !toolbar ) {
+		return null;
+	}
+	return {
+		top: toolbar.getHeight() + this.toolbarScrollOffset
+	};
 };
 
 /**
@@ -519,9 +568,9 @@ ve.init.Target.prototype.onToolbarResize = function () {
  * @param {Object} [config] Configuration options
  * @return {ve.ui.TargetWidget}
  */
-ve.init.Target.prototype.createTargetWidget = function ( config ) {
+ve.init.Target.prototype.createTargetWidget = function ( config = {} ) {
 	return new ve.ui.TargetWidget( ve.extendObject( {
-		toolbarGroups: this.toolbarGroups
+		toolbarGroups: this.toolbarGroups.filter( ( group ) => !group.excludeFromTargetWidget )
 	}, config ) );
 };
 
@@ -532,7 +581,7 @@ ve.init.Target.prototype.createTargetWidget = function ( config ) {
  * @param {Object} [config] Configuration options
  * @return {ve.ui.Surface}
  */
-ve.init.Target.prototype.createSurface = function ( dmDocOrSurface, config ) {
+ve.init.Target.prototype.createSurface = function ( dmDocOrSurface, config = {} ) {
 	return new ve.ui.Surface( this, dmDocOrSurface, this.getSurfaceConfig( config ) );
 };
 
@@ -542,7 +591,7 @@ ve.init.Target.prototype.createSurface = function ( dmDocOrSurface, config ) {
  * @param {Object} config Configuration option overrides
  * @return {Object} Surface configuration options
  */
-ve.init.Target.prototype.getSurfaceConfig = function ( config ) {
+ve.init.Target.prototype.getSurfaceConfig = function ( config = {} ) {
 	return ve.extendObject( {
 		$scrollContainer: this.$scrollContainer,
 		$scrollListener: this.$scrollListener,
@@ -555,7 +604,8 @@ ve.init.Target.prototype.getSurfaceConfig = function ( config ) {
 			this.constructor.static.documentCommands,
 			this.constructor.static.targetCommands
 		),
-		importRules: this.constructor.static.importRules
+		importRules: this.constructor.static.importRules,
+		allowTabFocusChange: this.constructor.static.allowTabFocusChange
 	}, config );
 };
 
@@ -566,7 +616,7 @@ ve.init.Target.prototype.getSurfaceConfig = function ( config ) {
  * @param {Object} [config] Configuration options
  * @return {ve.ui.Surface}
  */
-ve.init.Target.prototype.addSurface = function ( dmDocOrSurface, config ) {
+ve.init.Target.prototype.addSurface = function ( dmDocOrSurface, config = {} ) {
 	const surface = this.createSurface( dmDocOrSurface, ve.extendObject( { mode: this.getDefaultMode() }, config ) );
 	this.surfaces.push( surface );
 	surface.getView().connect( this, {
@@ -615,7 +665,7 @@ ve.init.Target.prototype.setSurface = function ( surface ) {
 		}
 	}
 
-	if ( this.surfaces.indexOf( surface ) === -1 ) {
+	if ( !this.surfaces.includes( surface ) ) {
 		throw new Error( 'Active surface must have been added first' );
 	}
 	if ( surface !== this.surface ) {
@@ -634,59 +684,51 @@ ve.init.Target.prototype.getSurface = function () {
 };
 
 /**
- * Get the target's toolbar
+ * Get the target's toolbar, if it exists
  *
- * @return {ve.ui.TargetToolbar} Toolbar
+ * @return {ve.ui.TargetToolbar|null}
  */
 ve.init.Target.prototype.getToolbar = function () {
-	if ( !this.toolbar ) {
-		this.toolbar = new ve.ui.PositionedTargetToolbar( this, this.toolbarConfig );
-	}
 	return this.toolbar;
 };
 
 /**
- * Get the actions toolbar
+ * Set up the toolbar if it doesn't exist, and attach it to a surface
  *
- * @deprecated
- * @return {ve.ui.TargetToolbar} Actions toolbar (same as the normal toolbar)
+ * If the toolbar already exists it can still be attached
+ * to another surface.
+ *
+ * @param {ve.ui.Surface} newSurface
  */
-ve.init.Target.prototype.getActions = function () {
-	OO.ui.warnDeprecation( 'Target#getActions: Use #getToolbar instead ' +
-		'(actions toolbar has been merged into the normal toolbar)' );
-	if ( !this.actionsToolbar ) {
-		this.actionsToolbar = this.getToolbar();
-	}
-	return this.actionsToolbar;
-};
+ve.init.Target.prototype.setupToolbar = function ( newSurface ) {
+	// Create toolbar if it doesn't exist
+	if ( !this.toolbar ) {
+		const toolbar = this.toolbar = new ve.ui.PositionedTargetToolbar( this, this.toolbarConfig );
 
-/**
- * Set up the toolbar, attaching it to a surface.
- *
- * @param {ve.ui.Surface} surface
- */
-ve.init.Target.prototype.setupToolbar = function ( surface ) {
-	const toolbar = this.getToolbar();
-	if ( this.actionGroups.length ) {
-		// Backwards-compatibility
-		if ( !this.actionsToolbar ) {
-			this.actionsToolbar = this.getToolbar();
+		if ( this.constructor.static.enforceResizesContent ) {
+			this.toggleResizesContent( true );
 		}
-	}
 
-	toolbar.connect( this, {
-		resize: 'onToolbarResize',
-		active: 'onToolbarActive'
-	} );
+		toolbar.connect( this, {
+			resize: 'onToolbarResize',
+			active: 'onToolbarActive'
+		} );
 
-	if ( surface.nullSelectionOnBlur ) {
 		toolbar.$element
 			.on( 'focusin', () => {
+				const surface = toolbar.getSurface();
+				if ( !surface || !surface.nullSelectionOnBlur ) {
+					return;
+				}
 				// When the focus moves to the toolbar, deactivate the surface but keep the selection (even if
 				// nullSelectionOnBlur is true), to allow tools to act on that selection.
 				surface.getView().deactivate( /* showAsActivated= */ true );
 			} )
 			.on( 'focusout', ( e ) => {
+				const surface = toolbar.getSurface();
+				if ( !surface || !surface.nullSelectionOnBlur ) {
+					return;
+				}
 				const newFocusedElement = e.relatedTarget;
 				if ( !OO.ui.contains( [ toolbar.$element[ 0 ], toolbar.$overlay[ 0 ] ], newFocusedElement, true ) ) {
 					// When the focus moves out of the toolbar:
@@ -708,12 +750,7 @@ ve.init.Target.prototype.setupToolbar = function ( surface ) {
 			} );
 	}
 
-	this.actionGroups.forEach( ( group ) => {
-		group.align = 'after';
-	} );
-	const groups = [ ...this.toolbarGroups, ...this.actionGroups ];
-
-	toolbar.setup( groups, surface );
+	this.toolbar.setup( this.toolbarGroups, newSurface );
 	this.attachToolbar();
 	requestAnimationFrame( this.onContainerScrollHandler );
 };
@@ -775,8 +812,8 @@ ve.init.Target.prototype.teardownToolbar = function () {
 		this.toolbar.destroy();
 		this.toolbar = null;
 	}
-	if ( this.actionsToolbar ) {
-		this.actionsToolbar = null;
+	if ( this.constructor.static.enforceResizesContent ) {
+		this.toggleResizesContent( false );
 	}
 	return ve.createDeferred().resolve().promise();
 };
@@ -788,4 +825,89 @@ ve.init.Target.prototype.attachToolbar = function () {
 	const toolbar = this.getToolbar();
 	toolbar.$element.insertBefore( toolbar.getSurface().$element );
 	toolbar.initialize();
+};
+
+/**
+ * Toggle "resizes content" mode of the viewport
+ *
+ * See #static-enforceResizesContent
+ *
+ * @param {boolean} set Set (true) or restore initial value (false)
+ */
+ve.init.Target.prototype.toggleResizesContent = function ( set ) {
+	// eslint-disable-next-line no-jquery/no-global-selector
+	let $viewportTag = $( 'meta[name=viewport]' );
+	if ( !$viewportTag.length ) {
+		$viewportTag = $( '<meta>' ).attr( 'name', 'viewport' ).appendTo( 'head' );
+	}
+	const obj = Object.create( null );
+	( $viewportTag.attr( 'content' ) || '' ).split( /[,;]/g ).forEach( ( pair ) => {
+		const [ key, value ] = pair.split( '=' );
+		obj[ key.trim().toLowerCase() ] = value.trim();
+	} );
+
+	if ( set && !this.interactiveWidgetValueSet ) {
+		this.initialInteractiveWidgetValue = obj[ 'interactive-widget' ];
+		obj[ 'interactive-widget' ] = 'resizes-content';
+		this.interactiveWidgetValueSet = true;
+	} else if ( !set && this.interactiveWidgetValueSet ) {
+		if ( this.initialInteractiveWidgetValue ) {
+			obj[ 'interactive-widget' ] = this.initialInteractiveWidgetValue;
+		} else {
+			delete obj[ 'interactive-widget' ];
+		}
+		this.interactiveWidgetValueSet = false;
+	}
+
+	$viewportTag.attr( 'content', Object.keys( obj ).map( ( key ) => key + '=' + obj[ key ] ).join( ',' ) );
+};
+
+/**
+ * Handle virtual keyboard geometry change events.
+ *
+ * @fires ve.init.Target#virtualKeyboardChange
+ */
+ve.init.Target.prototype.onVirtualKeyboardChange = function () {
+	const virtualKeyboardOpen = this.isVirtualKeyboardOpen();
+	if ( virtualKeyboardOpen !== this.virtualKeyboardOpen ) {
+		this.virtualKeyboardOpen = virtualKeyboardOpen;
+		this.emit( 'virtualKeyboardChange', virtualKeyboardOpen );
+	}
+};
+
+/**
+ * Check if a virtual keyboard is open
+ *
+ * @return {boolean} Whether a keyboard is open
+ */
+ve.init.Target.prototype.isVirtualKeyboardOpen = function () {
+	if ( 'virtualKeyboard' in navigator ) {
+		// The VirtualKeyboard API is available. It has limited browser
+		// support and is only available on HTTPS, but has exactly the
+		// information we need.
+		return navigator.virtualKeyboard.boundingRect && navigator.virtualKeyboard.boundingRect.height > 0;
+	}
+	if ( !OO.ui.isMobile() ) {
+		// We let VirtualKeyboard go first before abandoning for non-mobile,
+		// because it should hopefully cover desktop cases as well when they
+		// crop up. After this point we have to make mobile-device specific
+		// assumptions.
+		return false;
+	}
+	if ( 'visualViewport' in window ) {
+		// The VisualViewport API is available. This is much more widely
+		// supported, but requires us to start guessing.
+		if ( ve.init.platform.constructor.static.isIos() ) {
+			return visualViewport.height < this.viewportScrollContainer.clientHeight;
+		}
+		// TODO: Support orientation changes?
+		return this.viewportScrollContainer.clientHeight < this.initialClientHeight;
+	} else if ( this.getSurface() ) {
+		// Fallback: assume that if there's a native selection the keyboard must
+		// be open. This isn't necessarily true, but is an okay approximation for
+		// our final fallback check.
+		// TODO: Check if selection is in a form input?
+		return this.getSurface().getView().hasNativeCursorSelection();
+	}
+	return false;
 };

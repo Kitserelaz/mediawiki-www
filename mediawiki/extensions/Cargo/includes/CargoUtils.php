@@ -26,8 +26,8 @@ class CargoUtils {
 			return self::$CargoDB;
 		}
 
-		global $wgDBuser, $wgDBpassword, $wgDBprefix, $wgDBservers;
-		global $wgCargoDBserver, $wgCargoDBname, $wgCargoDBuser, $wgCargoDBpassword, $wgCargoDBprefix, $wgCargoDBtype, $wgCargoDBfilePath;
+		global $wgDBuser, $wgDBpassword, $wgDBprefix, $wgDBservers, $wgDBport;
+		global $wgCargoDBserver, $wgCargoDBname, $wgCargoDBuser, $wgCargoDBpassword, $wgCargoDBprefix, $wgCargoDBschema, $wgCargoDBport, $wgCargoDBtype, $wgCargoDBfilePath;
 
 		$services = MediaWikiServices::getInstance();
 		$dbr = self::getMainDBForRead();
@@ -75,16 +75,20 @@ class CargoUtils {
 			'tablePrefix' => $dbTablePrefix,
 		];
 
-		if ( $type === 'sqlite' ) {
+		if ( $wgCargoDBtype === 'sqlite' ) {
 			if ( $wgCargoDBfilePath !== null ) {
 				$params['dbFilePath'] = $wgCargoDBfilePath;
 			} else {
 				$params['dbFilePath'] = $dbr->getDbFilePath();
 			}
-		} elseif ( $type === 'postgres' ) {
-			global $wgDBport;
-			// @TODO - a $wgCargoDBport variable is still needed.
-			$params['port'] = $wgDBport;
+		} elseif ( $wgCargoDBtype === 'postgres' ) {
+			$params['port'] = $wgCargoDBport === null ? $wgDBport : $wgCargoDBport;
+			if ( $wgCargoDBschema !== null ) {
+				$params['schema'] = $wgCargoDBschema;
+			} elseif ( $dbName === $name && $dbServer === $server ) {
+				// Same database as the main wiki: inherit its schema.
+				$params['schema'] = $dbr->dbSchema();
+			}
 		}
 
 		self::$CargoDB = $services->getDatabaseFactory()->create( $wgCargoDBtype, $params );
@@ -120,14 +124,15 @@ class CargoUtils {
 	 */
 	public static function getPageProp( $pageID, $pageProp ) {
 		$dbr = self::getMainDBForRead();
-		$value = $dbr->selectField( 'page_props', [
-				'pp_value'
-			], [
+		$value = $dbr->newSelectQueryBuilder()
+			->select( 'pp_value' )
+			->from( 'page_props' )
+			->where( [
 				'pp_page' => $pageID,
-					'pp_propname' => $pageProp,
-			],
-			__METHOD__
-		);
+				'pp_propname' => $pageProp,
+			] )
+			->caller( __METHOD__ )
+			->fetchField();
 
 		if ( !$value ) {
 			return null;
@@ -141,14 +146,12 @@ class CargoUtils {
 	 */
 	public static function getAllPageProps( $pageProp ) {
 		$dbr = self::getMainDBForRead();
-		$res = $dbr->select( 'page_props', [
-			'pp_page',
-			'pp_value'
-			], [
-			'pp_propname' => $pageProp
-			],
-			__METHOD__
-		);
+		$res = $dbr->newSelectQueryBuilder()
+			->select( [ 'pp_page', 'pp_value' ] )
+			->from( 'page_props' )
+			->where( [ 'pp_propname' => $pageProp ] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 
 		$pagesPerValue = [];
 		foreach ( $res as $row ) {
@@ -170,14 +173,15 @@ class CargoUtils {
 	 */
 	public static function getTemplateIDForDBTable( $tableName ) {
 		$dbr = self::getMainDBForRead();
-		$page = $dbr->selectField( 'page_props', [
-			'pp_page'
-			], [
-			'pp_value' => $tableName,
-			'pp_propname' => 'CargoTableName'
-			],
-			__METHOD__
-		);
+		$page = $dbr->newSelectQueryBuilder()
+			->select( 'pp_page' )
+			->from( 'page_props' )
+			->where( [
+				'pp_value' => $tableName,
+				'pp_propname' => 'CargoTableName',
+			] )
+			->caller( __METHOD__ )
+			->fetchField();
 		if ( !$page ) {
 			return null;
 		}
@@ -195,7 +199,11 @@ class CargoUtils {
 	public static function getTables() {
 		$tableNames = [];
 		$dbr = self::getMainDBForRead();
-		$res = $dbr->select( 'cargo_tables', 'main_table', '', __METHOD__ );
+		$res = $dbr->newSelectQueryBuilder()
+			->select( 'main_table' )
+			->from( 'cargo_tables' )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 		foreach ( $res as $row ) {
 			$tableName = $row->main_table;
 			// Skip "replacement" tables.
@@ -210,7 +218,11 @@ class CargoUtils {
 	public static function getParentTables( $tableName ) {
 		$parentTables = [];
 		$dbr = self::getMainDBForRead();
-		$res = $dbr->select( 'cargo_tables', [ 'template_id', 'main_table' ], '', __METHOD__ );
+		$res = $dbr->newSelectQueryBuilder()
+			->select( [ 'template_id', 'main_table' ] )
+			->from( 'cargo_tables' )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 		foreach ( $res as $row ) {
 			if ( $tableName == $row->main_table ) {
 				$parentTables = self::getPageProp( $row->template_id, 'CargoParentTables' );
@@ -251,7 +263,11 @@ class CargoUtils {
 	public static function getDrilldownTabsParams( $tableName ) {
 		$drilldownTabs = [];
 		$dbr = self::getMainDBForRead();
-		$res = $dbr->select( 'cargo_tables', [ 'template_id', 'main_table' ], '', __METHOD__ );
+		$res = $dbr->newSelectQueryBuilder()
+			->select( [ 'template_id', 'main_table' ] )
+			->from( 'cargo_tables' )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 		foreach ( $res as $row ) {
 			if ( $tableName == $row->main_table ) {
 				$drilldownTabs = self::getPageProp( $row->template_id, 'CargoDrilldownTabsParams' );
@@ -277,8 +293,12 @@ class CargoUtils {
 		}
 		$tableSchemas = [];
 		$dbr = self::getMainDBForRead();
-		$res = $dbr->select( 'cargo_tables', [ 'main_table', 'table_schema' ],
-			[ 'main_table' => $mainTableNames ], __METHOD__ );
+		$res = $dbr->newSelectQueryBuilder()
+			->select( [ 'main_table', 'table_schema' ] )
+			->from( 'cargo_tables' )
+			->where( [ 'main_table' => $mainTableNames ] )
+			->caller( __METHOD__ )
+			->fetchResultSet();
 		foreach ( $res as $row ) {
 			$tableName = $row->main_table;
 			$tableSchemaString = $row->table_schema;
@@ -483,6 +503,9 @@ class CargoUtils {
 	/**
 	 * Determines whether a string is a literal.
 	 * This may need different handling for different (non-MySQL) DB types.
+	 *
+	 * @param string $string
+	 * @return bool
 	 */
 	public static function isSQLStringLiteral( $string ) {
 		return $string[0] == "'" && substr( $string, -1, 1 ) == "'";
@@ -668,7 +691,12 @@ class CargoUtils {
 			// if a table name was already specified, do we need
 			// to do a lookup here?
 			$tableNames = [];
-			$res = $dbw->select( 'cargo_tables', 'main_table', [ 'template_id' => $templatePageID ], __METHOD__ );
+			$res = $dbw->newSelectQueryBuilder()
+				->select( 'main_table' )
+				->from( 'cargo_tables' )
+				->where( [ 'template_id' => $templatePageID ] )
+				->caller( __METHOD__ )
+				->fetchResultSet();
 			foreach ( $res as $row ) {
 				$tableNames[] = $row->main_table;
 			}
@@ -689,10 +717,18 @@ class CargoUtils {
 					throw new MWException( "Caught exception ($e) while trying to drop Cargo table. "
 					. "Please make sure that your database user account has the DROP permission." );
 				}
-				$dbw->delete( 'cargo_pages', [ 'table_name' => $curTable ], __METHOD__ );
+				$dbw->newDeleteQueryBuilder()
+					->deleteFrom( 'cargo_pages' )
+					->where( [ 'table_name' => $curTable ] )
+					->caller( __METHOD__ )
+					->execute();
 			}
 
-			$dbw->delete( 'cargo_tables', [ 'template_id' => $templatePageID ], __METHOD__ );
+			$dbw->newDeleteQueryBuilder()
+				->deleteFrom( 'cargo_tables' )
+				->where( [ 'template_id' => $templatePageID ] )
+				->caller( __METHOD__ )
+				->execute();
 		}
 
 		self::createCargoTableOrTables( $cdb, $dbw, $tableName, $tableSchema, $tableSchemaString, $templatePageID );
@@ -711,7 +747,11 @@ class CargoUtils {
 
 	public static function tableFullyExists( $tableName ) {
 		$dbr = self::getMainDBForRead();
-		$numRows = $dbr->selectRowCount( 'cargo_tables', '*', [ 'main_table' => $tableName ], __METHOD__ );
+		$numRows = $dbr->newSelectQueryBuilder()
+			->from( 'cargo_tables' )
+			->where( [ 'main_table' => $tableName ] )
+			->caller( __METHOD__ )
+			->fetchRowCount();
 		if ( $numRows == 0 ) {
 			return false;
 		}
@@ -895,8 +935,12 @@ class CargoUtils {
 				// Insert hierarchy information in the __hierarchy table
 				$hierarchyTree = CargoHierarchyTree::newFromWikiText( $fieldDescription->mHierarchyStructure );
 				$hierarchyStructureTableData = $hierarchyTree->generateHierarchyStructureTableData();
-				foreach ( $hierarchyStructureTableData as $entry ) {
-					$cdb->insert( $fieldHelperTableName, $entry, __METHOD__ );
+				if ( $hierarchyStructureTableData ) {
+					$cdb->newInsertQueryBuilder()
+						->insertInto( $fieldHelperTableName )
+						->rows( $hierarchyStructureTableData )
+						->caller( __METHOD__ )
+						->execute();
 				}
 			}
 		}
@@ -919,13 +963,17 @@ class CargoUtils {
 		$cdb->commit( __METHOD__ );
 
 		// Finally, store all the info in the cargo_tables table.
-		$dbw->insert( 'cargo_tables', [
-			'template_id' => $templatePageID,
-			'main_table' => $tableName,
-			'field_tables' => serialize( $fieldTableNames ),
-			'field_helper_tables' => serialize( $fieldHelperTableNames ),
-			'table_schema' => $tableSchemaString
-		], __METHOD__ );
+		$dbw->newInsertQueryBuilder()
+			->insertInto( 'cargo_tables' )
+			->row( [
+				'template_id' => $templatePageID,
+				'main_table' => $tableName,
+				'field_tables' => serialize( $fieldTableNames ),
+				'field_helper_tables' => serialize( $fieldHelperTableNames ),
+				'table_schema' => $tableSchemaString
+			] )
+			->caller( __METHOD__ )
+			->execute();
 	}
 
 	public static function createTable( $cdb, $tableName, $fieldsInTable, $multipleColumnIndex = false ) {
@@ -1241,11 +1289,18 @@ class CargoUtils {
 			$quotedFieldName = $db->addIdentifierQuotes( $fieldName );
 			$quotedFieldValues[$quotedFieldName] = $fieldValue;
 		}
+		if ( !$quotedFieldValues ) {
+			return;
+		}
 		// Calling tableName() here is necessary, for some reason,
 		// to pass validation (and maybe even to work at all?) for
 		// MW 1.41+.
 		$sqlTableName = $db->tableName( $tableName );
-		$db->insert( $sqlTableName, $quotedFieldValues, __METHOD__ );
+		$db->newInsertQueryBuilder()
+			->insertInto( $sqlTableName )
+			->row( $quotedFieldValues )
+			->caller( __METHOD__ )
+			->execute();
 	}
 
 	/**

@@ -17,7 +17,8 @@
 			"Reza1615",
 			"Rtemis",
 			"Sahim",
-			"ZxxZxxZ"
+			"ZxxZxxZ",
+			"LProfo"
 		]
 	},
 	"wminc-desc": "سامانهٔ ویکی آزمایشی برای ویکی‌رشد ویکی‌مدیا",
@@ -96,7 +97,7 @@
 	"wminc-infopage-option-sisterprojects-existing": "شما می‌توانید به دنبال پروژه‌های موجود از این زبان بگردید:",
 	"wminc-infopage-option-sisterprojects-other": "شما می‌توانید به دنبال پروژه‌های دیگر این زبان بگردید:",
 	"wminc-infopage-option-multilingual": "همچنین، شما می‌توانید به ویکی چند زبانه بروید:",
-	"wminc-infopage-createmainpage": "کلمه «صفحهٔ اصلی» برای این زبان را وارد کنید:",
+	"wminc-infopage-createmainpage": "واژهٔ «صفحهٔ اصلی» برای این زبان را وارد کنید:",
 	"wminc-infopage-contribute": "اگر شما این زبان را می‌دانید، شما به مشارکت در آن تشویق شده‌اید!",
 	"wminc-infopage-status-open": "این یک ویکی باز اینکیوباتور ویکی‌مدیا است.",
 	"wminc-infopage-status-imported": "این ویکی در حال رشد پس از بسته شدن از نشانی $1 وارد شد.",
@@ -104,6 +105,5 @@
 	"wminc-infopage-status-approved": "این ویکی اینکیوباتور توسط [[meta:Special:MyLanguage/Language_committee|language committee]] تأیید شده و به زودی ایجاد خواهد‌شد.",
 	"wminc-infopage-status-created": "این پروژه توسط کمیته زبان تصویب شده است و در نشانی $1 در دسترس است.",
 	"wminc-infopage-status-beforeincubator": "این پروژه قبل از شروع ویکی‌رشد، ایجاد شده است و در نشانی $1 در دسترس است.",
-	"wminc-infopage-status-beforeincubator-sister": "این پروژه در $1 در دسترس است.",
-	"wminc-infopage-error": "خطا: {{#infopage}} فقط در صفحات پیشوند می‌تواند مورد استفاده قرار گیرد."
+	"wminc-infopage-status-beforeincubator-sister": "این پروژه در $1 در دسترس است."
 }

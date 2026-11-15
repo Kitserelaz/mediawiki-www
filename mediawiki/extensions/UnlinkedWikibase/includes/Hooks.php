@@ -6,23 +6,31 @@
 
 namespace MediaWiki\Extension\UnlinkedWikibase;
 
-use Config;
-use Html;
-use Language;
-use LanguageCode;
+use MediaWiki\Config\Config;
+use MediaWiki\Extension\Scribunto\Hooks\ScribuntoExternalLibrariesHook;
 use MediaWiki\Hook\InfoActionHook;
 use MediaWiki\Hook\OutputPageParserOutputHook;
 use MediaWiki\Hook\ParserFirstCallInitHook;
 use MediaWiki\Hook\SidebarBeforeOutputHook;
+use MediaWiki\Html\Html;
+use MediaWiki\Language\Language;
+use MediaWiki\Language\LanguageCode;
+use MediaWiki\Languages\LanguageNameUtils;
 use MediaWiki\MainConfigNames;
-use MediaWiki\MediaWikiServices;
-use Parser;
+use MediaWiki\Page\PageProps;
+use MediaWiki\Parser\Parser;
 use Wikimedia\Rdbms\LBFactory;
 
 /**
  * UnlinkedWikibase extension hooks.
  */
-class Hooks implements ParserFirstCallInitHook, InfoActionHook, SidebarBeforeOutputHook, OutputPageParserOutputHook {
+class Hooks implements
+	ParserFirstCallInitHook,
+	InfoActionHook,
+	SidebarBeforeOutputHook,
+	OutputPageParserOutputHook,
+	ScribuntoExternalLibrariesHook
+{
 
 	public const PAGE_PROP_ID = 'unlinkedwikibase_id';
 
@@ -33,23 +41,25 @@ class Hooks implements ParserFirstCallInitHook, InfoActionHook, SidebarBeforeOut
 	private const TRUEVALS = [ 'true', 't', 'yes', 'y', 'on', '1' ];
 	private const FALSEVALS = [ 'false', 'f', 'no', 'n', 'off', '0' ];
 
-	private Config $config;
-
-	private LBFactory $connectionProvider;
-
-	public function __construct( Config $mainConfig, LBFactory $connectionProvider ) {
-		$this->config = $mainConfig;
-		$this->connectionProvider = $connectionProvider;
+	public function __construct(
+		private readonly Config $config,
+		private readonly LBFactory $connectionProvider,
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly PageProps $pageProps,
+		private readonly Wikibase $wikibase,
+	) {
 	}
 
-	/**
-	 * @link https://www.mediawiki.org/wiki/Extension:Scribunto/Hooks/ScribuntoExternalLibraries
-	 * @param string $engine
-	 * @param string[] &$libs
-	 */
-	public static function onScribuntoExternalLibraries( $engine, array &$libs ) {
+	/** @inheritDoc */
+	public function onScribuntoExternalLibraries( string $engine, array &$extraLibraries ) {
 		if ( $engine === 'lua' ) {
-			$libs['mw.ext.unlinkedwikibase'] = UnlinkedWikibaseLuaLibrary::class;
+			$extraLibraries['mw.ext.unlinkedwikibase'] = UnlinkedWikibaseLuaLibrary::class;
+			$extraLibraries['mw.ext.unlinkedwikibase.entity'] = UnlinkedWikibaseEntityLuaLibrary::class;
+			if ( $this->config->get( 'UnlinkedWikibaseImitationMode' ) ) {
+				// In imitation mode, also add the alias of 'mw.wikibase'.
+				$extraLibraries['mw.wikibase'] = UnlinkedWikibaseImitationLuaLibrary::class;
+				$extraLibraries['mw.wikibase.entity'] = UnlinkedWikibaseEntityImitationLuaLibrary::class;
+			}
 		}
 	}
 
@@ -58,8 +68,18 @@ class Hooks implements ParserFirstCallInitHook, InfoActionHook, SidebarBeforeOut
 	 */
 	public function onParserFirstCallInit( $parser ) {
 		$parser->setFunctionHook( 'unlinkedwikibase', [ $this, 'renderMainParserFunction' ] );
-		if ( $this->config->get( 'UnlinkedWikibaseStatementsParserFunc' ) ) {
+		$enableImitation = $this->config->get( 'UnlinkedWikibaseImitationMode' );
+		$statementsParserFunc = $this->config->get( 'UnlinkedWikibaseStatementsParserFunc' );
+
+		if ( $statementsParserFunc ) {
+			wfDeprecatedMsg(
+				'$wgUnlinkedWikibaseStatementsParserFunc is deprecated, use $wgUnlinkedWikibaseImitationMode instead'
+			);
+		}
+
+		if ( $enableImitation || $statementsParserFunc ) {
 			$parser->setFunctionHook( 'statements', [ $this, 'renderStatements' ] );
+			$parser->setFunctionHook( 'property', [ $this, 'renderProperty' ] );
 		}
 		return true;
 	}
@@ -69,7 +89,27 @@ class Hooks implements ParserFirstCallInitHook, InfoActionHook, SidebarBeforeOut
 	 * @return mixed
 	 */
 	public function renderStatements( Parser $parser ) {
-		$params = $this->getParserFunctionArgs( func_get_args() );
+		return $this->renderPropertyClaims( $parser, func_get_args(), false );
+	}
+
+	/**
+	 * Render the {{#property:}} parser function.
+	 *
+	 * @param Parser $parser
+	 * @return mixed
+	 */
+	public function renderProperty( Parser $parser ) {
+		return $this->renderPropertyClaims( $parser, func_get_args(), true );
+	}
+
+	/**
+	 * @param Parser $parser
+	 * @param array $args Function arguments including parser
+	 * @param bool $rawValues If true, return raw values; if false, return formatted values
+	 * @return mixed
+	 */
+	private function renderPropertyClaims( Parser $parser, array $args, bool $rawValues ) {
+		$params = $this->getParserFunctionArgs( $args );
 		if ( !isset( $params[0] ) ) {
 			return $this->getError( 'unlinkedwikibase-error-missing-property' );
 		}
@@ -80,14 +120,13 @@ class Hooks implements ParserFirstCallInitHook, InfoActionHook, SidebarBeforeOut
 			return $this->getError( 'unlinkedwikibase-error-statements-entity-not-set' );
 		}
 
-		$wikibase = new Wikibase();
 		$propName = $params[0] ?? '';
-		$propId = $wikibase->getPropertyId( $parser, $propName );
+		$propId = $this->wikibase->getPropertyId( $parser, $propName );
 		if ( !$propId ) {
 			return $this->getError( 'unlinkedwikibase-error-property-name-not-found', [ $propName ] );
 		}
 
-		$entity = $wikibase->getEntity( $parser, $entityId );
+		$entity = $this->wikibase->getEntity( $parser, $entityId );
 		if ( !isset( $entity['claims'][$propId] ) ) {
 			// No claim for this property.
 			return "<!-- No $propName ($propId) property found for $entityId -->";
@@ -105,10 +144,57 @@ class Hooks implements ParserFirstCallInitHook, InfoActionHook, SidebarBeforeOut
 			$claims = $preferred;
 		}
 		foreach ( $claims as $claim ) {
-			$vals[] = $wikibase->formatClaimAsWikitext( $parser, $claim );
+			if ( $rawValues ) {
+				$value = $this->getRawClaimValue( $claim );
+				if ( $value !== null ) {
+					$vals[] = $value;
+				}
+			} else {
+				$vals[] = $this->wikibase->renderSnak( $parser, $claim['mainsnak'] );
+			}
 		}
+
 		$out = $parser->getContentLanguage()->listToText( array_filter( $vals ) );
-		return Html::rawElement( 'span', [ 'class' => 'ext-UnlinkedWikibase-statements' ], $out );
+		$cssClass = $rawValues ? 'ext-UnlinkedWikibase-property' : 'ext-UnlinkedWikibase-statements';
+		return Html::rawElement( 'span', [ 'class' => $cssClass ], $out );
+	}
+
+	/**
+	 * Extract raw value from a claim without formatting (for #property).
+	 *
+	 * @param array $claim
+	 * @return string|null
+	 */
+	private function getRawClaimValue( array $claim ): ?string {
+		if ( !isset( $claim['mainsnak']['datavalue']['value'] ) ) {
+			return null;
+		}
+
+		$value = $claim['mainsnak']['datavalue']['value'];
+		$datatype = $claim['mainsnak']['datatype'] ?? '';
+
+		switch ( $datatype ) {
+			case 'wikibase-item':
+				return $value['id'] ?? null;
+
+			case 'monolingualtext':
+				return $value['text'] ?? null;
+
+			case 'quantity':
+				return isset( $value['amount'] ) ? ltrim( $value['amount'], '+' ) : null;
+
+			case 'time':
+				return $value['time'] ?? null;
+
+			case 'globe-coordinate':
+				if ( isset( $value['latitude'] ) && isset( $value['longitude'] ) ) {
+					return $value['latitude'] . ',' . $value['longitude'];
+				}
+				return null;
+
+			default:
+				return $value;
+		}
 	}
 
 	/**
@@ -162,8 +248,7 @@ class Hooks implements ParserFirstCallInitHook, InfoActionHook, SidebarBeforeOut
 			!$this->config->get( MainConfigNames::HideInterlanguageLinks ) &&
 			$parser->getOutput()->getExtensionData( self::LANG_LINKS ) === null
 		) {
-			$wb = new Wikibase;
-			$entity = $wb->getEntity( $parser, $params['id'] );
+			$entity = $this->wikibase->getEntity( $parser, $params['id'] );
 			$langLinks = $this->generateLangLinks( $entity, $parser->getTargetLanguage() );
 			$parser->getOutput()->setExtensionData( self::LANG_LINKS, $langLinks );
 		}
@@ -185,7 +270,6 @@ class Hooks implements ParserFirstCallInitHook, InfoActionHook, SidebarBeforeOut
 		$suffix = $this->config->get( 'UnlinkedWikibaseSitelinkSuffix' );
 		$skip = $this->config->get( 'UnlinkedWikibaseSitelinkSkippedLangs' );
 		$map = $this->config->get( MainConfigNames::InterlanguageLinkCodeMap );
-		$langNameUtils = MediaWikiServices::getInstance()->getLanguageNameUtils();
 		foreach ( $entity['sitelinks'] as $wiki => $sitelink ) {
 			if (
 				strlen( $wiki ) <= strlen( $suffix ) ||
@@ -202,7 +286,7 @@ class Hooks implements ParserFirstCallInitHook, InfoActionHook, SidebarBeforeOut
 			$class = "interlanguage-link interwiki-$originalLangCode";
 
 			$langCode = $map[$originalLangCode] ?? $originalLangCode;
-			$langName = $langNameUtils->getLanguageName( $langCode );
+			$langName = $this->languageNameUtils->getLanguageName( $langCode );
 			if ( strval( $langName ) === '' ) {
 				$msg = wfMessage( "interlanguage-link-$langCode" );
 				if ( $msg->isDisabled() ) {
@@ -218,7 +302,7 @@ class Hooks implements ParserFirstCallInitHook, InfoActionHook, SidebarBeforeOut
 			// Core would use user language, but we use parse language due to
 			// where this processing happens with regards to caching.
 			// This is only used in the tooltip anyways.
-			$langLocalName = $langNameUtils->getLanguageName( $langCode, $lang->getCode() );
+			$langLocalName = $this->languageNameUtils->getLanguageName( $langCode, $lang->getCode() );
 			if ( $langLocalName === '' ) {
 				$friendlyName = wfMessage( "interlanguage-link-sitename-$langCode" );
 				if ( $friendlyName->isDisabled() ) {
@@ -269,8 +353,7 @@ class Hooks implements ParserFirstCallInitHook, InfoActionHook, SidebarBeforeOut
 	 */
 	public function onInfoAction( $context, &$pageInfo ) {
 		// Get this page's Wikibase ID.
-		$props = MediaWikiServices::getInstance()
-			->getPageProps()
+		$props = $this->pageProps
 			->getProperties( $context->getTitle(), self::PAGE_PROP_ID );
 		if ( !$props ) {
 			return true;
@@ -323,8 +406,7 @@ class Hooks implements ParserFirstCallInitHook, InfoActionHook, SidebarBeforeOut
 			$sidebar['LANGUAGES'] = array_merge( $sidebar['LANGUAGES'], $langLinks );
 		}
 
-		$props = MediaWikiServices::getInstance()
-			->getPageProps()
+		$props = $this->pageProps
 			->getProperties( $skin->getTitle(), self::PAGE_PROP_ID );
 		if ( $props ) {
 			$entityId = array_shift( $props );

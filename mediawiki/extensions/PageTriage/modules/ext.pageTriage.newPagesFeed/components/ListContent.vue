@@ -76,6 +76,8 @@ const listItemPropFormatter = ( pageInfo ) => {
 	listItemProps.oresArticleQuality = pageInfo.ores_articlequality;
 	listItemProps.oresDraftQuality = pageInfo.ores_draftquality;
 	listItemProps.copyvio = pageInfo.copyvio || 0;
+	listItemProps.creatorIsTempAccount = pageInfo.creator_is_temp_account;
+	listItemProps.creatorIsExpiredTempAccount = pageInfo.creator_is_expired_temp_account;
 	return listItemProps;
 };
 

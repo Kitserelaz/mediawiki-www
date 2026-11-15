@@ -66,6 +66,5 @@
 	"nuke-daterange-helper-text-max-age-different": "Als een gebruikersnaam of IP-adres wordt opgegeven, kunnen pagina’s tot {{PLURAL:$1|één dag|$1 dagen}} oud worden opgehaald. Anders kunnen om prestatieredenen slechts pagina’s tot {{PLURAL:$2|één dag|$2 dagen}} oud worden opgehaald.",
 	"nuke-daterange-helper-text-max-age-same": "Om prestatieredenen kunnen slechts pagina’s tot {{PLURAL:$1|één dag|$1 dagen}} oud worden opgehaald.",
 	"tag-nuke": "Massale verwijdering",
-	"tag-nuke-description": "Verwijderingen die zijn uitgevoerd met de uitbreiding Nuke",
-	"nuke-list-tempaccount": "De volgende pagina’s zijn onlangs aangemaakt door tijdelijke accounts die werden gebruikt vanaf het IP-adres $1. Selecteer de te verwijderen pagina’s, geef een bewerkingssamenvatting op en klik op ‘Geselecteerde verwijderen’ om de paginaverwijdering te starten. '''Schrijf om privacyredenen het IP-adres niet in de bewerkingssamenvatting.'''\n\nDoorverwijzingen worden cursief weergegeven."
+	"tag-nuke-description": "Verwijderingen die zijn uitgevoerd met de uitbreiding Nuke"
 }

@@ -17,7 +17,7 @@ class CargoAttach {
 	 * @return string Wikitext
 	 */
 	public static function run( Parser $parser ) {
-		if ( !$parser->getTitle() || $parser->getTitle()->getNamespace() != NS_TEMPLATE ) {
+		if ( $parser->getTitle()->getNamespace() != NS_TEMPLATE ) {
 			return CargoUtils::formatError( "Error: #cargo_attach must be called from a template page." );
 		}
 
@@ -44,9 +44,12 @@ class CargoAttach {
 		}
 
 		$dbw = CargoUtils::getMainDBForWrite();
-		$res = $dbw->select( 'cargo_tables', 'COUNT(*) AS total', [ 'main_table' => $tableName ], __METHOD__ );
-		$row = $res->fetchRow();
-		if ( $row && $row['total'] == 0 ) {
+		$numRows = $dbw->newSelectQueryBuilder()
+			->from( 'cargo_tables' )
+			->where( [ 'main_table' => $tableName ] )
+			->caller( __METHOD__ )
+			->fetchRowCount();
+		if ( $numRows == 0 ) {
 			return CargoUtils::formatError( "Error: The specified table, \"$tableName\", does not exist." );
 		}
 

@@ -1,89 +1,80 @@
 # TemplateStylesExtender
 
-Extends [Extension:TemplateStyles](https://www.mediawiki.org/wiki/Extension:TemplateStyles) with new selectors and matchers.
+Widens the CSS that [Extension:TemplateStyles](https://www.mediawiki.org/wiki/Extension:TemplateStyles)
+accepts on a wiki.
 
-TemplateStylesExtender is developed based on [css-sanitizer](https://www.mediawiki.org/wiki/Css-sanitizer) 5.5.0, which is being used by MediaWiki 1.43.
+**Writing CSS on a wiki that has this installed?**
+See [docs/css-support.md](docs/css-support.md) for what you can now write.
 
-## Features
+## Requirements
 
-* Declare CSS custom properties/variables
-* Use CSS custom properties/variables in most properties
-* Implement additional properties and values as listed below
-
-| Module | Changes | Upstream task
-| - | - | - |
-| [Basic User Interface Module Level 4](https://www.w3.org/TR/css-ui-4/) | Added property: [`pointer-events`](https://developer.mozilla.org/en-US/docs/Web/CSS/pointer-events) | [T342271](https://phabricator.wikimedia.org/T342271)
-| [Box Sizing Module Level 4](https://www.w3.org/TR/css-sizing-4/) | Backported for `css-sanitizer` 5.5.0 | [T375344](https://phabricator.wikimedia.org/T375344)
-| [Cascading and Inheritance Level 5](https://www.w3.org/TR/css-cascade-5/) | Added value: [`revert-layer`](https://developer.mozilla.org/en-US/docs/Web/CSS/revert-layer) | - |
-| [Color Module Level 4](https://www.w3.org/TR/css-color-4/) | Fully implemented | [T265675](https://phabricator.wikimedia.org/T265675), [T351500](https://phabricator.wikimedia.org/T351500)
-| [Color Module Level 5](https://www.w3.org/TR/css-color-5/) | Added: [Relative color](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_colors/Relative_colors) | - |
-| [Containment Module Level 3](https://www.w3.org/TR/css-contain-3/) | Added properties: [`contain`](https://developer.mozilla.org/en-US/docs/Web/CSS/contain), [`content-visibility`](https://developer.mozilla.org/en-US/docs/Web/CSS/content-visibility) | - |
-| [Filter Effects Module Level 2](https://drafts.fxtf.org/filter-effects-2) | Added property: [`backdrop-filter`](https://developer.mozilla.org/en-US/docs/Web/CSS/backdrop-filter) | - |
-| [Fonts Module Level 4](https://www.w3.org/TR/css-fonts-4/) | Added properties: [`font-optical-sizing`](https://developer.mozilla.org/en-US/docs/Web/CSS/font-optical-sizing), [`font-variation-settings`](https://developer.mozilla.org/en-US/docs/Web/CSS/font-variation-settings), [`ascent-override`](https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/ascent-override), [`descent-override`](https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/descent-override), [`font-display`](https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display), [`line-gap-override`](https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/line-gap-override) | - |
-| [Fonts Module Level 5](https://www.w3.org/TR/css-fonts-5/) | Added property: [`size-adjust`](https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/size-adjust) | - |
-| [Images Module Level 4](https://www.w3.org/TR/css-images-4/) | Added function: [`image-set()`](https://developer.mozilla.org/en-US/docs/Web/CSS/image/image-set) | - |
-| [Masking Module Level 1](https://www.w3.org/TR/css-masking/) | Added property: `-webkit-mask-image` | - |
-| [Ruby Annotation Layout Module Level 1](https://www.w3.org/TR/css-ruby-1/) | Added properties: [`ruby-align`](https://developer.mozilla.org/en-US/docs/Web/CSS/ruby-align), [`ruby-position`](https://developer.mozilla.org/en-US/docs/Web/CSS/ruby-position) | [T277755](https://phabricator.wikimedia.org/T277755)
-| [Scroll Snap Module Level 1](https://www.w3.org/TR/css-scroll-snap-1/) | Added properties: [`scroll-margin`](https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-margin), [`scroll-padding`](https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-padding), [`scroll-snap-align`](https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-snap-align), [`scroll-snap-stop`](https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-snap-stop), [`scroll-snap-type`](https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-snap-type) | [T271598](https://phabricator.wikimedia.org/T271598)
-| [Values and Units Module Level 4](https://www.w3.org/TR/css-values-4/) | Added function: [`clamp()`](https://developer.mozilla.org/en-US/docs/Web/CSS/clamp) | [T394619](https://phabricator.wikimedia.org/T394619) |
-
+- MediaWiki 1.43.9 or later
+- Extension:TemplateStyles
 
 ## Installation
+
 Download the zip file from the [latest release](https://github.com/octfx/mediawiki-extensions-TemplateStylesExtender/releases/latest) page.
 
-Extract the folder to `extensions/TemplateStylesExtender`.  
-Add the following to `LocalSettings.php`:
+Extract the folder to `extensions/TemplateStylesExtender`, then add to `LocalSettings.php`:
 ```php
 wfLoadExtension( 'TemplateStyles' );
 wfLoadExtension( 'TemplateStylesExtender' );
 ```
 
+The order matters. Both extensions register a handler for the `<templatestyles>` tag and the
+later registration replaces the earlier one, so loading this one first leaves `wrapclass` with
+no effect and no error.
+
 ## Configuration
+
+Scoping and URL policy are unchanged by default: every selector is still scoped to
+`.mw-parser-output`, and `url()` is still checked against `$wgTemplateStylesAllowedUrls`. Two
+settings below opt out of one each.
 
 | Configuration | Description | Default |
 | - | - | - |
-| `$wgTemplateStylesExtenderCustomPropertiesDeclaration` | Allow CSS custom properties (CSS variables) to be declared as properties | `true` |
-| `$wgTemplateStylesExtenderExtendCustomPropertiesValues` | Allow the CSS custom properties (CSS variables) to be used as values in all properties | `true`
-| `$wgTemplateStylesExtenderEnableUnscopingSupport` | Allows users with unscope permissions to unscope CSS by setting a `wrapclass` attribute.[^1][^2] | `false` |
-| `$wgTemplateStylesExtenderUnscopingPermission` | Specify a permission group that is allowed to unscope CSS. | `editinterface` |
+| `$wgTemplateStylesExtenderCustomPropertiesDeclaration` | Allow CSS custom properties (`--*`) to be declared. | `true` |
+| `$wgTemplateStylesExtenderExtendCustomPropertiesValues` | Allow `var()` in properties whose own grammar has no slot for it. | `true` |
+| `$wgTemplateStylesExtenderRequireFontFamilyPrefix` | Require `@font-face` family names to start with `TemplateStyles`. TemplateStyles enforces this itself; installing this extension lifts it until you set this to `true`. `@font-face` is not scoped to `.mw-parser-output`, so a family declared on a TemplateStyles page applies to the whole rendered page, including skin chrome. | `false` |
+| `$wgTemplateStylesExtenderAllowExternalResourcesInCustomProperties` | Allow `url()`, `image-set()` and the other external-resource functions inside custom property (`--*`) values. Those URLs are then no longer checked against `$wgTemplateStylesAllowedUrls`; enable it only where an enforced Content-Security-Policy restricts these fetches to trusted hosts. | `false` |
+| `$wgTemplateStylesExtenderEnableUnscopingSupport` | Allow CSS to be [unscoped](#unscoping-with-wrapclass) by setting a `wrapclass` attribute. | `false` |
+| `$wgTemplateStylesExtenderUnscopingPermission` | The right a user must hold to [unscope](#unscoping-with-wrapclass) CSS. Must name a right that already exists on the wiki; this extension defines none. | `editinterface` |
 
-[^1]: This is potentially expensive, as each templatestyles tag with `wrapclass` set, will attempt to look up the user of the current page revision, and check if this user has the permission to activate CSS un-scoping. <br/> Example: `<templatestyles src="Foo/style.css" wrapclass="mediawiki" />` results in the CSS being scoped to `.mediawiki` instead of `.mw-parser-output`.
+`$wgTemplateStylesDisallowedProperties` and `$wgTemplateStylesDisallowedAtRules` still apply,
+including to the properties this extension adds, so either list can narrow the grammar back
+per property or per at-rule.
 
-[^2]: Including such a call in a page essentially limits editing to users with the `editinterface` right. You can alternatively include a call to a template that includes the styles.
+Nothing here narrows it wholesale; removing the extension is that lever. It needs no database
+change, and neither does turning a setting off: pages already rendered keep their CSS until
+they are re-parsed, and a stylesheet page that used the widened CSS still renders with the
+refused rules dropped. It cannot be saved again until they are removed.
 
-## Notes
-### `:root` CSS variables declaration
-Currently using `:root` selectors won't work due to template styles prepending `.mw-parser-output`.
+## Unscoping with `wrapclass`
 
-One possible fix is to wrap the entire content into a `div` element and adding the declarations to this, e.g.
-```css
-div#content-wrap {
-	--padding: 10px
-}
+With `$wgTemplateStylesExtenderEnableUnscopingSupport` on, a `wrapclass` attribute scopes the
+stylesheet to a class of your choosing instead of `.mw-parser-output`:
 
-.content {
-	padding: var( --padding )
-}
-```
-
-Wikitext
 ```html
-<div id="content-wrap">
-	<div class=".content">
-		The WikiText...
-	</div>
-</div>
+<templatestyles src="Foo/style.css" wrapclass="mediawiki" />
 ```
 
-### Relative colors
-The relative colors module is quite extensive, not every feature is currently implemented.
+Three things to weigh before enabling it:
 
+* **The right reaches the whole page.** Any class is accepted, so `wrapclass="mediawiki"`
+  scopes a rule to the body class and it can restyle anything on the page. Grant the right as
+  you would the right to edit site CSS.
+* **It effectively limits editing to holders of that right.** Anyone without it who edits the
+  page replaces the unscoped CSS with an error message visible to every reader, on top of the
+  normally scoped CSS. Putting the tag in a template rather than an article moves the check to
+  the template's last editor.
+* **It is potentially expensive.** Each `wrapclass` tag costs a lookup of the last editor of
+  the page the tag sits on, plus a rights check.
 
-## Development
+## Contributing
 
-* css-sanitizer workboard: https://phabricator.wikimedia.org/tag/css-sanitizer
-* css-sanitizer repo: https://github.com/wikimedia/css-sanitizer
-* TemplateStyles repo: https://github.com/wikimedia/mediawiki-extensions-TemplateStyles
+Issues and pull requests go to
+[the repository](https://github.com/octfx/mediawiki-extensions-TemplateStylesExtender).
 
-### Test file
-Add `tests.css` in the content root to a TemplateStyle page to validate added matchers.
+## License
+
+GPL-2.0-or-later. See [COPYING](COPYING).

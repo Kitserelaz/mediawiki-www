@@ -3,14 +3,16 @@
 namespace Miraheze\IncidentReporting\Specials;
 
 use MediaWiki\Config\Config;
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\SpecialPage\SpecialPage;
 use Miraheze\IncidentReporting\IncidentReportingFormFactory;
 use Miraheze\IncidentReporting\IncidentReportingPager;
-use PermissionsError;
-use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IReadableDatabase;
+use Wikimedia\Rdbms\Platform\ISQLPlatform;
 
 class SpecialIncidentReports extends SpecialPage {
 	/** @var Config */
@@ -20,7 +22,8 @@ class SpecialIncidentReports extends SpecialPage {
 	private $permissionManager;
 
 	public function __construct() {
-		parent::__construct( 'IncidentReports', 'viewincidents' );
+		parent::__construct( 'IncidentReports' );
+
 		$this->config = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'IncidentReporting' );
 		$this->permissionManager = MediaWikiServices::getInstance()->getPermissionManager();
 	}
@@ -31,34 +34,28 @@ class SpecialIncidentReports extends SpecialPage {
 
 		$par = explode( '/', $par );
 
-		$dbw = MediaWikiServices::getInstance()->getConnectionProvider()
-			->getPrimaryDatabase( 'virtual-incidentreporting' );
+		$dbr = MediaWikiServices::getInstance()->getConnectionProvider()
+			->getReplicaDatabase( 'virtual-incidentreporting' );
 
-		$inc = $dbw->selectRow(
-			'incidents',
-			'*',
-			[
-				'i_id' => (int)$par[0]
-			],
-			__METHOD__
-		);
+		$inc = $dbr->newSelectQueryBuilder()
+			->select( ISQLPlatform::ALL_ROWS )
+			->from( 'incidents' )
+			->where( [ 'i_id' => (int)$par[0] ] )
+			->caller( __METHOD__ )
+			->fetchRow();
 
 		$isPublished = ( $inc ) ? (bool)$inc->i_published : false;
 
 		if ( $par[0] == '' || ( (int)$par[0] != 0 && !$inc ) ) {
-			$this->showLanding( $dbw );
+			$this->showLanding( $dbr );
 		} else {
 			$edit = ( ( isset( $par[1] ) || (int)$par[0] == 0 ) && $this->permissionManager->userHasRight( $this->getContext()->getUser(), 'editincidents' ) );
-			$this->showForm( (int)$par[0], $edit, $dbw, $isPublished );
+			$this->showForm( (int)$par[0], $edit, $isPublished );
 		}
 	}
 
-	public function showForm(
-		int $id,
-		bool $edit,
-		IDatabase $dbw,
-		bool $isPublished
-	) {
+	/** @throws PermissionsError */
+	public function showForm( int $id, bool $edit, bool $isPublished ) {
 		if ( !$isPublished && !$this->permissionManager->userHasRight( $this->getContext()->getUser(), 'editincidents' ) ) {
 			throw new PermissionsError( 'editincidents' );
 		}
@@ -75,12 +72,12 @@ class SpecialIncidentReports extends SpecialPage {
 		$out->addModuleStyles( [ 'oojs-ui-widgets.styles' ] );
 
 		$formFactory = new IncidentReportingFormFactory();
-		$htmlForm = $formFactory->getForm( $id, $edit, $dbw, $this->getContext() );
+		$htmlForm = $formFactory->getForm( $id, $edit, $this->getContext() );
 
 		$htmlForm->show();
 	}
 
-	public function showLanding( IDatabase $dbw ) {
+	public function showLanding( IReadableDatabase $dbr ) {
 		$type = $this->getRequest()->getText( 'type' );
 		$component = $this->getRequest()->getText( 'component' );
 		$published = $this->getRequest()->getText( 'published' );
@@ -103,7 +100,7 @@ class SpecialIncidentReports extends SpecialPage {
 
 		ksort( $servicesConfig );
 
-		foreach ( $servicesConfig as $service => $url ) {
+		foreach ( $servicesConfig as $service => $_ ) {
 			$niceName = str_replace( ' ', '-', strtolower( $service ) );
 			$irServices[$service] = $niceName;
 		}
@@ -199,19 +196,20 @@ class SpecialIncidentReports extends SpecialPage {
 		if ( $field && $where ) {
 			if ( $all ) {
 				foreach ( $foreach as $label => $key ) {
-						$statsData = $dbw->selectFieldValues(
-							'incidents',
-							$field, [
+						$statsData = $dbr->newSelectQueryBuilder()
+							->select( $field )
+							->from( 'incidents' )
+							->where( [
 								$where => $key,
-								'i_published >= ' . ( $published == '' ? '0' : $dbw->timestamp( wfTimestamp( TS_RFC2822, "{$published}T00:00:00.000Z" ) ) )
-							],
-							__METHOD__
-						);
+								$dbr->expr( 'i_published', '>=', ( $published === '' ? '0' : $dbr->timestamp( wfTimestamp( TS_RFC2822, "{$published}T00:00:00.000Z" ) ) ) ),
+							] )
+							->caller( __METHOD__ )
+							->fetchFieldValues();
 
 						$minutes = $this->msg( 'incidentreporting-label-outage-formatted', array_sum( $statsData ) )->text();
 
 						$formDescriptor += [
-							"statistics-out-quantity-{$key}" => [
+							"statistics-out-quantity-$key" => [
 								'type' => 'info',
 								'label' => $label,
 								'default' => $quantity === 'num' ? (string)count( $statsData ) : $minutes,
@@ -227,14 +225,15 @@ class SpecialIncidentReports extends SpecialPage {
 				}
 
 				if ( in_array( $key, $foreach ) ) {
-					$statsData = $dbw->selectFieldValues(
-						'incidents',
-						$field, [
+					$statsData = $dbr->newSelectQueryBuilder()
+						->select( $field )
+						->from( 'incidents' )
+						->where( [
 							$where => $key,
-							'i_published >= ' . ( $published == '' ? '0' : $dbw->timestamp( wfTimestamp( TS_RFC2822, "{$published}T00:00:00.000Z" ) ) )
-						],
-						__METHOD__
-					);
+							$dbr->expr( 'i_published', '>=', ( $published === '' ? '0' : $dbr->timestamp( wfTimestamp( TS_RFC2822, "{$published}T00:00:00.000Z" ) ) ) ),
+						] )
+						->caller( __METHOD__ )
+						->fetchFieldValues();
 
 					$label = array_flip( $foreach )[$key];
 					$minutes = $this->msg( 'incidentreporting-label-outage-formatted', array_sum( $statsData ) )->text();
@@ -258,7 +257,9 @@ class SpecialIncidentReports extends SpecialPage {
 			->prepareForm()
 			->displayForm( false );
 
-		$this->getOutput()->addParserOutputContent( $pager->getFullOutput() );
+		$table = $pager->getFullOutput();
+		$parserOptions = ParserOptions::newFromContext( $this->getContext() );
+		$this->getOutput()->addParserOutputContent( $table, $parserOptions );
 
 		if ( $this->permissionManager->userHasRight( $this->getContext()->getUser(), 'editincidents' ) ) {
 			$createForm = HTMLForm::factory( 'ooui', [], $this->getContext() );
@@ -266,9 +267,14 @@ class SpecialIncidentReports extends SpecialPage {
 		}
 	}
 
-	public static function onSubmitRedirectToCreate( $formData ) {
-		header( 'Location: ' . SpecialPage::getTitleFor( 'IncidentReports' )->getFullURL() . '/create' );
+	public function onSubmitRedirectToCreate(): void {
+		$this->getOutput()->redirect(
+			$this->getPageTitle( 'create' )->getFullURL()
+		);
+	}
 
-		return true;
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'viewincidents';
 	}
 }

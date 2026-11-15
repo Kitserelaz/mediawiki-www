@@ -3,12 +3,11 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
-use AggregateMessageGroup;
 use EmptyIterator;
 use Iterator;
-use JobQueueGroup;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Extension\Notifications\Model\Event;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
@@ -24,12 +23,10 @@ use StatusValue;
  * @author Abijeet Patro
  */
 class MessageGroupSubscription {
-	private MessageGroupSubscriptionStore $groupSubscriptionStore;
-	private JobQueueGroup $jobQueueGroup;
+
 	private bool $isMessageGroupSubscriptionEnabled;
-	private UserIdentityLookup $userIdentityLookup;
+	/** @var array<string,array<string,array<int,string>>> */
 	private array $queuedMessages = [];
-	private LoggerInterface $logger;
 	private ?MockEventCreator $mockEventCreator = null;
 
 	public const STATE_ADDED = 'added';
@@ -41,16 +38,12 @@ class MessageGroupSubscription {
 	public const DYNAMIC_GROUP_UNSUPPORTED = 'mgs-dynamic-group-unsupported';
 
 	public function __construct(
-		MessageGroupSubscriptionStore $groupSubscriptionStore,
-		JobQueueGroup $jobQueueGroup,
-		UserIdentityLookup $userIdentityLookup,
-		LoggerInterface $logger,
+		private readonly MessageGroupSubscriptionStore $groupSubscriptionStore,
+		private readonly JobQueueGroup $jobQueueGroup,
+		private readonly UserIdentityLookup $userIdentityLookup,
+		private readonly LoggerInterface $logger,
 		ServiceOptions $options
 	) {
-		$this->groupSubscriptionStore = $groupSubscriptionStore;
-		$this->jobQueueGroup = $jobQueueGroup;
-		$this->userIdentityLookup = $userIdentityLookup;
-		$this->logger = $logger;
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 		$this->isMessageGroupSubscriptionEnabled = $options->get( 'TranslateEnableMessageGroupSubscription' );
 	}
@@ -70,38 +63,49 @@ class MessageGroupSubscription {
 	}
 
 	public function isUserSubscribedTo( MessageGroup $group, UserIdentity $user ): bool {
-		return $this->groupSubscriptionStore->getSubscriptions( [ $group->getId() ], $user->getId() )->count() !== 0;
+		return (bool)$this->groupSubscriptionStore->getSubscriptions( [ $group->getId() ], $user->getId() );
 	}
 
 	public function unsubscribeFromGroup( MessageGroup $group, UserIdentity $user ): void {
 		$this->groupSubscriptionStore->removeSubscriptions( $group->getId(), $user->getId() );
 	}
 
-	/** @return string[] */
-	public function getUserSubscriptions( UserIdentity $user ): array {
-		$subscriptions = [];
-		$result = $this->groupSubscriptionStore->getSubscriptions( null, $user->getId() );
-		foreach ( $result as $row ) {
-			$subscriptions[] = $row->tmgs_group;
+	/**
+	 * @param string[] $groupIds
+	 * @param UserIdentity $user
+	 */
+	public function unsubscribeFromGroupsById( array $groupIds, UserIdentity $user ): void {
+		$uniqueGroupIds = array_unique( $groupIds );
+		foreach ( $uniqueGroupIds as $groupId ) {
+			$this->groupSubscriptionStore->removeSubscriptions( $groupId, $user->getId() );
 		}
-		return $subscriptions;
+	}
+
+	/**
+	 * @param string[] $groupIds
+	 * @param UserIdentity $user
+	 */
+	public function subscribeToGroupsById( array $groupIds, UserIdentity $user ): void {
+		$uniqueGroupIds = array_unique( $groupIds );
+		foreach ( $uniqueGroupIds as $groupId ) {
+			$this->groupSubscriptionStore->addSubscription( $groupId, $user->getId() );
+		}
+	}
+
+	/** @return array<int,string> */
+	public function getUserSubscriptions( UserIdentity $user ): array {
+		$groups = $this->groupSubscriptionStore->getSubscriptions( null, $user->getId() );
+		return array_keys( $groups );
 	}
 
 	/**
 	 * Queue a message / group to send notifications for
 	 * @param Title $messageTitle
 	 * @param string $state
-	 * @param string[] $groupIds
 	 * @return void
 	 */
-	public function queueMessage(
-		Title $messageTitle,
-		string $state,
-		array $groupIds
-	): void {
-		foreach ( $groupIds as $groupId ) {
-			$this->queuedMessages[ $groupId ][ $state ][] = $messageTitle->getPrefixedDBkey();
-		}
+	public function queueMessage( Title $messageTitle, string $state, string $groupId ): void {
+		$this->queuedMessages[ $groupId ][ $state ][] = $messageTitle->getPrefixedDBkey();
 	}
 
 	public function queueNotificationJob(): void {
@@ -144,12 +148,14 @@ class MessageGroupSubscription {
 				// The aggregate group might already be in the list of changes to process
 				$currentGroupState = $changesWithAggregateGroups[$aggregateGroupId] ??
 					$changesToProcess[$aggregateGroupId] ?? [];
-				$changesWithAggregateGroups[$aggregateGroupId] = $this->appendState( $currentGroupState, $stateValues );
+				$changesWithAggregateGroups[$aggregateGroupId] =
+					$this->appendToState( $currentGroupState, $stateValues );
 
-				// If an aggregate group is added to the list of changes, don't bother tracking dependency
-				// and send notifications to all subscribers
+				// If an aggregate group is added to the list of changes directly, don't bother finding other
+				// groups that have this group as a parent and notify all subscribers; otherwise, add the source
+				// message group id due to which notification is being sent to this aggregate group.
 				if ( !isset( $changesToProcess[$aggregateGroupId] ) ) {
-					$sourceGroupIdMap[$aggregateGroupId][] = $groupId;
+					$sourceGroupIdMap[$aggregateGroupId][$groupId] = true;
 				}
 			}
 		}
@@ -190,7 +196,7 @@ class MessageGroupSubscription {
 			];
 
 			if ( isset( $sourceGroupIdMap[ $groupId ] ) ) {
-				$extraParams['sourceGroupIds'] = $sourceGroupIdMap[ $groupId ];
+				$extraParams['sourceGroupIds'] = array_unique( array_keys( $sourceGroupIdMap[ $groupId ] ) );
 			}
 
 			if ( $this->mockEventCreator ) {
@@ -217,6 +223,7 @@ class MessageGroupSubscription {
 
 	/**
 	 * Given a group id returns an iterator to the subscribers of that group.
+	 * Returns an EmptyIterator if there are no subscribers
 	 * @return Iterator<UserIdentity>
 	 */
 	public function getGroupSubscribers( string $groupId ): Iterator {
@@ -234,17 +241,12 @@ class MessageGroupSubscription {
 
 	/**
 	 * Return a list of users ids that belong to all the given groups
+	 *
+	 * @param string[] $groupIds
 	 * @return int[]
 	 */
 	public function getGroupSubscriberUnion( array $groupIds ): array {
-		$unionGroups = $this->groupSubscriptionStore->getSubscriptionByGroupUnion( $groupIds );
-		$userList = [];
-
-		foreach ( $unionGroups as $row ) {
-			$userList[] = (int)$row;
-		}
-
-		return $userList;
+		return $this->groupSubscriptionStore->getSubscriptionByGroupUnion( $groupIds );
 	}
 
 	public function setMockEventCreator( MockEventCreator $mockEventCreator ): void {
@@ -255,17 +257,10 @@ class MessageGroupSubscription {
 	 * Get all subscribers for groups. Returns an array where the keys are the
 	 * group ids and value is a list of integer user ids
 	 * @param string[] $groupIds
-	 * @return array[] [(str) groupId => (int[]) userId, ...]
+	 * @return array<string,int[]> [(str) groupId => (int[]) userId, ...]
 	 */
 	private function getSubscriberIdsForGroups( array $groupIds ): array {
-		$dbGroupSubscriptions = $this->groupSubscriptionStore->getSubscriptions( $groupIds, null );
-		$groupSubscriptions = [];
-
-		foreach ( $dbGroupSubscriptions as $row ) {
-			$groupSubscriptions[ $row->tmgs_group ][] = (int)$row->tmgs_user_id;
-		}
-
-		return $groupSubscriptions;
+		return $this->groupSubscriptionStore->getSubscriptions( $groupIds, null );
 	}
 
 	public function canUserSubscribeToGroup( MessageGroup $group, User $user ): StatusValue {
@@ -297,18 +292,42 @@ class MessageGroupSubscription {
 				// We don't care about non-aggregate groups
 				continue;
 			}
-			foreach ( $mappedGroups as $subGroups ) {
-				if ( $subGroups instanceof AggregateMessageGroup ) {
-					continue;
-				}
-				$groupIdAggregateMapped[$subGroups->getId()][] = $groupId;
-			}
-		}
 
+			// array_merge_recursive causes duplicates to appear in the mapped group ids, but that's
+			// alright, we can deduplicate them when we use the values.
+			$groupIdAggregateMapped = array_merge_recursive(
+				$groupIdAggregateMapped,
+				$this->mapGroups( $mappedGroups, $groupId )
+			);
+		}
 		return $groupIdAggregateMapped;
 	}
 
-	private function appendState( array $existingState, array $newState ): array {
+	/** @return array<string, string[]> */
+	private function mapGroups( array $subGroupList, string $groupId ): array {
+		$groupIdAggregateMapped = [];
+		foreach ( $subGroupList as $subGroups ) {
+			if ( is_array( $subGroups ) && $subGroups ) {
+				// First group in the array is the aggregate group
+				$subGroupId = ( $subGroups[0] )->getId();
+				$groupIdAggregateMapped = $this->mapGroups( array_slice( $subGroups, 1 ), $subGroupId );
+				foreach ( array_keys( $groupIdAggregateMapped ) as $mappedGubGroupId ) {
+					$groupIdAggregateMapped[$mappedGubGroupId][] = $groupId;
+				}
+				$groupIdAggregateMapped[$subGroupId][] = $groupId;
+			} else {
+				$groupIdAggregateMapped[$subGroups->getId()][] = $groupId;
+			}
+		}
+		return $groupIdAggregateMapped;
+	}
+
+	/**
+	 * @param array<string,array<int,string>> $existingState
+	 * @param array<string,array<int,string>> $newState
+	 * @return array<string,array<int,string>>
+	 */
+	private function appendToState( array $existingState, array $newState ): array {
 		foreach ( $newState as $stateType => $stateValues ) {
 			$existingState[$stateType] = array_unique(
 				array_merge( $existingState[$stateType] ?? [], $stateValues )

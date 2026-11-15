@@ -2,15 +2,11 @@
 
 namespace MediaWiki\Extension\SecurePoll\Pages;
 
-use MediaWiki\Extension\SecurePoll\Exceptions\InvalidDataException;
+use MediaWiki\Extension\SecurePoll\Context;
 use MediaWiki\Extension\SecurePoll\SpecialSecurePoll;
 use MediaWiki\Extension\SecurePoll\TranslationRepo;
-use MediaWiki\Languages\LanguageNameUtils;
-use MediaWiki\Linker\Linker;
-use MediaWiki\MediaWikiServices;
-use MediaWiki\Message\Message;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Title\Title;
-use MediaWiki\WikiMap\WikiMap;
 use OOUI\ButtonInputWidget;
 use OOUI\DropdownInputWidget;
 use OOUI\Element;
@@ -32,25 +28,12 @@ class TranslatePage extends ActionPage {
 	/** @var bool|null */
 	public $isAdmin;
 
-	/** @var LanguageNameUtils */
-	private $languageNameUtils;
-
-	/** @var TranslationRepo */
-	private $translationRepo;
-
-	/**
-	 * @param SpecialSecurePoll $specialPage
-	 * @param LanguageNameUtils $languageNameUtils
-	 * @param TranslationRepo $translationRepo
-	 */
 	public function __construct(
 		SpecialSecurePoll $specialPage,
-		LanguageNameUtils $languageNameUtils,
-		TranslationRepo $translationRepo
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly TranslationRepo $translationRepo,
 	) {
 		parent::__construct( $specialPage );
-		$this->languageNameUtils = $languageNameUtils;
-		$this->translationRepo = $translationRepo;
 	}
 
 	/**
@@ -61,6 +44,7 @@ class TranslatePage extends ActionPage {
 		$out = $this->specialPage->getOutput();
 		$request = $this->specialPage->getRequest();
 		$out->enableOOUI();
+		$out->addModuleStyles( 'mediawiki.pager.styles' );
 
 		if ( !count( $params ) ) {
 			$out->addWikiMsg( 'securepoll-too-few-params' );
@@ -78,29 +62,7 @@ class TranslatePage extends ActionPage {
 		$this->initLanguage( $this->specialPage->getUser(), $this->election );
 		$out->setPageTitleMsg( $this->msg( 'securepoll-translate-title', $this->election->getMessage( 'title' ) ) );
 
-		$jumpUrl = $this->election->getProperty( 'jump-url' );
-		if ( $jumpUrl ) {
-			$jumpId = $this->election->getProperty( 'jump-id' );
-			if ( !$jumpId ) {
-				throw new InvalidDataException( 'Configuration error: no jump-id' );
-			}
-			$jumpUrl .= "/edit/$jumpId";
-			if ( count( $params ) > 1 ) {
-				$jumpUrl .= '/' . implode( '/', array_slice( $params, 1 ) );
-			}
-
-			$wiki = $this->election->getProperty( 'main-wiki' );
-			if ( $wiki ) {
-				$wiki = WikiMap::getWikiName( $wiki );
-			} else {
-				$wiki = $this->msg( 'securepoll-edit-redirect-otherwiki' )->text();
-			}
-
-			$out->addWikiMsg(
-				'securepoll-edit-redirect',
-				Message::rawParam( Linker::makeExternalLink( $jumpUrl, $wiki ) )
-			);
-
+		if ( $this->showRedirectMessage( 'translate', $params ) ) {
 			return;
 		}
 
@@ -118,10 +80,6 @@ class TranslatePage extends ActionPage {
 		if ( !isset( $params[1] ) ) {
 			# No language selected, show the selector
 			$this->showLanguageSelector( $primary );
-			$sourceConfig = MediaWikiServices::getInstance()->getMainConfig()
-			->get( 'SecurePollTranslationImportSourceUrl' );
-			$out->addJsConfigVars( 'SecurePollTranslationImportSourceUrl', $sourceConfig );
-
 			$out->addJsConfigVars( 'SecurePollSubPage', 'translate' );
 			$out->addModules( 'ext.securepoll.htmlform' );
 			return;
@@ -161,7 +119,7 @@ class TranslatePage extends ActionPage {
 		$table = new Tag( 'table' );
 		$table->addClasses( [ 'mw-datatable', 'TablePager', 'securepoll-trans-table' ] )->appendContent(
 			( new Tag( 'thead' ) )->appendContent( ( new Tag( 'tr' ) )->appendContent(
-				( new Tag( 'th' ) )->appendContent( $this->msg( 'securepoll-header-trans-id' ) ),
+				( new Tag( 'th' ) )->appendContent( $this->msg( 'securepoll-header-trans-id' )->parse() ),
 				( new Tag( 'th' ) )->appendContent( $primaryName ),
 				( new Tag( 'th' ) )->appendContent( $secondaryName )
 			) )
@@ -196,7 +154,7 @@ class TranslatePage extends ActionPage {
 
 		$fields->addItems( [ new Element( [ 'content' => [ $table ] ] ) ] );
 
-		if ( $this->isAdmin && $this->specialPage->getConfig()->get( 'SecurePollUseNamespace' ) ) {
+		if ( $this->isAdmin && Context::isNamespacedLoggingEnabled() ) {
 			$fields->addItems( [ new FieldLayout( new TextInputWidget( [
 				'name' => 'comment',
 				'maxlength' => 250,
@@ -215,7 +173,7 @@ class TranslatePage extends ActionPage {
 
 		$form->appendContent( $fields );
 
-		$out->addHTML( $form );
+		$out->addHTML( (string)$form );
 	}
 
 	/**
@@ -240,40 +198,13 @@ class TranslatePage extends ActionPage {
 		$languages = $this->languageNameUtils->getLanguageNames();
 		ksort( $languages );
 
-		$apiEndpoint = $this->specialPage->getConfig()->get( 'SecurePollTranslationImportSourceUrl' );
-
 		$form = new FormLayout( [
 			'action' => $this->getTitle( false )->getLocalURL(),
 			'method' => 'get',
-			'items' => [ new FieldsetLayout( [ 'items' => [
-				new HorizontalLayout( [
-					'id' => 'sp-translation-selection',
-					'items' => [
-						new DropdownInputWidget( [
-							'name' => 'secondary_lang',
-							'value' => $selectedCode,
-							'options' => array_map( static function ( $code, $name ) {
-								return [
-									'label' => "$code - $name",
-									'data' => $code,
-								];
-							}, array_keys( $languages ), $languages )
-						] ),
-						new ButtonInputWidget( [
-							'label' => $this->msg( 'securepoll-submit-select-lang' )->text(),
-							'flags' => [ 'primary' ],
-							'type' => 'submit',
-						] )
-					]
-				] )
-			] ] ) ]
-		] );
-
-		if ( $apiEndpoint !== '' ) {
-			$form->addItems( [
+			'items' => [
 				new FieldLayout(
 					new LabelWidget( [
-						'label' => $this->msg( 'securepoll-subpage-translate-info', $apiEndpoint )->text()
+						'label' => $this->msg( 'securepoll-subpage-translate-info' )
 					] )
 				),
 				new FieldLayout(
@@ -284,10 +215,33 @@ class TranslatePage extends ActionPage {
 						'flags' => [ 'primary', 'progressive' ],
 						'disabled' => !$this->isAdmin
 					] )
-				)
-			], 0 );
-		}
-		$this->specialPage->getOutput()->addHTML( $form );
+				),
+				new FieldsetLayout( [ 'items' => [
+					new HorizontalLayout( [
+						'id' => 'sp-translation-selection',
+						'items' => [
+							new DropdownInputWidget( [
+								'name' => 'secondary_lang',
+								'value' => $selectedCode,
+								'options' => array_map( static function ( $code, $name ) {
+									return [
+										'label' => "$code - $name",
+										'data' => $code,
+									];
+								}, array_keys( $languages ), $languages )
+							] ),
+							new ButtonInputWidget( [
+								'label' => $this->msg( 'securepoll-submit-select-lang' )->text(),
+								'flags' => [ 'primary' ],
+								'type' => 'submit',
+							] )
+						]
+					] )
+				] ] )
+			]
+		] );
+
+		$this->specialPage->getOutput()->addHTML( (string)$form );
 	}
 
 	/**

@@ -1,5 +1,7 @@
 <?php
 
+// @phan-file-suppress PhanPluginNeverReturnMethod
+
 namespace WikibaseQuality\ConstraintReport\ConstraintCheck\Helper;
 
 use DataValues\TimeValue;
@@ -14,7 +16,6 @@ use LogicException;
  * other than {@link getTime} and {@link equals}.
  *
  * @license GPL-2.0-or-later
- * @phan-file-suppress PhanPluginNeverReturnMethod
  */
 class NowValue extends TimeValue {
 
@@ -31,18 +32,22 @@ class NowValue extends TimeValue {
 		return gmdate( '+Y-m-d\TH:i:s\Z' );
 	}
 
+	/** @inheritDoc */
 	public function getTimezone() {
 		return 0;
 	}
 
+	/** @inheritDoc */
 	public function getCalendarModel() {
 		return parent::CALENDAR_GREGORIAN;
 	}
 
+	/** @inheritDoc */
 	public function getArrayValue() {
 		throw new LogicException( 'NowValue should never be serialized' );
 	}
 
+	/** @inheritDoc */
 	public function equals( $value ) {
 		return get_class( $value ) === self::class;
 	}

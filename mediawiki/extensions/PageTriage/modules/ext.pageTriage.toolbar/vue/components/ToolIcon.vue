@@ -1,66 +1,56 @@
 <template>
-	<div
-		class="mwe-pt-tool-icon-container"
-		@click="click"
-		@mouseover="mouseover"
-		@mouseleave="mouseleave"
-	>
-		<img
-			:class="{ 'mwe-pt-tool-icon-disabled': disabled }"
-			class="mwe-pt-tool-icon"
-			:src="src"
-			:title="title"
-			alt=""
-		>
+	<div class="mwe-pt-tool-icon-container" @click="click">
+		<div :class="iconClass" :title></div>
 	</div>
 </template>
 
 <script>
-/**
- *  Tool Icon
- */
-
 // @vue/component
-module.exports = {
+module.exports = exports = {
 	name: 'ToolIcon',
 	props: {
+		file: {
+			type: String,
+			required: true
+		},
 		title: {
 			type: String,
 			required: true
 		},
+		isOpen: {
+			type: Boolean,
+			default: false
+		},
 		disabled: {
 			type: Boolean,
-			required: true
+			default: false
 		},
-		file: {
-			type: String,
-			required: true
+		useSpecialIcon: {
+			type: Boolean,
+			default: false
 		}
 	},
 	emits: [ 'click' ],
-	data() {
-		return {
-			dir: 'normal'
-		};
-	},
 	computed: {
-		src: function () {
-			const path = `${ mw.config.get( 'wgExtensionAssetsPath' ) }/PageTriage/modules/ext.pageTriage.toolbar/images/icons`;
-			const dir = this.disabled ? 'disabled' : this.dir;
-			return `${ path }/${ dir }/${ this.file }`;
+		iconClass() {
+			let classes = 'mwe-pt-tool-icon mwe-pt-tool-icon-' + this.file;
+
+			if ( this.disabled ) {
+				classes += '-disabled mwe-pt-tool-icon-disabled';
+			} else if ( this.isOpen ) {
+				classes += '-active';
+			} else if ( this.useSpecialIcon ) {
+				classes += '-special';
+			}
+
+			return classes;
 		}
 	},
 	methods: {
-		click: function () {
+		click() {
 			if ( !this.disabled ) {
 				this.$emit( 'click' );
 			}
-		},
-		mouseover: function () {
-			this.dir = 'hover';
-		},
-		mouseleave: function () {
-			this.dir = 'normal';
 		}
 	}
 };

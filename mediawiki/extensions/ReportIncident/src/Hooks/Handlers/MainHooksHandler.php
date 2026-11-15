@@ -20,9 +20,9 @@
 namespace MediaWiki\Extension\ReportIncident\Hooks\Handlers;
 
 use MediaWiki\Extension\ReportIncident\Services\ReportIncidentController;
-use MediaWiki\Hook\SidebarBeforeOutputHook;
-use MediaWiki\Hook\SkinTemplateNavigation__UniversalHook;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
+use MediaWiki\Skin\Hook\SidebarBeforeOutputHook;
+use MediaWiki\Skin\Hook\SkinTemplateNavigation__UniversalHook;
 
 class MainHooksHandler implements
 	BeforePageDisplayHook,
@@ -30,10 +30,9 @@ class MainHooksHandler implements
 	SkinTemplateNavigation__UniversalHook
 {
 
-	private ReportIncidentController $controller;
-
-	public function __construct( ReportIncidentController $controller ) {
-		$this->controller = $controller;
+	public function __construct(
+		private readonly ReportIncidentController $controller,
+	) {
 	}
 
 	/** @inheritDoc */
@@ -45,6 +44,12 @@ class MainHooksHandler implements
 		// * feature flag is enabled.
 		if ( $this->controller->shouldAddMenuItem( $out->getContext() ) ) {
 			$out->addHtml( '<div id="ext-reportincident-app"></div>' );
+		}
+
+		// If page is Special:CommunityConfiguration, add message components
+		// needed to render the final message on-page
+		if ( $out->getTitle()->isSpecial( 'CommunityConfiguration' ) ) {
+			$out->addModules( 'ext.reportIncidentCommunityConfigurationMessages' );
 		}
 	}
 
@@ -69,10 +74,7 @@ class MainHooksHandler implements
 		}
 	}
 
-	/**
-	 * @inheritDoc
-	 * @phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-	 */
+	/** @inheritDoc */
 	public function onSkinTemplateNavigation__Universal( $sktemplate, &$links ): void {
 		// Show the reporting link in the "Tools" menu if the:
 		// * page is in a supported namespace,

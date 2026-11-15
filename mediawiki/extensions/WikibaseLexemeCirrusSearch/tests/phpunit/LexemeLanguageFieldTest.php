@@ -18,9 +18,11 @@ use Wikibase\Lexeme\Search\Elastic\LexemeLanguageField;
 class LexemeLanguageFieldTest extends LexemeFieldTestBase {
 
 	/**
+	 * @param NumericPropertyId $propId
+	 * @param string $code
 	 * @return StatementList
 	 */
-	private function getStatList( NumericPropertyId $propId, $code ) {
+	private static function getStatList( NumericPropertyId $propId, $code ) {
 		$statList = new StatementList();
 		$statList->addStatement( new Statement( new PropertyValueSnak( $propId,
 			new StringValue( $code ) ) ) );
@@ -30,49 +32,55 @@ class LexemeLanguageFieldTest extends LexemeFieldTestBase {
 	/**
 	 * @return EntityLookup
 	 */
-	private function getEntityLookup( StatementList $statList ) {
-		$langEntity = $this->createMock( Item::class );
-		$langEntity->method( 'getStatements' )->willReturn( $statList );
-
+	private function getEntityLookup( ?StatementList $statList ) {
 		$lookup = $this->createMock( EntityLookup::class );
-		$lookup->method( 'getEntity' )
-			->with( new ItemId( self::LANGUAGE_ID ) )
-			->willReturn( $langEntity );
+		if ( $statList !== null ) {
+			$langEntity = $this->createMock( Item::class );
+			$langEntity->method( 'getStatements' )->willReturn( $statList );
+
+			$lookup->method( 'getEntity' )
+				->with( new ItemId( self::LANGUAGE_ID ) )
+				->willReturn( $langEntity );
+		}
 		return $lookup;
+	}
+
+	/** @dataProvider provideTestData */
+	public function testLemmaField( $fieldSpec, $expected ) {
+		$field = new LexemeLanguageField( $this->getEntityLookup( $fieldSpec[0] ), $fieldSpec[1] );
+		parent::testLemmaField( $field, $expected );
 	}
 
 	/**
 	 * @return array
 	 */
-	public function getTestData() {
+	public static function provideTestData() {
 		$propId = new NumericPropertyId( 'P42' );
 
 		return [
 			'no property id' => [
-				new LexemeLanguageField( $this->createMock( EntityLookup::class ), null ),
+				[ null, null ],
 				[
 					'entity' => self::LANGUAGE_ID,
 					'code' => null
 				]
 			],
 			'no entity' => [
-				new LexemeLanguageField( $this->createMock( EntityLookup::class ), $propId ),
+				[ null, $propId ],
 				[
 					'entity' => self::LANGUAGE_ID,
 					'code' => null
 				]
 			],
 			'with property id' => [
-				new LexemeLanguageField(
-					$this->getEntityLookup( $this->getStatList( $propId, 'fr' ) ),
-					$propId ),
+				[ self::getStatList( $propId, 'fr' ), $propId ],
 				[
 					'entity' => self::LANGUAGE_ID,
 					'code' => 'fr'
 				]
 			],
 			'with property id, no statement' => [
-				new LexemeLanguageField( $this->getEntityLookup( new StatementList() ), $propId ),
+				[ new StatementList(), $propId ],
 				[
 					'entity' => self::LANGUAGE_ID,
 					'code' => null

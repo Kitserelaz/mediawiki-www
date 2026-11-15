@@ -8,15 +8,14 @@ use CirrusSearch\CompletionSuggester;
 use CirrusSearch\Connection;
 use CirrusSearch\ElasticsearchIntermediary;
 use CirrusSearch\HashSearchConfig;
-use CirrusSearch\Hooks;
 use CirrusSearch\RequestLog;
 use CirrusSearch\RequestLogger;
 use CirrusSearch\SearchConfig;
 use CirrusSearch\Searcher;
 use Elastica\Response;
 use Elastica\Transport\AbstractTransport;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
 use Psr\Log\AbstractLogger;
@@ -31,7 +30,7 @@ use Wikimedia\TestingAccessWrapper;
  * @group CirrusSearch
  * @covers \CirrusSearch\RequestLogger
  * @covers \CirrusSearch\ElasticsearchIntermediary
- * @covers \CirrusSearch\Hooks::prefixSearchExtractNamespaceWithConnection()
+ * @covers \CirrusSearch\PrefixSearchExtractNamespace
  */
 class RequestLoggerTest extends CirrusIntegrationTestCase {
 	/** @var array mediawiki/cirrussearch/request schema */
@@ -141,7 +140,6 @@ class RequestLoggerTest extends CirrusIntegrationTestCase {
 		$configs = [
 			'CirrusSearchFullTextQueryBuilderProfile' => 'default',
 			'CirrusSearchInterwikiSources' => [],
-			'CirrusSearchNamespaceResolutionMethod' => 'elastic',
 		];
 		if ( isset( $query['interwiki'] ) ) {
 			$configs['CirrusSearchInterwikiSources'] = $query['interwiki'];
@@ -150,8 +148,8 @@ class RequestLoggerTest extends CirrusIntegrationTestCase {
 		$this->overrideConfigValues( $configs );
 		$this->setService( 'LinkBatchFactory', $this->createMock( LinkBatchFactory::class ) );
 		$titleFactory = $this->createMock( TitleFactory::class );
-		$titleFactory->method( 'makeTitle' )->willReturnCallback( static function () {
-			$ret = Title::makeTitle( ...func_get_args() );
+		$titleFactory->method( 'makeTitle' )->willReturnCallback( static function ( $ns, $title, $fragment = '', $interwiki = '' ) {
+			$ret = Title::makeTitle( $ns, $title, $fragment, $interwiki );
 			$ret->resetArticleID( 0 );
 			return $ret;
 		} );
@@ -268,15 +266,8 @@ class RequestLoggerTest extends CirrusIntegrationTestCase {
 					[ 'transport' => $transport ],
 				]
 			],
-			'CirrusSearchNamespaceResolutionMethod' => 'utr30',
 		] );
 		$connection = new Connection( $config, 'default' );
-		$this->setTemporaryHook( 'PrefixSearchExtractNamespace',
-			static function ( &$namespace, &$query ) use ( $connection ) {
-				return Hooks::prefixSearchExtractNamespaceWithConnection( $connection,
-					$namespace, $query );
-			}
-		);
 		return [ $loggers, $config, $connection, $transport ];
 	}
 
@@ -396,8 +387,8 @@ class RequestLoggerTest extends CirrusIntegrationTestCase {
 		}
 
 		// Do same for the requests in the log
-		foreach ( array_keys( $log['context']['elasticsearch_requests'] ) as $idx ) {
-			$this->assertArrayHasKey( 'request_time_ms', $log['context']['elasticsearch_requests'][$idx], $debug );
+		foreach ( $log['context']['elasticsearch_requests'] as $idx => $request ) {
+			$this->assertArrayHasKey( 'request_time_ms', $request, $debug );
 			unset( $log['context']['elasticsearch_requests'][$idx]['request_time_ms'] );
 		}
 		return $log;

@@ -2,6 +2,7 @@
 	"@metadata": {
 		"authors": [
 			"Alex Great",
+			"Amire80",
 			"Deltaspace",
 			"Facenapalm",
 			"Gamliel Fishkin",
@@ -19,10 +20,12 @@
 			"Stjn",
 			"Sunpriat",
 			"Vlad5250",
-			"Туллук"
+			"Vonavy",
+			"Туллук",
+			"HyoerFlint"
 		]
 	},
-	"cirrussearch-desc": "Поиск для MediaWiki на базе Elasticsearch",
+	"cirrussearch-desc": "Поиск для MediaWiki на базе OpenSearch",
 	"cirrussearch-backend-error": "Нам не удалось завершить поиск из-за временной проблемы. Пожалуйста, повторите попытку позже.",
 	"cirrussearch-parse-error": "Запрос не был понят. Пожалуйста, сделайте его проще. Запрос был записан для улучшения поисковой системы.",
 	"cirrussearch-too-busy-error": "Поиск в настоящий момент слишком перегружен.  Пожалуйста, повторите попытку позже.",
@@ -77,7 +80,7 @@
 	"cirrussearch-feature-deepcat-endpoint": "$wgCirrusSearchCategoryEndpoint должен быть установлен на действительную конечную точку SPARQL для использования поиска глубокой категории.",
 	"cirrussearch-feature-deepcat-exception": "Не удалось получить запрос SPARQL с глубокой категорией",
 	"cirrussearch-feature-deepcat-timeout": "Глубокий поиск по категориям достиг тайм-аута. Скорее всего, в категории слишком много подкатегорий",
-	"cirrussearch-feature-deepcat-toomany": "Запрос по категории и рекурсивно по подкатегориям  возвратил слишком много категорий",
+	"cirrussearch-feature-deepcat-toomany": "Глубокий запрос категорий вернул слишком много категорий. Применено только подмножество категорий.",
 	"cirrussearch-feature-deepcat-invalid-title": "Указанная категория недействительна.",
 	"cirrussearch-feature-pageid-invalid-id": "{{PLURAL:$2|Неверный ID страницы|Неверные ID страниц}}: $1",
 	"cirrussearch-incategory-feature-no-valid-categories": "Не передано корректных категорий в '$1'.",
@@ -89,6 +92,5 @@
 	"cirrussearch-autoselect-profile": "Пусть поисковая система определит лучший профиль для использования.",
 	"cirrussearch-offset-too-large": "Не удалось получить результаты. В поисковой выдаче поддерживается до {{PLURAL:$1|$1 результата|$1 результатов}}, а по запросу результатов получилось более $2.",
 	"cirrussearch-offset-not-allowed-with-random-sort": "Запрос на постраничную разбивку случайно отсортированных результатов игнорируется.",
-	"cirrussearch-articletopic-invalid-topic": "{{PLURAL:$2|Нераспознанное название темы|Нераспознанных названия тем}} для <kbd>темы статьи:</kbd> ключевое слово: $1",
 	"cirrussearch-inlanguage-deprecate-comma": "Использование запятой в качестве разделителя для ключевого слова «inlanguage» устарело. Пожалуйста, используйте «|» (вертикальную черту/пайп) для разделения языков."
 }

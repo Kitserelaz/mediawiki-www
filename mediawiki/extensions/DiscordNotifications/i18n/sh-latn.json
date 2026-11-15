@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"Winston Sung"
 		]
 	},
@@ -26,6 +27,5 @@
 	"discordnotifications-content": "Sadržaj:",
 	"discordnotifications-view-user-rights": "Prikaz. ili uprav. korisničkim pravima",
 	"discordnotifications-change-user-groups-with-old": "$1 je promijenio/la korisničke grupe za $2. Stare grupe: $3. Nove grupe: $4",
-	"discordnotifications-flow-moderate-delete": "obrisano",
-	"discordnotifications-flow-moderate-undelete": "vratio/la"
+	"discordnotifications-flow-moderate-delete": "obrisano"
 }

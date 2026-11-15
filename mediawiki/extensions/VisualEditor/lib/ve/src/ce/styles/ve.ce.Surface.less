@@ -13,78 +13,25 @@
 	Should be inherited from the VE target container.
 	*/
 
-	&-selections {
-		position: absolute;
-		pointer-events: none;
-		/* @noflip */
-		left: 0;
-		top: 0;
+	flex: 1;
+	/*
+	 * Override the flex box default which expands min-width to the content size:
+	 * https://developer.mozilla.org/en-US/docs/Web/CSS/min-width#auto
+	 *
+	 * Without this the surface won't let itself be narrower than its
+	 * widest content, causing issues with long lines of text,
+	 * tables, floated elements, etc.
+	 */
+	min-width: 0;
 
-		.ve-ce-surface-selection {
-			> div {
-				position: absolute;
-			}
-
-			> .ve-ce-surface-selection-label {
-				position: absolute;
-				font-size: 0.8em;
-				font-weight: bold;
-				color: #fff;
-				text-shadow: 0 0 1px #000;
-				padding: 0.2em;
-				margin-top: -1.4em;
-				height: 1em;
-				line-height: 1;
-				white-space: nowrap;
-				max-width: 10em;
-				overflow: hidden;
-				text-overflow: ellipsis;
-			}
-		}
-
-		/* Deactivated selections */
-
-		&-deactivated {
-			opacity: 0.5;
-
-			.ve-ce-surface-selection > div {
-				background: #6da9f7;
-				/* Increase vertical height to look more like a system selection */
-				margin-top: -0.15em;
-				padding: 0.15em 0;
-			}
-
-			&-showAsDeactivated {
-				opacity: 0.15;
-
-				.ve-ce-surface-selection > div {
-					background: #000;
-				}
-			}
-
-			&-collapsed {
-				opacity: 1;
-				/* Color is matched to font in ve.ce.Surface.js */
-			}
-		}
-
-		&-otherUserSelection {
-			opacity: 0.5;
-
-			&-inactive {
-				opacity: 0.25;
-			}
-		}
-
-		&-otherUserCursor {
-			.ve-ce-surface-selection > div:not( .ve-ce-surface-selection-label ) {
-				width: 2px !important; /* stylelint-disable-line declaration-no-important */
-			}
-
-			&-inactive {
-				opacity: 0.5;
-			}
-		}
+	// Generic class for interface components embedded in the surface, e.g.
+	//  - .ve-ce-branchNode-blockSlug
+	//  - .ve-ce-focusableNode-invisibleIcon
+	// Used to reset styles that might otherwise be inherited
+	&-interface {
+		font-weight: normal;
+		font-style: normal;
+		// Downstream users should set reset font-size and family.
 	}
 
 	&-dropMarker {
@@ -108,9 +55,9 @@
 		opacity: 0.5;
 	}
 
-	&-paste {
+	&-clipboardHandler {
 		position: fixed;
-		/* FIXME T126024: Stop the viewport scrolling when the paste target is typed into */
+		/* FIXME T126024: Stop the viewport scrolling when the clipboard handler is typed into */
 		top: 3em;
 		left: 0;
 		/* Try to avoid wrapping by not setting a width because of https://code.google.com/p/chromium/issues/detail?id=318925 */

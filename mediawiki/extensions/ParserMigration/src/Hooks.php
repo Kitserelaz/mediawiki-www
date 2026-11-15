@@ -2,43 +2,44 @@
 
 namespace MediaWiki\Extension\ParserMigration;
 
-use Article;
+use MediaWiki\ChangeTags\Hook\ChangeTagsAllowedAddHook;
+use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
+use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
 use MediaWiki\Config\Config;
-use MediaWiki\Hook\ParserOutputPostCacheTransformHook;
-use MediaWiki\Hook\SidebarBeforeOutputHook;
 use MediaWiki\Html\Html;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\Article;
 use MediaWiki\Page\Hook\ArticleParserOptionsHook;
+use MediaWiki\Page\PageIdentity;
+use MediaWiki\Parser\Hook\ParserOutputPostCacheTransformHook;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
+use MediaWiki\ResourceLoader\Hook\ResourceLoaderGetConfigVarsHook;
+use MediaWiki\Skin\Hook\SidebarBeforeOutputHook;
+use MediaWiki\Skin\Skin;
+use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleValue;
 use MediaWiki\User\Options\UserOptionsManager;
 use MediaWiki\User\User;
-use Skin;
+use MediaWiki\WikiMap\WikiMap;
 
 class Hooks implements
-	GetPreferencesHook,
-	SidebarBeforeOutputHook,
 	ArticleParserOptionsHook,
-	ParserOutputPostCacheTransformHook
+	GetPreferencesHook,
+	ParserOutputPostCacheTransformHook,
+	ResourceLoaderGetConfigVarsHook,
+	SidebarBeforeOutputHook,
+	ListDefinedTagsHook,
+	ChangeTagsListActiveHook,
+	ChangeTagsAllowedAddHook
 {
 
-	private Config $mainConfig;
-	private UserOptionsManager $userOptionsManager;
-	private Oracle $oracle;
-
-	/**
-	 * @param Config $mainConfig
-	 * @param UserOptionsManager $userOptionsManager
-	 * @param Oracle $oracle
-	 */
 	public function __construct(
-		Config $mainConfig,
-		UserOptionsManager $userOptionsManager,
-		Oracle $oracle
+		private readonly Config $mainConfig,
+		private readonly UserOptionsManager $userOptionsManager,
+		private readonly Oracle $oracle,
 	) {
-		$this->mainConfig = $mainConfig;
-		$this->userOptionsManager = $userOptionsManager;
-		$this->oracle = $oracle;
 	}
 
 	/**
@@ -79,7 +80,7 @@ class Hooks implements
 		Article $article, ParserOptions $popts
 	) {
 		// T348257: Allow individual user to opt in to Parsoid read views as a
-		// use option in the ParserMigration section.
+		// user option in the ParserMigration section.
 		$context = $article->getContext();
 		if ( $this->oracle->shouldUseParsoid( $context->getUser(), $context->getRequest(), $article->getTitle() ) ) {
 			$popts->setUseParsoid();
@@ -88,7 +89,7 @@ class Hooks implements
 	}
 
 	/**
-	 * This hook is called from ParserOutput::getText() to do
+	 * This hook is called from ParserOutput::runOutputPipeline() to do
 	 * post-cache transforms.
 	 *
 	 * @since 1.35
@@ -102,14 +103,24 @@ class Hooks implements
 		&$options
 	): void {
 		// Make "whether Parsoid was used" visible to client-side JS
-		if ( $options['isParsoidContent'] ?? false ) {
+		$user = null;
+		if ( $parserOutput->getContentHolder()->isParsoidContent() ) {
 			$parserOutput->setJsConfigVar( 'parsermigration-parsoid', true );
 			// Add a user notice for named users
 			$named = false;
-			if ( $options['skin'] ) {
-				$named = $options['skin']->getUser()->isNamed();
+			$userPref = Oracle::USERPREF_DEFAULT;
+			if ( $options['skin'] ?? null ) {
+				$user = $options['skin']->getUser();
+				$named = $user->isNamed();
+				$userPref = intval( $this->userOptionsManager->getOption(
+					$user, 'parsermigration-parsoid-readviews'
+				) );
 			}
-			if ( $named ) {
+			if (
+				$this->mainConfig->get( 'ParserMigrationEnableUserNotice' ) &&
+				// Only display user notice for logged in ("named") users
+				$named
+			) {
 				$parserOutput->setJsConfigVar(
 					'parsermigration-notice-version',
 					$this->mainConfig->get(
@@ -124,29 +135,46 @@ class Hooks implements
 				);
 				$parserOutput->addModules( [ 'ext.parsermigration.notice' ] );
 			}
-			// Add an indicator using an ad-hoc Codex InfoChip
-			// Replace when T357324 blesses a CSS-only InfoChip
-			$parserOutput->addModuleStyles( [ 'ext.parsermigration.indicator' ] );
-			$parserOutput->setIndicator(
-				'parsoid',
-				$this->mainConfig->get( 'ParserMigrationCompactIndicator' ) ?
-				Html::rawElement(
-					'div',
-					[
-						'class' => 'mw-parsoid-icon notheme mw-no-invert',
-						'title' => wfMessage( 'parsermigration-parsoid-chip-label' )->text(),
-					]
-				) :
-				Html::rawElement(
-					'div',
-					[ 'class' => 'cdx-info-chip' ],
-					Html::element(
-						'span',
-						[ 'class' => 'cdx-info-chip--text' ],
-						wfMessage( 'parsermigration-parsoid-chip-label' )->text()
+
+			if (
+				$this->mainConfig->get( 'ParserMigrationEnableIndicator' ) &&
+				// Only display indicator for "opt in always" users.
+				$userPref === Oracle::USERPREF_ALWAYS
+			) {
+				// Add an indicator using an ad-hoc Codex InfoChip
+				// Replace when T357324 blesses a CSS-only InfoChip
+				$parserOutput->addModuleStyles( [ 'ext.parsermigration.indicator' ] );
+				$parserOutput->setIndicator(
+					'parsoid',
+					$this->mainConfig->get( 'ParserMigrationCompactIndicator' ) ?
+					Html::rawElement(
+						'div',
+						[
+							'class' => 'mw-parsoid-icon notheme mw-no-invert',
+							'title' => wfMessage( 'parsermigration-parsoid-chip-label' )->text(),
+						]
+					) :
+					Html::rawElement(
+						'div',
+						[ 'class' => 'cdx-info-chip' ],
+						Html::element(
+							'span',
+							[ 'class' => 'cdx-info-chip--text' ],
+							wfMessage( 'parsermigration-parsoid-chip-label' )->text()
+						)
 					)
-				)
-			);
+				);
+			}
+
+			if ( $user === null || $this->shouldShowReportVisualBug( $user ) ) {
+				// Harmless to add this module if we don't know user.
+				$parserOutput->addModules( [ 'ext.parsermigration.reportbug.init' ] );
+			}
+
+		} else {
+			if ( $this->mainConfig->get( 'ParserMigrationEnableQuickSurvey' ) ) {
+				$parserOutput->addModules( [ 'ext.parsermigration.survey' ] );
+			}
 		}
 	}
 
@@ -162,17 +190,16 @@ class Hooks implements
 			return;
 		}
 
+		$user = $skin->getUser();
+		$title = $skin->getTitle();
+		$usingParsoid = $this->oracle->shouldUseParsoid( $user, $skin->getRequest(), $title );
+
 		$queryStringEnabled = $this->mainConfig->get(
 			'ParserMigrationEnableQueryString'
 		);
-		if ( !$queryStringEnabled ) {
-			// Early exit from those wikis where we don't want the
-			// user to be able to put Parsoid pages into the parser cache.
-			return;
-		}
-
-		$user = $skin->getUser();
-		$title = $skin->getTitle();
+		$reportVisualBugEnabled = $this->mainConfig->get(
+			'ParserMigrationEnableReportVisualBug'
+		);
 
 		$editToolPref = $this->userOptionsManager->getOption(
 			$user, 'parsermigration'
@@ -182,8 +209,8 @@ class Hooks implements
 		) );
 
 		$shouldShowToggle = false;
-		if ( $editToolPref ) {
-			$sidebar['TOOLBOX']['parsermigration'] = [
+		if ( $editToolPref && $queryStringEnabled ) {
+			$sidebar['TOOLBOX']['parsermigration-edit-tool'] = [
 				'href' => $title->getLocalURL( [
 					'action' => 'parsermigration-edit',
 				] ),
@@ -197,14 +224,20 @@ class Hooks implements
 		if ( $userPref === Oracle::USERPREF_ALWAYS ) {
 			$shouldShowToggle = true;
 		}
+		if ( !$queryStringEnabled ) {
+			// On some wikis we don't want the user to be able to put
+			// Parsoid pages into the parser cache.
+			$shouldShowToggle = false;
+		}
 
 		if ( $shouldShowToggle ) {
-			$usingParsoid = $this->oracle->shouldUseParsoid( $user, $skin->getRequest(), $title );
-			$sidebar[ 'TOOLBOX' ][ 'parsermigration' ] = [
-				'href' => $title->getLocalURL( [
-					// Allow toggling 'useParsoid' from the current state
-					'useparsoid' => $usingParsoid ? '0' : '1',
-				] ),
+			$queryParams = $out->getRequest()->getQueryValues();
+			// Allow toggling 'useParsoid' from the current state
+			$queryParams[ 'useparsoid' ] = $usingParsoid ? '0' : '1';
+			// title is handled by getLocalURL, no need to pass it twice from a index.php?title= url
+			unset( $queryParams[ 'title' ] );
+			$sidebar[ 'TOOLBOX' ][ 'parsermigration-switch' ] = [
+				'href' => $title->getLocalURL( $queryParams ),
 				'text' => $skin->msg(
 					$usingParsoid ?
 					'parsermigration-use-legacy-parser-toolbox-label' :
@@ -212,5 +245,254 @@ class Hooks implements
 				)->text(),
 			];
 		}
+
+		if ( $usingParsoid && $this->shouldShowReportVisualBug( $user ) ) {
+			// Add "report visual bug" sidebar link
+			$href = $this->getFeedbackTitleUrl();
+			$sidebar[ 'TOOLBOX' ][ 'parsermigration-report-bug' ] = [
+				'html' => Html::rawElement( 'a', [
+					// This will be overridden in JavaScript, but is a useful
+					// fallback for no-javascript browsers and unnamed users
+					'href' => $href,
+					'title' => $skin->msg(
+						'parsermigration-report-bug-toolbox-title'
+					)->text(),
+				], $skin->msg(
+						'parsermigration-report-bug-toolbox-label'
+				)->parse() . '&nbsp;' . Html::rawElement( 'span', [
+					'class' => "parsermigration-report-bug-icon",
+				] ) ),
+				'id' => 'parsermigration-report-bug',
+				// These properties are for the mobile skins
+				'text' => $skin->msg( 'parsermigration-report-bug-toolbox-label' ),
+				'href' => $href,
+				'icon' => 'feedback',
+			];
+		}
+	}
+
+	/**
+	 * Adds extra variables to the global config
+	 *
+	 * @param array &$vars Global variables object
+	 * @param string $skin
+	 * @param Config $config
+	 */
+	public function onResourceLoaderGetConfigVars( array &$vars, $skin, Config $config ): void {
+		if ( $this->mainConfig->get( 'ParserMigrationEnableReportVisualBug' ) ) {
+			$vars['wgParserMigrationConfig'] = [
+				'onlyLoggedIn' => $this->mainConfig->get( 'ParserMigrationEnableReportVisualBugOnlyLoggedIn' ),
+				'isMobile' => $this->oracle->showingMobileView(),
+				'feedbackApiUrl' => $this->mainConfig->get( 'ParserMigrationFeedbackAPIURL' ),
+				'feedbackTitle' => $this->mainConfig->get( 'ParserMigrationFeedbackTitle' ),
+				'iwp' => WikiMap::getCurrentWikiId(),
+			];
+		}
+	}
+
+	/**
+	 * A change tag for "report visual bug" reports.
+	 * @inheritDoc
+	 */
+	public function onListDefinedTags( &$tags ) {
+		$tags[] = 'parsermigration-visual-bug';
+		return true;
+	}
+
+	/**
+	 * All tags are still active.
+	 * @inheritDoc
+	 */
+	public function onChangeTagsListActive( &$tags ) {
+		return $this->onListDefinedTags( $tags );
+	}
+
+	/**
+	 * MessagePoster acts on behalf of the user, so the
+	 * user (any user) needs to be allowed to add this tag.
+	 * @inheritDoc
+	 */
+	public function onChangeTagsAllowedAdd( &$allowedTags, $addTags, $user ) {
+		return $this->onListDefinedTags( $allowedTags );
+	}
+
+	/**
+	 * Suppress captcha when posting to the "Report Visual Bug" feedback
+	 * page.
+	 * @param string $action Action user is performing, one of sendmail,
+	 *  createaccount, badlogin, edit, create, addurl.
+	 * @param PageIdentity|null $page
+	 * @param bool &$result
+	 * @return bool|void True or no return value to continue or false to abort
+	 */
+	public static function onConfirmEditTriggersCaptcha(
+		string $action,
+		?PageIdentity $page,
+		bool &$result
+	) {
+		// If we don't have a target page, bail.
+		if ( $page === null ) {
+			return true;
+		}
+		// We're only going to intervene if this is an edit or create
+		// ('create' since this could be the first report posted)
+		// 'addurl' because our subject lines link to the page which is
+		// the subject of the report.
+		if ( !( $action === 'edit' || $action === 'create' || $action === 'addurl' ) ) {
+			return true;
+		}
+		$services = MediaWikiServices::getInstance();
+		$mainConfig = $services->getMainConfig();
+		// If the Report Visual Bug tool is not enabled, bail.
+		if ( !$mainConfig->get( 'ParserMigrationEnableReportVisualBug' ) ) {
+			return true;
+		}
+		$apiUrl = $mainConfig->get( 'ParserMigrationFeedbackAPIURL' );
+		// If a foreign API URL is set, we can't do anything to help.
+		if ( $apiUrl ) {
+			return true;
+		}
+		$title = $mainConfig->get( 'ParserMigrationFeedbackTitle' ) ?:
+			wfMessage( 'parsermigration-reportbug-feedback-title' )->plain();
+		$titleValue = $services->getTitleParser()->parseTitle( $title );
+		// If the page doesn't match our feedback page, do nothing.
+		// @phan-suppress-next-line PhanTypeMismatchArgumentNullable
+		if ( !$titleValue->isSameLinkAs( TitleValue::castPageToLinkTarget( $page ) ) ) {
+			return true;
+		}
+		// Ok, this is our page!  Suppress the captcha.
+		$result = false;
+		return false;
+	}
+
+	private function getFeedbackTitleUrl(): string {
+		$apiURL = $this->mainConfig->get( 'ParserMigrationFeedbackAPIURL' );
+		$url = $this->mainConfig->get( 'ParserMigrationFeedbackTitleURL' );
+		if ( $apiURL && $url ) {
+			return $url;
+		}
+		$title = Title::newFromText(
+			$this->mainConfig->get( 'ParserMigrationFeedbackTitle' ) ?:
+			wfMessage( 'parsermigration-reportbug-feedback-title' )->plain()
+		);
+		return $title->getLinkURL();
+	}
+
+	protected function shouldShowReportVisualBug( User $user ): bool {
+		if ( !$this->mainConfig->get( 'ParserMigrationEnableReportVisualBug' ) ) {
+			return false;
+		}
+		if ( $user->isNamed() ) {
+			return true;
+		}
+		return !$this->mainConfig->get( 'ParserMigrationEnableReportVisualBugOnlyLoggedIn' );
+	}
+
+	/**
+	 * Registers the parser migration survey
+	 *
+	 * @param array &$surveys
+	 */
+	public static function onQuickSurveysEnabled( &$surveys ) {
+		$enabled = MediaWikiServices::getInstance()->getMainConfig()->get( 'ParserMigrationEnableQuickSurvey' );
+		$surveys[] = [
+			"name" => "parsoid-migration-survey-2026",
+			"type" => "internal",
+			"enabled" => $enabled,
+			"coverage" => 1,
+			"submitButtonLabel" => "parsermigration-survey-submit-button",
+			"confirmMsg" => "parsermigration-survey-confirm-msg",
+			"privacyPolicy" => "parsermigration-survey-privacy-policy",
+			"platforms" => [ "desktop", "mobile" ],
+			"audience" => [],
+			"embedElementId" => "-",
+			"questions" => [
+				[
+					"name" => "q1",
+					"layout" => "single-answer",
+					"question" => "parsermigration-survey-description",
+					"description" => "parsermigration-survey-question-1",
+					"answers" => [
+						[
+							"label" => "parsermigration-survey-question-1-answer-1",
+						],
+						[
+							"label" => "parsermigration-survey-question-1-answer-2",
+						],
+						[
+							"label" => "parsermigration-survey-question-1-answer-3",
+						],
+						[
+							"label" => "parsermigration-survey-question-1-answer-4",
+						],
+						[
+							"label" => "parsermigration-survey-question-1-answer-5",
+						],
+					]
+				],
+				[
+					"name" => "q2",
+					"layout" => "single-answer",
+					"question" => "parsermigration-survey-question-2",
+					"answers" => [
+						[
+							"label" => "parsermigration-survey-question-2-answer-1",
+						],
+						[
+							"label" => "parsermigration-survey-question-2-answer-2",
+						],
+						[
+							"label" => "parsermigration-survey-question-2-answer-3",
+						],
+						[
+							"label" => "parsermigration-survey-question-2-answer-4",
+						],
+						[
+							"label" => "parsermigration-survey-question-2-answer-5",
+						],
+						[
+							"label" => "parsermigration-survey-question-2-answer-6",
+							"freeformTextLabel" => "parsermigration-survey-question-2-freeformtext",
+						],
+					]
+				],
+				[
+					"name" => "q3",
+					"layout" => "multiple-answer",
+					"question" => "parsermigration-survey-question-3",
+					"answers" => [
+						[
+							"label" => "parsermigration-survey-question-3-answer-1",
+						],
+						[
+							"label" => "parsermigration-survey-question-3-answer-2",
+						],
+						[
+							"label" => "parsermigration-survey-question-3-answer-3",
+						],
+						[
+							"label" => "parsermigration-survey-question-3-answer-4",
+						],
+						[
+							"label" => "parsermigration-survey-question-3-answer-5",
+						],
+					]
+				],
+				[
+					"name" => "q4",
+					"layout" => "single-answer",
+					"question" => "parsermigration-survey-question-4",
+					"answers" => [
+						[
+							"label" => "parsermigration-survey-question-4-answer-1",
+							"freeformTextLabel" => "parsermigration-survey-question-4-freeformtext",
+						],
+						[
+							"label" => "parsermigration-survey-question-4-answer-2",
+						],
+					],
+				],
+			]
+		];
 	}
 }

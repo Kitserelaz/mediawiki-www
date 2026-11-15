@@ -30,7 +30,7 @@ use Wikibase\DataModel\Term\TermList;
  */
 class ItemTest extends \PHPUnit\Framework\TestCase {
 
-	private function getNewEmpty() {
+	private static function getNewEmpty() {
 		return new Item();
 	}
 
@@ -111,25 +111,21 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 		return $argLists;
 	}
 
-	public static function simpleSiteLinksProvider() {
-		$argLists = [];
+	public static function simpleSiteLinksProvider(): iterable {
+		yield [];
 
-		$argLists[] = [];
+		yield [ new SiteLink( 'enwiki', 'Wikidata', [ new ItemId( 'Q42' ) ] ) ];
 
-		$argLists[] = [ new SiteLink( 'enwiki', 'Wikidata', [ new ItemId( 'Q42' ) ] ) ];
-
-		$argLists[] = [
+		yield [
 			new SiteLink( 'enwiki', 'Wikidata' ),
 			new SiteLink( 'nlwiki', 'Wikidata', [ new ItemId( 'Q3' ) ] ),
 		];
 
-		$argLists[] = [
+		yield [
 			new SiteLink( 'enwiki', 'Wikidata' ),
 			new SiteLink( 'nlwiki', 'Wikidata' ),
 			new SiteLink( 'foo bar', 'baz bah', [ new ItemId( 'Q2' ) ] ),
 		];
-
-		return $argLists;
 	}
 
 	public function testHasLinkToSiteForFalse() {
@@ -188,7 +184,7 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 		$this->assertFalse( $item->isEmpty() );
 
 		$item = new Item();
-		$item->getStatements()->addStatement( $this->newStatement() );
+		$item->getStatements()->addStatement( self::newStatement() );
 		$this->assertFalse( $item->isEmpty() );
 	}
 
@@ -198,7 +194,7 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 		$this->assertFalse( $item->getSiteLinkList()->isEmpty() );
 	}
 
-	private function newStatement() {
+	private static function newStatement() {
 		$statement = new Statement( new PropertyNoValueSnak( 42 ) );
 		$statement->setGuid( 'kittens' );
 		return $statement;
@@ -270,7 +266,7 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 	/**
 	 * @return Item
 	 */
-	private function getBaseItem() {
+	private static function getBaseItem() {
 		$item = new Item( new ItemId( 'Q42' ) );
 		$item->setLabel( 'en', 'Same' );
 		$item->setDescription( 'en', 'Same' );
@@ -281,25 +277,25 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 		return $item;
 	}
 
-	public function notEqualsProvider() {
-		$differentLabel = $this->getBaseItem();
+	public static function notEqualsProvider() {
+		$differentLabel = self::getBaseItem();
 		$differentLabel->setLabel( 'en', 'Different' );
 
-		$differentDescription = $this->getBaseItem();
+		$differentDescription = self::getBaseItem();
 		$differentDescription->setDescription( 'en', 'Different' );
 
-		$differentAlias = $this->getBaseItem();
+		$differentAlias = self::getBaseItem();
 		$differentAlias->setAliases( 'en', [ 'Different' ] );
 
-		$differentSiteLink = $this->getBaseItem();
+		$differentSiteLink = self::getBaseItem();
 		$differentSiteLink->getSiteLinkList()->removeLinkWithSiteId( 'enwiki' );
 		$differentSiteLink->getSiteLinkList()->addNewSiteLink( 'enwiki', 'Different' );
 
-		$differentStatement = $this->getBaseItem();
+		$differentStatement = self::getBaseItem();
 		$differentStatement->setStatements( new StatementList() );
 		$differentStatement->getStatements()->addNewStatement( new PropertyNoValueSnak( 24 ) );
 
-		$item = $this->getBaseItem();
+		$item = self::getBaseItem();
 
 		return [
 			'empty' => [ $item, new Item() ],
@@ -401,7 +397,7 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 	 * @param string $moarText
 	 */
 	public function testSetLabel( $languageCode, $labelText, $moarText = 'ohi there' ) {
-		$entity = $this->getNewEmpty();
+		$entity = self::getNewEmpty();
 
 		$entity->setLabel( $languageCode, $labelText );
 
@@ -419,7 +415,7 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 	 * @param string $moarText
 	 */
 	public function testSetDescription( $languageCode, $description, $moarText = 'ohi there' ) {
-		$entity = $this->getNewEmpty();
+		$entity = self::getNewEmpty();
 
 		$entity->setDescription( $languageCode, $description );
 
@@ -459,7 +455,7 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 	 * @dataProvider aliasesProvider
 	 */
 	public function testSetAliases( array $aliasesLists ) {
-		$entity = $this->getNewEmpty();
+		$entity = self::getNewEmpty();
 
 		foreach ( $aliasesLists as $langCode => $aliasesList ) {
 			foreach ( $aliasesList as $aliases ) {
@@ -487,40 +483,27 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 		$this->assertFalse( $item->getAliasGroups()->hasGroupForLanguage( 'en' ) );
 	}
 
-	public function instanceProvider() {
-		$entities = [];
-
+	public static function instanceProvider(): iterable {
 		// empty
-		$entity = $this->getNewEmpty();
-		$entities[] = $entity;
+		$entity = self::getNewEmpty();
+		yield [ $entity ];
 
 		// ID only
 		$entity = clone $entity;
 		$entity->setId( new ItemId( 'Q44' ) );
-
-		$entities[] = $entity;
+		yield [ $entity ];
 
 		// with labels and stuff
-		$entity = $this->getNewEmpty();
+		$entity = self::getNewEmpty();
 		$entity->setAliases( 'en', [ 'o', 'noez' ] );
 		$entity->setLabel( 'de', 'spam' );
 		$entity->setDescription( 'en', 'foo bar baz' );
-
-		$entities[] = $entity;
+		yield [ $entity ];
 
 		// with labels etc and ID
 		$entity = clone $entity;
 		$entity->setId( new ItemId( 'Q42' ) );
-
-		$entities[] = $entity;
-
-		$argLists = [];
-
-		foreach ( $entities as $entity ) {
-			$argLists[] = [ $entity ];
-		}
-
-		return $argLists;
+		yield [ $entity ];
 	}
 
 	/**
@@ -565,7 +548,7 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	public function testWhenNoStuffIsSet_getFingerprintReturnsEmptyFingerprint() {
-		$entity = $this->getNewEmpty();
+		$entity = self::getNewEmpty();
 
 		$this->assertEquals(
 			new Fingerprint(),
@@ -574,7 +557,7 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	public function testWhenLabelsAreSet_getFingerprintReturnsFingerprintWithLabels() {
-		$entity = $this->getNewEmpty();
+		$entity = self::getNewEmpty();
 
 		$entity->setLabel( 'en', 'foo' );
 		$entity->setLabel( 'de', 'bar' );
@@ -591,7 +574,7 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	public function testWhenTermsAreSet_getFingerprintReturnsFingerprintWithTerms() {
-		$entity = $this->getNewEmpty();
+		$entity = self::getNewEmpty();
 
 		$entity->setLabel( 'en', 'foo' );
 		$entity->setDescription( 'en', 'foo bar' );
@@ -614,14 +597,14 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	public function testGivenEmptyFingerprint_noTermsAreSet() {
-		$entity = $this->getNewEmpty();
+		$entity = self::getNewEmpty();
 		$entity->setFingerprint( new Fingerprint() );
 
 		$this->assertTrue( $entity->getFingerprint()->isEmpty() );
 	}
 
 	public function testGivenEmptyFingerprint_existingTermsAreRemoved() {
-		$entity = $this->getNewEmpty();
+		$entity = self::getNewEmpty();
 
 		$entity->setLabel( 'en', 'foo' );
 		$entity->setDescription( 'en', 'foo bar' );
@@ -645,7 +628,7 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 			] )
 		);
 
-		$entity = $this->getNewEmpty();
+		$entity = self::getNewEmpty();
 		$entity->setFingerprint( $fingerprint );
 		$newFingerprint = $entity->getFingerprint();
 
@@ -727,7 +710,7 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 		$this->assertTrue( $item->isEmpty(), 'cleared Item should be empty' );
 	}
 
-	public function clearableProvider() {
+	public static function clearableProvider() {
 		return [
 			'empty' => [ new Item( new ItemId( 'Q23' ) ) ],
 			'with fingerprint' => [
@@ -748,7 +731,7 @@ class ItemTest extends \PHPUnit\Framework\TestCase {
 					new ItemId( 'Q321' ),
 					null,
 					null,
-					new StatementList( $this->newStatement() )
+					new StatementList( self::newStatement() )
 				),
 			],
 		];

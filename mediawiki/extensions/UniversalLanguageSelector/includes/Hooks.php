@@ -25,10 +25,12 @@ use MediaWiki\Config\Config;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\BetaFeatures\BetaFeatures;
+use MediaWiki\Hook\SkinTemplateNavigation__UniversalHook;
 use MediaWiki\Hook\UserGetLanguageObjectHook;
 use MediaWiki\Html\Html;
 use MediaWiki\Language\LanguageCode;
 use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Output\Hook\MakeGlobalVariablesScriptHook;
@@ -37,18 +39,17 @@ use MediaWiki\Preferences\Hook\GetPreferencesHook;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\ResourceLoader\Context;
 use MediaWiki\ResourceLoader\Hook\ResourceLoaderGetConfigVarsHook;
+use MediaWiki\Skin\Skin;
+use MediaWiki\Skin\SkinTemplate;
 use MediaWiki\Skins\Hook\SkinAfterPortletHook;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\User;
-use Skin;
-use SkinTemplate;
+use Wikimedia\LanguageData\LanguageUtil;
 use Wikimedia\Stats\IBufferingStatsdDataFactory;
 
-/**
- * @phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
- */
 class Hooks implements
 	BeforePageDisplayHook,
+	SkinTemplateNavigation__UniversalHook,
 	UserGetLanguageObjectHook,
 	ResourceLoaderGetConfigVarsHook,
 	MakeGlobalVariablesScriptHook,
@@ -56,34 +57,12 @@ class Hooks implements
 	SkinAfterPortletHook
 {
 
-	/** @var Config */
-	private $config;
-
-	/** @var UserOptionsLookup */
-	private $userOptionsLookup;
-
-	/** @var IBufferingStatsdDataFactory */
-	private $statsdDataFactory;
-
-	/** @var LanguageNameUtils */
-	private $languageNameUtils;
-
-	/**
-	 * @param Config $config
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param IBufferingStatsdDataFactory $statsdDataFactory
-	 * @param LanguageNameUtils $languageNameUtils
-	 */
 	public function __construct(
-		Config $config,
-		UserOptionsLookup $userOptionsLookup,
-		IBufferingStatsdDataFactory $statsdDataFactory,
-		LanguageNameUtils $languageNameUtils
+		private readonly Config $config,
+		private readonly UserOptionsLookup $userOptionsLookup,
+		private readonly IBufferingStatsdDataFactory $statsdDataFactory,
+		private readonly LanguageNameUtils $languageNameUtils,
 	) {
-		$this->config = $config;
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->statsdDataFactory = $statsdDataFactory;
-		$this->languageNameUtils = $languageNameUtils;
 	}
 
 	public static function setVersionConstant() {
@@ -93,17 +72,22 @@ class Hooks implements
 	/**
 	 * Whether user visible ULS features are enabled (language changing, input methods, web
 	 * fonts, language change undo tooltip).
-	 * @return bool
 	 */
 	private function isEnabled(): bool {
 		return (bool)$this->config->get( 'ULSEnable' );
 	}
 
 	/**
+	 * Checks whether language is in the main menu.
+	 */
+	private function isLanguageInMainMenu( Skin $skin ): bool {
+		$languageInHeaderConfig = $skin->getConfig()->get( 'VectorLanguageInMainMenu' );
+		$userStatus = $skin->getUser()->isAnon() ? 'logged_out' : 'logged_in';
+		return $languageInHeaderConfig[ $userStatus ] ?? true;
+	}
+
+	/**
 	 * Checks whether language is in header.
-	 *
-	 * @param Skin $skin
-	 * @return bool
 	 */
 	private function isLanguageInHeader( Skin $skin ): bool {
 		$languageInHeaderConfig = $skin->getConfig()->get( 'VectorLanguageInHeader' );
@@ -113,24 +97,21 @@ class Hooks implements
 
 	/**
 	 * Whether ULS Compact interlanguage links enabled
-	 *
-	 * @param User $user
-	 * @param Skin $skin
-	 * @return bool
 	 */
-	private function isCompactLinksEnabled( User $user, Skin $skin ) {
+	private function isCompactLinksEnabled( User $user, Skin $skin ): bool {
 		// Whether any user visible features are enabled
 		if ( !$this->config->get( 'ULSEnable' ) ) {
 			return false;
 		}
 		// Compact links should be disabled in Vector 2022 skin,
 		// when the language button is displayed at the top of the content
-		if ( $skin->getSkinName() === 'vector-2022' ) {
+		// unless it is duplicated in the main menu (as is the case on Russian WP)
+		if ( $skin->getSkinName() === 'vector-2022' && !$this->isLanguageInMainMenu( $skin ) ) {
 			return !$this->isLanguageInHeader( $skin );
 		}
 		if ( $this->config->get( 'ULSCompactLanguageLinksBetaFeature' ) === true &&
-			$this->config->get( 'InterwikiMagic' ) === true &&
-			$this->config->get( 'HideInterlanguageLinks' ) === false &&
+			$this->config->get( MainConfigNames::InterwikiMagic ) === true &&
+			$this->config->get( MainConfigNames::HideInterlanguageLinks ) === false &&
 			ExtensionRegistry::getInstance()->isLoaded( 'BetaFeatures' ) &&
 			BetaFeatures::isFeatureEnabled( $user, 'uls-compact-links' )
 		) {
@@ -150,20 +131,44 @@ class Hooks implements
 	}
 
 	/**
+	 * Whether the new language selector is enabled.
+	 *
+	 * @param Skin $skin
+	 * @param Config $config
+	 * @return bool
+	 */
+	public static function isLanguageSelectorV2Enabled( Skin $skin, Config $config ): bool {
+		return in_array(
+			$skin->getSkinName(),
+			$config->get( 'ULSLanguageSelectorV2SupportedSkins' ),
+			true
+		);
+	}
+
+	/**
 	 * @param OutputPage $out
 	 * @param Skin $skin
 	 * Hook: BeforePageDisplay
 	 */
 	public function onBeforePageDisplay( $out, $skin ): void {
-		$unsupportedSkins = [ 'minerva', 'apioutput' ];
-		if ( in_array( $skin->getSkinName(), $unsupportedSkins, true ) ) {
+		$skinName = $skin->getSkinName();
+		if ( $skinName === 'apioutput' ) {
 			return;
 		}
+
+		if ( $skinName === 'minerva' ) {
+			if ( $this->isEnabled() ) {
+				$out->addJsConfigVars( $this->enableCoreFeatures( $out, [], $skin ) );
+			}
+
+			return;
+		}
+
 		// Soft dependency to Wikibase client. Don't enable CLL if links are managed manually.
 		$excludedLinks = $out->getProperty( 'noexternallanglinks' );
 		$override = is_array( $excludedLinks ) && in_array( '*', $excludedLinks, true );
 		$isCompactLinksEnabled = $this->isCompactLinksEnabled( $out->getUser(), $skin );
-		$isVector2022LanguageInHeader = $skin->getSkinName() === 'vector-2022' && $this->isLanguageInHeader( $skin );
+		$isVector2022LanguageInHeader = $skinName === 'vector-2022' && $this->isLanguageInHeader( $skin );
 		$config = [
 			'wgULSPosition' => $this->config->get( 'ULSPosition' ),
 			'wgULSisCompactLinksEnabled' => $isCompactLinksEnabled,
@@ -179,14 +184,7 @@ class Hooks implements
 		}
 
 		if ( $this->isEnabled() ) {
-			// Enable UI language selection for the user.
-			$out->addModules( 'ext.uls.interface' );
-
-			$title = $out->getTitle();
-			$isMissingPage = !$title || !$title->exists();
-			// if current page doesn't exist or if it's a talk page, we should use a different layout inside ULS
-			// according to T316559. Add JS config variable here, to let frontend know, when this is the case
-			$config[ 'wgULSisLanguageSelectorEmpty' ] = $isMissingPage || $title->isTalkPage();
+			$config = $this->enableCoreFeatures( $out, $config, $skin );
 		}
 
 		// This is added here, and not in onResourceLoaderGetConfigVars to allow skins and extensions
@@ -209,8 +207,6 @@ class Hooks implements
 	/**
 	 * Handle setlang query parameter; and decide if the setlang related scripts
 	 * have to be loaded.
-	 * @param OutputPage $out
-	 * @return void
 	 */
 	protected function handleSetLang( OutputPage $out ): void {
 		$languageToSet = $this->getSetLang( $out );
@@ -234,7 +230,7 @@ class Hooks implements
 	 * @param SkinTemplate $skin
 	 * @param array &$links
 	 */
-	public function onSkinTemplateNavigation__Universal( SkinTemplate $skin, array &$links ) {
+	public function onSkinTemplateNavigation__Universal( $skin, &$links ): void {
 		// In modern skins which separate out the user menu,
 		// e.g. Vector. (T282196)
 		// this should appear in the `user-interface-preferences` menu.
@@ -256,7 +252,7 @@ class Hooks implements
 	private function addPersonalBarTrigger(
 		array &$personal_urls,
 		SkinTemplate $context
-	) {
+	): array {
 		if ( $this->config->get( 'ULSPosition' ) !== 'personal' ) {
 			return $personal_urls;
 		}
@@ -288,7 +284,7 @@ class Hooks implements
 	 * @return string MediaWiki internal language code or empty string if there's no matched
 	 *  language code
 	 */
-	protected function getDefaultLanguage( array $preferred ) {
+	protected function getDefaultLanguage( array $preferred ): string {
 		/** @var array supported List of Supported languages by MediaWiki internal language codes */
 		$supported = $this->languageNameUtils
 			->getLanguageNames( LanguageNameUtils::AUTONYMS, LanguageNameUtils::SUPPORTED );
@@ -394,18 +390,13 @@ class Hooks implements
 		$vars['wgULSNoImeSelectors'] = $config->get( 'ULSNoImeSelectors' );
 		$vars['wgULSNoWebfontsSelectors'] = $config->get( 'ULSNoWebfontsSelectors' );
 		$vars['wgULSDisplaySettingsInInterlanguage'] = $skinConfig['ULSDisplaySettingsInInterlanguage'] ?? false;
+		$vars['wgULSCompactLinksPrepend'] = $config->get( 'ULSCompactLinksPrepend' ) ?? [];
 
 		if ( is_string( $config->get( 'ULSFontRepositoryBasePath' ) ) ) {
 			$vars['wgULSFontRepositoryBasePath'] = $config->get( 'ULSFontRepositoryBasePath' );
 		} else {
-			$vars['wgULSFontRepositoryBasePath'] = $config->get( 'ExtensionAssetsPath' ) .
+			$vars['wgULSFontRepositoryBasePath'] = $config->get( MainConfigNames::ExtensionAssetsPath ) .
 				'/UniversalLanguageSelector/data/fontrepo/fonts/';
-		}
-
-		if ( $config->has( 'InterwikiSortingSortPrepend' ) &&
-			$config->get( 'InterwikiSortingSortPrepend' ) !== []
-		) {
-			$vars['wgULSCompactLinksPrepend'] = $config->get( 'InterwikiSortingSortPrepend' );
 		}
 	}
 
@@ -459,6 +450,10 @@ class Hooks implements
 			'type' => 'api',
 		];
 
+		$preferences['mw-preferred-languages'] = [
+			'type' => 'api',
+		];
+
 		// A link shown for accessing ULS language settings from preferences screen
 		$preferences['languagesettings'] = [
 			'type' => 'info',
@@ -488,10 +483,10 @@ class Hooks implements
 	 */
 	public function onGetBetaFeaturePreferences( $user, array &$prefs ) {
 		if ( $this->config->get( 'ULSCompactLanguageLinksBetaFeature' ) === true &&
-			$this->config->get( 'InterwikiMagic' ) === true &&
-			$this->config->get( 'HideInterlanguageLinks' ) === false
+			$this->config->get( MainConfigNames::InterwikiMagic ) === true &&
+			$this->config->get( MainConfigNames::HideInterlanguageLinks ) === false
 		) {
-			$extensionAssetsPath = $this->config->get( 'ExtensionAssetsPath' );
+			$extensionAssetsPath = $this->config->get( MainConfigNames::ExtensionAssetsPath );
 			$imagesDir = "$extensionAssetsPath/UniversalLanguageSelector/resources/images";
 			$prefs['uls-compact-links'] = [
 				'label-message' => 'uls-betafeature-label',
@@ -553,10 +548,6 @@ class Hooks implements
 		}
 	}
 
-	/**
-	 * @param OutputPage $out
-	 * @return string|null
-	 */
 	private function getSetLang( OutputPage $out ): ?string {
 		$setLangCode = $out->getRequest()->getRawVal( 'setlang' );
 		if ( $setLangCode && $this->languageNameUtils->isSupportedLanguage( $setLangCode ) ) {
@@ -566,11 +557,6 @@ class Hooks implements
 		return null;
 	}
 
-	/**
-	 * @param Context $context
-	 * @param Config $config
-	 * @return array
-	 */
 	public static function getModuleData( Context $context, Config $config ): array {
 		$languageNameUtils = MediaWikiServices::getInstance()->getLanguageNameUtils();
 		return [
@@ -578,15 +564,64 @@ class Hooks implements
 		];
 	}
 
-	/**
-	 * @param Context $context
-	 * @param Config $config
-	 * @return array
-	 */
 	public static function getModuleDataSummary( Context $context, Config $config ): array {
 		return [
 			'currentAutonym' => $context->getLanguage(),
 		];
 	}
 
+	public static function getLanguageData( Context $context, Config $config ): array {
+		$languageDataInstance = LanguageUtil::get();
+		$allLanguageData = $languageDataInstance->getLanguages();
+		$rtlLanguages = [];
+
+		foreach ( $allLanguageData as $languageCode => $languageData ) {
+			if ( $languageDataInstance->getDir( $languageCode ) === 'rtl' ) {
+				$rtlLanguages[] = $languageCode;
+			}
+		}
+
+		return [
+			'rtlLanguages' => $rtlLanguages,
+			'territories' => $languageDataInstance->getTerritoriesWithLanguages(),
+		];
+	}
+
+	public static function getLanguageDataSummary(): array {
+		$languageDataInstance = LanguageUtil::get();
+		return [ $languageDataInstance->getVersion(), 'v2' ];
+	}
+
+	/** @return array Modified configuration data */
+	private function enableCoreFeatures( OutputPage $out, array $config, Skin $skin ): array {
+		$enabledLanguageSelectorV2 = self::isLanguageSelectorV2Enabled( $skin, $this->config );
+
+		if ( $skin->getSkinName() !== 'minerva' || $enabledLanguageSelectorV2 ) {
+			// If the ULS rewrite is disabled, don't add the 'ext.uls.interface' module for Minerva,
+			$out->addModules( 'ext.uls.interface' );
+		}
+
+		$title = $out->getTitle();
+		$isMissingPage = !$title || !$title->exists();
+		// if the current page doesn't exist or if it's a talk page, we should use a different layout inside ULS
+		// according to T316559. Add JS config variable here, to let frontend know, when this is the case
+		$config['wgULSisLanguageSelectorEmpty'] = $isMissingPage || $title->isTalkPage();
+		$config['wgULSLanguageSelectorV2Enabled'] = $enabledLanguageSelectorV2;
+
+		return $config;
+	}
+
+	/**
+	 * Callback for resource loader module for ext.uls.preferredlanguages
+	 * @param Context $context
+	 * @return array
+	 */
+	public static function getSupportedLanguages( Context $context ): array {
+		$services = MediaWikiServices::getInstance();
+		return $services->getLanguageNameUtils()
+			->getLanguageNames(
+				$context->getLanguage(),
+				LanguageNameUtils::SUPPORTED
+			);
+	}
 }

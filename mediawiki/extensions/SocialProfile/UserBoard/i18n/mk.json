@@ -1,14 +1,16 @@
 {
 	"@metadata": {
 		"authors": [
-			"Bjankuloski06"
+			"Bjankuloski06",
+			"Jack Phoenix",
+			"Vlad5250"
 		]
 	},
 	"userboard-desc": "Овозможува испраќање пораки од табла на табла",
 	"messagesenttitle": "Пораките се испратени",
 	"boardblasttitle": "Испрати изјава на таблата",
 	"boardblaststep1": "Чекор 1 - Напишете ја пораката",
-	"boardblastprivatenote": "Сите пораки ќе бидат испратени како приватни",
+	"boardblast-message-type-note": "Сите пораки ќе се испраќаат како јавни бидејќи личните пораки се оневозможени.",
 	"boardblaststep2": "Чекор 2 - Изберете кому сакате да ја испратите пораката",
 	"boardlinkselectall": "Избери сè",
 	"boardlinkunselectall": "Тргни избор",
@@ -56,10 +58,13 @@
 	"echo-pref-tooltip-social-msg": "Извести ме кога некој ќе ми остави порака на мојата корисничка табла.",
 	"notification-social-msg-send": "$1 штотуку ви остави порака на вашата корисничка табла.<br /><br />''$2''",
 	"notification-social-msg-send-bundle": "На корисничката табла имате {{PLURAL:$1|една порака|$1 пораки|100=преку 99 пораки}}.",
+	"apierror-socialprofile-send-message-nosend": "Не можете да праќате пораки.",
 	"apihelp-socialprofile-send-message-summary": "Испраќање порака на нечија корисничка табла.",
 	"apihelp-socialprofile-send-message-param-username": "Корисничко име на примачот.",
 	"apihelp-socialprofile-send-message-param-message": "Верзија на пораката за испраќање во URL-код.",
 	"apihelp-socialprofile-send-message-param-type": "Вид порака: 0 за јавна, 1 за приватна.",
 	"apihelp-socialprofile-delete-message-summary": "Избришете порака од корисничка табла.",
-	"apihelp-socialprofile-delete-message-param-id": "Единствена назнака на пораката за бришење."
+	"apihelp-socialprofile-delete-message-param-id": "Единствена назнака на пораката за бришење.",
+	"userboard-private-messages-disabled": "Личните пораки се оневозможени на ова вики.",
+	"userboard-private-messages-disabled-title": "Функцијата е оневозможена"
 }

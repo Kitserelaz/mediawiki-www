@@ -2,11 +2,9 @@
 
 namespace MediaWiki\Extension\PageTriage\Api;
 
-use Article;
-use ChangeTags;
-use ManualLogEntry;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
+use MediaWiki\ChangeTags\ChangeTags;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Extension\PageTriage\ArticleCompile\ArticleCompileProcessor;
 use MediaWiki\Extension\PageTriage\ArticleMetadata;
@@ -14,6 +12,8 @@ use MediaWiki\Extension\PageTriage\PageTriage;
 use MediaWiki\Extension\PageTriage\PageTriageUtil;
 use MediaWiki\Extension\PageTriage\QueueRecord;
 use MediaWiki\Language\Language;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\Page\Article;
 use MediaWiki\Permissions\PermissionStatus;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
@@ -21,24 +21,13 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class ApiPageTriageAction extends ApiBase {
 
-	private RevisionStore $revStore;
-	private Language $contLang;
-
-	/**
-	 * @param ApiMain $queryModule
-	 * @param string $moduleName
-	 * @param RevisionStore $revStore
-	 * @param Language $contLang
-	 */
 	public function __construct(
 		ApiMain $queryModule,
-		$moduleName,
-		RevisionStore $revStore,
-		Language $contLang
+		string $moduleName,
+		private readonly RevisionStore $revStore,
+		private readonly Language $contLang,
 	) {
 		parent::__construct( $queryModule, $moduleName );
-		$this->revStore = $revStore;
-		$this->contLang = $contLang;
 	}
 
 	public function execute() {
@@ -290,6 +279,7 @@ class ApiPageTriageAction extends ApiBase {
 		$logEntry->publish( $logEntry->insert() );
 	}
 
+	/** @inheritDoc */
 	public function needsToken() {
 		return 'csrf';
 	}

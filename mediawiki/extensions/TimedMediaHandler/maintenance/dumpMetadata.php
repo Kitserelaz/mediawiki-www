@@ -9,6 +9,8 @@ if ( $IP === false ) {
 require_once "$IP/maintenance/Maintenance.php";
 require_once __DIR__ . "/TimedMediaMaintenance.php";
 
+use MediaWiki\FileRepo\File\File;
+
 class DumpMetadata extends TimedMediaMaintenance {
 
 	public function __construct() {
@@ -22,9 +24,7 @@ class DumpMetadata extends TimedMediaMaintenance {
 		parent::execute();
 	}
 
-	/**
-	 * @param File $file
-	 */
+	/** @inheritDoc */
 	public function processFile( File $file ) {
 		$name = $file->getName();
 		$handler = $file->getHandler();

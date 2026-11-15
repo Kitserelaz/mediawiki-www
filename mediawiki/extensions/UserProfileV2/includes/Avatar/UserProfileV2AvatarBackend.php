@@ -17,9 +17,15 @@ class UserProfileV2AvatarBackend {
 	private string $container;
 
 	/**
+	 * @TODO: move this to a getter hook when PHP > 8.4 required
+	 * @var null
+	 */
+	private $fileBackend = null;
+
+	/**
 	 * @param string|null $container the container we want, will most likely be "avatar". Put this here for future ;)
 	 */
-	public function __construct( string $container = null ) {
+	public function __construct( ?string $container = null ) {
 		if ( !$container ) {
 			$container = 'upv2avatars'; // change because SocialProfile uses "Avatars"
 		}
@@ -32,7 +38,11 @@ class UserProfileV2AvatarBackend {
 	 * or if we can't, just fall back to using the default FSFileBackend
 	 * @return FSFileBackend|mixed
 	 */
-	public function getFileBackend() {
+	public function getFileBackend(): mixed {
+		if ( $this->fileBackend ) {
+			return $this->fileBackend;
+		}
+
 		$services = MediaWikiServices::getInstance();
 
 		$mainConfig = $services->getConfigFactory()->makeConfig( 'UserProfileV2' );
@@ -46,18 +56,22 @@ class UserProfileV2AvatarBackend {
 				'wikiId' => WikiMap::getCurrentWikiId(),
 				'lockManager' => new NullLockManager( [] ),
 				'containerPaths' => [ $this->container => "{$mainConfig->get( 'UploadDirectory' )}/{$this->container}" ],
-				'fileMode' => 0777,
+				'fileMode' => 0644,
 				'obResetFunc' => 'wfResetOutputBuffers',
 				'streamMimeFunc' => [ 'StreamFile', 'contentTypeFromPath' ],
 				'statusWrapper' => [ 'Status', 'wrap' ],
 			] );
+			// hack: only check if the directory exists if we are using the file system
+			// since checking if the directory exists all of the time in S3 is causing ListBucket
+			// requests which are expensive
+			if ( !$backend->directoryExists( [ 'dir' => $backend->getContainerStoragePath( $this->container ) ] ) ) {
+				$backend->prepare( [ 'dir' => $backend->getContainerStoragePath( $this->container ) ] );
+			}
 		}
 
-		if ( !$backend->directoryExists( [ 'dir' => $backend->getContainerStoragePath( $this->container ) ] ) ) {
-			$backend->prepare( [ 'dir' => $backend->getContainerStoragePath( $this->container ) ] );
-		}
+		$this->fileBackend = $backend;
 
-		return $backend;
+		return $this->fileBackend;
 	}
 
 	/**
@@ -67,7 +81,7 @@ class UserProfileV2AvatarBackend {
 	 * @param $ext
 	 * @return string|null
 	 */
-	public function getPath( $prefix, $id, $ext ) {
+	public function getPath( $prefix, $id, $ext ): ?string {
 		return $this->getFileBackend()->normalizeStoragePath(
 			$this->getContainerStoragePath() .
 			'/' . $this->getFileName( $prefix, $id, $ext )
@@ -81,7 +95,7 @@ class UserProfileV2AvatarBackend {
 	 * @param $ext
 	 * @return string
 	 */
-	public function getFileName( $prefix, $id, $ext ) {
+	public function getFileName( $prefix, $id, $ext ): string {
 		return $prefix . (string)$id . '.' . $ext;
 	}
 
@@ -90,7 +104,7 @@ class UserProfileV2AvatarBackend {
 	 *
 	 * @return string Storage path
 	 */
-	public function getContainerStoragePath() {
+	public function getContainerStoragePath(): string {
 		return $this->getFileBackend()->getContainerStoragePath( $this->container );
 	}
 
@@ -100,7 +114,7 @@ class UserProfileV2AvatarBackend {
 	 * @param $ext - file extension
 	 * @return mixed
 	 */
-	public function getFileHttpUrl( $prefix, $id, $ext ) {
+	public function getFileHttpUrl( $prefix, $id, $ext ): mixed {
 		return $this->getDefaultUrlPath( $this->getFileName( $prefix, $id, $ext ) );
 	}
 
@@ -108,7 +122,7 @@ class UserProfileV2AvatarBackend {
 	 * @param $fileName
 	 * @return mixed
 	 */
-	public function getFileHttpUrlFromName( $fileName ) {
+	public function getFileHttpUrlFromName( $fileName ): mixed {
 		return $this->getDefaultUrlPath( $fileName );
 	}
 
@@ -144,7 +158,7 @@ class UserProfileV2AvatarBackend {
 	 * @param $ext
 	 * @return bool|null
 	 */
-	public function fileExists( $prefix, $id, $ext ) {
+	public function fileExists( $prefix, $id, $ext ): ?bool {
 		return $this->getFileBackend()->fileExists( [
 			'src' => $this->getPath(
 				$prefix, $id, $ext

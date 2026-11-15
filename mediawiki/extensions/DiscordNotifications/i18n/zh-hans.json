@@ -3,6 +3,8 @@
 		"authors": [
 			"Diskdance",
 			"Lakejason0",
+			"SaoMikoto",
+			"Saoutax",
 			"Universal Omega",
 			"沈澄心"
 		]
@@ -39,22 +41,6 @@
 	"discordnotifications-view-user-rights": "查看或管理用户权限",
 	"discordnotifications-change-user-groups": "%s更改了%s的用户组。新群组：%s",
 	"discordnotifications-change-user-groups-with-old": "$1更改了$2的用户组。旧群组：$3。新群组：$4",
-	"discordnotifications-flow-edit-header": "💬 $1编辑了讨论板描述$2",
-	"discordnotifications-flow-edit-post": "💬 $1编辑了帖子$2",
-	"discordnotifications-flow-edit-title": "💬 $1已修改$3上的话题标题为$2",
-	"discordnotifications-flow-edit-topic-summary": "💬 $1编辑了$2上的话题摘要",
-	"discordnotifications-flow-lock-topic": "💬 $1已$2话题$3",
-	"discordnotifications-flow-lock-topic-lock": "已解决",
-	"discordnotifications-flow-lock-topic-unlock": "重新开放",
-	"discordnotifications-flow-moderate-post": "💬 $1已$2帖子在 $3 上",
-	"discordnotifications-flow-moderate-topic": "💬 $1已$2话题 $3",
-	"discordnotifications-flow-moderate-hide": "已隐藏",
-	"discordnotifications-flow-moderate-unhide": "取消隐藏",
-	"discordnotifications-flow-moderate-suppress": "已监督隐藏",
-	"discordnotifications-flow-moderate-unsuppress": "取消监督隐藏",
-	"discordnotifications-flow-moderate-delete": "已删除",
-	"discordnotifications-flow-moderate-undelete": "已还原",
-	"discordnotifications-flow-new-topic": "💬 $1已在$3上创建话题$2",
-	"discordnotifications-flow-reply": "💬 $1已回复$2",
-	"discordnotifications-import-complete": "⤵️ 条目$1已导入。"
+	"discordnotifications-import-complete": "⤵️ 条目$1已导入。",
+	"discordnotifications-moderation-pending": "🔍 $1已将对$2的编辑提交至[审核队列]（$3）。"
 }

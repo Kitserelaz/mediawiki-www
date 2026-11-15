@@ -58,10 +58,10 @@ class BasicSearchQueryRoute implements SearchQueryRoute {
 		if ( $this->namespaces !== [] ) {
 			$qNs = $query->getNamespaces();
 			if ( $qNs === [] ) {
-				return 0.0;
+				return self::REJECT_ROUTE;
 			}
 			if ( count( array_intersect( $this->namespaces, $qNs ) ) !== count( $qNs ) ) {
-				return 0.0;
+				return self::REJECT_ROUTE;
 			}
 		}
 		if ( $this->acceptableQueryClasses !== [] ) {
@@ -74,7 +74,7 @@ class BasicSearchQueryRoute implements SearchQueryRoute {
 				}
 			}
 			if ( !$match ) {
-				return 0.0;
+				return self::REJECT_ROUTE;
 			}
 		}
 		return $this->score;

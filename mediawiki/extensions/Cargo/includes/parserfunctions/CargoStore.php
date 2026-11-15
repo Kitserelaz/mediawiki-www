@@ -226,10 +226,17 @@ class CargoStore {
 			if ( $fieldDescription->mIsMandatory && ( $fieldValue === '' || $fieldValue === null ) ) {
 				return "Mandatory field, \"$fieldName\", cannot have a blank value.";
 			}
-			if ( $fieldDescription->mIsUnique && $fieldValue != '' ) {
-				$res = $cdb->select( $tableName, 'COUNT(*)', [ $fieldName => $fieldValue ], __METHOD__ );
-				$row = $res->fetchRow();
-				$numExistingValues = $row['COUNT(*)'];
+			// If it's not mandatory, and already blank, we can just move on.
+			if ( $fieldValue === '' || $fieldValue === null ) {
+				continue;
+			}
+
+			if ( $fieldDescription->mIsUnique ) {
+				$numExistingValues = $cdb->newSelectQueryBuilder()
+					->from( $tableName )
+					->where( [ $fieldName => $fieldValue ] )
+					->caller( __METHOD__ )
+					->fetchRowCount();
 				if ( $numExistingValues == 1 ) {
 					$rowAlreadyExists = self::doesRowAlreadyExist( $cdb, $title, $tableName, $tableFieldValues, $tableSchema );
 					if ( $rowAlreadyExists ) {
@@ -259,15 +266,39 @@ class CargoStore {
 			}
 
 			// Also set to blank if the value does not match the type.
-			if ( $fieldDescription->mType === 'Float' && !is_numeric( $fieldValue ) && !$fieldDescription->mIsList ) {
-				$tableFieldValues[$fieldName] = null;
-			}
-			if ( $fieldDescription->mType === 'Integer' && !$fieldDescription->mIsList ) {
-				if ( $fieldValue === null || !preg_match( '/^-?\d+$/', $fieldValue ) ) {
-					$tableFieldValues[$fieldName] = null;
+			if ( $fieldDescription->mType === 'Float' || $fieldDescription->mType === 'Integer' ) {
+				if ( $fieldDescription->mIsList ) {
+					$delimiter = $fieldDescription->getDelimiter();
+					$individualValues = explode( $delimiter, $fieldValue ?? '' );
+					$validValues = [];
+					foreach ( $individualValues as $individualValue ) {
+						$individualValue = trim( $individualValue );
+						if ( $individualValue === '' ) {
+							continue;
+						}
+						if ( $fieldDescription->mType === 'Float' && is_numeric( $individualValue ) ) {
+							$validValues[] = $individualValue;
+						} elseif ( $fieldDescription->mType === 'Integer' &&
+							preg_match( '/^-?\d+$/', $individualValue ) ) {
+							$validValues[] = $individualValue;
+						}
+					}
+					if ( $validValues === [] ) {
+						$tableFieldValues[$fieldName] = null;
+					} else {
+						$tableFieldValues[$fieldName] = implode( $delimiter, $validValues );
+					}
+				} else {
+					if ( $fieldDescription->mType === 'Float' && !is_numeric( $fieldValue ) ) {
+						$tableFieldValues[$fieldName] = null;
+					}
+					if ( $fieldDescription->mType === 'Integer' ) {
+						if ( $fieldValue === null || !preg_match( '/^-?\d+$/', $fieldValue ) ) {
+							$tableFieldValues[$fieldName] = null;
+						}
+					}
 				}
 			}
-
 		}
 	}
 
@@ -516,7 +547,7 @@ class CargoStore {
 			}
 			if ( $fieldDescription->mIsList ) {
 				$delimiter = $fieldDescription->getDelimiter();
-				$individualValues = explode( $delimiter, $tableFieldValues[$fieldName . '__full'] );
+				$individualValues = explode( $delimiter, $tableFieldValues[$fieldName . '__full'] ?? '' );
 				foreach ( $individualValues as $individualValue ) {
 					$individualValue = trim( $individualValue );
 					// Ignore blank values.
@@ -590,8 +621,8 @@ class CargoStore {
 				// greater than this size. But that's not
 				// always true - there's the hack mentioned
 				// above, plus some other cases.
-				$quotedFieldName = "SUBSTR($quotedFieldName, 1, $fieldSize)";
-				$fieldValue = mb_substr( $fieldValue, 0, $fieldSize );
+				$quotedFieldName = "SUBSTR(CAST($quotedFieldName AS BINARY), 1, $fieldSize)";
+				$fieldValue = substr( $fieldValue, 0, $fieldSize );
 			}
 
 			$tableFieldValuesForCheck[$quotedFieldName] = $fieldValue;

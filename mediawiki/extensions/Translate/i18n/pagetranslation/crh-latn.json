@@ -1,9 +1,9 @@
 {
 	"@metadata": {
 		"authors": [
+			"Don Alessandro",
 			"TayfunEt.",
-			"Zolgoyo",
-			"Don Alessandro"
+			"Zolgoyo"
 		]
 	},
 	"tpt-section-new": "Yañı tercime birlemi.\nAd: $1",
@@ -14,15 +14,14 @@
 	"tpt-languages-legend": "Başqa tiller:",
 	"tpt-aggregategroup-save": "Saqla",
 	"tpt-aggregategroup-close": "Qapat",
-	"tpt-aggregategroup-new-name": "İsim:",
 	"tpt-aggregategroup-edit-name": "İsim:",
 	"tpt-aggregategroup-edit-description": "Tasvir:",
-	"tpt-aggregategroup-update": "Saqla",
 	"tpt-aggregategroup-update-cancel": "Lâğu",
 	"pt-deletepage-reason-details": "Başqa/qoşumça sebep:",
 	"pm-savepages-button-label": "Saqla",
 	"pm-cancel-button-label": "Lâğu",
 	"pp-save-button-label": "Yayınla",
 	"pp-cancel-button-label": "Lâğu",
-	"tpt-generic-button": "Tasdıqla"
+	"tpt-generic-button": "Tasdıqla",
+	"special-tab-managemessagegroupsubscriptions-short": "Baq ve deñiştir"
 }

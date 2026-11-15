@@ -2,7 +2,7 @@
 
 namespace MediaWiki\TimedMediaHandler\Handlers\FLACHandler;
 
-use File;
+use MediaWiki\FileRepo\File\File;
 use MediaWiki\TimedMediaHandler\Handlers\ID3Handler\ID3Handler;
 
 /**
@@ -10,10 +10,7 @@ use MediaWiki\TimedMediaHandler\Handlers\ID3Handler\ID3Handler;
  */
 class FLACHandler extends ID3Handler {
 
-	/**
-	 * @param File $file
-	 * @return string
-	 */
+	/** @inheritDoc */
 	public function getMetadataType( $file ) {
 		return 'flac';
 	}
@@ -32,11 +29,7 @@ class FLACHandler extends ID3Handler {
 	 */
 	public function getStreamTypes( $file ) {
 		$streamTypes = [];
-		$metadata = $this->unpackMetadata( $file->getMetadata() );
-
-		if ( !$metadata || isset( $metadata['error'] ) ) {
-			return false;
-		}
+		$metadata = $file->getMetadataArray();
 
 		$audioFormat = $metadata[ 'audio' ][ 'dataformat' ] ?? false;
 		if ( $audioFormat === 'flac' ) {
@@ -46,40 +39,28 @@ class FLACHandler extends ID3Handler {
 		return $streamTypes;
 	}
 
-	/**
-	 * @param File $file
-	 * @return string
-	 */
+	/** @inheritDoc */
 	public function getShortDesc( $file ) {
 		$streamTypes = $this->getStreamTypes( $file );
 		if ( !$streamTypes ) {
 			return parent::getShortDesc( $file );
 		}
-		return wfMessage(
-			'timedmedia-flac-short-audio'
-			)->timeperiodParams(
-				$this->getLength( $file )
-			)->text();
+		return wfMessage( 'timedmedia-flac-short-audio' )
+			->timeperiodParams( $this->getLength( $file ) )
+			->escaped();
 	}
 
-	/**
-	 * @param File $file
-	 * @return string
-	 */
+	/** @inheritDoc */
 	public function getLongDesc( $file ) {
 		$streamTypes = $this->getStreamTypes( $file );
 		if ( !$streamTypes ) {
 			return parent::getLongDesc( $file );
 		}
-		return wfMessage(
-			'timedmedia-flac-long-audio'
-			)->timeperiodParams(
-				$this->getLength( $file )
-			)->bitrateParams(
-				$this->getBitRate( $file )
-			)->sizeParams(
-				$file->getSize()
-			)->text();
+		return wfMessage( 'timedmedia-flac-long-audio' )
+			->timeperiodParams( $this->getLength( $file ) )
+			->bitrateParams( $this->getBitRate( $file ) )
+			->sizeParams( $file->getSize() )
+			->escaped();
 	}
 
 }

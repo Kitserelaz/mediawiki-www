@@ -1,18 +1,15 @@
 'use strict';
 
-var CaptionsEditActionsWidget,
-	CancelPublishWidget;
-
-CancelPublishWidget = require( './CancelPublishWidget.js' );
+const CancelPublishWidget = require( './CancelPublishWidget.js' );
 
 /**
  * Widget containing other widgets to add a row, cancel, and save multi-lingual caption data
  *
  * @constructor
  */
-CaptionsEditActionsWidget = function () {
+const CaptionsEditActionsWidget = function () {
 
-	var cancelAndPublishButtons = new CancelPublishWidget(),
+	const cancelAndPublishButtons = new CancelPublishWidget(),
 		addCaptionButton = new OO.ui.ButtonWidget( {
 			icon: 'add',
 			label: mw.msg( 'wikibasemediainfo-filepage-add-caption' ),

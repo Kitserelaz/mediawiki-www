@@ -1,0 +1,130 @@
+'use strict';
+
+const Vue = require( 'vue' );
+const { h } = Vue;
+const UniversalLanguageSelector = require( './UniversalLanguageSelector.vue' );
+
+/**
+ * Create a Vue application for the UniversalLanguageSelector component.
+ *
+ * @param {Object} config
+ * @param {Object} config.triggerElement Element that triggers the ULS to open/close
+ * @param {Object} config.selectableLanguages (Optional) List of languages that can be selected.
+ * @param {string} [config.placeholder] (Optional) Placeholder text in the search input
+ * @param {string} [config.displayLanguageCode] (Optional) Language code for the selector's
+ * items. Defaults to the autonym of the language item
+ * @param {Object} [config.languageAnnotations] (Optional) Annotations (CSS classes) for
+ * language items, keyed by language code.
+ * @param {Object} [config.variantsByLanguage] (Optional) Language converter variants keyed
+ * by base language code. Each entry maps to a {variantCode: value} object (typically
+ * DOM <a> elements). When the selected language has variants in this map, a "Variants"
+ * section appears at the top of the selector listing those variants.
+ * @param {Object} [config.variantAnnotationsByLanguage] (Optional) Annotations for
+ * variant items, keyed by base language code then by variant code, matching the shape
+ * of variantsByLanguage.
+ * @param {boolean} [config.hideActiveLanguages] (Optional) Whether to hide current active
+ * languages from the list.
+ * @param {Function} [config.onClose] (Optional) Callback function to execute when the ULS
+ * is closed
+ * @param {Function} [config.onSelect] (Optional) Callback function to execute when a language is
+ * selected. Receives the selected language code and value as arguments.
+ * @param {string} config.mode The mode for ULS, either 'interface' or 'content'.
+ * @param {Object} [config.floatingOptions] (Optional) Floating UI configuration overrides
+ * (e.g. { placement: 'bottom-start' })
+ * @param {Object} [config.slots] (Optional) Vue slots to customize the ULS content
+ * @param {boolean} [config.visible] (Optional) Whether the ULS should be visible initially.
+ * Defaults to true.
+ * @return {Object} The Vue application instance.
+ */
+function createUniversalLanguageSelector( config ) {
+	const {
+		triggerElement,
+		selectableLanguages,
+		selected,
+		placeholder,
+		displayLanguageCode,
+		languageAnnotations,
+		variantsByLanguage,
+		variantAnnotationsByLanguage,
+		hideActiveLanguages,
+		onClose,
+		onSelect,
+		mode,
+		floatingOptions,
+		slots,
+		visible
+	} = config;
+
+	return Vue.createMwApp( {
+		name: 'UniversalLanguageSelectorWrapper',
+		data() {
+			return {
+				visible: visible !== undefined ? visible : true,
+				currentSelected: selected || [],
+				currentTriggerElement: triggerElement
+			};
+		},
+		methods: {
+			close() {
+				this.visible = false;
+				if ( onClose ) {
+					onClose();
+				}
+			},
+			open() {
+				this.visible = true;
+			},
+			toggle() {
+				if ( this.visible ) {
+					this.close();
+				} else {
+					this.open();
+				}
+			},
+			select( language ) {
+				this.visible = false;
+				if ( onSelect ) {
+					onSelect( language );
+				}
+			},
+			// Re-anchor to another trigger, e.g. the Vector 2022 sticky header button.
+			setTriggerElement( element ) {
+				if ( element ) {
+					this.currentTriggerElement = element;
+				}
+			},
+			updateSelected( newSelected ) {
+				this.currentSelected = newSelected;
+			},
+			onVisibleChange( isVisible, isMobile ) {
+				if ( config.onVisibleChange ) {
+					config.onVisibleChange( isVisible, isMobile );
+				}
+			}
+		},
+		render() {
+			return h( UniversalLanguageSelector, {
+				triggerElement: this.currentTriggerElement,
+				visible: this.visible,
+				placeholder: placeholder,
+				displayLanguageCode: displayLanguageCode,
+				languageAnnotations: languageAnnotations,
+				selectableLanguages: selectableLanguages,
+				variantsByLanguage: variantsByLanguage,
+				variantAnnotationsByLanguage: variantAnnotationsByLanguage,
+				hideActiveLanguages: hideActiveLanguages,
+				selected: this.currentSelected,
+				mode: mode,
+				floatingOptions: floatingOptions,
+				onClose: this.close,
+				onSelect: this.select,
+				onVisibleChange: this.onVisibleChange
+			}, slots );
+		}
+	} );
+}
+
+module.exports = {
+	UniversalLanguageSelector,
+	createUniversalLanguageSelector
+};

@@ -1,20 +1,11 @@
 'use strict';
 
-const KNOWN_DOCUMENT_TYPES = [
-	'xls', 'xlsx',
-	'doc', 'docx',
-	'odt',
-	'ods',
-	'odp',
-	'pdf'
-];
-
 /**
  * @param {string} fileExtension
  * @return {boolean}
  */
 const isKnownDocumentType = function ( fileExtension ) {
-	return KNOWN_DOCUMENT_TYPES.indexOf( fileExtension ) !== -1;
+	return /^((doc|ppt|xls)x?|hwp|od[a-z]|pdf|wps)$/i.test( fileExtension );
 };
 
 /**
@@ -31,25 +22,32 @@ const getTopLevelMimeType = function ( mimeType ) {
  * @param {Object} option
  */
 const addFileOption = function ( options, groupName, option ) {
-	if ( options[ groupName ].length === 0 ) {
+	// Note: Assigning a new array doesn't change the pre-defined order in options
+	if ( !options[ groupName ] || !options[ groupName ].length ) {
 		// The following messages are used here:
-		// * advancedsearch-filetype-section-types
 		// * advancedsearch-filetype-section-image
-		// * advancedsearch-filetype-section-video
 		// * advancedsearch-filetype-section-audio
+		// * advancedsearch-filetype-section-video
 		// * advancedsearch-filetype-section-document
 		// * advancedsearch-filetype-section-other
 		options[ groupName ] = [ { optgroup: mw.msg( 'advancedsearch-filetype-section-' + groupName ) } ];
 	}
-	options[ groupName ] = options[ groupName ].concat( option );
+	options[ groupName ].push( option );
 };
 
 /**
- * @param {Object.<string,Object[]>} options
  * @param {Object.<string,string>} allowedMimeTypes File extension => MIME type
  * @return {Object.<string,Object[]>}
  */
-const getFileOptions = function ( options, allowedMimeTypes ) {
+const getFileOptions = function ( allowedMimeTypes ) {
+	// Known top-level MIME types (i.e. the first part of "image/…") in a useful order
+	const options = {
+		image: [],
+		audio: [],
+		video: [],
+		document: []
+	};
+
 	for ( const fileExtension in allowedMimeTypes ) {
 		let groupName = 'other';
 		const mimeType = allowedMimeTypes[ fileExtension ],
@@ -57,7 +55,7 @@ const getFileOptions = function ( options, allowedMimeTypes ) {
 
 		if ( isKnownDocumentType( fileExtension ) ) {
 			groupName = 'document';
-		} else if ( Object.prototype.hasOwnProperty.call( options, topLevelType ) ) {
+		} else if ( topLevelType in options ) {
 			groupName = topLevelType;
 		}
 
@@ -70,20 +68,12 @@ const getFileOptions = function ( options, allowedMimeTypes ) {
 /**
  * @class
  * @property {Object.<string,string>} mimeTypes
- * @property {Object.<string,Object[]>} options
  *
  * @constructor
  * @param {Object.<string,string>} mimeTypes File extension => MIME type
  */
 const FileTypeOptionProvider = function ( mimeTypes ) {
 	this.mimeTypes = mimeTypes;
-	this.options = {
-		image: [],
-		audio: [],
-		video: [],
-		document: [],
-		other: []
-	};
 };
 
 OO.initClass( FileTypeOptionProvider );
@@ -98,8 +88,8 @@ FileTypeOptionProvider.prototype.getFileGroupOptions = function () {
 		{ optgroup: mw.msg( 'advancedsearch-filetype-section-types' ) },
 		{ data: 'bitmap', label: mw.msg( 'advancedsearch-filetype-bitmap' ) },
 		{ data: 'drawing', label: mw.msg( 'advancedsearch-filetype-drawing' ) },
-		{ data: 'video', label: mw.msg( 'advancedsearch-filetype-video' ) },
 		{ data: 'audio', label: mw.msg( 'advancedsearch-filetype-audio' ) },
+		{ data: 'video', label: mw.msg( 'advancedsearch-filetype-video' ) },
 		{ data: 'office', label: mw.msg( 'advancedsearch-filetype-office' ) }
 	];
 };
@@ -110,14 +100,8 @@ FileTypeOptionProvider.prototype.getFileGroupOptions = function () {
  * @return {Object[]}
  */
 FileTypeOptionProvider.prototype.getAllowedFileTypeOptions = function () {
-	let options = [];
-
-	// eslint-disable-next-line no-jquery/no-each-util
-	$.each( getFileOptions( this.options, this.mimeTypes ), ( index, fileOptions ) => {
-		options = options.concat( fileOptions );
-	} );
-
-	return options;
+	const groups = getFileOptions( this.mimeTypes );
+	return [].concat( ...Object.values( groups ) );
 };
 
 module.exports = FileTypeOptionProvider;

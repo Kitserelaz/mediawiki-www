@@ -1,6 +1,8 @@
 // For a detailed explanation regarding each configuration property, visit:
 // https://jestjs.io/docs/en/configuration.html
 
+'use strict';
+
 module.exports = {
 	moduleNameMapper: {
 		oo: '<rootDir>/dev/oo.js',
@@ -61,6 +63,9 @@ module.exports = {
 	],
 
 	testEnvironment: 'jsdom',
+	testEnvironmentOptions: {
+		customExportConditions: [ 'node', 'node-addons' ]
+	},
 
 	transform: {
 		'.*\\.(vue)$': '<rootDir>/node_modules/@vue/vue3-jest'

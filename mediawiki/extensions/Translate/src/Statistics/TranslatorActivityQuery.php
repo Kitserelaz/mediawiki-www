@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\Statistics;
 
 use MediaWiki\Config\Config;
-use Wikimedia\Rdbms\ILoadBalancer;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * Gathers translator activity from the database.
@@ -17,12 +17,11 @@ class TranslatorActivityQuery {
 	public const USER_NAME = 0;
 	public const USER_TRANSLATIONS = 1;
 	public const USER_LAST_ACTIVITY = 2;
-	private Config $options;
-	private ILoadBalancer $loadBalancer;
 
-	public function __construct( Config $options, ILoadBalancer $loadBalancer ) {
-		$this->options = $options;
-		$this->loadBalancer = $loadBalancer;
+	public function __construct(
+		private readonly Config $options,
+		private readonly IConnectionProvider $dbProvider,
+	) {
 	}
 
 	/**
@@ -32,7 +31,7 @@ class TranslatorActivityQuery {
 	 * @return array<int,array<string|int|string>> Translation stats per user
 	 */
 	public function inLanguage( string $code ): array {
-		$dbr = $this->loadBalancer->getConnection( DB_REPLICA, 'vslow' );
+		$dbr = $this->dbProvider->getReplicaDatabase( false, 'vslow' );
 
 		$res = $dbr->newSelectQueryBuilder()
 			->select( [
@@ -74,7 +73,7 @@ class TranslatorActivityQuery {
 	 * translation stats per user
 	 */
 	public function inAllLanguages(): array {
-		$dbr = $this->loadBalancer->getConnection( DB_REPLICA, 'vslow' );
+		$dbr = $this->dbProvider->getReplicaDatabase( false, 'vslow' );
 
 		$res = $dbr->newSelectQueryBuilder()
 			->select( [

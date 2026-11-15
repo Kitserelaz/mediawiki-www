@@ -10,6 +10,7 @@
 			"Omnipaedista",
 			"Protnet",
 			"Spyridon Eftychios Kokotos",
+			"Warudo",
 			"ZaDiak"
 		]
 	},
@@ -37,7 +38,7 @@
 	"wminc-viewuserlang-user": "Όνομα χρήστη:",
 	"wminc-viewuserlang-go": "Μετάβαση",
 	"wminc-userdoesnotexist": "Ο χρήστης \"$1\" δεν υπάρχει.",
-	"wminc-ip": "\"$1\" είναι μια διεύθυνση IP ή ένας προσωρινός χρήστης.",
+	"wminc-ip": "Η «$1» είναι διεύθυνση IP ή προσωρινός χρήστης.",
 	"action-viewuserlang": "προβολή της γλώσσας χρήστη και του δοκιμαστικού wiki",
 	"right-viewuserlang": "Προβολή της γλώσσας χρήστη και του δοκιμαστικού βίκι",
 	"group-test-sysop": "Διαχειριστές δοκιμαστικού wiki",
@@ -98,6 +99,5 @@
 	"wminc-infopage-status-approved": "Αυτό το βίκι του Επωαστήρα έχει εγκριθεί από την [[meta:Special:MyLanguage/Language_committee|γλωσσική επιτροπή]] και θα δημιουργηθεί σύντομα.",
 	"wminc-infopage-status-created": "Αυτό το εγχείρημα έχει εγκριθεί από την γλωσσική επιτροπή και τώρα είναι διαθέσιμο στο $1.",
 	"wminc-infopage-status-beforeincubator": "Αυτό το εγχείρημα δημιουργήθηκε πριν το ξεκίνημα του Επωαστήρα του Wikimedia και είναι διαθέσιμο στο $1.",
-	"wminc-infopage-status-beforeincubator-sister": "Το εγχείρημα είναι διαθέσιμο στο $1.",
-	"wminc-infopage-error": "Σφάλμα: {{#infopage}} μπορεί να βρεθεί μόνο σε σελίδες με πρόθεμα."
+	"wminc-infopage-status-beforeincubator-sister": "Το εγχείρημα είναι διαθέσιμο στο $1."
 }

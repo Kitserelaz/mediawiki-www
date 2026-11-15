@@ -3,22 +3,20 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageLoading;
 
-use ApiBase;
-use ApiPageSet;
-use ApiQuery;
-use ApiQueryGeneratorBase;
-use ApiResult;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiPageSet;
+use MediaWiki\Api\ApiQuery;
+use MediaWiki\Api\ApiQueryGeneratorBase;
+use MediaWiki\Api\ApiResult;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroupReviewStore;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\Utilities\ConfigHelper;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Title\Title;
 use RecentMessageGroup;
 use Wikimedia\ParamValidator\ParamValidator;
-use Wikimedia\ParamValidator\TypeDef\EnumDef;
 use Wikimedia\ParamValidator\TypeDef\IntegerDef;
-use Wikimedia\Rdbms\ILoadBalancer;
 
 /**
  * Api module for querying MessageCollection.
@@ -27,24 +25,15 @@ use Wikimedia\Rdbms\ILoadBalancer;
  * @ingroup API TranslateAPI
  */
 class QueryMessageCollectionActionApi extends ApiQueryGeneratorBase {
-	private ConfigHelper $configHelper;
-	private LanguageNameUtils $languageNameUtils;
-	private ILoadBalancer $loadBalancer;
-	private MessageGroupReviewStore $groupReviewStore;
 
 	public function __construct(
 		ApiQuery $query,
 		string $moduleName,
-		ConfigHelper $configHelper,
-		LanguageNameUtils $languageNameUtils,
-		ILoadBalancer $loadBalancer,
-		MessageGroupReviewStore $groupReviewStore
+		private readonly ConfigHelper $configHelper,
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly MessageGroupReviewStore $groupReviewStore,
 	) {
 		parent::__construct( $query, $moduleName, 'mc' );
-		$this->configHelper = $configHelper;
-		$this->languageNameUtils = $languageNameUtils;
-		$this->loadBalancer = $loadBalancer;
-		$this->groupReviewStore = $groupReviewStore;
 	}
 
 	public function execute(): void {
@@ -84,40 +73,28 @@ class QueryMessageCollectionActionApi extends ApiQueryGeneratorBase {
 		if ( $sourceLanguageCode === $languageCode ) {
 			$name = $this->getLanguageName( $languageCode );
 			$this->addWarning( [ 'apiwarn-translate-language-disabled-source', wfEscapeWikiText( $name ) ] );
-		} else {
-			$languages = $group->getTranslatableLanguages();
-			if ( $languages === null ) {
-				$checks = [
-					$group->getId(),
-					strtok( $group->getId(), '-' ),
-					'*'
-				];
+		}
 
-				$disabledLanguages = $this->configHelper->getDisabledTargetLanguages();
-				foreach ( $checks as $check ) {
-					if ( isset( $disabledLanguages[ $check ][ $languageCode ] ) ) {
-						$name = $this->getLanguageName( $languageCode );
-						$reason = $disabledLanguages[ $check ][ $languageCode ];
-						$this->dieWithError( [ 'apierror-translate-language-disabled-reason', $name, $reason ] );
-					}
-				}
-			} elseif ( !isset( $languages[ $languageCode ] ) ) {
-				// Not a translatable language
-				$name = $this->getLanguageName( $languageCode );
+		$isDisabled = $this->configHelper->isTargetLanguageDisabled( $group, $languageCode, $reason );
+		if ( $isDisabled ) {
+			$name = $this->getLanguageName( $languageCode );
+			if ( $reason === null ) {
 				$this->dieWithError( [ 'apierror-translate-language-disabled', $name ] );
+			} else {
+				$this->dieWithError( [ 'apierror-translate-language-disabled-reason', $name, $reason ] );
 			}
+		}
 
-			// A check for cases where the source language of group messages
-			// is a variant of the target language being translated into.
-			if ( strtok( $sourceLanguageCode, '-' ) === strtok( $languageCode, '-' ) ) {
-				$sourceLanguageName = $this->getLanguageName( $sourceLanguageCode );
-				$targetLanguageName = $this->getLanguageName( $languageCode );
-				$this->addWarning( [
-					'apiwarn-translate-language-targetlang-variant-of-source',
-					wfEscapeWikiText( $targetLanguageName ),
-					wfEscapeWikiText( $sourceLanguageName ) ]
-				);
-			}
+		// A check for cases where the source language of group messages
+		// is a variant of the target language being translated into.
+		if ( strtok( $sourceLanguageCode, '-' ) === strtok( $languageCode, '-' ) ) {
+			$sourceLanguageName = $this->getLanguageName( $sourceLanguageCode );
+			$targetLanguageName = $this->getLanguageName( $languageCode );
+			$this->addWarning( [
+				'apiwarn-translate-language-targetlang-variant-of-source',
+				wfEscapeWikiText( $targetLanguageName ),
+				wfEscapeWikiText( $sourceLanguageName ) ]
+			);
 		}
 
 		if ( MessageGroups::isDynamic( $group ) ) {
@@ -143,9 +120,9 @@ class QueryMessageCollectionActionApi extends ApiQueryGeneratorBase {
 			try {
 				$value = $value === null ? $value : (int)$value;
 				if ( str_starts_with( $filter, '!' ) ) {
-					$messages->filter( substr( $filter, 1 ), true, $value );
+					$messages->filter( substr( $filter, 1 ), MessageCollection::EXCLUDE_MATCHING, $value );
 				} else {
-					$messages->filter( $filter, false, $value );
+					$messages->filter( $filter, MessageCollection::INCLUDE_MATCHING, $value );
 				}
 			} catch ( InvalidFilterException $e ) {
 				$this->dieWithError(
@@ -164,7 +141,7 @@ class QueryMessageCollectionActionApi extends ApiQueryGeneratorBase {
 		$result->addValue(
 			[ 'query', 'metadata' ],
 			'state',
-			$this->groupReviewStore->getWorkflowState( $group->getId(), $params['language'] )
+			$this->groupReviewStore->getWorkflowState( $group, $params['language'] )
 		);
 
 		$result->addValue( [ 'query', 'metadata' ], 'resultsize', $resultSize );
@@ -184,7 +161,6 @@ class QueryMessageCollectionActionApi extends ApiQueryGeneratorBase {
 
 		$props = array_flip( $params['prop'] );
 
-		/** @var Title $title */
 		foreach ( $messages->keys() as $mkey => $titleValue ) {
 			$title = Title::newFromLinkTarget( $titleValue );
 
@@ -243,10 +219,6 @@ class QueryMessageCollectionActionApi extends ApiQueryGeneratorBase {
 			$data['tags'] = $message->getTags();
 			$result->setIndexedTagName( $data['tags'], 'tag' );
 		}
-		// BC
-		if ( isset( $props['revision'] ) ) {
-			$data['revision'] = $message->getProperty( 'revision' );
-		}
 		if ( isset( $props['properties'] ) ) {
 			foreach ( $message->getPropertyNames() as $prop ) {
 				$data['properties'][$prop] = $message->getProperty( $prop );
@@ -272,7 +244,7 @@ class QueryMessageCollectionActionApi extends ApiQueryGeneratorBase {
 				ParamValidator::PARAM_DEFAULT => 500,
 				ParamValidator::PARAM_TYPE => 'limit',
 				IntegerDef::PARAM_MIN => 1,
-				IntegerDef::PARAM_MAX => ApiBase::LIMIT_BIG2,
+				IntegerDef::PARAM_MAX => ApiBase::LIMIT_BIG1,
 				IntegerDef::PARAM_MAX2 => ApiBase::LIMIT_BIG2,
 			],
 			'offset' => [
@@ -291,15 +263,11 @@ class QueryMessageCollectionActionApi extends ApiQueryGeneratorBase {
 					'translation',
 					'tags',
 					'properties',
-					'revision',
 				],
 				ParamValidator::PARAM_DEFAULT => 'definition|translation',
 				ParamValidator::PARAM_ISMULTI => true,
 				ApiBase::PARAM_HELP_MSG_PER_VALUE => [
 					'translation' => [ 'apihelp-query+messagecollection-paramvalue-prop-translation', TRANSLATE_FUZZY ],
-				],
-				EnumDef::PARAM_DEPRECATED_VALUES => [
-					'revision' => true,
 				],
 			],
 		];
@@ -315,8 +283,6 @@ class QueryMessageCollectionActionApi extends ApiQueryGeneratorBase {
 			'action=query&list=messagecollection&mcgroup=page-Example&mclanguage=fi&' .
 				'mcprop=definition|translation|tags&mcfilter=optional'
 				=> 'apihelp-query+messagecollection-example-3',
-			'action=query&generator=messagecollection&gmcgroup=page-Example&gmclanguage=nl&prop=revisions'
-				=> 'apihelp-query+messagecollection-example-4',
 		];
 	}
 }

@@ -1,6 +1,8 @@
 <?php
 
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Request\WebRequest;
 
 /**
  * AJAX Poll class
@@ -36,6 +38,8 @@ class AJAXPoll {
 	 * @return string
 	 */
 	public static function render( $input, $args, Parser $parser, $frame ) {
+		$services = MediaWikiServices::getInstance();
+
 		$parser->getOutput()->updateCacheExpiry( 0 );
 		$parser->addTrackingCategory( 'ajaxpoll-tracking-category' );
 		$parser->getOutput()->addModules( [ 'ext.ajaxpoll' ] );
@@ -52,7 +56,7 @@ class AJAXPoll {
 		$input = trim( strip_tags( $input ) );
 		$lines = explode( "\n", trim( $input ) );
 
-		$dbw = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_PRIMARY );
+		$dbw = $services->getDBLoadBalancer()->getConnection( DB_PRIMARY );
 
 		/**
 		 * Register poll in the database
@@ -74,7 +78,7 @@ class AJAXPoll {
 			}
 		}
 
-		$readonly = MediaWikiServices::getInstance()->getReadOnlyMode()->getReason();
+		$readonly = $services->getReadOnlyMode()->getReason();
 		if ( !$readonly ) {
 			if ( $row === false ) {
 				$dbw->insert(
@@ -115,13 +119,8 @@ class AJAXPoll {
 				$ret = self::buildStats();
 				break;
 			default:
-				if ( method_exists( $parser, 'getUserIdentity' ) ) {
-					// MW 1.36+
-					$user = MediaWikiServices::getInstance()
-						->getUserFactory()->newFromUserIdentity( $parser->getUserIdentity() );
-				} else {
-					$user = $parser->getUser();
-				}
+				$user = MediaWikiServices::getInstance()
+					->getUserFactory()->newFromUserIdentity( $parser->getUserIdentity() );
 				$ret = Html::rawElement( 'div',
 					[
 						'id' => 'ajaxpoll-container-' . $id
@@ -185,10 +184,12 @@ During the last 48 hours, {$tab2->votes} votes have been given.";
 	 * @param int $id
 	 * @param string $answer
 	 * @param User $user
+	 * @param WebRequest $request
 	 * @return bool
 	 */
-	public static function submitVote( $id, $answer, User $user ) {
-		$readonly = MediaWikiServices::getInstance()->getReadOnlyMode()->getReason();
+	public static function submitVote( $id, $answer, User $user, $request ) {
+		$services = MediaWikiServices::getInstance();
+		$readonly = $services->getReadOnlyMode()->getReason();
 
 		if ( !$user->isAllowed( 'ajaxpoll-vote' ) || $user->isBot() ) {
 			return self::buildHTML( $id, $user, $readonly );
@@ -198,7 +199,7 @@ During the last 48 hours, {$tab2->votes} votes have been given.";
 			return self::buildHTML( $id, $user, $readonly, '' );
 		}
 
-		$dbw = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_PRIMARY );
+		$dbw = $services->getDBLoadBalancer()->getConnection( DB_PRIMARY );
 
 		if ( $answer != 0 ) {
 			$answer = ++$answer;
@@ -208,7 +209,7 @@ During the last 48 hours, {$tab2->votes} votes have been given.";
 				'COUNT(*) AS count',
 				[
 					'poll_id' => $id,
-					'poll_actor' => $user->getActorId()
+					'poll_actor' => $services->getActorNormalization()->acquireActorId( $user, $dbw )
 				],
 				__METHOD__
 			);
@@ -216,7 +217,7 @@ During the last 48 hours, {$tab2->votes} votes have been given.";
 			if ( $row->count > 0 ) {
 				$pollContainerText = self::updateVote( $dbw, $id, $user, $answer );
 			} else {
-				$pollContainerText = self::addVote( $dbw, $id, $user, $answer );
+				$pollContainerText = self::addVote( $dbw, $id, $user, $answer, $request );
 			}
 		} else { // revoking a vote
 			$pollContainerText = self::revokeVote( $dbw, $id, $user );
@@ -233,20 +234,21 @@ During the last 48 hours, {$tab2->votes} votes have been given.";
 	 * I am not amused by having to do all sorts of weird magic to get around jenkins
 	 * being stupid.
 	 *
-	 * @param IDatabase $dbw Write connection to a database
+	 * @param Wikimedia\Rdbms\IDatabase $dbw Write connection to a database
 	 * @param string $id Poll ID
 	 * @param User $user User (object) who is voting
 	 * @param int $answer Answer option #
+	 * @param WebRequest $request
 	 * @return string Name of an i18n msg to show to the user
 	 */
-	public static function addVote( $dbw, $id, $user, $answer ) {
-		global $wgRequest;
+	public static function addVote( $dbw, $id, $user, $answer, $request ) {
 		$insertQuery = $dbw->insert(
 			'ajaxpoll_vote',
 			[
 				'poll_id' => $id,
-				'poll_actor' => $user->getActorId(),
-				'poll_ip' => $wgRequest->getIP(),
+				'poll_actor' => MediaWikiServices::getInstance()->getActorNormalization()
+					->acquireActorId( $user, $dbw ),
+				'poll_ip' => $request->getIP(),
 				'poll_answer' => $answer,
 				'poll_date' => $dbw->timestamp( wfTimestampNow() )
 			],
@@ -256,7 +258,7 @@ During the last 48 hours, {$tab2->votes} votes have been given.";
 	}
 
 	/**
-	 * @param IDatabase $dbw Write connection to a database
+	 * @param Wikimedia\Rdbms\IDatabase $dbw Write connection to a database
 	 * @param string $id Poll ID
 	 * @param User $user User (object) who is voting
 	 * @return string Name of an i18n msg to show to the user
@@ -266,7 +268,7 @@ During the last 48 hours, {$tab2->votes} votes have been given.";
 			'ajaxpoll_vote',
 			[
 				'poll_id' => $id,
-				'poll_actor' => $user->getActorId()
+				'poll_actor' => MediaWikiServices::getInstance()->getActorNormalization()->acquireActorId( $user, $dbw )
 			],
 			__METHOD__
 		);
@@ -274,7 +276,7 @@ During the last 48 hours, {$tab2->votes} votes have been given.";
 	}
 
 	/**
-	 * @param IDatabase $dbw Write connection to a database
+	 * @param Wikimedia\Rdbms\IDatabase $dbw Write connection to a database
 	 * @param string $id Poll ID
 	 * @param User $user User (object) who is voting
 	 * @param int $answer Answer option #
@@ -289,7 +291,7 @@ During the last 48 hours, {$tab2->votes} votes have been given.";
 			],
 			[
 				'poll_id' => $id,
-				'poll_actor' => $user->getActorId()
+				'poll_actor' => MediaWikiServices::getInstance()->getActorNormalization()->acquireActorId( $user, $dbw )
 			],
 			__METHOD__
 		);
@@ -303,7 +305,8 @@ During the last 48 hours, {$tab2->votes} votes have been given.";
 	private static function buildHTML( $id, $user, $readonly, $lines = '', $extra_from_ajax = '' ) {
 		global $wgTitle, $wgLang;
 
-		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
+		$services = MediaWikiServices::getInstance();
+		$dbr = $services->getDBLoadBalancer()->getConnection( DB_REPLICA );
 
 		$row = $dbr->selectRow(
 			'ajaxpoll_info',
@@ -342,27 +345,33 @@ During the last 48 hours, {$tab2->votes} votes have been given.";
 
 		// Did we vote?
 		$userVoted = false;
+		$actorId = $user->getActorId();
+		$ourLastVoteDate = '';
 
-		$row = $dbr->selectRow(
-			'ajaxpoll_vote',
-			[ 'poll_answer', 'poll_date' ],
-			[
-				'poll_id' => $id,
-				'poll_actor' => $user->getActorId()
-			],
-			__METHOD__
-		);
+		// If the actor ID is 0, the user hasn't been given an actor ID yet (which they would have if they had voted),
+		// so no point doing a wasteful DB lookup here.
+		if ( $actorId !== 0 ) {
+			$row = $dbr->selectRow(
+				'ajaxpoll_vote',
+				[ 'poll_answer', 'poll_date' ],
+				[
+					'poll_id' => $id,
+					'poll_actor' => $actorId
+				],
+				__METHOD__
+			);
 
-		if ( $row ) {
-			$ts = wfTimestamp( TS_MW, $row->poll_date );
-			$ourLastVoteDate = wfMessage(
-				'ajaxpoll-your-vote',
-				$lines[$row->poll_answer - 1],
-				$wgLang->timeanddate( $ts, true /* adjust? */ ),
-				$wgLang->date( $ts, true /* adjust? */ ),
-				$wgLang->time( $ts, true /* adjust? */ )
-			)->text();
-			$userVoted = true;
+			if ( $row ) {
+				$ts = wfTimestamp( TS_MW, $row->poll_date );
+				$ourLastVoteDate = wfMessage(
+					'ajaxpoll-your-vote',
+					$lines[$row->poll_answer - 1],
+					$wgLang->timeanddate( $ts, true /* adjust? */ ),
+					$wgLang->date( $ts, true /* adjust? */ ),
+					$wgLang->time( $ts, true /* adjust? */ )
+				)->text();
+				$userVoted = true;
+			}
 		}
 
 		$ret = '';
@@ -568,7 +577,7 @@ During the last 48 hours, {$tab2->votes} votes have been given.";
 				}
 			}
 
-			$ret .= Xml::closeElement( 'form' );
+			$ret .= Html::closeElement( 'form' );
 
 			// Display information about the poll (creation date, amount of votes)
 			$pollSummary = wfMessage(

@@ -17,7 +17,7 @@
 	"codemirror-toggle-label": "Подсветка синтаксиса",
 	"codemirror-toggle-label-short": "Синтаксис",
 	"codemirror-prefs-summary": "Вы можете узнать больше об этой функции, прочитав [https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Extension:CodeMirror справочную страницу].",
-	"codemirror-prefs-enable": "Включить подсветку синтаксиса для вики-текста",
+	"codemirror-prefs-enable": "Включить подсветку синтаксиса для вики-кода",
 	"codemirror-prefs-enable-help": "Применяется при редактировании страниц с содержимым и шаблонов.",
 	"codemirror-prefs-enable-code": "Включить подсветку синтаксиса кода",
 	"codemirror-prefs-enable-code-help": "Применяется при редактировании такого кода, как JavaScript, CSS и модули Lua.",
@@ -59,7 +59,7 @@
 	"codemirror-match-case": "Учитывать регистр",
 	"codemirror-regexp": "Регулярное выражение",
 	"codemirror-regexp-invalid": "Ошибочное регулярное выражение",
-	"codemirror-by-word": "По словам",
+	"codemirror-by-word": "Слово целиком",
 	"codemirror-replace": "Заменить",
 	"codemirror-replace-placeholder": "Заменить",
 	"codemirror-replace-all": "Заменить все",
@@ -207,6 +207,7 @@
 	"codemirror-wikilint-unclosed-comment": "незакрытый HTML-комментарий",
 	"codemirror-wikilint-unclosed-quotes": "незакрытые кавычки",
 	"codemirror-wikilint-unclosed-table": "незакрытая таблица",
+	"codemirror-wikilint-unnecessary-encoding": "ненужное процентное кодирование во внутренней ссылке",
 	"codemirror-wikilint-uppercase": "перевести в верхний регистр",
 	"codemirror-wikilint-useless-attribute": "бесполезный атрибут",
 	"codemirror-wikilint-useless-link-text": "бесполезный текст ссылки",
@@ -215,7 +216,5 @@
 	"codemirror-potentially-slow": "может работать медленно",
 	"codemirror-validate-js-syntaxerror": "Ошибка синтаксиса в столбце $1 на строке $2: $3",
 	"codemirror-ve-limit-exceeded": "Страница является слишком большой для подсветки синтаксиса и поэтому она была отключена.",
-	"codemirror-ve-limit-exceeded-info": "Подробнее",
-	"codemirror-v6-prefs-colorblind": "Включить цветовую схему для дальтоников",
-	"codemirror-fold-template": "Свернуть параметры шаблона"
+	"codemirror-ve-limit-exceeded-info": "Подробнее"
 }

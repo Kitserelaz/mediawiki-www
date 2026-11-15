@@ -5,6 +5,9 @@ namespace MediaWiki\Extension\SecurePoll\Test\Integration;
 use MediaWiki\Extension\SecurePoll\Talliers\STVFormatter\WikitextFormatter;
 use MediaWikiIntegrationTestCase;
 
+/**
+ * @group Database
+ */
 class WikitextFormatterTest extends MediaWikiIntegrationTestCase {
 	private WikitextFormatter $wikitextFormatter;
 	private array $elected;
@@ -84,7 +87,7 @@ class WikitextFormatterTest extends MediaWikiIntegrationTestCase {
 			103 => 'User4',
 			104 => 'User5'
 		];
-		$this->wikitextFormatter = new WikitextFormatter( $resultsLog, $rankedVotes, 3, $candidates );
+		$this->wikitextFormatter = new WikitextFormatter( $resultsLog, $rankedVotes, 3, $candidates, [], '' );
 		$this->elected = [
 			1 => '102',
 			2 => '101',
@@ -100,7 +103,7 @@ class WikitextFormatterTest extends MediaWikiIntegrationTestCase {
 	 * @covers \MediaWiki\Extension\SecurePoll\Talliers\STVFormatter\WikitextFormatter::formatPreamble
 	 */
 	public function testFormatPreamble() {
-		$actualPreamble = $this->wikitextFormatter->formatPreamble( $this->elected, $this->eliminated );
+		$actualPreamble = $this->wikitextFormatter->formatPreamble( $this->elected, $this->eliminated, [] );
 
 		$expectedPreamble = "==Elected==
 Election for 3 seats with 5 candidates. Total 2 votes.
@@ -113,6 +116,21 @@ Election for 3 seats with 5 candidates. Total 2 votes.
 * User4
 * User5";
 		$this->assertEquals( $expectedPreamble, $actualPreamble );
+		$this->assertStringNotContainsString( 'manually excluded from the tally', $actualPreamble );
+	}
+
+	/**
+	 * @covers \MediaWiki\Extension\SecurePoll\Talliers\STVFormatter\WikitextFormatter::formatPreamble
+	 */
+	public function testFormatPreambleWithManuallyExcludedCandidate() {
+		$excludedCandidate = [
+			101 => true
+		];
+		$wikitextFormatter = new WikitextFormatter( [ 'rounds' => [] ], [], 1, [ 101 => 'Foo' ], $excludedCandidate, '' );
+		$result = $wikitextFormatter->formatPreamble( [], [], $excludedCandidate );
+		$expectedElimination = "==Eliminated/Not elected==
+* Foo";
+		$this->assertStringContainsString( $expectedElimination, $result );
 	}
 
 	/**
@@ -158,5 +176,29 @@ Eliminated: User1
 Transferring votes
 HERE;
 		$this->assertEquals( $expectedPreamble, $actualPreamble );
+	}
+
+	/**
+	 * @covers \MediaWiki\Extension\SecurePoll\Talliers\STVFormatter\WikitextFormatter::formatBlt
+	 */
+	public function testFormatBlt() {
+		$wikitextFormatter = new WikitextFormatter( [ 'rounds' => [] ], [], 1, [ 101 => 'Foo' ], [], 'BLT' );
+		$actualBlt = $wikitextFormatter->formatBlt();
+		$expectedBlt = <<<HERE
+==BLT==
+<pre>
+BLT
+</pre>
+HERE;
+		$this->assertEquals( $expectedBlt, $actualBlt );
+	}
+
+	/**
+	 * @covers \MediaWiki\Extension\SecurePoll\Talliers\STVFormatter\WikitextFormatter::formatBlt
+	 */
+	public function testFormatBltNoBltPresent() {
+		$actualBlt = $this->wikitextFormatter->formatBlt();
+		$expectedBlt = '';
+		$this->assertEquals( $expectedBlt, $actualBlt );
 	}
 }

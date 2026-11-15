@@ -3,9 +3,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Diagnostics;
 
-use ContentHandler;
-use IDBAccessObject;
 use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\ContentHandler;
 use MediaWiki\Extension\Translate\SystemUsers\FuzzyBot;
 use MediaWiki\Extension\Translate\Utilities\BaseMaintenanceScript;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
@@ -15,7 +14,8 @@ use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
 use MediaWiki\User\ActorNormalization;
-use Wikimedia\Rdbms\ILoadBalancer;
+use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Rdbms\IDBAccessObject;
 use Wikimedia\Rdbms\IResultWrapper;
 
 /**
@@ -26,7 +26,7 @@ use Wikimedia\Rdbms\IResultWrapper;
 class FuzzyTranslationsMaintenanceScript extends BaseMaintenanceScript {
 	private ActorNormalization $actorNormalization;
 	private RevisionStore $revisionStore;
-	private ILoadBalancer $DBLoadBalancer;
+	private IConnectionProvider $connectionProvider;
 	private WikiPageFactory $wikiPageFactory;
 
 	public function __construct() {
@@ -65,7 +65,7 @@ class FuzzyTranslationsMaintenanceScript extends BaseMaintenanceScript {
 		$mwServices = MediaWikiServices::getInstance();
 		$this->actorNormalization = $mwServices->getActorNormalization();
 		$this->revisionStore = $mwServices->getRevisionStore();
-		$this->DBLoadBalancer = $mwServices->getDBLoadBalancer();
+		$this->connectionProvider = $mwServices->getConnectionProvider();
 		$this->wikiPageFactory = $mwServices->getWikiPageFactory();
 	}
 
@@ -125,7 +125,7 @@ class FuzzyTranslationsMaintenanceScript extends BaseMaintenanceScript {
 
 	/** Searches pages that match given patterns */
 	private function getPagesForPattern( string $pattern, array $skipLanguages = [] ): array {
-		$dbr = $this->DBLoadBalancer->getMaintenanceConnectionRef( DB_REPLICA );
+		$dbr = $this->connectionProvider->getReplicaDatabase();
 
 		$conds = [
 			'page_latest=rev_id',
@@ -155,7 +155,7 @@ class FuzzyTranslationsMaintenanceScript extends BaseMaintenanceScript {
 	}
 
 	private function getPagesForUser( string $userName, array $skipLanguages = [] ): array {
-		$dbr = $this->DBLoadBalancer->getMaintenanceConnectionRef( DB_REPLICA );
+		$dbr = $this->connectionProvider->getReplicaDatabase();
 		$actorId = $this->actorNormalization->findActorIdByName( $userName, $dbr );
 		if ( $actorId === null ) {
 			return [];
@@ -190,18 +190,18 @@ class FuzzyTranslationsMaintenanceScript extends BaseMaintenanceScript {
 	 * @param string|null $comment Edit summary.
 	 */
 	private function updateMessage( Title $title, string $text, bool $dryrun, ?string $comment = null ) {
-		$this->output( "Updating {$title->getPrefixedText()}... ", $title );
+		$this->output( "Updating {$title->getPrefixedText()}... ", $title->getPrefixedText() );
 
 		$documentationLanguageCode = $this->getConfig()->get( 'TranslateDocumentationLanguageCode' );
 		$items = explode( '/', $title->getText(), 2 );
 		if ( isset( $items[1] ) && $items[1] === $documentationLanguageCode ) {
-			$this->output( 'IGNORED!', $title );
+			$this->output( 'IGNORED!', $title->getPrefixedText() );
 
 			return;
 		}
 
 		if ( $dryrun ) {
-			$this->output( 'DRY RUN!', $title );
+			$this->output( 'DRY RUN!', $title->getPrefixedText() );
 
 			return;
 		}
@@ -215,6 +215,6 @@ class FuzzyTranslationsMaintenanceScript extends BaseMaintenanceScript {
 			->saveRevision( $summary, EDIT_FORCE_BOT | EDIT_UPDATE );
 		$status = $updater->getStatus();
 
-		$this->output( $status->isOK() ? 'OK' : 'FAILED', $title );
+		$this->output( $status->isOK() ? 'OK' : 'FAILED', $title->getPrefixedText() );
 	}
 }

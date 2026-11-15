@@ -36,24 +36,28 @@ class SandboxMessageGroup extends WikiMessageGroup {
 	public function __construct() {
 	}
 
-	public function setLanguage( $code ) {
+	public function setLanguage( string $code ) {
 		$this->language = $code;
 	}
 
+	/** @inheritDoc */
 	public function getId() {
 		return '!sandbox';
 	}
 
+	/** @inheritDoc */
 	public function getLabel( ?IContextSource $context = null ) {
 		// Should not be visible
 		return 'Sandbox messages';
 	}
 
+	/** @inheritDoc */
 	public function getDescription( ?IContextSource $context = null ) {
 		// Should not be visible
 		return 'Suggests messages to translate for sandboxed users';
 	}
 
+	/** @inheritDoc */
 	public function getDefinitions() {
 		global $wgTranslateSandboxLimit;
 
@@ -62,7 +66,7 @@ class SandboxMessageGroup extends WikiMessageGroup {
 
 		// Ugly
 		$store = new TranslationStashStorage(
-			MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_PRIMARY )
+			MediaWikiServices::getInstance()->getConnectionProvider()->getPrimaryDatabase()
 		);
 		$user = RequestContext::getMain()->getUser();
 		$translations = $store->getTranslations( $user );
@@ -133,6 +137,7 @@ class SandboxMessageGroup extends WikiMessageGroup {
 		return $list;
 	}
 
+	/** @inheritDoc */
 	public function getValidator() {
 		return null;
 	}

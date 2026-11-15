@@ -1,49 +1,49 @@
 <template>
-	<div id="mwe-pt-vue-flyout" class="mwe-pt-vue-tool-flyout mwe-pt-vue-tool-flyout-not-flipped">
+	<div v-show="active" class="mwe-pt-tool-pokey mwe-pt-tool-pokey-not-flipped"></div>
+
+	<div v-show="active" class="mwe-pt-tool-flyout mwe-pt-tool-flyout-not-flipped">
 		<flyout-header
-			:help-link="helpLink"
-			:title="title"
-			@close-flyout="closeFlyout">
+			:title
+			:help-link
+			@closed="$emit( 'closed' )">
 		</flyout-header>
-		<flyout-content>
-			<slot></slot>
-		</flyout-content>
+
+		<div class="mwe-pt-tool-content">
+			<slot name="content"></slot>
+			<slot name="notes"></slot>
+			<slot name="footer"></slot>
+		</div>
 	</div>
 </template>
 
 <script>
 const FlyoutHeader = require( './FlyoutHeader.vue' );
-const FlyoutContent = require( './FlyoutContent.vue' );
+
 // @vue/component
-module.exports = {
-	components: {
-		FlyoutHeader,
-		FlyoutContent
-	},
+module.exports = exports = {
+	components: { FlyoutHeader },
 	props: {
-		helpLink: {
-			type: String,
-			required: true
+		active: {
+			type: Boolean,
+			default: false
 		},
 		title: {
 			type: String,
 			required: true
+		},
+		helpLink: {
+			type: String,
+			required: true
 		}
 	},
-	methods: {
-		closeFlyout: function () {
-			const flyoutContainer = document.getElementById( 'mwe-pt-vue-flyout' );
-			flyoutContainer.style.display = 'none';
-		}
-	}
+	emits: [ 'closed' ]
 };
-
 </script>
 
-<style>
-.mwe-pt-vue-tool-flyout {
+<style lang="less">
+.mwe-pt-tool-flyout {
 	position: absolute;
-	top: 12px;
+	top: -12px;
 	width: 500px;
 	padding: 5px;
 	background-color: #cacaca;
@@ -53,12 +53,21 @@ module.exports = {
 	border: 1px solid #9f9f9f;
 	box-shadow: 0 4px 8px rgba( 0, 0, 0, 0.4 );
 
-	&-not-flipped {
-		right: 46px;
-	}
-
-	&-flipped {
+	&-flipped[ dir='ltr' ],
+	&-not-flipped[ dir='rtl' ] {
 		left: 46px;
 	}
+
+	&-not-flipped[ dir='ltr' ],
+	&-flipped[ dir='rtl' ] {
+		right: 46px;
+	}
+}
+
+.mwe-pt-tool-content {
+	background-color: #fff;
+	font-size: 0.8em;
+	border: 1px solid #9f9f9f;
+	padding: 6px;
 }
 </style>

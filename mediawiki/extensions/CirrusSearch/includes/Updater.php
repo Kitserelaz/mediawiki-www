@@ -10,30 +10,17 @@ use MediaWiki\Content\TextContent;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\ProperPageIdentity;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Title\Title;
 use MediaWiki\WikiMap\WikiMap;
 use Wikimedia\Assert\Assert;
-use WikiPage;
 
 /**
  * Performs updates and deletes on the Elasticsearch index.  Called by
  * CirrusSearch.php (our SearchEngine implementation), forceSearchIndex
  * (for bulk updates), and CirrusSearch's jobs.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class Updater extends ElasticsearchIntermediary implements WeightedTagsUpdater {
 	/**
@@ -61,9 +48,9 @@ class Updater extends ElasticsearchIntermediary implements WeightedTagsUpdater {
 	 * @param SearchConfig $config
 	 * @param string|null $cluster cluster to read from and write to,
 	 * null to read from the default cluster and write to all
-	 * @return Updater
+	 * @return self
 	 */
-	public static function build( SearchConfig $config, $cluster ): Updater {
+	public static function build( SearchConfig $config, $cluster ): self {
 		Assert::invariant( self::class === static::class, 'Must be invoked as Updater::build( ... )' );
 		$connection = Connection::getPool( $config, $cluster );
 		return new self( $connection, $cluster );
@@ -209,7 +196,8 @@ class Updater extends ElasticsearchIntermediary implements WeightedTagsUpdater {
 			$services->getBacklinkCacheFactory(),
 			$docSizeLimiter,
 			$services->getTitleFormatter(),
-			$services->getWikiPageFactory()
+			$services->getWikiPageFactory(),
+			$services->getTitleFactory()
 		);
 		foreach ( $builder->initialize( $pages, $flags ) as $document ) {
 			// This isn't really a property of the connection, so it doesn't matter
@@ -223,7 +211,7 @@ class Updater extends ElasticsearchIntermediary implements WeightedTagsUpdater {
 			$this->pushElasticaWriteJobs(
 				UpdateGroup::PAGE,
 				$documents,
-				static function ( array $chunk, ClusterSettings $cluster ) use ( $indexSuffix, $updateKind, $rootEventTime ) {
+				static function ( array $chunk, string $cluster ) use ( $indexSuffix, $updateKind, $rootEventTime ) {
 					return Job\ElasticaWrite::build(
 						$cluster,
 						UpdateGroup::PAGE,
@@ -255,7 +243,7 @@ class Updater extends ElasticsearchIntermediary implements WeightedTagsUpdater {
 		$this->pushElasticaWriteJobs(
 			UpdateGroup::WEIGHTED_TAGS,
 			[ $docId ],
-			static function ( array $docIds, ClusterSettings $cluster ) use (
+			static function ( array $docIds, string $cluster ) use (
 				$docId,
 				$indexSuffix,
 				$tagPrefix,
@@ -307,7 +295,7 @@ class Updater extends ElasticsearchIntermediary implements WeightedTagsUpdater {
 		$this->pushElasticaWriteJobs(
 			UpdateGroup::PAGE,
 			$docIds,
-			static function ( array $chunk, ClusterSettings $cluster ) use ( $indexSuffix, $writeJobParams ) {
+			static function ( array $chunk, string $cluster ) use ( $indexSuffix, $writeJobParams ) {
 				return Job\ElasticaWrite::build(
 					$cluster,
 					UpdateGroup::PAGE,
@@ -334,7 +322,7 @@ class Updater extends ElasticsearchIntermediary implements WeightedTagsUpdater {
 		$this->pushElasticaWriteJobs(
 			UpdateGroup::ARCHIVE,
 			$docs,
-			static function ( array $chunk, ClusterSettings $cluster ) {
+			static function ( array $chunk, string $cluster ) {
 				return Job\ElasticaWrite::build(
 					$cluster,
 					UpdateGroup::ARCHIVE,
@@ -446,30 +434,15 @@ class Updater extends ElasticsearchIntermediary implements WeightedTagsUpdater {
 	protected function pushElasticaWriteJobs( string $updateGroup, array $items, $factory, int $batchSize = 10 ): void {
 		// Elasticsearch has a queue capacity of 50 so if $documents contains 50 pages it could bump up
 		// against the max.  So we chunk it and do them sequentially.
-		$jobs = [];
 		$config = $this->connection->getConfig();
 		$clusters = $this->elasticaWriteClusters( $updateGroup );
 
 		foreach ( array_chunk( $items, $batchSize ) as $chunked ) {
-			// Queueing one job per cluster ensures isolation. If one clusters falls
-			// behind on writes the others shouldn't notice.
-			// Unfortunately queueing a job per cluster results in quite a few
-			// jobs to run. If the job queue can't keep up some clusters can
-			// be run in-process. Any failures will queue themselves for later
-			// execution.
 			foreach ( $clusters as $cluster ) {
-				$clusterSettings = new ClusterSettings( $config, $cluster );
-				$job = $factory( $chunked, $clusterSettings );
-				if ( $clusterSettings->isIsolated() ) {
-					$jobs[] = $job;
-				} else {
-					$job->run();
-				}
+				$job = $factory( $chunked, $cluster );
+				// If the job fails for any reason it will enqueue itself to retry later.
+				$job->run();
 			}
-		}
-
-		if ( $jobs ) {
-			MediaWikiServices::getInstance()->getJobQueueGroup()->push( $jobs );
 		}
 	}
 

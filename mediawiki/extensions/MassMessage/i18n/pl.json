@@ -13,7 +13,8 @@
 			"The Polish",
 			"WTM",
 			"Wiochman",
-			"Woytecr"
+			"Woytecr",
+			"PanWor"
 		]
 	},
 	"massmessage": "Wysyłanie masowej wiadomości",
@@ -34,7 +35,7 @@
 	"massmessage-form-preview": "Podgląd",
 	"massmessage-form-submit": "Wyślij",
 	"massmessage-fieldset-preview": "Podgląd",
-	"massmessage-fieldset-wikitext-preview": "Podgląd wikitekstu",
+	"massmessage-fieldset-wikitext-preview": "Podgląd wikikodu",
 	"massmessage-fieldset-info": "Informacja",
 	"massmessage-preview-count": "Twoja wiadomość będzie wysłana do {{PLURAL:$1|$1 strony|$1 stron}}.",
 	"massmessage-translate-page-info": "Wybrano przetłumaczoną stronę do wysłania jako wiadomość. Subskrybenci otrzymają treść strony w preferowanym języku lub w języku zastępczym, jeśli tłumaczenie nie jest dostępne.",
@@ -59,6 +60,7 @@
 	"massmessage-unescaped-langlinks": "Ostrzeżenie: W wiadomości nie zabezpieczono odpowiednio linków do innych wersji językowych. Wstaw dwukropek przed kodem języka w linkach.",
 	"massmessage-no-timestamp": "Ostrzeżenie: Twoja wiadomość nie zawiera sygnatury czasowej lub podpisu.",
 	"massmessage-form-header": "Użyj poniższego formularza, aby wysłać wiadomości do określonej listy. ([https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Extension:MassMessage Więcej informacji]).",
+	"massmessage-redirect-notice": "(Ta wiadomość została wysłana do [[:$1]], ale została opublikowana tutaj z powodu przekierowania.)",
 	"massmessage-hidden-comment": "<!-- Wiadomość wysłana przez User:$1@$2 przy użyciu listy na $3 -->",
 	"massmessage-optout-category": "Wypisani z otrzymywania masowych wiadomości",
 	"massmessage-badhtml": "W Twojej wiadomości {{PLURAL:$2|mógł się znaleźć niezamknięty znacznik HTML|mogły się znaleźć niezamknięte znaczniki HTML}}: $1.",
@@ -71,8 +73,8 @@
 	"action-massmessage": "wyślij wiadomość do wielu użytkowników jednocześnie",
 	"log-name-massmessage": "Rejestr masowych wiadomości",
 	"log-description-massmessage": "To jest lista zdarzeń służąca do śledzenia wysyłanych wiadomości.",
-	"logentry-massmessage-send": "$1 {{GENDER:$2|wysłał|wysłała}} wiadomość do $3",
-	"logentry-massmessage-send-page-message": "$1 {{GENDER:$2|wysłał|wysłała}} stronę $5 jako wiadomość do $3",
+	"logentry-massmessage-send": "$1 {{GENDER:$2|wysłał|wysłała|wysłał(a)}} wiadomość do $3",
+	"logentry-massmessage-send-page-message": "$1 {{GENDER:$2|wysłał|wysłała|wysłał(a)}} stronę $5 jako wiadomość do $3",
 	"logentry-massmessage-failure": "Dostarczenie „$4” do $3 nie powiodło się. Kod błędu: <code>$5</code>",
 	"logentry-massmessage-failure-section": "Dostarczenie „$4” do $3 nie powiodło się, ponieważ efektywny temat wiadomości jest pusty. Prawdopodobna przyczyna: sekcja <code>$5</code> na stronie [[$6]] jest nieprawidłowa. Sprawdź, czy nie występują niepożądane znaki „&lt;”.",
 	"logentry-massmessage-skipbadns": "Dostarczanie wiadomości „$4” do $3 zostało pominięte, ponieważ miejsce docelowe znajdowało się w przestrzeni nazw, w której nie mogło być umieszczone",

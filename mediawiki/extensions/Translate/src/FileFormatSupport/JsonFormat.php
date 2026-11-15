@@ -4,10 +4,11 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\FileFormatSupport;
 
 use FileBasedMessageGroup;
-use FormatJson;
+use InvalidArgumentException;
 use MediaWiki\Extension\Translate\MessageLoading\Message;
 use MediaWiki\Extension\Translate\MessageLoading\MessageCollection;
 use MediaWiki\Extension\Translate\MessageProcessing\ArrayFlattener;
+use MediaWiki\Json\FormatJson;
 
 /**
  * JsonFormat implements a message format where messages are encoded
@@ -19,6 +20,8 @@ use MediaWiki\Extension\Translate\MessageProcessing\ArrayFlattener;
  * @ingroup FileFormatSupport
  */
 class JsonFormat extends SimpleFormat {
+	private const INDENT_PATTERN = '/^[ \t]+\z/';
+
 	private ?ArrayFlattener $flattener;
 
 	public static function isValid( string $data ): bool {
@@ -72,15 +75,9 @@ class JsonFormat extends SimpleFormat {
 		/** @var Message $m */
 		foreach ( $collection as $key => $m ) {
 			$value = $m->translation();
-			if ( $value === null ) {
-				continue;
+			if ( $value !== null ) {
+				$messages[$key] = str_replace( TRANSLATE_FUZZY, '', $value );
 			}
-
-			if ( $m->hasTag( 'fuzzy' ) ) {
-				$value = str_replace( TRANSLATE_FUZZY, '', $value );
-			}
-
-			$messages[$key] = $value;
 		}
 
 		// Do not create files without translations
@@ -112,7 +109,19 @@ class JsonFormat extends SimpleFormat {
 			$messages = [ '@metadata' => $metadata ] + $messages;
 		}
 
-		return FormatJson::encode( $messages, "\t", FormatJson::ALL_OK ) . "\n";
+		return FormatJson::encode( $messages, $this->getIndentString(), FormatJson::ALL_OK ) . "\n";
+	}
+
+	/** @since 2026.09 */
+	private function getIndentString(): string {
+		$indent = $this->extra['indentString'] ?? "\t";
+		if ( !preg_match( self::INDENT_PATTERN, $indent ) ) {
+			throw new InvalidArgumentException(
+				"The 'indentString' file format option may only contain spaces and tabs, got: '$indent'"
+			);
+		}
+
+		return $indent;
 	}
 
 	private function getFlattener(): ?ArrayFlattener {
@@ -149,7 +158,11 @@ class JsonFormat extends SimpleFormat {
 							],
 							'includeMetadata' => [
 								'_type' => 'boolean',
-							]
+							],
+							'indentString' => [
+								'_type' => 'pattern',
+								'_pattern' => self::INDENT_PATTERN,
+							],
 						]
 					]
 				]
@@ -157,4 +170,5 @@ class JsonFormat extends SimpleFormat {
 		];
 	}
 }
+
 class_alias( JsonFormat::class, 'JsonFFS' );

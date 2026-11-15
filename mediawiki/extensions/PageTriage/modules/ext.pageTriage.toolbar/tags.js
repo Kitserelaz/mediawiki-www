@@ -124,7 +124,6 @@ module.exports = ToolView.extend( {
 	 * Display the tag flyout, everything should be reset
 	 */
 	render: function () {
-		const that = this;
 		this.handleRedirectsTemplates();
 
 		this.reset();
@@ -141,24 +140,21 @@ module.exports = ToolView.extend( {
 		$( '#mwe-pt-tag .mwe-pt-flyout-help-link' ).attr( 'href', this.moduleConfig.helplink );
 
 		// add click event for each category
-		$( '#mwe-pt-categories' ).find( 'div' ).each( function () {
-			const cat = $( $( this ).html() ).attr( 'cat' );
-			$( this ).on( 'click',
-				function () {
-					$( this ).find( 'a' ).trigger( 'blur' );
-					that.displayTags( cat );
-					return false;
-				}
-			).end();
+		$( '#mwe-pt-categories' ).find( 'div' ).each( ( i, el ) => {
+			const cat = $( el ).find( '[cat]' ).attr( 'cat' );
+			$( el ).on( 'click', () => {
+				$( el ).find( 'a' ).trigger( 'blur' );
+				this.displayTags( cat );
+				return false;
+			} ).end();
 		} );
 
 		// add click event for tag submission
-		$( '#mwe-pt-tag-submit-button' )
-			.button( { disabled: true } )
+		$( '#mwe-pt-tag-submit-button' ).attr( 'disabled', true )
 			.on( 'click', () => {
-				$( '#mwe-pt-tag-submit-button' ).button( 'disable' );
+				$( '#mwe-pt-tag-submit-button' ).attr( 'disabled', true );
 				$( '#mwe-pt-tag-submit' ).append( $.createSpinner( 'tag-spinner' ) ); // show spinner
-				that.submit();
+				this.submit();
 				return false;
 			} )
 			.end();
@@ -195,8 +191,7 @@ module.exports = ToolView.extend( {
 
 		$( '#mwe-pt-tags' ).append( $tagList );
 
-		const that = this,
-			tagSet = this.tagOptions[ cat ].tags;
+		const tagSet = this.tagOptions[ cat ].tags;
 		for ( const key in tagSet ) {
 
 			// Keep a running total of tags in the category
@@ -242,20 +237,21 @@ module.exports = ToolView.extend( {
 
 			// add click events for checking/unchecking tags to both the
 			// checkboxes and tag labels
-			$( '#mwe-pt-tag-' + key + ', #mwe-pt-checkbox-tag-' + key ).on( 'click', function () {
-				let destCat, destKey, param;
+			$( '#mwe-pt-tag-' + key + ', #mwe-pt-checkbox-tag-' + key ).on( 'click', ( e ) => {
+				let destCat, destKey;
 
 				// Extract the tag key from the id of whatever was clicked on
-				const tagKeyMatches = $( this ).attr( 'id' ).match( /.*-tag-(.*)/ );
+				const tagKeyMatches = $( e.delegateTarget ).attr( 'id' ).match( /.*-tag-(.*)/ );
 				const tagKey = tagKeyMatches[ 1 ];
 
 				let allTagKey = tagSet[ tagKey ].tag + tagSet[ tagKey ].label;
 				allTagKey = allTagKey.replace( /[- (){}]/g, '' ).toLowerCase();
 
-				// If the tag is in the 'all' category, we already have a destinationCategory which we can use to sync the tag data
-				// across category. However, for non 'all' categories we can't identify the corresponding tag in the 'all' category
-				// to fix this, we generate the allTagKey (which should be the key for the tag in the 'all category') above
-				// and use it to sync the tag data across categories.
+				// If the tag is in the 'all' category, we already have a destinationCategory
+				// which we can use to sync the tag data across category. However, for non 'all'
+				// categories we can't identify the corresponding tag in the 'all' category
+				// to fix this, we generate the allTagKey (which should be the key for the tag
+				// in the 'all category') above and use it to sync the tag data across categories.
 				if ( cat !== 'all' ) {
 					tagSet[ tagKey ].allTagKey = allTagKey;
 				}
@@ -268,48 +264,48 @@ module.exports = ToolView.extend( {
 					destKey = tagSet[ tagKey ].destKey;
 				}
 
-				if ( !that.selectedTag[ cat ][ tagKey ] ) {
+				if ( !this.selectedTag[ cat ][ tagKey ] ) {
 					// activate checkbox
 					$( '#mwe-pt-checkbox-tag-' + tagKey ).prop( 'checked', true );
-					that.selectedTagCount++;
-					that.selectedTag[ cat ][ tagKey ] = tagSet[ tagKey ];
+					this.selectedTagCount++;
+					this.selectedTag[ cat ][ tagKey ] = tagSet[ tagKey ];
 					if ( destCat ) {
-						that.selectedTag[ destCat ][ destKey ] = tagSet[ tagKey ];
+						this.selectedTag[ destCat ][ destKey ] = tagSet[ tagKey ];
 					}
 					if ( tagSet[ tagKey ].common ) {
-						that.selectedTag.common[ tagKey ] = tagSet[ tagKey ];
+						this.selectedTag.common[ tagKey ] = tagSet[ tagKey ];
 					}
-					if ( that.tagOptions.all ) {
-						that.selectedTag.all[ allTagKey ] = that.tagOptions.all.tags[ allTagKey ];
+					if ( this.tagOptions.all ) {
+						this.selectedTag.all[ allTagKey ] = this.tagOptions.all.tags[ allTagKey ];
 					}
-					that.showParamsLink( tagKey, cat );
+					this.showParamsLink( tagKey, cat );
 					// show the param form if there is required parameter
-					for ( param in tagSet[ tagKey ].params ) {
+					for ( const param in tagSet[ tagKey ].params ) {
 						if ( tagSet[ tagKey ].params[ param ].input === 'required' ) {
-							that.showParamsForm( tagKey, cat );
+							this.showParamsForm( tagKey, cat );
 							break;
 						}
 					}
 				} else {
 					// deactivate checkbox
 					$( '#mwe-pt-checkbox-tag-' + tagKey ).prop( 'checked', false );
-					that.selectedTagCount--;
-					delete that.selectedTag[ cat ][ tagKey ];
+					this.selectedTagCount--;
+					delete this.selectedTag[ cat ][ tagKey ];
 					if ( destCat ) {
-						delete that.selectedTag[ destCat ][ destKey ];
+						delete this.selectedTag[ destCat ][ destKey ];
 					}
 					if ( tagSet[ tagKey ].common ) {
-						delete that.selectedTag.common[ tagKey ];
+						delete this.selectedTag.common[ tagKey ];
 					}
-					if ( that.tagOptions.all ) {
-						delete that.selectedTag.all[ allTagKey ];
+					if ( this.tagOptions.all ) {
+						delete this.selectedTag.all[ allTagKey ];
 					}
-					that.hideParamsLink( tagKey );
+					this.hideParamsLink( tagKey );
 					// If the param form is visible, hide it
-					that.hideParamsForm( tagKey );
+					this.hideParamsForm( tagKey );
 				}
 
-				that.refreshTagCountDisplay( tagKey, destCat || cat );
+				this.refreshTagCountDisplay( tagKey, destCat || cat );
 			} ).end();
 		}
 
@@ -333,20 +329,20 @@ module.exports = ToolView.extend( {
 
 		// activate or deactivate the submit button and associated parts
 		if ( this.selectedTagCount > 0 ) {
-			$( '#mwe-pt-tag-submit-button' ).button( 'enable' );
+			$( '#mwe-pt-tag-submit-button' ).attr( 'disabled', false );
 			$( '#mwe-pt-checkbox-mark-reviewed-wrapper' ).show();
 			if ( mw.config.get( 'wgUserName' ) !== this.model.get( 'user_name' ) && !this.model.get( 'creator_hidden' ) ) {
 				$( '#mwe-pt-tag-note' ).show();
 			}
 		} else {
 			$( '#mwe-pt-tag-total-count' ).empty();
-			$( '#mwe-pt-tag-submit-button' ).button( 'disable' );
+			$( '#mwe-pt-tag-submit-button' ).attr( 'disabled', true );
 			$( '#mwe-pt-checkbox-mark-reviewed-wrapper' ).hide();
 			$( '#mwe-pt-tag-note' ).hide();
 		}
 
 		// update the number in the submit button
-		$( '#mwe-pt-tag-submit-button .ui-button-text' ).text( mw.msg( 'pagetriage-button-add-tag-number', this.selectedTagCount ) );
+		$( '#mwe-pt-tag-submit-button' ).text( mw.msg( 'pagetriage-button-add-tag-number', this.selectedTagCount ) );
 	},
 
 	/**
@@ -391,10 +387,9 @@ module.exports = ToolView.extend( {
 		);
 		$( '#mwe-pt-tag-params-link-' + key ).html( '+&#160;' + link );
 
-		const that = this;
 		// Add click event to the link that shows the param form
 		$( '#mwe-pt-tag-params-' + key ).on( 'click', () => {
-			that.showParamsForm( key, cat );
+			this.showParamsForm( key, cat );
 			return false;
 		} );
 	},
@@ -427,12 +422,12 @@ module.exports = ToolView.extend( {
 
 		let buttons = mw.html.element(
 			'button',
-			{ id: 'mwe-pt-tag-set-param-' + key, class: 'mwe-pt-tag-set-param-button ui-button-green' },
+			{ id: 'mwe-pt-tag-set-param-' + key, class: 'mwe-pt-tag-set-param-button cdx-button' },
 			mw.msg( 'pagetriage-button-add-details' )
 		);
 		buttons += mw.html.element(
 			'button',
-			{ id: 'mwe-pt-tag-cancel-param-' + key, class: 'ui-button-red' },
+			{ id: 'mwe-pt-tag-cancel-param-' + key, class: 'cdx-button cdx-button--action-destructive' },
 			mw.msg( 'cancel' )
 		);
 		html += '<div class="mwe-pt-tag-params-form-buttons">' + buttons + '</div>';
@@ -443,33 +438,33 @@ module.exports = ToolView.extend( {
 		$( '#mwe-pt-tag-params-form-' + key ).html( html );
 		$( '#mwe-pt-tag-params-form-' + key ).show();
 
-		const that = this;
 		// Add click even for the Set Parameters button
-		$( '#mwe-pt-tag-set-param-' + key ).button().on( 'click', () => {
-			// When setting parameters, we need to make sure that all tags that are duplicated across categories
-			// are updated to reflect the param changes made to the tag in the current category.
-			// For most tags that are not in the all category, we can find the dupicate tag in the all category
-			// by using the previously set allTagKey. However, for tags in the all category, we need to
-			// use the destKey and dest (Category) to locate the duplicated tag.
-			if ( that.setParams( key, key, cat ) ) {
+		$( '#mwe-pt-tag-set-param-' + key ).on( 'click', () => {
+			// When setting parameters, we need to make sure that all tags that are duplicated
+			// across categories are updated to reflect the param changes made to the tag in
+			// the current category. For most tags that are not in the all category, we can find
+			// the dupicate tag in the all category by using the previously set allTagKey.
+			// However, for tags in the all category, we need to use the destKey and dest
+			// (Category) to locate the duplicated tag.
+			if ( this.setParams( key, key, cat ) ) {
 				if ( tag.dest ) {
-					that.setParams( key, tag.destKey, tag.dest );
+					this.setParams( key, tag.destKey, tag.dest );
 				} else {
-					that.setParams( key, tag.allTagKey, 'all' );
+					this.setParams( key, tag.allTagKey, 'all' );
 				}
 				// Hide the form and show the link to reopen it
-				that.hideParamsForm( key );
-				that.showParamsLink( key, cat );
+				this.hideParamsForm( key );
+				this.showParamsLink( key, cat );
 			}
 		} );
 
 		// Add click even for the Cancel button
-		$( '#mwe-pt-tag-cancel-param-' + key ).button().on( 'click', () => {
+		$( '#mwe-pt-tag-cancel-param-' + key ).on( 'click', () => {
 			let destCat;
 
 			// Hide the form and show the link to reopen it
-			that.hideParamsForm( key );
-			that.showParamsLink( key, cat );
+			this.hideParamsForm( key );
+			this.showParamsLink( key, cat );
 
 			// If there were any unset required params, uncheck the tag
 			// and hide the form link (basically, reset it)
@@ -477,13 +472,13 @@ module.exports = ToolView.extend( {
 				if ( tag.params[ param ].input === 'required' && !tag.params[ param ].value ) {
 					if ( tag.dest ) {
 						destCat = tag.dest;
-						delete that.selectedTag[ destCat ][ key ];
+						delete this.selectedTag[ destCat ][ key ];
 					}
-					delete that.selectedTag[ cat ][ key ];
-					that.selectedTagCount--;
-					that.refreshTagCountDisplay( key, destCat || cat );
+					delete this.selectedTag[ cat ][ key ];
+					this.selectedTagCount--;
+					this.refreshTagCountDisplay( key, destCat || cat );
 					$( '#mwe-pt-checkbox-tag-' + key ).prop( 'checked', false );
-					that.hideParamsLink( key );
+					this.hideParamsLink( key );
 					break;
 				}
 			}
@@ -580,7 +575,7 @@ module.exports = ToolView.extend( {
 		const tagStart = '{{' + tag;
 		const startingIndex = wikitext.indexOf( tagStart );
 
-		if ( wikitext.indexOf( tagStart ) === -1 ) {
+		if ( !wikitext.includes( tagStart ) ) {
 			return '';
 		}
 
@@ -615,8 +610,8 @@ module.exports = ToolView.extend( {
 	 * PageTriage is the best.
 	 * ```
 	 *
-	 * the function will find the existing Multiple issues wrapper tag and try to append the tagWikitext
-	 * as part of the Multiple issues tag block, so the returned output would be:
+	 * the function will find the existing Multiple issues wrapper tag and try to append the
+	 * tagWikitext as part of the Multiple issues tag block, so the returned output would be:
 	 *
 	 * ```
 	 * {{Multiple issues|
@@ -634,7 +629,8 @@ module.exports = ToolView.extend( {
 	 * @param {string} tagWikitext
 	 * @param {"top"|"bottom"} position
 	 * @param {boolean} shouldWrap
-	 * @return {string} Article text with the tag wrapped in the wrapper placed in the appropriate position
+	 * @return {string} Article text with the tag wrapped in the wrapper placed in the appropriate
+	 * position
 	 */
 	addToExistingTags: function ( articleWikitext, wrapper, tagWikitext, position, shouldWrap ) {
 		const existingWrapper = this.extractTagFromWikitext( articleWikitext, wrapper );
@@ -670,22 +666,20 @@ module.exports = ToolView.extend( {
 				// eslint-disable-next-line no-alert
 				if ( !confirm( mw.msg( 'pagetriage-add-tag-confirmation', this.selectedTagCount ) ) ) {
 					$.removeSpinner( 'tag-spinner' );
-					$( '#mwe-pt-tag-submit-button' ).button( 'enable' );
+					$( '#mwe-pt-tag-submit-button' ).attr( 'disabled', false );
 					return;
 				}
 			}
 
-			let tagKey,
-				bottomText = '';
+			let bottomText = '';
 			const processed = {};
-			const that = this;
 			const multipleTags = {};
 			const redirectTags = {};
 			const tagList = [];
 			let multipleTagsText = '',
 				multipleRedirectTagsText = '';
 			for ( const cat in this.selectedTag ) {
-				for ( tagKey in this.selectedTag[ cat ] ) {
+				for ( const tagKey in this.selectedTag[ cat ] ) {
 					if ( processed[ tagKey ] ) {
 						continue;
 					}
@@ -694,7 +688,7 @@ module.exports = ToolView.extend( {
 					// Final check on required params
 					for ( const param in tagObj.params ) {
 						if ( tagObj.params[ param ].input === 'required' && !tagObj.params[ param ].value ) {
-							that.handleError( mw.msg( 'pagetriage-tags-param-missing-required', tagObj.tag ) );
+							this.handleError( mw.msg( 'pagetriage-tags-param-missing-required', tagObj.tag ) );
 							return;
 						}
 					}
@@ -732,7 +726,7 @@ module.exports = ToolView.extend( {
 			// Generate a string of line breaks and templates. For example,
 			// \n{{No references}}\n{{Notability}}
 			const tagsArray = [];
-			for ( tagKey in multipleTags ) {
+			for ( const tagKey in multipleTags ) {
 				tagsArray.push( '{{' + multipleTags[ tagKey ].tag + this.buildParams( multipleTags[ tagKey ] ) + '}}' );
 			}
 			multipleTagsText = tagsArray.join( '\n' );
@@ -748,7 +742,7 @@ module.exports = ToolView.extend( {
 				this.objectPropCount( multipleTags ) > 1
 			);
 
-			for ( tagKey in redirectTags ) {
+			for ( const tagKey in redirectTags ) {
 				multipleRedirectTagsText += '\n{{' + redirectTags[ tagKey ].tag +
 				this.buildParams( redirectTags[ tagKey ] ) + '}}';
 			}
@@ -777,10 +771,10 @@ module.exports = ToolView.extend( {
 						// Register action for marking the page as reviewed.
 						actionQueue.mark = { reviewed: true };
 
-						that.applyTags( wikitext, tagList );
+						this.applyTags( wikitext, tagList );
 					} )
 					.catch( ( _errorCode, data ) => {
-						that.handleError( mw.msg( 'pagetriage-mark-as-reviewed-error', data.error.info ) );
+						this.handleError( mw.msg( 'pagetriage-mark-as-reviewed-error', data.error.info ) );
 					} );
 			} else {
 				return new mw.Api().postWithToken( 'csrf', {
@@ -795,10 +789,10 @@ module.exports = ToolView.extend( {
 						// Register action for marking the page as unreviewed.
 						actionQueue.mark = { reviewed: false };
 
-						that.applyTags( wikitext, tagList );
+						this.applyTags( wikitext, tagList );
 					} )
 					.catch( ( _errorCode, data ) => {
-						that.handleError( mw.msg( 'pagetriage-mark-as-unreviewed-error', data.error.info ) );
+						this.handleError( mw.msg( 'pagetriage-mark-as-unreviewed-error', data.error.info ) );
 					} );
 			}
 		} );
@@ -824,19 +818,19 @@ module.exports = ToolView.extend( {
 		const err = new Error( errorMessage );
 		err.name = 'pageTriageHandleError';
 		mw.errorLogger.logError( err, 'error.pagetraige' );
-		const sitename = mw.config.get( 'wgDBname' );
-		mw.track( 'counter.MediaWiki.extension.PageTriage.' + sitename + '.viewsToolbar.tags.error' );
+		const dbname = mw.config.get( 'wgDBname' );
+		mw.track( 'counter.MediaWiki.extension.PageTriage.' + dbname + '.viewsToolbar.tags.error' );
+		mw.track( 'stats.mediawiki_pagetriage_viewstoolbar_tags_error_total', 1, { wiki: dbname } );
 
 		$.removeSpinner( 'tag-spinner' );
 		// Re-enable the submit button (in case it is disabled)
-		$( '#mwe-pt-tag-submit-button' ).button( 'enable' );
+		$( '#mwe-pt-tag-submit-button' ).attr( 'disabled', false );
 		// Show error message to the user
 		// eslint-disable-next-line no-alert
 		alert( msg );
 	},
 
 	applyTags: function ( wikitext, tagList ) {
-		const that = this;
 		const note = $( '#mwe-pt-tag-note-input' ).val().trim();
 
 		new mw.Api().postWithToken( 'csrf', {
@@ -851,13 +845,16 @@ module.exports = ToolView.extend( {
 
 				if ( note ) {
 					actionQueue.tags.note = note;
-					that.talkPageNote( note );
+					this.talkPageNote( note );
 				} else {
-					mw.pageTriage.actionQueue.runAndRefresh( actionQueue, that.getDataForActionQueue() );
+					mw.pageTriage.actionQueue.runAndRefresh(
+						actionQueue,
+						this.getDataForActionQueue()
+					);
 				}
 			} )
 			.catch( ( _errorCode, data ) => {
-				that.handleError( mw.msg( 'pagetriage-mark-as-reviewed-error', data.error.info ) );
+				this.handleError( mw.msg( 'pagetriage-mark-as-reviewed-error', data.error.info ) );
 			} );
 	},
 
@@ -877,11 +874,10 @@ module.exports = ToolView.extend( {
 			'|2=' + mw.config.get( 'wgUserName' ) +
 			'|3=' + note + '}}';
 
-		const that = this;
 		return messagePosterPromise.then( ( messagePoster ) => messagePoster.post( topicTitle, note, { tags: 'pagetriage' } ) ).then( () => {
-			mw.pageTriage.actionQueue.runAndRefresh( actionQueue, that.getDataForActionQueue() );
+			mw.pageTriage.actionQueue.runAndRefresh( actionQueue, this.getDataForActionQueue() );
 		}, () => {
-			that.handleError( mw.msg( 'pagetriage-mark-as-reviewed-error' ) );
+			this.handleError( mw.msg( 'pagetriage-mark-as-reviewed-error' ) );
 		} );
 	},
 

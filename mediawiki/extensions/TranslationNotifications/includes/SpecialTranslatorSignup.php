@@ -1,15 +1,5 @@
 <?php
-/**
- * Form for translators to register contact methods
- *
- * @file
- * @author Niklas Laxström
- * @author Amir E. Aharoni
- * @author Santhosh Thottingal
- * @author Siebrand Mazeland
- * @copyright Copyright © 2012, Niklas Laxström
- * @license GPL-2.0-or-later
- */
+declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\TranslationNotifications;
 
@@ -17,8 +7,7 @@ use MediaWiki\Extension\CentralAuth\User\CentralAuthUser;
 use MediaWiki\Extension\SiteMatrix\SiteMatrix;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\Language\LanguageCode;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SpecialPage\FormSpecialPage;
 use MediaWiki\SpecialPage\SpecialPage;
@@ -28,26 +17,22 @@ use MediaWiki\WikiMap\WikiMap;
 /**
  * Form for translators to register contact methods
  *
- * @ingroup SpecialPage TranslateSpecialPage
+ * @author Niklas Laxström
+ * @author Amir E. Aharoni
+ * @author Santhosh Thottingal
+ * @author Siebrand Mazeland
+ * @copyright Copyright © 2012, Niklas Laxström
+ * @license GPL-2.0-or-later
  */
-
 class SpecialTranslatorSignup extends FormSpecialPage {
-	/** @var UserOptionsManager */
-	private $userOptionsManager;
-
-	/** @var LanguageNameUtils */
-	private $languageNameUtils;
-
 	public function __construct(
-		UserOptionsManager $userOptionsManager,
-		LanguageNameUtils $languageNameUtils
+		private readonly UserOptionsManager $userOptionsManager,
+		private readonly LanguageNameUtils $languageNameUtils,
 	) {
 		parent::__construct( 'TranslatorSignup' );
-		$this->userOptionsManager = $userOptionsManager;
-		$this->languageNameUtils = $languageNameUtils;
 	}
 
-	public function doesWrites() {
+	public function doesWrites(): bool {
 		return true;
 	}
 
@@ -56,8 +41,9 @@ class SpecialTranslatorSignup extends FormSpecialPage {
 	}
 
 	/** @inheritDoc */
-	public function execute( $par ) {
+	public function execute( $par ): void {
 		$this->requireNamedUser();
+		$this->getOutput()->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
 		parent::execute( $par );
 	}
 
@@ -82,6 +68,7 @@ class SpecialTranslatorSignup extends FormSpecialPage {
 		$form->setHeaderHtml( '' );
 	}
 
+	/** @inheritDoc */
 	protected function postHtml() {
 		$legalMsg = $this->getConfig()->get( 'TranslationNotificationsSignupLegalMessage' );
 		if ( $legalMsg ) {
@@ -131,37 +118,31 @@ class SpecialTranslatorSignup extends FormSpecialPage {
 			'raw' => true,
 		];
 
-		$languages = $this->languageNameUtils->getLanguageNames();
-		ksort( $languages );
-
-		$options = [];
-		foreach ( $languages as $code => $name ) {
-			$display = LanguageCode::bcp47( $code ) . ' - ' . $name;
-			$options[$display] = $code;
-		}
-
-		$options =
-			[ $this->msg( 'translationnotifications-nolang' )->plain() => '' ] + $options;
-
 		for ( $i = 1; $i < 4; $i++ ) {
 			$formatted = $this->getLanguage()->formatNum( $i );
-			$m["lang-$i"] = [
-				'type' => 'select',
-				'label-message' => [ 'translationnotifications-lang', $formatted ],
-				'section' => 'languages',
-				'options' => $options,
-				'default' => $this->userOptionsManager->getOption(
-					$user,
-					"translationnotifications-lang-$i"
-				),
-			];
+			$defaultValue = $this->userOptionsManager->getOption(
+				$user,
+				"translationnotifications-lang-$i"
+			);
 
 			if ( $i === 1 ) {
-				$m["lang-$i"]['default'] = $this->userOptionsManager->getOption(
+				$defaultValue = $this->userOptionsManager->getOption(
 					$user,
 					"translationnotifications-lang-$i",
 					$this->getLanguage()->getCode()
 				);
+			}
+
+			$m["lang-$i"] = [
+				'type' => 'language',
+				'useCodex' => true,
+				'label-message' => [ 'translationnotifications-lang', $formatted ],
+				'cssclass' => 'mw-translationnotifications-lang-selector',
+				'section' => 'languages',
+				'default' => $defaultValue,
+			];
+
+			if ( $i === 1 ) {
 				$m["lang-$i"]['required'] = true;
 			}
 		}
@@ -230,13 +211,12 @@ class SpecialTranslatorSignup extends FormSpecialPage {
 	 * @param array $formData
 	 * @return true
 	 */
-	public function onSubmit( array $formData ) {
-		$user = $this->getUser()->getInstanceForUpdate();
+	public function onSubmit( array $formData ): bool {
+		$user = $this->getUser();
 
 		if ( $this->getRequest()->getVal( 'translationnotifications-unsubscribe' ) !== null ) {
 			$this->userOptionsManager->setOption( $user, 'translationnotifications-freq', 'none' );
-
-			$user->saveSettings();
+			$this->userOptionsManager->saveOptions( $user );
 			return true;
 		}
 
@@ -245,11 +225,11 @@ class SpecialTranslatorSignup extends FormSpecialPage {
 		foreach ( $formData as $key => $value ) {
 			$this->userOptionsManager->setOption( $user, "translationnotifications-$key", $value );
 		}
-		$user->saveSettings();
+		$this->userOptionsManager->saveOptions( $user );
 		return true;
 	}
 
-	public function onSuccess() {
+	public function onSuccess(): void {
 		$out = $this->getOutput();
 		$out->addHTML(
 			Html::successBox(

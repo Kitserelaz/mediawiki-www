@@ -1,4 +1,4 @@
-<?php
+<?php declare( strict_types=1 );
 
 namespace CirrusSearch\Parser\AST;
 
@@ -9,32 +9,23 @@ use CirrusSearch\Parser\AST\Visitor\Visitor;
  */
 class PrefixNode extends ParsedNode {
 
-	/**
-	 * @var string
-	 */
-	private $prefix;
+	private string $prefix;
 
-	/**
-	 * @param int $startOffset
-	 * @param int $endOffset
-	 * @param string $prefix
-	 */
-	public function __construct( $startOffset, $endOffset, $prefix ) {
+	public function __construct( int $startOffset, int $endOffset, string $prefix ) {
 		parent::__construct( $startOffset, $endOffset );
 		$this->prefix = $prefix;
 	}
 
-	/**
-	 * @return array
-	 */
-	public function toArray() {
-		return [ 'prefix' => [ array_merge( parent::baseParams(), [ 'prefix' => $this->prefix ] ) ] ];
+	public function getPrefix(): string {
+		return $this->prefix;
 	}
 
-	/**
-	 * @param Visitor $visitor
-	 */
-	public function accept( Visitor $visitor ) {
+	public function toArray(): array {
+		return [ 'prefix' => array_merge( parent::baseParams(), [ 'prefix' => $this->prefix ] ) ];
+	}
+
+	public function accept( Visitor $visitor ): void {
 		$visitor->visitPrefixNode( $this );
 	}
+
 }

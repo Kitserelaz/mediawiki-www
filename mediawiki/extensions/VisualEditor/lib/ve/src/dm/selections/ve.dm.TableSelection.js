@@ -15,13 +15,6 @@
  * @param {number} [toRow] End row
  */
 ve.dm.TableSelection = function VeDmTableSelection( tableRange, fromCol, fromRow, toCol, toRow ) {
-	if ( ve.dm.Document && arguments[ 0 ] instanceof ve.dm.Document ) {
-		throw new Error( 'Got obsolete ve.dm.Document argument' );
-	}
-	if ( arguments.length > 5 ) {
-		throw new Error( 'Got obsolete argument (probably `expand`)' );
-	}
-
 	// Parent constructor
 	ve.dm.TableSelection.super.call( this );
 
@@ -73,7 +66,7 @@ ve.dm.TableSelection.static.newFromHash = function ( hash ) {
  * @static
  * @param {ve.dm.TableMatrix} matrix The table matrix
  * @param {Object} selectionOffsets Selection col/row offsets (startRow/endRow/startCol/endCol)
- * @param {boolean} [includePlaceholders] Include placeholders in result
+ * @param {boolean} [includePlaceholders=false] Include placeholders in result
  * @return {ve.dm.TableMatrixCell[]} List of table cells
  */
 ve.dm.TableSelection.static.getTableMatrixCells = function ( matrix, selectionOffsets, includePlaceholders ) {
@@ -119,20 +112,20 @@ ve.dm.TableSelection.prototype.expand = function ( doc ) {
 		cells = this.getMatrixCells( doc );
 
 	while ( cells.length > lastCellCount ) {
-		for ( let i = 0; i < cells.length; i++ ) {
-			const cell = cells[ i ];
+		// eslint-disable-next-line no-loop-func
+		cells.forEach( ( cell ) => {
 			startCol = Math.min( startCol, cell.col );
 			startRow = Math.min( startRow, cell.row );
 			endCol = Math.max( endCol, cell.col + cell.node.getColspan() - 1 );
 			endRow = Math.max( endRow, cell.row + cell.node.getRowspan() - 1 );
-		}
+		} );
 
 		lastCellCount = cells.length;
 		cells = this.constructor.static.getTableMatrixCells( matrix, {
-			startCol: startCol,
-			startRow: startRow,
-			endCol: endCol,
-			endRow: endRow
+			startCol,
+			startRow,
+			endCol,
+			endRow
 		} );
 	}
 	return new this.constructor(
@@ -205,12 +198,7 @@ ve.dm.TableSelection.prototype.collapseToTo = function () {
  * @param {ve.dm.Document} doc The document to which this selection applies
  */
 ve.dm.TableSelection.prototype.getRanges = function ( doc ) {
-	const ranges = [],
-		cells = this.getMatrixCells( doc );
-	for ( let i = 0, l = cells.length; i < l; i++ ) {
-		ranges.push( cells[ i ].node.getRange() );
-	}
-	return ranges;
+	return this.getMatrixCells( doc ).map( ( cell ) => cell.node.getRange() );
 };
 
 /**
@@ -224,6 +212,8 @@ ve.dm.TableSelection.prototype.getCoveringRange = function () {
 
 /**
  * Get all the ranges required to build a table slice from the selection
+ *
+ * Used when copying table selections.
  *
  * In addition to the outer ranges of the cells, this also includes the start and
  * end tags of table rows, sections and the table itself.
@@ -275,19 +265,14 @@ ve.dm.TableSelection.prototype.getTableSliceRanges = function ( doc ) {
  * @return {ve.Range[]} Outer ranges
  */
 ve.dm.TableSelection.prototype.getOuterRanges = function ( doc ) {
-	const ranges = [],
-		cells = this.getMatrixCells( doc );
-	for ( let i = 0, l = cells.length; i < l; i++ ) {
-		ranges.push( cells[ i ].node.getOuterRange() );
-	}
-	return ranges;
+	return this.getMatrixCells( doc ).map( ( cell ) => cell.node.getOuterRange() );
 };
 
 /**
  * Retrieves all cells within a given selection.
  *
  * @param {ve.dm.Document} doc The document to which this selection applies
- * @param {boolean} [includePlaceholders] Include placeholders in result
+ * @param {boolean} [includePlaceholders=false] Include placeholders in result
  * @return {ve.dm.TableMatrixCell[]} List of table cells
  */
 ve.dm.TableSelection.prototype.getMatrixCells = function ( doc, includePlaceholders ) {
@@ -418,7 +403,7 @@ ve.dm.TableSelection.prototype.getTableNode = function ( doc ) {
  * @param {number} fromRowOffset Starting row offset
  * @param {number} [toColOffset] End column offset
  * @param {number} [toRowOffset] End row offset
- * @param {number} [wrap] Wrap to the next/previous row if column limits are exceeded
+ * @param {boolean} [wrap=false] Wrap to the next/previous row if column limits are exceeded
  * @return {ve.dm.TableSelection} Adjusted selection
  */
 ve.dm.TableSelection.prototype.newFromAdjustment = function ( doc, fromColOffset, fromRowOffset, toColOffset, toRowOffset, wrap ) {

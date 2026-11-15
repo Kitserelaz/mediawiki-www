@@ -1,20 +1,42 @@
 {
 	"@metadata": {
 		"authors": [
+			"Engineer56",
 			"Kareyac",
 			"Pacha Tchernof",
 			"Yurina Tatiana"
 		]
 	},
+	"prefs-profile": "UserProfileV2",
+	"userprofilev2-desc": "Система профилей пользователей на основе вики.",
+	"userprofilev2-selectavatar": "Выбрать аватарку",
+	"userprofilev2-avatarchanged": "Аватарка успешна изменена.",
+	"userprofilev2-avatardeleted": "Аватарка успешна удалена.",
+	"userprofilev2-user-locked": "Эта учетная запись пользователя была глобально отключена.",
+	"userprofilev2-edit-profile": "Редактировать Ваш профиль",
+	"userprofilev2-apierror-forbidden": "Запрещено: у вас нет прав на изменение этой аватарки.",
+	"userprofilev2-apierror-invalidpermission": "Запрещено: у вас нет прав на редактирование профиля $1",
+	"userprofilev2-apierror-nofile": "Файл для загрузки не предоставлен.",
+	"userprofilev2-apierror-ratelimited": "В данный момент вы не можете загружать изображения.",
+	"userprofilev2-apierror-invalidusername": "На этой вики не зарегистрирован ни один пользователь с именем '$1'.",
 	"userprofilev2-about-me": "О себе",
 	"userprofilev2-discord": "Имя пользователя Discord",
 	"userprofilev2-twitter": "Имя пользователя в Twitter",
 	"userprofilev2-mastodon": "Имя пользователя Mastodon",
 	"userprofilev2-about-me-placeholder": "Напишите что-нибудь о себе...",
+	"userprofilev2-about-me-help": "Расскажите нам о себе. Максимум 200 символов.",
+	"userprofilev2-mastodon-help": "Ваше имя пользователя на Mastodon с @",
+	"userprofilev2-twitter-help": "Ваше имя пользователя в X (Twitter) с @",
+	"userprofilev2-discord-help": "Ваше имя пользователя в Discord, без #",
+	"userprofilev2-showglobalgroups": "Показать Ваши глобальные группы?",
+	"userprofilev2-showglobaleditcount": "Показать Ваше глобальное количество правок?",
+	"userprofilev2-showglobalgroupshelp": "Показать глобальные группы пользователей, в которых я состою (будут видны всем)",
+	"userprofilev2-showglobaleditcounthelp": "Показывать мое глобальное количество правок на CentralAuth (будет видно всем)",
 	"userprofilev2-edit": "Править",
 	"userprofilev2-edit-count": "$1 {{PLURAL:$1|правка|правки|правок}}",
 	"userprofilev2-globaledit-count": "$1 {{PLURAL:$1|глобальная правка|глобальных правки|глобальных правок}}",
 	"userprofilev2-editavatar": "Изменить аватар",
 	"userprofilev2-edit-back": "Назад",
-	"userprofilev2-deleteavatar": "Удалить аватар"
+	"userprofilev2-deleteavatar": "Удалить аватар",
+	"userprofilev2-helptext": "Используйте это диалоговое окно для изменения содержимого вашего профиля пользователя."
 }

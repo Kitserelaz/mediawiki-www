@@ -9,22 +9,9 @@ use CirrusSearch\SearchConfig;
 use MediaWiki\MediaWikiServices;
 
 /**
- * Builds elasticsearch analysis config arrays.
+ * Builds search analysis config arrays.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class AnalysisConfigBuilder {
 	/**
@@ -41,7 +28,7 @@ class AnalysisConfigBuilder {
 	/**
 	 * Maximum number of characters allowed in keyword terms.
 	 */
-	private const KEYWORD_IGNORE_ABOVE = 5000;
+	public const KEYWORD_IGNORE_ABOVE = 5000;
 
 	/**
 	 * Temporary magic value to prevent enabling ICU tokenizer in specific analyzers
@@ -95,7 +82,7 @@ class AnalysisConfigBuilder {
 
 	/**
 	 * @param string $langCode The language code to build config for
-	 * @param string[] $plugins list of plugins installed in Elasticsearch
+	 * @param string[] $plugins list of installed plugins
 	 * @param SearchConfig|null $config
 	 * @param CirrusSearchHookRunner|null $cirrusSearchHookRunner
 	 */
@@ -109,22 +96,22 @@ class AnalysisConfigBuilder {
 
 		$this->defaultLanguage = $langCode;
 		$this->plugins = $plugins;
-		foreach ( $this->elasticsearchLanguageAnalyzersFromPlugins as $pluginSpec => $extra ) {
+		foreach ( $this->searchLanguageAnalyzersFromPlugins as $pluginSpec => $extra ) {
 			$pluginsPresent = 1;
 			$pluginList = explode( ',', $pluginSpec );
 			foreach ( $pluginList as $plugin ) {
-				if ( !in_array( $plugin, $plugins ) ) {
+				if ( !Plugins::contains( $plugin, $plugins ) ) {
 					$pluginsPresent = 0;
 					break;
 				}
 			}
 			if ( $pluginsPresent ) {
-				$this->elasticsearchLanguageAnalyzers =
-					array_merge( $this->elasticsearchLanguageAnalyzers, $extra );
+				$this->customSearchLanguageAnalyzers =
+					array_merge( $this->customSearchLanguageAnalyzers, $extra );
 			}
 		}
-		$this->icu = in_array( 'analysis-icu', $plugins );
-		$this->textify = in_array( 'extra-analysis-textify', $plugins );
+		$this->icu = Plugins::contains( 'analysis-icu', $plugins );
+		$this->textify = Plugins::contains( 'extra-analysis-textify', $plugins );
 		if ( $this->isTextifyAvailable() ) {
 			// icu_token_repair can only work with the textify icu_tokenizer clone
 			$this->icu_tokenizer = 'textify_icu_tokenizer';
@@ -132,10 +119,8 @@ class AnalysisConfigBuilder {
 		$config ??= MediaWikiServices::getInstance()->getConfigFactory()
 			->makeConfig( 'CirrusSearch' );
 		$similarity = $config->getProfileService()->loadProfile( SearchProfileService::SIMILARITY );
-		if ( !array_key_exists( 'similarity', $similarity ) ) {
-			$similarity['similarity'] = [];
-		}
-		$this->cirrusSearchHookRunner = $cirrusSearchHookRunner ?: new CirrusSearchHookRunner(
+		$similarity['similarity'] ??= [];
+		$this->cirrusSearchHookRunner = $cirrusSearchHookRunner ?? new CirrusSearchHookRunner(
 			MediaWikiServices::getInstance()->getHookContainer() );
 		$this->cirrusSearchHookRunner->onCirrusSearchSimilarityConfig( $similarity['similarity'] );
 		$this->similarity = $similarity;
@@ -150,7 +135,7 @@ class AnalysisConfigBuilder {
 	 * @return bool true if icu folding should be enabled
 	 */
 	public function shouldActivateIcuFolding( $language ) {
-		if ( !$this->isIcuAvailable() || !in_array( 'extra', $this->plugins ) ) {
+		if ( !$this->isIcuAvailable() || !Plugins::contains( 'extra', $this->plugins ) ) {
 			// ICU folding requires the icu plugin and the extra plugin
 			return false;
 		}
@@ -340,7 +325,6 @@ class AnalysisConfigBuilder {
 			}
 			$config[ 'analyzer' ][ 'plain' ][ 'filter' ] =
 				$this->switchFiltersToICUFoldingPreserve(
-					// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset
 					$config[ 'analyzer' ][ 'plain' ][ 'filter' ], true );
 		}
 
@@ -544,7 +528,7 @@ class AnalysisConfigBuilder {
 					'type' => 'custom',
 					'char_filter' => [ 'near_space_flattener' ],
 					'tokenizer' => 'no_splitting',
-					'filter' => [ 'lowercase' ],
+					'filter' => [ 'truncate_keyword', 'lowercase' ],
 				],
 				'near_match_asciifolding' => [
 					'type' => 'custom',
@@ -584,6 +568,12 @@ class AnalysisConfigBuilder {
 					'tokenizer' => 'trigram',
 					'filter' => [ 'lowercase' ],
 				],
+				'trigram_anchored' => [
+					'type' => 'custom',
+					'tokenizer' => 'trigram',
+					'filter' => [ 'lowercase' ],
+					'char_filter' => [ 'add_regex_start_end_anchors' ],
+				],
 			],
 			'filter' => [
 				'suggest_shingle' => [
@@ -601,7 +591,7 @@ class AnalysisConfigBuilder {
 					'preserve_original' => false
 				],
 				'prefix_ngram_filter' => [
-					'type' => 'edgeNGram',
+					'type' => 'edge_ngram',
 					'max_gram' => CirrusSearch::MAX_TITLE_SEARCH,
 				],
 				'asciifolding' => [
@@ -612,10 +602,6 @@ class AnalysisConfigBuilder {
 					'type' => 'asciifolding',
 					'preserve_original' => true
 				],
-				// The 'keyword' type in ES seems like a hack
-				// and doesn't allow normalization (like lowercase)
-				// prior to 5.2. Instead we consistently use 'text'
-				// and truncate where necessary.
 				'truncate_keyword' => [
 					'type' => 'truncate',
 					'length' => self::KEYWORD_IGNORE_ABOVE,
@@ -627,7 +613,7 @@ class AnalysisConfigBuilder {
 			],
 			'tokenizer' => [
 				'prefix' => [
-					'type' => 'edgeNGram',
+					'type' => 'edge_ngram',
 					'max_gram' => CirrusSearch::MAX_TITLE_SEARCH,
 				],
 				'no_splitting' => [ // Just grab the whole term.
@@ -732,6 +718,15 @@ class AnalysisConfigBuilder {
 						"\u05F2=>\u05D9\u05D9", // double yod
 						"\uFB1F=>\u05D9\u05D9\u05B7", // single char yod-yod-patah decomposed
 						"\u05D9\u05B7\u05D9=>\u05D9\u05D9\u05B7", // rarer alternate order
+						// Malayalam & Bengali regularization (with zwj \u200D) (T375567)
+						'ണ്\u200D=>ൺ',
+						'ന്\u200D=>ൻ',
+						'ര്\u200D=>ർ',
+						'ല്\u200D=>ൽ',
+						'ള്\u200D=>ൾ',
+						'ত্\u200D=>ৎ',
+						// clean up invisibles
+						'\u061C=>', // delete Arabic letter mark so icu_tok can't split on it
 					],
 				],
 				'arabic_extended_norm' => [
@@ -794,8 +789,51 @@ class AnalysisConfigBuilder {
 						'İ=>I',
 					],
 				],
+				// "slow" truncate char_filter (replaced with a dedicated filter if the extra plugin is available)
+				'truncate_keyword' => AnalyzerBuilder::patternFilter( "(?s)(?<=^.{" . self::KEYWORD_IGNORE_ABOVE . "}).*", '' )
 			],
+			'normalizer' => [
+				'lowercase_keyword' => [
+					'type' => 'custom',
+					'char_filter' => [
+						'truncate_keyword',
+					],
+					'filter' => [
+						'lowercase'
+					],
+				],
+				'keyword' => [
+					'type' => 'custom',
+					'char_filter' => [
+						'truncate_keyword',
+					],
+				]
+			]
 		];
+
+		if ( $this->isTruncateNormAvailable() ) {
+			// TODO: once opensearch 3.x is the min version we support, drop this and rely
+			//  directly on truncate which supports normalization.
+			unset( $defaults['char_filter']['truncate_keyword'] );
+			$defaults['filter']['truncate_keyword'] = [
+				'type' => 'truncate_norm',
+				'length' => self::KEYWORD_IGNORE_ABOVE,
+			];
+			$defaults['normalizer']['lowercase_keyword'] = [
+				'type' => 'custom',
+				'filter' => [
+					'truncate_keyword',
+					'lowercase'
+				],
+			];
+			$defaults['normalizer']['keyword'] = [
+				'type' => 'custom',
+				'filter' => [
+					'truncate_keyword',
+				],
+			];
+		}
+
 		foreach ( $defaults[ 'analyzer' ] as &$analyzer ) {
 			if ( $analyzer[ 'type' ] === 'default' ) {
 				$analyzer = [
@@ -820,6 +858,7 @@ class AnalysisConfigBuilder {
 			if ( $unicodeSetFilter !== null ) {
 				$defaults[ 'filter' ][ 'icu_normalizer' ][ 'unicodeSetFilter' ] = $unicodeSetFilter;
 			}
+			$defaults[ 'char_filter' ][ 'icu_normalizer' ] = $defaults[ 'filter' ][ 'icu_normalizer' ];
 		}
 
 		return $defaults;
@@ -849,7 +888,6 @@ class AnalysisConfigBuilder {
 
 			// standard unpacked languages
 			case 'basque':     // Unpack Basque analyzer T283366
-			case 'czech':      // Unpack Czech analyzer T284578
 			case 'danish':     // Unpack Danish analyzer T283366
 			case 'estonian':   // Unpack Estonian analyzer T332322
 			case 'finnish':    // Unpack Finnish analyzer T284578
@@ -868,40 +906,43 @@ class AnalysisConfigBuilder {
 			// available
 			case 'brazilian':  // Unpack Brazilian analyzer T325092
 			case 'bulgarian':  // Unpack Bulgarian analyzer T325090
+			case 'czech':      // Unpack Czech analyzer T284578 / asciifolding T293398
 				$config = $myAnalyzerBuilder->
 					withUnpackedAnalyzer()->
 					withAsciifolding()->
 					build( $config );
 				break;
 
-			// largely uncustomized, except for asciifolding / icu_folding
-			// i.e., these have no Latin icu_folding exceptions (or no exceptions at all)
-			case 'assamese':
+			// languages with the default analyzer, plus asciifolding / icu_folding (i.e.,
+			// these have no Latin icu_folding exceptions, or no exceptions at all), plus
+			// possible language-specific normalization char filter
 			case 'burmese':
 			case 'georgian':
 			case 'kannada':
-			case 'nepali':
-			case 'punjabi':
+			case 'marathi':
+			case 'sinhala':
 			case 'swahili':
 			case 'tamil':
 			case 'telugu':
 			case 'uzbek':
+				$this->enableLangNormCharMap( $language, $langName, $myAnalyzerBuilder );
 				$config = $myAnalyzerBuilder->
 					withFilters( [ 'lowercase', 'asciifolding' ] )->
 					build( $config );
 				break;
 
-			// languages with a normalization char filter (see $langNormCharMap), plus
-			// asciifolding / icu_folding
+			// Default analyzer, plus asciifolding / icu_folding (i.e., these have no Latin
+			// icu_folding exceptions, or no exceptions at all), indic_normalization, and
+			// possible language-specific normalization char filter
+			case 'assamese':
 			case 'gujarati':
-			case 'marathi':
 			case 'malayalam':
+			case 'nepali':
 			case 'odia':
-			case 'sinhala':
+			case 'punjabi':
+				$this->enableLangNormCharMap( $language, $langName, $myAnalyzerBuilder );
 				$config = $myAnalyzerBuilder->
-					withCharMap( $this->langNormCharMap[$language], "{$langName}_norm" )->
-					withCharFilters( [ "{$langName}_norm" ] )->
-					withFilters( [ 'lowercase', 'asciifolding' ] )->
+					withFilters( [ 'lowercase', 'indic_normalization', 'asciifolding' ] )->
 					build( $config );
 				break;
 
@@ -916,6 +957,19 @@ class AnalysisConfigBuilder {
 					build( $config );
 				break;
 
+			// largely uncustomized, except for indic_normalization
+			case 'angika':
+			case 'awadhi':
+			case 'bhojpuri':
+			case 'goan_konkani':
+			case 'maithili':
+			case 'newari':
+			case 'sanskrit':
+				$config = $myAnalyzerBuilder->
+					withFilters( [ 'lowercase', 'indic_normalization' ] )->
+					build( $config );
+				break;
+
 			//////////////////////////
 			// Customized languages / language families in alphabetical order (plus a few
 			// sets of closely related languages with very similar configs)
@@ -926,7 +980,6 @@ class AnalysisConfigBuilder {
 				$arBuilder = $myAnalyzerBuilder->
 					withLangName( 'arabic' )->
 					withUnpackedAnalyzer()->
-					withDecimalDigit()->
 					withAsciifolding()->
 					insertFiltersBefore( 'arabic_stemmer', [ 'arabic_normalization' ] );
 
@@ -958,7 +1011,6 @@ class AnalysisConfigBuilder {
 			case 'bengali': // Unpack Bengali analyzer T294067
 				$config = $myAnalyzerBuilder->
 					withUnpackedAnalyzer()->
-					withDecimalDigit()->
 					insertFiltersBefore( 'bengali_stop', [ 'indic_normalization' ] )->
 					withAsciifolding()->
 					build( $config );
@@ -998,11 +1050,12 @@ class AnalysisConfigBuilder {
 				//   tokens so no folding here in the text field. However, the plain field pick up
 				//   icu_folding.
 				$config = $myAnalyzerBuilder->
+					withInvisCharMap()->
 					withCharMap( [ '\u606d\u5f18=>\u606d \u5f18', '\u5138=>\u3469' ], 'stconvertfix' )->
-					withCharFilters( [ 'stconvertfix', 'tsconvert' ] )->
+					withCharFilters( [ 'invis_cleanup', 'stconvertfix', 'tsconvert' ] )->
 					withTokenizer( 'smartcn_tokenizer' )->
 					withStop( [ ',' ], 'smartcn_stop' )->
-					withFilters( [ 'smartcn_stop', 'lowercase' ] )->
+					withFilters( [ 'smartcn_stop', 'lowercase', 'remove_empty' ] )->
 					build( $config );
 
 				$config[ 'analyzer' ][ 'plain' ][ 'filter' ] = [ 'smartcn_stop', 'lowercase' ];
@@ -1109,6 +1162,8 @@ class AnalysisConfigBuilder {
 			case 'hebrew':
 				$config = $myAnalyzerBuilder->
 					withTokenizer( 'hebrew' )->
+					withInvisCharMap()->
+					withCharFilters( [ 'invis_cleanup' ] )->
 					withFilters( [ 'niqqud', 'hebrew_lemmatizer', 'remove_duplicates',
 						'lowercase', 'asciifolding' ] )->
 					build( $config );
@@ -1117,7 +1172,6 @@ class AnalysisConfigBuilder {
 				// Unpack Hindi analyzer T289612
 				$config = $myAnalyzerBuilder->
 					withUnpackedAnalyzer()->
-					withDecimalDigit()->
 					insertFiltersBefore( 'hindi_stop',
 						[ 'indic_normalization', 'hindi_normalization' ] )->
 					withAsciifolding()->
@@ -1162,16 +1216,159 @@ class AnalysisConfigBuilder {
 					withAsciifolding()->
 					build( $config );
 				break;
-			case 'japanese':
-				// See https://www.mediawiki.org/wiki/User:TJones_(WMF)/T166731
-				// pre-convert fullwidth numbers because Kuromoji tokenizer treats them weirdly
+			case 'japanese-kuromoji':
+				// Wiki-optimized config for Kuromoji, if available. See T318269.
+				$config[ 'filter' ][ 'kuromoji_posfilter' ] = [
+					'type' => 'kuromoji_part_of_speech',
+					// This is the default list of filtered POS tags from stoptags.txt from
+					// Kuromoji, with the tags we've don't want commented out (so they can be
+					// restored if necessary).
+					'stoptags' => [
+						'接続詞', // conjunction
+						'助詞', // particle
+						'助詞-格助詞', // particle-case
+						'助詞-格助詞-一般', // particle-case-misc
+						'助詞-格助詞-引用', // particle-case-quote
+						'助詞-格助詞-連語', // particle-case-compound
+						'助詞-接続助詞', // particle-conjunctive
+						'助詞-係助詞', // particle-dependency
+						'助詞-副助詞', // particle-adverbial
+						'助詞-間投助詞', // particle-interjective
+						'助詞-並立助詞', // particle-coordinate
+						'助詞-終助詞', // particle-final
+						'助詞-副助詞／並立助詞／終助詞', // particle-adverbial/conjunctive/final
+						'助詞-連体化', // particle-adnominalizer ("no")
+						'助詞-副詞化', // particle-adnominalizer ("ni"/"to")
+						'助詞-特殊', // particle-special
+						'助動詞', // auxiliary-verb
+						'記号', // symbol
+					// 	'記号-一般', // symbol-misc
+						'記号-読点', // symbol-comma
+						'記号-句点', // symbol-period
+						'記号-空白', // symbol-space
+						'記号-括弧開', // symbol-open_bracket
+						'記号-括弧閉', // symbol-close_bracket
+					// 	'その他-間投', // other-interjection
+					// 	'フィラー', // filler
+						'非言語音', // non-verbal
+						],
+				];
+
+				$config[ 'char_filter' ][ 'kuromoji_combo_filter' ] =
+					AnalyzerBuilder::patternFilter( '[\\u0300-\\u0362]' );
+				$kuroCharFilters = [ 'kuromoji_combo_filter' ];
+				$kuroTokFilters = [ 'kuromoji_baseform', 'kuromoji_posfilter', 'ja_stop',
+					'kuromoji_stemmer', 'lowercase', 'asciifolding' ];
+
+				if ( $this->isIcuAvailable() ) {
+					// If ICU is available add the icu_normalizer char filter to fix issues
+					// with fullwidth characters and do basic folding. ICU will also upgrade
+					// asciifolding to icu_folding with ja/Japanese exceptions. We can remove
+					// the lowercase token filter (upgraded to icu_normalizer), if we have
+					// the icu_normalizer char filter.
+					array_unshift( $kuroCharFilters, 'icu_normalizer' );
+					array_splice( $kuroTokFilters, array_search( 'lowercase', $kuroTokFilters ), 1 );
+				} else {
+					// If ICU is not available, add a char filter fix just for fullwidth
+					// numbers, which are the worst offenders in the Kuromoji tokenizer;
+					// add cjk_width to clean up the rest of the fullwidth chars after
+					// tokenization.
+					$myAnalyzerBuilder->
+						withNumberCharFilter( 0xff10, 'fullwidthnumfix' );
+
+					array_unshift( $kuroCharFilters, 'fullwidthnumfix' );
+					array_splice( $kuroTokFilters, array_search( 'ja_stop', $kuroTokFilters ), 0,
+						'cjk_width' );
+				}
+
+				// invisibles cleanup must come before icu_normalizer, if added
+				$kuroCharMap = [ '\u200B=>\u0020' ]; // split on zero-width space
+				array_unshift( $kuroCharFilters, 'kuromoji_char_map' );
+
 				$config = $myAnalyzerBuilder->
-					withNumberCharFilter( 0xff10, 'fullwidthnumfix' )->
-					withCharFilters( [ 'fullwidthnumfix' ] )->
+					withLimitedCharMap( $kuroCharMap, 'kuromoji_char_map' )->
+					withCharFilters( $kuroCharFilters )->
 					withTokenizer( 'kuromoji_tokenizer' )->
-					withFilters( [ 'kuromoji_baseform', 'cjk_width', 'ja_stop', 'kuromoji_stemmer',
-						'lowercase' ] )->
+					withFilters( $kuroTokFilters )->
 					build( $config );
+				break;
+			case 'japanese-sudachi':
+				// Wiki-optimized config for Sudachi, if available. See T318269.
+				$config[ 'tokenizer' ][ 'sudachi_tok' ] = [
+					'type' => 'sudachi_tokenizer',
+					'split_mode' => 'B',
+					];
+
+				$config[ 'filter' ][ 'sudachi_posfilter' ] = [
+					'type' => 'sudachi_part_of_speech',
+					// This is the default list of filtered POS tags for Sudachi, with the
+					// tags we've don't want commented out (so they can be restored if
+					// necessary).
+					'stoptags' => [
+						'接続詞', // conjunction
+					//	'感動詞,フィラー', // interjection-filler
+						'助動詞', // auxiliary-verb
+						'助詞', // particle: unclassified particles
+						'助詞,格助詞', // particle-case
+						'助詞,副助詞', // particle-adverbial
+						'助詞,係助詞', // particle-dependency
+						'助詞,接続助詞', // particle-conjunctive
+						'助詞,終助詞', // particle-final
+						'助詞,準体助詞', // particle-adnominalizer
+					//	'記号', // symbol: unclassified Symbols without punctuation marks
+					//	'記号,一般', // symbol-misc
+					//	'記号,文字', // symbol-letters
+					//	'補助記号', // punctuation
+					//	'補助記号,一般', // punctuation-misc
+						'補助記号,句点', // punctuation-full-stop
+						'補助記号,読点', // punctuation-comma
+						'補助記号,括弧開', // punctuation-left-parenthesis
+						'補助記号,括弧閉', // punctuation-right-parenthesis
+						'補助記号,ＡＡ', // punctuation-AA: unclassifed ASCII arts.
+						'補助記号,ＡＡ,一般', // punctuation-AA-common: ASCII arts without emoticons.
+						'補助記号,ＡＡ,顔文字', // punctuation-AA-emoticons: ASCII arts emoticons.
+						'空白', // space: Whitespace.
+						],
+					];
+
+				$config[ 'char_filter' ][ 'sudachi_combo_filter' ] =
+					AnalyzerBuilder::patternFilter( '[\\u0300-\\u0362]' );
+
+				// The Sudachi tokenizer can choke on very long sequences of kana, emoji,
+				// and other multibyte characters. After word_break_helper and
+				// sudachi_char_map (which convert some characters to spaces), break up
+				// any stretch of over 8K characters containing no spaces and no
+				// token-breaking punctuation. (Japanese regularly has stretches of
+				// hundreds of non-punct characters without spaces, but not thousands.)
+				// Arbitrarily break up really long stretches of such characters.
+				$config[ 'char_filter' ][ 'sudachi_tok_break' ] =
+					AnalyzerBuilder::patternFilter( '([^、。\s「」・]{8000})', '$1 ' );
+
+				$sudachiMap = [
+					"（=>\u0020", "）=>\u0020", // fullwidth parens
+					"〜=>～", // wave dash
+				];
+
+				// Break up or trim multi-word tokens with spaces, hyphens, ampersands, middle
+				// dots, pound signs, at signs, slashes, script-specific punctuation, etc.
+				// Also, strip English possessive 's when it shows up
+				$config[ 'filter' ][ 'sudachi_word_delim' ] = [
+					'type' => 'word_delimiter_graph',
+					'split_on_case_change' => false,
+					'stem_english_possessive' => true,
+					];
+
+				$config = $myAnalyzerBuilder->
+					withInvisCharMap()->
+					withLimitedCharMap( $sudachiMap, 'sudachi_char_map' )->
+					withCharFilters( [ 'invis_cleanup', 'sudachi_combo_filter',
+						'sudachi_char_map', 'sudachi_tok_break' ] )->
+					withTokenizer( 'sudachi_tok' )->
+					withFilters( [ 'sudachi_split', 'sudachi_baseform', 'sudachi_posfilter',
+						'sudachi_ja_stop', 'lowercase', 'asciifolding', 'sudachi_word_delim',
+						'flatten_graph' ] )->
+					build( $config );
+
 				break;
 			case 'kazakh':
 			case 'tatar':
@@ -1204,8 +1401,6 @@ class AnalysisConfigBuilder {
 				$noriMap = [
 					'\u00B7=>\u0020', // convert middle dot to space
 					'\u318D=>\u0020', // arae-a to space
-					'\u00AD=>', // remove soft hyphens
-					'\u200C=>', // remove zero-width non-joiners
 				];
 
 				// Nori-specific pattern_replace to strip combining diacritics
@@ -1228,8 +1423,9 @@ class AnalysisConfigBuilder {
 				];
 
 				$config = $myAnalyzerBuilder->
+					withInvisCharMap()->
 					withLimitedCharMap( $noriMap, 'nori_charfilter' )->
-					withCharFilters( [ 'nori_charfilter', 'nori_combo_filter' ] )->
+					withCharFilters( [ 'invis_cleanup', 'nori_charfilter', 'nori_combo_filter' ] )->
 					withTokenizer( 'nori_tok' )->
 					withFilters( [ 'nori_posfilter', 'nori_readingform', 'lowercase',
 						'asciifolding', 'remove_empty' ] )->
@@ -1250,7 +1446,6 @@ class AnalysisConfigBuilder {
 				$config = $myAnalyzerBuilder->
 					withUnpackedAnalyzer()->
 					withLimitedCharMap( [ '\u200C=>\u0020' ], 'zero_width_spaces' )->
-					withDecimalDigit()->
 					omitStemmer()->
 					insertFiltersBefore( 'persian_stop',
 						[ 'arabic_normalization', 'persian_normalization' ] )->
@@ -1338,6 +1533,21 @@ class AnalysisConfigBuilder {
 				$config[ 'analyzer' ][ 'suggest' ][ 'char_filter' ][] = 'russian_charfilter';
 				$config[ 'analyzer' ][ 'suggest_reverse' ][ 'char_filter' ][] = 'russian_charfilter';
 				break;
+			case 'santali':
+				// Map punctuation-like modifier characters to ASCII equivalents when
+				// they are not in their normal alphabetic contexts. See T396530.
+				$config[ 'char_filter' ][ 'sat_period_pat' ] =
+					AnalyzerBuilder::patternFilter( "(?<=[^ᱚᱟᱮ])ᱹ|ᱹ(\\p{Nd})", '.$1' );
+				$config[ 'char_filter' ][ 'sat_colon_pat' ] =
+					AnalyzerBuilder::patternFilter( "(?<=[^ᱚᱟᱮ])ᱺ|ᱺ(\\p{Nd})", ':$1' );
+				$config[ 'char_filter' ][ 'sat_dash_pat' ] =
+					AnalyzerBuilder::patternFilter( "(?<=[^ᱜᱡᱫᱵ])ᱼ|ᱼ(\\p{Nd})", '-$1' );
+
+				$config = $myAnalyzerBuilder->
+					withCharFilters( [ 'sat_period_pat', 'sat_colon_pat', 'sat_dash_pat' ] )->
+					withFilters( [ 'lowercase' ] )->
+					build( $config );
+				break;
 			case 'slovak':
 				// See https://www.mediawiki.org/wiki/User:TJones_(WMF)/T190815
 				// and https://www.mediawiki.org/wiki/User:TJones_(WMF)/T223787
@@ -1354,7 +1564,6 @@ class AnalysisConfigBuilder {
 			case 'sorani':    // Unpack Sorani analyzer T325091
 				$config = $myAnalyzerBuilder->
 					withUnpackedAnalyzer()->
-					withDecimalDigit()->
 					insertFiltersBefore( 'lowercase', [ 'sorani_normalization' ] )->
 					withAsciifolding()->
 					build( $config );
@@ -1409,14 +1618,21 @@ class AnalysisConfigBuilder {
 					// if we have to settle for the Thai tokenizer, add some additional
 					// character filters to accommodate some of its weaknesses
 					$thThaiTokSplits = [
-						'\u200B=>', // delete zero width space
-						'-=>\u0020', // split tokens on hyphen-minus ..
+						'\u200B=>\u0020', // split tokens on zero width space ..
+						'-=>\u0020', // .. hyphen-minus
 						'‐=>\u0020', // .. hyphen
+						'‑=>\u0020', // .. non-breaking hyphen
+						'‒=>\u0020', // .. figure dash
 						'–=>\u0020', // .. en dash
 						'—=>\u0020', // .. em dash
 						'―=>\u0020', // .. horizontal bar
+						'⹀=>\u0020', // .. double hyphen
+						'゠=>\u0020', // .. katakana-hiragana double hyphen
+						'﹣=>\u0020', // .. small hyphen-minus
 						'－=>\u0020', // .. fullwidth hyphen
 						'"=>\u0020', // .. & double quote
+						// the thai tokenizer splits on (but shouldn't) ..
+						'\udb40\uddef=>', // .. just variation selector-256 (weird!)
 					];
 					array_push( $thCharMap, ...$thThaiTokSplits );
 				}
@@ -1424,14 +1640,13 @@ class AnalysisConfigBuilder {
 				// add in the rest of the bits that are always needed, and build
 				$config = $myAnalyzerBuilder->
 					withCharMap( $thCharMap )->
-					withDecimalDigit()->
 					omitStemmer()->
 					withAsciifolding()->
 					build( $config );
 				break;
 			case 'turkish':
 				$trAposFilter = 'apostrophe';
-				if ( in_array( 'extra-analysis-turkish', $this->plugins ) ) {
+				if ( Plugins::contains( 'extra-analysis-turkish', $this->plugins ) ) {
 					$trAposFilter = 'better_apostrophe';
 				}
 				$config = $myAnalyzerBuilder->
@@ -1485,32 +1700,50 @@ class AnalysisConfigBuilder {
 
 		// replace lowercase filters with icu_normalizer filter
 		if ( $this->isIcuAvailable() ) {
-			foreach ( $config[ 'analyzer' ] as &$analyzer ) {
-				if ( !isset( $analyzer[ 'filter'  ] ) ) {
-					continue;
+			foreach ( [ 'analyzer', 'normalizer' ] as $componentType ) {
+				foreach ( $config[ $componentType ] as &$component ) {
+					if ( !isset( $component[ 'filter'  ] ) ) {
+						continue;
+					}
+					$tmpFilters = [];
+					foreach ( $component[ 'filter' ] as $filter ) {
+						if ( $filter === 'lowercase' ) {
+							// If lowercase filter has language-specific processing, keep it,
+							// and do it before ICU normalization, particularly for Greek,
+							// Irish, and Turkish
+							// See https://www.mediawiki.org/wiki/User:TJones_(WMF)/T203117
+							// See https://www.mediawiki.org/wiki/User:TJones_(WMF)/T217602
+							if ( isset( $config[ 'filter' ][ 'lowercase' ][ 'language' ] ) ) {
+								$tmpFilters[] = 'lowercase';
+							}
+							$tmpFilters[] = 'icu_normalizer';
+						} else {
+							$tmpFilters[] = $filter;
+						}
+					}
+					$component[ 'filter' ] = $tmpFilters;
 				}
 
-				$tmpFilters = [];
-				foreach ( $analyzer[ 'filter' ] as $filter ) {
-					if ( $filter === 'lowercase' ) {
-						// If lowercase filter has language-specific processing, keep it,
-						// and do it before ICU normalization, particularly for Greek,
-						// Irish, and Turkish
-						// See https://www.mediawiki.org/wiki/User:TJones_(WMF)/T203117
-						// See https://www.mediawiki.org/wiki/User:TJones_(WMF)/T217602
-						if ( isset( $config[ 'filter' ][ 'lowercase' ][ 'language' ] ) ) {
-							$tmpFilters[] = 'lowercase';
-						}
-						$tmpFilters[] = 'icu_normalizer';
-					} else {
-						$tmpFilters[] = $filter;
-					}
-				}
-				$analyzer[ 'filter' ] = $tmpFilters;
 			}
 		}
 
 		return $config;
+	}
+
+	/**
+	 * If langNormCharMap is defined for the given language, build the char map and name it
+	 * after the language. (Note this will replace any existing CharMap and CharFilters.)
+	 *
+	 * @param string $language Config language (short code)
+	 * @param string $langName Config language (full name)
+	 * @param AnalyzerBuilder $analyzerBuilder
+	 */
+	private function enableLangNormCharMap( $language, $langName, $analyzerBuilder ) {
+		if ( isset( $this->langNormCharMap[$language] ) ) {
+			$analyzerBuilder->
+				withCharMap( $this->langNormCharMap[$language], "{$langName}_norm" )->
+				withCharFilters( [ "{$langName}_norm" ] );
+		}
 	}
 
 	/**
@@ -1523,7 +1756,7 @@ class AnalysisConfigBuilder {
 	 */
 	public function getDefaultTextAnalyzerType( $language ) {
 		// If we match a language exactly, use it
-		return $this->elasticsearchLanguageAnalyzers[ $language ] ?? 'default';
+		return $this->customSearchLanguageAnalyzers[ $language ] ?? 'default';
 	}
 
 	/**
@@ -1608,40 +1841,51 @@ class AnalysisConfigBuilder {
 	 * @param string $name Name for analyzer whose config we're merging
 	 * @param string $prefix Prefix for this configuration
 	 */
-	private function mergeConfig( array &$config, array $langConfig, $name, $prefix ) {
+	private function mergeAnalyzerConfig( array &$config, array $langConfig, $name, $prefix ): void {
 		$analyzer = $langConfig[ 'analyzer' ][ $name ];
 		$config[ 'analyzer' ][ $prefix . '_' . $name ] = $analyzer;
-		if ( !empty( $analyzer[ 'filter' ] ) ) {
-			// Add private filters for this analyzer
-			foreach ( $analyzer[ 'filter' ] as $filter ) {
-				// Copy filters that are in language config but not in the main config.
+		foreach ( [ 'filter', 'char_filter', 'tokenizer' ] as $component ) {
+			$this->mergeAnalysisComponent( $analyzer, $component, $langConfig, $config );
+		}
+	}
+
+	/**
+	 * Merge per-language config into the main config.
+	 * It will copy specific normalizer and all dependant filters and char_filters.
+	 * @param array &$config Main config
+	 * @param array $langConfig Per-language config
+	 * @param string $name Name for analyzer whose config we're merging
+	 * @param string $prefix Prefix for this configuration
+	 */
+	private function mergeNormalizerConfig( array &$config, array $langConfig, string $name, string $prefix ): void {
+		$normalizer = $langConfig[ 'normalizer' ][ $name ];
+		$config[ 'normalizer' ][ $prefix . '_' . $name ] = $normalizer;
+		foreach ( [ 'filter', 'char_filter' ] as $componentType ) {
+			$this->mergeAnalysisComponent( $normalizer, $componentType, $langConfig, $config );
+		}
+	}
+
+	/**
+	 * @param array $customAnalysisComponent the custom analysis component (analyzer or normalizer)
+	 * @param string $type the type of component to merge (filter, char_filter or tokenizer)
+	 * @param array $langConfig the langConfig to merge from
+	 * @param array &$config the target config to merge into
+	 */
+	private function mergeAnalysisComponent( array $customAnalysisComponent, string $type, array $langConfig, array &$config ): void {
+		if ( !empty( $customAnalysisComponent[$type] ) ) {
+			// Add private filters for this normalizer
+			$components = is_array( $customAnalysisComponent[$type] ) ?
+				$customAnalysisComponent[$type] :
+				[ $customAnalysisComponent[$type] ];
+			foreach ( $components as $componentName ) {
+				// Copy type of analysis components that are in language config but not in the main config.
 				// We would not copy the same filter into the main config since due to
 				// the resolution step we know they are the same (otherwise we would have
 				// renamed it).
-				if ( isset( $langConfig[ 'filter' ][ $filter ] ) &&
-					!isset( $config[ 'filter' ][ $filter ] ) ) {
-					$config[ 'filter' ][ $filter ] = $langConfig[ 'filter' ][ $filter ];
+				if ( isset( $langConfig[$type][$componentName] ) &&
+					 !isset( $config[$type][$componentName] ) ) {
+					$config[$type][$componentName] = $langConfig[$type][$componentName];
 				}
-			}
-		}
-		if ( !empty( $analyzer[ 'char_filter' ] ) ) {
-			// Add private char_filters for this analyzer
-			foreach ( $analyzer[ 'char_filter' ] as $filter ) {
-				// Copy char_filters that are in lang config but not in the main config.
-				// Need to check whether the filter exists in langConfig because some
-				// non-configurable filters are defined in plugins and do not have a
-				// local definition (e.g., camelCase_splitter)
-				if ( isset( $langConfig[ 'char_filter' ][ $filter ] ) &&
-					!isset( $config[ 'char_filter' ][ $filter ] ) ) {
-					$config[ 'char_filter' ][ $filter ] = $langConfig[ 'char_filter' ][ $filter ];
-				}
-			}
-		}
-		if ( !empty( $analyzer[ 'tokenizer' ] ) ) {
-			$tokenizer = $analyzer[ 'tokenizer' ];
-			if ( isset( $langConfig[ 'tokenizer' ][ $tokenizer ] ) &&
-					!isset( $config[ 'tokenizer' ][ $tokenizer ] ) ) {
-				$config[ 'tokenizer' ][ $tokenizer ] = $langConfig[ 'tokenizer' ][ $tokenizer ];
 			}
 		}
 	}
@@ -1652,8 +1896,9 @@ class AnalysisConfigBuilder {
 	 * @param array &$config Existing config, will be modified
 	 * @param string[] $languages List of languages to process
 	 * @param string[] $analyzers List of analyzers to process
+	 * @param string[] $normalizers List of normalizers to process
 	 */
-	public function buildLanguageConfigs( array &$config, array $languages, array $analyzers ) {
+	public function buildLanguageConfigs( array &$config, array $languages, array $analyzers, array $normalizers = [] ) {
 		$defaultFilters = $this->getDefaultFilters( $config, $analyzers );
 		foreach ( $languages as $lang ) {
 			$langConfig = $this->buildConfig( $lang );
@@ -1669,7 +1914,10 @@ class AnalysisConfigBuilder {
 				$this->resolveFilters( $langConfig, $config[ 'filter' ], $defaultFilters, $lang );
 			// Merge configs
 			foreach ( $analyzers as $analyzer ) {
-				$this->mergeConfig( $config, $langConfig, $analyzer, $lang );
+				$this->mergeAnalyzerConfig( $config, $langConfig, $analyzer, $lang );
+			}
+			foreach ( $normalizers as $normalizer ) {
+				$this->mergeNormalizerConfig( $config, $langConfig, $normalizer, $lang );
 			}
 		}
 	}
@@ -1679,6 +1927,13 @@ class AnalysisConfigBuilder {
 	 */
 	public function isIcuAvailable() {
 		return $this->icu;
+	}
+
+	/**
+	 * @return bool true if the truncate_norm filter is available.
+	 */
+	public function isTruncateNormAvailable(): bool {
+		return Plugins::contains( 'extra', $this->plugins );
 	}
 
 	/**
@@ -1701,24 +1956,29 @@ class AnalysisConfigBuilder {
 	}
 
 	/**
-	 * Languages for which we have a custom analysis chain (Elastic built-in or our
+	 * Languages for which we have a custom analysis chain (built-in or our
 	 * own custom analysis). All other languages default to the default analyzer which
 	 * isn't too good. Note that this array is sorted alphabetically by value. The
-	 * Elastic list is sourced from
+	 * OpenSearch list:
+	 * https://docs.opensearch.org/docs/latest/analyzers/language-analyzers/index/
+	 * Elastic list:
 	 * https://www.elastic.co/guide/en/elasticsearch/reference/current/analysis-lang-analyzer.html
 	 *
 	 * @var string[]
 	 */
-	private $elasticsearchLanguageAnalyzers = [
+	private $customSearchLanguageAnalyzers = [
 		'sq' => 'albanian',
+		'anp' => 'angika',
 		'ar' => 'arabic',
 		'ary' => 'arabic-moroccan',
 		'arz' => 'arabic-egyptian',
 		'hy' => 'armenian',
 		'as' => 'assamese',
+		'awa' => 'awadhi',
 		'az' => 'azerbaijani',
 		'eu' => 'basque',
 		'bn' => 'bengali',
+		'bh' => 'bhojpuri',
 		'pt-br' => 'brazilian',
 		'bg' => 'bulgarian',
 		'my' => 'burmese',
@@ -1740,6 +2000,7 @@ class AnalysisConfigBuilder {
 		'gl' => 'galician',
 		'ka' => 'georgian',
 		'de' => 'german',
+		'gom' => 'goan_konkani',
 		'el' => 'greek',
 		'gu' => 'gujarati',
 		'hi' => 'hindi',
@@ -1752,11 +2013,13 @@ class AnalysisConfigBuilder {
 		'kk' => 'kazakh',
 		'lt' => 'lithuanian',
 		'lv' => 'latvian',
+		'mai' => 'maithili',
 		'ms' => 'malay',
 		'ml' => 'malayalam',
 		'mr' => 'marathi',
 		'mwl' => 'mirandese',
 		'ne' => 'nepali',
+		'new' => 'newari',
 		'nb' => 'norwegian',
 		'nn' => 'norwegian',
 		'no' => 'norwegian',
@@ -1766,6 +2029,8 @@ class AnalysisConfigBuilder {
 		'pa' => 'punjabi',
 		'ro' => 'romanian',
 		'ru' => 'russian',
+		'sa' => 'sanskrit',
+		'sat' => 'santali',
 		'si' => 'sinhala',
 		'sl' => 'slovene',
 		'ckb' => 'sorani',
@@ -1873,11 +2138,11 @@ class AnalysisConfigBuilder {
 	 * @var array[] indexed by language code, char filter normalization mappings
 	 */
 	private $langNormCharMap = [
-		'gu' => [ 'ાૅ=>ૉ', 'ાે=>ો', 'ાૈ=>ૌ' ], // T332342
-		'mr' => [ 'र्‍=>ऱ्', 'ऱ=>ऱ' ], // T332342
+		'mr' => [ 'र्\u200D=>ऱ्' ], // T332342 + T375567
 		'ml' => [ 'ൌ=>ൗ', 'ൎ=>ർ', '഻=>്', '്഼=>്', '്്=>്', '഼=>്' ], // T332342
 		'or' => [ 'ୖେ=>ୈ', 'ାେ=>ୋ', 'ୗେ=>ୌ' ], // T332342
 		'si' => [ 'ෘෘ=>ෲ', 'ෙෙ=>ෛ' ], // T332342
+		'te' => [ 'ఒౌ=>ఔ', 'ఒౕ=>ఓ', 'బుు=>ఋ', 'ెౕ=>ే', 'ై=>ై' ], // T375567
 	];
 
 	/**
@@ -1887,6 +2152,8 @@ class AnalysisConfigBuilder {
 		/*
 		 * For Slovak (sk)—which has no folding configured here!—see:
 		 *   https://www.mediawiki.org/wiki/User:TJones_(WMF)/T223787
+		 *
+		 * For Czech (cs), there is no folding due to T293398.
 		 *
 		 * Exceptions are generally listed as Unicode characters for ease of inspection.
 		 *   However, combining characters (such as for Thai (th)) are \u encoded to
@@ -1903,7 +2170,6 @@ class AnalysisConfigBuilder {
 		'az' => '[^ÇçƏəĞğIıİiÖöŞşÜü]', // T332342
 		'bg' => '[^Йй]', // T325090
 		'crh' => '[^ЁёЙйÇçĞğIıİiÑñÖöŞşÜü]', // T332342
-		'cs' => '[^ÁáČčĎďÉéĚěÍíŇňÓóŘřŠšŤťÚúŮůÝýŽž]', // T284578
 		'da' => '[^ÆæØøÅå]', // T283366
 		'de' => '[^ÄäÖöÜüẞß]', // T281379
 		'eo' => '[^ĈĉĜĝĤĥĴĵŜŝŬŭ]', // T202173
@@ -1994,7 +2260,7 @@ class AnalysisConfigBuilder {
 		'nan' => true, // zh-min-nan
 		'zh-min-nan' => true, // deprecated code for nan
 
-		// false => do not use any version of icu_tokenizer (i.e., textify_icu_tokenzier)
+		// false => do not use any version of icu_tokenizer (i.e., textify_icu_tokenizer)
 		// over the standard tokenizer, even when icu_token_repair is available
 		// 'xyz' => false, // <-- example entry for now, since there are no actual instances
 	];
@@ -2002,9 +2268,9 @@ class AnalysisConfigBuilder {
 	/**
 	 * @var array[]
 	 */
-	private $elasticsearchLanguageAnalyzersFromPlugins = [
+	private $searchLanguageAnalyzersFromPlugins = [
 		/**
-		 * multiple plugin requirement can be comma separated
+		 * multiple plugin requirements can be comma separated
 		 *
 		 * Polish: https://www.mediawiki.org/wiki/User:TJones_(WMF)/T154517
 		 * Ukrainian: https://www.mediawiki.org/wiki/User:TJones_(WMF)/T160106
@@ -2017,13 +2283,17 @@ class AnalysisConfigBuilder {
 		 * Esperanto: https://www.mediawiki.org/wiki/User:TJones_(WMF)/T202173
 		 * Korean: https://www.mediawiki.org/wiki/User:TJones_(WMF)/T206874
 		 * Khmer: https://www.mediawiki.org/wiki/User:TJones_(WMF)/T185721
+		 * Japanese (Kuromoji & Sudachi): See T318269
 		 *
-		 * extra-analysis-ukrainian should follow analysis-ukrainian, so that
-		 * ukrainian-unpacked can overwrite value for uk if both are present.
+		 * Options with same key are ordered so that later ones can override earlier ones
+		 * if all the relevant plugins are present.
+		 *  - extra-analysis-ukrainian can override analysis-ukrainian.
+		 *  - analysis-sudachi can override analysis-kuromoji
 		 */
 
 		'analysis-stempel' => [ 'pl' => 'polish' ],
-		'analysis-kuromoji' => [ 'ja' => 'japanese' ],
+		'analysis-kuromoji' => [ 'ja' => 'japanese-kuromoji' ],
+		'analysis-sudachi' => [ 'ja' => 'japanese-sudachi' ],
 		'analysis-stconvert,analysis-smartcn' => [ 'zh' => 'chinese' ],
 		'analysis-hebrew' => [ 'he' => 'hebrew' ],
 		'analysis-ukrainian' => [ 'uk' => 'ukrainian' ],
@@ -2038,8 +2308,6 @@ class AnalysisConfigBuilder {
 
 	/**
 	 * Set up global custom filters
-	 *
-	 * @return array
 	 */
 	private static function buildGlobalCustomFilters(): array {
 		$gcf = [
@@ -2066,7 +2334,8 @@ class AnalysisConfigBuilder {
 				// * follow armenian_charfilter, which normalizes another period-like
 				//   character, if it is being used
 				setMustFollowFilters( [ 'acronym_fixer', 'regex_acronym_fixer',
-					'armenian_charfilter' ] )->
+					'armenian_charfilter', 'sat_period_pat', 'sat_colon_pat',
+					'sat_dash_pat' ] )->
 				setLanguageDenyList( [ 'ko', 'zh' ] ),
 
 			'dotted_I_fix' => ( new GlobalCustomFilter( 'char_filter' ) )->
@@ -2102,8 +2371,23 @@ class AnalysisConfigBuilder {
 			'homoglyph_norm' => ( new GlobalCustomFilter( 'filter' ) )->
 				// aggressive_splitting has weird graph problems and creating
 				// multiple tokens makes it blow up
+				// the tokenizers below split on changes in script, so mixed-script tokens
+				// (with or without homoglyphs) cannot occur. sudachi_tokenizer is the
+				// default Sudachi tokenizer. sudachi_tok is our custom version.
 				setRequiredPlugins( [ 'extra-analysis-homoglyph' ] )->
-				setMustFollowFilters( [ 'aggressive_splitting' ] ),
+				setMustFollowFilters( [ 'aggressive_splitting' ] )->
+				setDisallowedTokenizers( [ 'icu_tokenizer', 'kuromoji_tokenizer',
+					'sudachi_tokenizer', 'sudachi_tok' ] ),
+
+			'decimal_digit' => ( new GlobalCustomFilter( 'filter' ) )->
+				// Generally, enable digit normalization everywhere. However, icu_folding
+				// also does it, so we don't need this *and* icu_folding. The Chinese/zh
+				// tokenizer (smartcn) splits on non-Arabic digits, so normalizing after
+				// the split is weird; the zh plain analyzer has icu_folding, though, so
+				// that will pick up the slack. We place it after lowercase/icu_norm
+				// mostly because that's the traditional location. (T396530)
+				setDisallowedTokenFilters( [ 'icu_folding' ] )->
+				setLanguageDenyList( [ 'zh' ] ),
 		];
 		// reverse the array so that items are ordered (approximately, modulo incompatible
 		// filters) in the order specified here

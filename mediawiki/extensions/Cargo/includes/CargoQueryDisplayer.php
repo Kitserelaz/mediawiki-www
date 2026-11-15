@@ -211,7 +211,8 @@ class CargoQueryDisplayer {
 				}
 
 				if ( $text != '' ) {
-					$formattedQueryResults[$rowNum][$fieldName] = $text;
+					$escapedFieldName = htmlspecialchars( $fieldName );
+					$formattedQueryResults[$rowNum][$escapedFieldName] = $text;
 				}
 			}
 		}
@@ -221,7 +222,7 @@ class CargoQueryDisplayer {
 	public static function formatFieldValue( $value, $type, $fieldDescription, $parser, $escapeValue ) {
 		if ( $type == 'Integer' ) {
 			global $wgCargoDecimalMark, $wgCargoDigitGroupingCharacter;
-			return number_format( $value, 0, $wgCargoDecimalMark, $wgCargoDigitGroupingCharacter );
+			return number_format( intval( $value ), 0, $wgCargoDecimalMark, $wgCargoDigitGroupingCharacter );
 		} elseif ( $type == 'Float' ) {
 			global $wgCargoDecimalMark, $wgCargoDigitGroupingCharacter;
 			// Can we assume that the decimal mark will be a '.' in the database?
@@ -232,7 +233,7 @@ class CargoQueryDisplayer {
 			} else {
 				$numDecimalPlaces = strlen( $value ) - $locOfDecimalPoint - 1;
 			}
-			return number_format( $value, $numDecimalPlaces, $wgCargoDecimalMark,
+			return number_format( floatval( $value ), $numDecimalPlaces, $wgCargoDecimalMark,
 				$wgCargoDigitGroupingCharacter );
 		} elseif ( $type == 'Page' ) {
 			$title = Title::newFromText( $value );
@@ -415,6 +416,11 @@ class CargoQueryDisplayer {
 		}
 
 		$formattedQueryResults = $this->getFormattedQueryResults( $queryResults, true );
+		$fieldDescriptionsForDisplay = [];
+		foreach ( $this->mFieldDescriptions as $fieldName => $fieldDescription ) {
+			$escapedFieldName = htmlspecialchars( $fieldName );
+			$fieldDescriptionsForDisplay[$escapedFieldName] = $fieldDescription;
+		}
 		$text = '';
 
 		// If this is the 'template' format, let the formatter print
@@ -428,7 +434,7 @@ class CargoQueryDisplayer {
 			$text .= CargoUtils::smartParse( $this->mDisplayParams['intro'], null );
 		}
 		try {
-			$text .= $formatter->display( $queryResults, $formattedQueryResults, $this->mFieldDescriptions,
+			$text .= $formatter->display( $queryResults, $formattedQueryResults, $fieldDescriptionsForDisplay,
 				$this->mDisplayParams );
 		} catch ( Exception $e ) {
 			return CargoUtils::formatError( $e->getMessage() );

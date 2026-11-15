@@ -30,6 +30,17 @@
 	 */
 	$.uls.data.addLanguage( 'als', { target: 'gsw' } );
 
+	/*
+	 * MediaWiki core maps several non-standard wiki language codes to
+	 * standard BCP 47 codes in HTML lang= attributes (T391575).
+	 * ULS needs redirects for these so that languages are not silently
+	 * dropped from the interlanguage list.
+	 */
+	$.uls.data.addLanguage( 'jv-x-bms', { target: 'map-bms' } );
+	$.uls.data.addLanguage( 'nap-x-tara', { target: 'roa-tara' } );
+	$.uls.data.addLanguage( 'nrf', { target: 'nrm' } );
+	$.uls.data.addLanguage( 'ro-cyrl-md', { target: 'mo' } );
+
 	mw.uls = mw.uls || {};
 	mw.uls.previousLanguagesStorageKey = 'uls-previous-languages';
 
@@ -104,12 +115,10 @@
 	};
 
 	mw.uls.setPreviousLanguages = function ( previousLanguages ) {
-		try {
-			localStorage.setItem(
-				mw.uls.previousLanguagesStorageKey,
-				JSON.stringify( previousLanguages.slice( 0, 9 ) )
-			);
-		} catch ( e ) {}
+		mw.storage.setObject(
+			mw.uls.previousLanguagesStorageKey,
+			previousLanguages.slice( 0, 9 )
+		);
 	};
 
 	/**
@@ -142,16 +151,7 @@
 	};
 
 	mw.uls.getPreviousLanguages = function () {
-		const previousLanguages = [];
-
-		try {
-			previousLanguages.push.apply(
-				previousLanguages,
-				JSON.parse( localStorage.getItem( mw.uls.previousLanguagesStorageKey ) )
-			);
-		} catch ( e ) {}
-
-		return previousLanguages.slice( 0, 9 );
+		return mw.storage.getObject( mw.uls.previousLanguagesStorageKey ) || [];
 	};
 
 	/**
@@ -226,7 +226,11 @@
 
 		for ( let i = 0; i < lists.length; i++ ) {
 			for ( let j = 0; j < lists[ i ].length; j++ ) {
-				const lang = lists[ i ][ j ];
+				if ( !lists[ i ][ j ] ) {
+					continue;
+				}
+				// Resolve redirects so a language isn't listed under two codes.
+				const lang = mw.uls.convertMediaWikiLanguageCodeToULS( lists[ i ][ j ] );
 				// Make flat, make unique, and ignore unknown/unsupported languages
 				if ( !ret.includes( lang ) && $.uls.data.getAutonym( lang ) !== lang ) {
 					ret.push( lang );

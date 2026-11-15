@@ -10,19 +10,19 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.43",
+		"MediaWiki": ">= 1.46",
 		"extensions": {
 			"Elastica": ">= 6.0.1"
 		}
 	},
 	"Actions": {
-		"cirrusdump": "CirrusSearch\\Dump"
+		"cirrusdump": "CirrusSearch\\Dump",
+		"cirrussuggestdump": "CirrusSearch\\SuggestDump"
 	},
 	"APIModules": {
 		"cirrus-config-dump": "CirrusSearch\\Api\\ConfigDump",
-		"cirrus-mapping-dump": "CirrusSearch\\Api\\MappingDump",
-		"cirrus-settings-dump": "CirrusSearch\\Api\\SettingsDump",
 		"cirrus-profiles-dump": "CirrusSearch\\Api\\ProfilesDump",
+		"cirrus-schema-dump": "CirrusSearch\\Api\\SchemaDump",
 		"cirrus-check-sanity": "CirrusSearch\\Api\\CheckSanity"
 	},
 	"APIPropModules": {
@@ -85,6 +85,7 @@
 		"localBasePath": "",
 		"remoteExtPath": "CirrusSearch"
 	},
+	"callback": "CirrusSearch\\Hooks::onRegistration",
 	"Hooks": {
 		"APIAfterExecute": "default",
 		"ApiBeforeMain": "default",
@@ -98,18 +99,18 @@
 		"ArticleRevisionVisibilitySet": "changelistener",
 		"PageUndeleteComplete": "archivechangelistener",
 		"BeforeInitialize": "default",
-		"CirrusSearchAddQueryFeatures": "CirrusSearch\\Wikimedia\\WeightedTagsHooks::onCirrusSearchAddQueryFeatures",
-		"CirrusSearchAnalysisConfig": "CirrusSearch\\Wikimedia\\WeightedTagsHooks::onCirrusSearchAnalysisConfig",
-		"CirrusSearchSimilarityConfig": "CirrusSearch\\Wikimedia\\WeightedTagsHooks::onCirrusSearchSimilarityConfig",
+		"CirrusSearchAddQueryFeatures": "weightedtags",
+		"CirrusSearchAnalysisConfig": "weightedtags",
+		"CirrusSearchSimilarityConfig": "weightedtags",
 		"GetPreferences": "default",
 		"LinksUpdateComplete": [
 			"changelistener",
 			"eventbusbridge"
 		],
-		"PrefixSearchExtractNamespace": "default",
+		"PrefixSearchExtractNamespace": "prefixsearch_extract_namespace",
 		"ResourceLoaderGetConfigVars": "default",
 		"SearchIndexFields": [
-			"wikimediatags",
+			"weightedtags",
 			"custompagefields"
 		],
 		"SearchGetNearMatch": "default",
@@ -130,8 +131,12 @@
 				"ConfigFactory"
 			]
 		},
-		"wikimediatags": {
-			"class": "CirrusSearch\\Wikimedia\\WeightedTagsHooks"
+		"weightedtags": {
+			"class": "CirrusSearch\\Search\\WeightedTagsHooks",
+			"factory": "CirrusSearch\\Search\\WeightedTagsHooks::create",
+			"services": [
+				"ConfigFactory"
+			]
 		},
 		"custompagefields": {
 			"class": "CirrusSearch\\Hooks\\CustomPageFields"
@@ -174,6 +179,14 @@
 			"services": [
 				"ConnectionProvider"
 			]
+		},
+		"prefixsearch_extract_namespace": {
+			"class": "MediaWiki\\Search\\Hook\\PrefixSearchExtractNamespaceHook",
+			"factory": "CirrusSearch\\PrefixSearchExtractNamespace::create",
+			"services": [
+				"MainConfig",
+				"CirrusSearch\\NamespaceMatcher"
+			]
 		}
 	},
 	"config": {
@@ -194,13 +207,6 @@
 		},
 		"CirrusSearchWriteClusters": {
 			"value": null
-		},
-		"CirrusSearchWriteIsolateClusters": {
-			"value": null
-		},
-		"CirrusSearchElasticaWritePartitionCounts": {
-			"description": "Mapping from writable cluster name to number of partitions. Defaults to 1 if not set.",
-			"value": []
 		},
 		"CirrusSearchPrivateClusters": {
 			"value": null
@@ -322,6 +328,9 @@
 		"CirrusSearchEnablePhraseSuggest": {
 			"value": true
 		},
+		"CirrusSearchPhraseSuggestBuildVariant": {
+			"value": false
+		},
 		"CirrusSearchPhraseSuggestProfiles": {
 			"value": []
 		},
@@ -341,6 +350,9 @@
 			"value": true
 		},
 		"CirrusSearchIndexFieldsToCleanup": {
+			"value": []
+		},
+		"CirrusSearchIndexWeightedTagsPrefixMap": {
 			"value": []
 		},
 		"CirrusSearchIndexedRedirects": {
@@ -531,6 +543,9 @@
 		"CirrusSearchCompletionSettings": {
 			"value": "fuzzy"
 		},
+		"CirrusSearchCompletionPlainTokenizer": {
+			"value": "whitespace"
+		},
 		"CirrusSearchUseIcuFolding": {
 			"value": "default"
 		},
@@ -690,18 +705,20 @@
 			"value": 5
 		},
 		"CirrusSearchCategoryMax": {
-			"value": 1000
+			"value": 5000
 		},
 		"CirrusSearchNamespaceResolutionMethod": {
-			"value": "elastic"
+			"value": "utr30"
 		},
-		"CirrusSearchWMFExtraFeatures": {
-			"description": "Configuration for Wikimedia-spexific extra features.\n\n* weighted_tags: multi purpose tag search.\n** build: include in the index definition",
+		"CirrusSearchNamespaceMatcherProfiles": {
+			"value": []
+		},
+		"CirrusSearchWeightedTags": {
+			"description": "Configuration for features using weighted tags.",
 			"value": {
-				"weighted_tags": {
-					"build": false,
-					"use": false
-				}
+				"build": false,
+				"use": false,
+				"max_score": 1000
 			}
 		},
 		"CirrusSearchCompletionBannedPageIds": {
@@ -750,6 +767,54 @@
 				"build": false,
 				"use": false
 			}
+		},
+		"CirrusSearchEnableEventBusWeightedTags": {
+			"description": "Enables external processing of weighted tag changes.\n Changes are offloaded via EventBus and processed by the search update pipeline.",
+			"value": false
+		},
+		"CirrusSearchMustTrackTotalHits": {
+			"description": "Return the number of total hits precisely or not, based on a query class.",
+			"value": {
+				"default": true
+			}
+		},
+		"CirrusLanguageLanguageKeywordExtraFields": {
+			"description": "List of fields to query when search using the inlanguage keyword",
+			"value": []
+		},
+		"CirrusSearchManagedClusters": {
+			"description": "Set of clusters CirrusSearch is allowed to maintain indices on. If unset all known clusters are used.",
+			"value": null
+		},
+		"CirrusSearchCompletionSuggesterUseAltIndexId": {
+			"description": "If set the completion suggester will this alternative index id (must be present in CirrusSearchAlternateIndices).",
+			"value": null
+		},
+		"CirrusSearchAlternateIndices": {
+			"description": "List of alternate indices to build.",
+			"value": {
+				"completion": []
+			}
+		},
+		"CirrusSearchStreamingUpdaterUsername": {
+			"description": "Name of the internal Cirrus Streaming Updater user allowed to bypass poolcounter protections on the cirrusbuilddoc API prop.",
+			"value": null
+		},
+		"CirrusSearchSecondTryProfiles": {
+			"description": "Set of custom second try profiles.",
+			"value": []
+		},
+		"CirrusSearchCompletionUseSecondTryProfile": {
+			"description": "Use this second try profile instead of the 'default' one",
+			"value": null
+		},
+		"CirrusSearchCategoriesClientCacheTTL": {
+			"description": "How long, in seconds, to cache responses from the categories sparql client",
+			"value": 900
+		},
+		"CirrusSearchDefaultSemanticProfile": {
+			"description": "EXPERIMENTAL. Selects the profile to use when CirrusDebugOptions requests the use of semantic search",
+			"value": null
 		}
 	},
 	"SearchMappings": {

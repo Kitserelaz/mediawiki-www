@@ -10,20 +10,7 @@ use MediaWiki\Title\Title;
 /**
  * Sets up configuration expected by the CirrusSearch integration test suite.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
 // All of this has to be done at setup time so it has the right globals.  No putting
@@ -33,7 +20,6 @@ require_once __DIR__ . '/FullyFeaturedConfig.php';
 
 // Extra Cirrus stuff for Jenkins
 $wgAutoloadClasses['CirrusSearch\Jenkins\CleanSetup'] = __DIR__ . '/cleanSetup.php';
-$wgAutoloadClasses['CirrusSearch\Jenkins\NukeAllIndexes'] = __DIR__ . '/nukeAllIndexes.php';
 $wgHooks['LoadExtensionSchemaUpdates'][] = 'CirrusSearch\Jenkins\IntegrationTesting::installDatabaseUpdatePostActions';
 $wgHooks['PageContentLanguage'][] = 'CirrusSearch\Jenkins\IntegrationTesting::setLanguage';
 
@@ -76,9 +62,6 @@ class IntegrationTesting {
 	 * @return bool true so we let other extensions install more maintenance actions
 	 */
 	public static function installDatabaseUpdatePostActions( $updater ) {
-		// NukeAllIndexes nukes indices unrelated to this wiki, meaning we can't run update.php
-		// for each wiki.
-		// $updater->addPostDatabaseUpdateMaintenance( NukeAllIndexes::class );
 		$updater->addPostDatabaseUpdateMaintenance( CleanSetup::class );
 		return true;
 	}
@@ -87,9 +70,9 @@ class IntegrationTesting {
 	 * If the page ends in '/<language code>' then set the page's language to that code.
 	 * @param Title $title
 	 * @param string|Language|StubUserLang &$pageLang the page content language
-	 * @param Language|StubUserLang $wgLang the user language
+	 * @param Language|StubUserLang $userLang the user language
 	 */
-	public static function setLanguage( $title, &$pageLang, $wgLang ) {
+	public static function setLanguage( $title, &$pageLang, $userLang ) {
 		$matches = [];
 		if ( preg_match( '/\/..$/', $title->getText(), $matches ) ) {
 			$pageLang = MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage( substr( $matches[0], 1 ) );

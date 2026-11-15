@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"BadDog",
 			"Kizule",
 			"Lakisan97",
@@ -8,8 +9,7 @@
 			"Rancher",
 			"Sasa Stefanovic",
 			"Verlor",
-			"Zoranzoki21",
-			"Aca"
+			"Zoranzoki21"
 		]
 	},
 	"apihelp-pollsubmitvote-summary": "AJAXPoll API модул",

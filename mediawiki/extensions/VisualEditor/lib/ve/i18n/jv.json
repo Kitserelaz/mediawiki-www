@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Bennylin",
 			"Gleki",
 			"Jadinegara",
 			"Meursault2004",
@@ -49,7 +50,7 @@
 	"visualeditor-clipboard-paste": "Tèmplèk",
 	"visualeditor-clipboard-paste-special": "Tèmplèkaké dadi tulisan barès",
 	"visualeditor-command-dialog-cancel": "Tutup / wurungaké owahan",
-	"visualeditor-command-dialog-confirm": "Iyai owahan",
+	"visualeditor-command-dialog-confirm": "Konfirmasi owahan",
 	"visualeditor-commentannotationcontextitem-comment": "Tanggepi",
 	"visualeditor-commentinspector-title": "Tanggepan",
 	"visualeditor-commentinspector-tooltip": "Tanggepan",
@@ -77,7 +78,6 @@
 	"visualeditor-dialog-table-title": "Properti tabèl",
 	"visualeditor-diff-no-changes": "Ora ana owahan",
 	"visualeditor-dimensionswidget-px": "px",
-	"visualeditor-dimensionswidget-times": "×",
 	"visualeditor-find-and-replace-diacritic": "Ora sènsitif marang dhiakritik",
 	"visualeditor-find-and-replace-done": "Rampung",
 	"visualeditor-find-and-replace-find-text": "Golèk",
@@ -117,7 +117,6 @@
 	"visualeditor-key-page-up": "Kaca Munggah",
 	"visualeditor-key-right": "Tengen",
 	"visualeditor-language-search-input-placeholder": "Golèk miturut kodhe utawa jeneng basa",
-	"visualeditor-languageannotation-description-with-dir": "$1 ($2)",
 	"visualeditor-languagecontext-remove": "Busek basa",
 	"visualeditor-languageinspector-title": "Basa",
 	"visualeditor-languageinspector-widget-changelang": "Golèk basa",

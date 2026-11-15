@@ -6,7 +6,12 @@ namespace Maps\DataAccess;
 
 use FileFetcher\FileFetcher;
 use FileFetcher\FileFetchingException;
-use MediaWiki\Revision\RevisionLookup;
+use MediaWiki\Content\JsonContent;
+use MediaWiki\Page\ExistingPageRecord;
+use MediaWiki\Page\PageLookup;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Title\TitleValue;
 
 /**
  * Returns the content of the JSON file at the specified location as array.
@@ -18,13 +23,24 @@ use MediaWiki\Revision\RevisionLookup;
 class GeoJsonFetcher {
 
 	private FileFetcher $fileFetcher;
-	private \TitleParser $titleParser;
-	private RevisionLookup $revisionLookup;
+	private PageLookup $pageLookup;
+	private Parser $parser;
+	private bool $allowExternalDataFiles;
 
-	public function __construct( FileFetcher $fileFetcher, \TitleParser $titleParser, RevisionLookup $revisionLookup ) {
+	/**
+	 * @param Parser $parser A parser in the middle of a parse, normally the one rendering the page. Pages are read
+	 * through it, so its options decide which pages the render may include, and its output records the pages read.
+	 */
+	public function __construct(
+		FileFetcher $fileFetcher,
+		PageLookup $pageLookup,
+		Parser $parser,
+		bool $allowExternalDataFiles
+	) {
 		$this->fileFetcher = $fileFetcher;
-		$this->titleParser = $titleParser;
-		$this->revisionLookup = $revisionLookup;
+		$this->pageLookup = $pageLookup;
+		$this->parser = $parser;
+		$this->allowExternalDataFiles = $allowExternalDataFiles;
 	}
 
 	public function parse( string $fileLocation ): array {
@@ -32,28 +48,31 @@ class GeoJsonFetcher {
 	}
 
 	public function fetch( string $fileLocation ): GeoJsonFetcherResult {
-		try {
-			$title = $this->titleParser->parseTitle( $fileLocation, NS_GEO_JSON );
+		$page = $this->pageLookup->getExistingPageByText( $fileLocation, NS_GEO_JSON );
 
-			$revision = $this->revisionLookup->getRevisionByTitle( $title );
+		if ( $page !== null ) {
+			$revision = $this->fetchCurrentRevision( $page );
 
 			if ( $revision !== null ) {
 				$content = $revision->getContent( 'main' );
 
-				if ( $content instanceof \JsonContent ) {
+				if ( $content instanceof JsonContent ) {
 					return new GeoJsonFetcherResult(
-						$this->normalizeJson( $content->getNativeData() ),
+						$this->normalizeJson( $content->getText() ),
 						$revision->getId(),
-						$title
+						TitleValue::newFromPage( $page )
 					);
 				}
 			}
 		}
-		catch ( \MalformedTitleException $e ) {
-		}
 
 		// Prevent reading JSON files on the server
 		if ( !filter_var( $fileLocation, FILTER_VALIDATE_URL ) ) {
+			return $this->newEmptyResult();
+		}
+
+		// External data files are only fetched when this wiki allows them
+		if ( !$this->allowExternalDataFiles ) {
 			return $this->newEmptyResult();
 		}
 
@@ -67,6 +86,19 @@ class GeoJsonFetcher {
 		catch ( FileFetchingException $ex ) {
 			return $this->newEmptyResult();
 		}
+	}
+
+	/**
+	 * Records the page as used even when the parser refuses it, so that an edit of the page also refreshes the
+	 * renders that were allowed to show it.
+	 */
+	private function fetchCurrentRevision( ExistingPageRecord $page ): ?RevisionRecord {
+		$title = TitleValue::newFromPage( $page );
+		$revision = $this->parser->fetchCurrentRevisionRecordOfTitle( $title );
+
+		$this->parser->getOutput()->addTemplate( $title, $page->getId(), $revision?->getId() );
+
+		return $revision;
 	}
 
 	private function newEmptyResult(): GeoJsonFetcherResult {
@@ -84,7 +116,8 @@ class GeoJsonFetcher {
 
 		$json = json_decode( $jsonString, true );
 
-		if ( $json === null ) {
+		// Not just null: JSON that is a bare number, string or boolean decodes to a non-array.
+		if ( !is_array( $json ) ) {
 			return [];
 		}
 

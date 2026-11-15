@@ -16,7 +16,7 @@ use Elastica\Client;
 use Wikimedia\Assert\Assert;
 
 class FallbackRunner implements SearchMetricsProvider {
-	/** @var FallbackRunner */
+	/** @var self */
 	private static $NOOP_RUNNER = null;
 
 	/**
@@ -31,6 +31,11 @@ class FallbackRunner implements SearchMetricsProvider {
 	private $searchMetrics = [];
 
 	/**
+	 * @var int[] Map from fallback name to number of hits returned
+	 */
+	private $responseMetrics = [];
+
+	/**
 	 * @param FallbackMethod[] $fallbackMethods List of fallbacks to apply in order,
 	 *  keyed by name of the fallback configuration.
 	 */
@@ -40,9 +45,9 @@ class FallbackRunner implements SearchMetricsProvider {
 
 	/**
 	 * Noop fallback runner
-	 * @return FallbackRunner
+	 * @return self
 	 */
-	public static function noopRunner(): FallbackRunner {
+	public static function noopRunner(): self {
 		self::$NOOP_RUNNER ??= new self( [] );
 		return self::$NOOP_RUNNER;
 	}
@@ -52,14 +57,14 @@ class FallbackRunner implements SearchMetricsProvider {
 	 * @param InterwikiResolver $interwikiResolver
 	 * @param string $profileContext
 	 * @param array $profileContextParam
-	 * @return FallbackRunner
+	 * @return self
 	 */
 	public static function create(
 		SearchQuery $query,
 		InterwikiResolver $interwikiResolver,
 		$profileContext = SearchProfileService::CONTEXT_DEFAULT,
 		$profileContextParam = []
-	): FallbackRunner {
+	): self {
 		$profileService = $query->getSearchConfig()->getProfileService();
 		if ( !$profileService->supportsContext( SearchProfileService::FALLBACKS, $profileContext ) ) {
 			// This component is optional and we simply avoid building it if the $profileContext does
@@ -77,9 +82,9 @@ class FallbackRunner implements SearchMetricsProvider {
 	 * @param SearchQuery $query
 	 * @param array $profile
 	 * @param InterwikiResolver $interwikiResolver
-	 * @return FallbackRunner
+	 * @return self
 	 */
-	private static function createFromProfile( SearchQuery $query, array $profile, InterwikiResolver $interwikiResolver ): FallbackRunner {
+	private static function createFromProfile( SearchQuery $query, array $profile, InterwikiResolver $interwikiResolver ): self {
 		$fallbackMethods = [];
 		$methodDefs = $profile['methods'] ?? [];
 		foreach ( $methodDefs as $name => $methodDef ) {
@@ -94,12 +99,22 @@ class FallbackRunner implements SearchMetricsProvider {
 			if ( !is_subclass_of( $clazz, FallbackMethod::class ) ) {
 				throw new SearchProfileException( "Invalid FallbackMethod: $clazz must implement " . FallbackMethod::class );
 			}
-			$method = call_user_func( [ $clazz, 'build' ], $query, $params, $interwikiResolver );
+			if ( !self::acceptQuery( $methodDef, $query ) ) {
+				continue;
+			}
+			$method = $clazz::build( $query, $params, $interwikiResolver );
 			if ( $method !== null ) {
 				$fallbackMethods[$name] = $method;
 			}
 		}
-		return new self( $fallbackMethods );
+		return $fallbackMethods === [] ? self::noopRunner() : new self( $fallbackMethods );
+	}
+
+	private static function acceptQuery( array $methodDef, SearchQuery $query ): bool {
+		if ( $methodDef['default_ns_only'] ?? false ) {
+			return $query->isTargetingDefaultSearchedNamespaces();
+		}
+		return true;
 	}
 
 	/**
@@ -117,6 +132,7 @@ class FallbackRunner implements SearchMetricsProvider {
 		NamespacePrefixParser $namespacePrefixParser,
 		CirrusSearchHookRunner $cirrusSearchHookRunner
 	) {
+		$this->recordResponseMetrics( $responses );
 		$methods = [];
 		$position = 0;
 		$context = new FallbackRunnerContextImpl( $initialResult, $factory, $namespacePrefixParser, $cirrusSearchHookRunner );
@@ -161,9 +177,6 @@ class FallbackRunner implements SearchMetricsProvider {
 		return $context->getPreviousResultSet();
 	}
 
-	/**
-	 * @return array
-	 */
 	public function getElasticSuggesters(): array {
 		$suggesters = [];
 		foreach ( $this->fallbackMethods as $method ) {
@@ -226,6 +239,23 @@ class FallbackRunner implements SearchMetricsProvider {
 		return $status;
 	}
 
+	private function recordResponseMetrics( MSearchResponses $responses ) {
+		// Report on which fallback methods returned results, even if they didn't get used.
+		$position = 0;
+		foreach ( $this->fallbackMethods as $name => $fallback ) {
+			$position++;
+			if ( !( $fallback instanceof ElasticSearchRequestFallbackMethod ) ) {
+				continue;
+			}
+			$k = $this->msearchKey( $position );
+			if ( !$responses->hasResultsFor( $k ) ) {
+				continue;
+			}
+			$resultSet = $responses->getResultSet( $k );
+			$this->responseMetrics[$name] = count( $resultSet );
+		}
+	}
+
 	/**
 	 * @return array
 	 */
@@ -251,6 +281,8 @@ class FallbackRunner implements SearchMetricsProvider {
 				'mainResults' => $mainResults,
 				// action that made final query suggestion
 				'querySuggestion' => $querySuggestion,
+				// metrics about requests that were made
+				'responseMetrics' => $this->responseMetrics,
 			],
 		];
 	}

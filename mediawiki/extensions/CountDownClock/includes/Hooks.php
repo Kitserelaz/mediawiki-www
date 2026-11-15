@@ -5,7 +5,8 @@ namespace MediaWiki\Extension\CountDownClock;
 use DateTime;
 use DateTimeInterface;
 use DateTimeZone;
-use Html;
+use MediaWiki\Html\Html;
+use MediaWiki\Parser\Parser;
 
 class Hooks {
 

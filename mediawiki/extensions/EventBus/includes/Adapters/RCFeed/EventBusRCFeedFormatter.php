@@ -5,18 +5,15 @@ namespace MediaWiki\Extension\EventBus\Adapters\RCFeed;
 use MediaWiki\Extension\EventBus\EventBus;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\RCFeed\MachineReadableRCFeedFormatter;
-use RecentChange;
+use MediaWiki\RecentChanges\RecentChange;
 
 /**
  * Augments the RecentChange object for use with the EventBus service, and then
  * formats it into a JSON string.
- *
- * @extends MachineReadableRCFeedFormatter
  */
 class EventBusRCFeedFormatter extends MachineReadableRCFeedFormatter {
 	/**
 	 * Stream name to which this event belongs.
-	 * @var string
 	 */
 	public const STREAM = 'mediawiki.recentchange';
 

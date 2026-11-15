@@ -95,8 +95,8 @@ class KeywordFeatureAssertions {
 		}
 		$warnings = [];
 		$context->method( 'addWarning' )
-			->will( $this->testCase->returnCallback( static function () use ( &$warnings ) {
-				$warnings[] = array_filter( func_get_args() );
+			->will( $this->testCase->returnCallback( static function ( ...$args ) use ( &$warnings ) {
+				$warnings[] = array_filter( $args );
 			} ) );
 
 		$context->method( 'getWarnings' )
@@ -135,8 +135,8 @@ class KeywordFeatureAssertions {
 		$warnings = [];
 
 		$context->method( 'addWarning' )
-			->will( $this->testCase->returnCallback( static function () use ( &$warnings ) {
-				$warnings[] = array_filter( func_get_args() );
+			->will( $this->testCase->returnCallback( static function ( ...$args ) use ( &$warnings ) {
+				$warnings[] = array_filter( $args );
 			} ) );
 
 		$context->method( 'getWarnings' )
@@ -154,8 +154,8 @@ class KeywordFeatureAssertions {
 		$warnings = [];
 		$context = $this->mockContext();
 		$context->method( 'addWarning' )
-			->will( $this->testCase->returnCallback( static function () use ( &$warnings ) {
-				$warnings[] = array_filter( func_get_args() );
+			->will( $this->testCase->returnCallback( static function ( ...$args ) use ( &$warnings ) {
+				$warnings[] = array_filter( $args );
 			} ) );
 		$feature->apply( $context, $term );
 		$this->testCase->assertEquals( $expected, $warnings );
@@ -198,9 +198,7 @@ class KeywordFeatureAssertions {
 		?SearchConfig $config = null
 	) {
 		$node = $this->getParsedKeyword( $term, $feature );
-		if ( $config === null ) {
-			$config = new HashSearchConfig( [] );
-		}
+		$config ??= new HashSearchConfig( [] );
 
 		$parser = new KeywordParser();
 		$this->testCase->assertEquals( $expected, $feature->expand( $node, $config, $parser ) );
@@ -246,9 +244,7 @@ class KeywordFeatureAssertions {
 		?array $warnings = null,
 		?SearchConfig $config = null
 	) {
-		if ( $config === null ) {
-			$config = new SearchConfig();
-		}
+		$config ??= new SearchConfig();
 		$context =
 			$this->mockContextExpectingAddFilter( $filter,
 				$this->isNegated( $feature, $term ), $config );
@@ -309,9 +305,7 @@ class KeywordFeatureAssertions {
 	) {
 		$this->testCase->assertInstanceOf( BoostFunctionFeature::class, $feature );
 
-		if ( $config === null ) {
-			$config = new SearchConfig();
-		}
+		$config ??= new SearchConfig();
 
 		$context = $this->mockContextExpectingBoost( $boostAssertion, $config );
 		$feature->apply( $context, $term );
@@ -334,7 +328,7 @@ class KeywordFeatureAssertions {
 		if ( $boostAssertion == null ) {
 			$this->testCase->assertNull( $func );
 		} elseif ( is_callable( $boostAssertion ) ) {
-			call_user_func( $boostAssertion, $func );
+			$boostAssertion( $func );
 		} else {
 			$this->testCase->assertEquals( $boostAssertion, $func );
 		}
@@ -439,8 +433,7 @@ class KeywordFeatureAssertions {
 			$mi = new \MultipleIterator();
 			$mi->attachIterator( new \ArrayIterator( $highlightField ?: [] ) );
 			$mi->attachIterator( new \ArrayIterator( $highlightQuery ?: [] ) );
-			foreach ( $mi as $tuple ) {
-				[ $fieldName, $hlQuery ] = $tuple;
+			foreach ( $mi as [ $fieldName, $hlQuery ] ) {
 				if ( isset( $hlQuery['pattern'] ) && !$useExp ) {
 					$this->testCase->assertArrayNotHasKey( $fieldName, $hlFieldsPerName );
 					continue;
@@ -502,9 +495,7 @@ class KeywordFeatureAssertions {
 	 * @return KeywordFeatureNode|null
 	 */
 	private function getParsedKeyword( $term, KeywordFeature $feature, ?KeywordParser $parser = null, $ignoreNegatedNodes = false ) {
-		if ( $parser === null ) {
-			$parser = new KeywordParser();
-		}
+		$parser ??= new KeywordParser();
 		$nodes = $parser->parse( $term, $feature, new OffsetTracker() );
 		$this->testCase->assertCount( 1, $nodes,
 			"A single keyword expression must be provided for this test" );
@@ -557,11 +548,11 @@ class KeywordFeatureAssertions {
 
 	/**
 	 * @param KeywordParser $parser
-	 * @return array
+	 * @return array[]
 	 */
-	protected function extractWarnings( $parser ) {
+	protected function extractWarnings( KeywordParser $parser ): array {
 		return array_map( static function ( ParseWarning $warning ) {
-			return array_merge( [ $warning->getMessage() ], $warning->getMessageParams() );
+			return [ $warning->getMessage(), ...$warning->getMessageParams() ];
 		}, $parser->getWarnings() );
 	}
 

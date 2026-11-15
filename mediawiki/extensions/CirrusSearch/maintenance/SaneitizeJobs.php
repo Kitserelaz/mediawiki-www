@@ -12,28 +12,17 @@ use MediaWiki\MediaWikiServices;
 /**
  * Push some sanitize jobs to the JobQueue
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
 require_once __DIR__ . '/../includes/Maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
 
 class SaneitizeJobs extends Maintenance {
 	/**
@@ -82,6 +71,7 @@ class SaneitizeJobs extends Maintenance {
 			'Defaults to "default".', false, true );
 	}
 
+	/** @inheritDoc */
 	public function execute() {
 		$this->init();
 		if ( $this->hasOption( 'show' ) ) {
@@ -344,9 +334,6 @@ EOD
 		return $latest;
 	}
 
-	/**
-	 * @param \Elastica\Document $jobInfo
-	 */
 	private function updateJob( \Elastica\Document $jobInfo ) {
 		foreach ( $this->metaStores as $store ) {
 			$store->update( $jobInfo );
@@ -369,7 +356,6 @@ EOD
 		if ( $job === null ) {
 			$this->fatalError( "No job created, metastores failed to create?" );
 		}
-		// @phan-suppress-next-line PhanTypeMismatchReturnNullable T240141
 		return $job;
 	}
 
@@ -393,6 +379,10 @@ EOD
 		return $queue->getSize() + $queue->getDelayedCount();
 	}
 
+	/**
+	 * @param string $msg
+	 * @param string|null $channel
+	 */
 	private function log( $msg, $channel = null ) {
 		$date = new \DateTime();
 		$this->output( $date->format( 'Y-m-d H:i:s' ) . " " . $msg, $channel );
@@ -418,5 +408,7 @@ EOD
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = SaneitizeJobs::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

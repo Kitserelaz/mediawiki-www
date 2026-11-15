@@ -6,6 +6,7 @@ namespace MediaWiki\Extension\Translate\Synchronization;
 use FileBasedMessageGroup;
 use MediaWiki\Extension\Translate\FileFormatSupport\JsonFormat;
 use MediaWiki\Extension\Translate\FileFormatSupport\SimpleFormat;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\Utilities\BaseMaintenanceScript;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
@@ -20,6 +21,12 @@ use RuntimeException;
  * @author Niklas Laxström
  */
 class BackportTranslationsMaintenanceScript extends BaseMaintenanceScript {
+	/**
+	 * List of language codes where a lot of translations have been moved under a different code.
+	 * Translations are never removed for these languages to avoid disturbances in stable releases.
+	 */
+	private const CHANGED_CODES = [ 'cdo', 'nan', 'sh', 'wuu', 'yue' ];
+
 	public function __construct() {
 		parent::__construct();
 		$this->addDescription( 'Backport translations from one branch to another.' );
@@ -60,7 +67,7 @@ class BackportTranslationsMaintenanceScript extends BaseMaintenanceScript {
 	/** @inheritDoc */
 	public function execute() {
 		$config = $this->getConfig();
-		$logger = LoggerFactory::getInstance( 'Translate.GroupSynchronization' );
+		$logger = LoggerFactory::getInstance( LogNames::GROUP_SYNCHRONIZATION );
 		$groupPattern = $this->getOption( 'group' ) ?? '';
 		$logger->info(
 			'Starting backports for groups {groups}',
@@ -150,8 +157,8 @@ class BackportTranslationsMaintenanceScript extends BaseMaintenanceScript {
 				$summary[$status][] = $language;
 			}
 
-			$numUpdated = count( $summary[ 'updated' ] ?? [] );
-			$numAdded = count( $summary[ 'new' ] ?? [] );
+			$numUpdated = count( $summary['updated'] ?? [] );
+			$numAdded = count( $summary['new'] ?? [] );
 			if ( ( $numUpdated + $numAdded ) > 0 ) {
 				$this->output(
 					sprintf(
@@ -160,7 +167,7 @@ class BackportTranslationsMaintenanceScript extends BaseMaintenanceScript {
 						count( $keyCompatibilityMap ),
 						$numUpdated,
 						$numAdded,
-						implode( ', ', $summary[ 'new' ] ?? [] )
+						implode( ', ', $summary['new'] ?? [] )
 					)
 				);
 			}
@@ -170,16 +177,12 @@ class BackportTranslationsMaintenanceScript extends BaseMaintenanceScript {
 	private function csv2array( string $input ): array {
 		return array_filter(
 			array_map( 'trim', explode( ',', $input ) ),
-			static function ( $v ) {
-				return $v !== '';
-			}
+			'strlen'
 		);
 	}
 
 	private function matchPath( string $prefix, string $full ): bool {
-		$prefix = "./$prefix";
-		$length = strlen( $prefix );
-		return substr( $full, 0, $length ) === $prefix;
+		return str_starts_with( $full, "./$prefix" );
 	}
 
 	private function loadDefinitions(
@@ -209,7 +212,7 @@ class BackportTranslationsMaintenanceScript extends BaseMaintenanceScript {
 	private function getKeyCompatibilityMap( array $source, array $target, SimpleFormat $fileFormat ): array {
 		$keys = [];
 		foreach ( $target as $key => $value ) {
-			$keys[$key] = isset( $source[ $key ] ) && $fileFormat->isContentEqual( $source[ $key ], $value );
+			$keys[$key] = isset( $source[$key] ) && $fileFormat->isContentEqual( $source[$key], $value );
 		}
 		return $keys;
 	}
@@ -223,13 +226,13 @@ class BackportTranslationsMaintenanceScript extends BaseMaintenanceScript {
 	): string {
 		try {
 			$sourceTemplate = $this->loadDefinitions( $group, $source, $language );
-		} catch ( RuntimeException $e ) {
+		} catch ( RuntimeException ) {
 			return 'no definitions';
 		}
 
 		try {
 			$targetTemplate = $this->loadDefinitions( $group, $targetPath, $language );
-		} catch ( RuntimeException $e ) {
+		} catch ( RuntimeException ) {
 			$targetTemplate = [
 				'MESSAGES' => [],
 				'AUTHORS' => [],
@@ -242,16 +245,16 @@ class BackportTranslationsMaintenanceScript extends BaseMaintenanceScript {
 		$fileFormat = $group->getFFS();
 
 		// This has been checked before, but checking again to keep Phan and IDEs happy.
-		// Remove once support for other file formats are added.
+		// Remove once support for other file formats is added.
 		if ( !$fileFormat instanceof JsonFormat ) {
 			throw new RuntimeException(
-				"Expected file format type: " . JsonFormat::class . '; got: ' . get_class( $fileFormat )
+				'Expected file format type: ' . JsonFormat::class . '; got: ' . get_class( $fileFormat )
 			);
 		}
 
 		$combinedMessages = [];
 		// $keyCompatibilityMap has the target (stable branch) source language key order
-		foreach ( $keyCompatibilityMap as $key => $isCompatible ) {
+		foreach ( $keyCompatibilityMap as $key => $isDefinitionCompatible ) {
 			$sourceValue = $sourceTemplate['MESSAGES'][$key] ?? null;
 			$targetValue = $targetTemplate['MESSAGES'][$key] ?? null;
 
@@ -260,13 +263,20 @@ class BackportTranslationsMaintenanceScript extends BaseMaintenanceScript {
 				$combinedMessages[$key] = $targetValue;
 			}
 
-			// If the source (development branch) has a different translation for a compatible key
-			// replace the target (stable branch) translation with it.
-			if ( !$isCompatible ) {
+			// The source (development branch) message definition in the source language is not compatible with the
+			// target (stable branch) definition. Skip exporting the message
+			if ( !$isDefinitionCompatible ) {
 				continue;
 			}
 
-			if ( $sourceValue !== null && !$fileFormat->isContentEqual( $sourceValue, $targetValue ) ) {
+			if ( $sourceValue === null ) {
+				if ( in_array( $language, self::CHANGED_CODES, true ) ) {
+					continue;
+				}
+				// Translation no longer exists, remove it from the stable branch. See: T375487
+				$hasUpdates = true;
+				unset( $combinedMessages[$key] );
+			} elseif ( !$fileFormat->isContentEqual( $sourceValue, $targetValue ) ) {
 				// {{#FORMAL:}} magic word was introduced in 1.43. Temporary skip backporting translations using it.
 				if ( str_contains( $sourceValue, '#FORMAL:' ) ) {
 					continue;
@@ -282,10 +292,10 @@ class BackportTranslationsMaintenanceScript extends BaseMaintenanceScript {
 			return 'no updates';
 		}
 
-		// Copy over all authors (we do not know per-message level)
+		// Copy over all authors (we do not know authors at the message level)
 		$combinedAuthors = array_merge(
-			$targetTemplate[ 'AUTHORS' ] ?? [],
-			$sourceTemplate[ 'AUTHORS' ] ?? []
+			$targetTemplate['AUTHORS'] ?? [],
+			$sourceTemplate['AUTHORS'] ?? []
 		);
 		$combinedAuthors = array_unique( $combinedAuthors );
 		$combinedAuthors = $fileFormat->filterAuthors( $combinedAuthors, $language );

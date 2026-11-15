@@ -11,8 +11,8 @@ endif
 EXTENSION=SimpleTooltip
 
 # docker images
-MW_VERSION?=1.39
-PHP_VERSION?=8.1
+MW_VERSION?=1.43
+PHP_VERSION?=8.3
 DB_TYPE?=mysql
 DB_IMAGE?=""
 
@@ -24,7 +24,27 @@ COMPOSER_EXT?=true
 
 # nodejs
 # Enables node.js related tests and "npm install"
-# NODE_JS?=true
+NODE_JS?=true
+
+.PHONY: composer-phan
+composer-phan: .init
+ifdef COMPOSER_EXT
+	$(show-current-target)
+	$(compose-exec-wiki) bash -c "cd $(EXTENSION_FOLDER) && composer phan $(COMPOSER_PARAMS)"
+endif
+
+# browser tests
+# Enables Playwright + Chromium for the browser smoke test (see tests/browser/smoke.js).
+# Off by default: "make install" always rebuilds the image with --no-cache, so this
+# would re-download Chromium on every local install, not just when actually needed.
+# The Dockerfile installs it for any non-empty value (also "false"), so keep the default empty.
+# Set BROWSER_TESTS=true explicitly (or in .env) to run "make browser-test" locally.
+BROWSER_TESTS?=
 
 # check for build dir and git submodule init if it does not exist
 include build/Makefile
+
+.PHONY: browser-test
+browser-test: .init
+	$(show-current-target)
+	$(compose-exec-wiki) bash -c "cd $(EXTENSION_FOLDER) && node tests/browser/smoke.js"

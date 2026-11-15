@@ -15,6 +15,7 @@ use MediaWikiIntegrationTestCase;
 use OOUI\FieldsetLayout;
 
 /**
+ * @group Database
  * @covers \MediaWiki\Extension\SecurePoll\Ballots\STVBallot
  */
 class STVBallotTest extends MediaWikiIntegrationTestCase {
@@ -38,6 +39,8 @@ class STVBallotTest extends MediaWikiIntegrationTestCase {
 			$option = $this->createMock( Option::class );
 			$option->method( 'getId' )
 				->willReturn( $id );
+			$option->method( 'parseMessageInline' )
+				->willReturn( 'Candidate ' . $id );
 			return $option;
 		}, [ 1, 2, 3, 4 ] );
 		$this->question = $this->createMock( Question::class );
@@ -59,14 +62,14 @@ class STVBallotTest extends MediaWikiIntegrationTestCase {
 		$this->assertInstanceOf( STVBallot::class, $this->ballot );
 	}
 
-	public static function votesFromRequestContext() {
+	public static function provideVotesFromRequestContext() {
 		return [
 			'All valid inputs' => [
 				[
-					'securepoll_q101_opt0' => 2,
-					'securepoll_q101_opt1' => 4,
-					'securepoll_q101_opt2' => 1,
-					'securepoll_q101_opt3' => 3,
+					'securepoll_q0000101_opt0000000' => 2,
+					'securepoll_q0000101_opt0000001' => 4,
+					'securepoll_q0000101_opt0000002' => 1,
+					'securepoll_q0000101_opt0000003' => 3,
 				],
 				'Q00000065-C00000002-R00000000--Q00000065-C00000004-R00000001--' .
 				'Q00000065-C00000001-R00000002--Q00000065-C00000003-R00000003--'
@@ -81,10 +84,10 @@ class STVBallotTest extends MediaWikiIntegrationTestCase {
 			],
 			'Not sequentially ranked' => [
 				[
-					'securepoll_q101_opt0' => 1,
-					'securepoll_q101_opt1' => 3,
-					'securepoll_q101_opt2' => 0,
-					'securepoll_q101_opt3' => 2,
+					'securepoll_q0000101_opt0000000' => 1,
+					'securepoll_q0000101_opt0000001' => 3,
+					'securepoll_q0000101_opt0000002' => 0,
+					'securepoll_q0000101_opt0000003' => 2,
 				],
 				[
 					[
@@ -98,9 +101,9 @@ class STVBallotTest extends MediaWikiIntegrationTestCase {
 			],
 			'Duplicate ranks' => [
 				[
-					'securepoll_q101_opt0' => 1,
-					'securepoll_q101_opt1' => 1,
-					'securepoll_q101_opt2' => 1,
+					'securepoll_q0000101_opt0000000' => 1,
+					'securepoll_q0000101_opt0000001' => 1,
+					'securepoll_q0000101_opt0000002' => 1,
 				],
 				[
 					[
@@ -118,7 +121,7 @@ class STVBallotTest extends MediaWikiIntegrationTestCase {
 		];
 	}
 
-	public static function packedRecords() {
+	public static function providePackedRecords() {
 		return [
 			'Valid record, all options ranked' => [
 				'Q00000065-C00000002-R00000000--Q00000065-C00000004-R00000001--' .
@@ -141,7 +144,7 @@ class STVBallotTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @dataProvider votesFromRequestContext
+	 * @dataProvider provideVotesFromRequestContext
 	 * @covers \MediaWiki\Extension\SecurePoll\Ballots\ApprovalBallot::submitQuestion
 	 */
 	public function testSubmitQuestion( $votes, $expected ) {
@@ -160,7 +163,7 @@ class STVBallotTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @dataProvider packedRecords
+	 * @dataProvider providePackedRecords
 	 * @covers \MediaWiki\Extension\SecurePoll\Ballots\ApprovalBallot::unpackRecord
 	 */
 	public function testUnpackRecord( $record, $expected ) {
@@ -169,7 +172,7 @@ class STVBallotTest extends MediaWikiIntegrationTestCase {
 
 	/**
 	 * @covers \MediaWiki\Extension\SecurePoll\Ballots\STVBallot::getQuestionForm
-	 * @dataProvider votesFromRequestContext
+	 * @dataProvider provideVotesFromRequestContext
 	 */
 	public function testGetQuestionForm( $votes ): void {
 		$stvBallot = new STVBallot( $this->context, $this->createMock( Election::class ) );

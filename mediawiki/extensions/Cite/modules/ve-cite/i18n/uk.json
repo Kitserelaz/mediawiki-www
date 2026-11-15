@@ -83,6 +83,5 @@
 	"cite-ve-referenceslist-missingref-in-list": "Ця примітка визначена в шаблоні чи іншому генерованому блоці, і наразі її можна попередньо переглянути лише в режимі редагування коду.",
 	"cite-ve-referenceslist-missingreflist": "Список приміток генерується шаблоном.",
 	"cite-ve-toolbar-group-label": "Джерело",
-	"cite-ve-othergroup-item": "$1 посилання",
-	"cite-ve-dialog-reference-editing-extends": "Це посилання є повторним використанням із додатковими деталями. Тут ви можете редагувати лише деталі."
+	"cite-ve-othergroup-item": "$1 посилання"
 }

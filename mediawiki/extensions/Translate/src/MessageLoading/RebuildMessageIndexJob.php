@@ -3,10 +3,10 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageLoading;
 
-use GenericParameterJob;
 use MediaWiki\Extension\Translate\Jobs\GenericTranslateJob;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\Services;
+use MediaWiki\JobQueue\GenericParameterJob;
 use MediaWiki\MediaWikiServices;
 
 /**
@@ -77,5 +77,3 @@ class RebuildMessageIndexJob extends GenericTranslateJob implements GenericParam
 		return $info;
 	}
 }
-
-class_alias( RebuildMessageIndexJob::class, 'MessageIndexRebuildJob' );

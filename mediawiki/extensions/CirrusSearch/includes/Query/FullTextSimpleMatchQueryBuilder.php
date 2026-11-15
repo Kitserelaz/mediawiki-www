@@ -179,17 +179,21 @@ class FullTextSimpleMatchQueryBuilder extends FullTextQueryStringQueryBuilder {
 			$minShouldMatch = $this->defaultMinShouldMatch;
 			$stemWeight = $this->defaultStemWeight;
 			$boost = 1;
+			$plainBoost = 1;
 			$fields = [ "$f.plain^1", "$f^$stemWeight" ];
 			$in_dismax = null;
 
 			if ( is_array( $settings ) ) {
+				$stemWeight = $settings['stem_boost'] ?? $stemWeight;
+				$plainBoost = $settings['plain_boost'] ?? $plainBoost;
 				$boost = $settings['boost'] ?? $boost;
+
 				$queryType = $settings['query_type'] ?? $queryType;
 				$minShouldMatch = $settings['min_should_match'] ?? $minShouldMatch;
 				if ( isset( $settings['is_plain'] ) && $settings['is_plain'] ) {
 					$fields = [ $f ];
 				} else {
-					$fields = [ "$f.plain^1", "$f^$stemWeight" ];
+					$fields = [ "$f.plain^$plainBoost", "$f^$stemWeight" ];
 				}
 				$in_dismax = $settings['in_dismax'] ?? null;
 			} else {
@@ -275,10 +279,7 @@ class FullTextSimpleMatchQueryBuilder extends FullTextQueryStringQueryBuilder {
 		foreach ( [ 'all', 'all.plain' ] as $field ) {
 			$m = new \Elastica\Query\MatchQuery();
 			$m->setFieldQuery( $field, $query );
-			$minShouldMatch = '100%';
-			if ( isset( $options['settings'][$field]['minimum_should_match'] ) ) {
-				$minShouldMatch = $options['settings'][$field]['minimum_should_match'];
-			}
+			$minShouldMatch = $options['settings'][$field]['minimum_should_match'] ?? '100%';
 			if ( $minShouldMatch === '100%' ) {
 				$m->setFieldOperator( $field, 'AND' );
 			} else {
@@ -304,10 +305,7 @@ class FullTextSimpleMatchQueryBuilder extends FullTextQueryStringQueryBuilder {
 	private function buildTitleFilter( $options, $query ) {
 		$filter = new \Elastica\Query\BoolQuery();
 		$filter->addMust( $this->buildSimpleAllFilter( $options, $query ) );
-		$minShouldMatch = '3<80%';
-		if ( isset( $options['settings']['minimum_should_match'] ) ) {
-			$minShouldMatch = $options['settings']['minimum_should_match'];
-		}
+		$minShouldMatch = $options['settings']['minimum_should_match'] ?? '3<80%';
 		$titleFilter = new \Elastica\Query\BoolQuery();
 		$titleFilter->setMinimumShouldMatch( 1 );
 

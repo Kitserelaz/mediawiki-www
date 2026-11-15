@@ -3,10 +3,12 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TtmServer;
 
-use ApiBase;
-use ApiMain;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
 use MediaWiki\Config\Config;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Extension\Translate\LogNames;
+use MediaWiki\Logger\LoggerFactory;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 
@@ -15,8 +17,7 @@ use Wikimedia\ParamValidator\TypeDef\IntegerDef;
  * @license GPL-2.0-or-later
  */
 class SearchTranslationsActionApi extends ApiBase {
-	/** @var TtmServerFactory */
-	private $ttmServerFactory;
+
 	/** @var ServiceOptions */
 	private $options;
 
@@ -30,11 +31,10 @@ class SearchTranslationsActionApi extends ApiBase {
 		ApiMain $main,
 		string $moduleName,
 		Config $config,
-		TtmServerFactory $ttmServerFactory
+		private readonly TtmServerFactory $ttmServerFactory,
 	) {
 		parent::__construct( $main, $moduleName );
 		$this->options = new ServiceOptions( self::CONSTRUCTOR_OPTIONS, $config );
-		$this->ttmServerFactory = $ttmServerFactory;
 	}
 
 	public function execute(): void {
@@ -51,18 +51,30 @@ class SearchTranslationsActionApi extends ApiBase {
 
 		$result = $this->getResult();
 
-		if ( $params['filter'] !== '' ) {
-			$translationSearch = new CrossLanguageTranslationSearchQuery( $params, $server );
-			$documents = $translationSearch->getDocuments();
-			$total = $translationSearch->getTotalHits();
-		} else {
-			$searchResults = $server->search(
-				$params['query'],
-				$params,
-				[ '', '' ]
-			);
-			$documents = $server->getDocuments( $searchResults );
-			$total = $server->getTotalHits( $searchResults );
+		try {
+			if ( $params['filter'] !== '' ) {
+				$translationSearch = new CrossLanguageTranslationSearchQuery( $params, $server );
+				$documents = $translationSearch->getDocuments();
+				$total = $translationSearch->getTotalHits();
+			} else {
+				$searchResults = $server->search(
+					$params['query'],
+					$params,
+					[ '', '' ]
+				);
+				$documents = $server->getDocuments( $searchResults );
+				$total = $server->getTotalHits( $searchResults );
+			}
+		} catch ( TtmServerException $e ) {
+			if ( $e->getCode() === TtmServerException::TRANSIENT_SEARCH_BACKEND_FAILURE ) {
+				LoggerFactory::getInstance( LogNames::MAIN )->warning(
+					'Translation search server failed: {exception}',
+					[ 'exception' => $e ]
+				);
+				$this->dieWithError( 'tux-sst-search-backend-error' );
+			}
+			// unexpected issue, let it bubble up
+			throw $e;
 		}
 		$result->addValue( [ 'search', 'metadata' ], 'total', $total );
 		$result->addValue( 'search', 'translations', $documents );

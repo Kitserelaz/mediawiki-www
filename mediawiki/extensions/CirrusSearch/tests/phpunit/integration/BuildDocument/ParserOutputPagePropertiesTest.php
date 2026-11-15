@@ -7,10 +7,11 @@ use CirrusSearch\HashSearchConfig;
 use Elastica\Document;
 use MediaWiki\Content\ContentHandler;
 use MediaWiki\Content\WikitextContent;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Revision\BadRevisionException;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
-use WikiPage;
 
 /**
  * @group Database
@@ -134,8 +135,19 @@ class ParserOutputPagePropertiesTest extends \MediaWikiIntegrationTestCase {
 		$this->buildDoc( $page );
 	}
 
-	private function pageWithMockParserOutput( Title $title, ?ParserOutput $parserOutput ) {
+	public function testBadRevision() {
+		$title = Title::makeTitle( NS_MAIN, 'Phpunit' );
+		$page = $this->pageWithMockParserOutput( $title, null, new BadRevisionException() );
+		$doc = $this->buildDoc( $page );
+		$this->assertArrayEquals( $doc->get( 'template' ), [ 'Template:CirrusSearchBadRevision' ] );
+	}
+
+	private function pageWithMockParserOutput( Title $title, ?ParserOutput $parserOutput, ?\Exception $exception = null ) {
 		$contentHandler = $this->createMock( ContentHandler::class );
+		if ( $exception !== null ) {
+			$contentHandler->method( 'getParserOutputForIndexing' )
+				->willThrowException( $exception );
+		}
 		$contentHandler->method( 'getParserOutputForIndexing' )
 			->willReturn( $parserOutput );
 		$contentHandler->method( 'getDataForSearchIndex' )
@@ -166,7 +178,6 @@ class ParserOutputPagePropertiesTest extends \MediaWikiIntegrationTestCase {
 	private static function forceTitleLang( Title $title, $langCode ) {
 		global $wgLanguageCode;
 		$refl = new \ReflectionProperty( Title::class, 'mPageLanguage' );
-		$refl->setAccessible( true );
 		$refl->setValue( $title, [ $langCode, $wgLanguageCode ] );
 	}
 }

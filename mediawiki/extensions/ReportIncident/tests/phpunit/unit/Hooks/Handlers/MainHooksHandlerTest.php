@@ -7,8 +7,9 @@ use MediaWiki\Extension\ReportIncident\Hooks\Handlers\MainHooksHandler;
 use MediaWiki\Extension\ReportIncident\Services\ReportIncidentController;
 use MediaWiki\Message\Message;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Skin\Skin;
+use MediaWiki\Title\Title;
 use MediaWikiUnitTestCase;
-use Skin;
 
 /**
  * @group ReportIncident
@@ -16,6 +17,25 @@ use Skin;
  * @covers \MediaWiki\Extension\ReportIncident\Hooks\Handlers\MainHooksHandler
  */
 class MainHooksHandlerTest extends MediaWikiUnitTestCase {
+
+	public function testOnBeforePageLoadCommunityConfigurationMessages() {
+		$outputPageMock = $this->createMock( OutputPage::class );
+
+		$mockTitle = $this->createMock( Title::class );
+		$mockTitle->method( 'isSpecial' )->willReturn( true );
+		$outputPageMock->expects( $this->once() )
+			->method( 'getTitle' )->willReturn( $mockTitle );
+
+		$mockContext = $this->createMock( IContextSource::class );
+		$outputPageMock->expects( $this->once() )
+			->method( 'getContext' )->willReturn( $mockContext );
+
+		$outputPageMock->expects( $this->once() )
+			->method( 'addModules' );
+		$mockReportIncidentController = $this->createMock( ReportIncidentController::class );
+		( new MainHooksHandler( $mockReportIncidentController ) )
+			->onBeforePageDisplay( $outputPageMock, $this->createMock( Skin::class ) );
+	}
 
 	public function testOnBeforePageDisplayNotShowingButton() {
 		// Create a mock IContextSource that will be passed
@@ -28,6 +48,11 @@ class MainHooksHandlerTest extends MediaWikiUnitTestCase {
 		// Expect that no HTML is added to the output.
 		$outputPageMock->expects( $this->never() )
 			->method( 'addHTML' );
+
+		$mockTitle = $this->createMock( Title::class );
+		$mockTitle->method( 'isSpecial' )->willReturn( false );
+		$outputPageMock->expects( $this->once() )
+			->method( 'getTitle' )->willReturn( $mockTitle );
 
 		$mockReportIncidentController = $this->createMock( ReportIncidentController::class );
 		// Mock that the ::shouldAddMenuItem method will return false.
@@ -51,6 +76,11 @@ class MainHooksHandlerTest extends MediaWikiUnitTestCase {
 		// Expect that HTML is added to the output.
 		$outputPageMock->expects( $this->once() )
 			->method( 'addHTML' );
+
+		$mockTitle = $this->createMock( Title::class );
+		$mockTitle->method( 'isSpecial' )->willReturn( false );
+		$outputPageMock->expects( $this->once() )
+			->method( 'getTitle' )->willReturn( $mockTitle );
 
 		$mockReportIncidentController = $this->createMock( ReportIncidentController::class );
 		// Mock that the ::shouldAddMenuItem method will return true.

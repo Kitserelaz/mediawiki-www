@@ -3,13 +3,14 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TranslatorInterface;
 
+use InvalidArgumentException;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Extension\Translate\TranslatorInterface\Aid\MessageDefinitionAid;
 use MediaWiki\Extension\Translate\TranslatorInterface\Aid\TranslationAidDataProvider;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\Html\Html;
-use MediaWiki\Languages\LanguageFactory;
+use MediaWiki\Language\LanguageFactory;
 use MediaWiki\Title\Title;
 use MessageGroup;
 
@@ -20,20 +21,21 @@ use MessageGroup;
  * @license GPL-2.0-or-later
  */
 class LegacyTranslationAids {
-	private MessageHandle $handle;
-	private ?MessageGroup $group;
-	private IContextSource $context;
-	private LanguageFactory $languageFactory;
+
+	private MessageGroup $group;
 
 	public function __construct(
-		MessageHandle $handle,
-		IContextSource $context,
-		LanguageFactory $languageFactory
+		private readonly MessageHandle $handle,
+		private readonly IContextSource $context,
+		private readonly LanguageFactory $languageFactory,
 	) {
-		$this->handle = $handle;
-		$this->context = $context;
-		$this->group = $handle->getGroup();
-		$this->languageFactory = $languageFactory;
+		$group = $handle->getGroup();
+		if ( !$group ) {
+			throw new InvalidArgumentException(
+				'Message handle ' . $handle->getTitle()->getPrefixedDbKey() . ' has no associated group'
+			);
+		}
+		$this->group = $group;
 	}
 
 	private function getDefinition(): ?string {
@@ -76,9 +78,10 @@ class LegacyTranslationAids {
 		);
 	}
 
+	/** @throws TranslationHelperException */
 	private function getDefinitionBox(): string {
 		$definition = $this->getDefinition();
-		if ( (string)$definition === '' ) {
+		if ( $definition === null || $definition === '' ) {
 			throw new TranslationHelperException( 'Message lacks definition' );
 		}
 
@@ -104,6 +107,7 @@ class LegacyTranslationAids {
 		return Utilities::fieldset( $label, $msg, $class );
 	}
 
+	/** @throws TranslationHelperException */
 	private function getDocumentationBox(): string {
 		global $wgTranslateDocumentationLanguageCode;
 
@@ -126,7 +130,7 @@ class LegacyTranslationAids {
 		// The information is most likely in English
 		$divAttribs = [ 'dir' => 'ltr', 'lang' => 'en', 'class' => 'mw-content-ltr mw-parser-output' ];
 
-		if ( (string)$info === '' ) {
+		if ( $info === null || $info === '' ) {
 			$info = $this->context->msg( 'translate-edit-no-information' )->plain();
 			$class = 'mw-sp-translate-edit-noinfo';
 			$lang = $this->context->getLanguage();

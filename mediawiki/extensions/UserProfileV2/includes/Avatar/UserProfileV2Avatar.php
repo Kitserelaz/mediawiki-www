@@ -25,8 +25,8 @@ class UserProfileV2Avatar {
 	private function uploadDefaultAvatar(): StatusValue {
 		$backend = new UserProfileV2AvatarBackend( 'upv2avatars' );
 		return $backend->getFileBackend()->quickStore( [
-			'src' => __DIR__ . '/../../resources/avatars/default.jpg',
-			'dst' => $backend->getContainerStoragePath() . '/default.jpg',
+			'src' => __DIR__ . '/../../resources/avatars/default.png',
+			'dst' => $backend->getContainerStoragePath() . '/default.png',
 		] );
 	}
 
@@ -68,7 +68,7 @@ class UserProfileV2Avatar {
 				$this->uploadDefaultAvatar();
 			}
 
-			$avatar_filename = 'default.jpg';
+			$avatar_filename = 'default.png';
 
 			$backend = new UserProfileV2AvatarBackend( 'upv2avatars' );
 			$extensions = [ 'png', 'gif', 'jpg', 'jpeg' ];
@@ -123,7 +123,7 @@ class UserProfileV2Avatar {
 	private function defaultAvatarExists(): bool {
 		$backend = new UserProfileV2AvatarBackend( 'upv2avatars' );
 		return $backend->getFileBackend()->fileExists( [
-			'src' => $backend->getContainerStoragePath() . '/default.jpg',
+			'src' => $backend->getContainerStoragePath() . '/default.png',
 		] );
 	}
 

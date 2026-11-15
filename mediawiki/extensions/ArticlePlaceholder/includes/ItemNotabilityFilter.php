@@ -8,7 +8,6 @@ use Wikibase\Lib\Store\SiteLinkLookup;
 use Wikimedia\Rdbms\FakeResultWrapper;
 use Wikimedia\Rdbms\IReadableDatabase;
 use Wikimedia\Rdbms\IResultWrapper;
-use Wikimedia\Rdbms\SessionConsistentConnectionManager;
 
 /**
  * Filter a list of items by article placeholder notability.
@@ -29,50 +28,19 @@ class ItemNotabilityFilter {
 	 */
 	private const MIN_SITELINKS = 2;
 
-	/**
-	 * @var SessionConsistentConnectionManager
-	 */
-	private $connectionManager;
-
-	/**
-	 * @var EntityNamespaceLookup
-	 */
-	private $entityNamespaceLookup;
-
-	/**
-	 * @var SiteLinkLookup
-	 */
-	private $siteLinkLookup;
-
-	/**
-	 * @var string
-	 */
-	private $siteGlobalId;
-
-	/**
-	 * @param SessionConsistentConnectionManager $connectionManager
-	 * @param EntityNamespaceLookup $entityNamespaceLookup
-	 * @param SiteLinkLookup $siteLinkLookup
-	 * @param string $siteGlobalId
-	 */
 	public function __construct(
-		SessionConsistentConnectionManager $connectionManager,
-		EntityNamespaceLookup $entityNamespaceLookup,
-		SiteLinkLookup $siteLinkLookup,
-		$siteGlobalId
+		private readonly IReadableDatabase $dbr,
+		private readonly EntityNamespaceLookup $entityNamespaceLookup,
+		private readonly SiteLinkLookup $siteLinkLookup,
+		private readonly string $siteGlobalId,
 	) {
-		$this->connectionManager = $connectionManager;
-		$this->entityNamespaceLookup = $entityNamespaceLookup;
-		$this->siteLinkLookup = $siteLinkLookup;
-		$this->siteGlobalId = $siteGlobalId;
 	}
 
 	/**
 	 * @param ItemId[] $itemIds
-	 *
 	 * @return ItemId[]
 	 */
-	public function getNotableEntityIds( array $itemIds ) {
+	public function getNotableEntityIds( array $itemIds ): array {
 		if ( $itemIds === [] ) {
 			return [];
 		}
@@ -104,15 +72,12 @@ class ItemNotabilityFilter {
 
 	/**
 	 * @param ItemId[] $itemIds
-	 *
 	 * @return int[][] Map of page_title => propname => numeric value
 	 */
-	private function getPagePropsByItem( array $itemIds ) {
+	private function getPagePropsByItem( array $itemIds ): array {
 		$values = [];
 
-		$dbr = $this->connectionManager->getReadConnection();
-
-		$res = $this->selectPagePropsPage( $dbr, $itemIds );
+		$res = $this->selectPagePropsPage( $itemIds );
 
 		foreach ( $res as $row ) {
 			$values[$row->page_title][$row->pp_propname] = intval( $row->pp_value ?: 0 );
@@ -122,12 +87,10 @@ class ItemNotabilityFilter {
 	}
 
 	/**
-	 * @param IReadableDatabase $dbr
 	 * @param ItemId[] $itemIds
-	 *
 	 * @return IResultWrapper
 	 */
-	private function selectPagePropsPage( IReadableDatabase $dbr, array $itemIds ) {
+	private function selectPagePropsPage( array $itemIds ): IResultWrapper {
 		$entityNamespace = $this->entityNamespaceLookup->getEntityNamespace( 'item' );
 
 		if ( !is_int( $entityNamespace ) ) {
@@ -140,7 +103,7 @@ class ItemNotabilityFilter {
 			$itemIdSerializations[] = $itemId->getSerialization();
 		}
 
-		return $dbr->newSelectQueryBuilder()
+		return $this->dbr->newSelectQueryBuilder()
 			->select( [ 'page_title', 'pp_propname', 'pp_value' ] )
 			->from( 'page' )
 			->join( 'page_props', null, 'page_id=pp_page' )
@@ -154,10 +117,9 @@ class ItemNotabilityFilter {
 
 	/**
 	 * @param ItemId[] $itemIds expected to be indexed by numeric item ID
-	 *
 	 * @return ItemId[]
 	 */
-	private function getItemsWithoutArticle( array $itemIds ) {
+	private function getItemsWithoutArticle( array $itemIds ): array {
 		$links = $this->siteLinkLookup->getLinks( array_keys( $itemIds ), [ $this->siteGlobalId ] );
 
 		foreach ( $links as [ , , $numericId ] ) {

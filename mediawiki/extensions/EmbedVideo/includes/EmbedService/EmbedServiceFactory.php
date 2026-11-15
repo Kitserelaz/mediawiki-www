@@ -4,12 +4,28 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\EmbedVideo\EmbedService;
 
-use InvalidArgumentException;
+use MediaWiki\Extension\EmbedVideo\EmbedService\AppleMusic\AppleMusicAlbum;
+use MediaWiki\Extension\EmbedVideo\EmbedService\AppleMusic\AppleMusicArtist;
+use MediaWiki\Extension\EmbedVideo\EmbedService\AppleMusic\AppleMusicPlaylist;
+use MediaWiki\Extension\EmbedVideo\EmbedService\AppleMusic\AppleMusicTrack;
+use MediaWiki\Extension\EmbedVideo\EmbedService\Deezer\DeezerAlbum;
+use MediaWiki\Extension\EmbedVideo\EmbedService\Deezer\DeezerArtist;
+use MediaWiki\Extension\EmbedVideo\EmbedService\Deezer\DeezerEpisode;
+use MediaWiki\Extension\EmbedVideo\EmbedService\Deezer\DeezerPlaylist;
+use MediaWiki\Extension\EmbedVideo\EmbedService\Deezer\DeezerShow;
+use MediaWiki\Extension\EmbedVideo\EmbedService\Deezer\DeezerTrack;
+use MediaWiki\Extension\EmbedVideo\EmbedService\Qobuz\QobuzAlbum;
+use MediaWiki\Extension\EmbedVideo\EmbedService\Qobuz\QobuzTrack;
 use MediaWiki\Extension\EmbedVideo\EmbedService\Spotify\SpotifyAlbum;
 use MediaWiki\Extension\EmbedVideo\EmbedService\Spotify\SpotifyArtist;
 use MediaWiki\Extension\EmbedVideo\EmbedService\Spotify\SpotifyEpisode;
+use MediaWiki\Extension\EmbedVideo\EmbedService\Spotify\SpotifyPlaylist;
 use MediaWiki\Extension\EmbedVideo\EmbedService\Spotify\SpotifyShow;
 use MediaWiki\Extension\EmbedVideo\EmbedService\Spotify\SpotifyTrack;
+use MediaWiki\Extension\EmbedVideo\EmbedService\Tidal\TidalAlbum;
+use MediaWiki\Extension\EmbedVideo\EmbedService\Tidal\TidalMix;
+use MediaWiki\Extension\EmbedVideo\EmbedService\Tidal\TidalTrack;
+use MediaWiki\Extension\EmbedVideo\EmbedService\Tidal\TidalVideo;
 use MediaWiki\Extension\EmbedVideo\EmbedService\Twitch\Twitch;
 use MediaWiki\Extension\EmbedVideo\EmbedService\Twitch\TwitchClip;
 use MediaWiki\Extension\EmbedVideo\EmbedService\Twitch\TwitchVod;
@@ -17,6 +33,7 @@ use MediaWiki\Extension\EmbedVideo\EmbedService\YouTube\YouTube;
 use MediaWiki\Extension\EmbedVideo\EmbedService\YouTube\YouTubeOEmbed;
 use MediaWiki\Extension\EmbedVideo\EmbedService\YouTube\YouTubePlaylist;
 use MediaWiki\Extension\EmbedVideo\EmbedService\YouTube\YouTubeVideoList;
+use MediaWiki\Extension\EmbedVideo\EmbedVideoException;
 
 final class EmbedServiceFactory {
 
@@ -26,24 +43,46 @@ final class EmbedServiceFactory {
 	 * @var AbstractEmbedService[]
 	 */
 	private static $availableServices = [
+		Alugha::class,
+		AmazonMusic::class,
+		Aparat::class,
+		AppleMusicAlbum::class,
+		AppleMusicArtist::class,
+		AppleMusicTrack::class,
+		AppleMusicPlaylist::class,
 		ArchiveOrg::class,
 		Bandcamp::class,
 		Bilibili::class,
 		Ccc::class,
 		DailyMotion::class,
+		DeezerAlbum::class,
+		DeezerArtist::class,
+		DeezerEpisode::class,
+		DeezerPlaylist::class,
+		DeezerShow::class,
+		DeezerTrack::class,
 		ExternalVideo::class,
-		KakaoTV::class,
 		Loom::class,
 		NaverTV::class,
 		Niconico::class,
+		Podbean::class,
+		QobuzAlbum::class,
+		QobuzTrack::class,
+		Reddit::class,
 		SharePoint::class,
 		SoundCloud::class,
 		SpotifyAlbum::class,
 		SpotifyArtist::class,
-		SpotifyShow::class,
 		SpotifyEpisode::class,
+		SpotifyShow::class,
 		SpotifyTrack::class,
+		SpotifyPlaylist::class,
 		Substack::class,
+		TakhteSefid::class,
+		TidalAlbum::class,
+		TidalMix::class,
+		TidalTrack::class,
+		TidalVideo::class,
 		Twitch::class,
 		TwitchClip::class,
 		TwitchVod::class,
@@ -51,11 +90,11 @@ final class EmbedServiceFactory {
 		Vimeo::class,
 		Vk::class,
 		Wistia::class,
+		Youku::class,
 		YouTube::class,
 		YouTubeOEmbed::class,
 		YouTubePlaylist::class,
 		YouTubeVideoList::class,
-		Youku::class,
 	];
 
 	/**
@@ -65,6 +104,28 @@ final class EmbedServiceFactory {
 	 */
 	public static function newFromName( string $serviceName, string $id ): AbstractEmbedService {
 		switch ( strtolower( $serviceName ) ) {
+			case 'alugha':
+				return new Alugha( $id );
+
+			case 'amazonmusic':
+				return new AmazonMusic( $id );
+
+			case 'aparat':
+				return new Aparat( $id );
+
+			case 'applemusicalbum':
+				return new AppleMusicAlbum( $id );
+
+			case 'applemusicartist':
+				return new AppleMusicArtist( $id );
+
+			case 'applemusicplaylist':
+				return new AppleMusicPlaylist( $id );
+
+			case 'applemusic':
+			case 'applemusictrack':
+				return new AppleMusicTrack( $id );
+
 			case 'archive':
 			case 'archiveorg':
 			case 'archive.org':
@@ -85,25 +146,58 @@ final class EmbedServiceFactory {
 			case 'dailymotion':
 				return new DailyMotion( $id );
 
+			case 'deezeralbum':
+				return new DeezerAlbum( $id );
+
+			case 'deezerartist':
+				return new DeezerArtist( $id );
+
+			case 'deezerplaylist':
+				return new DeezerPlaylist( $id );
+
+			case 'deezerpodcast':
+			case 'deezershow':
+				return new DeezerShow( $id );
+
+			case 'deezerpodcastepisode':
+			case 'deezerepisode':
+				return new DeezerEpisode( $id );
+
+			case 'deezer':
+			case 'deezertrack':
+				return new DeezerTrack( $id );
+
 			case 'external':
 			case 'externalvideo':
 				return new ExternalVideo( $id );
 
-			case 'kakaotv':
-			case 'play-tv.kakao':
-				return new KakaoTV( $id );
-
 			case 'loom':
 				return new Loom( $id );
+
+			case 'navertv':
+			case 'tv.naver':
+				return new NaverTV( $id );
 
 			case 'nicovideo':
 			case 'niconico':
 			case 'embed.nicovideo':
 				return new Niconico( $id );
 
-			case 'navertv':
-			case 'tv.naver':
-				return new NaverTV( $id );
+			case 'podbean':
+				return new Podbean( $id );
+
+			case 'qobuzalbum':
+				return new QobuzAlbum( $id );
+
+			case 'qobuz':
+			case 'qobuztrack':
+				return new QobuzTrack( $id );
+
+			case 'reddit':
+			case 'reddit.com':
+			case 'www.reddit':
+			case 'embed.reddit':
+				return new Reddit( $id );
 
 			case 'sharepoint':
 				return new SharePoint( $id );
@@ -117,10 +211,6 @@ final class EmbedServiceFactory {
 			case 'spotifyartist':
 				return new SpotifyArtist( $id );
 
-			case 'spotify':
-			case 'spotifytrack':
-				return new SpotifyTrack( $id );
-
 			case 'spotifypodcast':
 			case 'spotifyshow':
 				return new SpotifyShow( $id );
@@ -129,8 +219,31 @@ final class EmbedServiceFactory {
 			case 'spotifyepisode':
 				return new SpotifyEpisode( $id );
 
+			case 'spotifyplaylist':
+				return new SpotifyPlaylist( $id );
+
+			case 'spotify':
+			case 'spotifytrack':
+				return new SpotifyTrack( $id );
+
 			case 'substack':
 				return new Substack( $id );
+
+			case 'takhtesefid':
+				return new TakhteSefid( $id );
+
+			case 'tidalalbum':
+				return new TidalAlbum( $id );
+
+			case 'tidalmix':
+				return new TidalMix( $id );
+
+			case 'tidal':
+			case 'tidaltrack':
+				return new TidalTrack( $id );
+
+			case 'tidalvideo':
+				return new TidalVideo( $id );
 
 			case 'twitch':
 				return new Twitch( $id );
@@ -148,10 +261,14 @@ final class EmbedServiceFactory {
 				return new Vimeo( $id );
 
 			case 'vk':
+			case 'vkvideo':
 				return new Vk( $id );
 
 			case 'wistia':
 				return new Wistia( $id );
+
+			case 'youku':
+				return new Youku( $id );
 
 			case 'youtubeoembed':
 				return new YouTubeOEmbed( $id );
@@ -164,11 +281,9 @@ final class EmbedServiceFactory {
 
 			case 'youtubevideolist':
 				return new YouTubeVideoList( $id );
-			case 'youku':
-				return new Youku( $id );
 
 			default:
-				throw new InvalidArgumentException( sprintf( 'VideoService "%s" not recognized.', $serviceName ) );
+				throw new EmbedVideoException( sprintf( 'VideoService "%s" not recognized.', $serviceName ) );
 		}
 	}
 

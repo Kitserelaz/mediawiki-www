@@ -20,7 +20,7 @@ class PFCreateCategory extends SpecialPage {
 		parent::__construct( 'CreateCategory' );
 	}
 
-	static function createCategoryText( $default_form, $category_name, $parent_category ) {
+	static function createCategoryText( string $default_form, string $category_name, $parent_category ) {
 		if ( $default_form === '' ) {
 			$text = wfMessage( 'pf_category_desc', $category_name )->inContentLanguage()->text();
 		} else {
@@ -68,7 +68,7 @@ class PFCreateCategory extends SpecialPage {
 			$out->setArticleBodyOnly( true );
 			$title = Title::makeTitleSafe( NS_CATEGORY, $category_name );
 			$full_text = self::createCategoryText( $default_form, $category_name, $parent_category );
-			$text = PFUtils::printRedirectForm( $title, $full_text, "", $save_page, $this->getUser() );
+			$text = PFUtils::printRedirectForm( $title, $full_text, "", $save_page, $this->getUser(), $out );
 			$out->addHTML( $text );
 			return;
 		}

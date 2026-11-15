@@ -46,7 +46,7 @@
 			.text( mw.msg( 'ext-uls-setlang-cancel' ) );
 
 		$acceptBtn = $( '<button>' )
-			.addClass( 'cdx-button cdx-button--type-primary cdx-button--action-progressive active uls-setlang-apply' )
+			.addClass( 'cdx-button cdx-button--weight-primary cdx-button--action-progressive active uls-setlang-apply' )
 			.text( mw.msg( 'ext-uls-setlang-accept' ) );
 
 		return $( '<div>' )
@@ -84,19 +84,22 @@
 			action: 'ulssetlang',
 			languagecode: langCode,
 			formatversion: 2
-		} ).done( () => {
-			location.replace( currentUrlWithoutSetLang() );
-		} ).fail( ( code, result ) => {
-			const apiErrorInfo = result.error && result.error.info ||
-				mw.msg( 'ext-uls-setlang-unknown-error' );
-			mw.notify(
-				mw.msg( 'ext-uls-setlang-error', apiErrorInfo ),
-				{
-					type: 'error',
-					tag: 'uls-setlang-error'
-				}
-			);
-		} );
+		} ).then(
+			() => {
+				location.replace( currentUrlWithoutSetLang() );
+			},
+			( code, result ) => {
+				const apiErrorInfo = result.error && result.error.info ||
+					mw.msg( 'ext-uls-setlang-unknown-error' );
+				mw.notify(
+					mw.msg( 'ext-uls-setlang-error', apiErrorInfo ),
+					{
+						type: 'error',
+						tag: 'uls-setlang-error'
+					}
+				);
+			}
+		);
 	}
 
 	function createSetLangDialog( languageName, languageCode ) {
@@ -112,7 +115,7 @@
 	function addSetLangDialogEvents( ulsDialog ) {
 		$acceptBtn.on( 'click', () => {
 			toggleLoading( $acceptBtn, true );
-			updateLanguage( mw.config.get( 'wgULSSetLangCode' ) ).fail( () => {
+			updateLanguage( mw.config.get( 'wgULSSetLangCode' ) ).then( () => {
 				toggleLoading( $acceptBtn, false );
 			} );
 		} );

@@ -2,10 +2,10 @@
 namespace Wikibase\Lexeme\Search\Elastic;
 
 use CirrusSearch\Search\Result;
-use HtmlArmor;
 use MediaWiki\Html\Html;
 use MediaWiki\Language\Language;
 use Wikibase\Lexeme\DataAccess\LexemeDescription;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * Single CirrusSearch result for Lexeme fulltext search.
@@ -53,8 +53,8 @@ class LexemeResult extends Result {
 			$this->labelData = $result['representation'];
 			// This copies FormTitleStoreLookup, we could instantiate one instead
 			// but that would add a lot of wrapper code.
-			if ( $this->mTitle !== null ) {
-				$this->mTitle->setFragment( '#' . $result['formId'] );
+			if ( $this->getTitle() !== null ) {
+				$this->getTitle()->setFragment( '#' . $result['formId'] );
 			}
 		} else {
 			// Lexeme

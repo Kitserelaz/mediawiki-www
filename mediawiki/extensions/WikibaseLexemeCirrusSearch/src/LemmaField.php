@@ -2,7 +2,8 @@
 namespace Wikibase\Lexeme\Search\Elastic;
 
 use CirrusSearch\CirrusSearch;
-use SearchEngine;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchIndexField;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\Lexeme\Domain\Model\Lexeme;
 use Wikibase\Search\Elastic\Fields\TermIndexField;
@@ -15,7 +16,7 @@ class LemmaField extends TermIndexField {
 	public const NAME = 'lemma';
 
 	public function __construct() {
-		parent::__construct( static::NAME, \SearchIndexField::INDEX_TYPE_TEXT );
+		parent::__construct( static::NAME, SearchIndexField::INDEX_TYPE_TEXT );
 	}
 
 	/**

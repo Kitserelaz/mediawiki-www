@@ -14,7 +14,6 @@ use SMWDIUri;
  *
  * @author Yaron Koren
  */
-
 class Filter {
 	private string $name;
 	private string $property;
@@ -40,7 +39,9 @@ class Filter {
 		$this->name = $name;
 		$this->property = $property;
 		$this->category = $category;
-		$this->requiredFilters = $requiredFilters ?? [];
+		$this->requiredFilters = is_array( $requiredFilters )
+			? $requiredFilters
+			: ( $requiredFilters !== null ? [ $requiredFilters ] : [] );
 		$this->int = $int;
 		$this->propertyType = $propertyType;
 		$this->timePeriod = $timePeriod;
@@ -110,7 +111,7 @@ class Filter {
 		$dbw = MediaWikiServices::getInstance()
 				->getDBLoadBalancer()
 				->getMaintenanceConnectionRef( DB_PRIMARY );
-		list( $yearValue, $monthValue, $dayValue ) = SqlProvider::getDateFunctions( $date_field );
+		[ $yearValue, $monthValue, $dayValue ] = SqlProvider::getDateFunctions( $date_field );
 		$fields = "$yearValue, $monthValue, $dayValue";
 		$datesTable = $dbw->tableName( PropertyTypeDbInfo::tableName( $this->propertyType() ) );
 		$idsTable = $dbw->tableName( Utils::getIDsTableName() );
@@ -258,7 +259,8 @@ END;
 			$sql .= <<<END
 	JOIN $smw_ids o_ids ON p.o_id = o_ids.smw_id
 	LEFT JOIN $revision_table_name ON $revision_table_name.rev_id = o_ids.smw_rev
-	LEFT JOIN $page_props_table_name displaytitle ON $revision_table_name.rev_page = displaytitle.pp_page AND displaytitle.pp_propname = 'displaytitle'
+	LEFT JOIN $page_props_table_name displaytitle
+		ON $revision_table_name.rev_page = displaytitle.pp_page AND displaytitle.pp_propname = 'displaytitle'
 END;
 		}
 		$sql .= <<<END
@@ -277,7 +279,9 @@ END;
 			if ( $value_string === '' ) {
 				continue;
 			}
-			$possible_values[] = new PossibleFilterValue( $value_string, $row['count'], htmlspecialchars_decode( $row['displayTitle'] ?? '' ) );
+			$possible_values[] = new PossibleFilterValue(
+				$value_string, $row['count'], htmlspecialchars_decode( $row['displayTitle'] ?? '' )
+			);
 		}
 
 		return new PossibleFilterValues( $possible_values );
@@ -309,9 +313,7 @@ END;
 		}
 		$minDateParts = explode( '/', $minDate );
 		if ( count( $minDateParts ) == 3 ) {
-			// check if array can be used instead of list
-			// [ $minYear, $minMonth, $minDay ] = $minDateParts;
-			list( $minYear, $minMonth, $minDay ) = $minDateParts;
+			[ $minYear, $minMonth, $minDay ] = $minDateParts;
 		} else {
 			$minYear = $minDateParts[0];
 			$minMonth = $minDay = 0;
@@ -320,9 +322,7 @@ END;
 		$maxDate = str_replace( '-', '/', $row[1] );
 		$maxDateParts = explode( '/', $maxDate );
 		if ( count( $maxDateParts ) == 3 ) {
-			// check if array can be used instead of list
-			// [ $maxYear, $maxMonth, $maxDay ] = $maxDateParts;
-			list( $maxYear, $maxMonth, $maxDay ) = $maxDateParts;
+			[ $maxYear, $maxMonth, $maxDay ] = $maxDateParts;
 		} else {
 			$maxYear = $maxDateParts[0];
 			$maxMonth = $maxDay = 0;

@@ -1,15 +1,14 @@
 'use strict';
 
-var ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget,
-	inputs = require( './inputs/index.js' ),
-	AddPropertyWidget;
+const ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget,
+	inputs = require( './inputs/index.js' );
 
 /**
  * @constructor
  * @param {Object} [config]
  * @param {Array} [config.propertyIds] An array of property ids of statements that exist on the page
  */
-AddPropertyWidget = function MediaInfoAddPropertyWidget( config ) {
+const AddPropertyWidget = function MediaInfoAddPropertyWidget( config ) {
 	config = config || {};
 	this.state = {
 		propertyIds: config.propertyIds || [],
@@ -30,11 +29,7 @@ OO.mixinClass( AddPropertyWidget, ComponentWidget );
  * @inheritDoc
  */
 AddPropertyWidget.prototype.getTemplateData = function () {
-	var propertyInputWidget,
-		addPropertyButton,
-		removeButton;
-
-	propertyInputWidget = new inputs.EntityInputWidget( {
+	const propertyInputWidget = new inputs.EntityInputWidget( {
 		entityType: 'property',
 		filter: this.getFilters(),
 		maxSuggestions: 7,
@@ -45,7 +40,7 @@ AddPropertyWidget.prototype.getTemplateData = function () {
 	propertyInputWidget.connect( this, { add: [ 'setEditing', false ] } );
 	propertyInputWidget.connect( this, { add: [ 'emit', 'choose' ] } );
 
-	addPropertyButton = new OO.ui.ButtonWidget( {
+	const addPropertyButton = new OO.ui.ButtonWidget( {
 		classes: [ 'wbmi-entityview-add-statement-property-button' ],
 		framed: true,
 		icon: 'add',
@@ -55,7 +50,7 @@ AddPropertyWidget.prototype.getTemplateData = function () {
 
 	addPropertyButton.connect( this, { click: [ 'setEditing', !this.state.editing ] } );
 
-	removeButton = new OO.ui.ButtonWidget( {
+	const removeButton = new OO.ui.ButtonWidget( {
 		classes: [ 'wbmi-item-remove' ],
 		title: mw.msg( 'wikibasemediainfo-statements-item-remove' ),
 		flags: 'destructive',
@@ -77,10 +72,8 @@ AddPropertyWidget.prototype.getTemplateData = function () {
  * @return {Array}
  */
 AddPropertyWidget.prototype.getFilters = function () {
-	var supportedTypes = mw.config.get( 'wbmiSupportedDataTypes' ) || [],
-		uniqueTypes = supportedTypes.filter( function ( item, index, self ) {
-			return self.indexOf( item ) === index;
-		} );
+	const supportedTypes = mw.config.get( 'wbmiSupportedDataTypes' ) || [],
+		uniqueTypes = supportedTypes.filter( ( item, index, self ) => self.indexOf( item ) === index );
 
 	return [
 		{ field: 'datatype', value: uniqueTypes.join( '|' ) },
@@ -93,7 +86,7 @@ AddPropertyWidget.prototype.getFilters = function () {
  * @return {jQuery.Promise}
  */
 AddPropertyWidget.prototype.addPropertyId = function ( propertyId ) {
-	if ( this.state.propertyIds.indexOf( propertyId ) >= 0 ) {
+	if ( this.state.propertyIds.includes( propertyId ) ) {
 		return $.Deferred().resolve( this.$element ).promise();
 	}
 
@@ -124,9 +117,7 @@ AddPropertyWidget.prototype.onChoose = function ( input ) {
  */
 AddPropertyWidget.prototype.onStatementPanelRemoved = function ( panelPropertyId ) {
 	this.setState( {
-		propertyIds: this.state.propertyIds.filter( function ( propertyId ) {
-			return propertyId !== panelPropertyId;
-		} )
+		propertyIds: this.state.propertyIds.filter( ( propertyId ) => propertyId !== panelPropertyId )
 	} );
 };
 

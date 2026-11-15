@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"GilPe",
 			"Robby",
 			"Soued031",
 			"Volvox"
@@ -11,7 +12,7 @@
 	"drafts-view": "Brouillon weisen",
 	"drafts-view-summary": "Dës Spezialsäit weist eng Lëscht mat alle Brouillonen, déi et gëtt.\nBruillonen déi net benotzt ginn, ginn no {{PLURAL:$1|engem Dag|$1 Deeg}} automatesch geläscht.",
 	"drafts-view-article": "Säit",
-	"drafts-view-existing": "Brouillonen, déi et gëtt",
+	"drafts-view-existing": "Besteeënd Brouillonen",
 	"drafts-view-saved": "Gespäichert",
 	"drafts-view-discard": "Verwerfen",
 	"drafts-view-nonesaved": "Dir hutt elo keng Brouillone gespäichert.",
@@ -31,5 +32,5 @@
 	"apihelp-savedrafts-param-title": "Titel vum Brouillon.",
 	"apihelp-savedrafts-param-starttime": "D'Ufankszäit vum Brouillon.",
 	"apihelp-savedrafts-param-text": "Text vum Brouillon.",
-	"apihelp-savedrafts-param-summary": "Resumé vum Brouillon."
+	"apihelp-savedrafts-param-summary": "Resümmee vum Brouillon."
 }

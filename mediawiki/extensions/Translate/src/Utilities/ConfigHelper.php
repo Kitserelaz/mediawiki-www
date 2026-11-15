@@ -3,6 +3,9 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Utilities;
 
+use MediaWiki\Permissions\Authority;
+use MessageGroup;
+
 /**
  * A helper class added to work with configuration values of the Translate Extension
  *
@@ -31,14 +34,76 @@ class ConfigHelper {
 		return $wgTranslateDisabledTargetLanguages;
 	}
 
-	public function isAuthorExcluded( string $groupId, string $languageCode, string $username ): bool {
+	/**
+	 * Helper to validate MessageGroup::getTranslatableLanguage against site configuration.
+	 * @param MessageGroup $group The message group to check.
+	 * @param string $languageCode Target language code.
+	 * @param string|null &$reason Store the reason why the language is disabled, if applicable.
+	 * @return bool True if the target language is disabled, false otherwise.
+	 */
+	public function isTargetLanguageDisabled(
+		MessageGroup $group,
+		string $languageCode,
+		?string &$reason = null
+	): bool {
+		$globalDisabledReason = null;
+		$groupId = $group->getId();
+		$checks = [
+			$groupId,
+			strtok( $groupId, '-' ),
+			'*'
+		];
+
+		$disabledLanguages = $this->getDisabledTargetLanguages();
+		foreach ( $checks as $check ) {
+			if ( isset( $disabledLanguages[$check][$languageCode] ) ) {
+				$globalDisabledReason = $disabledLanguages[$check][$languageCode];
+				break;
+			}
+		}
+
+		$groupLanguages = $group->getTranslatableLanguages();
+
+		$isLanguageDisabled = $groupLanguages === MessageGroup::DEFAULT_LANGUAGES
+			? $globalDisabledReason !== null
+			: !array_key_exists( $languageCode, $groupLanguages );
+
+		// Only set the reason if the language is actually disabled
+		if ( $isLanguageDisabled ) {
+			$reason = $globalDisabledReason;
+		}
+
+		return $isLanguageDisabled;
+	}
+
+	/**
+	 * Whether an excluded language group with existing translations should be
+	 * visible to the given user. Users with the 'pagetranslation' right (i.e.
+	 * translation admins) can see disabled-language groups that already have
+	 * translations; everyone else has them hidden as before.
+	 *
+	 * @param Authority $authority The current user.
+	 * @param int $translated Number of translated messages.
+	 * @param int $fuzzy Number of fuzzy messages.
+	 */
+	public function canSeeExcludedLanguageStats(
+		Authority $authority,
+		int $translated,
+		int $fuzzy
+	): bool {
+		if ( $translated === 0 && $fuzzy === 0 ) {
+			return false;
+		}
+		return $authority->isAllowed( 'pagetranslation' );
+	}
+
+	public function isAuthorExcluded( MessageGroup|string $group, string $languageCode, string $username ): bool {
+		$groupId = $group instanceof MessageGroup ? $group->getId() : $group;
 		$hash = "$groupId;$languageCode;$username";
 		$authorExclusionList = $this->getTranslateAuthorExclusionList();
 		$excluded = false;
 
-		foreach ( $authorExclusionList as $rule ) {
-			[ $type, $regex ] = $rule;
-
+		foreach ( $authorExclusionList as [ $type, $regex ] ) {
 			if ( preg_match( $regex, $hash ) ) {
 				if ( $type === 'include' ) {
 					return false;

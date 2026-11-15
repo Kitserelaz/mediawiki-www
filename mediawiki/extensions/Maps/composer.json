@@ -25,21 +25,19 @@
 			"role": "Creator and lead developer"
 		},
 		{
-			"name": "Professional.Wiki",
+			"name": "Professional Wiki",
 			"email": "info@professional.wiki",
 			"homepage": "https://professional.wiki"
 		}
 	],
 	"support": {
 		"email": "semediawiki-user@lists.sourceforge.net",
-		"irc": "irc://irc.libera.chat/mediawiki",
 		"source": "https://github.com/ProfessionalWiki/Maps"
 	},
 	"require": {
-		"php": ">=7.4",
+		"php": ">=8.1",
 		"composer/installers": "^2.0.0|^1.0.1",
-		"mediawiki/validator": "~2.2",
-		"mediawiki/parser-hooks": "~1.5",
+		"mediawiki/parser-hooks": "~1.5|~3.0",
 		"param-processor/param-processor": "^1.10",
 		"data-values/geo": "~4.0|~3.0",
 		"jeroen/file-fetcher": "~6.0|~5.0",
@@ -49,9 +47,9 @@
 		"jmikola/geojson": "^1.0.2"
 	},
 	"require-dev": {
-		"vimeo/psalm": "^6.0",
+		"vimeo/psalm": "^5.0.0",
 		"phpstan/phpstan": "^1.4.8",
-		"mediawiki/mediawiki-codesniffer": "51.0.1"
+		"mediawiki/mediawiki-codesniffer": "^52.0"
 	},
 	"autoload": {
 		"psr-4": {
@@ -71,11 +69,11 @@
 	"config": {
 		"process-timeout": 0,
 		"allow-plugins": {
-			"composer/installers": true
-		},
-		"prepend-autoloader": false
+			"composer/installers": true,
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
 	},
-	"scripts": {
+	"scripts":{
 		"ci": "php ../../tests/phpunit/phpunit.php -c phpunit.xml.dist"
 	}
 }

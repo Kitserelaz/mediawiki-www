@@ -7,7 +7,6 @@ namespace Maps;
 use DataValues\Geo\Parsers\LatLongParser;
 use Maps\GeoJsonPages\GeoJsonContent;
 use Maps\GeoJsonPages\GeoJsonContentHandler;
-use Maps\LegacyMapEditor\SpecialMapEditor;
 use Maps\Map\CargoFormat\CargoFormat;
 use Maps\WikitextParsers\CircleParser;
 use Maps\WikitextParsers\DistanceParser;
@@ -17,7 +16,7 @@ use Maps\WikitextParsers\LocationParser;
 use Maps\WikitextParsers\PolygonParser;
 use Maps\WikitextParsers\RectangleParser;
 use Maps\WikitextParsers\WmsOverlayParser;
-use Parser;
+use MediaWiki\Parser\Parser;
 
 /**
  * @licence GNU GPL v2+
@@ -37,11 +36,6 @@ class MapsSetup {
 	private function defaultSettings() {
 		if ( $GLOBALS['egMapsGMaps3Language'] === '' ) {
 			$GLOBALS['egMapsGMaps3Language'] = $GLOBALS['wgLang'];
-		}
-
-		if ( in_array( 'googlemaps3', $GLOBALS['egMapsAvailableServices'] ) ) {
-			$GLOBALS['wgSpecialPages']['MapEditor'] = SpecialMapEditor::class;
-			$GLOBALS['wgSpecialPageGroups']['MapEditor'] = 'maps';
 		}
 
 		if ( $GLOBALS['egMapsGMaps3ApiKey'] === '' && array_key_exists( 'egGoogleJsApiKey', $GLOBALS ) ) {
@@ -116,6 +110,11 @@ class MapsSetup {
 		$hooks['ListDefinedTags'][] = 'Maps\MapsHooks::onRegisterTags';
 		$hooks['ChangeTagsListActive'][] = 'Maps\MapsHooks::onRegisterTags';
 		$hooks['ChangeTagsAllowedAdd'][] = 'Maps\MapsHooks::onChangeTagsAllowedAdd';
+		$hooks['ContentHandlerDefaultModelFor'][] = 'Maps\MapsHooks::onContentHandlerDefaultModelFor';
+		$hooks['JsonValidateSave'][] = 'Maps\MapsHooks::onJsonValidateSave';
+		$hooks['AlternateEdit'][] = 'Maps\MapsHooks::onAlternateEdit';
+		$hooks['EditFormPreloadText'][] = 'Maps\MapsHooks::onEditFormPreloadText';
+		$hooks['BeforePageDisplay'][] = 'Maps\MapsHooks::onBeforePageDisplay';
 
 		$hooks['CargoSetFormatClasses'][] = function( array &$formatClasses ) {
 			$formatClasses['map'] = CargoFormat::class;

@@ -9,31 +9,21 @@
 
 namespace MediaWiki\TimedMediaHandler;
 
-use File;
 use MediaWiki\Api\ApiQuery;
 use MediaWiki\Api\ApiQueryBase;
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\FileRepo\RepoGroup;
 use MediaWiki\TimedMediaHandler\WebVideoTranscode\WebVideoTranscode;
-use RepoGroup;
 
 class ApiTranscodeStatus extends ApiQueryBase {
-	/** @var RepoGroup */
-	private $repoGroup;
+	private readonly TranscodableChecker $transcodableChecker;
 
-	/** @var TranscodableChecker */
-	private $transcodableChecker;
-
-	/**
-	 * @param ApiQuery $queryModule
-	 * @param string $moduleName
-	 * @param RepoGroup $repoGroup
-	 */
 	public function __construct(
 		ApiQuery $queryModule,
-		$moduleName,
-		RepoGroup $repoGroup
+		string $moduleName,
+		private readonly RepoGroup $repoGroup
 	) {
 		parent::__construct( $queryModule, $moduleName );
-		$this->repoGroup = $repoGroup;
 		$this->transcodableChecker = new TranscodableChecker(
 			$this->getConfig(),
 			$repoGroup

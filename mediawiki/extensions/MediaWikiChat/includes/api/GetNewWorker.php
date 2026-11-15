@@ -1,5 +1,7 @@
 <?php
 
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Api\ApiResult;
 use MediaWiki\MediaWikiServices;
 
 class GetNewWorker {
@@ -13,8 +15,9 @@ class GetNewWorker {
 	static function execute( ApiResult $result, User $user, ApiMain $main ) {
 		global $wgChatOnlineTimeout;
 
-		$dbr = MediaWikiChat::getDBHandle( 'read' );
-		$dbw = MediaWikiChat::getDBHandle( 'write' );
+		$connectionProvider = MediaWikiServices::getInstance()->getConnectionProvider();
+		$dbr = $connectionProvider->getReplicaDatabase();
+		$dbw = $connectionProvider->getPrimaryDatabase();
 		$mName = 'chatgetnew';
 
 		$thisCheck = MediaWikiChat::now();

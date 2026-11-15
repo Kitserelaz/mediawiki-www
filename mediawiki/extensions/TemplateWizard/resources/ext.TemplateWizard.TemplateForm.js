@@ -41,14 +41,6 @@ mw.TemplateWizard.TemplateForm = function MWTemplateWizardTemplateForm( template
 
 OO.inheritClass( mw.TemplateWizard.TemplateForm, OO.ui.Widget );
 
-/* Events */
-
-/**
- * @event close
- *
- * A 'close' event is emitted when closing the template form and returning to the search form.
- */
-
 /* Methods */
 
 /**
@@ -77,7 +69,6 @@ mw.TemplateWizard.TemplateForm.prototype.getFormat = function () {
 mw.TemplateWizard.TemplateForm.prototype.getForm = function ( templateData ) {
 	// Title bar.
 	this.templateTitleBar = new mw.TemplateWizard.TemplateTitleBar(
-		this,
 		this.title,
 		templateData
 	);
@@ -132,16 +123,11 @@ mw.TemplateWizard.TemplateForm.prototype.attemptFocus = function () {
 		// are required.
 		if ( this.addRemoveAllButton && this.addRemoveAllButton.isVisible() ) {
 			this.addRemoveAllButton.focus();
+		} else {
+			// Fall back to giving focus to the title bar if there's nothing else.
+			this.templateTitleBar.focus();
 		}
 	}
-
-};
-/**
- * Event handler for the 'click' event of the trashButton in TemplateTitleBar.
- * This propagates the event upwards as a 'close' event.
- */
-mw.TemplateWizard.TemplateForm.prototype.closeForm = function () {
-	this.emit( 'close' );
 };
 
 mw.TemplateWizard.TemplateForm.prototype.toggleFields = function ( show ) {
@@ -330,6 +316,13 @@ mw.TemplateWizard.TemplateForm.prototype.getInputWidgetForParam = function (
 		config.autosize = true;
 		config.maxRows = 10;
 		widget = new OO.ui.MultilineTextInputWidget( config );
+	} else if ( paramDefinition.suggestedvalues !== undefined ) {
+		// The handlng of suggestedvalues here matches what VisualEditor does in ve.ui.MWParameterPage.
+		config.menu = { filterFromInput: true, highlightOnFilter: true };
+		config.options = paramDefinition.suggestedvalues
+			.filter( ( suggestedValue ) => typeof suggestedValue === 'string' )
+			.map( ( suggestedValue ) => ( { data: suggestedValue, label: suggestedValue || '\xA0' } ) );
+		widget = new OO.ui.ComboBoxInputWidget( config );
 	} else {
 		widget = new OO.ui.TextInputWidget( config );
 	}
@@ -415,7 +408,7 @@ mw.TemplateWizard.TemplateForm.prototype.getFieldsValidity = function () {
 		const field = this.fields[ i ].getField();
 		const validity = field.getValidity();
 		// Record this field as being the invalid one.
-		validity.fail( () => {
+		validity.catch( () => {
 			this.invalidField = field;
 		} );
 		validityPromises.push( validity );
@@ -434,6 +427,9 @@ mw.TemplateWizard.TemplateForm.prototype.processParameters = function ( template
 		suggested: {},
 		optional: {}
 	};
+	if ( !params || params.length === 0 ) {
+		return groupedParams;
+	}
 	// Optionally use paramOrder (which if present and not null must contain all params).
 	const paramNames = templateData.paramOrder || Object.keys( params );
 	paramNames.forEach( ( param ) => {

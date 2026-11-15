@@ -4,7 +4,7 @@ namespace Wikibase\Lexeme\Search\Elastic;
 use CirrusSearch\CirrusSearch;
 use CirrusSearch\Search\CirrusIndexField;
 use DataValues\StringValue;
-use SearchEngine;
+use MediaWiki\Search\SearchEngine;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\NumericPropertyId;

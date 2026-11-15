@@ -1,12 +1,12 @@
 /*!
- * OOUI v0.51.1
+ * OOUI v0.53.2
  * https://www.mediawiki.org/wiki/OOUI
  *
- * Copyright 2011–2024 OOUI Team and other contributors.
+ * Copyright 2011–2026 OOUI Team and other contributors.
  * Released under the MIT license
  * http://oojs.mit-license.org
  *
- * Date: 2024-09-19T17:13:43Z
+ * Date: 2026-04-21T12:46:08Z
  */
 ( function ( OO ) {
 
@@ -112,7 +112,7 @@ OO.ui.isFocusableElement = function ( $element ) {
 	// (indexOf is much faster than regex in Chrome and about the
 	// same in FF: https://jsperf.com/regex-vs-indexof-array2)
 	const nodeName = element.nodeName.toLowerCase();
-	if ( [ 'input', 'select', 'textarea', 'button', 'object' ].indexOf( nodeName ) !== -1 ) {
+	if ( [ 'input', 'select', 'textarea', 'button', 'object' ].includes( nodeName ) ) {
 		return true;
 	}
 
@@ -493,6 +493,8 @@ OO.ui.isMobile = function () {
  * clipped to the viewport, e.g. dropdown menus and popups. This is meant to be overridden to avoid
  * such menus overlapping any fixed headers/toolbars/navigation used by the site.
  *
+ * Care should be taken to account for the padding changing when modal dialogs are open.
+ *
  * @return {Object} Object with the properties 'top', 'right', 'bottom', 'left', each representing
  *  the extra spacing from that edge of viewport (in pixels)
  */
@@ -564,6 +566,7 @@ OO.ui.msg.messages = {
 	"ooui-dialog-message-accept": "OK",
 	"ooui-dialog-message-reject": "Cancel",
 	"ooui-dialog-process-error": "Something went wrong",
+	"ooui-dialog-process-back": "Back",
 	"ooui-dialog-process-dismiss": "Dismiss",
 	"ooui-dialog-process-retry": "Try again",
 	"ooui-dialog-process-continue": "Continue",
@@ -622,11 +625,11 @@ OO.ui.mixin = {};
  *  Data can also be specified with the #setData method.
  */
 OO.ui.Element = function OoUiElement( config ) {
+	// Configuration initialization
+	config = config || {};
 	if ( OO.ui.isDemo ) {
 		this.initialConfig = config;
 	}
-	// Configuration initialization
-	config = config || {};
 
 	// Properties
 	this.elementId = null;
@@ -1331,8 +1334,14 @@ OO.ui.Element.static.getClosestScrollableContainer = function ( el, dimension ) 
  * @param {string} [config.duration='fast'] jQuery animation duration value
  * @param {string} [config.direction] Scroll in only one direction, e.g. 'x' or 'y', omit
  *  to scroll in both directions
- * @param {Object} [config.alignToTop=false] Aligns the top of the element to the top of the visible
- *  area of the scrollable ancestor.
+ * @param {boolean} [config.alignToTop=false] Deprecated, use `alignTo: 'top'` instead.
+ *  Aligns the top of the element to the top of the visible area of the scrollable ancestor.
+ * @param {string|string[]} [config.alignTo] Aligns the element to an edge of the visible area of
+ *  the scrollable ancestor. Possible values are 'top' or 'bottom' when scrolling vertically, and
+ *  'left' or 'right' when scrolling horizontally. When scrolling in both directions, an array with
+ *  two values can be used, e.g. `['top', 'right']`.
+ *  When omitted, the element will be scrolled the minimum amount necessary to make it fully
+ *  visible.
  * @param {Object} [config.padding] Additional padding on the container to scroll past.
  *  Object containing any of 'top', 'bottom', 'left', or 'right' as numbers.
  * @param {Object} [config.scrollContainer] Scroll container. Defaults to
@@ -1396,10 +1405,17 @@ OO.ui.Element.static.scrollIntoView = function ( elOrPosition, config ) {
 		};
 	}
 
+	const hasAlignTo = ( align ) => Array.isArray( config.alignTo ) ?
+		config.alignTo.includes( align ) :
+		config.alignTo === align || ( align === 'top' && config.alignToTop );
+
 	if ( !config.direction || config.direction === 'y' ) {
-		if ( position.top < padding.top || config.alignToTop ) {
+		const alignToTop = hasAlignTo( 'top' );
+		const alignToBottom = hasAlignTo( 'bottom' );
+
+		if ( alignToTop || ( !alignToBottom && position.top < padding.top ) ) {
 			animations.scrollTop = containerDimensions.scroll.top + position.top - padding.top;
-		} else if ( position.bottom < padding.bottom ) {
+		} else if ( alignToBottom || position.bottom < padding.bottom ) {
 			animations.scrollTop = containerDimensions.scroll.top +
 				// Scroll the bottom into view, but not at the expense
 				// of scrolling the top out of view
@@ -1407,9 +1423,12 @@ OO.ui.Element.static.scrollIntoView = function ( elOrPosition, config ) {
 		}
 	}
 	if ( !config.direction || config.direction === 'x' ) {
-		if ( position.left < padding.left ) {
+		const alignToLeft = hasAlignTo( 'left' );
+		const alignToRight = hasAlignTo( 'right' );
+
+		if ( alignToLeft || ( !alignToRight && position.left < padding.left ) ) {
 			animations.scrollLeft = containerDimensions.scroll.left + position.left - padding.left;
-		} else if ( position.right < padding.right ) {
+		} else if ( alignToRight || position.right < padding.right ) {
 			animations.scrollLeft = containerDimensions.scroll.left +
 				// Scroll the right into view, but not at the expense
 				// of scrolling the left out of view
@@ -1975,6 +1994,7 @@ OO.ui.Theme.prototype.updateQueuedElementClasses = function () {
 OO.ui.Theme.prototype.queueUpdateElementClasses = function ( element ) {
 	// Keep items in the queue unique. Use lastIndexOf to start checking from the end because that's
 	// the most common case (this method is often called repeatedly for the same element).
+	// eslint-disable-next-line unicorn/prefer-includes
 	if ( this.elementClassesQueue.lastIndexOf( element ) !== -1 ) {
 		return;
 	}
@@ -2170,6 +2190,22 @@ OO.ui.mixin.TabIndexedElement.prototype.getInputId = function () {
 };
 
 /**
+ * Set the element with the given ID as a label for this widget.
+ *
+ * @param {string|null} id
+ */
+OO.ui.mixin.TabIndexedElement.prototype.setLabelledBy = function ( id ) {
+	if ( !this.$tabIndexed ) {
+		return;
+	}
+	if ( id ) {
+		this.$tabIndexed.attr( 'aria-labelledby', id );
+	} else {
+		this.$tabIndexed.removeAttr( 'aria-labelledby' );
+	}
+};
+
+/**
  * Whether the node is 'labelable' according to the HTML spec
  * (i.e., whether it can be interacted with through a `<label for="…">`).
  * See: <https://html.spec.whatwg.org/multipage/forms.html#category-label>.
@@ -2186,7 +2222,7 @@ OO.ui.mixin.TabIndexedElement.prototype.isLabelableNode = function ( $node ) {
 	if ( tagName === 'input' && $node.attr( 'type' ) !== 'hidden' ) {
 		return true;
 	}
-	if ( labelableTags.indexOf( tagName ) !== -1 ) {
+	if ( labelableTags.includes( tagName ) ) {
 		return true;
 	}
 	return false;
@@ -2238,6 +2274,8 @@ OO.ui.mixin.TabIndexedElement.prototype.simulateLabelClick = function () {
  * @param {jQuery} [config.$button] The button element created by the class.
  *  If this configuration is omitted, the button element will use a generated `<a>`.
  * @param {boolean} [config.framed=true] Render the button with a frame
+ * @param {string} [config.size='medium'] The size of the button,
+ *  either 'small', 'medium' or 'large'
  */
 OO.ui.mixin.ButtonElement = function OoUiMixinButtonElement( config ) {
 	// Configuration initialization
@@ -2246,6 +2284,7 @@ OO.ui.mixin.ButtonElement = function OoUiMixinButtonElement( config ) {
 	// Properties
 	this.$button = null;
 	this.framed = null;
+	this.size = null;
 	this.active = config.active !== undefined && config.active;
 	this.onDocumentMouseUpHandler = this.onDocumentMouseUp.bind( this );
 	this.onMouseDownHandler = this.onMouseDown.bind( this );
@@ -2257,6 +2296,7 @@ OO.ui.mixin.ButtonElement = function OoUiMixinButtonElement( config ) {
 	// Initialization
 	this.$element.addClass( 'oo-ui-buttonElement' );
 	this.toggleFramed( config.framed === undefined || config.framed );
+	this.setSize( config.size || 'medium' );
 	this.setButtonElement( config.$button || $( '<a>' ) );
 };
 
@@ -2356,6 +2396,10 @@ OO.ui.mixin.ButtonElement.prototype.onMouseDown = function ( e ) {
  * @param {MouseEvent} e Mouse up event
  */
 OO.ui.mixin.ButtonElement.prototype.onDocumentMouseUp = function ( e ) {
+	if ( e.target === document.documentElement ) {
+		// This means that the scrollbar was the target of the click
+		return;
+	}
 	if ( this.isDisabled() || e.which !== OO.ui.MouseButtons.LEFT ) {
 		return;
 	}
@@ -2451,6 +2495,41 @@ OO.ui.mixin.ButtonElement.prototype.toggleFramed = function ( framed ) {
 		this.$element
 			.toggleClass( 'oo-ui-buttonElement-frameless', !framed )
 			.toggleClass( 'oo-ui-buttonElement-framed', framed );
+		this.updateThemeClasses();
+		// Changing framed changes the available sizes
+		this.setSize( this.size || 'medium' );
+	}
+
+	return this;
+};
+
+/**
+ * Get the button's size.
+ *
+ * @return {string} The button's size, either 'small', 'medium' or 'large'
+ */
+OO.ui.mixin.ButtonElement.prototype.getSize = function () {
+	return this.size;
+};
+
+/**
+ * Set the button's size
+ *
+ * @param {string} size The size of the button, either 'small', 'medium' or 'large'
+ * @chainable
+ * @return {OO.ui.Element} The element, for chaining
+ */
+OO.ui.mixin.ButtonElement.prototype.setSize = function ( size ) {
+	if ( !this.framed ) {
+		// Frameless buttons only support medium size
+		size = 'medium';
+	}
+	if ( size !== this.size ) {
+		this.size = size;
+		this.$element
+			.toggleClass( 'oo-ui-buttonElement-size-small', size === 'small' )
+			.toggleClass( 'oo-ui-buttonElement-size-medium', size === 'medium' )
+			.toggleClass( 'oo-ui-buttonElement-size-large', size === 'large' );
 		this.updateThemeClasses();
 	}
 
@@ -3023,10 +3102,10 @@ OO.ui.mixin.LabelElement.prototype.setLabelContent = function ( label ) {
  *
  * @constructor
  * @param {Object} [config] Configuration options
- * @param {jQuery} [config.$icon] The icon element created by the class. If this configuration is omitted,
- *  the icon element will use a generated `<span>`. To use a different HTML tag, or to specify that
- *  the icon element be set to an existing icon instead of the one generated by this class, set a
- *  value using a jQuery selection. For example:
+ * @param {jQuery} [config.$icon] The icon element created by the class. If this configuration
+ *  is omitted, the icon element will use a generated `<span>`. To use a different HTML tag,
+ *  or to specify that the icon element be set to an existing icon instead of the one generated
+ *  by this class, set a value using a jQuery selection. For example:
  *
  *      // Use a <div> tag instead of a <span>
  *     $icon: $( '<div>' )
@@ -3034,8 +3113,8 @@ OO.ui.mixin.LabelElement.prototype.setLabelContent = function ( label ) {
  *     $icon: this.$element
  *     // Use an icon element from a child widget
  *     $icon: this.childwidget.$element
- * @param {Object|string} [config.icon=''] The symbolic name of the icon (e.g., ‘remove’ or ‘menu’), or a
- *  map of symbolic names. A map is used for i18n purposes and contains a `default` icon
+ * @param {Object|string} [config.icon=''] The symbolic name of the icon (e.g., ‘remove’ or ‘menu’),
+ *  or a map of symbolic names. A map is used for i18n purposes and contains a `default` icon
  *  name and additional names keyed by language code. The `default` name is used when no icon is
  *  keyed by the user's language.
  *
@@ -4177,7 +4256,7 @@ OO.ui.ButtonWidget.prototype.setRel = function ( rel ) {
 
 	this.rel = rel;
 	// For backwards compatibility.
-	this.noFollow = rel.indexOf( 'nofollow' ) !== -1;
+	this.noFollow = rel.includes( 'nofollow' );
 	this.$button.attr( 'rel', rel.join( ' ' ) || null );
 
 	return this;
@@ -5098,7 +5177,7 @@ OO.ui.mixin.FloatableElement.prototype.setFloatableContainer = function ( $float
  * @param {string} position 'below', 'above', 'top', 'bottom' or 'center'
  */
 OO.ui.mixin.FloatableElement.prototype.setVerticalPosition = function ( position ) {
-	if ( [ 'below', 'above', 'top', 'bottom', 'center' ].indexOf( position ) === -1 ) {
+	if ( ![ 'below', 'above', 'top', 'bottom', 'center' ].includes( position ) ) {
 		throw new Error( 'Invalid value for vertical position: ' + position );
 	}
 	if ( this.verticalPosition !== position ) {
@@ -5115,7 +5194,7 @@ OO.ui.mixin.FloatableElement.prototype.setVerticalPosition = function ( position
  * @param {string} position 'before', 'after', 'start', 'end' or 'center'
  */
 OO.ui.mixin.FloatableElement.prototype.setHorizontalPosition = function ( position ) {
-	if ( [ 'before', 'after', 'start', 'end', 'center' ].indexOf( position ) === -1 ) {
+	if ( ![ 'before', 'after', 'start', 'end', 'center' ].includes( position ) ) {
 		throw new Error( 'Invalid value for horizontal position: ' + position );
 	}
 	if ( this.horizontalPosition !== position ) {
@@ -5317,6 +5396,7 @@ OO.ui.mixin.FloatableElement.prototype.position = function () {
 OO.ui.mixin.FloatableElement.prototype.computePosition = function () {
 	const newPos = { top: '', left: '', bottom: '', right: '' };
 	const direction = this.$floatableContainer.css( 'direction' );
+	const viewportSpacing = OO.ui.getViewportSpacing();
 
 	let $offsetParent = this.$floatable.offsetParent();
 
@@ -5352,15 +5432,35 @@ OO.ui.mixin.FloatableElement.prototype.computePosition = function () {
 
 	if ( this.verticalPosition === 'below' ) {
 		newPos.top = containerPos.bottom + this.spacing;
+		// Adjust for viewport spacing (e.g. sticky headers) when attached to body
+		if ( isBody ) {
+			newPos.top += viewportSpacing.top;
+		}
 	} else if ( this.verticalPosition === 'above' ) {
 		newPos.bottom = $offsetParent.outerHeight() - containerPos.top + this.spacing;
+		// Adjust for viewport spacing (e.g. sticky footers) when attached to body
+		if ( isBody ) {
+			newPos.bottom += viewportSpacing.bottom;
+		}
 	} else if ( this.verticalPosition === 'top' ) {
 		newPos.top = containerPos.top;
+		// Adjust for viewport spacing when attached to body
+		if ( isBody ) {
+			newPos.top += viewportSpacing.top;
+		}
 	} else if ( this.verticalPosition === 'bottom' ) {
 		newPos.bottom = $offsetParent.outerHeight() - containerPos.bottom;
+		// Adjust for viewport spacing when attached to body
+		if ( isBody ) {
+			newPos.bottom += viewportSpacing.bottom;
+		}
 	} else if ( this.verticalPosition === 'center' ) {
 		newPos.top = containerPos.top +
 			( this.$floatableContainer.height() - this.$floatable.height() ) / 2;
+		// Adjust for viewport spacing when attached to body
+		if ( isBody ) {
+			newPos.top += viewportSpacing.top;
+		}
 	}
 
 	if ( this.horizontalPosition === 'before' ) {
@@ -6046,6 +6146,10 @@ OO.mixinClass( OO.ui.PopupWidget, OO.ui.mixin.FloatableElement );
  * @param {MouseEvent} e Mouse down event
  */
 OO.ui.PopupWidget.prototype.onDocumentMouseDown = function ( e ) {
+	if ( e.target === document.documentElement ) {
+		// This means that the scrollbar was the target of the click
+		return;
+	}
 	if (
 		this.isVisible() &&
 		!OO.ui.contains( this.$element.add( this.$autoCloseIgnore ).get(), e.target, true )
@@ -6173,7 +6277,7 @@ OO.ui.PopupWidget.prototype.toggleAnchor = function ( show ) {
  * @param {string} edge 'top', 'bottom', 'start' or 'end'
  */
 OO.ui.PopupWidget.prototype.setAnchorEdge = function ( edge ) {
-	if ( [ 'top', 'bottom', 'start', 'end' ].indexOf( edge ) === -1 ) {
+	if ( ![ 'top', 'bottom', 'start', 'end' ].includes( edge ) ) {
 		throw new Error( 'Invalid value for edge: ' + edge );
 	}
 	if ( this.anchorEdge !== null ) {
@@ -6264,7 +6368,7 @@ OO.ui.PopupWidget.prototype.toggle = function ( show ) {
 							// If that also causes it to be clipped, open in whichever direction
 							// we have more space
 							const oppositeHeight = this.$element.height();
-							if ( oppositeHeight < normalHeight ) {
+							if ( oppositeHeight <= normalHeight ) {
 								this.isAutoFlipped = !this.isAutoFlipped;
 								this.position();
 							}
@@ -6287,7 +6391,7 @@ OO.ui.PopupWidget.prototype.toggle = function ( show ) {
 							// If that also causes it to be clipped, open in whichever direction
 							// we have more space
 							const oppositeWidth = this.$element.width();
-							if ( oppositeWidth < normalWidth ) {
+							if ( oppositeWidth <= normalWidth ) {
 								this.isAutoFlipped = !this.isAutoFlipped;
 								// Due to T180173, horizontally clipped PopupWidgets have messed up
 								// dimensions, which causes positioning to be off. Toggle clipping
@@ -6544,7 +6648,7 @@ OO.ui.PopupWidget.prototype.computePosition = function () {
  */
 OO.ui.PopupWidget.prototype.setAlignment = function ( align ) {
 	// Validate alignment
-	if ( [ 'force-left', 'force-right', 'backwards', 'forwards', 'center' ].indexOf( align ) > -1 ) {
+	if ( [ 'force-left', 'force-right', 'backwards', 'forwards', 'center' ].includes( align ) ) {
 		this.align = align;
 	} else {
 		this.align = 'center';
@@ -6568,7 +6672,7 @@ OO.ui.PopupWidget.prototype.getAlignment = function () {
  * @param {string} position 'above', 'below', 'before' or 'after'
  */
 OO.ui.PopupWidget.prototype.setPosition = function ( position ) {
-	if ( [ 'above', 'below', 'before', 'after' ].indexOf( position ) === -1 ) {
+	if ( ![ 'above', 'below', 'before', 'after' ].includes( position ) ) {
 		position = 'below';
 	}
 	this.popupPosition = position;
@@ -7335,6 +7439,10 @@ OO.ui.SelectWidget.prototype.onMouseDown = function ( e ) {
  * @return {undefined|boolean} False to prevent default if event is handled
  */
 OO.ui.SelectWidget.prototype.onDocumentMouseUp = function ( e ) {
+	if ( e.target === document.documentElement ) {
+		// This means that the scrollbar was the target of the click
+		return;
+	}
 	this.togglePressed( false );
 	if ( !this.selecting ) {
 		const item = this.findTargetItem( e );
@@ -7464,7 +7572,6 @@ OO.ui.SelectWidget.prototype.onDocumentKeyDown = function ( e ) {
 					handled = true;
 				}
 				break;
-			case OO.ui.Keys.ESCAPE:
 			case OO.ui.Keys.TAB:
 				if ( currentItem ) {
 					currentItem.setHighlighted( false );
@@ -7511,6 +7618,24 @@ OO.ui.SelectWidget.prototype.bindDocumentKeyDownListener = function () {
  */
 OO.ui.SelectWidget.prototype.unbindDocumentKeyDownListener = function () {
 	this.getElementDocument().removeEventListener( 'keydown', this.onDocumentKeyDownHandler, true );
+};
+
+/**
+ * Attach document keydown listeners when the element is focused
+ *
+ * @param {jQuery} [$element=this.$element] Element to watch
+ * @protected
+ */
+OO.ui.SelectWidget.prototype.attachDocumentKeyDownListenerOnFocus = function ( $element ) {
+	$element = $element || this.$element;
+	// focusin/out are bubbling and so fire before DOM changes, this
+	// means focusout fires when this.$element is detached while focused,
+	// unlike blur.
+	// As the widget could be removed by using widget.$element.remove(),
+	// we use native events as jQuery.remove will unbind jQuery events
+	// before element removal, preventing us from listening to focusout.
+	$element[ 0 ].addEventListener( 'focusin', this.bindDocumentKeyDownListener.bind( this ) );
+	$element[ 0 ].addEventListener( 'focusout', this.unbindDocumentKeyDownListener.bind( this ) );
 };
 
 /**
@@ -7623,7 +7748,7 @@ OO.ui.SelectWidget.prototype.getItemMatcher = function ( query, mode ) {
 			case 'exact':
 				return matchText === normalizedQuery;
 			case 'substring':
-				return matchText.indexOf( normalizedQuery ) !== -1;
+				return matchText.includes( normalizedQuery );
 			// 'prefix'
 			default:
 				return matchText.indexOf( normalizedQuery ) === 0;
@@ -8126,10 +8251,7 @@ OO.ui.SelectWidget.prototype.addItems = function ( items, index ) {
 OO.ui.SelectWidget.prototype.removeItems = function ( items ) {
 	// Deselect items being removed
 	for ( let i = 0; i < items.length; i++ ) {
-		const item = items[ i ];
-		if ( item.isSelected() ) {
-			this.selectItem( null );
-		}
+		this.unselectItem( items[ i ] );
 	}
 
 	// Mixin method
@@ -8481,6 +8603,10 @@ OO.ui.MenuSelectWidget.static.flippedPositions = {
  * @param {MouseEvent} e Mouse down event
  */
 OO.ui.MenuSelectWidget.prototype.onDocumentMouseDown = function ( e ) {
+	if ( e.target === document.documentElement ) {
+		// This means that the scrollbar was the target of the click
+		return;
+	}
 	if (
 		this.isVisible() &&
 		!OO.ui.contains(
@@ -8828,7 +8954,7 @@ OO.ui.MenuSelectWidget.prototype.toggle = function ( visible ) {
 					// If flipping also causes it to be clipped, open in whichever direction
 					// we have more space
 					const flippedHeight = this.$element.height();
-					if ( originalHeight > flippedHeight ) {
+					if ( originalHeight >= flippedHeight ) {
 						this.setVerticalPosition( this.originalVerticalPosition );
 					}
 				}
@@ -9258,10 +9384,7 @@ OO.ui.RadioSelectWidget = function OoUiRadioSelectWidget( config ) {
 	OO.ui.mixin.TabIndexedElement.call( this, config );
 
 	// Events
-	this.$element.on( {
-		focus: this.bindDocumentKeyDownListener.bind( this ),
-		blur: this.unbindDocumentKeyDownListener.bind( this )
-	} );
+	this.attachDocumentKeyDownListenerOnFocus();
 
 	// Initialization
 	this.$element
@@ -10611,13 +10734,19 @@ OO.ui.DropdownInputWidget = function OoUiDropdownInputWidget( config ) {
 	} );
 
 	// Initialization
+	const downIndicator = new OO.ui.IndicatorWidget( {
+		indicator: 'down'
+	} );
 	this.$element
 		.addClass( 'oo-ui-dropdownInputWidget' )
-		.append( this.dropdownWidget.$element );
+		.append( this.dropdownWidget.$element, downIndicator.$element );
 	if ( OO.ui.isMobile() ) {
 		this.$element.addClass( 'oo-ui-isMobile' );
+	} else {
+		// On mobile, keep this.$input as the tab-indexed element.
+		// This also allows FieldLayout to use <label for> to point to it. (T396261)
+		this.setTabIndexedElement( this.dropdownWidget.$tabIndexed );
 	}
-	this.setTabIndexedElement( this.dropdownWidget.$tabIndexed );
 	this.setTitledElement( this.dropdownWidget.$handle );
 };
 
@@ -10633,7 +10762,7 @@ OO.mixinClass( OO.ui.DropdownInputWidget, OO.ui.mixin.RequiredElement );
  * @protected
  */
 OO.ui.DropdownInputWidget.prototype.getInputElement = function () {
-	return $( '<select>' ).addClass( 'oo-ui-indicator-down' );
+	return $( '<select>' );
 };
 
 /**
@@ -11573,7 +11702,7 @@ OO.mixinClass( OO.ui.TextInputWidget, OO.ui.mixin.RequiredElement );
 /* Static Properties */
 
 OO.ui.TextInputWidget.static.validationPatterns = {
-	'non-empty': /.+/,
+	'non-empty': /^./,
 	integer: /^\d+$/
 };
 
@@ -11583,6 +11712,7 @@ OO.ui.TextInputWidget.static.validationPatterns = {
  * An `enter` event is emitted when the user presses Enter key inside the text box.
  *
  * @event OO.ui.TextInputWidget#enter
+ * @param {jQuery.Event} e
  */
 
 /* Methods */
@@ -11745,7 +11875,7 @@ OO.ui.TextInputWidget.prototype.getValidType = function ( config ) {
 		'url',
 		'number'
 	];
-	return allowedTypes.indexOf( config.type ) !== -1 ? config.type : 'text';
+	return allowedTypes.includes( config.type ) ? config.type : 'text';
 };
 
 /**
@@ -12978,7 +13108,7 @@ OO.ui.FieldLayout.prototype.makeMessage = function ( kind, text ) {
 OO.ui.FieldLayout.prototype.setAlignment = function ( value ) {
 	if ( value !== this.align ) {
 		// Default to 'left'
-		if ( [ 'left', 'right', 'top', 'inline' ].indexOf( value ) === -1 ) {
+		if ( ![ 'left', 'right', 'top', 'inline' ].includes( value ) ) {
 			value = 'left';
 		}
 		// Validate
@@ -14304,10 +14434,16 @@ OO.ui.SelectFileInputWidget.prototype.setValue = function ( files ) {
 	}
 
 	function comparableFile( file ) {
-		// Use extend to convert to plain objects so they can be compared.
-		// File objects contains name, size, timestamp and mime type which
-		// should be unique.
-		return Object.assign( {}, file );
+		// File objects are not enumerable for comparison, so we use these simple objects.
+		// This ignores contents, so it's not a perfect comparison
+		return {
+			// Blob properties
+			size: file.size,
+			type: file.type,
+			// File properties
+			lastModified: file.lastModified,
+			name: file.name
+		};
 	}
 
 	if ( !OO.compare(
@@ -14469,18 +14605,17 @@ OO.ui.SelectFileInputWidget.prototype.filterFiles = function ( files ) {
 			return true;
 		}
 
-		for ( let i = 0; i < accept.length; i++ ) {
-			let mimeTest = accept[ i ];
-			if ( mimeTest === mimeType ) {
+		return accept.some( ( acceptedType ) => {
+			if ( acceptedType === mimeType ) {
 				return true;
-			} else if ( mimeTest.slice( -2 ) === '/*' ) {
-				mimeTest = mimeTest.slice( 0, mimeTest.length - 1 );
-				if ( mimeType.slice( 0, mimeTest.length ) === mimeTest ) {
+			} else if ( acceptedType.slice( -2 ) === '/*' ) {
+				// e.g. 'image/*'
+				if ( mimeType.startsWith( acceptedType.slice( 0, -1 ) ) ) {
 					return true;
 				}
 			}
-		}
-		return false;
+			return false;
+		} );
 	}
 
 	return Array.prototype.filter.call( files, mimeAllowed );
@@ -14580,13 +14715,16 @@ OO.ui.SelectFileInputWidget.prototype.onDragEnterOrOver = function ( e ) {
 	// DataTransferItem and File both have a type property, but in Chrome files
 	// have no information at this point.
 	const itemsOrFiles = dt.items || dt.files;
-	const hasFiles = !!( itemsOrFiles && itemsOrFiles.length );
+	const hasFiles = !!itemsOrFiles &&
+		// Check some of the items are files (e.g. not just dragged text)
+		Array.prototype.some.call( itemsOrFiles, ( item ) => item.kind === 'file' );
+
 	if ( hasFiles ) {
 		if ( this.filterFiles( itemsOrFiles ).length ) {
 			hasDroppableFile = true;
 		}
 	// dt.types is Array-like, but not an Array
-	} else if ( Array.prototype.indexOf.call( OO.getProp( dt, 'types' ) || [], 'Files' ) !== -1 ) {
+	} else if ( Array.prototype.includes.call( OO.getProp( dt, 'types' ) || [], 'Files' ) ) {
 		// File information is not available at this point for security so just assume
 		// it is acceptable for now.
 		// https://bugzilla.mozilla.org/show_bug.cgi?id=640534
@@ -14643,14 +14781,6 @@ OO.ui.SelectFileInputWidget.prototype.onDrop = function ( e ) {
 
 	return false;
 };
-
-// Deprecated alias
-OO.ui.SelectFileWidget = function OoUiSelectFileWidget() {
-	OO.ui.warnDeprecation( 'SelectFileWidget: Deprecated alias, use SelectFileInputWidget instead.' );
-	OO.ui.SelectFileWidget.super.apply( this, arguments );
-};
-
-OO.inheritClass( OO.ui.SelectFileWidget, OO.ui.SelectFileInputWidget );
 
 }( OO ) );
 

@@ -7,7 +7,7 @@ use CirrusSearch\HashSearchConfig;
 use CirrusSearch\Search\CirrusSearchResultSet;
 use CirrusSearch\Search\SearchQueryBuilder;
 use CirrusSearch\Test\DummySearchResultSet;
-use HtmlArmor;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * @covers \CirrusSearch\Fallbacks\PhraseSuggestFallbackMethod
@@ -15,11 +15,11 @@ use HtmlArmor;
  */
 class PhraseSuggestFallbackMethodTest extends FallbackMethodTestBase {
 
-	public function provideTest() {
+	public static function provideTest() {
 		foreach ( CirrusIntegrationTestCase::findFixtures( 'phraseSuggestResponses/*.config' ) as $testFile ) {
 			$testName = substr( basename( $testFile ), 0, -7 );
 			$fixture = CirrusIntegrationTestCase::loadFixture( $testFile );
-			$resultSet = $this->newResultSet( $fixture['response'] );
+			$resultSet = self::newResultSet( $fixture['response'] );
 			yield $testName => [
 				$fixture['query'],
 				$resultSet,
@@ -47,7 +47,7 @@ class PhraseSuggestFallbackMethodTest extends FallbackMethodTestBase {
 			->setAllowRewrite( true )
 			->build();
 
-		$rewrittenResults = $rewritten ? DummySearchResultSet::fakeTotalHits( $this->newTitleHelper(), 1 ) : null;
+		$rewrittenResults = $rewritten ? DummySearchResultSet::fakeTotalHits( self::newTitleHelper(), 1 ) : null;
 		$rewrittenQuery = $rewritten ? SearchQueryBuilder::forRewrittenQuery( $query, $suggestion, $this->namespacePrefixParser(),
 				$this->createCirrusSearchHookRunner() )->build() : null;
 		$searcherFactory = $this->getSearcherFactoryMock( $rewrittenQuery, $rewrittenResults );
@@ -72,8 +72,7 @@ class PhraseSuggestFallbackMethodTest extends FallbackMethodTestBase {
 				$this->assertEquals( new HtmlArmor( $suggestionSnippet ),
 					$actualNewResults->getSuggestionSnippet() );
 			} else {
-				$this->assertSame( FallbackStatus::ACTION_REPLACE_LOCAL_RESULTS, $status->getAction
-				() );
+				$this->assertSame( FallbackStatus::ACTION_REPLACE_LOCAL_RESULTS, $status->getAction() );
 				$this->assertSame( $suggestion, $rewrittenResults->getQueryAfterRewrite() );
 				$this->assertEquals( new HtmlArmor( $suggestionSnippet ),
 					$rewrittenResults->getQueryAfterRewriteSnippet() );
@@ -185,7 +184,7 @@ class PhraseSuggestFallbackMethodTest extends FallbackMethodTestBase {
 		$method = PhraseSuggestFallbackMethod::build( $query, [ 'profile' => 'default' ] );
 		$this->assertNotNull( $method->getSuggestQueries() );
 
-		$rset = DummySearchResultSet::fakeTotalHits( $this->newTitleHelper(), 10 );
+		$rset = DummySearchResultSet::fakeTotalHits( self::newTitleHelper(), 10 );
 		$rset->setSuggestionQuery( "test", "test" );
 		$factory = $this->createNoOpMock( SearcherFactory::class );
 		$context = new FallbackRunnerContextImpl( $rset, $factory, $this->namespacePrefixParser(),
@@ -193,7 +192,7 @@ class PhraseSuggestFallbackMethodTest extends FallbackMethodTestBase {
 		$method->rewrite( $context );
 		$this->assertTrue( $context->costlyCallAllowed() );
 
-		$rset = DummySearchResultSet::fakeTotalHits( $this->newTitleHelper(), 10 );
+		$rset = DummySearchResultSet::fakeTotalHits( self::newTitleHelper(), 10 );
 		$factory = $this->createNoOpMock( SearcherFactory::class );
 		$context = new FallbackRunnerContextImpl( $rset, $factory, $this->namespacePrefixParser(),
 			$this->createCirrusSearchHookRunner() );

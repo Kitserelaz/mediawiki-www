@@ -1,0 +1,22 @@
+{
+	"root": true,
+	"extends": [
+		"wikimedia/client",
+		"wikimedia/jquery",
+		"wikimedia/mediawiki"
+	],
+	"env": {
+		"commonjs": true
+	},
+	"rules": {
+		"valid-jsdoc": [
+			"error",
+			{
+				"requireParamDescription": false,
+				"requireReturn": false,
+				"requireReturnDescription": false
+			}
+		],
+		"jsdoc/no-undefined-types": "warn"
+	}
+}

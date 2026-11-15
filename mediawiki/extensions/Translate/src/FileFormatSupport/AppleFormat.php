@@ -15,7 +15,7 @@ use RuntimeException;
  *
  * This class has not yet been battle-tested, so beware.
  *
- * @author Brion Vibber <bvibber@wikimedia.org>
+ * @author Brooke Vibber <bvibber@pobox.com>
  * @ingroup FileFormatSupport
  */
 class AppleFormat extends SimpleFormat {
@@ -102,7 +102,7 @@ class AppleFormat extends SimpleFormat {
 		$output = '';
 		$mangler = $this->group->getMangler();
 
-		$collection->filter( 'hastranslation', false );
+		$collection->filter( MessageCollection::FILTER_HAS_TRANSLATION, MessageCollection::INCLUDE_MATCHING );
 		/** @var Message $m */
 		foreach ( $collection as $key => $m ) {
 			$value = $m->translation();
@@ -148,9 +148,7 @@ class AppleFormat extends SimpleFormat {
 
 	/** Escape Obj-C-style strings; use backslash-escapes etc. */
 	private static function escapeString( string $str ): string {
-		$str = addcslashes( $str, '\\"' );
-		$str = str_replace( "\n", '\\n', $str );
-		return $str;
+		return str_replace( "\n", '\\n', addcslashes( $str, '\\"' ) );
 	}
 
 	/**

@@ -254,9 +254,10 @@ END;
 				$text .= '<li class="tableName error">' . $table . "</li>";
 				continue;
 			}
-			$res = $cdb->select( $table, 'COUNT(*) AS total', '', __METHOD__ );
-			$row = $res->fetchRow();
-			$tableRows = $row['total'];
+			$tableRows = $cdb->newSelectQueryBuilder()
+				->from( $table )
+				->caller( __METHOD__ )
+				->fetchRowCount();
 			// FIXME: hardcoded ()
 			$tableStr = $this->displayTableName( $table ) . " ($tableRows)";
 			if ( $this->tableName == $table ) {
@@ -346,10 +347,10 @@ END;
 		// If it's boolean, display something nicer than "0" or "1".
 		if ( $value === '_other' ) {
 			return Html::element( 'span', [ 'style' => 'font-style: italic;' ],
-				$this->msg( 'htmlform-selectorother-other' )->escaped() );
+				$this->msg( 'htmlform-selectorother-other' )->text() );
 		} elseif ( $value === '_none' ) {
 			return Html::element( 'span', [ 'style' => 'font-style: italic;' ],
-				$this->msg( 'powersearch-togglenone' )->escaped() );
+				$this->msg( 'powersearch-togglenone' )->text() );
 		} elseif ( $filter->fieldDescription->mType === 'Boolean' ) {
 			// Use existing MW messages for "Yes" and "No".
 			if ( $value == true ) {
@@ -1176,7 +1177,7 @@ END;
 					( $this->drilldownTabsParams ) ? [ 'tab' => $this->curTabName ] :
 					[ 'format' => $this->format, 'formatBy' => $this->formatBy ] );
 			$appliedFiltersHTML .= "\n\t" . '<span class="drilldown-header-value">~ \'' .
-				$this->fullTextSearchTerm .
+				htmlspecialchars( $this->fullTextSearchTerm ) .
 				'\'</span> <a href="' . $remove_filter_url . '" title="' .
 				$this->msg( 'cargo-drilldown-removefilter' )->escaped() . '"><img src="' .
 				$cgScriptPath . '/drilldown/resources/filter-x.png" /></a> ';
@@ -1230,7 +1231,7 @@ END;
 					$appliedFiltersHTML .= " <span class=\"drilldown-or\">" .
 						$this->msg( 'cargo-drilldown-or' )->escaped() . '</span> ';
 				}
-				$filter_text = $this->printFilterValue( $af->filter, $fv->text );
+				$filter_text = $this->printFilterValue( $af->filter, html_entity_decode( $fv->text ) );
 				$temp_filters_array = $this->applied_filters;
 				$removed_values = array_splice( $temp_filters_array[$i]->values, $j, 1 );
 				if ( $num_applied_values == 1 ) {
@@ -1247,7 +1248,7 @@ END;
 				}
 				array_splice( $temp_filters_array[$i]->values, $j, 0, $removed_values );
 				$appliedFiltersHTML .= "\n\t" . "<span class=\"drilldown-header-value\">" .
-					html_entity_decode( $filter_text ) . '</span> <a href="' . $remove_filter_url . '" title="' .
+					$filter_text . '</span> <a href="' . $remove_filter_url . '" title="' .
 					$this->msg( 'cargo-drilldown-removefilter' )->escaped() . '"><img src="' .
 					$cgScriptPath . '/drilldown/resources/filter-x.png" /></a>';
 			}
@@ -2074,7 +2075,7 @@ END;
 					'role' => 'presentation',
 					'class' => ( $this->curTabName == $drilldownTabName )
 						? 'selected' : null,
-				], Html::rawElement( 'a', [
+				], Html::element( 'a', [
 					'role' => 'tab',
 					'href' => $tabUrl,
 				], ucfirst( str_replace( '_', ' ', $drilldownTabName ) ) ) );
@@ -2150,7 +2151,7 @@ END;
 			}
 		}
 
-		if ( array_key_exists( $this->curTabName, $this->drilldownTabsParams ) ) {
+		if ( $this->curTabName !== null && array_key_exists( $this->curTabName, $this->drilldownTabsParams ) ) {
 			$currentTabParams = $this->drilldownTabsParams[$this->curTabName];
 			$this->format = strtolower( $currentTabParams['format'] );
 		} else {

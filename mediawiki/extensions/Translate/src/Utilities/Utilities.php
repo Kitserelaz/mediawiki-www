@@ -3,25 +3,24 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Utilities;
 
-use Content;
-use LanguageCode;
 use MediaWiki\Config\ConfigException;
+use MediaWiki\Content\Content;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Extension\Translate\PageTranslation\Hooks as PageTranslationHooks;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePage;
 use MediaWiki\Extension\Translate\Services;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Html\Html;
+use MediaWiki\Language\LanguageCode;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
 use MessageGroup;
-use TextContent;
 use UnexpectedValueException;
-use Wikimedia\Rdbms\IDatabase;
-use Xml;
-use XmlSelect;
+use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
  * Essentially random collection of helper functions, similar to GlobalFunctions.php.
@@ -82,18 +81,18 @@ class Utilities {
 	}
 
 	/**
-	 * Fetches contents for pagenames in given namespace without side effects.
+	 * Fetches the latest RevisionRecords for page names in a given namespace.
 	 *
-	 * @param string|string[] $titles Database page names.
+	 * Only pages whose main slot contains TextContent are included in the result.
+	 *
+	 * @param string[] $titles Database page names.
 	 * @param int $namespace The number of the namespace.
-	 * @return array ( string => array ( string, string ) ) Tuples of page
-	 * text and last author indexed by page name.
+	 * @return array<string, RevisionRecord> RevisionRecords indexed by page title.
 	 */
-	public static function getContents( $titles, int $namespace ): array {
+	private static function fetchLatestRevisionsByTitles( array $titles, int $namespace ): array {
 		$mwServices = MediaWikiServices::getInstance();
 		$dbr = $mwServices->getConnectionProvider()->getReplicaDatabase();
 		$revStore = $mwServices->getRevisionStore();
-		$titleContents = [];
 
 		$rows = $revStore->newSelectQueryBuilder( $dbr )
 			->joinPage()
@@ -107,22 +106,39 @@ class Utilities {
 			'content' => true
 		] )->getValue();
 
+		$result = [];
 		foreach ( $rows as $row ) {
-			/** @var RevisionRecord|null $rev */
-			$rev = $revisions[$row->rev_id];
-			if ( $rev ) {
-				/** @var TextContent $content */
-				$content = $rev->getContent( SlotRecord::MAIN );
-				if ( $content ) {
-					$titleContents[$row->page_title] = [
-						$content->getText(),
-						$row->rev_user_text
-					];
+			$revision = $revisions[$row->rev_id] ?? null;
+			if ( $revision !== null ) {
+				$content = $revision->getContent( SlotRecord::MAIN );
+				if ( $content instanceof TextContent ) {
+					$result[$row->page_title] = $revision;
 				}
 			}
 		}
 
 		$rows->free();
+
+		return $result;
+	}
+
+	/**
+	 * Fetches contents for page names in given namespace.
+	 *
+	 * @param string|string[] $titles Database page names.
+	 * @param int $namespace The number of the namespace.
+	 * @return array ( string => array ( string, string ) ) Tuples of page
+	 * text and last author indexed by page name.
+	 */
+	public static function getContents( $titles, int $namespace ): array {
+		$titleContents = [];
+		foreach ( self::fetchLatestRevisionsByTitles( (array)$titles, $namespace ) as $pageTitle => $revision ) {
+			$user = $revision->getUser( RevisionRecord::FOR_PUBLIC );
+			$titleContents[$pageTitle] = [
+				self::getTextFromTextContent( $revision->getContent( SlotRecord::MAIN ) ),
+				$user ? $user->getName() : '',
+			];
+		}
 
 		return $titleContents;
 	}
@@ -134,17 +150,8 @@ class Utilities {
 	 * @return string|null
 	 */
 	public static function getContentForTitle( Title $title, bool $addFuzzy = false ): ?string {
-		$store = MediaWikiServices::getInstance()->getRevisionStore();
-		$revision = $store->getRevisionByTitle( $title );
-
-		if ( $revision === null ) {
-			return null;
-		}
-
-		$content = $revision->getContent( SlotRecord::MAIN );
-		$wiki = ( $content instanceof TextContent ) ? $content->getText() : null;
-
-		// Either unexpected content type, or the revision content is hidden
+		$revision = MediaWikiServices::getInstance()->getRevisionStore()->getRevisionByTitle( $title );
+		$wiki = self::getTextFromContentOrNull( $revision?->getContent( SlotRecord::MAIN ) );
 		if ( $wiki === null ) {
 			return null;
 		}
@@ -173,42 +180,18 @@ class Utilities {
 	}
 
 	/**
-	 * Standard language selector in Translate extension.
-	 * @param string $language Language code of the language the names should be localised to.
-	 * @param ?string $labelOption
-	 * @return XmlSelect
-	 */
-	public static function getLanguageSelector( $language, ?string $labelOption = null ) {
-		$languages = self::getLanguageNames( $language );
-		ksort( $languages );
-
-		$selector = new XmlSelect();
-		if ( $labelOption !== null ) {
-			$selector->addOption( $labelOption, '-' );
-		}
-
-		foreach ( $languages as $code => $name ) {
-			$selector->addOption( "$code - $name", $code );
-		}
-
-		return $selector;
-	}
-
-	/**
 	 * Get translated language names for the languages generally supported for
 	 * translation in the current wiki. Message groups can have further
 	 * exclusions.
 	 * @param null|string $code
-	 * @return array ( language code => language name )
+	 * @return array<string,string> ( language code => language name )
 	 */
 	public static function getLanguageNames( ?string $code ): array {
 		$mwServices = MediaWikiServices::getInstance();
-		$languageNames = $mwServices->getLanguageNameUtils()->getLanguageNames( $code );
-
-		$deprecatedCodes = LanguageCode::getDeprecatedCodeMapping();
-		foreach ( array_keys( $deprecatedCodes ) as $deprecatedCode ) {
-			unset( $languageNames[ $deprecatedCode ] );
-		}
+		$languageNames = array_diff_key(
+			$mwServices->getLanguageNameUtils()->getLanguageNames( $code ),
+			LanguageCode::getDeprecatedCodeMapping()
+		);
 		Services::getInstance()->getHookRunner()->onTranslateSupportedLanguages( $languageNames, $code );
 
 		return $languageNames;
@@ -222,9 +205,11 @@ class Utilities {
 	 * @return string Html.
 	 */
 	public static function fieldset( string $legend, string $contents, array $attributes = [] ): string {
-		return Xml::openElement( 'fieldset', $attributes ) .
-			Xml::tags( 'legend', null, $legend ) . $contents .
-			Xml::closeElement( 'fieldset' );
+		return Html::rawElement(
+			'fieldset',
+			$attributes,
+			Html::rawElement( 'legend', [], $legend ) . $contents
+		);
 	}
 
 	/**
@@ -309,14 +294,15 @@ class Utilities {
 	/**
 	 * Get a DB handle suitable for read and read-for-write cases
 	 *
-	 * @return IDatabase Primary for HTTP POST, CLI, DB already changed;
+	 * @return IReadableDatabase Primary for HTTP POST, CLI, DB already changed;
 	 * replica otherwise
 	 */
-	public static function getSafeReadDB(): IDatabase {
-		$lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
-		$index = self::shouldReadFromPrimary() ? DB_PRIMARY : DB_REPLICA;
-
-		return $lb->getConnection( $index );
+	public static function getSafeReadDB(): IReadableDatabase {
+		$icp = MediaWikiServices::getInstance()->getConnectionProvider();
+		if ( self::shouldReadFromPrimary() ) {
+			return $icp->getPrimaryDatabase();
+		}
+		return $icp->getReplicaDatabase();
 	}
 
 	/** Check whether primary should be used for reads to avoid reading stale data. */
@@ -338,9 +324,14 @@ class Utilities {
 	 * @param MessageHandle $handle
 	 * @param string $action_source If non-empty, defines where
 	 * the link originates from, for metrics (event logging)
+	 * @param bool $includeLanguageParam Whether the language parameter should be included
 	 * @return string Domain relative URL
 	 */
-	public static function getEditorUrl( MessageHandle $handle, string $action_source = '' ): string {
+	public static function getEditorUrl(
+		MessageHandle $handle,
+		string $action_source = '',
+		bool $includeLanguageParam = true
+	): string {
 		if ( !$handle->isValid() ) {
 			return $handle->getTitle()->getLocalURL( [ 'action' => 'edit' ] );
 		}
@@ -350,7 +341,7 @@ class Utilities {
 		$urlParameters = [
 			'showMessage' => $handle->getInternalKey(),
 			'group' => $handle->getGroup()->getId(),
-			'language' => $handle->getCode(),
+			'language' => $includeLanguageParam ? $handle->getCode() : null,
 		];
 
 		if ( $action_source !== '' ) {
@@ -407,6 +398,20 @@ class Utilities {
 		return isset( $all[ $code ] );
 	}
 
+	/**
+	 * Best-effort extraction of text from content.
+	 *
+	 * Returns null when the content is missing, hidden or not text-based.
+	 */
+	public static function getTextFromContentOrNull( ?Content $content ): ?string {
+		return $content instanceof TextContent ? $content->getText() : null;
+	}
+
+	/**
+	 * Strict extraction of text from content.
+	 *
+	 * Throws when the content is missing, hidden or not text-based.
+	 */
 	public static function getTextFromTextContent( ?Content $content ): string {
 		if ( !$content ) {
 			throw new UnexpectedValueException( 'Expected $content to be TextContent, got null instead.' );
@@ -426,6 +431,32 @@ class Utilities {
 	 * text and last author indexed by page name.
 	 */
 	public static function getTranslations( MessageHandle $handle ): array {
+		$titleContents = [];
+		foreach ( self::getTranslationRevisions( $handle ) as $pageTitle => $revision ) {
+			$user = $revision->getUser( RevisionRecord::FOR_PUBLIC );
+			$titleContents[$pageTitle] = [
+				self::getTextFromTextContent( $revision->getContent( SlotRecord::MAIN ) ),
+				$user ? $user->getName() : '',
+			];
+		}
+
+		return $titleContents;
+	}
+
+	/**
+	 * Returns the latest RevisionRecord for each existing translation of a message.
+	 *
+	 * This is the typed counterpart of {@see getTranslations()}: callers that need
+	 * more than page text and author name (e.g. revision timestamp) should use this
+	 * method and read whatever fields they need from the RevisionRecord objects directly.
+	 *
+	 * Results are ordered by page title (ascending), matching the order that
+	 * {@see getTranslations()} returns.
+	 *
+	 * @param MessageHandle $handle Language code is ignored.
+	 * @return array<string, RevisionRecord> RevisionRecords indexed by page title.
+	 */
+	public static function getTranslationRevisions( MessageHandle $handle ): array {
 		$namespace = $handle->getTitle()->getNamespace();
 		$base = $handle->getKey();
 
@@ -446,7 +477,16 @@ class Utilities {
 			return [];
 		}
 
-		return self::getContents( $titles, $namespace );
+		// fetchLatestRevisionsByTitles may return results in a different order
+		// (by rev_id or row insertion), so re-index in the original page_title order.
+		$revisionsByTitle = self::fetchLatestRevisionsByTitles( $titles, $namespace );
+		$ordered = [];
+		foreach ( $titles as $title ) {
+			if ( isset( $revisionsByTitle[$title] ) ) {
+				$ordered[$title] = $revisionsByTitle[$title];
+			}
+		}
+		return $ordered;
 	}
 
 	public static function isTranslationPage( MessageHandle $handle ): bool {
@@ -469,6 +509,28 @@ class Utilities {
 		$codes ??= self::getLanguageNames( LanguageNameUtils::AUTONYMS );
 
 		return !$handle->isDoc() && isset( $codes[ $languageCode ] );
+	}
+
+	/**
+	 * Validate a regular exception.
+	 *
+	 * @param string $pattern The regular expression to validate.
+	 * @param string|null &$error Output parameter containing the error message, if any.
+	 * @return bool Whether the regular exception is valid.
+	 */
+	public static function isValidRegex( string $pattern, ?string &$error = null ): bool {
+		set_error_handler( static function ( $severity, $message ) use ( &$error ) {
+			$error = $message;
+			return true;
+		} );
+
+		try {
+			// @phan-suppress-next-line PhanParamSuspiciousOrder
+			$result = preg_match( $pattern, '' );
+			return $result !== false;
+		} finally {
+			restore_error_handler();
+		}
 	}
 }
 

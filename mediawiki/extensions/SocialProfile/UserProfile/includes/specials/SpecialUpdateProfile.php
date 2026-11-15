@@ -1,7 +1,11 @@
 <?php
 
+use MediaWiki\Extension\SpamBlacklist\BaseBlacklist;
 use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 
@@ -177,72 +181,63 @@ class SpecialUpdateProfile extends UnlistedSpecialPage {
 				}
 			}
 
+			// Pointless to declare this here, but phan is being whiny, so...
+			$status = Status::newGood();
 			if ( !$section ) {
 				$section = 'basic';
 			}
 			switch ( $section ) {
 				case 'basic':
-					$this->saveProfileBasic( $user );
+					$status = $this->saveProfileBasic( $user );
 					$this->saveBasicSettings( $user );
 					break;
 				case 'personal':
-					$this->saveProfilePersonal( $user );
+					$status = $this->saveProfilePersonal( $user );
 					break;
 				case 'custom':
-					$this->saveProfileCustom( $user );
+					$status = $this->saveProfileCustom( $user );
 					break;
 				case 'preferences':
-					$this->saveSocialPreferences();
+					$status = $this->saveSocialPreferences();
 					break;
 			}
 
-			UserProfile::clearCache( $user );
+			if ( $status->isGood() ) {
+				UserProfile::clearCache( $user );
 
-			$log = new LogPage( 'profile' );
-			if ( !$wgUpdateProfileInRecentChanges ) {
-				$log->updateRecentChanges = false;
-			}
-			$log->addEntry(
-				'profile',
-				$user->getUserPage(),
-				$this->msg( 'user-profile-update-log-section' )
-					->inContentLanguage()->text() .
-					" '{$section}'",
-				[],
-				$user
-			);
-			$out->addHTML(
-				'<span class="profile-on">' .
-				$this->msg( 'user-profile-update-saved' )->escaped() .
-				'</span><br /><br />'
-			);
+				$log = new LogPage( 'profile' );
+				if ( !$wgUpdateProfileInRecentChanges ) {
+					$log->updateRecentChanges = false;
+				}
+				$log->addEntry(
+					'profile',
+					$user->getUserPage(),
+					$this->msg( 'user-profile-update-log-section' )
+						->inContentLanguage()->text() .
+						" '{$section}'",
+					[],
+					$user
+				);
+				$out->addHTML(
+					'<span class="profile-on">' .
+					$this->msg( 'user-profile-update-saved' )->escaped() .
+					'</span><br /><br />'
+				);
 
-			// create the user page if it doesn't exist yet
-			$title = Title::makeTitle( NS_USER, $user->getName() );
-			if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
-				// MW 1.36+
+				// create the user page if it doesn't exist yet
+				$title = Title::makeTitle( NS_USER, $user->getName() );
 				$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
-			} else {
-				// @phan-suppress-next-line PhanUndeclaredStaticMethod
-				$page = WikiPage::factory( $title );
-			}
-			if ( !$page->exists() ) {
-				if ( method_exists( $page, 'doUserEditContent' ) ) {
-					// MW 1.36+
+				if ( !$page->exists() ) {
 					$page->doUserEditContent(
 						ContentHandler::makeContent( '', $title ),
 						$this->getUser(),
 						'create user page',
 						EDIT_SUPPRESS_RC
 					);
-				} else {
-					// @phan-suppress-next-line PhanUndeclaredMethod Removed in MW 1.41
-					$page->doEditContent(
-						ContentHandler::makeContent( '', $title ),
-						'create user page',
-						EDIT_SUPPRESS_RC
-					);
 				}
+			} else {
+				// Spam somewhere? Uh-oh...
+				$out->addHTML( Html::errorBox( $this->msg( 'user-profile-error-spam' )->parse() ) );
 			}
 		}
 
@@ -298,6 +293,8 @@ class SpecialUpdateProfile extends UnlistedSpecialPage {
 
 	/**
 	 * Save social preferences into the database.
+	 *
+	 * @return Status
 	 */
 	function saveSocialPreferences() {
 		$request = $this->getRequest();
@@ -321,6 +318,8 @@ class SpecialUpdateProfile extends UnlistedSpecialPage {
 
 		// Allow extensions like UserMailingList do their magic here
 		$this->getHookContainer()->run( 'SpecialUpdateProfile::saveSettings_pref', [ $this, $request ] );
+
+		return Status::newGood();
 	}
 
 	public static function formatBirthdayDB( $birthday ) {
@@ -356,6 +355,7 @@ class SpecialUpdateProfile extends UnlistedSpecialPage {
 	 * Save the basic user profile info fields into the database.
 	 *
 	 * @param UserIdentity|null $user User object, null by default (=the current user)
+	 * @return Status
 	 */
 	function saveProfileBasic( $user = null ) {
 		if ( $user === null ) {
@@ -409,25 +409,40 @@ class SpecialUpdateProfile extends UnlistedSpecialPage {
 		if ( $request->getVal( 'websites' ) ) {
 			$basicProfileData['up_websites'] = $request->getVal( 'websites' );
 		}
-		// @todo FIXME: remove this per T373263
-		if ( $request->getVal( 'relationship' ) ) {
-			$basicProfileData['up_relationship'] = $request->getVal( 'relationship' ) ?? 0;
+
+		$spammyFields = [];
+		foreach ( $basicProfileData as $key => $val ) {
+			$hasSpam = self::validateSpamRegex( $val );
+			if ( $hasSpam ) {
+				$spammyFields[] = $key;
+			}
+
+			$hasSpam = self::validateSpamBlacklist( $val, rand(), $user );
+			if ( $hasSpam ) {
+				$spammyFields[] = $key;
+			}
 		}
 
-		$dbw->update(
-			'user_profile',
-			/* SET */$basicProfileData,
-			/* WHERE */[ 'up_actor' => $user->getActorId() ],
-			__METHOD__
-		);
+		if ( $spammyFields !== [] ) {
+			return Status::newFatal( 'user-profile-error-spam' );
+		} else {
+			$dbw->update(
+				'user_profile',
+				/* SET */$basicProfileData,
+				/* WHERE */[ 'up_actor' => $user->getActorId() ],
+				__METHOD__
+			);
 
-		// BasicProfileChanged hook
-		$basicProfileData['up_name'] = $request->getVal( 'real_name' );
-		$basicProfileData['up_email'] = $request->getVal( 'email' );
-		$this->getHookContainer()->run( 'BasicProfileChanged', [ $user, $basicProfileData ] );
-		// end of the hook
+			// BasicProfileChanged hook
+			$basicProfileData['up_name'] = $request->getVal( 'real_name' );
+			$basicProfileData['up_email'] = $request->getVal( 'email' );
+			$this->getHookContainer()->run( 'BasicProfileChanged', [ $user, $basicProfileData ] );
+			// end of the hook
 
-		UserProfile::clearCache( $user );
+			UserProfile::clearCache( $user );
+
+			return Status::newGood();
+		}
 	}
 
 	/**
@@ -435,6 +450,7 @@ class SpecialUpdateProfile extends UnlistedSpecialPage {
 	 * database.
 	 *
 	 * @param UserIdentity|null $user
+	 * @return Status
 	 */
 	function saveProfileCustom( $user = null ) {
 		if ( $user === null ) {
@@ -444,20 +460,41 @@ class SpecialUpdateProfile extends UnlistedSpecialPage {
 		$this->initProfile( $user );
 		$request = $this->getRequest();
 
-		$dbw = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_PRIMARY );
-		$dbw->update(
-			'user_profile',
-			/* SET */[
-				'up_custom_1' => $request->getVal( 'custom1' ),
-				'up_custom_2' => $request->getVal( 'custom2' ),
-				'up_custom_3' => $request->getVal( 'custom3' ),
-				'up_custom_4' => $request->getVal( 'custom4' )
-			],
-			/* WHERE */[ 'up_actor' => $user->getActorId() ],
-			__METHOD__
-		);
+		$customProfileData = [
+			'up_custom_1' => $request->getVal( 'custom1' ),
+			'up_custom_2' => $request->getVal( 'custom2' ),
+			'up_custom_3' => $request->getVal( 'custom3' ),
+			'up_custom_4' => $request->getVal( 'custom4' )
+		];
 
-		UserProfile::clearCache( $user );
+		$spammyFields = [];
+		foreach ( $customProfileData as $key => $val ) {
+			$hasSpam = self::validateSpamRegex( $val );
+			if ( $hasSpam ) {
+				$spammyFields[] = $key;
+			}
+
+			$hasSpam = self::validateSpamBlacklist( $val, rand(), $user );
+			if ( $hasSpam ) {
+				$spammyFields[] = $key;
+			}
+		}
+
+		if ( $spammyFields !== [] ) {
+			return Status::newFatal( 'user-profile-error-spam' );
+		} else {
+			$dbw = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_PRIMARY );
+			$dbw->update(
+				'user_profile',
+				/* SET */$customProfileData,
+				/* WHERE */[ 'up_actor' => $user->getActorId() ],
+				__METHOD__
+			);
+
+			UserProfile::clearCache( $user );
+
+			return Status::newGood();
+		}
 	}
 
 	/**
@@ -465,6 +502,7 @@ class SpecialUpdateProfile extends UnlistedSpecialPage {
 	 * TV programs or video games, etc.) into the database.
 	 *
 	 * @param UserIdentity|null $user
+	 * @return Status
 	 */
 	function saveProfilePersonal( $user = null ) {
 		if ( $user === null ) {
@@ -474,10 +512,7 @@ class SpecialUpdateProfile extends UnlistedSpecialPage {
 		$this->initProfile( $user );
 		$request = $this->getRequest();
 
-		$dbw = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_PRIMARY );
-
 		$interestsData = [
-			'up_companies' => $request->getVal( 'companies' ),
 			'up_movies' => $request->getVal( 'movies' ),
 			'up_music' => $request->getVal( 'music' ),
 			'up_tv' => $request->getVal( 'tv' ),
@@ -488,18 +523,39 @@ class SpecialUpdateProfile extends UnlistedSpecialPage {
 			'up_drinks' => $request->getVal( 'drinks' )
 		];
 
-		$dbw->update(
-			'user_profile',
-			/* SET */$interestsData,
-			/* WHERE */[ 'up_actor' => $user->getActorId() ],
-			__METHOD__
-		);
+		$spammyFields = [];
+		foreach ( $interestsData as $key => $val ) {
+			$hasSpam = self::validateSpamRegex( $val );
+			if ( $hasSpam ) {
+				$spammyFields[] = $key;
+			}
 
-		// PersonalInterestsChanged hook
-		$this->getHookContainer()->run( 'PersonalInterestsChanged', [ $user, $interestsData ] );
-		// end of the hook
+			$hasSpam = self::validateSpamBlacklist( $val, rand(), $user );
+			if ( $hasSpam ) {
+				$spammyFields[] = $key;
+			}
+		}
 
-		UserProfile::clearCache( $user );
+		if ( $spammyFields !== [] ) {
+			return Status::newFatal( 'user-profile-error-spam' );
+		} else {
+			$dbw = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_PRIMARY );
+
+			$dbw->update(
+				'user_profile',
+				/* SET */$interestsData,
+				/* WHERE */[ 'up_actor' => $user->getActorId() ],
+				__METHOD__
+			);
+
+			// PersonalInterestsChanged hook
+			$this->getHookContainer()->run( 'PersonalInterestsChanged', [ $user, $interestsData ] );
+			// end of the hook
+
+			UserProfile::clearCache( $user );
+
+			return Status::newGood();
+		}
 	}
 
 	/**
@@ -610,7 +666,7 @@ class SpecialUpdateProfile extends UnlistedSpecialPage {
 		$form .= '<select name="location_country" id="location_country"><option></option>';
 
 		foreach ( $countries as $country ) {
-			$form .= Xml::option( $country, $country, ( $country == $location_country ) );
+			$form .= Html::element( 'option', [ 'value' => $country, 'selected' => ( $country == $location_country ) ], $country );
 		}
 
 		$form .= '</select>';
@@ -633,7 +689,7 @@ class SpecialUpdateProfile extends UnlistedSpecialPage {
 		$form .= '<select name="hometown_country" id="hometown_country"><option></option>';
 
 		foreach ( $countries as $country ) {
-			$form .= Xml::option( $country, $country, ( $country == $hometown_country ) );
+			$form .= Html::element( 'option', [ 'value' => $country, 'selected' => ( $country == $hometown_country ) ], $country );
 		}
 
 		$form .= '</select>';
@@ -723,8 +779,8 @@ class SpecialUpdateProfile extends UnlistedSpecialPage {
 		$s = $dbr->selectRow(
 			'user_profile',
 			[
-				'up_about', 'up_places_lived', 'up_websites', 'up_relationship',
-				'up_occupation', 'up_companies', 'up_schools', 'up_movies',
+				'up_about', 'up_places_lived', 'up_websites',
+				'up_occupation', 'up_schools', 'up_movies',
 				'up_tv', 'up_music', 'up_books', 'up_video_games',
 				'up_magazines', 'up_snacks', 'up_drinks'
 			],
@@ -738,8 +794,6 @@ class SpecialUpdateProfile extends UnlistedSpecialPage {
 		if ( $s !== false ) {
 			$places = $s->up_places_lived;
 			$websites = $s->up_websites;
-			$relationship = $s->up_relationship;
-			$companies = $s->up_companies;
 			$schools = $s->up_schools;
 			$movies = $s->up_movies;
 			$tv = $s->up_tv;
@@ -974,5 +1028,91 @@ class SpecialUpdateProfile extends UnlistedSpecialPage {
 	 */
 	private function renderEye( $fieldCode ) {
 		return SPUserSecurity::renderEye( $fieldCode, $this->getUser() );
+	}
+
+	/**
+	 * Run comment through SpamRegex, both the $wg* global configuration variable
+	 * and if installed, the anti-spam extension of the same name as well
+	 *
+	 * @note This method was forked from the ArticleFeedbackv5 extension.
+	 * @note This method is also used by UserBoard, UserGifts' Special:GiveGift and UserRelationship's
+	 *  Special:AddRelationship.
+	 *
+	 * @param string $value
+	 * @return bool Will return boolean false if valid or true if flagged
+	 */
+	public static function validateSpamRegex( $value ) {
+		// Respect $wgSpamRegex
+		global $wgSpamRegex;
+
+		// Apparently this has to use the name SpamRegex specifies in its extension.json
+		// rather than the shorter directory name...
+		$spamRegexExtIsInstalled = ExtensionRegistry::getInstance()->isLoaded( 'Regular Expression Spam Block' );
+
+		// If and only if the config var is neither an array nor a string nor
+		// do we have the extension installed, bail out then and *only* then.
+		// It's entirely possible to have the extension installed without
+		// the config var being explicitly changed from the default value.
+		if (
+			!(
+				( is_array( $wgSpamRegex ) && count( $wgSpamRegex ) > 0 ) ||
+				( is_string( $wgSpamRegex ) && strlen( $wgSpamRegex ) > 0 )
+			) &&
+			!$spamRegexExtIsInstalled
+		) {
+			return false;
+		}
+
+		// In older versions, $wgSpamRegex may be a single string rather than
+		// an array of regexes, so make it compatible.
+		$regexes = (array)$wgSpamRegex;
+
+		// Support [[mw:Extension:SpamRegex]] if it's installed (T347215)
+		if ( $spamRegexExtIsInstalled ) {
+			$phrases = SpamRegex::fetchRegexData( SpamRegex::TYPE_TEXTBOX );
+			if ( $phrases && is_array( $phrases ) ) {
+				$regexes = array_merge( $regexes, $phrases );
+			}
+		}
+
+		foreach ( $regexes as $regex ) {
+			if ( preg_match( $regex, $value ) ) {
+				// $value contains spam
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Run comment through SpamBlacklist
+	 *
+	 * @note This method was forked from the ArticleFeedbackv5 extension.
+	 * @note This method is also used by UserBoard, UserGifts' Special:GiveGift and UserRelationship's
+	 *  Special:AddRelationship.
+	 *
+	 * @param string $value
+	 * @param int $pageId
+	 * @param User $user
+	 * @return bool Will return boolean false if valid or true if flagged
+	 */
+	public static function validateSpamBlacklist( $value, $pageId, User $user ) {
+		// Check SpamBlacklist, if installed
+		if ( ExtensionRegistry::getInstance()->isLoaded( 'SpamBlacklist' ) ) {
+			$spam = BaseBlacklist::getSpamBlacklist();
+			$title = Title::newFromText( 'SocialProfile_UserProfile_' . $pageId );
+
+			$options = new ParserOptions( $user );
+			$output = MediaWikiServices::getInstance()->getParser()->parse( $value, $title, $options );
+			$links = array_keys( $output->getExternalLinks() );
+
+			$ret = $spam->filter( $links, $title, $user );
+			if ( $ret !== false ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

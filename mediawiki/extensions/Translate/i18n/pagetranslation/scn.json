@@ -3,9 +3,9 @@
 		"authors": [
 			"Ajeje Brazorf",
 			"Aushulz",
+			"GianAntonucci",
 			"Pippinu",
-			"Sarvaturi",
-			"GianAntonucci"
+			"Sarvaturi"
 		]
 	},
 	"pagetranslation": "Traduzzioni pàggini",
@@ -24,14 +24,10 @@
 	"tpt-aggregategroup-add": "Agghiunci",
 	"tpt-aggregategroup-save": "Sarva",
 	"tpt-aggregategroup-close": "Chiudi",
-	"tpt-aggregategroup-new-name": "Nomu:",
-	"tpt-aggregategroup-new-description": "Discrizzioni (facultativu):",
 	"tpt-aggregategroup-invalid-group": "Lu gruppu nun esisti",
 	"tpt-aggregategroup-edit-name": "Nomu:",
 	"tpt-aggregategroup-edit-description": "Discrizzioni:",
-	"tpt-aggregategroup-update": "Sarva",
 	"tpt-aggregategroup-update-cancel": "Annulla",
-	"tpt-invalid-group": "Gruppu nun vàlidu",
 	"log-name-pagetranslation": "Riggistru dî traduzzioni di pàggini",
 	"log-action-filter-pagetranslation": "Tipu d'azzioni:",
 	"log-action-filter-pagetranslation-delete": "Cancillazioni di pàggini",
@@ -54,12 +50,10 @@
 	"pm-page-does-not-exist": "$1 nun esisti.",
 	"pm-pagename-missing": "Pi favuri nzirisci lu nomu dâ pàggina.",
 	"pm-delete-icon-hover-text": "Cancella unitati",
-	"pm-pagetitle-placeholder": "Nzirisci lu tìtulu dâ pàggina",
 	"pm-pagetitle-missing": "Pi favuri nzirisci lu tìtulu dâ pàggina.",
 	"pp-pagename-placeholder": "Nzirisci lu nomu dâ pàggina",
 	"pp-cancel-button-label": "Annulla",
 	"pp-pagename-missing": "Pi favuri nzirisci lu nomu dâ pàggina.",
-	"tpt-generic-confirm": "Pi favuri cunferma l'azzioni.",
 	"tpt-generic-button": "Cunferma",
 	"visualeditor-annotations-translate-end": "Fini dû cuntinutu ca pò èssiri tradottu"
 }

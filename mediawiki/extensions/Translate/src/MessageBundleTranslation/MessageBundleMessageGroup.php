@@ -61,7 +61,7 @@ class MessageBundleMessageGroup implements MessageGroup {
 	}
 
 	private function getData(): array {
-		if ( isset( $this->data ) ) {
+		if ( $this->data !== null ) {
 			return $this->data;
 		}
 
@@ -80,7 +80,7 @@ class MessageBundleMessageGroup implements MessageGroup {
 		}
 
 		$data = json_decode( $content->getText(), true );
-		if ( !$data ) {
+		if ( $data === null ) {
 			throw new LogicException(
 				"Content with revision id $this->revisionId is not valid JSON"
 			);
@@ -223,7 +223,7 @@ class MessageBundleMessageGroup implements MessageGroup {
 
 	/** @inheritDoc */
 	public function getTranslatableLanguages(): ?array {
-		return null;
+		return self::DEFAULT_LANGUAGES;
 	}
 
 	/** @inheritDoc */

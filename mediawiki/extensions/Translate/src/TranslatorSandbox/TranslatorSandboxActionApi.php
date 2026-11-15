@@ -3,13 +3,14 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TranslatorSandbox;
 
-use ApiBase;
-use ApiMain;
-use ContentHandler;
-use FormatJson;
-use ManualLogEntry;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Content\ContentHandler;
+use MediaWiki\Json\FormatJson;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\ObjectCache\ObjectCacheFactory;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Revision\SlotRecord;
@@ -28,37 +29,30 @@ use Wikimedia\ParamValidator\ParamValidator;
  * @ingroup API TranslateAPI
  */
 class TranslatorSandboxActionApi extends ApiBase {
-	private UserFactory $userFactory;
-	private UserNameUtils $userNameUtils;
-	private UserOptionsManager $userOptionsManager;
-	private WikiPageFactory $wikiPageFactory;
-	private UserOptionsLookup $userOptionsLookup;
-	private TranslateSandbox $translateSandbox;
+
 	private bool $isSandboxEnabled;
+	private readonly int $sandboxCreationHourlyLimit;
 	public const CONSTRUCTOR_OPTIONS = [
 		'TranslateUseSandbox',
+		'TranslateSandboxCreationHourlyLimit',
 	];
 
 	public function __construct(
 		ApiMain $mainModule,
 		string $moduleName,
-		UserFactory $userFactory,
-		UserNameUtils $userNameUtils,
-		UserOptionsManager $userOptionsManager,
-		WikiPageFactory $wikiPageFactory,
-		UserOptionsLookup $userOptionsLookup,
-		TranslateSandbox $translateSandbox,
+		private readonly UserFactory $userFactory,
+		private readonly UserNameUtils $userNameUtils,
+		private readonly UserOptionsManager $userOptionsManager,
+		private readonly WikiPageFactory $wikiPageFactory,
+		private readonly UserOptionsLookup $userOptionsLookup,
+		private readonly TranslateSandbox $translateSandbox,
+		private readonly ObjectCacheFactory $cacheFactory,
 		ServiceOptions $options
 	) {
 		parent::__construct( $mainModule, $moduleName );
-		$this->userFactory = $userFactory;
-		$this->userNameUtils = $userNameUtils;
-		$this->userOptionsManager = $userOptionsManager;
-		$this->wikiPageFactory = $wikiPageFactory;
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->translateSandbox = $translateSandbox;
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 		$this->isSandboxEnabled = $options->get( 'TranslateUseSandbox' );
+		$this->sandboxCreationHourlyLimit = (int)$options->get( 'TranslateSandboxCreationHourlyLimit' );
 	}
 
 	public function execute(): void {
@@ -86,6 +80,16 @@ class TranslatorSandboxActionApi extends ApiBase {
 	}
 
 	private function doCreate(): void {
+		if ( $this->sandboxCreationHourlyLimit > 0 ) {
+			$cache = $this->cacheFactory->getInstance( CACHE_ANYTHING );
+			$key = $cache->makeKey( 'translate-sandbox-creates-hourly' );
+			$count = (int)$cache->get( $key );
+			if ( $count >= $this->sandboxCreationHourlyLimit ) {
+				$this->dieWithError( 'apierror-ratelimited' );
+			}
+			$cache->incrWithInit( $key, 3600, 1, 1 );
+		}
+
 		$params = $this->extractRequestParams();
 
 		// Do validations
@@ -260,10 +264,6 @@ class TranslatorSandboxActionApi extends ApiBase {
 				ParamValidator::PARAM_TYPE => 'integer',
 				ParamValidator::PARAM_DEFAULT => 0,
 				ParamValidator::PARAM_ISMULTI => true,
-			],
-			'token' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true,
 			],
 			'username' => [ ParamValidator::PARAM_TYPE => 'string' ],
 			'password' => [ ParamValidator::PARAM_TYPE => 'string' ],

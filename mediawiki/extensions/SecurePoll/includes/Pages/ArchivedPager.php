@@ -11,25 +11,17 @@ use Wikimedia\Rdbms\ILoadBalancer;
  * Pager for an archived election list. See TablePager documentation.
  */
 class ArchivedPager extends ElectionPager {
-	/** @var array[] */
-	private $subpages = [
+	private array $subpages = [
 		'unarchive' => [
 			'public' => false,
 			'visible-after-start' => false,
 			'visible-after-close' => true,
+			'token' => true
 		]
 	];
+	private LinkRenderer $linkRenderer;
+	private ILoadBalancer $loadBalancer;
 
-	/** @var LinkRenderer */
-	private $linkRenderer;
-	/** @var ILoadBalancer */
-	private $loadBalancer;
-
-	/**
-	 * @param ArchivedPage $specialPage
-	 * @param LinkRenderer $linkRenderer
-	 * @param ILoadBalancer $loadBalancer
-	 */
 	public function __construct(
 		ArchivedPage $specialPage,
 		LinkRenderer $linkRenderer,
@@ -44,9 +36,8 @@ class ArchivedPager extends ElectionPager {
 
 	/**
 	 * Return query paramters in array form to get archived elections
-	 * @return array
 	 */
-	public function getQueryInfo() {
+	public function getQueryInfo(): array {
 		$subquery = $this->loadBalancer->getConnection( ILoadBalancer::DB_REPLICA )->newSelectQueryBuilder()
 			->select( 'pr_entity' )
 			->from( 'securepoll_properties' )
@@ -65,42 +56,55 @@ class ArchivedPager extends ElectionPager {
 	/**
 	 * @return string HTML
 	 */
-	public function getLinks() {
-		$id = $this->mCurrentRow->el_entity;
+	public function getStatus(): string {
+		return $this->msg( 'securepoll-status-archived' )->escaped();
+	}
 
-		$s = '';
-		$sep = $this->msg( 'pipe-separator' )->escaped();
+	/**
+	 * @return string HTML
+	 */
+	public function getLinks(): string {
+		$pollId = $this->mCurrentRow->el_entity;
+		$html = '';
+		$separator = $this->msg( 'pipe-separator' )->escaped();
 		foreach ( $this->subpages as $subpage => $props ) {
 			// Message keys used here:
 			// securepoll-subpage-unarchive
 			$linkText = $this->msg( "securepoll-subpage-$subpage" )->text();
-			if ( $s !== '' ) {
-				$s .= $sep;
+
+			if ( $html !== '' ) {
+				$html .= $separator;
 			}
-			if (
+
+			$needsHyperlink =
 				( $this->isAdmin || $props['public'] ) &&
-				( !$this->election->isStarted() ||
+				(
+					!$this->election->isStarted() ||
 					( $this->election->isStarted() && $this->election->isFinished() ) ||
-					$props['visible-after-start'] ) &&
-				( !$this->election->isFinished() || $props['visible-after-close'] )
-			) {
+					$props['visible-after-start']
+				) &&
+				( !$this->election->isFinished() || $props['visible-after-close'] );
+			if ( $needsHyperlink ) {
+				$queryParams = [];
+				if ( isset( $props['token'] ) && $props['token'] ) {
+					$queryParams[ 'token' ] = $this->page->specialPage->getContext()
+						->getCsrfTokenSet()->getToken();
+				}
 				if ( isset( $props['link'] ) ) {
-					$s .= $this->{$props['link']}( $id );
+					$html .= $this->{$props['link']}( $pollId );
 				} else {
-					$title = $this->page->specialPage->getPageTitle( "$subpage/$id" );
-					$s .= $this->linkRenderer->makeKnownLink( $title, $linkText );
+					$title = $this->page->specialPage->getPageTitle( "$subpage/$pollId" );
+					$html .= $this->linkRenderer->makeKnownLink( $title, $linkText, [], $queryParams );
 				}
 			} else {
-				$s .= Html::element(
+				$html .= Html::element(
 					'span',
-					[
-						'class' => 'securepoll-link-disabled',
-					],
+					[ 'class' => 'securepoll-link-disabled' ],
 					$linkText
 				);
 			}
 		}
 
-		return $s;
+		return $html;
 	}
 }

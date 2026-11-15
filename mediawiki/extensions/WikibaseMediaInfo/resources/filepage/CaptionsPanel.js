@@ -1,13 +1,12 @@
 'use strict';
 
-var AnonWarning = require( './AnonWarning.js' ),
+const AnonWarning = require( './AnonWarning.js' ),
 	CaptionData = require( './CaptionData.js' ),
 	CaptionDataEditor = require( './CaptionDataEditor.js' ),
 	CaptionsEditActionsWidget = require( './CaptionsEditActionsWidget.js' ),
 	LicenseDialogWidget = require( './LicenseDialogWidget.js' ),
 	ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget,
-	wbTermsLanguages = require( 'wikibase.mediainfo.statements' ).config.wbTermsLanguages,
-	CaptionsPanel;
+	wbTermsLanguages = require( 'wikibase.mediainfo.statements' ).config.wbTermsLanguages;
 
 /**
  * Panel for displaying/editing structured data multi-lingual captions
@@ -44,8 +43,8 @@ var AnonWarning = require( './AnonWarning.js' ),
  * @param {number} [config.warnWithinMaxCaptionLength] Show a warning when the caption length is within X
  *   characters of the max
  */
-CaptionsPanel = function ( config ) {
-	var self = this;
+const CaptionsPanel = function ( config ) {
+	const self = this;
 	config = config || {};
 
 	// Parent constructor
@@ -93,7 +92,7 @@ CaptionsPanel = function ( config ) {
 
 	// Set the target pending element to first child of $element, which is the first node of the
 	// rendered template
-	this.renderPromise.then( function () {
+	this.renderPromise.then( () => {
 		self.$pending = self.$element.children( ':first' );
 	} );
 };
@@ -109,9 +108,9 @@ OO.mixinClass( CaptionsPanel, OO.ui.mixin.PendingElement );
  * @private
  */
 CaptionsPanel.prototype.captionsDataFromMediaInfoEntity = function ( mediaInfo ) {
-	var captionsData = {};
+	const captionsData = {};
 	if ( mediaInfo.labels !== undefined ) {
-		Object.keys( mediaInfo.labels ).forEach( function ( langCode ) {
+		Object.keys( mediaInfo.labels ).forEach( ( langCode ) => {
 			captionsData[ langCode ] = new CaptionData(
 				langCode,
 				mediaInfo.labels[ langCode ].value
@@ -170,9 +169,9 @@ CaptionsPanel.prototype.ensureCaptionDataArrayHasLanguage = function (
  * @private
  */
 CaptionsPanel.prototype.addCaptionsDataForUserLanguages = function ( captionDataArray ) {
-	var self = this;
+	const self = this;
 	// Create CaptionData objects for user languages that we don't already have on the screen
-	this.userLanguages.forEach( function ( langCode ) {
+	this.userLanguages.forEach( ( langCode ) => {
 		captionDataArray = self.ensureCaptionDataArrayHasLanguage( captionDataArray, langCode );
 	} );
 	return captionDataArray;
@@ -187,9 +186,8 @@ CaptionsPanel.prototype.addCaptionsDataForUserLanguages = function ( captionData
  * @private
  */
 CaptionsPanel.prototype.getOrderedLangCodes = function ( captionDataArray ) {
-	var i,
-		captionLanguages = Object.keys( captionDataArray ),
-		rearrangedCaptionLanguages = [];
+	const captionLanguages = Object.keys( captionDataArray );
+	const rearrangedCaptionLanguages = [];
 
 	// First language in fallback chain (i.e. the interface language) is always first
 	rearrangedCaptionLanguages.push( this.languageFallbackChain[ 0 ] );
@@ -200,7 +198,7 @@ CaptionsPanel.prototype.getOrderedLangCodes = function ( captionDataArray ) {
 		typeof captionDataArray[ this.languageFallbackChain[ 0 ] ] !== CaptionData ||
 		captionDataArray[ this.languageFallbackChain[ 0 ] ].text !== ''
 	) {
-		for ( i = 1; i < this.languageFallbackChain.length; i++ ) {
+		for ( let i = 1; i < this.languageFallbackChain.length; i++ ) {
 			if (
 				captionDataArray[ this.languageFallbackChain[ i ] ] &&
 				captionDataArray[ this.languageFallbackChain[ i ] ].text !== ''
@@ -212,15 +210,15 @@ CaptionsPanel.prototype.getOrderedLangCodes = function ( captionDataArray ) {
 	}
 
 	// User languages go next
-	this.userLanguages.forEach( function ( langCode ) {
-		if ( rearrangedCaptionLanguages.indexOf( langCode ) === -1 ) {
+	this.userLanguages.forEach( ( langCode ) => {
+		if ( !rearrangedCaptionLanguages.includes( langCode ) ) {
 			rearrangedCaptionLanguages.push( langCode );
 		}
 	} );
 
 	// And finally all other languages
-	captionLanguages.forEach( function ( langCode ) {
-		if ( rearrangedCaptionLanguages.indexOf( langCode ) === -1 ) {
+	captionLanguages.forEach( ( langCode ) => {
+		if ( !rearrangedCaptionLanguages.includes( langCode ) ) {
 			rearrangedCaptionLanguages.push( langCode );
 		}
 	} );
@@ -243,17 +241,18 @@ CaptionsPanel.prototype.getTemplateData = function () {
  * @return {Object|jQuery.Promise<Object>}
  */
 CaptionsPanel.prototype.getTemplateDataEditable = function () {
-	var self = this,
-		templateCaptions = [],
-		data = {
-			editing: true,
-			title: mw.msg( 'wikibasemediainfo-entitytermsforlanguagelistview-caption' ),
-			editActionsWidget: this.editActionsWidget
-		},
-		inputErrorFound = false;
+	const self = this;
+	const templateCaptions = [];
+	const data = {
+		editing: true,
+		title: mw.msg( 'wikibasemediainfo-entitytermsforlanguagelistview-caption' ),
+		editActionsWidget: this.editActionsWidget
+	};
 
-	Object.keys( this.state.captionsDataEditors ).forEach( function ( guid ) {
-		var captionDataEditor = self.state.captionsDataEditors[ guid ];
+	let inputErrorFound = false;
+
+	Object.keys( this.state.captionsDataEditors ).forEach( ( guid ) => {
+		const captionDataEditor = self.state.captionsDataEditors[ guid ];
 
 		templateCaptions.push( {
 			show: true,
@@ -290,14 +289,12 @@ CaptionsPanel.prototype.getTemplateDataEditable = function () {
  * @return {Object|jQuery.Promise<Object>}
  */
 CaptionsPanel.prototype.getTemplateDataReadOnly = function () {
-	var self = this,
-		templateCaptions = [],
-		showCaptionFlags = this.getShowCaptionFlagsByLangCode(),
-		count = 0,
-		data;
+	const self = this;
+	const templateCaptions = [];
+	const showCaptionFlags = this.getShowCaptionFlagsByLangCode();
 
 	// basic template data
-	data = {
+	const data = {
 		editing: false,
 		title: mw.msg( 'wikibasemediainfo-entitytermsforlanguagelistview-caption' )
 	};
@@ -334,14 +331,12 @@ CaptionsPanel.prototype.getTemplateDataReadOnly = function () {
 		);
 	}
 
+	let count = 0;
 	// captions data
-	this.state.orderedLanguageCodes.forEach( function ( langCode ) {
-		var captionData = self.state.captionsData[ langCode ],
-			language,
-			caption;
-
-		language = captionData.languageText;
-		caption = captionData.text ?
+	this.state.orderedLanguageCodes.forEach( ( langCode ) => {
+		const captionData = self.state.captionsData[ langCode ];
+		const language = captionData.languageText;
+		const caption = captionData.text ?
 			mw.html.escape( captionData.text ) :
 			mw.message( 'wikibasemediainfo-filepage-caption-empty' ).escaped();
 
@@ -366,7 +361,7 @@ CaptionsPanel.prototype.getTemplateDataReadOnly = function () {
  * Triggered when cancelling the edit mode.
  */
 CaptionsPanel.prototype.onCancel = function () {
-	var self = this;
+	const self = this;
 
 	if ( this.hasChanges() ) {
 		OO.ui.confirm(
@@ -386,7 +381,7 @@ CaptionsPanel.prototype.onCancel = function () {
 					}
 				]
 			}
-		).then( function ( confirmed ) {
+		).then( ( confirmed ) => {
 			if ( confirmed ) {
 				self.restoreToSaved();
 			}
@@ -403,7 +398,7 @@ CaptionsPanel.prototype.onCancel = function () {
  * @param {string} guidToRemove
  */
 CaptionsPanel.prototype.onCaptionDeleted = function ( guidToRemove ) {
-	var modifiedCaptionsDataEditors = Object.assign( {}, this.state.captionsDataEditors );
+	const modifiedCaptionsDataEditors = Object.assign( {}, this.state.captionsDataEditors );
 	delete modifiedCaptionsDataEditors[ guidToRemove ];
 	this.setState( {
 		captionsDataEditors: modifiedCaptionsDataEditors
@@ -416,10 +411,10 @@ CaptionsPanel.prototype.onCaptionDeleted = function ( guidToRemove ) {
  * 3. Update this.state.captions from this.state.captionsDataEditors
  */
 CaptionsPanel.prototype.onDataChanged = function () {
-	var self = this, captionsData = {};
+	const self = this, captionsData = {};
 	this.refreshLanguageSelectorsOptions();
-	Object.keys( this.state.captionsDataEditors ).forEach( function ( guid ) {
-		var langSelector = self.state.captionsDataEditors[ guid ].languageSelector,
+	Object.keys( this.state.captionsDataEditors ).forEach( ( guid ) => {
+		const langSelector = self.state.captionsDataEditors[ guid ].languageSelector,
 			langCode = langSelector.getValue(),
 			textInput = self.state.captionsDataEditors[ guid ].textInput;
 		if ( langCode ) {
@@ -439,7 +434,7 @@ CaptionsPanel.prototype.onDataChanged = function () {
  * Restores to a read-only view with the saved captions data
  */
 CaptionsPanel.prototype.restoreToSaved = function () {
-	var restoredState = Object.assign( {}, this.getCaptionsState( this.savedCaptionsData ), {
+	const restoredState = Object.assign( {}, this.getCaptionsState( this.savedCaptionsData ), {
 		editing: false,
 		disabled: false
 	} );
@@ -454,9 +449,9 @@ CaptionsPanel.prototype.restoreToSaved = function () {
  * @private
  */
 CaptionsPanel.prototype.getAvailableLanguages = function ( excludeLanguages ) {
-	var languages = {};
+	const languages = {};
 	Object.assign( languages, wbTermsLanguages );
-	( excludeLanguages || [] ).forEach( function ( languageCode ) {
+	( excludeLanguages || [] ).forEach( ( languageCode ) => {
 		delete languages[ languageCode ];
 	} );
 	return languages;
@@ -469,19 +464,17 @@ CaptionsPanel.prototype.getAvailableLanguages = function ( excludeLanguages ) {
  * @private
  */
 CaptionsPanel.prototype.refreshLanguageSelectorsOptions = function () {
-	var self = this,
+	const self = this,
 		currentlySelectedLanguages = [],
 		captionsDataEditors = this.state.captionsDataEditors;
 
-	Object.keys( captionsDataEditors ).forEach( function ( guid ) {
+	Object.keys( captionsDataEditors ).forEach( ( guid ) => {
 		currentlySelectedLanguages.push( captionsDataEditors[ guid ].languageSelector.getValue() );
 	} );
-	Object.keys( captionsDataEditors ).forEach( function ( guid ) {
+	Object.keys( captionsDataEditors ).forEach( ( guid ) => {
 		captionsDataEditors[ guid ].languageSelector.updateLanguages(
 			self.getAvailableLanguages(
-				currentlySelectedLanguages.filter( function ( langCode ) {
-					return langCode !== captionsDataEditors[ guid ].languageSelector.getValue();
-				} )
+				currentlySelectedLanguages.filter( ( langCode ) => langCode !== captionsDataEditors[ guid ].languageSelector.getValue() )
 			)
 		);
 	} );
@@ -491,10 +484,10 @@ CaptionsPanel.prototype.refreshLanguageSelectorsOptions = function () {
  * @return {boolean} True if any captions have been changed/added/deleted
  */
 CaptionsPanel.prototype.hasChanges = function () {
-	var self = this,
-		nonEmptyCaptionsData = {},
-		hasChanges;
-	hasChanges = Object.keys( this.state.captionsData ).some( function ( langCode ) {
+	const self = this;
+	const nonEmptyCaptionsData = {};
+	let hasChanges;
+	hasChanges = Object.keys( this.state.captionsData ).some( ( langCode ) => {
 		if ( self.state.captionsData[ langCode ].text !== '' ) {
 			nonEmptyCaptionsData[ langCode ] = self.state.captionsData[ langCode ];
 			if ( !self.savedCaptionsData[ langCode ] ) {
@@ -527,7 +520,7 @@ CaptionsPanel.prototype.hasChanges = function () {
  * @private
  */
 CaptionsPanel.prototype.getWbSetLabelParams = function ( language, text ) {
-	var apiParams = {
+	const apiParams = {
 		/*
 		 * Unconditionally set the bot parameter to match the UI behavior of core.
 		 * In normal page editing, if you have the "bot" user right and edit through the GUI
@@ -560,13 +553,13 @@ CaptionsPanel.prototype.getWbSetLabelParams = function ( language, text ) {
  * @private
  */
 CaptionsPanel.prototype.getShowCaptionFlagsByLangCode = function () {
-	var self = this,
-		firstCaptionIsBlank,
-		indexedShowCaptionFlags = {};
+	const self = this;
+	let firstCaptionIsBlank;
+	const indexedShowCaptionFlags = {};
 
-	this.state.orderedLanguageCodes.forEach( function ( langCode, index ) {
-		var captionData = self.state.captionsData[ langCode ],
-			showCaption;
+	this.state.orderedLanguageCodes.forEach( ( langCode, index ) => {
+		const captionData = self.state.captionsData[ langCode ];
+		let showCaption;
 		if ( index === 0 ) {
 			showCaption = true;
 			firstCaptionIsBlank = ( captionData.text === '' );
@@ -577,7 +570,7 @@ CaptionsPanel.prototype.getShowCaptionFlagsByLangCode = function () {
 		) {
 			showCaption = true;
 		} else {
-			if ( self.userLanguages.indexOf( langCode ) === -1 ) {
+			if ( !self.userLanguages.includes( langCode ) ) {
 				showCaption = false;
 			} else {
 				showCaption = true;
@@ -597,17 +590,15 @@ CaptionsPanel.prototype.getShowCaptionFlagsByLangCode = function () {
  * @private
  */
 CaptionsPanel.prototype.getHideableLanguageCount = function () {
-	var showCaptionFlags = this.getShowCaptionFlagsByLangCode();
+	const showCaptionFlags = this.getShowCaptionFlagsByLangCode();
 
 	return Object.keys( showCaptionFlags ).filter(
-		function ( langCode ) {
-			return showCaptionFlags[ langCode ] === false;
-		}
+		( langCode ) => showCaptionFlags[ langCode ] === false
 	).length;
 };
 
 CaptionsPanel.prototype.makeEditable = function () {
-	var self = this;
+	const self = this;
 
 	// Show IP address logging notice to anon users
 	if ( mw.config.get( 'wbmiShowIPEditingWarning' ) && mw.user.isAnon() ) {
@@ -615,8 +606,8 @@ CaptionsPanel.prototype.makeEditable = function () {
 	}
 
 	// show dialog informing user of licensing
-	self.licenseDialogWidget.getConfirmationIfNecessary().then( function () {
-		var entityId = mw.config.get( 'wbEntityId' );
+	self.licenseDialogWidget.getConfirmationIfNecessary().then( () => {
+		const entityId = mw.config.get( 'wbEntityId' );
 		self.pushPending();
 		// refresh caption data from the api
 		self.api
@@ -625,24 +616,24 @@ CaptionsPanel.prototype.makeEditable = function () {
 				props: 'info|labels',
 				ids: entityId
 			} )
-			.done( function ( result ) {
+			.done( ( result ) => {
 				mw.mediaInfo.structuredData.currentRevision = result.entities[ entityId ].lastrevid;
 				self.savedCaptionsData = self.captionsDataFromMediaInfoEntity(
 					result.entities[ entityId ]
 				);
 			} )
-			.fail( function () {
+			.fail( () => {
 				// Ignore the failure and just make do with the data we already have saved
 			} )
-			.always( function () {
-				var captionsDataEditors = {},
+			.always( () => {
+				const captionsDataEditors = {},
 					captionsState = self.getCaptionsState(
 						// Copy by value so the saved data isn't modified
 						Object.assign( {}, self.savedCaptionsData )
 					);
 
-				captionsState.orderedLanguageCodes.forEach( function ( langCode ) {
-					var guid = self.createGuid();
+				captionsState.orderedLanguageCodes.forEach( ( langCode ) => {
+					const guid = self.createGuid();
 					captionsDataEditors[ guid ] = self.createCaptionDataEditor(
 						guid,
 						self.savedCaptionsData[ langCode ] || new CaptionData( langCode )
@@ -657,7 +648,7 @@ CaptionsPanel.prototype.makeEditable = function () {
 							editing: true
 						}
 					)
-				).then( function () {
+				).then( () => {
 					self.refreshLanguageSelectorsOptions();
 					self.popPending();
 				} );
@@ -666,7 +657,7 @@ CaptionsPanel.prototype.makeEditable = function () {
 };
 
 CaptionsPanel.prototype.addNewEmptyLanguageRow = function () {
-	var guid = this.createGuid(),
+	const guid = this.createGuid(),
 		captionsDataEditors = Object.assign(
 			{},
 			this.state.captionsDataEditors
@@ -678,84 +669,80 @@ CaptionsPanel.prototype.addNewEmptyLanguageRow = function () {
 };
 
 CaptionsPanel.prototype.sendData = function () {
-	var self = this,
-		captionsDataEditors = Object.assign( {}, this.state.captionsDataEditors ),
-		promise = $.Deferred().resolve().promise(),
-		tempuser = {};
+	const self = this;
+	const captionsDataEditors = Object.assign( {}, this.state.captionsDataEditors );
+	let promise = $.Deferred().resolve().promise();
+	const tempuser = {};
 
 	this.setSending();
 
 	// Send changed data
-	Object.keys( captionsDataEditors ).forEach( function ( guid ) {
-		var captionDataEditor = captionsDataEditors[ guid ],
+	Object.keys( captionsDataEditors ).forEach( ( guid ) => {
+		const captionDataEditor = captionsDataEditors[ guid ],
 			langCode = captionDataEditor.getLanguageCode(),
 			text = captionDataEditor.getText(),
 			savedData = self.savedCaptionsData[ langCode ];
 
 		if ( text && langCode && ( !savedData || savedData.text !== text ) ) {
-			promise = promise.then( function () {
-				return self.api.postWithToken(
-					'csrf',
-					self.getWbSetLabelParams( langCode, text )
-				)
-					.done( function ( response ) {
-						mw.mediaInfo.structuredData.currentRevision = response.entity.lastrevid;
+			promise = promise.then( () => self.api.postWithToken(
+				'csrf',
+				self.getWbSetLabelParams( langCode, text )
+			)
+				.done( ( response ) => {
+					mw.mediaInfo.structuredData.currentRevision = response.entity.lastrevid;
 
-						self.savedCaptionsData[ langCode ] =
+					self.savedCaptionsData[ langCode ] =
 							new CaptionData( langCode, text );
 
-						// extract tempuser properties from response, if present
-						// (this will only be present the first request)
-						for ( var property in response ) {
-							if ( property.match( /^tempuser/ ) ) {
-								tempuser[ property ] = response[ property ];
-							}
+					// extract tempuser properties from response, if present
+					// (this will only be present the first request)
+					for ( const property in response ) {
+						if ( property.match( /^tempuser/ ) ) {
+							tempuser[ property ] = response[ property ];
 						}
-					} )
-					.fail( function ( errorCode, error ) {
-						var apiError =
+					}
+				} )
+				.fail( ( errorCode, error ) => {
+					const apiError =
 							wikibase.api.RepoApiError.newFromApiResponse( error, 'save' );
-						captionDataEditor.setInputError( apiError.detailedMessage );
-					} );
-			} );
+					captionDataEditor.setInputError( apiError.detailedMessage );
+				} ) );
 		}
 	} );
 
 	// Delete removed data
-	Object.keys( this.savedCaptionsData ).forEach( function ( langCode ) {
-		var captionsData = self.state.captionsData[ langCode ];
+	Object.keys( this.savedCaptionsData ).forEach( ( langCode ) => {
+		const captionsData = self.state.captionsData[ langCode ];
 		if ( !captionsData || captionsData.text === '' ) {
-			promise = promise.then( function () {
-				return self.api.postWithToken(
-					'csrf',
-					self.getWbSetLabelParams( langCode, '' )
-				)
-					.done( function ( response ) {
-						mw.mediaInfo.structuredData.currentRevision = response.entity.lastrevid;
+			promise = promise.then( () => self.api.postWithToken(
+				'csrf',
+				self.getWbSetLabelParams( langCode, '' )
+			)
+				.done( ( response ) => {
+					mw.mediaInfo.structuredData.currentRevision = response.entity.lastrevid;
 
-						delete self.savedCaptionsData[ langCode ];
+					delete self.savedCaptionsData[ langCode ];
 
-						// extract tempuser properties from response, if present
-						// (this will only be present the first request)
-						for ( var property in response ) {
-							if ( property.match( /^tempuser/ ) ) {
-								tempuser[ property ] = response[ property ];
-							}
+					// extract tempuser properties from response, if present
+					// (this will only be present the first request)
+					for ( const property in response ) {
+						if ( property.match( /^tempuser/ ) ) {
+							tempuser[ property ] = response[ property ];
 						}
-					} )
-					.fail( function ( errorCode, error ) {
-						var apiError =
+					}
+				} )
+				.fail( ( errorCode, error ) => {
+					const apiError =
 								wikibase.api.RepoApiError.newFromApiResponse( error, 'save' ),
-							guid = self.createGuid(),
-							captionDataEditor = self.createCaptionDataEditor( guid, self.savedCaptionsData[ langCode ] );
-						captionDataEditor.setInputError( apiError.detailedMessage );
-						captionsDataEditors[ guid ] = captionDataEditor;
-					} );
-			} );
+						guid = self.createGuid(),
+						captionDataEditor = self.createCaptionDataEditor( guid, self.savedCaptionsData[ langCode ] );
+					captionDataEditor.setInputError( apiError.detailedMessage );
+					captionsDataEditors[ guid ] = captionDataEditor;
+				} ) );
 		}
 	} );
 
-	promise.then( function () {
+	promise.then( () => {
 		self.setState(
 			Object.assign(
 				{},
@@ -767,12 +754,12 @@ CaptionsPanel.prototype.sendData = function () {
 				}
 			)
 		);
-	} ).catch( function () {
+	} ).catch( () => {
 		self.setState( {
 			editing: true,
 			captionsDataEditors: captionsDataEditors
 		} );
-	} ).always( function () {
+	} ).always( () => {
 		if ( tempuser.tempuserredirect ) {
 			window.location.href = tempuser.tempuserredirect;
 		} else if ( tempuser.tempusercreated ) {
@@ -788,7 +775,7 @@ CaptionsPanel.prototype.sendData = function () {
  * @return {CaptionDataEditor}
  */
 CaptionsPanel.prototype.createCaptionDataEditor = function ( guid, captionData ) {
-	var captionDataEditor = new CaptionDataEditor( guid, captionData, { warnWithinMaxCaptionLength: this.warnWithinMaxCaptionLength } );
+	const captionDataEditor = new CaptionDataEditor( guid, captionData, { warnWithinMaxCaptionLength: this.warnWithinMaxCaptionLength } );
 	this.enableCaptionDataEditor( captionDataEditor );
 	return captionDataEditor;
 };
@@ -821,9 +808,9 @@ CaptionsPanel.prototype.disableCaptionDataEditor = function ( captionDataEditor 
  * Puts the panel into a 'sending' state without re-rendering
  */
 CaptionsPanel.prototype.setSending = function () {
-	var self = this;
+	const self = this;
 	this.editActionsWidget.setStateSending();
-	Object.keys( this.state.captionsDataEditors ).forEach( function ( guid ) {
+	Object.keys( this.state.captionsDataEditors ).forEach( ( guid ) => {
 		self.disableCaptionDataEditor( self.state.captionsDataEditors[ guid ] );
 	} );
 	this.pushPending();
@@ -833,9 +820,9 @@ CaptionsPanel.prototype.setSending = function () {
  * Puts the panel into a ready' state without re-rendering
  */
 CaptionsPanel.prototype.setReady = function () {
-	var self = this;
+	const self = this;
 	this.editActionsWidget.setStateReady();
-	Object.keys( this.state.captionsDataEditors ).forEach( function ( guid ) {
+	Object.keys( this.state.captionsDataEditors ).forEach( ( guid ) => {
 		self.enableCaptionDataEditor( self.state.captionsDataEditors[ guid ] );
 	} );
 	this.popPending();
@@ -849,9 +836,7 @@ CaptionsPanel.prototype.setReady = function () {
  */
 CaptionsPanel.prototype.createGuid = function () {
 	return 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(
-		/[x]/g, function () {
-			return ( Math.random() * 16 ).toString( 16 ).slice( 0, 1 );
-		}
+		/[x]/g, () => ( Math.random() * 16 ).toString( 16 ).slice( 0, 1 )
 	);
 };
 

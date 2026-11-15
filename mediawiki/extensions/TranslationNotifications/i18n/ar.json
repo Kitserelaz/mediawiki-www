@@ -2,10 +2,10 @@
 	"@metadata": {
 		"authors": [
 			"Hubaishan",
+			"Meno25",
 			"ترجمان05",
 			"ديفيد",
-			"محمد أحمد عبد الفتاح",
-			"Meno25"
+			"محمد أحمد عبد الفتاح"
 		]
 	},
 	"translatorsignup": "إضافة مترجم",
@@ -76,7 +76,7 @@
 	"translationnotifications-log-alllanguages": "كل اللغات",
 	"translationnotifications-nodeadline": "لا شيء",
 	"translationnotifications-signup-legal": "أنت توافق على أنه من خلال تقديم هذه المعلومات، قد نتصل بك بشأن الموضوعات المتعلقة بـ{{SITENAME}} التي نعتقد أنها قد تهمك، أنت توافق على أن بياناتك تخضع [[{{MediaWiki:Privacypage}}|لسياسة الخصوصية]] لدينا.",
-	"translationnotifications-generic-languages": "&lt;اللغات>",
+	"translationnotifications-generic-languages": "<var>اللغات</var>",
 	"translationnotifications-text": "استخدم النموذج أدناه لإرسال طلبات ترجمة إلى المترجمين.",
 	"translationnotifications-tes-discouraged-group": "الصفحة المحددة القابلة للترجمة غير مستحبة. لا يُسمح بإرسال إشعارات إلى الصفحات غير المستحبة.",
 	"translationnotifications-echo-unsubscribe-header": "لقد تم إلغاء اشتراكك في إشعارات الترجمة",

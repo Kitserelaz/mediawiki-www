@@ -28,7 +28,5 @@
 	"thanks-thanked-notice": "{{GENDER:$3|Dhika}} matorè kaso'on ḍâ' {{GENDER:$2|$1}}",
 	"thanks": "Mekkas pamatoran kaso'onna",
 	"thanks-submit": "Mekkas pamatoran kaso'on",
-	"echo-pref-subscription-edit-thank": "Mator kaso'on ḍâ' bule karana beccè'an bule",
-	"thanks-error-notitle": "Pranès pelataran ta' kèngèng èyangghâl'aghi",
-	"thanks-error-api-params": "Parameter 'revid' otabâ 'logid' kodhu èbâghi"
+	"echo-pref-subscription-edit-thank": "Mator kaso'on ḍâ' bule karana beccè'an bule"
 }

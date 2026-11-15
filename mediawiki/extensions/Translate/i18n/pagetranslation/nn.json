@@ -7,7 +7,8 @@
 			"Harald Khan",
 			"Jon Harald Søby",
 			"Njardarlogar",
-			"Pyscowicz"
+			"Pyscowicz",
+			"Ranveig"
 		]
 	},
 	"pagetranslation": "Sideomsetjing",
@@ -37,6 +38,7 @@
 	"tpt-tag-discouraged": "frårådd",
 	"tpt-select-prioritylangs-reason": "Årsak:",
 	"tpt-sections-prioritylangs": "Prioriterte språk",
+	"tpt-syntaxversion-text": "Denne sida bruker ein gammal versjon av kjeldesyntaksen for omsettbare sider. Den nye versjonen vil omfatta uomsette seksjonar med ein HTML-tagg som indikerer det rette språket til teksten. Døme: $1. Du kan bruka den nye markeringssyntaksen $2 for å forhindra omfatting av tekst der det ikkje passar, som under omsetjing av <code>title</code>-attributten til eit element. Det er ikkje mogleg å gå tilbake til den gamle syntaksversjonen.",
 	"tpt-rev-mark": "merk for omsetjing",
 	"tpt-rev-unmark": "fjerna frå omsetjing",
 	"tpt-rev-discourage": "råd frå",
@@ -59,10 +61,8 @@
 	"tpt-render-summary": "Oppdatering for å svara til ny versjon av kjeldesida",
 	"tpt-aggregategroup-add": "Legg til",
 	"tpt-aggregategroup-save": "Lagra",
-	"tpt-aggregategroup-new-name": "Namn:",
 	"tpt-aggregategroup-edit-name": "Namn:",
 	"tpt-aggregategroup-edit-description": "Skildring:",
-	"tpt-aggregategroup-update": "Lagra",
 	"tpt-aggregategroup-update-cancel": "Avbryt",
 	"log-description-pagetranslation": "Logg over handlingar i sideomsetjingssystemet",
 	"log-name-pagetranslation": "Sideomsetjingslogg",
@@ -108,6 +108,6 @@
 	"pp-save-button-label": "Publiser",
 	"pp-cancel-button-label": "Avbryt",
 	"tpt-unlink-button": "Fjern frå omsetjing",
-	"tpt-unlink-summary": "Fjerna side frå omsetjing",
-	"tpt-generic-button": "Stadfest"
+	"tpt-generic-button": "Stadfest",
+	"tpt-unlink-summary": "Fjerna side frå omsetjing"
 }

@@ -6,7 +6,12 @@ use MediaWiki\Api\ApiUsageException;
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Content\TextContent;
 use MediaWiki\Extension\PageTriage\ArticleCompile\ArticleCompileAfcTag;
+use MediaWiki\Extension\PageTriage\ArticleMetadata;
+use MediaWiki\Extension\PageTriage\PageTriage;
+use MediaWiki\Extension\PageTriage\QueueRecord;
+use MediaWiki\Request\FauxRequest;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Tests\User\TempUser\TempUserTestTrait;
 use MediaWiki\Title\Title;
 use MediaWiki\Utils\MWTimestamp;
 use MockHttpTrait;
@@ -24,6 +29,7 @@ use MockHttpTrait;
 class ApiPageTriageListTest extends PageTriageTestCase {
 
 	use MockHttpTrait;
+	use TempUserTestTrait;
 
 	/** @var int */
 	protected $draftNsId = 150;
@@ -250,9 +256,13 @@ class ApiPageTriageListTest extends PageTriageTestCase {
 	public function testAutopatrolledCreation() {
 		$apiParams = [ 'namespace' => 0 ];
 
+		// Make sure sysops are autopatrolled.
+		$this->setGroupPermissions( 'sysop', 'autopatrol', true );
+
+		// Then have a sysop insert a page.
 		$this->insertPage( 'Mainspace test page 1', '' );
 
-		// Should not be in unreviewed list (test user is a sysop and hence autopatrolled).
+		// Should not be in unreviewed list
 		$list = $this->getPageTriageList( $apiParams );
 
 		// First check count($list) in case this test is ran standalone.
@@ -275,9 +285,13 @@ class ApiPageTriageListTest extends PageTriageTestCase {
 		$apiParams = [ 'namespace' => 0 ];
 		$pageTitle = 'Redirect test';
 
+		// Make sure sysops are autopatrolled.
+		$this->setGroupPermissions( 'sysop', 'autopatrol', true );
+
+		// Then have a sysop insert a page.
 		$this->insertPage( $pageTitle, '#REDIRECT [[Foo]]' );
 
-		// Should not be in unreviewed list (test user is a sysop and hence autopatrolled).
+		// Should not be in unreviewed list
 		$list = $this->getPageTriageList( $apiParams );
 		$this->assertTrue( count( $list ) === 0 || $list[0]['title'] !== $pageTitle );
 
@@ -372,8 +386,11 @@ class ApiPageTriageListTest extends PageTriageTestCase {
 		$clock = (int)wfTimestamp( TS_UNIX );
 
 		$page1 = $this->insertPage( 'Oldest created', '', $this->draftNsId );
+		MWTimestamp::setFakeTime( ++$clock );
 		$page2 = $this->insertPage( 'Page in the middle', '', $this->draftNsId );
+		MWTimestamp::setFakeTime( ++$clock );
 		$page3 = $this->insertPage( 'Newest created', '', $this->draftNsId );
+		MWTimestamp::setFakeTime( ++$clock );
 
 		// Now submit them, in an order different than their creation date.
 		// ptrp_reviewed_updated is a timestamp, only accurate to the second.
@@ -383,6 +400,7 @@ class ApiPageTriageListTest extends PageTriageTestCase {
 		$this->editPage( $page3[ 'title' ], '[[Category:Pending AfC submissions]]' );
 		MWTimestamp::setFakeTime( ++$clock );
 		$this->editPage( $page1[ 'title' ], '[[Category:Pending AfC submissions]]' );
+		MWTimestamp::setFakeTime( ++$clock );
 
 		$oldestSubmitted = $page2;
 		$newestSubmitted = $page1;
@@ -396,6 +414,33 @@ class ApiPageTriageListTest extends PageTriageTestCase {
 		$list = $this->getPageTriageList( $apiParams );
 		$this->assertArrayHasKey( 'title', $list[0] );
 		$this->assertSame( $newestSubmitted[ 'title' ]->getPrefixedText(), $list[0][ 'title' ] );
+	}
+
+	public function testSubmissionWithNonTempUser() {
+		$page = $this->insertPage( 'Page title', 'page text', $this->draftNsId );
+
+		$apiParams = [ 'dir' => 'oldestfirst' ];
+		$list = $this->getPageTriageList( $apiParams );
+
+		$this->assertArrayHasKey( 'title', $list[0] );
+		$this->assertSame( $page[ 'title' ]->getPrefixedText(), $list[0][ 'title' ] );
+		$this->assertSame( false, $list[0][ 'creator_is_temp_account' ] );
+	}
+
+	public function testSubmissionWithTempUser() {
+		$this->enableAutoCreateTempUser();
+		$tempUser = $this->getServiceContainer()
+			->getTempUserCreator()
+			->create( null, new FauxRequest() )
+			->getUser();
+		$page = $this->insertPage( 'Page title', 'page text', $this->draftNsId, $tempUser );
+
+		$apiParams = [ 'dir' => 'oldestfirst' ];
+		$list = $this->getPageTriageList( $apiParams );
+
+		$this->assertArrayHasKey( 'title', $list[0] );
+		$this->assertSame( $page[ 'title' ]->getPrefixedText(), $list[0][ 'title' ] );
+		$this->assertSame( true, $list[0][ 'creator_is_temp_account' ] );
 	}
 
 	public function testQueryOres() {
@@ -565,6 +610,19 @@ class ApiPageTriageListTest extends PageTriageTestCase {
 		] );
 		$this->assertPages( [ 'DateRange20190215' ], $list,
 			'Pages to date' );
+	}
+
+	public function testKeywordSearch() {
+		$page1 = $this->insertPage( 'KeywordSearchFoo', 'Testing Foo Keyword Search ', $this->draftNsId );
+		$page2 = $this->insertPage( 'KeywordSearchBar', 'Testing bar Keyword Search ', $this->draftNsId );
+
+		$apiParams = [ 'keyword' => "Foo" ];
+		$list = $this->getPageTriageList( $apiParams );
+		$this->assertPages( [ 'KeywordSearchFoo' ], $list, 'Keyword search' );
+
+		$apiParams = [ 'keyword' => "bar" ];
+		$list = $this->getPageTriageList( $apiParams );
+		$this->assertPages( [ 'KeywordSearchBar' ], $list, 'Keyword search' );
 	}
 
 	public function testFilterType() {
@@ -753,5 +811,74 @@ class ApiPageTriageListTest extends PageTriageTestCase {
 		$list = $this->doApiRequest( [ 'action' => 'pagetriagelist', 'page_id' => $testDraft['id'] ] );
 		$draftInfo = $list[0]['pagetriagelist']['pages'][0];
 		$this->assertSame( 1, $draftInfo['talkpage_feedback_count'] );
+	}
+
+	/**
+	 * @param array[] $pages pagetriagelist pages
+	 * @return string[] Unprefixed titles
+	 */
+	private function pageTitlesFromList( array $pages ): array {
+		return array_map( static function ( $item ) {
+			$title = $item['title'];
+			return strpos( $title, ':' ) !== false ?
+				explode( ':', $title )[1] :
+				$title;
+		}, $pages );
+	}
+
+	/**
+	 * The API must not disclose the name of a reviewer whose name is suppressed.
+	 */
+	public function testSuppressedReviewerIsNotDisclosed() {
+		$reviewer = $this->getMutableTestUser()->getUser();
+		$pageId = $this->makeDraft( __METHOD__ );
+
+		// Record $reviewer as the last reviewer of the draft.
+		$pageTriage = new PageTriage( $pageId );
+		$pageTriage->setTriageStatus( QueueRecord::REVIEW_STATUS_REVIEWED, $reviewer );
+		ArticleMetadata::clearStaticCache();
+
+		// Before suppression the API shows the reviewer.
+		$pageInfo = $this->getPageTriageList( [ 'page_id' => $pageId ] )[0];
+		$this->assertSame( $reviewer->getName(), $pageInfo['reviewer'] );
+		$this->assertFalse( $pageInfo['reviewer_hidden'] );
+		$this->assertSame(
+			'User:' . $reviewer->getName(),
+			$pageInfo['reviewer_user_page']
+		);
+
+		// Suppress the name of the reviewer.
+		$this->getServiceContainer()->getBlockUserFactory()->newBlockUser(
+			$reviewer,
+			$this->getTestUser( [ 'sysop', 'suppress' ] )->getAuthority(),
+			'infinity',
+			'test suppression',
+			[ 'isHideUser' => true ]
+		)->placeBlock();
+		ArticleMetadata::clearStaticCache();
+
+		// After suppression the API shows no reviewer data.
+		$pageInfo = $this->getPageTriageList( [ 'page_id' => $pageId ] )[0];
+		$this->assertNull( $pageInfo['reviewer'] );
+		$this->assertTrue( $pageInfo['reviewer_hidden'] );
+		$this->assertSame( '0', $pageInfo['ptrp_last_reviewed_by'] );
+
+		$disclosingFields = [
+			'reviewer_user_page',
+			'reviewer_user_page_url',
+			'reviewer_user_talk_page',
+			'reviewer_user_talk_page_url',
+			'reviewer_contribution_page',
+			'reviewer_contribution_page_url',
+		];
+		foreach ( $disclosingFields as $field ) {
+			$this->assertArrayNotHasKey( $field, $pageInfo );
+		}
+
+		// The name of the reviewer must not be anywhere in the response.
+		$this->assertStringNotContainsString(
+			$reviewer->getName(),
+			json_encode( $pageInfo )
+		);
 	}
 }

@@ -2,6 +2,7 @@
 
 namespace MediaWiki\Extension\SecurePoll\Ballots;
 
+use MediaWiki\Extension\SecurePoll\Entities\Option;
 use MediaWiki\Extension\SecurePoll\Entities\Question;
 use OOUI\FieldsetLayout;
 use OOUI\HorizontalLayout;
@@ -17,10 +18,12 @@ use OOUI\NumberInputWidget;
  *     must-rank-all
  */
 class PreferentialBallot extends Ballot {
+	/** @inheritDoc */
 	public static function getTallyTypes() {
 		return [ 'schulze' ];
 	}
 
+	/** @inheritDoc */
 	public static function getCreateDescriptors() {
 		$ret = parent::getCreateDescriptors();
 		$ret['election'] += [
@@ -117,6 +120,12 @@ class PreferentialBallot extends Ballot {
 		}
 	}
 
+	/**
+	 * @param Question $question
+	 * @param Option $option
+	 * @param int $rank
+	 * @return string
+	 */
 	public function packRecord( $question, $option, $rank ) {
 		return sprintf(
 			'Q%08X-A%08X-R%08X--',
@@ -126,6 +135,7 @@ class PreferentialBallot extends Ballot {
 		);
 	}
 
+	/** @inheritDoc */
 	public function unpackRecord( $record ) {
 		$ranks = [];
 		$itemLength = 3 * 8 + 7;
@@ -151,6 +161,7 @@ class PreferentialBallot extends Ballot {
 		return $ranks;
 	}
 
+	/** @inheritDoc */
 	public function convertScores( $scores, $params = [] ) {
 		$result = [];
 		foreach ( $this->election->getQuestions() as $question ) {

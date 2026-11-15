@@ -8,7 +8,9 @@
 			"DixonD",
 			"Ice bulldog",
 			"Macofe",
+			"Movses",
 			"Piramidion",
+			"Repakr",
 			"Wizardist",
 			"Ата"
 		]
@@ -28,7 +30,7 @@
 	"templatesandbox-editform-page-label": "Заголовок сторінки",
 	"templatesandbox-editform-view-label": "Попередній перегляд",
 	"templatesandbox-preview": "Попередній перегляд $2",
-	"templatesandbox-previewnote": "'''Це лише попередній перегляд [[:$1]].'''\nВаші зміни ще не збережено!",
+	"templatesandbox-previewnote": "<strong>Пам’ятайте, що це лише попередній перегляд [[:$1]].</strong> \nВаші зміни ще не збережено!",
 	"templatesandbox-invalid-title": "Вказана назва неприпустима.",
 	"templatesandbox-title-not-exists": "Вказана назва не існує.",
 	"templatesandbox-revision-not-exists": "Вказаної версії не існує.",
@@ -44,5 +46,6 @@
 	"templatesandbox-editform-invalid-template": "Неприпустиме ім'я шаблону, яке ви вказали.",
 	"templatesandbox-editform-invalid-title": "Вказаний заголовок для попереднього перегляду некоректний.",
 	"templatesandbox-editform-title-not-exists": "Вказаний заголовок для попереднього перегляду не існує.",
-	"templatesandbox-failed-replace-section": "Не вдалося замінити розділ наявної сторінки."
+	"templatesandbox-failed-replace-section": "Не вдалося замінити розділ наявної сторінки.",
+	"templatesandbox-template-not-used": "Шаблон не було використано на вказаній сторінці."
 }

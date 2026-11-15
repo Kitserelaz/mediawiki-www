@@ -1,11 +1,9 @@
 'use strict';
 
-var LicenseDialogWidget;
-
 /**
  * @constructor
  */
-LicenseDialogWidget = function () {
+const LicenseDialogWidget = function () {
 	this.dialog = new OO.ui.MessageDialog();
 	this.windowManager = new OO.ui.WindowManager();
 	this.windowManager.addWindows( [ this.dialog ] );
@@ -22,7 +20,7 @@ OO.inheritClass( LicenseDialogWidget, OO.ui.Widget );
  * @return {jQuery.Promise}
  */
 LicenseDialogWidget.prototype.getConfirmationIfNecessary = function () {
-	var self = this,
+	const self = this,
 		deferred = $.Deferred(),
 		confirmed = this.getLicenseConfirmation();
 
@@ -36,7 +34,7 @@ LicenseDialogWidget.prototype.getConfirmationIfNecessary = function () {
 	}
 
 	this.openDialog();
-	this.dialog.getManager().on( 'closing', function ( window, compatClosing, data ) {
+	this.dialog.getManager().on( 'closing', ( window, compatClosing, data ) => {
 		if ( data && data.action === 'accept' ) {
 			deferred.resolve();
 			self.storeLicenseConfirmation();
@@ -76,7 +74,7 @@ LicenseDialogWidget.prototype.openDialog = function () {
  * @return {number} 0 or 1
  */
 LicenseDialogWidget.prototype.getLicenseConfirmation = function () {
-	var storage = mw.storage,
+	const storage = mw.storage,
 		key = this.prefKey,
 		user = mw.user;
 
@@ -94,7 +92,7 @@ LicenseDialogWidget.prototype.getLicenseConfirmation = function () {
  * localstorage.
  */
 LicenseDialogWidget.prototype.storeLicenseConfirmation = function () {
-	var storage = mw.storage,
+	const storage = mw.storage,
 		key = this.prefKey,
 		user = mw.user;
 

@@ -1,9 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
+			"HakanIST",
 			"Hedda"
 		]
 	},
+	"prefs-profile": "Kullanıcı Profili V2",
 	"userprofilev2-desc": "Wiki tabanlı kullanıcı profili sistemi.",
 	"userprofilev2-selectavatar": "Avatar Seç",
 	"userprofilev2-avatarchanged": "Avatar başarıyla değiştirildi.",
@@ -26,5 +28,7 @@
 	"userprofilev2-showglobalgroups": "Küresel gruplarımı göster?",
 	"userprofilev2-showglobaleditcount": "Küresel düzenleme sayımı göster?",
 	"userprofilev2-showglobalgroupshelp": "Parçası olduğum küresel kullanıcı gruplarını göster (herkes tarafından görülebilir)",
-	"userprofilev2-showglobaleditcounthelp": "CentralAuth'tan gelen küresel düzenleme sayımı göster (herkes tarafından görülebilir)"
+	"userprofilev2-showglobaleditcounthelp": "CentralAuth'tan gelen küresel düzenleme sayımı göster (herkes tarafından görülebilir)",
+	"userprofilev2-edit": "Düzenle",
+	"userprofilev2-edit-back": "Geri"
 }

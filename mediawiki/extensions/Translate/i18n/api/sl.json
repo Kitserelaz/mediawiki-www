@@ -4,7 +4,6 @@
 			"Eleassar"
 		]
 	},
-	"apihelp-aggregategroups-param-group": "ID skupine sporočil. Glejte <kbd>[[Special:ApiHelp/query+messagegroups|action=query&meta=messagegroups]]</kbd>.",
 	"apihelp-aggregategroups-param-groupsourcelanguagecode": "Združitev kode izvornega jezika skupine sporočil ali <kbd>-</kbd>, da se ne nastavi izvorni jezik ali odstrani obstoječi.",
 	"apihelp-groupreview-param-group": "Skupina sporočil. Glejte\n <kbd>[[Special:ApiHelp/query+messagegroups|action=query&meta=messagegroups]]</kbd>.",
 	"apihelp-groupreview-param-language": "Oznaka jezika.",
@@ -20,7 +19,6 @@
 	"apihelp-query+messagecollection-paramvalue-prop-translation": "Trenutni prevod (brez niza $1, če obstaja; za preverjanje zasterelih ali okvarjeni prevodov uporabite oznake).",
 	"apihelp-query+messagecollection-paramvalue-prop-tags": "Oznake sporočil, kot so »optional« (izbirno), »ignored« (prezrto) in »fuzzy« (ohlapno).",
 	"apihelp-query+messagecollection-paramvalue-prop-properties": "Lastnosti sporočila, kot so status, redakcija, zadnji prevajalec. Lahko se razlikuje med sporočili.",
-	"apihelp-query+messagecollection-paramvalue-prop-revision": "Uporaba $1 prop=properties.",
 	"apihelp-query+messagegroups-param-prop": "Kateri podatki v zvezi s prevodom naj se pridobijo:",
 	"apihelp-query+messagegroups-paramvalue-prop-id": "Vključitev ID-ja skupine.",
 	"apihelp-query+messagegroups-paramvalue-prop-label": "Vključitev oznake skupine.",
@@ -46,6 +44,7 @@
 	"apihelp-translationreview-param-revision": "Številka redakcije za pregled.",
 	"apihelp-translationreview-example-1": "Pregled redakcije 1",
 	"apihelp-translationstash-summary": "Doda prevode v shrambo.",
+	"apihelp-translationstash-param-subaction": "Dejanje.",
 	"apihelp-translationstash-param-title": "Naslov strani prevodne enote.",
 	"apihelp-ttmserver-param-service": "Katera od razpoložljivih prevajalskih storitev naj se uporabi.",
 	"apihelp-ttmserver-param-targetlanguage": "Oznaka jezika predloga.",
@@ -57,8 +56,6 @@
 	"apihelp-translationcheck-extended-description": "Statistika vključuje urejanja prevodov, aktivne prevajalce, nove uporabnike, preglede prevodov in pregledovalce.",
 	"apihelp-translationstats-param-group": "Seznam skupin za pridobitev statistike. Glejte <kbd>[[Special:ApiHelp/query+messagegroups|action=query&meta=messagegroups]]</kbd>.",
 	"apierror-translate-fuzzymessage": "Ohlapnih prevodov ni mogoče pregledovati",
-	"apierror-translate-grouplanguagemismatch": "Jezik ($1) skupine, ki ste jo izbrali, se ne ujema z jezikom ($2) združene skupine.",
-	"apierror-translate-messagegroup-aggregategrouplanguagemismatch": "{{PLURAL:$3|Skupina|Skupine}}: $1, {{PLURAL:$3|nima|nimajo}} istega izvornega jezika ($2) kot združena skupina.",
 	"apierror-translate-invalidgroup": "Skupina ne obstaja ali je neveljavna",
 	"apierror-translate-invalidlanguage": "Oznaka jezika $1 ni veljavna.",
 	"apierror-translate-language-disabled": "Prevajanje v $1 je onemogočeno.",

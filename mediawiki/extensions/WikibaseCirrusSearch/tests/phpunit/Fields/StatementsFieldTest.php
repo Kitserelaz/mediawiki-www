@@ -6,12 +6,15 @@ use DataValues\BooleanValue;
 use DataValues\StringValue;
 use DataValues\UnboundedQuantityValue;
 use MediaWikiIntegrationTestCase;
+use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\PropertyId;
 use Wikibase\DataModel\Services\Lookup\PropertyDataTypeLookup;
 use Wikibase\DataModel\Snak\PropertyNoValueSnak;
 use Wikibase\DataModel\Snak\PropertySomeValueSnak;
 use Wikibase\DataModel\Snak\PropertyValueSnak;
+use Wikibase\DataModel\Statement\Statement;
 use Wikibase\DataModel\Statement\StatementList;
+use Wikibase\Lib\DataTypeFactory;
 use Wikibase\Repo\Tests\ChangeOp\StatementListProviderDummy;
 use Wikibase\Repo\Tests\Rdf\RdfBuilderTestData;
 use Wikibase\Repo\WikibaseRepo;
@@ -93,13 +96,9 @@ class StatementsFieldTest extends MediaWikiIntegrationTestCase {
 	private function getPropertyTypeLookup( array $map ) {
 		$lookup = $this->createMock( PropertyDataTypeLookup::class );
 
-		$lookup->method( 'getDataTypeIdForProperty' )
-			->willReturnCallback( static function ( PropertyId $id ) use ( $map ) {
-				if ( isset( $map[$id->getSerialization()] ) ) {
-					return $map[$id->getSerialization()];
-				}
-				return 'unknown';
-			} );
+		$lookup->method( 'getDataTypeIdForProperty' )->willReturnCallback(
+			static fn ( PropertyId $id ) => $map[$id->getSerialization()] ?? 'unknown'
+		);
 
 		return $lookup;
 	}
@@ -125,9 +124,48 @@ class StatementsFieldTest extends MediaWikiIntegrationTestCase {
 			'P11' => 'external-id',
 		] );
 
-		$field = new StatementsField( $lookup, $this->properties, [ 'wikibase-item', 'url' ], [ 'P11' ],
-			WikibaseRepo::getDataTypeDefinitions()->getSearchIndexDataFormatterCallbacks() );
+		$services = $this->getServiceContainer();
+		$field = new StatementsField(
+			WikibaseRepo::getDataTypeFactory( $services ),
+			$lookup,
+			$this->properties,
+			[ 'wikibase-item', 'url' ],
+			[ 'P11' ],
+			WikibaseRepo::getDataTypeDefinitions( $services )
+				->getSearchIndexDataFormatterCallbacks()
+		);
 		$this->assertEquals( $expected, $field->getFieldData( $entity ) );
+	}
+
+	public function testStatementProvider() {
+		$entity = new StatementListProviderDummy( "Q1" );
+		$entity->getStatements()->addNewStatement(
+			new PropertyValueSnak( 123, new StringValue( 'testString' ) ) );
+
+		$lookup = $this->getPropertyTypeLookup( [
+			'P123' => 'string',
+		] );
+		$formatters = [
+			'string' => static function ( StringValue $s ) {
+				return $s->getValue();
+			},
+		];
+		$statementProvider = static function ( EntityDocument $entity ) {
+			// Not the actual intent, but proves this callable gets to choose the set of indexed statements.
+			return [ new Statement( new PropertyValueSnak( 123, new StringValue( 'override' ) ) ) ];
+		};
+		$field = new StatementsField(
+			WikibaseRepo::getDataTypeFactory(),
+			$lookup,
+			[ 'P123' ],
+			[],
+			[],
+			$formatters,
+			null,
+			$statementProvider
+		);
+		$data = $field->getFieldData( $entity );
+		$this->assertEquals( [ 'P123=override' ], $data );
 	}
 
 	public function testFormatters() {
@@ -148,7 +186,19 @@ class StatementsFieldTest extends MediaWikiIntegrationTestCase {
 			'P789' => 'boolean', // not in $formatters
 			'P9' => 'sometype',
 		] );
-		$field = new StatementsField( $lookup, [ 'P123', 'P456', 'P789', 'P9' ], [], [], $formatters );
+		$field = new StatementsField(
+			new DataTypeFactory( [
+				'string' => 'string',
+				'quantity' => 'quantity',
+				'boolean' => 'boolean',
+				'sometype' => 'string',
+			] ),
+			$lookup,
+			[ 'P123', 'P456', 'P789', 'P9' ],
+			[],
+			[],
+			$formatters
+		);
 
 		$statementList = new StatementList();
 		$statementList->addNewStatement( new PropertyValueSnak( 123, new StringValue( 'testString' ) ) );

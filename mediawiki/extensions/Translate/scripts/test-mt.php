@@ -9,6 +9,7 @@
 
 use MediaWiki\Extension\Translate\WebService\QueryAggregator;
 use MediaWiki\Extension\Translate\WebService\TranslationWebService;
+use MediaWiki\Maintenance\Maintenance;
 use Psr\Log\AbstractLogger;
 
 // Standard boilerplate to define $IP
@@ -64,15 +65,13 @@ class TestMT extends Maintenance {
 			$this->fatalError( "Unknown service. Available services: $available\n" );
 		}
 
-		$logger = new class( fn ( $msg ) => $this->output( $msg ) ) extends AbstractLogger {
-			private $logger;
-
-			public function __construct( $logger ) {
-				$this->logger = $logger;
+		$logger = new class( $this->output( ... ) ) extends AbstractLogger {
+			public function __construct( private readonly Closure $logger ) {
 			}
 
-			public function log( $level, $msg, array $context = [] ) {
-				call_user_func( $this->logger, "[$level] $msg\n" );
+			/** @inheritDoc */
+			public function log( $level, $message, array $context = [] ): void {
+				( $this->logger )( "[$level] $message\n" );
 			}
 		};
 
@@ -97,7 +96,7 @@ class TestMT extends Maintenance {
 		$agg->run();
 		$res = $agg->getResponse( $id );
 
-		$this->output( $service->getResultData( $res ), 1 );
+		$this->output( $service->getResultData( $res ), '1' );
 	}
 }
 

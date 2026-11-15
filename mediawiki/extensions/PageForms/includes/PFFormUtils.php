@@ -128,7 +128,7 @@ class PFFormUtils {
 		] );
 		$text = Html::rawElement(
 			'label',
-			[ 'title' => wfMessage( 'tooltip-minoredit' )->parse() ],
+			[ 'title' => wfMessage( 'tooltip-minoredit' )->text() ],
 			new OOUI\CheckboxInputWidget( $attrs ) . $labelWidget
 		);
 		$text = Html::rawElement( 'div', [ 'style' => 'display: inline-block; padding: 12px 16px 12px 0;' ], $text );
@@ -136,14 +136,14 @@ class PFFormUtils {
 		return $text;
 	}
 
-	static function watchInputHTML( $form_submitted, $is_disabled, $is_checked = false, $label = null, $attrs = [] ) {
+	static function watchInputHTML( IContextSource $context, $form_submitted, $is_disabled, $is_checked = false, $label = null, $attrs = [] ) {
 		global $wgPageFormsTabIndex, $wgTitle;
 
 		$wgPageFormsTabIndex++;
 		// figure out if the checkbox should be checked -
 		// this code borrowed from /includes/EditPage.php
 		if ( !$form_submitted ) {
-			$user = RequestContext::getMain()->getUser();
+			$user = $context->getUser();
 			$services = MediaWikiServices::getInstance();
 			$userOptionsLookup = $services->getUserOptionsLookup();
 			$watchlistManager = $services->getWatchlistManager();
@@ -184,7 +184,7 @@ class PFFormUtils {
 		] );
 		$text = Html::rawElement(
 			'label',
-			[ 'title' => wfMessage( 'tooltip-watch' )->parse() ],
+			[ 'title' => wfMessage( 'tooltip-watch' )->text() ],
 			new OOUI\CheckboxInputWidget( $attrs ) . $labelWidget
 		);
 		$text = Html::rawElement( 'div', [ 'style' => 'display: inline-block; padding: 12px 16px 12px 0;' ], $text );
@@ -345,27 +345,28 @@ class PFFormUtils {
 
 	/**
 	 * Much of this function is based on MediaWiki's EditPage::showEditForm().
+	 * @param IContextSource $context
 	 * @param bool $form_submitted
 	 * @param bool $is_disabled
 	 * @return string
 	 */
-	static function formBottom( $form_submitted, $is_disabled ) {
+	static function formBottom( IContextSource $context, $form_submitted, $is_disabled ) {
 		$text = <<<END
 	<br />
 	<div class='editOptions'>
 
 END;
-		$req = RequestContext::getMain()->getRequest();
+		$req = $context->getRequest();
 		$summary = $req->getVal( 'wpSummary' );
 		$text .= self::summaryInputHTML( $is_disabled, null, [], $summary );
-		$user = RequestContext::getMain()->getUser();
+		$user = $context->getUser();
 		if ( $user->isAllowed( 'minoredit' ) ) {
 			$text .= self::minorEditInputHTML( $form_submitted, $is_disabled, false );
 		}
 
 		$userIsRegistered = $user->isRegistered();
 		if ( $userIsRegistered ) {
-			$text .= self::watchInputHTML( $form_submitted, $is_disabled );
+			$text .= self::watchInputHTML( $context, $form_submitted, $is_disabled );
 		}
 
 		$text .= <<<END
@@ -460,8 +461,8 @@ END;
 	/**
 	 * Parse the form definition and return it
 	 * @param Parser $parser
-	 * @param string|null $form_def
-	 * @param string|null $form_id
+	 * @param ?string $form_def
+	 * @param ?int $form_id
 	 * @return string
 	 */
 	public static function getFormDefinition( Parser $parser, $form_def = null, $form_id = null ) {
@@ -484,7 +485,7 @@ END;
 		}
 
 		// Remove <noinclude> sections and <includeonly> tags from form definition
-		$form_def = StringUtils::delimiterReplace( '<noinclude>', '</noinclude>', '', $form_def );
+		$form_def = StringUtils::delimiterReplace( '<noinclude>', '</noinclude>', '', $form_def ?? '' );
 		$form_def = strtr( $form_def, [ '<includeonly>' => '', '</includeonly>' => '' ] );
 
 		// We need to replace all PF tags in the form definition by strip items. But we can not just use
@@ -537,7 +538,7 @@ END;
 			self::purgeCache( $wikiPage );
 			wfDebug( "Caching disabled for form definition $form_id\n" );
 		} elseif ( $form_id !== null ) {
-			self::cacheFormDefinition( $form_id, $form_def, $parser );
+			self::cacheFormDefinition( (string)$form_id, $form_def, $parser );
 		}
 
 		return $form_def;
@@ -679,7 +680,7 @@ END;
 	 */
 	public static function getFormCache() {
 		global $wgPageFormsFormCacheType, $wgParserCacheType;
-		$ret = ObjectCache::getInstance( ( $wgPageFormsFormCacheType !== null ) ? $wgPageFormsFormCacheType : $wgParserCacheType );
+		$ret = ObjectCache::getInstance( $wgPageFormsFormCacheType ?? $wgParserCacheType );
 		return $ret;
 	}
 

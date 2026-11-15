@@ -9,7 +9,7 @@
 			"Tīgelika"
 		]
 	},
-	"cirrussearch-desc": "Пошук у MediaWiki з дапамогай ElasticSearch",
+	"cirrussearch-desc": "Пошук у MediaWiki з дапамогай OpenSearch",
 	"cirrussearch-backend-error": "Мы не змаглі выканаць пошукавы запыт з-за часовых праблемаў. Калі ласка, паспрабуйце пазней.",
 	"cirrussearch-parse-error": "Запыт не быў зразуметы. Калі ласка, спрасціце яго. Запыт быў запісаны ў журнал дзеля ўдасканалення пошукавай сістэмы.",
 	"cirrussearch-too-busy-error": "Пошук зараз занадта заняты. Калі ласка, паспрабуйце пазней.",
@@ -64,7 +64,7 @@
 	"cirrussearch-feature-deepcat-endpoint": "У зменнай $wgCirrusSearchCategoryEndpoint павінна быць усталяваная слушная канчатковая кропка SPARQL для выкарыстання глыбокага пошуку па катэгорыях.",
 	"cirrussearch-feature-deepcat-exception": "Збой запыту SPARQL на глыбокі пошук па катэгорыях",
 	"cirrussearch-feature-deepcat-timeout": "Час чакання глыбокага пошуку па катэгорыях скончыўся. Хутчэй за ўсё, катэгорыя мае занадта шмат падкатэгорыяў",
-	"cirrussearch-feature-deepcat-toomany": "Запыт глыбокай катэгорыі вярнуў занадта шмат катэгорыяў",
+	"cirrussearch-feature-deepcat-toomany": "Запыт глыбокай катэгорыі вярнуў занадта шмат катэгорыяў. Ужыта толькі частка катэгорыяў.",
 	"cirrussearch-feature-deepcat-invalid-title": "Указаная катэгорыя неслушная.",
 	"cirrussearch-feature-pageid-invalid-id": "{{PLURAL:$2|Няслушны ідэнтыфікатар|Няслушныя ідэнтыфікатары}} старонкі: $1",
 	"cirrussearch-incategory-feature-no-valid-categories": "Для «$1» не зададзены слушныя катэгорыі.",
@@ -76,6 +76,5 @@
 	"cirrussearch-autoselect-profile": "Дазволіць рухавіку пошуку абіраць найлепшы профіль для выкарыстання.",
 	"cirrussearch-offset-too-large": "Немагчыма атрымаць вынікі. Падтрымліваецца да $1 вынікаў пошуку, але запытваліся вынікі, пачынаючы з $2.",
 	"cirrussearch-offset-not-allowed-with-random-sort": "Ігнаруецца запыт на падзел на старонкі выпадкова адсартаваных вынікаў.",
-	"cirrussearch-articletopic-invalid-topic": "{{PLURAL:$2|Нераспазнаная назва тэмы|Нераспазнаныя назвы тэмаў}} для ключавога слова <kbd>articletopic:</kbd>: $1",
 	"cirrussearch-inlanguage-deprecate-comma": "Выкарыстанне коскі ў якасці падзяляльніка для ключавога слова inlanguage не рэкамендуецца. Калі ласка, выкарыстоўвайце | (вертыкальную рыску) каб падзяляць мовы."
 }

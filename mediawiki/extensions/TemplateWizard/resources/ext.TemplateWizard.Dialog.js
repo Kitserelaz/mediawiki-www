@@ -29,7 +29,13 @@ mw.TemplateWizard.Dialog.static.actions = [
 		label: OO.ui.deferMsg( 'templatewizard-cancel' ),
 		flags: [ 'safe', 'close' ],
 		action: 'closeDialog',
-		modes: [ 'choose', 'insert' ]
+		modes: [ 'choose' ]
+	},
+	{
+		label: OO.ui.deferMsg( 'templatewizard-remove-template-title' ),
+		flags: [ 'safe', 'back' ],
+		action: 'closeTemplate',
+		modes: [ 'insert' ]
 	},
 	{
 		action: 'help',
@@ -64,9 +70,15 @@ mw.TemplateWizard.Dialog.prototype.showSearchForm = function () {
 	this.ignoreParamValues = false;
 	this.invalidField = false;
 	this.firstFieldWithValue = false;
+	this.templateForm = null;
 
 	// Show the search form.
-	this.searchForm = new mw.TemplateWizard.SearchForm( this, { contentDir: this.contentDir } );
+	if ( mw.templateData !== undefined && mw.templateData.TemplateSearchLayout !== undefined ) {
+		this.searchForm = new mw.templateData.TemplateSearchLayout( { expanded: true } );
+		this.searchForm.connect( this, { choose: this.showTemplate } );
+	} else {
+		this.searchForm = new mw.TemplateWizard.SearchForm( this, { contentDir: this.contentDir } );
+	}
 	this.actions.setMode( 'choose' );
 	this.$body.html( this.searchForm.$element );
 	this.searchForm.focus();
@@ -85,18 +97,16 @@ mw.TemplateWizard.Dialog.prototype.showTemplate = function ( templateData ) {
 	this.templateForm = new mw.TemplateWizard.TemplateForm(
 		templateData, { $overlay: this.$overlay }
 	);
-	this.templateForm.connect( this, { close: 'closeTemplate' } );
 
 	this.$body.html( this.templateForm.$element );
 	this.templateForm.afterAttached();
 	this.actions.get( { actions: [ 'insert' ] } )[ 0 ].setDisabled( false );
+	this.ignoreParamValues = false;
 };
 
-/**
- * Event handler for the 'close' event of TemplateForm.
- */
-mw.TemplateWizard.Dialog.prototype.closeTemplate = function () {
-	this.executeAction( 'closeTemplate' );
+/** @inheritDoc */
+OO.ui.Dialog.prototype.getEscapeAction = function () {
+	return this.templateForm ? 'closeTemplate' : '';
 };
 
 /**
@@ -137,12 +147,7 @@ mw.TemplateWizard.Dialog.prototype.showErrors = function ( data ) {
 	if ( this.firstFieldWithValue && this.currentAction === 'closeTemplate' ) {
 		this.$errorsTitle.text( mw.msg( 'templatewizard-remove-template' ) );
 		this.retryButton.setLabel( mw.msg( 'templatewizard-remove-template-retry' ) );
-		this.dismissButton.setLabel( mw.msg( 'templatewizard-cancel' ) );
-	} else if ( this.firstFieldWithValue && this.currentAction === 'closeDialog' ) {
-		this.$errorsTitle.text( mw.msg( 'templatewizard-close-dialog' ) );
-		this.retryButton.setLabel( mw.msg( 'templatewizard-close-dialog-retry' ) );
-		this.retryButton.setFlags( 'destructive' );
-		this.dismissButton.setLabel( mw.msg( 'templatewizard-cancel' ) );
+		this.dismissButton.setLabel( mw.msg( 'templatewizard-remove-template-cancel' ) );
 	} else {
 		this.$errorsTitle.text( mw.msg( 'ooui-dialog-process-error' ) );
 		this.retryButton.setLabel( mw.msg( 'templatewizard-invalid-values-insert' ) );
@@ -162,8 +167,6 @@ mw.TemplateWizard.Dialog.prototype.onRetryButtonClick = function ( data ) {
 		// won't execute the insert action.
 		this.currentAction = 'search';
 		this.showSearchForm();
-	} else if ( this.firstFieldWithValue && this.currentAction === 'closeDialog' ) {
-		this.close();
 	}
 	mw.TemplateWizard.Dialog.super.prototype.onRetryButtonClick.call( this, data );
 	this.ignoreParamValues = true;
@@ -192,21 +195,13 @@ mw.TemplateWizard.Dialog.prototype.onDismissErrorButtonClick = function ( data )
 mw.TemplateWizard.Dialog.prototype.getActionProcess = function ( action ) {
 	return mw.TemplateWizard.Dialog.super.prototype.getActionProcess.call( this, action )
 		.next( () => {
-			if ( ( action === 'closeTemplate' || action === 'closeDialog' ) && this.templateForm ) {
+			if ( action === 'closeTemplate' && this.templateForm ) {
 				this.firstFieldWithValue = this.templateForm.getFirstFieldWithValue();
 				if ( this.firstFieldWithValue && !this.ignoreParamValues ) {
-					return new OO.ui.Error( mw.msg(
-						action === 'closeTemplate' ?
-							'templatewizard-remove-template-body' :
-							'templatewizard-close-dialog-body'
-					) );
+					return new OO.ui.Error( mw.msg( 'templatewizard-remove-template-body' ), { warning: true } );
 				}
-				if ( action === 'closeTemplate' ) {
-					mw.TemplateWizard.logEvent( 'remove-template', [ this.templateForm.getTitle().getMainText() ] );
-					this.showSearchForm();
-				} else {
-					mw.TemplateWizard.logEvent( 'cancel-dialog', [ this.templateForm.getTitle().getMainText() ] );
-				}
+				mw.TemplateWizard.logEvent( 'remove-template', [ this.templateForm.getTitle().getMainText() ] );
+				this.showSearchForm();
 			}
 			if ( action === 'closeDialog' ) {
 				mw.TemplateWizard.logEvent( 'cancel-dialog', [] );
@@ -218,9 +213,11 @@ mw.TemplateWizard.Dialog.prototype.getActionProcess = function ( action ) {
 		} )
 		.next( () => {
 			if ( action === 'insert' && this.templateForm && !this.ignoreParamValues ) {
-				return this.templateForm.getFieldsValidity().fail( () => {
+				const deferred = this.templateForm.getFieldsValidity();
+				deferred.catch( () => {
 					this.invalidField = this.templateForm.getInvalidField();
 				} );
+				return deferred;
 			}
 		} )
 		.next( () => {

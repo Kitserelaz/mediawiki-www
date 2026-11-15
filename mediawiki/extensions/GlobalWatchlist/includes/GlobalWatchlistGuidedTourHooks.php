@@ -35,35 +35,13 @@ class GlobalWatchlistGuidedTourHooks implements
 	ResourceLoaderRegisterModulesHook
 {
 
-	/** @var ExtensionRegistry */
-	private $extensionRegistry;
-
-	/**
-	 * @param ExtensionRegistry $extensionRegistry
-	 */
 	public function __construct(
-		ExtensionRegistry $extensionRegistry
+		private readonly ExtensionRegistry $extensionRegistry,
 	) {
-		$this->extensionRegistry = $extensionRegistry;
-	}
-
-	/**
-	 * Need a factory method to inject ExtensionRegistry, which is not available from
-	 * the service container
-	 *
-	 * @return GlobalWatchlistGuidedTourHooks
-	 */
-	public static function newFromGlobalState() {
-		return new GlobalWatchlistGuidedTourHooks(
-			ExtensionRegistry::getInstance()
-		);
 	}
 
 	/**
 	 * Register ResourceLoader modules with dynamic dependencies.
-	 *
-	 * @param ResourceLoader $resourceLoader
-	 * @return void
 	 */
 	public function onResourceLoaderRegisterModules( ResourceLoader $resourceLoader ): void {
 		$config = $resourceLoader->getConfig();

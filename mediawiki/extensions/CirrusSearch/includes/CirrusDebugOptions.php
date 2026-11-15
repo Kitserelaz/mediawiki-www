@@ -11,11 +11,6 @@ use MediaWiki\Request\WebRequest;
 class CirrusDebugOptions {
 
 	/**
-	 * @var string[]|null
-	 */
-	private $cirrusCompletionVariant;
-
-	/**
 	 * @var bool
 	 */
 	private $cirrusDumpQuery = false;
@@ -29,6 +24,8 @@ class CirrusDebugOptions {
 	 * @var bool
 	 */
 	private $cirrusDumpResult = false;
+
+	private bool $cirrusSemanticSearch = false;
 
 	/**
 	 * @var string|null
@@ -50,14 +47,14 @@ class CirrusDebugOptions {
 
 	/**
 	 * @param WebRequest $request
-	 * @return CirrusDebugOptions
+	 * @return self
 	 */
-	public static function fromRequest( WebRequest $request ) {
+	public static function fromRequest( WebRequest $request ): self {
 		$options = new self();
-		$options->cirrusCompletionVariant = $request->getArray( 'cirrusCompletionVariant' );
 		$options->cirrusDumpQuery = $request->getCheck( 'cirrusDumpQuery' );
 		$options->cirrusDumpQueryAST = $request->getCheck( 'cirrusDumpQueryAST' );
 		$options->cirrusDumpResult = $request->getCheck( 'cirrusDumpResult' );
+		$options->cirrusSemanticSearch = $request->getCheck( 'cirrusSemanticSearch' );
 		$options->cirrusExplain = self::debugOption( $request, 'cirrusExplain', [ 'verbose', 'pretty', 'hot', 'raw' ] );
 		$options->cirrusMLRModel = $request->getVal( 'cirrusMLRModel' );
 		$options->dumpAndDie = $options->cirrusDumpQuery || $options->cirrusDumpQueryAST || $options->cirrusDumpResult;
@@ -66,18 +63,16 @@ class CirrusDebugOptions {
 
 	/**
 	 * Default options (no debug options set)
-	 * @return CirrusDebugOptions
 	 */
-	public static function defaultOptions() {
+	public static function defaultOptions(): self {
 		return new self();
 	}
 
 	/**
 	 * Dump the query but not die.
 	 * Only useful in Unit tests.
-	 * @return CirrusDebugOptions
 	 */
-	public static function forDumpingQueriesInUnitTests() {
+	public static function forDumpingQueriesInUnitTests(): self {
 		$options = new self();
 		$options->cirrusDumpQuery = true;
 		$options->dumpAndDie = false;
@@ -86,11 +81,17 @@ class CirrusDebugOptions {
 
 	/**
 	 * @param string|null $withExplain
-	 * @return CirrusDebugOptions
+	 * @return self
 	 */
-	public static function forRelevanceTesting( $withExplain = null ) {
+	public static function forRelevanceTesting( $withExplain = null ): self {
 		$options = new self();
 		$options->cirrusExplain = $withExplain;
+		return $options;
+	}
+
+	public static function forSemanticSearchUnitTests(): self {
+		$options = new self();
+		$options->cirrusSemanticSearch = true;
 		return $options;
 	}
 
@@ -114,13 +115,6 @@ class CirrusDebugOptions {
 	}
 
 	/**
-	 * @return null|string[]
-	 */
-	public function getCirrusCompletionVariant() {
-		return $this->cirrusCompletionVariant;
-	}
-
-	/**
 	 * @return bool
 	 */
 	public function isCirrusDumpQuery() {
@@ -139,6 +133,10 @@ class CirrusDebugOptions {
 	 */
 	public function isCirrusDumpResult() {
 		return $this->cirrusDumpResult;
+	}
+
+	public function isCirrusSemanticSearch(): bool {
+		return $this->cirrusSemanticSearch;
 	}
 
 	/**

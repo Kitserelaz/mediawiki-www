@@ -4,7 +4,7 @@
 			"McDutchie"
 		]
 	},
-	"cirrussearch-desc": "Recerca pro MediaWiki actionate per Elasticsearch",
+	"cirrussearch-desc": "Recerca pro MediaWiki actionate per OpenSearch",
 	"cirrussearch-backend-error": "Un problema temporari ha impedite le completion del recerca. Per favor reproba plus tarde.",
 	"cirrussearch-parse-error": "Le consulta non ha essite comprendite. Simplifica lo, per favor. Le consulta ha essite registrate pro meliorar le systema de recerca.",
 	"cirrussearch-too-busy-error": "Le recerca es troppo occupate pro le momento. Reproba plus tarde.",
@@ -59,9 +59,10 @@
 	"cirrussearch-feature-deepcat-endpoint": "$wgCirrusSearchCategoryEndpoint debe esser mittite a un puncto final SPARQL valide pro usar le recerca de categoria in profunditate.",
 	"cirrussearch-feature-deepcat-exception": "Le consulta SPARQL de recerca de categoria in profunditate ha fallite",
 	"cirrussearch-feature-deepcat-timeout": "Le recerca profunde de categorias ha expirate. Le categoria probabilemente ha troppo de subcategorias.",
-	"cirrussearch-feature-deepcat-toomany": "Le consulta de categoria in profunditate ha retornate troppo de categorias",
+	"cirrussearch-feature-deepcat-toomany": "Le consulta de categoria in profunditate ha retornate troppo de categorias. Solmente un subinsimul de categorias ha essite applicate.",
 	"cirrussearch-feature-deepcat-invalid-title": "Le categoria fornite non es valide.",
 	"cirrussearch-feature-pageid-invalid-id": "{{PLURAL:$2|ID|IDs}} de pagina invalide: $1",
+	"cirrussearch-feature-invalid-date-range": "Le data fornite non es in un formato valide. Usa le formatos recognoscite pro anno (<code>AAAA</code>), mense (<code>AAAA-MM</code>), die (<code>AAAA-MM-DD</code>) o expressiones temporal relative (in anglese) como <code>now-2d</code> o <code>today-1y</code>.",
 	"cirrussearch-incategory-feature-no-valid-categories": "Nulle categorias valide fornite pro '$1'.",
 	"cirrussearch-mlt-feature-no-valid-titles": "Nulle titulos valide fornite pro '$1'.",
 	"cirrussearch-mlt-not-configured": "Le function '$1' es mal configurate. Demanda a un administrator de corriger $wgCirrusSearchMoreLikeThisFields",
@@ -71,6 +72,10 @@
 	"cirrussearch-autoselect-profile": "Lassar le motor de recerca decider qual es le melior profilo a usar.",
 	"cirrussearch-offset-too-large": "Impossibile recuperar le resultatos. Es supportate un maximo de $1 resultatos de recerca, ma esseva requestate resultatos a partir de $2.",
 	"cirrussearch-offset-not-allowed-with-random-sort": "Ignorante le requesta de paginar resultatos aleatorimente ordinate.",
-	"cirrussearch-articletopic-invalid-topic": "Nomine{{PLURAL:$2||s}} de topico non recognoscite pro le parola clave <kbd>articletopic:</kbd>: $1",
-	"cirrussearch-inlanguage-deprecate-comma": "Le uso de un comma como separator pro le parola clave <kbd>inlanguage</kbd> es obsolete. Per favor usa le barra vertical <kbd>|</kbd> pro separar linguas."
+	"cirrussearch-articleprediction-invalid-keyword": "Valor{{PLURAL:$2||es}} non recognoscite pro le parola-clave <kbd>$3</kbd>: $1",
+	"cirrussearch-inlanguage-deprecate-comma": "Le uso de un comma como separator pro le parola clave <kbd>inlanguage</kbd> es obsolete. Per favor usa le barra vertical <kbd>|</kbd> pro separar linguas.",
+	"cirrussearch-invalid-keyword-boost": "Le valor de amplification fornite, ‘$1’, non es valide. Es expectate un numero decimal positive.",
+	"cirrussearch-invalid-keyword-threshold": "Le valor de limine fornite, ‘$1’, non es valide. Es expectate un numero decimal inter 0 e 1.",
+	"cirrussearch-semantic-empty-query": "Le recerca semantic require un termino de recerca non vacue.",
+	"cirrussearch-semantic-too-many-results": "Troppo de resultatos requestate al recerca semantic. Solmente le prime $1 essera correctemente classificate."
 }

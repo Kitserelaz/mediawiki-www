@@ -2,16 +2,18 @@
 	"@metadata": {
 		"authors": [
 			"Chrumps",
-			"Rzuwig"
+			"PanWor",
+			"Rzuwig",
+			"Woytecr"
 		]
 	},
 	"apihelp-aggregategroups-summary": "Zarządzaj grupami zbiorczymi komunikatów.",
 	"apihelp-aggregategroups-param-groupname": "Nazwa zbiorczej grupy komunikatów.",
 	"apihelp-aggregategroups-param-groupdescription": "Opis zbiorczej grupy komunikatów.",
-	"apihelp-groupreview-param-group": "Grupa komunikatów.",
+	"apihelp-groupreview-param-group": "Grupa komunikatów. Sprawdź <kbd>[[Special:ApiHelp/query+messagegroups|action=query&meta=messagegroups]]</kbd>.",
 	"apihelp-groupreview-param-language": "Kod języka.",
 	"apihelp-query+languagestats-param-language": "Kod języka.",
-	"apihelp-query+messagecollection-param-group": "Grupa komunikatów.",
+	"apihelp-query+messagecollection-param-group": "Grupa komunikatów. Sprawdź <kbd>[[Special:ApiHelp/query+messagegroups|action=query&meta=messagegroups]]</kbd>.",
 	"apihelp-query+messagecollection-param-language": "Kod języka.",
 	"apihelp-query+messagecollection-param-limit": "Liczba komunikatów do pokazania (po filtrowaniu).",
 	"apihelp-query+messagecollection-example-1": "Lista obsługiwanych języków",
@@ -33,9 +35,7 @@
 	"apihelp-searchtranslations-example-1": "Pokaż tłumaczenia dla języka.",
 	"apihelp-translationcheck-param-title": "Tytuł strony z przestrzenią nazw i kodem języka.",
 	"apihelp-translationcheck-param-translation": "Tłumaczenie do sprawdzenia poprawności.",
-	"apierror-translate-duplicateaggregategroup": "Grupa komunikatów już istnieje",
 	"apierror-translate-groupreviewdisabled": "Przeglądanie grup komunikatów nie jest używane.",
-	"apierror-translate-invalidaggregategroup": "Nieprawidłowa zbiorcza grupa komunikatów",
 	"apierror-translate-invalidaggregategroupname": "Nieprawidłowa nazwa zbiorczej grupy komunikatów",
 	"apierror-translate-invalidgroup": "Grupa nie istnieje lub jest nieprawidłowa",
 	"apierror-translate-invalidupdate": "Nieprawidłowa aktualizacja",
@@ -46,7 +46,7 @@
 	"apierror-translate-owntranslation": "Nie można przeglądać własnych tłumaczeń",
 	"apierror-translate-sandboxdisabled": "Funkcja brudnopisu nie jest używana",
 	"apierror-translate-unknownmessage": "Nieznany komunikat",
-	"apiwarn-translate-alreadyreviewedbyyou": "Już oznaczono jako przejrzane przez ciebie",
+	"apiwarn-translate-alreadyreviewedbyyou": "Już oznaczono jako przejrzane przez Ciebie",
 	"apiwarn-translate-language-disabled-source": "Językiem źródłowym tej grupy jest $1. Wybierz inny język, na który chcesz tłumaczyć.",
 	"apiwarn-translate-language-targetlang-variant-of-source": "<strong>Tłumaczysz na wariant językowy: <bdi>$1</bdi>.</strong> Język <bdi>$2</bdi> jest językiem źródłowym dla tego komunikatu. Upewnij się, że wybrany język jest poprawny i uwzględnij różnice między wariantami językowymi, aby zapewnić dobre tłumaczenie."
 }

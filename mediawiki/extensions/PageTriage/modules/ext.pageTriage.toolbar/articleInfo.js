@@ -2,15 +2,13 @@
 
 const ToolView = require( './ToolView.js' );
 const config = require( './config.json' );
-
+const { getTempAccountUserIpAddress } = require( '../ext.pageTriage.showIp/showIp.js' );
 const ArticleInfoHistoryView = Backbone.View.extend( {
 	id: 'mwe-pt-info-history',
 	template: mw.template.get( 'ext.pageTriage.toolbar', 'articleInfoHistory.underscore' ),
 
 	render: function () {
-		let parsedTimestamp, userTitle;
 		const offset = parseInt( mw.user.options.get( 'timecorrection' ).split( '|' )[ 1 ] );
-		const that = this;
 		let lastDate = null;
 		let addedRevisions = 0;
 
@@ -22,7 +20,7 @@ const ArticleInfoHistoryView = Backbone.View.extend( {
 			// I'd rather do this date parsing in the model, but the change event isn't properly
 			// passed through to nested models, and switching to backbone-relational in order to
 			// move these few lines of code seems silly.
-			parsedTimestamp = moment( historyItem.get( 'timestamp' ) ); // ISO date format
+			const parsedTimestamp = moment( historyItem.get( 'timestamp' ) ); // ISO date format
 
 			historyItem.set(
 				'timestamp_date',
@@ -39,7 +37,7 @@ const ArticleInfoHistoryView = Backbone.View.extend( {
 			// can't set link color since no userpage status is returned by the history api
 			if ( historyItem.get( 'user' ) ) {
 				try {
-					userTitle = new mw.Title( historyItem.get( 'user' ), mw.config.get( 'wgNamespaceIds' ).user );
+					const userTitle = new mw.Title( historyItem.get( 'user' ), mw.config.get( 'wgNamespaceIds' ).user );
 					historyItem.set( 'user_title_url', userTitle.getUrl() );
 				} catch ( e ) {
 					historyItem.set( 'user_title_url', '' );
@@ -51,7 +49,9 @@ const ArticleInfoHistoryView = Backbone.View.extend( {
 				mw.util.getUrl( mw.config.get( 'wgPageName' ), { oldid: historyItem.get( 'revid' ) } )
 			);
 
-			that.$el.append( that.template( historyItem.toJSON() ) );
+			historyItem.set( 'temp', historyItem.has( 'temp' ) && this.options.showTemp );
+
+			this.$el.append( this.template( historyItem.toJSON() ) );
 			addedRevisions++;
 		} );
 		return this;
@@ -87,26 +87,27 @@ module.exports = ToolView.extend( {
 		$talkpageFeedbackBadge.badge( feedbackCount, 'bottom', true );
 		// Use the same message (without link) as is used on the flyout, for the badge's tooltip.
 		const badgeTooltip = mw.msg( 'pagetriage-has-talkpage-feedback', feedbackCount, mw.msg( 'pagetriage-has-talkpage-feedback-link' ) );
-		// Add OOUI classes to the badge element that was added in .badge(), in order to get the envelope icon.
+		// Add OOUI classes to the badge element that was added in .badge(), in order to get the
+		// envelope icon.
 		$talkpageFeedbackBadge.find( '.notification-badge' )
 			.addClass( 'oo-ui-iconElement oo-ui-icon-message oo-ui-image-invert' )
 			.attr( 'title', badgeTooltip );
 	},
 
-	render: function () {
+	render: async function () {
 		this.enumerateProblems();
 		// set the history link
-		let url = new mw.Uri( mw.util.getUrl( mw.config.get( 'wgPageName' ), { action: 'history' } ) );
+		const historyUrl = new URL( mw.util.getUrl( mw.config.get( 'wgPageName' ), { action: 'history' } ), location.href );
 		this.model.set(
 			'history_link',
-			url.toString()
+			historyUrl.toString()
 		);
 
 		// set the logs link
-		url = new mw.Uri( mw.util.getUrl( 'Special:Log', { page: mw.config.get( 'wgPageName' ) } ) );
+		const logUrl = new URL( mw.util.getUrl( 'Special:Log', { page: mw.config.get( 'wgPageName' ) } ), location.href );
 		this.model.set(
 			'logs_link',
-			url.toString()
+			logUrl.toString()
 		);
 
 		const offset = parseInt( mw.user.options.get( 'timecorrection' ).split( '|' )[ 1 ] );
@@ -133,10 +134,11 @@ module.exports = ToolView.extend( {
 				).utcOffset( offset ).format(
 					mw.msg( 'pagetriage-info-timestamp-date-format' )
 				),
-				this.model.buildLinkTag(
+				await this.buildUserTag(
 					this.model.get( 'creator_user_page_url' ),
 					this.model.get( 'user_name' ),
-					this.model.get( 'creator_user_page_exist' )
+					this.model.get( 'creator_user_page_exist' ),
+					this.model.has( 'creator_is_temp_account' )
 				),
 				this.model.buildLinkTag(
 					this.model.get( 'creator_user_talk_page_url' ),
@@ -168,7 +170,11 @@ module.exports = ToolView.extend( {
 		this.model.set( 'articleStat', mw.msg( 'pagetriage-articleinfo-stat', stats.join( mw.msg( 'pagetriage-dot-separator' ) ) ) );
 
 		this.$tel.html( this.template( this.model.toJSON() ) );
-		const history = new ArticleInfoHistoryView( { eventBus: this.eventBus, model: this.model.revisions } );
+		const history = new ArticleInfoHistoryView( {
+			eventBus: this.eventBus,
+			model: this.model.revisions,
+			showTemp: await this.checkTempRights()
+		} );
 		this.$tel.find( '#mwe-pt-info-history-container' ).append( history.render().$el );
 
 		// set the Learn More link URL
@@ -176,13 +182,14 @@ module.exports = ToolView.extend( {
 
 		// bind down here so it doesn't happen before the first render
 		// Only bind this once
-		const that = this;
 		if ( !this.renderWasBound ) {
 			this.model.bind( 'change', () => {
-				that.render();
+				this.render();
 			} );
 			this.renderWasBound = true;
 		}
+
+		await this.addShowIpEventListeners();
 
 		return this;
 	},
@@ -281,5 +288,63 @@ module.exports = ToolView.extend( {
 			problems = '<ul>' + problems + '</ul>';
 		}
 		this.model.set( 'problems_html', problems );
+	},
+
+	hasTempRights: null,
+
+	checkTempRights: async function () {
+		if ( this.hasTempRights === null ) {
+			const rights = await mw.user.getRights();
+			this.hasTempRights = rights.includes( 'checkuser-temporary-account' );
+		}
+
+		return this.hasTempRights;
+	},
+
+	buildUserTag: async function ( url, text, exists, isTemp ) {
+		const linkTag = this.model.buildLinkTag( url, text, exists );
+
+		if ( isTemp && await this.checkTempRights() ) {
+			const showIpLink = document.createElement( 'a' );
+			showIpLink.className = 'mwe-pt-info-show-ip';
+			showIpLink.innerText = mw.msg( 'pagetriage-new-page-feed-show-ip' );
+
+			linkTag.push( document.createTextNode( ' ' ), showIpLink );
+		}
+
+		return linkTag;
+	},
+
+	addShowIpEventListeners: async function () {
+		if ( !await this.checkTempRights() ) {
+			return;
+		}
+
+		for ( const link of this.$el.find( '.mwe-pt-info-show-ip' ) ) {
+			link.addEventListener( 'click', async () => {
+				const username = link.previousElementSibling.innerText;
+				const title = mw.config.get( 'wgPageName' );
+				let ipResult, newLink;
+
+				try {
+					ipResult = await getTempAccountUserIpAddress( username, title );
+				} catch ( error ) {
+					mw.errorLogger.logError( error );
+					mw.log.error( error );
+				}
+
+				if ( ipResult ) {
+					newLink = document.createElement( 'a' );
+					newLink.className = 'cdx-link';
+					newLink.href = '/wiki/Special:IPContributions/' + ipResult;
+					newLink.target = '_blank';
+					newLink.innerText = ipResult;
+				} else {
+					newLink = document.createTextNode( mw.msg( 'pagetriage-new-page-feed-show-ip-not-found' ) );
+				}
+
+				link.replaceWith( newLink );
+			} );
+		}
 	}
 } );

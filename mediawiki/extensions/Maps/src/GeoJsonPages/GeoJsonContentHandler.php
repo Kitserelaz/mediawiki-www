@@ -8,6 +8,7 @@ use Content;
 use Maps\MapsFactory;
 use Maps\Presentation\OutputFacade;
 use MediaWiki\Content\Renderer\ContentParseParams;
+use MediaWiki\Title\Title;
 use ParserOutput;
 
 class GeoJsonContentHandler extends \JsonContentHandler {
@@ -17,12 +18,11 @@ class GeoJsonContentHandler extends \JsonContentHandler {
 	}
 
 	protected function getContentClass(): string {
-		return version_compare( MW_VERSION, '1.38', '<' ) ? GeoJsonLegacyContent::class : GeoJsonContent::class;
+		return GeoJsonContent::class;
 	}
 
 	public function makeEmptyContent(): GeoJsonContent {
-		$class = $this->getContentClass();
-		return new $class( $class::newEmptyContentString() );
+		return new GeoJsonContent( GeoJsonContent::newEmptyContentString() );
 	}
 
 	/**
@@ -34,7 +34,6 @@ class GeoJsonContentHandler extends \JsonContentHandler {
 		ParserOutput &$parserOutput
 	) {
 		'@phan-var GeoJsonContent $content';
-		// this method won't be called below MW_VERSION 1.38
 
 		if ( $cpoParams->getGenerateHtml() && $content->isValid() ) {
 
@@ -43,12 +42,15 @@ class GeoJsonContentHandler extends \JsonContentHandler {
 				->addToOutput( OutputFacade::newFromParserOutput( $parserOutput ) );
 
 			if ( MapsFactory::globalInstance()->smwIntegrationIsEnabled() ) {
-				// @FIXME alternatively decode $this->mText in GeoJsonLegacyContent
-				// to avoid decoding it again in SubObjectBuilder -> getSubObjectsFromGeoJson
 				$text = json_encode( $content->getData()->getValue() );
 
+				$subjectPage = $cpoParams->getPage();
+				if ( !$subjectPage instanceof Title ) {
+					// all underlying methods expect a Title, so cast it to one
+					$subjectPage = Title::newFromPageReference( $subjectPage );
+				}
 				MapsFactory::globalInstance()
-					->newSemanticGeoJsonStore( $parserOutput, $cpoParams->getPage() )
+					->newSemanticGeoJsonStore( $parserOutput, $subjectPage )
 					->storeGeoJson( $text );
 			}
 

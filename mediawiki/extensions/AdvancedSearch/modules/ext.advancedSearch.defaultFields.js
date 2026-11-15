@@ -2,15 +2,14 @@
 
 const {
 	ArbitraryWordInput,
-	DeepCategoryFilter,
 	FileTypeOptionProvider,
 	FileTypeSelection,
 	ImageDimensionInput,
 	ImageDimensionLayout,
 	LanguageOptionProvider,
 	LanguageSelection,
+	MultiselectLookup,
 	SortPreference,
-	TemplateSearch,
 	TextInput
 } = require( 'ext.advancedSearch.SearchFieldUI' );
 const { createSearchFieldFromObject } = require( './ext.advancedSearch.SearchField.js' );
@@ -49,7 +48,7 @@ const optionalQuotes = function ( val ) {
  * @return {string}
  */
 const formatSizeConstraint = function ( prefix, val ) {
-	if ( !Array.isArray( val ) || val.length < 2 || ( val[ 1 ] || '' ).trim() === '' ) {
+	if ( !Array.isArray( val ) || val.length < 2 || !( val[ 1 ] || '' ).trim() ) {
 		return '';
 	}
 	return prefix + val.join( '' );
@@ -66,6 +65,7 @@ const getOptionHelpMessage = function ( id ) {
 	// * advancedsearch-help-filetype
 	// * advancedsearch-help-filew
 	// * advancedsearch-help-hastemplate
+	// * advancedsearch-help-incategory
 	// * advancedsearch-help-inlanguage
 	// * advancedsearch-help-intitle
 	// * advancedsearch-help-not
@@ -85,6 +85,7 @@ const getOptionHelpMessage = function ( id ) {
 	// * advancedsearch-field-filetype
 	// * advancedsearch-field-filew
 	// * advancedsearch-field-hastemplate
+	// * advancedsearch-field-incategory
 	// * advancedsearch-field-inlanguage
 	// * advancedsearch-field-intitle
 	// * advancedsearch-field-not
@@ -93,7 +94,7 @@ const getOptionHelpMessage = function ( id ) {
 	// * advancedsearch-field-plain
 	// * advancedsearch-field-sort
 	// * advancedsearch-field-subpageof
-	const head = mw.msg( 'advancedsearch-field-' + id );
+	const head = mw.message( 'advancedsearch-field-' + id ).escaped();
 	return new OO.ui.HtmlSnippet( '<h6 class="mw-advancedSearch-tooltip-head">' + head + '</h6>' +
 		'<div class="mw-advancedSearch-tooltip-body">' + message + '</div>' );
 };
@@ -140,9 +141,7 @@ const createImageDimensionLayout = function ( widget, id, state ) {
 			// Messages documented in getOptionHelpMessage
 			label: mw.msg( 'advancedsearch-field-' + id ),
 			align: 'right',
-			checkVisibility: function () {
-				return state.filetypeSupportsDimensions();
-			},
+			checkVisibility: () => state.filetypeSupportsDimensions(),
 			help: getOptionHelpMessage( id ),
 			$overlay: true
 		}
@@ -158,15 +157,8 @@ const addDefaultFields = function ( fieldCollection ) {
 		createSearchFieldFromObject( {
 			id: 'plain',
 			defaultValue: [],
-			formatter: function ( val ) {
-				if ( Array.isArray( val ) ) {
-					return val.join( ' ' );
-				}
-				return val;
-			},
-			init: function ( state, config ) {
-				return new ArbitraryWordInput( state, config );
-			},
+			formatter: ( val ) => Array.isArray( val ) ? val.join( ' ' ) : val,
+			init: ( state, config ) => new ArbitraryWordInput( state, config ),
 			layout: createDefaultLayout
 		} ),
 		'text'
@@ -175,15 +167,12 @@ const addDefaultFields = function ( fieldCollection ) {
 	fieldCollection.add(
 		createSearchFieldFromObject( {
 			id: 'phrase',
-			formatter: function ( val ) {
-				return val;
-			},
-			init: function ( state, config ) {
-				return new TextInput(
-					state,
-					Object.assign( {}, config, { placeholder: mw.msg( 'advancedsearch-placeholder-exact-text' ) } )
-				);
-			},
+			// Add quotes only when missing; don't destroy deliberate user input
+			formatter: ( val ) => val.includes( '"' ) ? val : enforceQuotes( val ),
+			init: ( state, config ) => new TextInput(
+				state,
+				Object.assign( {}, config, { placeholder: mw.msg( 'advancedsearch-placeholder-exact-text' ) } )
+			),
 			layout: createDefaultLayout
 		} ),
 		'text'
@@ -199,9 +188,7 @@ const addDefaultFields = function ( fieldCollection ) {
 				}
 				return '-' + val;
 			},
-			init: function ( state, config ) {
-				return new ArbitraryWordInput( state, config );
-			},
+			init: ( state, config ) => new ArbitraryWordInput( state, config ),
 			layout: createDefaultLayout
 		} ),
 		'text'
@@ -217,9 +204,7 @@ const addDefaultFields = function ( fieldCollection ) {
 				}
 				return optionalQuotes( val );
 			},
-			init: function ( state, config ) {
-				return new ArbitraryWordInput( state, config );
-			},
+			init: ( state, config ) => new ArbitraryWordInput( state, config ),
 			layout: createDefaultLayout
 		} ),
 		'text'
@@ -229,12 +214,8 @@ const addDefaultFields = function ( fieldCollection ) {
 	fieldCollection.add(
 		createSearchFieldFromObject( {
 			id: 'intitle',
-			formatter: function ( val ) {
-				return 'intitle:' + optionalQuotes( val );
-			},
-			init: function ( state, config ) {
-				return new TextInput( state, config );
-			},
+			formatter: ( val ) => 'intitle:' + optionalQuotes( val ),
+			init: ( state, config ) => new TextInput( state, config ),
 			layout: createDefaultLayout
 		} ),
 		'structure'
@@ -243,33 +224,28 @@ const addDefaultFields = function ( fieldCollection ) {
 	fieldCollection.add(
 		createSearchFieldFromObject( {
 			id: 'subpageof',
-			formatter: function ( val ) {
-				return 'subpageof:' + optionalQuotes( val );
-			},
-			init: function ( state, config ) {
-				return new TextInput( state, config );
-			},
+			formatter: ( val ) => 'subpageof:' + optionalQuotes( val ),
+			init: ( state, config ) => new TextInput( state, config ),
 			layout: createDefaultLayout
 		} ),
 		'structure'
 	);
 
+	const deepcatEnabled = mw.config.get( 'advancedSearch.deepcategoryEnabled' );
 	fieldCollection.add(
 		createSearchFieldFromObject( {
-			id: 'deepcategory',
+			id: deepcatEnabled ? 'deepcategory' : 'incategory',
 			formatter: function ( val ) {
-				const keyword = mw.config.get( 'advancedSearch.deepcategoryEnabled' ) ? 'deepcat:' : 'incategory:';
+				const keyword = deepcatEnabled ? 'deepcat:' : 'incategory:';
 				if ( Array.isArray( val ) ) {
-					return val.map( ( templateItem ) => keyword + optionalQuotes( templateItem ) ).join( ' ' );
+					return val.map( ( v ) => keyword + optionalQuotes( v ) ).join( ' ' );
 				}
 				return keyword + optionalQuotes( val );
 			},
-			init: function ( state, config ) {
-				return new DeepCategoryFilter(
-					state,
-					Object.assign( {}, config, { lookupId: 'category' } )
-				);
-			},
+			init: ( state, config ) => new MultiselectLookup( state, Object.assign( {}, config, {
+				classes: [ deepcatEnabled ? 'mw-advancedSearch-deepCategory' : 'mw-advancedSearch-inCategory' ],
+				namespaceId: 14
+			} ) ),
 			layout: createDefaultLayout
 		} ),
 		'structure'
@@ -281,16 +257,14 @@ const addDefaultFields = function ( fieldCollection ) {
 			defaultValue: [],
 			formatter: function ( val ) {
 				if ( Array.isArray( val ) ) {
-					return val.map( ( templateItem ) => 'hastemplate:' + optionalQuotes( templateItem ) ).join( ' ' );
+					return val.map( ( v ) => 'hastemplate:' + optionalQuotes( v ) ).join( ' ' );
 				}
 				return 'hastemplate:' + optionalQuotes( val );
 			},
-			init: function ( state, config ) {
-				return new TemplateSearch(
-					state,
-					Object.assign( {}, config, { lookupId: 'template' } )
-				);
-			},
+			init: ( state, config ) => new MultiselectLookup( state, Object.assign( {}, config, {
+				classes: [ 'mw-advancedSearch-template' ],
+				namespaceId: 10
+			} ) ),
 			customEventHandling: true,
 			layout: createDefaultLayout
 		} ),
@@ -300,19 +274,13 @@ const addDefaultFields = function ( fieldCollection ) {
 	fieldCollection.add(
 		createSearchFieldFromObject( {
 			id: 'inlanguage',
-			formatter: function ( val ) {
-				return 'inlanguage:' + val;
-			},
-			init: function ( state, config ) {
-				return new LanguageSelection(
-					state,
-					new LanguageOptionProvider( mw.config.get( 'advancedSearch.languages' ) ),
-					Object.assign( {}, config, { dropdown: { $overlay: true } } )
-				);
-			},
-			enabled: function () {
-				return mw.config.get( 'advancedSearch.languages' ) !== null;
-			},
+			formatter: ( val ) => 'inlanguage:' + val,
+			init: ( state, config ) => new LanguageSelection(
+				state,
+				new LanguageOptionProvider( mw.config.get( 'advancedSearch.languages' ) ),
+				Object.assign( {}, config, { dropdown: { $overlay: true } } )
+			),
+			enabled: () => mw.config.get( 'advancedSearch.languages' ) !== null,
 			layout: createDefaultLayout
 		} ),
 		'structure'
@@ -325,22 +293,20 @@ const addDefaultFields = function ( fieldCollection ) {
 			formatter: function ( val ) {
 				switch ( val ) {
 					case 'bitmap':
-					case 'audio':
 					case 'drawing':
-					case 'office':
+					case 'audio':
 					case 'video':
+					case 'office':
 						return 'filetype:' + val;
 					default:
 						return 'filemime:' + val;
 				}
 			},
-			init: function ( state, config ) {
-				return new FileTypeSelection(
-					state,
-					new FileTypeOptionProvider( mw.config.get( 'advancedSearch.mimeTypes' ) ),
-					Object.assign( {}, config, { dropdown: { $overlay: true } } )
-				);
-			},
+			init: ( state, config ) => new FileTypeSelection(
+				state,
+				new FileTypeOptionProvider( mw.config.get( 'advancedSearch.mimeTypes' ) ),
+				Object.assign( {}, config, { dropdown: { $overlay: true } } )
+			),
 			layout: createDefaultLayout
 		} ),
 		'files'
@@ -350,12 +316,8 @@ const addDefaultFields = function ( fieldCollection ) {
 		createSearchFieldFromObject( {
 			id: 'filew',
 			defaultValue: [ '>', '' ],
-			formatter: function ( val ) {
-				return formatSizeConstraint( 'filew:', val );
-			},
-			init: function ( state, config ) {
-				return new ImageDimensionInput( state, config );
-			},
+			formatter: ( val ) => formatSizeConstraint( 'filew:', val ),
+			init: ( state, config ) => new ImageDimensionInput( state, config ),
 			layout: createImageDimensionLayout
 		} ),
 		'files'
@@ -365,12 +327,8 @@ const addDefaultFields = function ( fieldCollection ) {
 		createSearchFieldFromObject( {
 			id: 'fileh',
 			defaultValue: [ '>', '' ],
-			formatter: function ( val ) {
-				return formatSizeConstraint( 'fileh:', val );
-			},
-			init: function ( state, config ) {
-				return new ImageDimensionInput( state, config );
-			},
+			formatter: ( val ) => formatSizeConstraint( 'fileh:', val ),
+			init: ( state, config ) => new ImageDimensionInput( state, config ),
 			layout: createImageDimensionLayout
 		} ),
 		'files'
@@ -381,13 +339,9 @@ const addDefaultFields = function ( fieldCollection ) {
 		createSearchFieldFromObject( {
 			id: 'sort',
 			defaultValue: 'relevance',
-			formatter: function () {
-				// Doesn't become a keyword in …&search=…, but it's own …&sort=… parameter
-				return '';
-			},
-			init: function ( state, config ) {
-				return new SortPreference( state, config );
-			},
+			// Doesn't become a keyword in …&search=…, but it's own …&sort=… parameter
+			formatter: () => '',
+			init: ( state, config ) => new SortPreference( state, config ),
 			customEventHandling: true,
 			layout: createDefaultLayout
 		} ),

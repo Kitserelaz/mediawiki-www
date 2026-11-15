@@ -3,9 +3,9 @@
 namespace MediaWiki\Extension\EventBus\Rest;
 
 use Exception;
-use Job;
 use MediaWiki\Extension\EventBus\EventBus;
 use MediaWiki\Extension\EventBus\EventFactory;
+use MediaWiki\JobQueue\Job;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\HttpException;
 use Psr\Log\LoggerInterface;
@@ -25,6 +25,10 @@ class EventBodyValidator {
 	 */
 	private $logger;
 
+	/**
+	 * @param string $secretKey
+	 * @param LoggerInterface $logger
+	 */
 	public function __construct( $secretKey, LoggerInterface $logger ) {
 		$this->secretKey = $secretKey;
 		$this->logger = $logger;
@@ -77,7 +81,6 @@ class EventBodyValidator {
 			if ( preg_match( '/^data:application\/octet-stream;base64,([\s\S]+)$/', $value, $match ) ) {
 				$value = base64_decode( $match[1], true );
 				if ( $value === false ) {
-
 					throw new HttpException(
 						'Parameter base64_decode() failed',
 						500,
@@ -96,13 +99,13 @@ class EventBodyValidator {
 
 	/**
 	 * @param array $jobEvent containing the job EventBus event
-	 * @return Job|void
+	 * @return Job
 	 * @throws HttpException
 	 */
 	private function getJobFromParams( array $jobEvent ) {
 		try {
 			$jobFactory = MediaWikiServices::getInstance()->getJobFactory();
-			$job = $jobFactory->newJob( $jobEvent['type'], $jobEvent['params'] );
+			return $jobFactory->newJob( $jobEvent['type'], $jobEvent['params'] );
 		} catch ( Exception $e ) {
 			$this->throwJobErrors( [
 				'status'  => false,
@@ -110,16 +113,6 @@ class EventBodyValidator {
 				'type' => $jobEvent['type']
 			] );
 		}
-
-		if ( $job === null ) {
-			$this->throwJobErrors( [
-				'status'  => false,
-				'error' => 'Could not create a job from event',
-				'type' => $jobEvent['type']
-			] );
-		}
-
-		return $job;
 	}
 
 	/**

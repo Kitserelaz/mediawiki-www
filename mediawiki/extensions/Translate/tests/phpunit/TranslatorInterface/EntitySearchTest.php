@@ -4,13 +4,13 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\TranslatorInterface;
 
 use Generator;
-use HashBagOStuff;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageLoading\MessageIndex;
 use MediaWiki\Extension\Translate\Services;
 use MediaWikiIntegrationTestCase;
 use MessageGroup;
-use WANObjectCache;
+use Wikimedia\ObjectCache\HashBagOStuff;
+use Wikimedia\ObjectCache\WANObjectCache;
 
 /**
  * @covers \MediaWiki\Extension\Translate\TranslatorInterface\EntitySearch
@@ -63,8 +63,8 @@ class EntitySearchTest extends MediaWikiIntegrationTestCase {
 			$this->getMessageGroupFactoryStub(),
 			$mediaWikiServices->getNamespaceInfo(),
 			Services::getInstance()->getMessageIndex(),
-			$mediaWikiServices->getTitleFormatter(),
-			$mediaWikiServices->getTitleParser()
+			$mediaWikiServices->getTitleParser(),
+			$mediaWikiServices->getTitleFormatter()
 		);
 
 		$actual = $entitySearch->searchStaticMessageGroups( $query, $maxResults );
@@ -172,8 +172,8 @@ class EntitySearchTest extends MediaWikiIntegrationTestCase {
 			$this->createStub( MessageGroups::class ),
 			$mediaWikiServices->getNamespaceInfo(),
 			$this->getMessageIndexStub(),
-			$mediaWikiServices->getTitleFormatter(),
-			$mediaWikiServices->getTitleParser()
+			$mediaWikiServices->getTitleParser(),
+			$mediaWikiServices->getTitleFormatter()
 		);
 
 		$actual = $entitySearch->searchMessages( $query, $maxResults );
@@ -231,6 +231,21 @@ class EntitySearchTest extends MediaWikiIntegrationTestCase {
 			'No match',
 			10,
 			[]
+		];
+
+		yield 'trailing wildcard is ignored' => [
+			'prefix*',
+			2,
+			[
+				[
+					'pattern' => 'MediaWiki talk:Prefix*',
+					'count' => 3,
+				],
+				[
+					'pattern' => 'MediaWiki:Prefix',
+					'count' => 1,
+				],
+			]
 		];
 	}
 }

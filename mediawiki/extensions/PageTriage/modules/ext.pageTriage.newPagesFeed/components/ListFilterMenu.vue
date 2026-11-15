@@ -74,6 +74,7 @@
 							<filter-radios
 								v-model:filter="settings.unsaved.nppFilter"
 								v-model:user="settings.unsaved.nppFilterUser"
+								v-model:keyword="settings.unsaved.nppFilterKeyword"
 								type="npp"
 							>
 							</filter-radios>
@@ -123,6 +124,7 @@
 								<filter-radios
 									v-model:filter="settings.unsaved.afcFilter"
 									v-model:user="settings.unsaved.afcFilterUser"
+									v-model:keyword="settings.unsaved.afcFilterKeyword"
 									type="afc"
 								>
 								</filter-radios>

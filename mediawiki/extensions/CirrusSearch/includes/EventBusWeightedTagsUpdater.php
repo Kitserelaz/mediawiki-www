@@ -3,6 +3,7 @@
 namespace CirrusSearch;
 
 use CirrusSearch\Extra\MultiList\MultiListBuilder;
+use Exception;
 use MediaWiki\Extension\EventBus\EventBusFactory;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Page\WikiPageFactory;
@@ -41,7 +42,22 @@ class EventBusWeightedTagsUpdater implements WeightedTagsUpdater {
 			$tagPrefixes,
 			$trigger === 'revision' ? true : null
 		);
-		$this->eventBusFactory->getInstanceForStream( EventBusWeightedTagSerializer::STREAM )->send( $event );
+		try {
+			$outcome = $this->eventBusFactory->getInstanceForStream( EventBusWeightedTagSerializer::STREAM )->send(
+				$event
+			);
+		} catch ( Exception $e ) {
+			throw new WeightedTagsException(
+				"Failed to send reset: {msg}",
+				[ 'msg' => $e->getMessage() ], $e
+			);
+		}
+		if ( $outcome !== true ) {
+			throw new WeightedTagsException(
+				"Failed to send reset: {msg}",
+				[ 'msg' => var_export( $outcome, true ) ]
+			);
+		}
 	}
 
 	/**
@@ -59,13 +75,34 @@ class EventBusWeightedTagsUpdater implements WeightedTagsUpdater {
 			if ( !isset( $set[$weightedTag->getPrefix()] ) ) {
 				$set[$weightedTag->getPrefix()] = [];
 			}
-			$set[$weightedTag->getPrefix()][$weightedTag->getName()] = $weightedTag->getWeight();
+			$mappedWeightedTag = [ 'tag' => $weightedTag->getName() ];
+			$weight = $weightedTag->getWeight();
+			if ( $weight !== null ) {
+				$mappedWeightedTag['score'] = $weight / 1000;
+			}
+			$set[$weightedTag->getPrefix()][] = $mappedWeightedTag;
 			return $set;
 		}, [] );
 
 		$event = $this->eventSerializer->toSetEvent(
 			$this->wikiPageFactory->newFromTitle( $page ), $set, $trigger === 'revision' ? true : null );
-		$this->eventBusFactory->getInstanceForStream( EventBusWeightedTagSerializer::STREAM )->send( $event );
+
+		try {
+			$outcome = $this->eventBusFactory->getInstanceForStream( EventBusWeightedTagSerializer::STREAM )->send(
+				$event
+			);
+		} catch ( Exception $e ) {
+			throw new WeightedTagsException(
+				"Failed to send update: {msg}",
+				[ 'msg' => $e->getMessage() ], $e
+			);
+		}
+		if ( $outcome !== true ) {
+			throw new WeightedTagsException(
+				"Failed to send update: {msg}",
+				[ 'msg' => var_export( $outcome, true ) ]
+			);
+		}
 	}
 
 }

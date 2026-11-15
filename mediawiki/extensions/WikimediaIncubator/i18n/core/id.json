@@ -11,7 +11,8 @@
 			"Rex",
 			"Sonic Speedy",
 			"Syman51",
-			"Veracious"
+			"Veracious",
+			"Bayahiu"
 		]
 	},
 	"wminc-desc": "Sistem wiki tes untuk Wikimedia Incubator",
@@ -33,7 +34,7 @@
 	"wminc-error-wiki-exists": "Wiki ini sudah ada. Anda dapat menemukan halaman ini di $1. Jika wiki tersebut baru saja dibuat, mohon tunggu beberapa jam atau hari hingga seluruh kontennya selesai diimpor.",
 	"wminc-error-wiki-sister": "Halaman ini merupakan bagian dari proyek yang tidak diinangkan di sini. Mohon menuju ke $1 untuk mencari wikinya.",
 	"randombytest": "Halaman sembarang oleh wiki percobaan",
-	"randombytest-nopages": "Tidak ada halaman wiki pengujian anda, dalam ruangnama: $1.",
+	"randombytest-nopages": "Tidak ada halaman wiki pengujian Anda, dalam ruang nama: $1.",
 	"wminc-viewuserlang": "Cari bahasa pengguna dan wiki pengujian",
 	"wminc-viewuserlang-user": "Nama pengguna:",
 	"wminc-viewuserlang-go": "Lanjut",
@@ -98,9 +99,8 @@
 	"wminc-infopage-status-open": "Ini merupakan wiki terbuka di Inkubator Wikimedia.",
 	"wminc-infopage-status-imported": "Wiki Inkubator ini diimpor dari $1 yang telah ditutup.",
 	"wminc-infopage-status-closedsister": "Subdomain ini telah ditutup. Kunjungi <strong>$2</strong> untuk berkontribusi pada wiki ini.",
-	"wminc-infopage-status-approved": "Wiki Inkubator ini telah disetujui oleh [[meta:Special:MyLanguage/Language_committee|komite bahasa]] dan akan segera dibuat.",
-	"wminc-infopage-status-created": "Proyek ini telah disetujui oleh komite bahasa dan sekarang tersedia di $1.",
+	"wminc-infopage-status-approved": "Wiki Inkubator ini telah disetujui oleh [[meta:Special:MyLanguage/Language_committee|panitia bahasa]] dan akan segera dibuat.",
+	"wminc-infopage-status-created": "Proyek ini telah disetujui oleh panitia bahasa dan kini tersedia di $1.",
 	"wminc-infopage-status-beforeincubator": "Proyek ini dibuat selebum Inkubator Wikimedia ada dan tersedia di $1.",
-	"wminc-infopage-status-beforeincubator-sister": "Proyek ini tersedia di $1.",
-	"wminc-infopage-error": "Galat: {{#infopage}} hanya bisa digunakan pada halaman berprefiks."
+	"wminc-infopage-status-beforeincubator-sister": "Proyek ini tersedia di $1."
 }

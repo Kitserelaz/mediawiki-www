@@ -5,18 +5,6 @@
 		-->
 	<rule ref="./vendor/mediawiki/mediawiki-codesniffer/MediaWiki" />
 
-	<!-- The function comment sniff is way to rigorous about way to many details that need
-		exceptions:
-		* It complains about missing documentation on fully self-explanatory function headers
-		  with strict type hints.
-		* It complains about missing documentation if there is a proper @see tag.
-		* It complains about duplicate spaces in "@param <type>  $<var>", but removing these
-		  doesn't make the code easier to read.
-		* It does not understand "@param <type> [$optional,…]. -->
-	<rule ref="MediaWiki.Commenting.FunctionComment">
-		<severity>0</severity>
-	</rule>
-
 	<!-- We disagree with the idea of certain characters making comments "illegal" and blocking
 		patches from being merged. This behaves especially bad on code examples. -->
 	<rule ref="MediaWiki.Commenting.IllegalSingleLineComment">

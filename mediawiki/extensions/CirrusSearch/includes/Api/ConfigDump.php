@@ -2,6 +2,7 @@
 
 namespace CirrusSearch\Api;
 
+use CirrusSearch\Maintenance\ExpectedIndicesBuilder;
 use CirrusSearch\Profile\SearchProfileService;
 use CirrusSearch\SearchConfig;
 use CirrusSearch\UserTestingEngine;
@@ -13,20 +14,7 @@ use Wikimedia\ParamValidator\ParamValidator;
 /**
  * Dumps CirrusSearch configuration for easy viewing.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class ConfigDump extends ApiBase {
 	use ApiTrait;
@@ -34,7 +22,6 @@ class ConfigDump extends ApiBase {
 	/** @var string[] */
 	public static $PUBLICLY_SHAREABLE_CONFIG_VARS = [
 		'CirrusSearchDisableUpdate',
-		'CirrusSearchServers',
 		'CirrusSearchConnectionAttempts',
 		'CirrusSearchSlowSearch',
 		'CirrusSearchUseExperimentalHighlighter',
@@ -104,7 +91,6 @@ class ConfigDump extends ApiBase {
 		'CirrusSearchFiletypeAliases',
 		'CirrusSearchDefaultCluster',
 		'CirrusSearchClientSideConnectTimeout',
-		'CirrusSearchClusters',
 		'CirrusSearchReplicaGroup',
 		'CirrusSearchExtraBackendLatency',
 		'CirrusSearchAllowLeadingWildcard',
@@ -163,12 +149,11 @@ class ConfigDump extends ApiBase {
 		if ( isset( $props['usertesting'] ) ) {
 			$this->addUserTesting( $result );
 		}
+		if ( isset( $props['expectedindices'] ) ) {
+			$this->addExpectedIndices( $result );
+		}
 	}
 
-	/**
-	 * @param ApiResult $result
-	 * @return void
-	 */
 	protected function addGlobals( ApiResult $result ): void {
 		$config = $this->getConfig();
 		foreach ( self::$PUBLICLY_SHAREABLE_CONFIG_VARS as $key ) {
@@ -176,6 +161,27 @@ class ConfigDump extends ApiBase {
 				$result->addValue( null, $key, $config->get( $key ) );
 			}
 		}
+	}
+
+	/**
+	 * When encoding to json when an array is constructed starting
+	 * from zero and adding only sequential keys it will be emit
+	 * as a list, instead of a map. Re-order the array so it doesn't
+	 * start at zero, unless it's a single element list.
+	 *
+	 * This does not solve the single element list problem, but in
+	 * practice the use case always has multiple values.
+	 *
+	 * @param array $items
+	 * @return array associative array version of source if 2+ elements exist.
+	 */
+	private function ensureAssociative( array $items ): array {
+		if ( isset( $items[0] ) ) {
+			$value = $items[0];
+			unset( $items[0] );
+			$items[0] = $value;
+		}
+		return $items;
 	}
 
 	/**
@@ -190,9 +196,13 @@ class ConfigDump extends ApiBase {
 		$nsInfo = MediaWikiServices::getInstance()->getNamespaceInfo();
 		$conn = $this->getCirrusConnection();
 		$indexBaseName = $conn->getConfig()->get( SearchConfig::INDEX_BASE_NAME );
+		$items = [];
 		foreach ( $nsInfo->getValidNamespaces() as $ns ) {
 			$indexSuffix = $conn->getIndexSuffixForNamespace( $ns );
 			$indexName = $conn->getIndexName( $indexBaseName, $indexSuffix );
+			$items[$ns] = $indexName;
+		}
+		foreach ( self::ensureAssociative( $items ) as $ns => $indexName ) {
 			$result->addValue( 'CirrusSearchConcreteNamespaceMap', $ns, $indexName );
 		}
 	}
@@ -218,14 +228,13 @@ class ConfigDump extends ApiBase {
 
 	/**
 	 * Add data from profiles
-	 * @param ApiResult $result
 	 */
 	private function addProfiles( ApiResult $result ) {
 		$config = new SearchConfig();
 		$profileService = $config->getProfileService();
 		foreach ( self::$PROFILES as $var => $profileType ) {
 			$data = $profileService->listExposedProfiles( $profileType );
-			$this->getResult()->addValue( null, $var, $data, ApiResult::OVERRIDE );
+			$result->addValue( null, $var, $data, ApiResult::OVERRIDE );
 		}
 	}
 
@@ -245,6 +254,17 @@ class ConfigDump extends ApiBase {
 			$status->isActive() ? $status->getTrigger() : '' );
 	}
 
+	/**
+	 * @param ApiResult $result
+	 * @return void
+	 */
+	protected function addExpectedIndices( ApiResult $result ): void {
+		$builder = new ExpectedIndicesBuilder( $this->getSearchConfig() );
+		$result->addValue( null, 'CirrusSearchExpectedIndices',
+			$builder->build( false, null ) );
+	}
+
+	/** @inheritDoc */
 	public function getAllowedParams() {
 		return [
 			'prop' => [
@@ -255,10 +275,19 @@ class ConfigDump extends ApiBase {
 					'profiles',
 					'replicagroup',
 					'usertesting',
+					'expectedindices'
 				],
 				ParamValidator::PARAM_ISMULTI => true,
 			],
 		];
+	}
+
+	/**
+	 * Mark as internal. This isn't meant to be used by normal api users
+	 * @return bool
+	 */
+	public function isInternal() {
+		return true;
 	}
 
 	/**

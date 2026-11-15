@@ -2,27 +2,19 @@
 
 namespace CirrusSearch\Maintenance;
 
+use CirrusSearch\Connection;
 use Elastica\Client;
 use Elastica\Exception\ResponseException;
+use Elastica\Index;
 use Elasticsearch\Endpoints;
+use LogicException;
 use MediaWiki\Extension\Elastica\MWElasticUtils;
+use MediaWiki\Language\RawMessage;
 use MediaWiki\Status\Status;
+use RuntimeException;
 
 /**
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class ConfigUtils {
 	/**
@@ -35,31 +27,39 @@ class ConfigUtils {
 	 */
 	private $out;
 
-	/**
-	 * @param Client $client
-	 * @param Printer $out
-	 */
 	public function __construct( Client $client, Printer $out ) {
 		$this->client = $client;
 		$this->out = $out;
 	}
 
 	public function checkElasticsearchVersion(): Status {
-		$this->outputIndented( 'Fetching Elasticsearch version...' );
+		$this->outputIndented( 'Fetching server version...' );
 		$response = $this->client->request( '' );
 		if ( !$response->isOK() ) {
 			return Status::newFatal( "Cannot fetch elasticsearch version: "
 				. $response->getError() );
 		}
-		$result = $response->getData();
-		if ( !isset( $result['version']['number'] ) ) {
+		$banner = $response->getData();
+		if ( !isset( $banner['version']['number'] ) ) {
 			return Status::newFatal( 'unable to determine, aborting.' );
 		}
-		$result = $result[ 'version' ][ 'number' ];
-		$this->output( "$result..." );
-		if ( strpos( $result, '7.10' ) !== 0 ) {
+		$distribution = $banner['version']['distribution'] ?? 'elasticsearch';
+		$version = $banner['version']['number'];
+		$this->output( "$distribution $version..." );
+
+		$required = $distribution === 'opensearch' ? '1.3' : '7.10';
+		if ( strpos( $version, $required ) !== 0 ) {
 			$this->output( "Not supported!\n" );
-			return Status::newFatal( "Only Elasticsearch 7.10.x is supported.  Your version: $result." );
+			return Status::newFatal(
+				"Only OpenSearch 1.3.x is supported; Elasticsearch 7.10.x is now deprecated "
+				. " and support will be removed soon.\n  Your version: $distribution $version." );
+		}
+		if ( $distribution === 'elasticsearch' ) {
+			$this->output( "deprecated.\n" );
+			$this->outputIndented(
+				"*** ElasticSearch support is deprecated and will be End-of-Life in the next "
+				. "release. Upgrading to OpenSearch will be required. ***\n"
+			);
 		} else {
 			$this->output( "ok\n" );
 		}
@@ -74,7 +74,7 @@ class ConfigUtils {
 	 *          'current'    => if there is just one index for this type then use its identifier
 	 *          other string => that string back
 	 * @param string $typeName
-	 * @return Status holds string index identifier to use
+	 * @return Status<string> holds string index identifier to use
 	 */
 	public function pickIndexIdentifierFromOption( $option, $typeName ): Status {
 		if ( $option === 'now' ) {
@@ -117,16 +117,29 @@ class ConfigUtils {
 	 * type $typeName
 	 *
 	 * @param string $typeName the type to filter with
+	 * @param bool $excludeAltIndices exclude alternative indices
 	 * @return Status holds string[] with list of indices
 	 */
-	public function getAllIndicesByType( $typeName ): Status {
-		$response = $this->client->requestEndpoint( ( new Endpoints\Indices\Get() )
-			->setIndex( $typeName . '*' ) );
-		if ( !$response->isOK() ) {
-			return Status::newFatal( "Cannot fetch index names for $typeName: "
-				. $response->getError() );
+	public function getAllIndicesByType( $typeName, bool $excludeAltIndices = true ): Status {
+		$indexQuery = "$typeName*";
+		if ( $excludeAltIndices ) {
+			$altIndexSuffix = Connection::ALT_SUFFIX;
+			$indexQuery .= ",-{$typeName}_{$altIndexSuffix}_*";
 		}
-		return Status::newGood( array_keys( $response->getData() ) );
+
+		return $this->listIndices( $indexQuery );
+	}
+
+	/**
+	 * Scan the indices and return the ones that match the
+	 * type $typeName and are alternative indices
+	 *
+	 * @param string $typeName the type to filter with
+	 * @return Status holds string[] with list of indices
+	 */
+	public function getAllAlternativeIndicesByType( $typeName ): Status {
+		$altIndexSuffix = Connection::ALT_SUFFIX;
+		return $this->listIndices( "{$typeName}_{$altIndexSuffix}_*" );
 	}
 
 	/**
@@ -171,15 +184,29 @@ class ConfigUtils {
 			$this->output( 'none' );
 		}
 		$this->output( "\n" );
-		if ( count( $bannedPlugins ) ) {
-			$availablePlugins = array_diff( $availablePlugins, $bannedPlugins );
-		}
-		foreach ( array_chunk( $availablePlugins, 5 ) as $pluginChunk ) {
+		$filteredPlugins = $this->removeBannedPlugins(
+			$availablePlugins, $bannedPlugins );
+		foreach ( array_chunk( $filteredPlugins, 5 ) as $pluginChunk ) {
 			$plugins = implode( ', ', $pluginChunk );
 			$this->outputIndented( "\t$plugins\n" );
 		}
 
-		return Status::newGood( $availablePlugins );
+		return Status::newGood( $filteredPlugins );
+	}
+
+	/**
+	 * @param string[] $availablePlugins
+	 * @param string[] $bannedPlugins
+	 * @return string[] Filtered plugins list
+	 */
+	public function removeBannedPlugins(
+		array $availablePlugins,
+		array $bannedPlugins
+	): array {
+		if ( count( $bannedPlugins ) ) {
+			return array_diff( $availablePlugins, $bannedPlugins );
+		}
+		return $availablePlugins;
 	}
 
 	/**
@@ -209,7 +236,7 @@ class ConfigUtils {
 
 	/**
 	 * @param string $message
-	 * @param mixed|null $channel
+	 * @param string|null $channel
 	 */
 	protected function output( $message, $channel = null ) {
 		if ( $this->out ) {
@@ -305,8 +332,6 @@ class ConfigUtils {
 			// does not check http status codes and can incorrectly report no aliases.
 			$aliasResponse = $this->client->requestEndpoint( ( new Endpoints\Indices\GetAlias() )
 				->setIndex( $indexName ) );
-			// secondary check, verify no queries have previously run through this index.
-			$stats = $this->client->getIndex( $indexName )->getStats();
 		} catch ( ResponseException $e ) {
 			// Would have expected a NotFoundException? in testing we get ResponseException instead
 			if ( $e->getResponse()->getStatus() === 404 ) {
@@ -330,18 +355,107 @@ class ConfigUtils {
 			// Any index with aliases is likely to be live
 			return Status::newGood( true );
 		}
-		// On a newly created and promoted index this would only trigger on
-		// indices with volume, some low volume indices might be promoted but
-		// not recieve a query between promotion and this check.
-		$searchStats = $stats->get( '_all', 'total', 'search' );
-		if ( $searchStats['query_total'] !== 0 || $searchStats['suggest_total'] !== 0 ) {
-			// Something has run through here, it might not be live now (no aliases) but
-			// it was used at some point. Call it live-enough to not delete automatically.
-			$status = Status::newGood( true );
-			$status->warning( "Broken index {$indexName} appears to be in use, " .
-				"please check and delete." );
-			return $status;
-		}
 		return Status::newGood( false );
+	}
+
+	/**
+	 * Refresh the index, return a failed Status after $attempts
+	 * @param Index $index
+	 * @param int $attempts
+	 * @return Status
+	 */
+	public static function safeRefresh( Index $index, int $attempts = 3 ): Status {
+		try {
+			MWElasticUtils::withRetry( $attempts, static function () use ( $index ) {
+				$resp = $index->refresh();
+				$data = $resp->getData();
+				if ( is_array( $data ) && isset( $data['_shards'] ) ) {
+					$shards = $data['_shards'];
+					$tot = $shards['total'] ?? -1;
+					$success = $shards['successful'] ?? -1;
+					$failed = $shards['failed'] ?? -1;
+					if ( $tot - ( $success + $failed ) !== 0 ) {
+						throw new RuntimeException( "Inconsistent shard results from response " . json_encode( $data ) );
+					}
+					if ( $tot !== $success ) {
+						throw new RuntimeException( "Some shards failed $failed failed, $success succeeded out of $tot total $success " );
+					}
+				} else {
+					throw new RuntimeException( "Inconsistent refresh response " . print_r( $data, true ) );
+				}
+			} );
+		} catch ( RuntimeException $e ) {
+			return Status::newFatal( new RawMessage( $e->getMessage() ) );
+		}
+		return Status::newGood();
+	}
+
+	/**
+	 * Count the number of doc in this index, fail the maintenance script with fatalError after $attempts.
+	 * @param Index $index
+	 * @param callable $failureFunction a function that accepts a StatusValue with the error message. must fail.
+	 * @param int $attempts
+	 */
+	public static function safeRefreshOrFail( Index $index, callable $failureFunction, int $attempts = 3 ): void {
+		$status = self::safeRefresh( $index, $attempts );
+		if ( !$status->isGood() ) {
+			$failureFunction( $status );
+			throw new LogicException( '$failureFunction must fail' );
+		}
+	}
+
+	/**
+	 * Count the number of doc in this index, return a failed Status after $attempts.
+	 * @param Index $index
+	 * @param int $attempts
+	 * @return Status<int>
+	 */
+	public static function safeCount( Index $index, int $attempts = 3 ): Status {
+		try {
+			$count = MWElasticUtils::withRetry( $attempts, static function () use ( $index ) {
+				$resp = $index->createSearch( '' )->count( '', true );
+				$count = $resp->getResponse()->getData()['hits']['total']['value'] ?? null;
+				if ( $count === null ) {
+					throw new RuntimeException( "Received search response without total hits: " .
+												 json_encode( $resp->getResponse()->getData() ) );
+				}
+				return (int)$count;
+			} );
+		} catch ( ResponseException | RuntimeException $e ) {
+			return Status::newFatal( new RawMessage( "Failed to count {$index->getName()}: {$e->getMessage()}" ) );
+		}
+		return Status::newGood( $count );
+	}
+
+	/**
+	 * Count the number of doc in this index, fail the maintenance script with fatalError after $attempts.
+	 * @param Index $index
+	 * @param callable $failureFunction a function that accepts a StatusValue with the error message. must fail.
+	 * @param int $attempts
+	 * @return int
+	 */
+	public static function safeCountOrFail( Index $index, callable $failureFunction, int $attempts = 3 ): int {
+		$status = self::safeCount( $index, $attempts );
+		if ( $status->isGood() ) {
+			return $status->getValue();
+		} else {
+			$failureFunction( $status );
+			throw new \LogicException( '$failureFunction must fail' );
+		}
+	}
+
+	/**
+	 * @param string $indexQuery
+	 * @return Status
+	 */
+	private function listIndices( string $indexQuery ): Status {
+		$response =
+			$this->client->requestEndpoint( ( new Endpoints\Indices\Get() )->setIndex( $indexQuery ) );
+		if ( !$response->isOK() ) {
+			return Status::newFatal( "Cannot fetch index names for $indexQuery: " .
+									 $response->getError() );
+		}
+
+		return Status::newGood( array_keys( $response->getData() ) );
 	}
 }

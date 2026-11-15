@@ -14,9 +14,15 @@ use MediaWiki\WikiMap\WikiMap;
 class SpecialCreateMassMessageList extends FormSpecialPage {
 
 	public function __construct() {
-		parent::__construct( 'CreateMassMessageList', 'editcontentmodel' );
+		parent::__construct( 'CreateMassMessageList' );
 	}
 
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'createwithcontentmodel';
+	}
+
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
@@ -64,8 +70,6 @@ class SpecialCreateMassMessageList extends FormSpecialPage {
 
 	/**
 	 * Add an ID to the form for targeting with JS code.
-	 *
-	 * @param HTMLForm $form
 	 */
 	protected function alterForm( HTMLForm $form ) {
 		$form->setId( 'mw-massmessage-create-form' );
@@ -83,7 +87,7 @@ class SpecialCreateMassMessageList extends FormSpecialPage {
 		} elseif ( $title->exists() ) {
 			return Status::newFatal( 'massmessage-create-exists' );
 		} elseif ( !$pm->userCan( 'edit', $this->getUser(), $title ) ||
-			!$pm->userCan( 'editcontentmodel', $this->getUser(), $title )
+			!$pm->userCan( 'createwithcontentmodel', $this->getUser(), $title )
 		) {
 			return Status::newFatal( 'massmessage-create-nopermission' );
 		}
@@ -127,7 +131,7 @@ class SpecialCreateMassMessageList extends FormSpecialPage {
 		);
 
 		if ( !$result->isGood() ) {
-			return $result;
+			return Status::wrap( $result );
 		}
 
 		$this->getOutput()->redirect( $title->getFullUrl() );

@@ -5,87 +5,16 @@ const Observer = require( '../../../resources/components/base/mixins/observer.js
 const IntersectionObserverSpies = require( '../mocks/IntersectionObserver.js' );
 
 describe( 'Observer', () => {
-	let observerInstance;
+	let observerInstance, defineObserverDefaultSpy;
 	beforeEach( () => {
 		observerInstance = Observer;
+		defineObserverDefaultSpy = jest.spyOn( observerInstance.methods, 'defineObserverElement' ).mockReturnValue( true );
+	} );
+	afterEach( () => {
+		defineObserverDefaultSpy.mockRestore();
 	} );
 
-	it( 'check if IntersectObserver feature is set on mount', () => {
-		const Component = {
-			render() {},
-			mixins: [ observerInstance ]
-		};
-		const spySupportsObserverCheck = jest.spyOn( observerInstance.methods, 'supportsObserverCheck' );
-		VueTestUtils.shallowMount( Component );
-
-		expect( spySupportsObserverCheck ).toHaveBeenCalled();
-	} );
-
-	describe( 'when IntersectionObserver is not supported', () => {
-
-		it( 'set observerSupported to false if feature is not supported', () => {
-			const Component = {
-				render() {},
-				mixins: [ observerInstance ]
-			};
-
-			const wrapper = VueTestUtils.shallowMount( Component );
-			expect( wrapper.vm.observerSupported ).toBe( false );
-		} );
-
-		it( 'does not calls the IntersectionObserver API', () => {
-			const Component = {
-				render() {},
-				mixins: [ observerInstance ]
-			};
-
-			VueTestUtils.shallowMount( Component );
-
-			expect( window.IntersectionObserver ).not.toHaveBeenCalled();
-		} );
-
-		it( 'calls disconnectObserver method when component is destroyed', () => {
-			const Component = {
-				render() {},
-				mixins: [ observerInstance ]
-			};
-
-			observerInstance.methods.disconnectObserver = jest.fn();
-
-			const wrapper = VueTestUtils.shallowMount( Component );
-			wrapper.unmount();
-
-			expect( observerInstance.methods.disconnectObserver ).toHaveBeenCalled();
-		} );
-
-		it( 'does not trigger the observer.disconnect method when destroyed', () => {
-			const Component = {
-				render() {},
-				mixins: [ observerInstance ]
-			};
-
-			const wrapper = VueTestUtils.shallowMount( Component );
-			wrapper.unmount();
-
-			expect( IntersectionObserverSpies.disconnect ).not.toHaveBeenCalled();
-		} );
-	} );
-	describe( 'when IntersectionObserver is supported', () => {
-
-		it( 'set observerSupported to true', () => {
-			const Component = {
-				render() {},
-				mixins: [ observerInstance ]
-			};
-
-			observerInstance.methods.supportsObserverCheck = jest.fn().mockReturnValue( true );
-			observerInstance.methods.defineObserverElement = jest.fn().mockReturnValue( true );
-
-			const wrapper = VueTestUtils.shallowMount( Component );
-
-			expect( observerInstance.methods.supportsObserverCheck ).toHaveBeenCalled();
-			expect( wrapper.vm.observerSupported ).toBe( true );
-		} );
+	describe( 'when initialized', () => {
 
 		it( 'calls the IntersectionObserver API', () => {
 			const Component = {
@@ -93,27 +22,21 @@ describe( 'Observer', () => {
 				mixins: [ observerInstance ]
 			};
 
-			observerInstance.methods.supportsObserverCheck = jest.fn().mockReturnValue( true );
-			observerInstance.methods.defineObserverElement = jest.fn().mockReturnValue( true );
-
 			VueTestUtils.shallowMount( Component );
 
 			expect( window.IntersectionObserver ).toHaveBeenCalled();
 		} );
 
-		it( 'define the observerElement', ( done ) => {
+		it( 'defines the observerElement', ( done ) => {
 			const Component = {
 				render() {},
 				mixins: [ observerInstance ]
 			};
 
-			observerInstance.methods.supportsObserverCheck = jest.fn().mockReturnValue( true );
-			observerInstance.methods.defineObserverElement = jest.fn().mockReturnValue( true );
-
 			VueTestUtils.shallowMount( Component );
 
 			Vue.nextTick().then( () => {
-				expect( observerInstance.methods.defineObserverElement ).toHaveBeenCalled();
+				expect( defineObserverDefaultSpy ).toHaveBeenCalled();
 				done();
 			} );
 		} );
@@ -125,39 +48,37 @@ describe( 'Observer', () => {
 			};
 			const mockSelector = 'mock-element-selector';
 
-			observerInstance.methods.supportsObserverCheck = jest.fn().mockReturnValue( true );
-			observerInstance.methods.defineObserverElement = jest.fn().mockReturnValue( mockSelector );
+			const defineObserverSpy = jest.spyOn( observerInstance.methods, 'defineObserverElement' ).mockReturnValue( mockSelector );
 
 			VueTestUtils.shallowMount( Component );
 
 			Vue.nextTick().then( () => {
 				expect( IntersectionObserverSpies.observe ).toHaveBeenCalled();
 				expect( IntersectionObserverSpies.observe ).toHaveBeenCalledWith( mockSelector );
+				defineObserverSpy.mockRestore();
 				done();
 			} );
 		} );
 
-		it( 'trigger the observer.disconnect method when destroyed', ( done ) => {
+		it( 'triggers the observer.disconnect method when destroyed', ( done ) => {
 			const Component = {
 				render() {},
 				mixins: [ observerInstance ]
 			};
-			const mockSelector = 'mock-element-selector';
-
-			observerInstance.methods.supportsObserverCheck = jest.fn().mockReturnValue( true );
-			observerInstance.methods.defineObserverElement = jest.fn().mockReturnValue( mockSelector );
+			const disconnectSpy = jest.spyOn( observerInstance.methods, 'disconnectObserver' );
 
 			const wrapper = VueTestUtils.shallowMount( Component );
 
 			Vue.nextTick().then( () => {
 				wrapper.unmount();
 
-				expect( wrapper.vm.observerSupported ).toBe( true );
-				expect( observerInstance.methods.disconnectObserver ).toHaveBeenCalled();
+				expect( disconnectSpy ).toHaveBeenCalled();
+				disconnectSpy.mockRestore();
 				done();
 			} );
 		} );
 	} );
+
 	describe( 'when intersectionCallback is triggered', () => {
 		it( 'triggers a change event', () => {
 			const Component = {
@@ -189,7 +110,7 @@ describe( 'Observer', () => {
 			expect( wrapper.emitted().hide ).toBeTruthy();
 		} );
 
-		it( 'set the observerIntersecting data to "false" when value isIntersecting is falsy', () => {
+		it( 'sets the observerIntersecting data to "false" when value isIntersecting is falsy', () => {
 			const Component = {
 				render() {},
 				mixins: [ observerInstance ]
@@ -219,7 +140,7 @@ describe( 'Observer', () => {
 			expect( wrapper.emitted().intersect ).toBeTruthy();
 		} );
 
-		it( 'set the observerIntersecting data to "true" when value isIntersecting is truthy', () => {
+		it( 'sets the observerIntersecting data to "true" when value isIntersecting is truthy', () => {
 			const Component = {
 				render() {},
 				mixins: [ observerInstance ]

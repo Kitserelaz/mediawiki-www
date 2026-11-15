@@ -40,13 +40,13 @@ class ThinMessage extends Message {
 
 	/** @inheritDoc */
 	public function translation(): ?string {
-		if ( !isset( $this->row ) ) {
+		if ( $this->row === null ) {
 			return $this->infile();
 		}
 		return $this->translation;
 	}
 
-	// Re-implemented
+	/** @inheritDoc */
 	public function getProperty( string $key ) {
 		if ( !isset( self::$propertyMap[$key] ) ) {
 			return parent::getProperty( $key );
@@ -55,7 +55,7 @@ class ThinMessage extends Message {
 		return $this->row->$field ?? null;
 	}
 
-	// Re-implemented
+	/** @inheritDoc */
 	public function getPropertyNames(): array {
 		return array_merge( parent::getPropertyNames(), array_keys( self::$propertyMap ) );
 	}

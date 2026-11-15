@@ -1,6 +1,6 @@
 mw.template.registerCompiler( 'mustache+dom', {
 	compile: function () {
-		var compiler = mw.template.getCompiler( 'mustache' ),
+		const compiler = mw.template.getCompiler( 'mustache' ),
 			compiled = compiler.compile.apply( compiler, arguments );
 
 		return {
@@ -30,25 +30,23 @@ mw.template.registerCompiler( 'mustache+dom', {
 			 * @return {jQuery} Rendered HTML
 			 */
 			render: function ( data ) {
-				var self = this,
-					$container = $( '<div>' ),
-					handlers = {},
-					dom = [],
-					random, transformNodes, i, $result;
+				const self = this;
+				const $container = $( '<div>' );
+				const handlers = {};
+				const dom = [];
 
-				transformNodes = function ( d ) {
-					var keys = Object.keys( d ),
-						result = new d.constructor(),
-						key, j, node, $stub;
+				const transformNodes = function ( d ) {
+					const keys = Object.keys( d );
+					const result = new d.constructor();
 
-					for ( j = 0; j < keys.length; j++ ) {
-						key = keys[ j ];
+					for ( let j = 0; j < keys.length; j++ ) {
+						const key = keys[ j ];
 
 						if ( d[ key ] instanceof Function ) {
 							// on<event> handlers can't be parsed into the HTML, so we'll
 							// assign them a random name, which will point to a place where
 							// the actual handler will be
-							random = 'fn_' + Math.random().toString( 36 ).slice( 2 );
+							const random = 'fn_' + Math.random().toString( 36 ).slice( 2 );
 							handlers[ random ] = d[ key ];
 							result[ key ] = 'return $( "#' + random + '" ).data( "handler" )( event )';
 						} else if (
@@ -62,9 +60,9 @@ mw.template.registerCompiler( 'mustache+dom', {
 							try {
 								// try to fetch DOM node from this data, for which
 								// we'll want to parse a placeholder into the template
-								node = self.getNode( d[ key ] );
+								const node = self.getNode( d[ key ] );
 								// eslint-disable-next-line mediawiki/class-doc
-								$stub = $( '<div>' ).addClass( 'tpl-dom-' + dom.length );
+								const $stub = $( '<div>' ).addClass( 'tpl-dom-' + dom.length );
 								dom.push( node );
 								result[ key ] = $stub[ 0 ].outerHTML;
 							} catch ( e ) {
@@ -83,19 +81,19 @@ mw.template.registerCompiler( 'mustache+dom', {
 				// (this is basically `compiled.render( data, partialTemplates )`, but made
 				// more generic so it could be copied right over for other templates, with
 				// a different set of other arguments)
-				$result = compiled.render.apply( compiled, [].concat(
+				const $result = compiled.render.apply( compiled, [].concat(
 					data,
 					[].slice.call( arguments, 1 )
 				) );
 
 				// ... and replace placeholder with actual nodes now
 				$container.append( $result );
-				for ( i = 0; i < dom.length; i++ ) {
+				for ( let i = 0; i < dom.length; i++ ) {
 					$container.find( '.tpl-dom-' + i ).replaceWith( dom[ i ] );
 				}
 
 				// ... and add nodes with the on<event> callback handlers
-				Object.keys( handlers ).forEach( function ( randomId ) {
+				Object.keys( handlers ).forEach( ( randomId ) => {
 					$( '<script>' )
 						.attr( 'id', randomId )
 						.data( 'handler', handlers[ randomId ] )

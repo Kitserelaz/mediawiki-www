@@ -4,7 +4,6 @@ namespace ArticlePlaceholder\Tests;
 
 use ArticlePlaceholder\ItemNotabilityFilter;
 use DataValues\StringValue;
-use ExtensionRegistry;
 use MediaWikiIntegrationTestCase;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
@@ -16,7 +15,6 @@ use Wikibase\DataModel\Statement\Statement;
 use Wikibase\DataModel\Statement\StatementList;
 use Wikibase\DataModel\Term\Fingerprint;
 use Wikibase\Repo\WikibaseRepo;
-use Wikimedia\Rdbms\SessionConsistentConnectionManager;
 
 /**
  * @group Database
@@ -30,19 +28,13 @@ use Wikimedia\Rdbms\SessionConsistentConnectionManager;
  */
 class ItemNotabilityFilterTest extends MediaWikiIntegrationTestCase {
 
-	/**
-	 * @var ItemId[]
-	 */
+	/** @var ItemId[] */
 	private $testItemIds = [];
 
 	protected function setUp(): void {
 		parent::setUp();
 
-		if ( !ExtensionRegistry::getInstance()->isLoaded( 'WikibaseRepository' ) ) {
-			$this->markTestSkipped(
-				'ItemNotabilityFilterTest needs the current wiki to be the repo.'
-			);
-		}
+		$this->markTestSkippedIfExtensionNotLoaded( 'WikibaseRepository' );
 
 		static $setUp = false;
 		if ( !$setUp ) {
@@ -51,14 +43,11 @@ class ItemNotabilityFilterTest extends MediaWikiIntegrationTestCase {
 		}
 	}
 
-	/**
-	 * @return ItemNotabilityFilter
-	 */
 	private function getInstance(): ItemNotabilityFilter {
-		$lbFactory = $this->getServiceContainer()->getDBLoadBalancerFactory();
+		$connProvider = $this->getServiceContainer()->getConnectionProvider();
 
 		return new ItemNotabilityFilter(
-			new SessionConsistentConnectionManager( $lbFactory->getMainLB() ),
+			$connProvider->getReplicaDatabase(),
 			WikibaseRepo::getEntityNamespaceLookup(),
 			WikibaseRepo::getStore()->newSiteLinkStore(),
 			'enwiki'

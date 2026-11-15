@@ -2,19 +2,12 @@
 
 namespace WikibaseQuality\ConstraintReport;
 
-use JobSpecification;
-use MediaWiki\Config\Config;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Page\Hook\ArticlePurgeHook;
 use MediaWiki\Registration\ExtensionRegistry;
-use Wikibase\DataModel\Entity\NumericPropertyId;
-use Wikibase\Lib\Changes\Change;
-use Wikibase\Lib\Changes\EntityChange;
-use Wikibase\Lib\Changes\EntityDiffChangedAspects;
 use Wikibase\Repo\WikibaseRepo;
 use WikibaseQuality\ConstraintReport\Api\ResultsCache;
-use WikibaseQuality\ConstraintReport\Job\CheckConstraintsJob;
 
 /**
  * Container for hook callbacks registered in extension.json.
@@ -26,72 +19,7 @@ final class WikibaseQualityConstraintsHooks implements
 	BeforePageDisplayHook
 {
 
-	public static function onWikibaseChange( Change $change ) {
-		if ( !( $change instanceof EntityChange ) ) {
-			return;
-		}
-		/** @var EntityChange $change */
-
-		$services = MediaWikiServices::getInstance();
-		$config = $services->getMainConfig();
-		$jobQueueGroup = $services->getJobQueueGroup();
-
-		// If jobs are enabled and the results would be stored in some way run a job.
-		if (
-			$config->get( 'WBQualityConstraintsEnableConstraintsCheckJobs' ) &&
-			$config->get( 'WBQualityConstraintsCacheCheckConstraintsResults' ) &&
-			self::isSelectedForJobRunBasedOnPercentage()
-		) {
-			$params = [ 'entityId' => $change->getEntityId()->getSerialization() ];
-			$jobQueueGroup->lazyPush(
-				new JobSpecification( CheckConstraintsJob::COMMAND, $params )
-			);
-		}
-
-		if ( $config->get( 'WBQualityConstraintsEnableConstraintsImportFromStatements' ) &&
-			self::isConstraintStatementsChange( $config, $change )
-		) {
-			$params = [ 'propertyId' => $change->getEntityId()->getSerialization() ];
-			$metadata = $change->getMetadata();
-			if ( array_key_exists( 'rev_id', $metadata ) ) {
-				$params['revisionId'] = $metadata['rev_id'];
-			}
-			$jobQueueGroup->push(
-				new JobSpecification( 'constraintsTableUpdate', $params )
-			);
-		}
-	}
-
-	private static function isSelectedForJobRunBasedOnPercentage() {
-		$config = MediaWikiServices::getInstance()->getMainConfig();
-		$percentage = $config->get( 'WBQualityConstraintsEnableConstraintsCheckJobsRatio' );
-
-		return mt_rand( 1, 100 ) <= $percentage;
-	}
-
-	public static function isConstraintStatementsChange( Config $config, Change $change ) {
-		if ( !( $change instanceof EntityChange ) ||
-			 $change->getAction() !== EntityChange::UPDATE ||
-			 !( $change->getEntityId() instanceof NumericPropertyId )
-		) {
-			return false;
-		}
-
-		$info = $change->getInfo();
-
-		if ( !array_key_exists( 'compactDiff', $info ) ) {
-			// the non-compact diff ($info['diff']) does not contain statement diffs (T110996),
-			// so we only know that the change *might* affect the constraint statements
-			return true;
-		}
-
-		/** @var EntityDiffChangedAspects $aspects */
-		$aspects = $info['compactDiff'];
-
-		$propertyConstraintId = $config->get( 'WBQualityConstraintsPropertyConstraintId' );
-		return in_array( $propertyConstraintId, $aspects->getStatementChanges() );
-	}
-
+	/** @inheritDoc */
 	public function onArticlePurge( $wikiPage ) {
 		$entityContentFactory = WikibaseRepo::getEntityContentFactory();
 		if ( $entityContentFactory->isEntityContentModel( $wikiPage->getContentModel() ) ) {
@@ -104,6 +32,7 @@ final class WikibaseQualityConstraintsHooks implements
 		}
 	}
 
+	/** @inheritDoc */
 	public function onBeforePageDisplay( $out, $skin ): void {
 		$lookup = WikibaseRepo::getEntityNamespaceLookup();
 		$title = $out->getTitle();
@@ -114,24 +43,30 @@ final class WikibaseQualityConstraintsHooks implements
 		if ( !$lookup->isNamespaceWithEntities( $title->getNamespace() ) ) {
 			return;
 		}
-		if ( empty( $out->getJsConfigVars()['wbIsEditView'] ) ) {
+
+		$jsConfigVars = $out->getJsConfigVars();
+		if ( empty( $jsConfigVars['wbIsEditView'] ) || empty( $jsConfigVars['wbEntityId'] ) ) {
 			return;
 		}
 
 		$services = MediaWikiServices::getInstance();
-		$config = $services->getMainConfig();
 
 		$isMobileView = ExtensionRegistry::getInstance()->isLoaded( 'MobileFrontend' ) &&
 			$services->getService( 'MobileFrontend.Context' )->shouldDisplayMobileView();
 		if ( $isMobileView ) {
+			$user = $out->getUser();
+			$isWbui2025Enabled = WikibaseRepo::getWbui2025FeatureFlag( $services )
+				->shouldRenderAsWbui2025( $user );
+			if ( $isWbui2025Enabled && $user->isAllowed( 'wbqc-check-constraints' ) ) {
+				$out->addModules( 'wikibase.quality.constraints.gadget' );
+			}
 			return;
 		}
 
 		$out->addModules( 'wikibase.quality.constraints.suggestions' );
 
-		if ( $config->get( 'WBQualityConstraintsShowConstraintViolationToNonLoggedInUsers' )
-			|| $out->getUser()->isRegistered() ) {
-				$out->addModules( 'wikibase.quality.constraints.gadget' );
+		if ( $out->getUser()->isAllowed( 'wbqc-check-constraints' ) ) {
+			$out->addModules( 'wikibase.quality.constraints.gadget' );
 		}
 	}
 

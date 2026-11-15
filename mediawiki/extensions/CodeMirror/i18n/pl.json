@@ -42,7 +42,7 @@
 	"codemirror-prefs-highlightrefs": "Koloruj zawartość znacznika <ref>",
 	"codemirror-prefs-foldallrefs": "Domyślnie zwijaj wszystkie znaczniki <ref>",
 	"codemirror-prefs-reset": "Przywróć ustawienia domyślne",
-	"codemirror-prefs-colorblind": "Włącz schemat kolorystyczny podświetlania składni wikiteksu przyjazny osobom ze ślepotą barw",
+	"codemirror-prefs-colorblind": "Włącz schemat kolorystyczny podświetlania składni wikikodu podczas edycji przyjazny osobom ze ślepotą barw",
 	"codemirror-prefs-colorblind-help": "Jeśli używasz gadżetu do podświetlania składni, ta preferencja nie zadziała.",
 	"codemirror-close": "Zamknij",
 	"codemirror-find": "Znajdź",
@@ -53,7 +53,7 @@
 	"codemirror-match-case": "Uwzględnij wielkość liter",
 	"codemirror-regexp": "Wyrażenie regularne",
 	"codemirror-regexp-invalid": "Nieprawidłowe wyrażenie regularne",
-	"codemirror-by-word": "Według słów",
+	"codemirror-by-word": "Całe słowo",
 	"codemirror-replace": "Zastąp",
 	"codemirror-replace-placeholder": "Zastąp",
 	"codemirror-replace-all": "Zastąp wszystkie",
@@ -209,6 +209,5 @@
 	"codemirror-wikilint-vertical-alignment": "wyrównanie w pionie",
 	"codemirror-wikilint-whitespace": "wstaw spację",
 	"codemirror-potentially-slow": "może spowalniać",
-	"codemirror-validate-js-syntaxerror": "Błąd składni w kolumnie $1 w wierszu $2: $3",
-	"codemirror-v6-prefs-colorblind": "Schemat koloru dla osób ze ślepotą barw"
+	"codemirror-validate-js-syntaxerror": "Błąd składni w kolumnie $1 w wierszu $2: $3"
 }

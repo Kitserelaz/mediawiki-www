@@ -28,7 +28,7 @@ class PFHooks {
 			return 1;
 		}
 
-		define( 'PF_VERSION', '6.0.5' );
+		define( 'PF_VERSION', '6.0.11' );
 
 		$GLOBALS['wgPageFormsIP'] = dirname( __DIR__ ) . '/../';
 
@@ -39,7 +39,7 @@ class PFHooks {
 
 		if ( defined( 'SMW_VERSION' ) || ExtensionRegistry::getInstance()->isLoaded( 'SemanticMediaWiki' ) ) {
 			$GLOBALS['wgSpecialPages']['CreateProperty'] = 'PFCreateProperty';
-			$GLOBALS['wgAutoloadClasses']['PFCreateProperty'] = __DIR__ . '/../specials/PF_CreateProperty.php';
+			$GLOBALS['wgAutoloadClasses']['PFCreateProperty'] = __DIR__ . '/../specials/PFCreateProperty.php';
 			$GLOBALS['smwgEnabledSpecialPage'][] = 'RunQuery';
 		}
 
@@ -135,6 +135,7 @@ class PFHooks {
 		$parser->setFunctionHook( 'autoedit_rating', [ 'PFAutoEditRating', 'run' ] );
 		$parser->setFunctionHook( 'template_params', [ 'PFTemplateParams', 'run' ] );
 		$parser->setFunctionHook( 'template_display', [ 'PFTemplateDisplay', 'run' ], Parser::SFH_OBJECT_ARGS );
+		$parser->setFunctionHook( 'page_name_formula', [ 'PFPageNameFormula', 'run' ] );
 	}
 
 	/**
@@ -220,7 +221,7 @@ class PFHooks {
 	/**
 	 * Called by the CargoTablesSetAllowedActions hook.
 	 *
-	 * @param SpecialPage $cargoTablesPage
+	 * @param CargoTables $cargoTablesPage
 	 * @param array &$allowedActions
 	 */
 	public static function addToCargoTablesColumns( $cargoTablesPage, &$allowedActions ) {
@@ -307,7 +308,7 @@ class PFHooks {
 	 *
 	 * Adds an "Edit" link to Special:CargoTables, pointing to Special:MultiPageEdit.
 	 *
-	 * @param SpecialPage $cargoTablesPage
+	 * @param CargoTables $cargoTablesPage
 	 * @param array &$actionLinks Action links
 	 * @param string $tableName Cargo table name
 	 * @param bool $isReplacementTable Whether this table iss a replacement table
@@ -342,7 +343,7 @@ class PFHooks {
 	 * @param WebRequest $request
 	 */
 	public static function showFormPreview( EditPage $editpage, WebRequest $request ) {
-		global $wgOut, $wgPageFormsFormPrinter;
+		global $wgPageFormsFormPrinter;
 
 		wfDebug( __METHOD__ . ": enter.\n" );
 
@@ -356,21 +357,23 @@ class PFHooks {
 		}
 
 		// Needed in case there are any OOUI-based input types in the form.
-		$wgOut->enableOOUI();
+		$out = $editpage->getContext()->getOutput();
+		$out->enableOOUI();
 
-		$previewNote = $wgOut->parseAsInterface( wfMessage( 'pf-preview-note' )->text() );
+		$previewNote = $out->parseAsInterface( wfMessage( 'pf-preview-note' )->text() );
 		// The "pfForm" ID is there so the form JS will be activated.
-		$editpage->previewTextAfterContent .= Html::element( 'h2', null, wfMessage( 'pf-preview-header' )->text() ) . "\n" .
+		$editpage->previewTextAfterContent .= Html::element( 'h2', [], wfMessage( 'pf-preview-header' )->text() ) . "\n" .
 			'<div id="pfForm" class="previewnote" style="font-weight: bold">' . $previewNote . "</div>\n<hr />\n";
 
 		$form_definition = StringUtils::delimiterReplace( '<noinclude>', '</noinclude>', '', $editpage->textbox1 );
 		[ $form_text, $data_text, $form_page_title, $generated_page_name ] =
-			$wgPageFormsFormPrinter->formHTML( $form_definition, null, false, null, null, "Page Forms form preview dummy title", null );
+			$wgPageFormsFormPrinter->formHTML(
+				$editpage->getContext(), $form_definition, null, false, null, null, "Page Forms form preview dummy title", null );
 
 		$parserOutput = PFUtils::getParser()->getOutput();
-		$wgOut->addParserOutputMetadata( $parserOutput );
+		$out->addParserOutputMetadata( $parserOutput );
 
-		PFUtils::addFormRLModules();
+		PFUtils::addFormRLModules( $out );
 		$editpage->previewTextAfterContent .=
 			'<div style="margin-top: 15px">' . $form_text . "</div>";
 	}
@@ -423,9 +426,9 @@ class PFHooks {
 	 * @param Skin $skin
 	 */
 	public static function handleForceReload( $out, Skin $skin ) {
-		global $wgRequest, $wgPageFormsScriptPath;
+		global $wgPageFormsScriptPath;
 
-		if ( $wgRequest->getVal( 'forceReload' ) !== 'true' ) {
+		if ( $out->getRequest()->getVal( 'forceReload' ) !== 'true' ) {
 			return;
 		}
 
@@ -438,4 +441,137 @@ class PFHooks {
 		$out->addHTML( $text );
 	}
 
+	public static function renamePageBasedOnFormula( WikiPage $wikiPage, MediaWiki\User\UserIdentity $user, string $summary, int $flags, MediaWiki\Revision\RevisionRecord $revisionRecord, MediaWiki\Storage\EditResult $editResult ) {
+		$parserOptions = \ParserOptions::newFromUser( $user );
+		$parserOutput = $wikiPage->getParserOutput( $parserOptions );
+		if ( !$parserOutput ) {
+			return;
+		}
+		$formula = $parserOutput->getExtensionData( 'PFPageNameFormula' );
+		if ( !$formula ) {
+			return;
+		}
+
+		$title = $wikiPage->getTitle();
+		$content = $revisionRecord->getContent( \MediaWiki\Revision\SlotRecord::MAIN );
+		if ( !$content || !$content instanceof \MediaWiki\Content\TextContent ) {
+			return;
+		}
+		$text = $content->getText();
+		$generated_page_name = $formula;
+
+		preg_match_all( "/<([^\[\]]+)\[([^\[\]]+)\]>/", $formula, $matches, PREG_SET_ORDER );
+		if ( !empty( $matches ) ) {
+			$generated_page_name = str_replace( ' ', '_', $generated_page_name );
+			foreach ( $matches as $match ) {
+				$full_match = $match[0];
+				$template_name = $match[1];
+				$field_name = $match[2];
+
+				$tif = PFTemplateInForm::create( $template_name );
+				$tif->setPageRelatedInfo( $text );
+				$tif->setFieldValuesFromPage( $text );
+
+				$values = $tif->getValuesFromPage();
+				$replacement = '';
+				if ( is_array( $values ) && array_key_exists( $field_name, $values ) ) {
+					$replacement = $values[$field_name];
+				}
+
+				$escaped_match = str_replace( ' ', '_', $full_match );
+				$generated_page_name = str_ireplace( $escaped_match, $replacement, $generated_page_name );
+			}
+			$generated_page_name = str_replace( '_', ' ', $generated_page_name );
+		}
+
+		$generated_page_name = trim( $generated_page_name );
+		if ( $generated_page_name === '' ) {
+			return;
+		}
+
+		$titleText = $title->getText();
+		$hasUniqueNumber = false;
+
+		if ( preg_match( '/<unique number(.*)>/', $generated_page_name ) ) {
+			$hasUniqueNumber = true;
+
+			// Check if the current title matches the pattern.
+			// Escape special regex characters in the formula, but preserve our placeholder.
+			$pattern = preg_quote( preg_replace( '/<unique number(.*)>/', '___UNIQUE_NUMBER___', $generated_page_name ), '/' );
+			// Replace the placeholder with a pattern that matches a number (or random digits).
+			$pattern = str_replace( '___UNIQUE_NUMBER___', '(.*)', $pattern );
+
+			if ( preg_match( '/^' . $pattern . '$/', $titleText, $numberMatches ) ) {
+				$numberPart = $numberMatches[1];
+				// If the matched part is a valid number (or empty, or random digits),
+				// then the current title is already a valid instance of this formula.
+				if ( $numberPart === '' || is_numeric( $numberPart ) ) {
+					return;
+				}
+			}
+
+			// If we get here, the current title does not match, so we need to generate a new unique name.
+			// Replace "unique number" tag with {num...} temporarily to match PFAutoeditAPI logic.
+			$targetName = preg_replace( '/<unique number(.*)>/', '{num\1}', $generated_page_name, 1 );
+			$targetName = str_replace( ' ', '_', $targetName );
+
+			$titleNumber = '';
+			$isRandom = false;
+			$randomNumHasPadding = false;
+			$randomNumDigits = 6;
+
+			if ( preg_match( '/{num.*}/', $targetName, $matches ) && strpos( $targetName, '{num' ) !== false ) {
+				if ( preg_match( '/{num;random(;(0)?([1-9][0-9]*))?}/', $targetName, $matches ) ) {
+					$isRandom = true;
+					$randomNumHasPadding = array_key_exists( 2, $matches );
+					$randomNumDigits = ( array_key_exists( 3, $matches ) ? $matches[3] : $randomNumDigits );
+					$titleNumber = PFAutoeditAPI::makeRandomNumber( $randomNumDigits, $randomNumHasPadding );
+				} elseif ( preg_match( '/{num.*start[_]*=[_]*([^;]*).*}/', $targetName, $matches ) ) {
+					if ( count( $matches ) == 2 && is_numeric( $matches[1] ) && $matches[1] >= 0 ) {
+						$titleNumber = $matches[1];
+					}
+				} elseif ( preg_match( '/^(_?{num.*}?)*$/', $targetName, $matches ) ) {
+					$titleNumber = '1';
+				}
+
+				$targetTitle = \MediaWiki\Title\Title::newFromText( preg_replace( '/{num.*}/', $titleNumber, $targetName ) );
+
+				if ( $targetTitle ) {
+					$numAttemptsAtTitle = 0;
+					// Cycle through numbers until we find one that gives a nonexistent page title.
+					while ( $targetTitle->getArticleID( \IDBAccessObject::READ_LATEST ) !== 0 ) {
+						$numAttemptsAtTitle++;
+
+						if ( $isRandom ) {
+							if ( $numAttemptsAtTitle > 20 ) {
+								$randomNumDigits++;
+							}
+							$titleNumber = PFAutoeditAPI::makeRandomNumber( $randomNumDigits, $randomNumHasPadding );
+						} elseif ( $titleNumber == "" ) {
+							$titleNumber = 2;
+						} else {
+							$titleNumber = str_pad( strval( $titleNumber + 1 ), strlen( $titleNumber ), '0', STR_PAD_LEFT );
+						}
+
+						$targetTitle = \MediaWiki\Title\Title::newFromText( preg_replace( '/{num.*}/', $titleNumber, $targetName ) );
+					}
+
+					$generated_page_name = $targetTitle->getText();
+				}
+			}
+		}
+
+		$newTitle = \MediaWiki\Title\Title::newFromText( $generated_page_name );
+
+		if ( $newTitle && !$newTitle->equals( $title ) && !$newTitle->exists() ) {
+			try {
+				$movePageFactory = \MediaWiki\MediaWikiServices::getInstance()->getMovePageFactory();
+				$movePage = $movePageFactory->newMovePage( $title, $newTitle );
+				$userFactory = \MediaWiki\MediaWikiServices::getInstance()->getUserFactory();
+				$authority = $userFactory->newFromUserIdentity( $user );
+				$movePage->moveIfAllowed( $authority, wfMessage( 'pf-automatic-rename' )->text(), true );
+			} catch ( \Exception ) {
+			}
+		}
+	}
 }

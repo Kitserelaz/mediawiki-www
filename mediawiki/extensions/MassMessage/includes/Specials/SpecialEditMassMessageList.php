@@ -2,11 +2,11 @@
 
 namespace MediaWiki\MassMessage\Specials;
 
-use LogEventsList;
 use MediaWiki\CommentStore\CommentStore;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Logging\LogEventsList;
 use MediaWiki\MassMessage\Content\MassMessageListContent;
 use MediaWiki\MassMessage\Content\MassMessageListContentHandler;
 use MediaWiki\MassMessage\Lookup\DatabaseLookup;
@@ -20,6 +20,7 @@ use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\Watchlist\WatchlistManager;
+use StatusValue;
 use Wikimedia\Rdbms\IDBAccessObject;
 
 class SpecialEditMassMessageList extends FormSpecialPage {
@@ -47,48 +48,17 @@ class SpecialEditMassMessageList extends FormSpecialPage {
 	 */
 	protected $errorMsgKey;
 
-	/**
-	 * Provides access to user options
-	 *
-	 * @var UserOptionsLookup
-	 */
-	private $userOptionsLookup;
-
-	/** @var RestrictionStore */
-	private $restrictionStore;
-
-	/** @var WatchlistManager */
-	private $watchlistManager;
-
-	/** @var PermissionManager */
-	private $permissionManager;
-
-	/** @var RevisionLookup */
-	private $revisionLookup;
-
-	/**
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param RestrictionStore $restrictionStore
-	 * @param WatchlistManager $watchlistManager
-	 * @param PermissionManager $permissionManager
-	 * @param RevisionLookup $revisionLookup
-	 */
 	public function __construct(
-		UserOptionsLookup $userOptionsLookup,
-		RestrictionStore $restrictionStore,
-		WatchlistManager $watchlistManager,
-		PermissionManager $permissionManager,
-		RevisionLookup $revisionLookup
+		private readonly UserOptionsLookup $userOptionsLookup,
+		private readonly RestrictionStore $restrictionStore,
+		private readonly WatchlistManager $watchlistManager,
+		private readonly PermissionManager $permissionManager,
+		private readonly RevisionLookup $revisionLookup,
 	) {
 		parent::__construct( 'EditMassMessageList' );
-
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->restrictionStore = $restrictionStore;
-		$this->watchlistManager = $watchlistManager;
-		$this->permissionManager = $permissionManager;
-		$this->revisionLookup = $revisionLookup;
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
@@ -265,8 +235,6 @@ class SpecialEditMassMessageList extends FormSpecialPage {
 	 * Hide the form if the title is invalid or if the user can't edit the list. If neither
 	 * of these are true, then add a cancel button alongside the automatic save button. Also
 	 * add an ID to the form for targeting with CSS styles.
-	 *
-	 * @param HTMLForm $form
 	 */
 	protected function alterForm( HTMLForm $form ) {
 		if ( !$this->rev ) {
@@ -354,7 +322,7 @@ class SpecialEditMassMessageList extends FormSpecialPage {
 		);
 
 		if ( !$editResult->isGood() ) {
-			return $editResult;
+			return Status::wrap( $editResult );
 		}
 
 		$this->getOutput()->redirect( $this->title->getFullURL() );
@@ -370,7 +338,7 @@ class SpecialEditMassMessageList extends FormSpecialPage {
 	 * If input contains invalid data, the value is the array of invalid target strings.
 	 *
 	 * @param string $input
-	 * @return Status
+	 * @return StatusValue
 	 */
 	protected static function parseInput( $input ) {
 		// Array of non-empty lines
@@ -386,7 +354,7 @@ class SpecialEditMassMessageList extends FormSpecialPage {
 			$targets[] = $target;
 		}
 
-		$result = new Status;
+		$result = new StatusValue();
 		if ( !$invalidTargets ) {
 			$result->setResult( true,
 				MassMessageListContentHandler::normalizeTargetArray( $targets ) );

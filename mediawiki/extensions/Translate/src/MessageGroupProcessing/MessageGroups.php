@@ -14,8 +14,11 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use MessageGroup;
 use MessageGroupLoader;
+use RecentAdditionsMessageGroup;
+use RecentMessageGroup;
 use RuntimeException;
-use WANObjectCache;
+use SandboxMessageGroup;
+use Wikimedia\ObjectCache\WANObjectCache;
 
 /**
  * Factory class for accessing message groups individually by id or
@@ -57,12 +60,12 @@ class MessageGroups {
 	/**
 	 * Expand process cached groups to objects
 	 *
-	 * @param array $groups Map of (group ID => mixed)
+	 * @param array<string,MessageGroup|callable> $groups Map of (group ID => mixed)
 	 */
 	protected function initGroupsFromDefinitions( array $groups ): void {
 		foreach ( $groups as $id => $mixed ) {
 			if ( !is_object( $mixed ) ) {
-				$groups[$id] = call_user_func( $mixed, $id );
+				$groups[$id] = $mixed( $id );
 			}
 		}
 
@@ -161,6 +164,10 @@ class MessageGroups {
 			);
 		}
 
+		// TODO: To decide if we should load this like we load other message group factories.
+		// See Ie95f25e18816f48d1d663ae392ecf5f9bbcf0b56 for related discussion
+		$this->groupLoaders[] = $services->getWorkflowStatesMessageGroupLoader();
+
 		return $this->groupLoaders;
 	}
 
@@ -178,7 +185,7 @@ class MessageGroups {
 			return $groups[$id];
 		}
 
-		if ( $id !== '' && $id[0] === '!' ) {
+		if ( str_starts_with( $id, '!' ) ) {
 			$dynamic = self::getDynamicGroups();
 			if ( isset( $dynamic[$id] ) ) {
 				return new $dynamic[$id];
@@ -227,7 +234,7 @@ class MessageGroups {
 
 	/**
 	 * Get all enabled message groups.
-	 * @return MessageGroup[] Map of (string => MessageGroup)
+	 * @return array<string,MessageGroup>
 	 */
 	public static function getAllGroups(): array {
 		return self::singleton()->getGroups();
@@ -238,10 +245,9 @@ class MessageGroups {
 	 * They can still exist in the system, but should not appear in front
 	 * of translators looking to do some useful work.
 	 *
-	 * @param MessageGroup|string $group Message group ID
 	 * @return string Message group priority
 	 */
-	public static function getPriority( $group ): string {
+	public static function getPriority( MessageGroup|string $group ): string {
 		if ( $group instanceof MessageGroup ) {
 			$id = $group->getId();
 		} else {
@@ -254,10 +260,10 @@ class MessageGroups {
 	/**
 	 * Sets the message group priority.
 	 *
-	 * @param MessageGroup|string $group Message group
+	 * @param MessageGroup|string $group
 	 * @param string $priority Priority (empty string to unset)
 	 */
-	public static function setPriority( $group, string $priority = '' ): void {
+	public static function setPriority( MessageGroup|string $group, string $priority = '' ): void {
 		if ( $group instanceof MessageGroup ) {
 			$id = $group->getId();
 		} else {
@@ -277,6 +283,8 @@ class MessageGroups {
 	/**
 	 * Returns a list of message groups that share (certain) messages
 	 * with this group.
+	 *
+	 * @return string[]
 	 */
 	public static function getSharedGroups( MessageGroup $group ): array {
 		// Take the first message, get a handle for it and check
@@ -300,6 +308,8 @@ class MessageGroups {
 	/**
 	 * Returns a list of parent message groups. If message group exists
 	 * in multiple places in the tree, multiple lists are returned.
+	 *
+	 * @return string[][]
 	 */
 	public static function getParentGroups( MessageGroup $targetGroup ): array {
 		$ids = self::getSharedGroups( $targetGroup );
@@ -452,22 +462,24 @@ class MessageGroups {
 		return $all;
 	}
 
-	/** Contents on these groups changes on a whim. */
+	/**
+	 * Contents on these groups changes on a whim.
+	 *
+	 * @return array<string,class-string>
+	 */
 	public static function getDynamicGroups(): array {
 		return [
-			'!recent' => 'RecentMessageGroup',
-			'!additions' => 'RecentAdditionsMessageGroup',
-			'!sandbox' => 'SandboxMessageGroup',
+			'!recent' => RecentMessageGroup::class,
+			'!additions' => RecentAdditionsMessageGroup::class,
+			'!sandbox' => SandboxMessageGroup::class,
 		];
 	}
 
 	/**
 	 * Get only groups of specific type (class).
-	 * @phan-template T
-	 * @param string $type Class name of wanted type
-	 * @phan-param class-string<T> $type
-	 * @return MessageGroup[] Map of (group ID => MessageGroupBase)
-	 * @phan-return array<T&MessageGroup>
+	 * @template T of MessageGroup
+	 * @param class-string<T> $type Class name of wanted type
+	 * @return array<T> Map of (group ID => MessageGroupBase)
 	 * @since 2012-04-30
 	 */
 	public static function getGroupsByType( string $type ): array {
@@ -489,7 +501,7 @@ class MessageGroups {
 	 * One group can exist multiple times in different parts of the tree.
 	 * In other words: [Group1, Group2, [AggGroup, Group3, Group4]]
 	 *
-	 * @return array Map of (group ID => MessageGroup or recursive array)
+	 * @return array<string,MessageGroup|array> Map of (group ID => MessageGroup or recursive array)
 	 */
 	public static function getGroupStructure(): array {
 		$groups = self::getAllGroups();
@@ -562,7 +574,9 @@ class MessageGroups {
 	 * @param AggregateMessageGroup $parent
 	 * @param string[] &$childIds Flat list of child group IDs [returned]
 	 * @param string $fname Calling method name; used to identify recursion [optional]
-	 * @return array
+	 * @return array<int,MessageGroup|array> An array containing `MessageGroup`s and arrays containing
+	 *  (`MessageGroup`s and arrays containing (`MessageGroups` and arrays containing...)) – that is,
+	 *  a generic tree whose leaves are `MessageGroup`s
 	 */
 	public static function subGroups(
 		AggregateMessageGroup $parent,
@@ -612,7 +626,7 @@ class MessageGroups {
 
 	/**
 	 * Checks whether all the message groups have the same source language.
-	 * @param array $groups A list of message groups objects.
+	 * @param MessageGroup[] $groups
 	 * @return string Language code if the languages are the same, empty string otherwise.
 	 */
 	public static function haveSingleSourceLanguage( array $groups ): string {

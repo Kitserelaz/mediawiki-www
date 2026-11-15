@@ -10,7 +10,7 @@
 	"descriptionmsg": "eventbus-desc",
 	"license-name": "GPL-2.0-or-later",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"AutoloadNamespaces": {
 		"MediaWiki\\Extension\\EventBus\\": "includes/"
@@ -49,24 +49,31 @@
 			"i18n"
 		]
 	},
-	"HookHandlers": {
-		"mediawiki_page_change": {
-			"class": "MediaWiki\\Extension\\EventBus\\HookHandlers\\MediaWiki\\PageChangeHooks",
+	"DomainEventIngresses": [
+		{
+			"class": "MediaWiki\\Extension\\EventBus\\MediaWikiEventSubscribers\\PageChangeEventIngress",
 			"services": [
 				"EventBus.EventBusFactory",
 				"EventBus.StreamNameMapper",
-				"MainConfig",
-				"GlobalIdGenerator",
-				"UserGroupManager",
-				"TitleFormatter",
-				"WikiPageFactory",
+				"EventBus.EventSerializer",
+				"EventBus.PageEntitySerializer",
+				"EventBus.UserEntitySerializer",
+				"EventBus.RevisionEntitySerializer",
 				"UserFactory",
 				"RevisionStore",
-				"ContentHandlerFactory",
 				"RedirectStore",
 				"PageStore"
+			],
+			"events": [
+				"PageLatestRevisionChanged",
+				"PageDeleted",
+				"PageMoved",
+				"PageCreated",
+				"PageHistoryVisibilityChanged"
 			]
-		},
+		}
+	],
+	"HookHandlers": {
 		"mediawiki_campaign_change": {
 			"class": "MediaWiki\\Extension\\EventBus\\HookHandlers\\MediaWiki\\CampaignChangeHooks",
 			"services": [
@@ -74,32 +81,32 @@
 			]
 		},
 		"main": {
-			"class": "MediaWiki\\Extension\\EventBus\\EventBusHooks"
+			"class": "MediaWiki\\Extension\\EventBus\\EventBusHooks",
+			"services": [
+				"EventBus.EventBusFactory",
+				"RevisionLookup",
+				"CommentFormatter",
+				"TitleFactory"
+			]
 		}
 	},
 	"Hooks": {
 		"PageSaveComplete": [
-			"main",
-			"mediawiki_page_change"
+			"main"
 		],
 		"PageMoveComplete": [
-			"main",
-			"mediawiki_page_change"
+			"main"
 		],
 		"PageDelete": [
-			"mediawiki_page_change"
 		],
 		"PageDeleteComplete": [
-			"main",
-			"mediawiki_page_change"
+			"main"
 		],
 		"PageUndeleteComplete": [
-			"main",
-			"mediawiki_page_change"
+			"main"
 		],
 		"ArticleRevisionVisibilitySet": [
-			"main",
-			"mediawiki_page_change"
+			"main"
 		],
 		"ArticlePurge": "main",
 		"BlockIpComplete": "main",

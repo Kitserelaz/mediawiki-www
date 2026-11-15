@@ -106,16 +106,14 @@ class FetchPhaseConfigBuilder implements HighlightFieldGenerator {
 		$target,
 		$pattern,
 		$caseInsensitive,
-		$priority = HighlightedField::COSTLY_EXPERT_SYNTAX_PRIORITY
+		$priority = HighlightedField::COSTLY_EXPERT_SYNTAX_PRIORITY,
+		$regexFlavor = 'lucene'
 	): BaseHighlightedField {
 		Assert::precondition( $this->supportsRegexFields(), 'Regex fields not supported' );
 		return ExperimentalHighlightedFieldBuilder::newRegexField(
-			$this->config, $name, $target, $pattern, $caseInsensitive, $priority );
+			$this->config, $name, $target, $pattern, $caseInsensitive, $priority, $regexFlavor );
 	}
 
-	/**
-	 * @param HighlightedField $field
-	 */
 	public function addHLField( HighlightedField $field ) {
 		$prev = $this->highlightedFields[$field->getFieldName()] ?? null;
 		if ( $prev === null ) {
@@ -159,10 +157,6 @@ class FetchPhaseConfigBuilder implements HighlightFieldGenerator {
 		return $config;
 	}
 
-	/**
-	 * @param SearchConfig $config
-	 * @return FetchPhaseConfigBuilder
-	 */
 	public function withConfig( SearchConfig $config ): self {
 		return new self( $config, $this->factoryGroup );
 	}
@@ -212,7 +206,7 @@ class FetchPhaseConfigBuilder implements HighlightFieldGenerator {
 		$this->addHLField( $field->skipIfLastMatched() );
 	}
 
-	private function clearSkipIfLastMatched( array $arr ) {
+	private function clearSkipIfLastMatched( array $arr ): array {
 		unset( $arr['options']['skip_if_last_matched'] );
 		if ( empty( $arr['options'] ) ) {
 			unset( $arr['options'] );

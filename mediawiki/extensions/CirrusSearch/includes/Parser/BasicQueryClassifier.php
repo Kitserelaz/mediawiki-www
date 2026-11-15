@@ -57,29 +57,22 @@ class BasicQueryClassifier implements ParsedQueryClassifier, Visitor {
 	public const BOGUS_QUERY = 'bogus_query';
 
 	/**
-	 * @var bool
+	 * Query that is only a morelike
 	 */
-	private $hasWords;
+	public const MORE_LIKE_ONLY = 'more_like_only';
 
-	/**
-	 * @var bool
-	 */
-	private $hasSimplePhrase;
+	private bool $hasWords;
 
-	/**
-	 * @var bool
-	 */
-	private $hasComplex;
+	private bool $hasSimplePhrase;
 
-	/**
-	 * @var int
-	 */
-	private $depth;
+	private bool $hasComplex;
+
+	private int $depth;
 
 	/**
 	 * @var int
 	 */
-	private $maxDepth;
+	private int $maxDepth;
 
 	/**
 	 * @param ParsedQuery $query
@@ -99,9 +92,11 @@ class BasicQueryClassifier implements ParsedQueryClassifier, Visitor {
 
 		$query->getRoot()->accept( $this );
 
+		if ( $this->maxDepth === 0 && in_array( 'more_like', $query->getFeaturesUsed() ) ) {
+			$classes[] = self::MORE_LIKE_ONLY;
+		}
 		if ( $this->hasComplex ) {
 			$classes[] = self::COMPLEX_QUERY;
-			// @phan-suppress-next-line PhanSuspiciousValueComparison
 		} elseif ( $this->maxDepth === 0 && $this->hasWords && !$this->hasSimplePhrase ) {
 			$classes[] = self::SIMPLE_BAG_OF_WORDS;
 		} elseif ( $this->maxDepth === 0 && !$this->hasWords && $this->hasSimplePhrase ) {
@@ -113,16 +108,10 @@ class BasicQueryClassifier implements ParsedQueryClassifier, Visitor {
 		return $classes;
 	}
 
-	/**
-	 * @param WordsQueryNode $node
-	 */
 	public function visitWordsQueryNode( WordsQueryNode $node ) {
 		$this->hasWords = true;
 	}
 
-	/**
-	 * @param PhraseQueryNode $node
-	 */
 	public function visitPhraseQueryNode( PhraseQueryNode $node ) {
 		if ( $node->isStem() || $node->getSlop() !== -1 ) {
 			$this->hasComplex = true;
@@ -131,50 +120,29 @@ class BasicQueryClassifier implements ParsedQueryClassifier, Visitor {
 		}
 	}
 
-	/**
-	 * @param PhrasePrefixNode $node
-	 */
 	public function visitPhrasePrefixNode( PhrasePrefixNode $node ) {
 		$this->hasComplex = true;
 	}
 
-	/**
-	 * @param FuzzyNode $node
-	 */
 	public function visitFuzzyNode( FuzzyNode $node ) {
 		$this->hasComplex = true;
 	}
 
-	/**
-	 * @param PrefixNode $node
-	 */
 	public function visitPrefixNode( PrefixNode $node ) {
 		$this->hasComplex = true;
 	}
 
-	/**
-	 * @param WildcardNode $node
-	 */
 	public function visitWildcardNode( WildcardNode $node ) {
 		$this->hasComplex = true;
 	}
 
-	/**
-	 * @param EmptyQueryNode $node
-	 */
 	public function visitEmptyQueryNode( EmptyQueryNode $node ) {
 	}
 
-	/**
-	 * @param KeywordFeatureNode $node
-	 */
 	public function visitKeywordFeatureNode( KeywordFeatureNode $node ) {
 		$this->hasComplex = true;
 	}
 
-	/**
-	 * @param ParsedBooleanNode $node
-	 */
 	public function visitParsedBooleanNode( ParsedBooleanNode $node ) {
 		if ( $this->hasComplex ) {
 			// we can quickly skip, this query cannot belong to this class
@@ -185,9 +153,6 @@ class BasicQueryClassifier implements ParsedQueryClassifier, Visitor {
 		}
 	}
 
-	/**
-	 * @param BooleanClause $clause
-	 */
 	public function visitBooleanClause( BooleanClause $clause ) {
 		$this->depth++;
 		$this->maxDepth = max( $this->depth, $this->maxDepth );
@@ -196,9 +161,6 @@ class BasicQueryClassifier implements ParsedQueryClassifier, Visitor {
 		$this->depth--;
 	}
 
-	/**
-	 * @param NegatedNode $node
-	 */
 	public function visitNegatedNode( NegatedNode $node ) {
 		$this->hasComplex = true;
 	}
@@ -213,12 +175,10 @@ class BasicQueryClassifier implements ParsedQueryClassifier, Visitor {
 			self::BAG_OF_WORDS_WITH_PHRASE,
 			self::COMPLEX_QUERY,
 			self::BOGUS_QUERY,
+			self::MORE_LIKE_ONLY,
 		];
 	}
 
-	/**
-	 * @param NamespaceHeaderNode $node
-	 */
 	public function visitNamespaceHeader( NamespaceHeaderNode $node ) {
 	}
 }

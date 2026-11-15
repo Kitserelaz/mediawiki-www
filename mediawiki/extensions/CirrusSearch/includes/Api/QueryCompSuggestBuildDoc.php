@@ -3,7 +3,6 @@
 namespace CirrusSearch\Api;
 
 use CirrusSearch\BuildDocument\Completion\SuggestBuilder;
-use Elastica\Document;
 use InvalidArgumentException;
 use MediaWiki\Api\ApiQuery;
 use MediaWiki\Api\ApiQueryBase;
@@ -12,7 +11,7 @@ use Wikimedia\ParamValidator\ParamValidator;
 class QueryCompSuggestBuildDoc extends ApiQueryBase {
 	use ApiTrait;
 
-	public function __construct( ApiQuery $query, $moduleName ) {
+	public function __construct( ApiQuery $query, string $moduleName ) {
 		parent::__construct( $query, $moduleName, 'csb' );
 	}
 
@@ -23,7 +22,7 @@ class QueryCompSuggestBuildDoc extends ApiQueryBase {
 		$method = $this->getParameter( 'method' );
 		try {
 			$builder = SuggestBuilder::create( $this->getCirrusConnection(), $method );
-		} catch ( InvalidArgumentException $e ) {
+		} catch ( InvalidArgumentException ) {
 			$this->addError( 'apierror-compsuggestbuilddoc-bad-method' );
 			return;
 		}
@@ -44,18 +43,21 @@ class QueryCompSuggestBuildDoc extends ApiQueryBase {
 		];
 	}
 
-	private function addExplanation( SuggestBuilder $builder, $pageId, array $docs ) {
-		$docs = array_map(
-			static function ( Document $d ) {
-				return [ $d->getId() => $d->getData() ];
-			}, $builder->build( $docs, true )
-		);
+	/**
+	 * Mark as internal. This isn't meant to be used by normal api users
+	 * @return bool
+	 */
+	public function isInternal() {
+		return true;
+	}
 
-		foreach ( $docs as $doc ) {
-			$this->getResult()->addValue(
+	private function addExplanation( SuggestBuilder $builder, int $pageId, array $docs ) {
+		$result = $this->getResult();
+		foreach ( $builder->build( $docs, true ) as $d ) {
+			$result->addValue(
 				[ 'query', 'pages', $pageId ],
 				'cirruscompsuggestbuilddoc',
-				$doc
+				[ $d->getId() => $d->getData() ]
 			);
 		}
 	}

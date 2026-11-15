@@ -1,36 +1,25 @@
 ( function () {
-	var TranslationFlattener = require( 'ext.securepoll.htmlform/TranslationFlattener.js' );
+	const TranslationFlattener = require( 'ext.securepoll.htmlform/TranslationFlattener.js' );
 
 	QUnit.module( 'ext.securepoll.translationFlattener.test' );
 
-	QUnit.test( 'Flatten parser test', function ( assert ) {
-		var done = assert.async();
-		var translationFlattener = new TranslationFlattener();
+	function getTestData( fileName ) {
+		return $.get( `${ mw.config.get( 'wgExtensionAssetsPath' ) }/SecurePoll/tests/qunit/data/flattener/${ fileName }` );
+	}
 
-		var getOrigin = $.get( '../extensions/SecurePoll/tests/qunit/data/flattener/JSONWithMultipleQuestions.json' );
-		getOrigin.done( function ( data ) {
-			var flattenedContent = translationFlattener.flattenData( data, 81 );
-			var getExpected = $.get( '../extensions/SecurePoll/tests/qunit/data/flattener/ExpectedDataWithMultipleQuestions.json' );
-			getExpected.done( function ( expectedContent ) {
-				assert.deepEqual( flattenedContent, expectedContent, 'flattenedContent' );
-				done();
-			} );
-		} );
+	QUnit.test.each( 'Flatten parser test', {
+		'with multiple questions': [ 'JSONWithMultipleQuestions.json', 'ExpectedDataWithMultipleQuestions.json' ],
+		'with wrong data': [ 'JSONWithWrongData.json', 'ExpectedDataWithWrongData.json' ]
+	}, async ( assert, [ inputFile, expectedFile ] ) => {
+		const translationFlattener = new TranslationFlattener();
+
+		const [ data, expected ] = await Promise.all( [
+			getTestData( inputFile ),
+			getTestData( expectedFile )
+		] );
+
+		const flattenedContent = translationFlattener.flattenData( data, 81 );
+
+		assert.deepEqual( flattenedContent, expected, 'flattenedContent' );
 	} );
-
-	QUnit.test( 'Flatten parser test with wrong data', function ( assert ) {
-		var done = assert.async();
-		var translationFlattener = new TranslationFlattener();
-
-		var getOrigin = $.get( '../extensions/SecurePoll/tests/qunit/data/flattener/JSONWithWrongData.json' );
-		getOrigin.done( function ( data ) {
-			var flattenedContent = translationFlattener.flattenData( data, 81 );
-			var getExpected = $.get( '../extensions/SecurePoll/tests/qunit/data/flattener/ExpectedDataWithWrongData.json' );
-			getExpected.done( function ( expectedContent ) {
-				assert.deepEqual( flattenedContent, expectedContent, 'flattenedContent' );
-				done();
-			} );
-		} );
-	} );
-
 }() );

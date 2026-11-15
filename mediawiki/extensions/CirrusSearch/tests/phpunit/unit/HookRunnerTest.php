@@ -13,4 +13,5 @@ class HookRunnerTest extends HookRunnerTestBase {
 	public static function provideHookRunners() {
 		yield CirrusSearchHookRunner::class => [ CirrusSearchHookRunner::class ];
 	}
+
 }

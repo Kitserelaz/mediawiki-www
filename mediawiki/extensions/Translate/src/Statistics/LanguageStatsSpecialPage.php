@@ -4,20 +4,23 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\Statistics;
 
 use AggregateMessageGroup;
-use JobQueueGroup;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroupReviewStore;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
+use MediaWiki\Extension\Translate\Utilities\ConfigHelper;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\Html\Html;
+use MediaWiki\Html\TemplateParser;
 use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\ObjectCache\ObjectCacheFactory;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Widget\LanguageSelectWidget;
 use MessageGroup;
-use ObjectCacheFactory;
 use Wikimedia\ObjectCache\BagOStuff;
 use WikiPageMessageGroup;
 
@@ -36,7 +39,6 @@ use WikiPageMessageGroup;
  * @ingroup SpecialPage TranslateSpecialPage Stats
  */
 class LanguageStatsSpecialPage extends SpecialPage {
-	private LanguageNameUtils $languageNameUtils;
 	private StatsTable $table;
 	private array $targetValueName = [ 'code', 'language' ];
 	/** Most of the displayed numbers added together at the bottom of the table. */
@@ -60,38 +62,34 @@ class LanguageStatsSpecialPage extends SpecialPage {
 	 */
 	private array $statsCounted = [];
 	private array $states = [];
-	private LinkBatchFactory $linkBatchFactory;
-	private ProgressStatsTableFactory $progressStatsTableFactory;
-	private JobQueueGroup $jobQueueGroup;
-	private MessageGroupReviewStore $groupReviewStore;
-	private BagOStuff $cache;
+	private readonly BagOStuff $cache;
+	private readonly TemplateParser $templateParser;
 
 	public function __construct(
-		LinkBatchFactory $linkBatchFactory,
-		ProgressStatsTableFactory $progressStatsTableFactory,
-		LanguageNameUtils $languageNameUtils,
-		JobQueueGroup $jobQueueGroup,
-		MessageGroupReviewStore $groupReviewStore,
-		ObjectCacheFactory $objectCacheFactory
+		private readonly LinkBatchFactory $linkBatchFactory,
+		private readonly ProgressStatsTableFactory $progressStatsTableFactory,
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly JobQueueGroup $jobQueueGroup,
+		private readonly MessageGroupReviewStore $groupReviewStore,
+		ObjectCacheFactory $objectCacheFactory,
+		private readonly ConfigHelper $configHelper
 	) {
 		parent::__construct( 'LanguageStats' );
 		$this->totals = MessageGroupStats::getEmptyStats();
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->progressStatsTableFactory = $progressStatsTableFactory;
-		$this->languageNameUtils = $languageNameUtils;
-		$this->jobQueueGroup = $jobQueueGroup;
-		$this->groupReviewStore = $groupReviewStore;
 		$this->cache = $objectCacheFactory->getInstance( CACHE_ANYTHING );
+		$this->templateParser = new TemplateParser( __DIR__ . '/templates/' );
 	}
 
+	/** @inheritDoc */
 	public function isIncludable() {
 		return true;
 	}
 
-	protected function getGroupName() {
+	protected function getGroupName(): string {
 		return 'translation';
 	}
 
+	/** @inheritDoc */
 	public function execute( $par ) {
 		$this->target = $this->getLanguage()->getCode();
 		$request = $this->getRequest();
@@ -110,7 +108,12 @@ class LanguageStatsSpecialPage extends SpecialPage {
 		$out = $this->getOutput();
 
 		$out->addModules( 'ext.translate.special.languagestats' );
-		$out->addModuleStyles( 'ext.translate.statstable' );
+		$out->addModuleStyles( [
+			'ext.translate.special.languagestats.styles',
+			'ext.translate.statstable',
+			'mediawiki.codex.messagebox.styles',
+			'codex-styles'
+		] );
 
 		$params = $par ? explode( '/', $par ) : [];
 
@@ -150,9 +153,8 @@ class LanguageStatsSpecialPage extends SpecialPage {
 			$stats = $this->loadStatistics( $this->target, MessageGroupStats::FLAG_CACHE_ONLY );
 			$output = $this->getTable( $stats );
 			if ( $this->incomplete ) {
-				$out->wrapWikiMsg(
-					"<div class='error'>$1</div>",
-					'translate-langstats-incomplete'
+				$out->addHTML(
+					Html::warningBox( $this->msg( 'translate-langstats-incomplete' )->parse() )
 				);
 			}
 
@@ -179,7 +181,9 @@ class LanguageStatsSpecialPage extends SpecialPage {
 				} );
 			}
 			if ( $this->nothing ) {
-				$out->wrapWikiMsg( "<div class='error'>$1</div>", 'translate-mgs-nothing' );
+				$out->addHTML(
+					Html::errorBox( $this->msg( 'translate-mgs-nothing' )->parse() )
+				);
 			}
 			$out->addHTML( $output );
 		} elseif ( $submitted ) {
@@ -197,11 +201,13 @@ class LanguageStatsSpecialPage extends SpecialPage {
 		return MessageGroupStats::forLanguage( $target, $flags );
 	}
 
-	private function getCacheRebuildJobParameters( $target ): array {
+	private function getCacheRebuildJobParameters( string $target ): array {
 		return [ 'languagecode' => $target ];
 	}
 
-	/** Return true if language exist in the list of allowed languages or false otherwise. */
+	/**
+	 * Return true if language exist in the list of allowed languages or false otherwise.
+	 */
 	private function isValidValue( string $value ): bool {
 		$langs = $this->languageNameUtils->getLanguageNames();
 
@@ -210,9 +216,8 @@ class LanguageStatsSpecialPage extends SpecialPage {
 
 	/** Called when the target is unknown. */
 	private function invalidTarget(): void {
-		$this->getOutput()->wrapWikiMsg(
-			"<div class='error'>$1</div>",
-			'translate-page-no-such-language'
+		$this->getOutput()->addHTML(
+			Html::errorBox( $this->msg( 'translate-page-no-such-language' )->parse() )
 		);
 	}
 
@@ -238,51 +243,44 @@ class LanguageStatsSpecialPage extends SpecialPage {
 
 	/** HTMLForm for the top form rendering. */
 	private function addForm(): void {
-		$formDescriptor = [
-			'language' => [
-				'type' => 'text',
-				'name' => 'language',
-				'id' => 'language',
-				'label' => $this->msg( 'translate-language-code-field-name' )->text(),
-				'size' => 10,
-				'default' => $this->target,
-			],
-			'suppresscomplete' => [
-				'type' => 'check',
-				'label' => $this->msg( 'translate-suppress-complete' )->text(),
-				'name' => 'suppresscomplete',
-				'id' => 'suppresscomplete',
-				'default' => $this->noComplete,
-			],
-			'suppressempty' => [
-				'type' => 'check',
-				'label' => $this->msg( 'translate-ls-noempty' )->text(),
-				'name' => 'suppressempty',
-				'id' => 'suppressempty',
-				'default' => $this->noEmpty,
-			],
-		];
-
 		$context = new DerivativeContext( $this->getContext() );
 		$context->setTitle( $this->getPageTitle() ); // Remove subpage
-
-		$htmlForm = HTMLForm::factory( 'ooui', $formDescriptor, $context );
+		$hiddenFields = [
+			[ 'name' => 'x', 'value' => 'D' ]
+		];
 
 		/* Since these pages are in the tabgroup with Special:Translate,
 		* it makes sense to retain the selected group/language parameter
 		* on post requests even when not relevant to the current page. */
 		$val = $this->getRequest()->getVal( 'group' );
 		if ( $val !== null ) {
-			$htmlForm->addHiddenField( 'group', $val );
+			$hiddenFields['group'] = $val;
 		}
 
-		$htmlForm
-			->addHiddenField( 'x', 'D' ) // To detect submission
-			->setMethod( 'get' )
-			->setSubmitTextMsg( 'translate-ls-submit' )
-			->setWrapperLegendMsg( 'translate-mgs-fieldset' )
-			->prepareForm()
-			->displayForm( false );
+		$languages = Utilities::getLanguageNames( LanguageNameUtils::AUTONYMS );
+		$languageSelectWidget = new LanguageSelectWidget( [
+			'name' => 'language',
+			'value' => $this->target,
+			'languages' => $languages,
+			'cssclass' => 'cdx-text-input cdx-text-input__input'
+		] );
+
+		$data = [
+			'action' => $this->getPageTitle()->getLocalURL(),
+			'legend' => $this->msg( 'translate-mgs-fieldset' )->text(),
+			'languageLabel' => $this->msg( 'translate-language-field-name' )->text(),
+			'languageSelectHtml' => $languageSelectWidget->toString(),
+			'suppressCompleteLabel' => $this->msg( 'translate-suppress-complete' )->text(),
+			'suppressCompleteChecked' => $this->noComplete,
+			'suppressEmptyLabel' => $this->msg( 'translate-ls-noempty' )->text(),
+			'suppressEmptyChecked' => $this->noEmpty,
+			'submitLabel' => $this->msg( 'translate-ls-submit' )->text(),
+			'hiddenFields' => $hiddenFields,
+		];
+
+		$this->getOutput()->addHTML(
+			$this->templateParser->processTemplate( 'LanguageStatsForm', $data )
+		);
 	}
 
 	/** Output something helpful to guide the confused user. */
@@ -338,7 +336,7 @@ class LanguageStatsSpecialPage extends SpecialPage {
 		if ( $this->getConfig()->get( 'TranslateWorkflowStates' ) ) {
 			$this->states = $this->groupReviewStore->getWorkflowStatesForLanguage(
 				$this->target,
-				array_keys( $structure )
+				array_map( 'strval', array_keys( $structure ) )
 			);
 			// An array where keys are state names and values are numbers
 			$this->table->addExtraColumn( $this->msg( 'translate-stats-workflow' ) );
@@ -409,15 +407,20 @@ class LanguageStatsSpecialPage extends SpecialPage {
 		int $depth = 0
 	): string {
 		$groupId = $group->getId();
-
-		if ( $this->table->isExcluded( $group, $this->target ) ) {
-			return '';
-		}
+		$isExcluded = $this->table->isExcluded( $group, $this->target );
 
 		$stats = $cache[$groupId];
 		$total = $stats[MessageGroupStats::TOTAL];
 		$translated = $stats[MessageGroupStats::TRANSLATED];
 		$fuzzy = $stats[MessageGroupStats::FUZZY];
+
+		if ( $isExcluded && !$this->configHelper->canSeeExcludedLanguageStats(
+			$this->getAuthority(),
+			$translated ?? 0,
+			$fuzzy ?? 0
+		) ) {
+			return '';
+		}
 
 		// Quick checks to see whether filters apply
 		if ( $this->noComplete && $fuzzy === 0 && $translated === $total ) {
@@ -447,11 +450,12 @@ class LanguageStatsSpecialPage extends SpecialPage {
 		$params[] = md5( $this->target );
 		$params[] = $parent ? $parent->getId() : '!';
 		$params[] = $depth;
+		$params[] = $isExcluded ? '1' : '0';
 
 		return $this->cache->getWithSetCallback(
-			$this->cache->makeKey( __METHOD__ . '-v3', implode( '-', $params ) ),
+			$this->cache->makeKey( __METHOD__ . '-v4', implode( '-', $params ) ),
 			$this->cache::TTL_DAY,
-			function () use ( $translated, $total, $groupId, $group, $parent, $stats, $depth ) {
+			function () use ( $translated, $total, $groupId, $group, $parent, $stats, $depth, $isExcluded ) {
 				// Any data variable read below should be part of the cache key above
 				$extra = [];
 				if ( $translated === $total ) {
@@ -461,6 +465,9 @@ class LanguageStatsSpecialPage extends SpecialPage {
 				$rowParams = [];
 				$rowParams['data-groupid'] = $groupId;
 				$rowParams['class'] = get_class( $group );
+				if ( $isExcluded ) {
+					$rowParams['class'] .= ' tux-langstats-disabled';
+				}
 				if ( $parent ) {
 					$rowParams['data-parentgroup'] = $parent->getId();
 				}
@@ -468,13 +475,25 @@ class LanguageStatsSpecialPage extends SpecialPage {
 					$rowParams['data-depth'] = $depth;
 				}
 
+				// For excluded groups, append a visually-hidden label so the disabled
+				// status is conveyed to screen-reader and touchscreen users, not only
+				// through the strike-through styling.
+				$groupNameCell = $this->table->makeGroupLink( $group, $this->target, $extra );
+				if ( $isExcluded ) {
+					$groupNameCell .= ' ' . Html::element(
+						'span',
+						[ 'class' => 'tux-langstats-disabled-label' ],
+						$this->msg( 'translate-langstats-disabled-language' )->text()
+					);
+				}
+
 				return "\t" .
 					Html::openElement( 'tr', $rowParams ) .
 					"\n\t\t" .
 					Html::rawElement(
 						'td',
-						 [],
-						$this->table->makeGroupLink( $group, $this->target, $extra )
+						[],
+						$groupNameCell
 					) . $this->table->makeNumberColumns( $stats ) .
 					$this->getWorkflowStateCell( $groupId ) .
 					"\n\t" .

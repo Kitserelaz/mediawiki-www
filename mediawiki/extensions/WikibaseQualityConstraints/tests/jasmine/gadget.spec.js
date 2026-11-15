@@ -13,41 +13,10 @@ describe( 'wikibase.quality.constraints.gadget', () => {
 		global.jQuery = sinon.stub();
 		global.OO = sinon.stub();
 
-		// poor man's Promise.all()
-		global.jQuery.when = function () {
-			const promises = arguments,
-				length = promises.length,
-				results = [];
-			for ( let i = 0; i < length; i++ ) {
-				promises[ i ].then( ( data ) => {
-					results.push( data );
-				} );
-			}
-			return {
-				then: function ( func ) {
-					const thenResult = func.apply( {}, results );
-					return {
-						then: function ( func2 ) {
-							func2( thenResult );
-							return {
-								promise: sinon.spy()
-							};
-						}
-					};
-				}
-			};
-		};
-		// poor man's Object.assign()
-		global.jQuery.extend = function () {
-			const objects = Array.from( arguments ),
-				target = objects.shift();
-			for ( let i = 0; i < objects.length; i++ ) {
-				for ( const name in objects[ i ] ) {
-					target[ name ] = objects[ i ][ name ];
-				}
-			}
-			return target;
-		};
+		global.mediaWiki.config = sinon.stub();
+		global.mediaWiki.config.get = sinon.stub();
+
+		global.jQuery.extend = Object.assign;
 
 		loadedEntity = {};
 
@@ -111,8 +80,7 @@ describe( 'wikibase.quality.constraints.gadget', () => {
 			const gadget = new Gadget();
 
 			gadget.fullCheck = sinon.stub();
-			global.mediaWiki.config = sinon.stub();
-			global.mediaWiki.config.get = sinon.stub();
+
 			global.mediaWiki.config.get.withArgs( 'wbEntityId' ).returns( 'Q42' );
 			global.mediaWiki.config.get.withArgs( 'wbIsEditView' ).returns( true );
 			global.mediaWiki.loader = sinon.stub();
@@ -142,8 +110,6 @@ describe( 'wikibase.quality.constraints.gadget', () => {
 			const gadget = new Gadget(),
 				done = sinon.stub();
 
-			global.mediaWiki.config = sinon.stub();
-			global.mediaWiki.config.get = sinon.stub();
 			global.mediaWiki.config.get.withArgs( 'wbEntityId' ).returns( 'Q42' );
 			global.mediaWiki.config.get.withArgs( 'wbIsEditView' ).returns( true );
 			global.mediaWiki.loader = sinon.stub();
@@ -156,15 +122,13 @@ describe( 'wikibase.quality.constraints.gadget', () => {
 			expect( done.calledOnce, 'to be true' );
 		} );
 
-		it( 'runs a fullCheck once mw loader is done and entityView.rendered fires', () => {
+		it( 'runs a fullCheck once mw loader is done and entityView.rendered fires', async () => {
 			const gadget = new Gadget(),
 				statementSavedSpy = sinon.spy(),
 				entityViewRenderedSpy = sinon.stub(),
 				wgUserLanguage = 'de',
 				wbEntityId = 'Q42';
 
-			global.mediaWiki.config = sinon.stub();
-			global.mediaWiki.config.get = sinon.stub();
 			global.mediaWiki.config.get.withArgs( 'wbEntityId' ).returns( wbEntityId );
 			global.mediaWiki.config.get.withArgs( 'wbIsEditView' ).returns( true );
 			global.mediaWiki.loader = sinon.stub();
@@ -174,11 +138,7 @@ describe( 'wikibase.quality.constraints.gadget', () => {
 			global.mediaWiki.loader.getState = sinon.stub();
 			global.mediaWiki.loader.getState.withArgs( 'wikibase.quality.constraints.gadget' ).returns( 'executing' );
 			global.mediaWiki.Api = sinon.stub();
-			global.mediaWiki.Api.prototype.get = sinon.stub().returns( {
-				then: sinon.stub().returns( {
-					then: sinon.stub()
-				} )
-			} );
+			global.mediaWiki.Api.prototype.get = sinon.stub().resolves( {} );
 			global.mediaWiki.config.get.withArgs( 'wgUserLanguage' ).returns( wgUserLanguage );
 
 			global.mediaWiki.hook = sinon.stub();
@@ -194,6 +154,7 @@ describe( 'wikibase.quality.constraints.gadget', () => {
 			gadget._renderWbcheckconstraintsResult = sinon.stub();
 
 			gadget.defaultBehavior();
+			await Promise.resolve();
 
 			expect( entityViewRenderedSpy.calledOnce, 'to be true' );
 			sinon.assert.calledWith(
@@ -274,7 +235,7 @@ describe( 'wikibase.quality.constraints.gadget', () => {
 			} );
 		} );
 
-		it( 'uses api response to update DOM statements', () => {
+		it( 'uses api response to update DOM statements', async () => {
 			const gadget = new Gadget(),
 				lang = 'fr',
 				entityId = 'Q42',
@@ -318,9 +279,7 @@ describe( 'wikibase.quality.constraints.gadget', () => {
 				uselang: 'fr',
 				id: [ entityId ],
 				status: gadget.config.CACHED_STATUSES
-			} ).returns( {
-				then: sinon.stub().yields( responseData )
-			} );
+			} ).resolves( responseData );
 			global.jQuery.withArgs( '.wbqc-constraint-warning' ).returns( {
 				remove: preExistingReportButtonsRemovedSpy
 			} );
@@ -330,7 +289,7 @@ describe( 'wikibase.quality.constraints.gadget', () => {
 			gadget._addReportsToStatement = sinon.spy();
 
 			gadget.setEntity( { getId: sinon.stub().returns( entityId ) } );
-			gadget.fullCheck( api, lang );
+			await gadget.fullCheck( api, lang );
 
 			sinon.assert.called( preExistingReportButtonsRemovedSpy );
 			sinon.assert.calledWith( gadget._addReportsToStatement, responseData.wbcheckconstraints.Q42 );
@@ -338,51 +297,38 @@ describe( 'wikibase.quality.constraints.gadget', () => {
 	} );
 
 	describe( '_fullCheckAllIds', () => {
-		it( 'chunks requests', () => {
+		it( 'chunks requests and combines their responses', async () => {
 			const gadget = new Gadget( { WBCHECKCONSTRAINTS_MAX_ID_COUNT: 2 } ),
 				api = sinon.stub(),
 				lang = 'fr';
 
-			gadget._wbcheckconstraints = sinon.stub();
-			gadget._wbcheckconstraints.returns( { then: sinon.stub() } );
-			gadget._aggregateMultipleWbcheckconstraintsResponses = sinon.spy();
+			gadget._wbcheckconstraints = sinon.spy( async ( _api, _lang, ids ) => {
+				const response = { wbcheckconstraints: {} };
+				for ( const id of ids ) {
+					response.wbcheckconstraints[ id ] = {};
+				}
+				return response;
+			} );
 			gadget._renderWbcheckconstraintsResult = sinon.spy();
 
-			gadget._fullCheckAllIds( api, lang, [ 'L2', 'L2-F1', 'L2-F2', 'L2-F3', 'L2-S1', 'L2-S2', 'L2-F3' ] );
+			await gadget._fullCheckAllIds( api, lang, [ 'L2', 'L2-F1', 'L2-F2', 'L2-F3', 'L2-S1', 'L2-S2', 'L2-S3' ] );
 
 			sinon.assert.callCount( gadget._wbcheckconstraints, 4 );
 			sinon.assert.calledWith( gadget._wbcheckconstraints, api, lang, [ 'L2', 'L2-F1' ] );
 			sinon.assert.calledWith( gadget._wbcheckconstraints, api, lang, [ 'L2-F2', 'L2-F3' ] );
 			sinon.assert.calledWith( gadget._wbcheckconstraints, api, lang, [ 'L2-S1', 'L2-S2' ] );
-			sinon.assert.calledWith( gadget._wbcheckconstraints, api, lang, [ 'L2-F3' ] );
+			sinon.assert.calledWith( gadget._wbcheckconstraints, api, lang, [ 'L2-S3' ] );
 
-			sinon.assert.callCount( gadget._aggregateMultipleWbcheckconstraintsResponses, 1 );
 			sinon.assert.callCount( gadget._renderWbcheckconstraintsResult, 1 );
-		} );
-	} );
-
-	describe( '_aggregateMultipleWbcheckconstraintsResponses', () => {
-		it( 'can combine multiple responses\' entity information', () => {
-			const gadget = new Gadget(),
-				responseOne = {
-					wbcheckconstraints: {
-						L2: {
-							data: 'here'
-						}
-					}
-				},
-				responseTwo = {
-					wbcheckconstraints: {
-						'L2-F1': {
-							data: 'more of it'
-						}
-					}
-				};
-
-			const combinedResponse = gadget._aggregateMultipleWbcheckconstraintsResponses( responseOne, responseTwo );
-
-			expect( combinedResponse.L2, 'to equal', responseOne.wbcheckconstraints.L2 );
-			expect( combinedResponse[ 'L2-F1' ], 'to equal', responseTwo.wbcheckconstraints[ 'L2-F1' ] );
+			sinon.assert.calledWith( gadget._renderWbcheckconstraintsResult, {
+				L2: {},
+				'L2-F1': {},
+				'L2-F2': {},
+				'L2-F3': {},
+				'L2-S1': {},
+				'L2-S2': {},
+				'L2-S3': {}
+			} );
 		} );
 	} );
 
@@ -630,7 +576,7 @@ describe( 'wikibase.quality.constraints.gadget', () => {
 		} );
 	} );
 
-	describe( 'snackCheck', () => {
+	describe( 'snakCheck', () => {
 		it( 'runs a full check', () => {
 			const gadget = new Gadget(),
 				api = sinon.stub(),
@@ -693,4 +639,564 @@ describe( 'wikibase.quality.constraints.gadget', () => {
 		} );
 	} );
 
+} );
+
+describe( 'wikibase.quality.constraints.gadget with wbui2025', () => {
+	const expect = require( 'unexpected' ).clone(),
+		sinon = require( 'sinon' ),
+		lang = 'fr',
+		entityId = 'Q42';
+
+	let gadget,
+		setIndicatorHtmlForMainSnakStub,
+		setIndicatorHtmlForQualifierStub,
+		setIndicatorHtmlForReferenceSnakStub,
+		setPopoverContentForMainSnakStub,
+		setPopoverContentForQualifierStub,
+		setPopoverContentForReferenceSnakStub,
+		clearPopoverContentAndIndicatorForMainSnakStub,
+		clearPopoverContentAndIndicatorForQualifierStub,
+		clearPopoverContentAndIndicatorForReferenceSnakStub;
+
+	beforeEach( () => {
+		// ensure the module, containing immediately invoked code, is loaded repeatedly
+		delete require.cache[ require.resolve( 'wikibase.quality.constraints.gadget' ) ];
+
+		setIndicatorHtmlForMainSnakStub = sinon.stub();
+		setIndicatorHtmlForQualifierStub = sinon.stub();
+		setIndicatorHtmlForReferenceSnakStub = sinon.stub();
+		setPopoverContentForMainSnakStub = sinon.stub();
+		setPopoverContentForQualifierStub = sinon.stub();
+		setPopoverContentForReferenceSnakStub = sinon.stub();
+		clearPopoverContentAndIndicatorForMainSnakStub = sinon.stub();
+		clearPopoverContentAndIndicatorForQualifierStub = sinon.stub();
+		clearPopoverContentAndIndicatorForReferenceSnakStub = sinon.stub();
+
+		global.mediaWiki = {
+			config: {
+				get: sinon.stub().withArgs( 'wgMFMode' ).returns( true )
+			},
+			loader: {
+				getModuleNames: sinon.stub().returns( {
+					includes: sinon.stub().withArgs( 'wikibase.wbui2025.lib' ).returns( true )
+				} ),
+				using: sinon.stub().returns(
+					sinon.stub().returns( {
+						store: {
+							setIndicatorHtmlForMainSnak: setIndicatorHtmlForMainSnakStub,
+							setIndicatorHtmlForQualifier: setIndicatorHtmlForQualifierStub,
+							setIndicatorHtmlForReferenceSnak: setIndicatorHtmlForReferenceSnakStub,
+							setPopoverContentForMainSnak: setPopoverContentForMainSnakStub,
+							setPopoverContentForQualifier: setPopoverContentForQualifierStub,
+							setPopoverContentForReferenceSnak: setPopoverContentForReferenceSnakStub,
+							clearPopoverContentAndIndicatorForMainSnak: clearPopoverContentAndIndicatorForMainSnakStub,
+							clearPopoverContentAndIndicatorForQualifier: clearPopoverContentAndIndicatorForQualifierStub,
+							clearPopoverContentAndIndicatorForReferenceSnak: clearPopoverContentAndIndicatorForReferenceSnakStub
+						}
+					} )
+				)
+			},
+			message: function ( messageKey ) {
+				return {
+					text: sinon.stub().returns( messageKey ),
+					parse: sinon.stub().returns( messageKey )
+				};
+			},
+			html: {
+				escape: sinon.stub().callsFake( ( s ) => `escape( ${ s } )` )
+			},
+			track: sinon.spy()
+		};
+
+		global.wikibase = {
+			EntityInitializer: {}
+		};
+
+		global.jQuery = {
+			extend: Object.assign
+		};
+
+		const Gadget = require( 'wikibase.quality.constraints.gadget' );
+		gadget = new Gadget();
+	} );
+
+	it( 'calls api with correct parameters', async () => {
+		const api = {
+			get: sinon.stub().returns( {
+				then: sinon.stub().returns( {
+					then: sinon.stub()
+				} )
+			} )
+		};
+
+		gadget.setEntity( { getId: sinon.stub().returns( entityId ) } );
+		gadget.fullCheck( api, lang );
+
+		sinon.assert.calledWith( api.get, {
+			action: 'wbcheckconstraints',
+			format: 'json',
+			formatversion: 2,
+			uselang: 'fr',
+			id: [ entityId ],
+			status: gadget.config.CACHED_STATUSES
+		} );
+	} );
+
+	it( 'adds single issues (on main snak + qualifier) to the store', async () => {
+		const api = { get: sinon.stub() };
+		const responseData = {
+			wbcheckconstraints: {
+				Q42: {
+					claims: {
+						P9: [ {
+							id: 'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+							mainsnak: {
+								hash: '261be448fb9ca79fd5e3fb45e7b810c5d33c2e4d',
+								results: [ {
+									status: 'warning',
+									property: 'P9',
+									constraint: {
+										id: 'P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+										type: 'Q1283',
+										typeLabel: 'MultiValueConstraintItem',
+										link: 'https://test.wikidata.org/wiki/Property:P9#P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+										discussLink: 'https://test.wikidata.org/wiki/Property_talk:P9'
+									},
+									'message-html': 'This property should contain multiple values.',
+									claim: 'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2'
+								} ]
+							},
+							qualifiers: {
+								P10: [ {
+									hash: 'c8459e533816c5da0702e1cd795b0b09dfbba1b0',
+									results: [ {
+										status: 'violation',
+										property: 'P10',
+										constraint: {
+											id: 'P10$197313ce-4014-c893-e2c4-5eb1f9347945',
+											type: 'Q1283',
+											typeLabel: 'MultiValueConstraintItem',
+											link: 'https://test.wikidata.org/wiki/Property:P10#P10$197313ce-4014-c893-e2c4-5eb1f9347945',
+											discussLink: 'https://test.wikidata.org/wiki/Property_talk:P10'
+										},
+										'message-html': 'This property should contain multiple values.'
+									} ]
+								} ]
+							}
+						} ]
+					}
+				}
+			}, success: 1
+		};
+
+		api.get.withArgs( {
+			action: 'wbcheckconstraints',
+			format: 'json',
+			formatversion: 2,
+			uselang: 'fr',
+			id: [ entityId ],
+			status: gadget.config.CACHED_STATUSES
+		} ).resolves( responseData );
+
+		gadget.setEntity( { getId: sinon.stub().returns( entityId ) } );
+		await gadget.fullCheck( api, lang );
+
+		expect( setIndicatorHtmlForMainSnakStub.calledOnceWith(
+			'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+			'<span class="wikibase-wbui2025-wbqc-icon--notice"></span>'
+		), 'to be true' );
+
+		expect( setPopoverContentForMainSnakStub.calledOnceWith(
+			'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+			[ sinon.match( { bodyHtml: sinon.match( 'P9' ) } ) ]
+		), 'to be true' );
+
+		expect( setIndicatorHtmlForQualifierStub.calledOnceWith(
+			'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+			'c8459e533816c5da0702e1cd795b0b09dfbba1b0',
+			'<span class="wikibase-wbui2025-wbqc-icon--error"></span>'
+		), 'to be true' );
+
+		expect( setPopoverContentForQualifierStub.calledOnceWith(
+			'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+			'c8459e533816c5da0702e1cd795b0b09dfbba1b0',
+			[ sinon.match( { bodyHtml: sinon.match( 'P10' ) } ) ]
+		), 'to be true' );
+	} );
+
+	it( 'clears issues (on main snak + qualifier) if they were previously set and then removed', async () => {
+		const api = { get: sinon.stub() };
+		const responseDataWithViolations = {
+			wbcheckconstraints: {
+				Q42: {
+					claims: {
+						P9: [ {
+							id: 'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+							mainsnak: {
+								hash: '261be448fb9ca79fd5e3fb45e7b810c5d33c2e4d',
+								results: [ {
+									status: 'warning',
+									property: 'P9',
+									constraint: {
+										id: 'P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+										type: 'Q1283',
+										typeLabel: 'MultiValueConstraintItem',
+										link: 'https://test.wikidata.org/wiki/Property:P9#P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+										discussLink: 'https://test.wikidata.org/wiki/Property_talk:P9'
+									},
+									'message-html': 'This property should contain multiple values.',
+									claim: 'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2'
+								} ]
+							},
+							qualifiers: {
+								P10: [ {
+									hash: 'c8459e533816c5da0702e1cd795b0b09dfbba1b0',
+									results: [ {
+										status: 'violation',
+										property: 'P10',
+										constraint: {
+											id: 'P10$197313ce-4014-c893-e2c4-5eb1f9347945',
+											type: 'Q1283',
+											typeLabel: 'MultiValueConstraintItem',
+											link: 'https://test.wikidata.org/wiki/Property:P10#P10$197313ce-4014-c893-e2c4-5eb1f9347945',
+											discussLink: 'https://test.wikidata.org/wiki/Property_talk:P10'
+										},
+										'message-html': 'This property should contain multiple values.'
+									} ]
+								} ]
+							}
+						} ]
+					}
+				}
+			}, success: 1
+		};
+
+		api.get.withArgs( {
+			action: 'wbcheckconstraints',
+			format: 'json',
+			formatversion: 2,
+			uselang: 'fr',
+			id: [ entityId ],
+			status: gadget.config.CACHED_STATUSES
+		} ).resolves( responseDataWithViolations );
+
+		gadget.setEntity( { getId: sinon.stub().returns( entityId ) } );
+		await gadget.fullCheck( api, lang );
+
+		expect( setIndicatorHtmlForMainSnakStub.calledOnceWith(
+			'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+			'<span class="wikibase-wbui2025-wbqc-icon--notice"></span>'
+		), 'to be true' );
+
+		expect( setPopoverContentForMainSnakStub.calledOnceWith(
+			'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+			[ sinon.match( { bodyHtml: sinon.match( 'P9' ) } ) ]
+		), 'to be true' );
+
+		expect( setIndicatorHtmlForQualifierStub.calledOnceWith(
+			'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+			'c8459e533816c5da0702e1cd795b0b09dfbba1b0',
+			'<span class="wikibase-wbui2025-wbqc-icon--error"></span>'
+		), 'to be true' );
+
+		expect( setPopoverContentForQualifierStub.calledOnceWith(
+			'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+			'c8459e533816c5da0702e1cd795b0b09dfbba1b0',
+			[ sinon.match( { bodyHtml: sinon.match( 'P10' ) } ) ]
+		), 'to be true' );
+
+		const responseDataWithoutViolations = {
+			wbcheckconstraints: {
+				Q42: {
+					claims: {
+						P9: [ {
+							id: 'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+							mainsnak: {
+								hash: '261be448fb9ca79fd5e3fb45e7b810c5d33c2e4d',
+								results: [ ]
+							},
+							qualifiers: {
+								P10: [ {
+									hash: 'c8459e533816c5da0702e1cd795b0b09dfbba1b0',
+									results: [ ]
+								} ]
+							}
+						} ]
+					}
+				}
+			}, success: 1
+		};
+		api.get.withArgs( {
+			action: 'wbcheckconstraints',
+			format: 'json',
+			formatversion: 2,
+			uselang: 'fr',
+			id: [ entityId ],
+			status: gadget.config.CACHED_STATUSES
+		} ).resolves( responseDataWithoutViolations );
+
+		await gadget.fullCheck( api, lang );
+
+		expect( clearPopoverContentAndIndicatorForMainSnakStub.calledOnceWith(
+			'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2'
+		), 'to be true' );
+
+		expect( clearPopoverContentAndIndicatorForQualifierStub.calledOnceWith(
+			'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+			'c8459e533816c5da0702e1cd795b0b09dfbba1b0'
+		), 'to be true' );
+
+		expect( clearPopoverContentAndIndicatorForReferenceSnakStub.notCalled, 'to be true' );
+	} );
+
+	it( 'does not add anything if the only issue is "advanced"', async () => {
+		const api = { get: sinon.stub() };
+		const responseData = {
+			wbcheckconstraints: {
+				Q42: {
+					claims: {
+						P9: [ {
+							id: 'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+							mainsnak: {
+								hash: '261be448fb9ca79fd5e3fb45e7b810c5d33c2e4d',
+								results: [ {
+									status: 'bad-parameters',
+									property: 'P9',
+									constraint: {
+										id: 'P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+										type: 'Q1283',
+										typeLabel: 'MultiValueConstraintItem',
+										link: 'https://test.wikidata.org/wiki/Property:P9#P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+										discussLink: 'https://test.wikidata.org/wiki/Property_talk:P9'
+									},
+									'message-html': 'This property should contain multiple values.',
+									claim: 'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2'
+								} ]
+							}
+						} ]
+					}
+				}
+			}, success: 1
+		};
+
+		api.get.withArgs( {
+			action: 'wbcheckconstraints',
+			format: 'json',
+			formatversion: 2,
+			uselang: 'fr',
+			id: [ entityId ],
+			status: gadget.config.CACHED_STATUSES
+		} ).resolves( responseData );
+
+		gadget.setEntity( { getId: sinon.stub().returns( entityId ) } );
+		await gadget.fullCheck( api, lang );
+
+		expect( setIndicatorHtmlForMainSnakStub.called, 'to be false' );
+		expect( setPopoverContentForMainSnakStub.called, 'to be false' );
+	} );
+
+	it( 'adds multiple issues (on reference) to the store, including advanced issues', async () => {
+		const api = { get: sinon.stub() };
+		const responseData = {
+			wbcheckconstraints: {
+				Q42: { claims: {
+					P9: [ {
+						id: 'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+						mainsnak: { results: [] },
+						references: [ {
+							hash: '56bed0d30a0bc154b768cdc835a1dc049b7fcfef',
+							snaks: { P9: [ {
+								hash: '261be448fb9ca79fd5e3fb45e7b810c5d33c2e4d',
+								results: [
+									{
+										status: 'bad-parameters',
+										property: 'P9',
+										constraint: {
+											id: 'P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+											type: 'Q1283',
+											typeLabel: 'MultiValueConstraintItem',
+											link: 'https://test.wikidata.org/wiki/Property:P9#P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+											discussLink: 'https://test.wikidata.org/wiki/Property_talk:P9'
+										},
+										'message-html': 'parameters are wrong for this one.',
+										claim: 'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2'
+									},
+									{
+										status: 'warning',
+										property: 'P9',
+										constraint: {
+											id: 'P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+											type: 'Q1283',
+											typeLabel: 'MultiValueConstraintItem',
+											link: 'https://test.wikidata.org/wiki/Property:P9#P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+											discussLink: 'https://test.wikidata.org/wiki/Property_talk:P9'
+										},
+										'message-html': 'This property should contain multiple values.',
+										claim: 'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2'
+									},
+									{
+										status: 'suggestion',
+										property: 'P9',
+										constraint: {
+											id: 'P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+											type: 'Q1283',
+											typeLabel: 'MultiValueConstraintItem',
+											link: 'https://test.wikidata.org/wiki/Property:P9#P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+											discussLink: 'https://test.wikidata.org/wiki/Property_talk:P9'
+										},
+										'message-html': 'This property should contain multiple values.',
+										claim: 'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2'
+									},
+									{
+										status: 'violation',
+										property: 'P9',
+										constraint: {
+											id: 'P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+											type: 'Q1283',
+											typeLabel: 'MultiValueConstraintItem',
+											link: 'https://test.wikidata.org/wiki/Property:P9#P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+											discussLink: 'https://test.wikidata.org/wiki/Property_talk:P9'
+										},
+										'message-html': 'This property should contain multiple values.',
+										claim: 'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2'
+									}
+								]
+							} ] }
+						} ]
+					} ]
+				} }
+			}, success: 1
+		};
+
+		api.get.withArgs( {
+			action: 'wbcheckconstraints',
+			format: 'json',
+			formatversion: 2,
+			uselang: 'fr',
+			id: [ entityId ],
+			status: gadget.config.CACHED_STATUSES
+		} ).resolves( responseData );
+
+		gadget.setEntity( { getId: sinon.stub().returns( entityId ) } );
+		await gadget.fullCheck( api, lang );
+
+		expect( setIndicatorHtmlForReferenceSnakStub.calledOnceWith(
+			'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+			'56bed0d30a0bc154b768cdc835a1dc049b7fcfef',
+			'261be448fb9ca79fd5e3fb45e7b810c5d33c2e4d',
+			'<span class="wikibase-wbui2025-wbqc-icon--error"></span>'
+		), 'to be true' );
+
+		expect( setPopoverContentForReferenceSnakStub.calledOnceWith(
+			'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+			'56bed0d30a0bc154b768cdc835a1dc049b7fcfef',
+			'261be448fb9ca79fd5e3fb45e7b810c5d33c2e4d',
+			[
+				sinon.match( { title: 'wbqc-issue-heading', iconClass: 'wikibase-wbui2025-wbqc-icon--error' } ),
+				sinon.match( { title: 'wbqc-potentialissue-heading', iconClass: 'wikibase-wbui2025-wbqc-icon--notice' } ),
+				sinon.match( { title: 'wbqc-suggestion-heading', iconClass: 'wikibase-wbui2025-wbqc-icon--flag' } ),
+				sinon.match( { title: 'wbqc-parameterissue-heading', iconClass: 'wikibase-wbui2025-wbqc-icon--flask' } )
+			]
+		), 'to be true' );
+	} );
+
+	it( 'clear issues on reference if they are no longer present', async () => {
+		const api = { get: sinon.stub() };
+		const responseWithViolationsData = {
+			wbcheckconstraints: {
+				Q42: { claims: {
+					P9: [ {
+						id: 'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+						mainsnak: { results: [] },
+						references: [ {
+							hash: '56bed0d30a0bc154b768cdc835a1dc049b7fcfef',
+							snaks: { P9: [ {
+								hash: '261be448fb9ca79fd5e3fb45e7b810c5d33c2e4d',
+								results: [
+									{
+										status: 'warning',
+										property: 'P9',
+										constraint: {
+											id: 'P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+											type: 'Q1283',
+											typeLabel: 'MultiValueConstraintItem',
+											link: 'https://test.wikidata.org/wiki/Property:P9#P9$197313ce-4014-c893-e2c4-5eb1f9347945',
+											discussLink: 'https://test.wikidata.org/wiki/Property_talk:P9'
+										},
+										'message-html': 'This property should contain multiple values.',
+										claim: 'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2'
+									}
+								]
+							} ] }
+						} ]
+					} ]
+				} }
+			}, success: 1
+		};
+
+		api.get.withArgs( {
+			action: 'wbcheckconstraints',
+			format: 'json',
+			formatversion: 2,
+			uselang: 'fr',
+			id: [ entityId ],
+			status: gadget.config.CACHED_STATUSES
+		} ).resolves( responseWithViolationsData );
+
+		gadget.setEntity( { getId: sinon.stub().returns( entityId ) } );
+		await gadget.fullCheck( api, lang );
+
+		expect( setIndicatorHtmlForReferenceSnakStub.calledOnceWith(
+			'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+			'56bed0d30a0bc154b768cdc835a1dc049b7fcfef',
+			'261be448fb9ca79fd5e3fb45e7b810c5d33c2e4d',
+			'<span class="wikibase-wbui2025-wbqc-icon--notice"></span>'
+		), 'to be true' );
+
+		expect( setPopoverContentForReferenceSnakStub.calledOnceWith(
+			'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+			'56bed0d30a0bc154b768cdc835a1dc049b7fcfef',
+			'261be448fb9ca79fd5e3fb45e7b810c5d33c2e4d',
+			[
+				sinon.match( { title: 'wbqc-potentialissue-heading', iconClass: 'wikibase-wbui2025-wbqc-icon--notice' } )
+			]
+		), 'to be true' );
+
+		const responseWithoutViolationsData = {
+			wbcheckconstraints: {
+				Q42: { claims: {
+					P9: [ {
+						id: 'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+						mainsnak: { results: [] },
+						references: [ {
+							hash: '56bed0d30a0bc154b768cdc835a1dc049b7fcfef',
+							snaks: { P9: [ {
+								hash: '261be448fb9ca79fd5e3fb45e7b810c5d33c2e4d',
+								results: [ ]
+							} ] }
+						} ]
+					} ]
+				} } }, success: 1
+		};
+
+		api.get.withArgs( {
+			action: 'wbcheckconstraints',
+			format: 'json',
+			formatversion: 2,
+			uselang: 'fr',
+			id: [ entityId ],
+			status: gadget.config.CACHED_STATUSES
+		} ).resolves( responseWithoutViolationsData );
+
+		await gadget.fullCheck( api, lang );
+
+		expect( clearPopoverContentAndIndicatorForReferenceSnakStub.calledOnceWith(
+			'Q42$2c9c5e39-4d4c-23f0-5bcb-b92615bf7aa2',
+			'56bed0d30a0bc154b768cdc835a1dc049b7fcfef',
+			'261be448fb9ca79fd5e3fb45e7b810c5d33c2e4d'
+		), 'to be true' );
+		expect( clearPopoverContentAndIndicatorForMainSnakStub.notCalled, 'to be true' );
+		expect( clearPopoverContentAndIndicatorForQualifierStub.notCalled, 'to be true' );
+
+	} );
 } );

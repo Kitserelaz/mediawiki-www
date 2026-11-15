@@ -104,7 +104,7 @@ var BoardBlast = {
 
 		document.blast.message.style.color = '#ccc';
 		document.blast.message.readOnly = true;
-		document.getElementById( 'blast-friends-list' ).innerHTML = mw.msg( 'boardblast-js-sending' );
+		document.getElementById( 'blast-friends-list' ).innerText = mw.msg( 'boardblast-js-sending' );
 		document.blast.submit();
 	}
 };

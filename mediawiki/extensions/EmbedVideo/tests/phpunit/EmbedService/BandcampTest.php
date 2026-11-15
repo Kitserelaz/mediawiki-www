@@ -5,12 +5,12 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\EmbedVideo\Tests\EmbedService;
 
 use Exception;
-use InvalidArgumentException;
 use MediaWiki\Extension\EmbedVideo\EmbedService\Bandcamp;
 use MediaWiki\Extension\EmbedVideo\EmbedVideo;
+use MediaWiki\Extension\EmbedVideo\EmbedVideoException;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\PPCustomFrame_Hash;
 use MediaWikiIntegrationTestCase;
-use ParserOptions;
-use PPCustomFrame_Hash;
 
 /**
  * @group EmbedVideo
@@ -47,7 +47,7 @@ class BandcampTest extends MediaWikiIntegrationTestCase {
 	 * @return void
 	 */
 	public function testInvalidId() {
-		$this->expectException( InvalidArgumentException::class );
+		$this->expectException( EmbedVideoException::class );
 
 		new Bandcamp( $this->invalidId );
 	}
@@ -87,7 +87,7 @@ class BandcampTest extends MediaWikiIntegrationTestCase {
 	 * @return void
 	 */
 	public function testInvalidUrlId() {
-		$this->expectException( InvalidArgumentException::class );
+		$this->expectException( EmbedVideoException::class );
 		new Bandcamp( $this->invalidUrlId );
 	}
 
@@ -114,7 +114,7 @@ class BandcampTest extends MediaWikiIntegrationTestCase {
 	public function testEvu(): void {
 		$parser = $this->getServiceContainer()->getParser();
 		$parser->setOptions( ParserOptions::newFromAnon() );
-		$parser->resetOutput();
+		$parser->clearState();
 
 		$out = EmbedVideo::parseEVU(
 			$parser, new PPCustomFrame_Hash( $parser->getPreprocessor(), [] ), [
@@ -122,10 +122,10 @@ class BandcampTest extends MediaWikiIntegrationTestCase {
 		] );
 
 		$this->assertIsArray( $out );
-		$this->assertCount( 3, $out );
+		$this->assertCount( 2, $out );
 		$this->assertStringContainsString(
 			$this->validId,
-			$out[0]
+			$parser->getStripState()->unstripNoWiki( $out[0] )
 		);
 	}
 }

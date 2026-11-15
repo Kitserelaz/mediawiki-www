@@ -9,26 +9,14 @@ use CirrusSearch\Search\CirrusSearchIndexFieldFactory;
 use CirrusSearch\Search\SourceTextIndexField;
 use CirrusSearch\Search\TextIndexField;
 use CirrusSearch\SearchConfig;
+use MediaWiki\Language\Language;
 use MediaWiki\MediaWikiServices;
-use SearchIndexField;
+use MediaWiki\Search\SearchIndexField;
 
 /**
- * Builds elasticsearch mapping configuration arrays.
+ * Builds search mapping configuration arrays.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class MappingConfigBuilder {
 	// Bit field parameters for buildConfig
@@ -73,28 +61,61 @@ class MappingConfigBuilder {
 	 */
 	private $cirrusSearchHookRunner;
 
+	/** @var bool if the icu plugin is available */
+	private bool $icu;
+	/**
+	 * @var Language the content language
+	 */
+	private Language $language;
+
 	/**
 	 * @param bool $optimizeForExperimentalHighlighter should the index be optimized for the experimental highlighter?
+	 * @param array $plugins list of installed plugins
 	 * @param int $flags
 	 * @param SearchConfig|null $config
 	 * @param CirrusSearchHookRunner|null $cirrusSearchHookRunner
+	 * @param Language|null $language
 	 */
 	public function __construct(
-		$optimizeForExperimentalHighlighter,
-		$flags = 0,
+		bool $optimizeForExperimentalHighlighter,
+		array $plugins,
+		int $flags = 0,
 		?SearchConfig $config = null,
-		?CirrusSearchHookRunner $cirrusSearchHookRunner = null
+		?CirrusSearchHookRunner $cirrusSearchHookRunner = null,
+		?Language $language = null
 	) {
 		$this->optimizeForExperimentalHighlighter = $optimizeForExperimentalHighlighter;
 		if ( $this->optimizeForExperimentalHighlighter ) {
 			$flags |= self::OPTIMIZE_FOR_EXPERIMENTAL_HIGHLIGHTER;
 		}
 		$this->flags = $flags;
+		$this->icu = Plugins::contains( 'analysis-icu', $plugins );
 		$this->engine = new CirrusSearch( $config );
 		$this->config = $this->engine->getConfig();
 		$this->searchIndexFieldFactory = new CirrusSearchIndexFieldFactory( $this->config );
-		$this->cirrusSearchHookRunner = $cirrusSearchHookRunner ?: new CirrusSearchHookRunner(
+		$this->cirrusSearchHookRunner = $cirrusSearchHookRunner ?? new CirrusSearchHookRunner(
 			MediaWikiServices::getInstance()->getHookContainer() );
+		$this->language = $language ?? MediaWikiServices::getInstance()->getContentLanguage();
+
+		$this->validatePlugins( $plugins );
+	}
+
+	private function validatePlugins( array $plugins ) {
+		if ( $this->config->get( 'CirrusSearchOptimizeForExperimentalHighlighter' ) &&
+			!Plugins::contains( 'experimental-highlighter', $plugins )
+		) {
+			throw new \InvalidArgumentException(
+				"wgCirrusSearchOptimizeIndexForExperimentalHighlighter is set to true but the " .
+				"'experimental-highlighter' plugin is not available."
+			);
+		}
+
+		if ( $this->config->getElement( 'CirrusSearchNaturalTitleSort', 'build' ) && !$this->icu ) {
+			throw new \InvalidArgumentException(
+				"wgCirrusSearchNaturalTitleSort is set to build but the 'analysis-icu' plugin " .
+				"is not available."
+			);
+		}
 	}
 
 	/**
@@ -103,8 +124,8 @@ class MappingConfigBuilder {
 	 * @return array
 	 */
 	private function getDefaultFields() {
-		// Note never to set something as type='object' here because that isn't returned by elasticsearch
-		// and is inferred anyway.
+		// Note never to set something as type='object' here because that isn't returned
+		// by the search engine and is inferred anyway.
 		$titleExtraAnalyzers = [
 			[ 'analyzer' => 'prefix', 'search_analyzer' => 'near_match', 'index_options' => 'docs', 'norms' => false ],
 			[
@@ -115,7 +136,7 @@ class MappingConfigBuilder {
 			],
 			[ 'analyzer' => 'near_match', 'index_options' => 'docs', 'norms' => false ],
 			[ 'analyzer' => 'near_match_asciifolding', 'index_options' => 'docs', 'norms' => false ],
-			[ 'analyzer' => 'keyword', 'index_options' => 'docs', 'norms' => false ],
+			[ 'type' => 'keyword', 'normalizer' => 'keyword' ],
 		];
 		if ( $this->flags & self::PREFIX_START_WITH_ANY ) {
 			$titleExtraAnalyzers[] = [
@@ -124,17 +145,18 @@ class MappingConfigBuilder {
 				'index_options' => 'docs'
 			];
 		}
-		if ( $this->config->getElement( 'CirrusSearchNaturalTitleSort', 'build' ) ) {
+		if ( $this->icu && $this->config->getElement( 'CirrusSearchNaturalTitleSort', 'build' ) ) {
 			$titleExtraAnalyzers[] = [
 				'fieldName' => 'natural_sort',
 				'type' => 'icu_collation_keyword',
+				'ignore_above' => AnalysisConfigBuilder::KEYWORD_IGNORE_ABOVE,
 				// doc values only
 				'index' => false,
 				'numeric' => true,
 				'strength' => 'tertiary',
-				// Does icu support all the language codes?
-				'language' => $this->config->getElement( 'CirrusSearchNaturalTitleSort', 'language' ),
-				'country' => $this->config->getElement( 'CirrusSearchNaturalTitleSort', 'country' ),
+				// icu_collation_keyword will use new ULocale(String $l) if only provided the language
+				// which supports BCP 47 language code.
+				'language' => $this->language->toBcp47Code()
 			];
 		}
 
@@ -179,11 +201,17 @@ class MappingConfigBuilder {
 					->getMapping( $this->engine ),
 				'namespace_text' => $this->searchIndexFieldFactory
 					->newKeywordField( 'namespace_text' )
+					->withDocValues()
 					->getMapping( $this->engine ),
-				'title' => $this->searchIndexFieldFactory->newStringField( 'title',
-					TextIndexField::ENABLE_NORMS | TextIndexField::COPY_TO_SUGGEST |
-					TextIndexField::SUPPORT_REGEX,
-					$titleExtraAnalyzers )->setMappingFlags( $this->flags )->getMapping( $this->engine ),
+				'title' => $this->searchIndexFieldFactory
+					->newStringField( 'title',
+						TextIndexField::ENABLE_NORMS
+						| TextIndexField::COPY_TO_SUGGEST
+						| TextIndexField::COPY_TO_SUGGEST_VARIANT
+						| TextIndexField::SUPPORT_REGEX,
+						$titleExtraAnalyzers )
+					->setMappingFlags( $this->flags )
+					->getMapping( $this->engine ),
 				'text' => $this->getTextFieldMapping(),
 				'text_bytes' => $this->searchIndexFieldFactory
 					->newLongField( 'text_bytes' )
@@ -200,6 +228,7 @@ class MappingConfigBuilder {
 							->newStringField( 'redirect.title', TextIndexField::ENABLE_NORMS
 								| TextIndexField::SPEED_UP_HIGHLIGHTING
 								| TextIndexField::COPY_TO_SUGGEST
+								| TextIndexField::COPY_TO_SUGGEST_VARIANT
 								| TextIndexField::SUPPORT_REGEX,
 								$titleExtraAnalyzers
 							)
@@ -217,6 +246,10 @@ class MappingConfigBuilder {
 				'suggest' => $suggestField,
 			]
 		];
+
+		if ( $this->config->get( 'CirrusSearchPhraseSuggestBuildVariant' ) ) {
+			$page['properties']['suggest_variant'] = $suggestField;
+		}
 
 		return $page;
 	}

@@ -1,10 +1,10 @@
 $( () => {
 	new ve.init.sa.Platform( ve.messagePaths ).initialize().done( () => {
 		const documentNameInput = new OO.ui.TextInputWidget( {
-				placeholder: OO.ui.msg( 'visualeditor-rebase-client-document-name' )
+				placeholder: ve.msg( 'visualeditor-rebase-client-document-name' )
 			} ),
 			submitButton = new OO.ui.ButtonWidget( {
-				label: OO.ui.msg( 'visualeditor-rebase-client-document-create-edit' ),
+				label: ve.msg( 'visualeditor-rebase-client-document-create-edit' ),
 				flags: [ 'primary', 'progressive' ]
 			} ),
 			documentNameField = new OO.ui.ActionFieldLayout( documentNameInput, submitButton, {
@@ -12,7 +12,7 @@ $( () => {
 			} );
 
 		function onSubmit() {
-			const docName = documentNameInput.getValue().trim().replace( / /g, '_' ) || Math.random().toString( 36 ).slice( 2 );
+			const docName = documentNameInput.getValue().trim().replace( / /g, '_' ) || ve.init.platform.generateUniqueId();
 			if ( docName ) {
 				window.location.href = '/doc/edit/' + encodeURIComponent( docName );
 			} else {

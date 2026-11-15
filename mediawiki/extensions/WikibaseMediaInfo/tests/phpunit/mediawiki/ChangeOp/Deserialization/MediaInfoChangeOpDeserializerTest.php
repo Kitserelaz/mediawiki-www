@@ -178,7 +178,7 @@ class MediaInfoChangeOpDeserializerTest extends \PHPUnit\Framework\TestCase {
 	/**
 	 * @return MediaInfo
 	 */
-	public function getEntity() {
+	public static function getEntity(): MediaInfo {
 		return new MediaInfo();
 	}
 

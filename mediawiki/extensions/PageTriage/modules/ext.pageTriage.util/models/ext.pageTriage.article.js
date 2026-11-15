@@ -13,16 +13,15 @@ const Article = Backbone.Model.extend( {
 		this.pageId = options.pageId;
 
 		if ( options.includeHistory ) {
-			// fetch the history too?
-			// don't do this when fetching via collection, since it'll generate one ajax request per article.
-			// don't execute on every model change, just when loading a different page
+			// Fetch the history too?
+			// Don't do this when fetching via collection, since it'll generate one ajax request
+			// per article. Don't execute on every model change, just when loading a different page
 			this.bind( 'change:pageid', this.addHistory, this );
 		}
 	},
 
 	formatMetadata: function ( article ) {
 		const creationDateParsed = moment.utc( article.get( 'creation_date_utc' ), 'YYYYMMDDHHmmss' ),
-			reviewedUpdatedParsed = moment.utc( article.get( 'ptrp_reviewed_updated' ), 'YYYYMMDDHHmmss' ),
 			titleObj = new mw.Title( article.get( 'title' ) ),
 			nsId = titleObj.getNamespaceId(),
 			offset = parseInt( mw.user.options.get( 'timecorrection' ).split( '|' )[ 1 ] );
@@ -44,11 +43,6 @@ const Article = Backbone.Model.extend( {
 		article.set(
 			'article_age_in_minutes',
 			Math.ceil( ( now - creationDateParsed ) / ( 1000 * 60 ) )
-		);
-
-		article.set(
-			'reviewed_updated_pretty',
-			reviewedUpdatedParsed.utcOffset( offset ).format( mw.msg( 'pagetriage-creation-dateformat' ) )
 		);
 
 		// sometimes user info isn't set, so check that first.
@@ -131,7 +125,8 @@ const Article = Backbone.Model.extend( {
 			const drafts = article.get( 'is_draft' ) ? 1 : 0;
 			const revision = article.get( 'copyvio' );
 
-			const link = this.generateCopyPatrolURL( wikiLanguageCodeForCopyPatrolURL, filter, filterPage, drafts, revision );
+			const link = this.generateCopyPatrolURL( wikiLanguageCodeForCopyPatrolURL, filter,
+				filterPage, drafts, revision );
 
 			article.set( 'copyvio_link_url', link );
 		} else {
@@ -199,14 +194,16 @@ const Article = Backbone.Model.extend( {
 			);
 		}
 
-		const titleUrl = new mw.Uri( mw.util.getUrl( article.get( 'title' ) ) );
+		const titleUrl = new URL( mw.util.getUrl( article.get( 'title' ) ), location.href );
 		if ( Number( article.get( 'is_redirect' ) ) === 1 ) {
-			titleUrl.query.redirect = 'no';
+			titleUrl.searchParams.set( 'redirect', 'no' );
 		}
 		article.set( 'title_url', titleUrl.toString() );
 	},
 
-	generateCopyPatrolURL( wikiLanguageCodeForCopyPatrolURL, filter, filterPage, drafts, revision ) {
+	generateCopyPatrolURL(
+		wikiLanguageCodeForCopyPatrolURL, filter, filterPage, drafts, revision
+	) {
 		return 'https://copypatrol.wmcloud.org/' + wikiLanguageCodeForCopyPatrolURL + '?' +
 			$.param( {
 				filter: filter,
@@ -242,10 +239,10 @@ const Article = Backbone.Model.extend( {
 	},
 
 	buildRedLink: function ( url, exists ) {
-		url = new mw.Uri( url );
+		url = new URL( url, location.href );
 		if ( !exists ) {
-			url.query.action = 'edit';
-			url.query.redlink = 1;
+			url.searchParams.set( 'action', 'edit' );
+			url.searchParams.set( 'redlink', '1' );
 		}
 		return url.toString();
 	},
@@ -264,7 +261,10 @@ const Article = Backbone.Model.extend( {
 	},
 
 	parse: function ( response ) {
-		if ( response.pagetriagelist !== undefined && response.pagetriagelist.pages !== undefined ) {
+		if (
+			response.pagetriagelist !== undefined &&
+			response.pagetriagelist.pages !== undefined
+		) {
 			// data came directly from the api
 			// extract the useful bits of json.
 			return response.pagetriagelist.pages[ 0 ];
@@ -275,7 +275,7 @@ const Article = Backbone.Model.extend( {
 
 	addHistory: function () {
 		this.revisions = new RevisionList( { eventBus: this.eventBus, pageId: this.pageId } );
-		this.revisions.fetch();
+		this.revisions.fetch( { success: () => this.trigger( 'ready' ) } );
 	}
 } );
 
@@ -343,8 +343,9 @@ const ArticleList = Backbone.Collection.extend( {
 	/**
 	 * Set the ArticleList mode.
 	 *
-	 * TODO This also sets the namespace that will be queried, which means that it'll be saved as the current
-	 * filter namespace and so when NPP is selected the NS dropdown will not remember the previous state. Bad?
+	 * TODO This also sets the namespace that will be queried, which means that it'll be saved
+	 * as the current filter namespace and so when NPP is selected the NS dropdown will not
+	 * remember the previous state. Bad?
 	 *
 	 * @param {string} newMode Either 'npp' or 'afc'.
 	 */
@@ -403,7 +404,10 @@ const ArticleList = Backbone.Collection.extend( {
 		// information about pages missing metadata; if that property is set then we assume that
 		// there may be more articles to load (T202815).
 		this.moreToLoad = false;
-		if ( response.pagetriagelist.pages && response.pagetriagelist.pages.length > this.apiParams.limit ) {
+		if (
+			response.pagetriagelist.pages &&
+			response.pagetriagelist.pages.length > this.apiParams.limit
+		) {
 			// Remove the extra page from the list
 			response.pagetriagelist.pages.pop();
 			this.moreToLoad = true;

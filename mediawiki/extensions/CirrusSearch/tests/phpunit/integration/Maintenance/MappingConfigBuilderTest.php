@@ -5,8 +5,9 @@ namespace CirrusSearch\Maintenance;
 use CirrusSearch\CirrusIntegrationTestCase;
 use CirrusSearch\HashSearchConfig;
 use MediaWiki\Json\FormatJson;
+use MediaWiki\Language\Language;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MainConfigSchema;
-use MediaWiki\Registration\ExtensionRegistry;
 
 /**
  * @covers \CirrusSearch\Maintenance\MappingConfigBuilder
@@ -33,7 +34,7 @@ class MappingConfigBuilderTest extends CirrusIntegrationTestCase {
 		// which provide extra fields, but we only want the default values
 		// from core.
 		$this->overrideConfigValue(
-			'ContentHandlers',
+			MainConfigNames::ContentHandlers,
 			MainConfigSchema::ContentHandlers['default']
 		);
 		$this->clearHooks( [
@@ -41,8 +42,8 @@ class MappingConfigBuilderTest extends CirrusIntegrationTestCase {
 			'GetContentModels',
 			'SearchIndexFields',
 		] );
-		$scopedCallback = ExtensionRegistry::getInstance()->setAttributeForTest( 'Hooks', [] );
 
+		$plugins = $extraConfig[ '__plugins' ] ?? [];
 		$defaultConfig = [
 			'CirrusSearchSimilarityProfile' => 'bm25_with_defaults',
 			'CirrusSearchWikimediaExtraPlugin' => [
@@ -51,9 +52,13 @@ class MappingConfigBuilderTest extends CirrusIntegrationTestCase {
 			'CirrusSearchPhraseSuggestReverseField' => [
 				'build' => true,
 			],
+			'CirrusSearchNaturalTitleSort' => [ 'build' => false ],
+			'CirrusSearchOptimizeIndexForExperimentalHighlighter' => false,
 		];
-		$config = new HashSearchConfig( $defaultConfig + $extraConfig, [ HashSearchConfig::FLAG_INHERIT ] );
-		$builder = new $buildClass( true, 0, $config, $this->createCirrusSearchHookRunner() );
+		$config = new HashSearchConfig( $extraConfig + $defaultConfig, [ HashSearchConfig::FLAG_INHERIT ] );
+		$language = $this->createMock( Language::class );
+		$language->method( 'toBcp47Code' )->willReturn( 'my-language-bcp47-code' );
+		$builder = new $buildClass( true, $plugins, 0, $config, $this->createCirrusSearchHookRunner(), $language );
 		$flags = 0;
 		$mapping = $builder->buildConfig( $flags );
 		$mappingJson = FormatJson::encode( $mapping, true );

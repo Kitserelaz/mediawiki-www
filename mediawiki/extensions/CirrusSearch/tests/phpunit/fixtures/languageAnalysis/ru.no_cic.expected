@@ -20,6 +20,7 @@
                 "near_space_flattener"
             ],
             "filter": [
+                "truncate_keyword",
                 "icu_normalizer"
             ],
             "tokenizer": "no_splitting",
@@ -154,6 +155,7 @@
             ],
             "filter": [
                 "homoglyph_norm",
+                "decimal_digit",
                 "icu_normalizer",
                 "russian_stop",
                 "russian_stemmer",
@@ -174,6 +176,7 @@
             ],
             "filter": [
                 "homoglyph_norm",
+                "decimal_digit",
                 "icu_normalizer",
                 "russian_stop",
                 "russian_stemmer",
@@ -190,6 +193,16 @@
             "type": "custom"
         },
         "trigram": {
+            "filter": [
+                "icu_normalizer"
+            ],
+            "tokenizer": "trigram",
+            "type": "custom"
+        },
+        "trigram_anchored": {
+            "char_filter": [
+                "add_regex_start_end_anchors"
+            ],
             "filter": [
                 "icu_normalizer"
             ],
@@ -288,8 +301,19 @@
                 "\\u05F1=>\\u05D5\\u05D9",
                 "\\u05F2=>\\u05D9\\u05D9",
                 "\\uFB1F=>\\u05D9\\u05D9\\u05B7",
-                "\\u05D9\\u05B7\\u05D9=>\\u05D9\\u05D9\\u05B7"
+                "\\u05D9\\u05B7\\u05D9=>\\u05D9\\u05D9\\u05B7",
+                "\u0d23\u0d4d\\u200D=>\u0d7a",
+                "\u0d28\u0d4d\\u200D=>\u0d7b",
+                "\u0d30\u0d4d\\u200D=>\u0d7c",
+                "\u0d32\u0d4d\\u200D=>\u0d7d",
+                "\u0d33\u0d4d\\u200D=>\u0d7e",
+                "\u09a4\u09cd\\u200D=>\u09ce",
+                "\\u061C=>"
             ]
+        },
+        "icu_normalizer": {
+            "type": "icu_normalizer",
+            "name": "nfkc_cf"
         },
         "near_space_flattener": {
             "type": "mapping",
@@ -379,7 +403,7 @@
             "type": "lowercase"
         },
         "prefix_ngram_filter": {
-            "type": "edgeNGram",
+            "type": "edge_ngram",
             "max_gram": 255
         },
         "remove_empty": {
@@ -401,8 +425,23 @@
             "output_unigrams": true
         },
         "truncate_keyword": {
-            "type": "truncate",
+            "type": "truncate_norm",
             "length": 5000
+        }
+    },
+    "normalizer": {
+        "keyword": {
+            "type": "custom",
+            "filter": [
+                "truncate_keyword"
+            ]
+        },
+        "lowercase_keyword": {
+            "type": "custom",
+            "filter": [
+                "truncate_keyword",
+                "icu_normalizer"
+            ]
         }
     },
     "tokenizer": {
@@ -410,7 +449,7 @@
             "type": "keyword"
         },
         "prefix": {
-            "type": "edgeNGram",
+            "type": "edge_ngram",
             "max_gram": 255
         },
         "trigram": {

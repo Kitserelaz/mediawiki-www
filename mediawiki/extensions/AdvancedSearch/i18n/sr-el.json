@@ -2,7 +2,7 @@
 	"@metadata": {
 		"authors": []
 	},
-	"advancedsearch-desc": "Lak pristup naprednim mogućnostima pretrage na [[Special:Search|Posebno:Pretraži]]",
+	"advancedsearch-desc": "Lak pristup naprednim mogućnostima pretrage na [[{{#Special:Search}}]]",
 	"advancedsearch-options-pane-head": "Napredna pretraga:",
 	"advancedsearch-options-pane-preview-list": "Aktuelni termini koji se pretražuju",
 	"advancedsearch-optgroup-text": "Pretraga u tekstu stranice",
@@ -38,8 +38,8 @@
 	"advancedsearch-inlanguage-default": "Izaberite jezik",
 	"advancedsearch-filetype-section-types": "Opšti tipovi datoteka",
 	"advancedsearch-filetype-section-image": "Formati slika",
-	"advancedsearch-filetype-section-video": "Formati video-snimaka",
 	"advancedsearch-filetype-section-audio": "Formati audio-zapisa",
+	"advancedsearch-filetype-section-video": "Formati video-snimaka",
 	"advancedsearch-filetype-section-document": "Formati dokumenata",
 	"advancedsearch-filetype-section-other": "Ostali formati",
 	"advancedsearch-filetype-default": "Izaberite vrstu datoteke",
@@ -70,6 +70,6 @@
 	"advancedsearch-namespaces-preset-discussion": "Razgovor",
 	"advancedsearch-namespaces-placeholder": "Dodajte imenske prostore…",
 	"prefs-advancedsearch": "Napredna pretraga",
-	"advancedsearch-preference-help": "Napredna pretraga dodaje obrazac na stranicu „Posebno:Pretraži”. Ovo vam omogućava da izvršite specijalizovane pretrage, čak i ako ne znate nikakvu sintaksu pretrage. Menja i način na koji se mogu izabrati imenski prostori.",
-	"advancedsearch-preference-disable": "Ne prikazuj interfejs napredne pretrage pri upotrebi stranice Posebno:Pretraži"
+	"advancedsearch-preference-help": "Napredna pretraga dodaje obrazac na stranicu {{#Special:Search}}. Ovo vam omogućava da izvršite specijalizovane pretrage, čak i ako ne znate nikakvu sintaksu pretrage. Menja i način na koji se mogu izabrati imenski prostori.",
+	"advancedsearch-preference-disable": "Ne prikazuj napredni interfejs pri upotrebi {{#Special:Search}}"
 }

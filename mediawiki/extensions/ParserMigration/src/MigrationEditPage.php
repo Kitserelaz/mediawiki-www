@@ -2,11 +2,11 @@
 
 namespace MediaWiki\Extension\ParserMigration;
 
-use Article;
 use MediaWiki\Content\Content;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\Article;
 use MediaWiki\Title\Title;
 
 class MigrationEditPage extends EditPage {
@@ -35,6 +35,7 @@ class MigrationEditPage extends EditPage {
 		$out->addModuleStyles( 'ext.parsermigration.edit' );
 	}
 
+	/** @inheritDoc */
 	protected function previewOnOpen() {
 		return true;
 	}
@@ -70,9 +71,9 @@ class MigrationEditPage extends EditPage {
 			"<th>" . $context->msg( 'parsermigration-new' )->parse() . "</th>\n" .
 			"</tr><tr>\n" .
 			"<td class=\"mw-parsermigration-left\">\n\n" .
-			$outputs[0]->getText( $poOptions ) .
+			$outputs[0]->runOutputPipeline( $parserOptions, $poOptions )->getContentHolderText() .
 			"\n\n</td><td class=\"mw-parsermigration-right\">\n\n" .
-			$outputs[1]->getText( $poOptions ) .
+			$outputs[1]->runOutputPipeline( $parserOptions, $poOptions )->getContentHolderText() .
 			"\n\n</td></tr></tbody></table>\n";
 
 		return [

@@ -154,7 +154,19 @@ Feature: Prefix search via api
   #   When I type TonsOfRedirects into the search box
   #   Then suggestions should appear
 
-  Scenario: Search suggestions
+  Scenario: Search suggestions with an alternative index
+    # The alt index 128 is built with defaultsort completion (see wgCirrusSearchAlternateIndices in FullyFeaturedConfig)
+	When I ask suggestion API for Wilson Sam
+	  Then the API should produce list of length 0
+	When I ask suggestion API using the alternative index 128 for Wilson Sam
+	  Then the API should produce list starting with Sam Wilson
+		When I ask suggestion API for Wilson
+
+  Scenario: Search suggestions with a custom second try search profile
+	When I ask suggestion API using the second try profile language_converter_and_russian_wrong_keyboard for мутщь
+	  Then the API should produce list starting with Venom
+
+	Scenario: Search suggestions
     When I ask suggestion API for main
      Then the API should produce list containing Main Page
 
@@ -232,10 +244,6 @@ Feature: Prefix search via api
     | Z           | Zam Wilson        |
     | Z:          | Z:Navigation      |
 
-  Scenario: Default sort can be used as search input
-    When I ask suggestion API for Wilson
-      Then the API should produce list starting with Sam Wilson
-
   Scenario Outline: Completion and prefixsearch both allow to search over multiple namespaces
     When I get api suggestions for <term> using the <profile> profile on namespaces <namespaces>
       Then <result>
@@ -254,3 +262,20 @@ Feature: Prefix search via api
     | Magnet      | fuzzy       |     0      | Help:Magneto is not in the api suggestions |
     | Magnet      | normal      |     0      | Help:Magneto is not in the api suggestions |
     | Magnet      | classic     |     0      | Help:Magneto is not in the api suggestions |
+
+  # While this might make sense in it's own dump_schema.feature file, this depends on titlesuggest
+  # being pre-initialized, and we currently have a tangled mess where some prefix tests depend on
+  # page initialized in random hooks and not just @suggest.
+  Scenario: You can dump the mapping CirrusSearch set on Elasticsearch's indexes
+    When I dump the cirrus schema
+    Then A valid mapping dump is produced
+     And A valid settings dump is produced
+
+  Scenario: Can dump suggestions
+    When I dump the cirrus suggest data for Main Page
+    Then the page text contains target_title
+     And the page text contains Main Page
+     And the page text contains source_doc_id
+     And the page text contains suggest-stop
+     And the page text contains weight
+

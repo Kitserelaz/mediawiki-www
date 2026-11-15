@@ -4,7 +4,8 @@ namespace MediaWiki\Extension\SecurePoll\Talliers\STVFormatter;
 
 class WikitextFormatter extends HtmlFormatter {
 
-	public function formatPreamble( array $elected, array $eliminated ) {
+	/** @inheritDoc */
+	public function formatPreamble( array $elected, array $eliminated, array $modifiers ) {
 		// Generate overview of elected candidates
 		$electionSummary = "==" .
 			wfMessage( 'securepoll-stv-result-election-elected-header' ) . "==\n";
@@ -36,6 +37,30 @@ class WikitextFormatter extends HtmlFormatter {
 			}
 		}
 		$electionSummary .= $electedList;
+
+		// The modifier data of pre-eliminated candidates is an array of selected options
+		// across all questions so check if any of those options belong to the current
+		// question and output any hits to a list.
+		$excluded = [];
+		if ( isset( $this->modifiers['excludedCandidates'] ) ) {
+			$excluded = $this->modifiers['excludedCandidates'];
+		}
+
+		if ( count( $excluded ) ) {
+			$hasExcludedCandidates = false;
+			$excludedList = "";
+			foreach ( array_keys( $this->candidates ) as $candidateId ) {
+				if ( in_array( $candidateId, $excluded ) ) {
+					$hasExcludedCandidates = true;
+					$excludedList .= "\n" . "* " . $this->getCandidateName( $candidateId );
+				}
+			}
+
+			if ( $hasExcludedCandidates ) {
+				$electionSummary .= "\n" . "==" . wfMessage( 'securepoll-stv-result-election-excluded-header' ) . "==";
+				$electionSummary .= $excludedList;
+			}
+		}
 
 		// Generate overview of eliminated candidates
 		$electionSummary .= "\n" . "==" . wfMessage( 'securepoll-stv-result-election-eliminated-header' ) . "==";
@@ -205,5 +230,17 @@ class WikitextFormatter extends HtmlFormatter {
 			$tbody .= $tr;
 		}
 		return $tbody;
+	}
+
+	public function formatBlt(): string {
+		// Historical tallies may not have a calculated blt; return nothing in those cases
+		if ( !$this->blt ) {
+			return '';
+		}
+
+		$electionBlt = "==" .
+			wfMessage( 'securepoll-stv-result-election-blt-header' ) . "==\n";
+		$electionBlt .= "<pre>\n" . $this->blt . "\n</pre>";
+		return $electionBlt;
 	}
 }

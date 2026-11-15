@@ -31,9 +31,5 @@
 	"nuke-viewchanges": "breytingaskrá",
 	"nuke-namespace": "Takmarka við nafnrými:",
 	"nuke-linkoncontribs": "fjöldaeyða",
-	"nuke-linkoncontribs-text": "Fjöldaeyða síðum þegar {{GENDER:$1|þessi notandi}} er eini höfundurinn",
-	"nuke-list": "Eftirfarandi síður voru nýlega búnar til af [[Special:Contributions/$1|{{GENDER:$1|$1}}]]. Veldu hvaða síður eigi að eyða, tilgreindu breytingaráagrip og smelltu á \"Eyða völdum síðum\" til að byrja eyðingu.\n\nTilvísanir eru skáletraðar.",
-	"nuke-list-tempaccount": "Eftirfarandi síður voru nýlega búnar til af tímabundnum aðgöngum sem voru notaðar af vistfanginu $1. Veldu hvaða síður eigi að eyða, tilgreindu breytingaráagrip og smelltu á \"Eyða völdum síðum\" til að byrja eyðingu. '''Af persónuverndarástæðum, ekki skrifa vistfangið í breytingarágripið.'''\n\nTilvísanir eru skáletraðar.",
-	"nuke-list-multiple": "Eftirfarandi síður voru nýlega búnar til. Veldu hvaða síður eigi að eyða, tilgreindu breytingaráagrip og smelltu á \"Eyða völdum síðum\" til að byrja eyðingu.\n\nTilvísanir eru skáletraðar.",
-	"nuke-confirm": "Þú ert í þann mund að eyða $1 {{PLURAL:$1|síðu|síðum}}. Ertu viss um að þú viljir gera það?"
+	"nuke-linkoncontribs-text": "Fjöldaeyða síðum þegar {{GENDER:$1|þessi notandi}} er eini höfundurinn"
 }

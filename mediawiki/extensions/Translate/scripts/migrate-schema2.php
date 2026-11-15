@@ -8,6 +8,8 @@
  * @file
  */
 
+use MediaWiki\Maintenance\Maintenance;
+
 // Standard boilerplate to define $IP
 if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
 	$IP = getenv( 'MW_INSTALL_PATH' );
@@ -42,8 +44,8 @@ class TSchema2 extends Maintenance {
 		}
 
 		if ( $dbw->getType() !== 'mysql' ) {
-			$this->error( 'This migration script only supports mysql. Please help ' .
-				"us to write routine for {$dbw->getType()}.", 1 );
+			$this->fatalError( 'This migration script only supports mysql. Please help ' .
+				"us to write routine for {$dbw->getType()}." );
 		}
 
 		$table = $dbw->tableName( 'revtag' );

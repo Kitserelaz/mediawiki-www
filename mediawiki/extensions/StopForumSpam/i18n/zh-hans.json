@@ -1,13 +1,13 @@
 {
 	"@metadata": {
 		"authors": [
+			"Diskdance",
 			"GuoPC",
 			"Liuxinyu970226",
 			"Shizhao",
 			"Stang",
 			"Xyb",
-			"Yfdyh000",
-			"Diskdance"
+			"Yfdyh000"
 		]
 	},
 	"abusefilter-edit-builder-vars-sfs-blocked": "IP地址是否已通过stopforumspam.com列表封禁（$1）",

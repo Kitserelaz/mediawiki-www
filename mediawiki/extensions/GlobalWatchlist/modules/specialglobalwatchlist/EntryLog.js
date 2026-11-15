@@ -2,7 +2,7 @@
  * Extended version of GlobalWatchlistEntryBase for log entries
  */
 
-var GlobalWatchlistEntryBase = require( './EntryBase.js' );
+const GlobalWatchlistEntryBase = require( './EntryBase.js' );
 
 /**
  * Represents a single log entry
@@ -33,6 +33,12 @@ function GlobalWatchlistEntryLog( info ) {
 	 *   logaction above
 	 */
 	this.logtype = info.logtype;
+
+	/**
+	 * @property {string} logdisplay The "action text" for this log entry, used for
+	 *   plain text description
+	 */
+	this.logdisplay = info.logdisplay;
 }
 
 OO.inheritClass( GlobalWatchlistEntryLog, GlobalWatchlistEntryBase );

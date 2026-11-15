@@ -36,7 +36,6 @@ class FullTextQueryStringQueryBuilder implements FullTextQueryBuilder {
 	 */
 	private $useTokenCountRouter;
 
-	/** @var NearMatchFieldQueryBuilder */
 	private NearMatchFieldQueryBuilder $nearMatchFieldQueryBuilder;
 
 	/**
@@ -340,7 +339,7 @@ class FullTextQueryStringQueryBuilder implements FullTextQueryBuilder {
 		$query->setFuzzyPrefixLength( 2 );
 		$query->setRewrite( $this->getMultiTermRewriteMethod() );
 		$states = $this->config->get( 'CirrusSearchQueryStringMaxDeterminizedStates' );
-		if ( isset( $states ) ) {
+		if ( $states !== null ) {
 			$query->setParam( 'max_determinized_states', $states );
 		}
 		return $query;
@@ -367,11 +366,7 @@ class FullTextQueryStringQueryBuilder implements FullTextQueryBuilder {
 		// We still need to add title.plain with a high boost otherwise
 		// match in titles be poorly scored (actually it breaks some tests).
 		$titleWeight = $context->getConfig()->getElement( 'CirrusSearchWeights', 'title' );
-		$fields = [];
-		$fields[] = "title.plain:$term^{$titleWeight}";
-		$fields[] = "all.plain:$term";
-		$exact = implode( ' OR ', $fields );
-		return "($exact)";
+		return "(title.plain:$term^$titleWeight OR all.plain:$term)";
 	}
 
 	/**
@@ -495,7 +490,7 @@ class FullTextQueryStringQueryBuilder implements FullTextQueryBuilder {
 				];
 			}
 
-			$callableResult = call_user_func( $callable, $matches );
+			$callableResult = $callable( $matches );
 			if ( $callableResult ) {
 				$destination[] = $callableResult;
 			}

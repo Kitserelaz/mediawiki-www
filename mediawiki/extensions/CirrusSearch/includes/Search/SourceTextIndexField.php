@@ -4,7 +4,7 @@ namespace CirrusSearch\Search;
 
 use CirrusSearch\CirrusSearch;
 use CirrusSearch\SearchConfig;
-use SearchEngine;
+use MediaWiki\Search\SearchEngine;
 
 /**
  * Index field representing the source_text data.
@@ -14,6 +14,11 @@ class SourceTextIndexField extends TextIndexField {
 	/** @var bool enable trigram index for accelerated regex query */
 	private $withTrigrams;
 
+	/**
+	 * @param string $name
+	 * @param string $type
+	 * @param SearchConfig $config
+	 */
 	public function __construct( $name, $type, SearchConfig $config ) {
 		parent::__construct( $name, $type, $config );
 

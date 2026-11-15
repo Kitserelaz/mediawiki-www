@@ -16,6 +16,7 @@ QUnit.module( 've.ce.LinearArrowKeyDownHandler', {
 QUnit.test( 'special key down: linear arrow keys', ( assert ) => {
 	const done = assert.async(),
 		supportsSelectionExtend = ve.supportsSelectionExtend,
+		// Docs can be reused because they are never modified
 		complexTableDoc = ve.dm.example.createExampleDocument( 'complexTable' ),
 		slugDoc = ve.dm.example.createExampleDocumentFromData( [
 			{ type: 'alienBlock' }, { type: '/alienBlock' },
@@ -29,6 +30,12 @@ QUnit.test( 'special key down: linear arrow keys', ( assert ) => {
 			{ type: 'paragraph' }, ...'Foo', { type: '/paragraph' },
 			...ve.dm.example.blockImage.data,
 			{ type: 'paragraph' }, ...'Bar', { type: '/paragraph' },
+			{ type: 'internalList' }, { type: '/internalList' }
+		] ),
+		emptyParagraphsDoc = ve.dm.example.createExampleDocumentFromData( [
+			{ type: 'paragraph' }, { type: '/paragraph' },
+			{ type: 'paragraph' }, { type: '/paragraph' },
+			{ type: 'paragraph' }, { type: '/paragraph' },
 			{ type: 'internalList' }, { type: '/internalList' }
 		] ),
 		cases = [
@@ -327,7 +334,18 @@ QUnit.test( 'special key down: linear arrow keys', ( assert ) => {
 				rangeOrSelection: new ve.Range( 1 ),
 				keys: [ 'TAB' ],
 				expectedRangeOrSelection: new ve.Range( 1 ),
+				expectedHasFocus: true,
 				msg: 'Tab outside a table prevents default'
+			},
+			{
+				rangeOrSelection: new ve.Range( 1 ),
+				keys: [ 'TAB' ],
+				surfaceConfig: {
+					allowTabFocusChange: true
+				},
+				expectedRangeOrSelection: new ve.Range( 1 ),
+				expectedHasFocus: false,
+				msg: 'Tab with allowTabFocusChange moves the focus from the surface'
 			},
 			{
 				htmlOrDoc: slugDoc,
@@ -397,6 +415,22 @@ QUnit.test( 'special key down: linear arrow keys', ( assert ) => {
 				expectedRangeOrSelection: new ve.Range( 7, 4 ),
 				expectedDefaultPrevented: [ false ],
 				msg: 'Shift+left off an inline focusable (backwards selection)'
+			},
+			{
+				htmlOrDoc: emptyParagraphsDoc,
+				rangeOrSelection: new ve.Range( 1 ),
+				keys: [ 'RIGHT', 'RIGHT' ],
+				expectedRangeOrSelection: new ve.Range( 5 ),
+				expectedDefaultPrevented: [ true, true ],
+				msg: 'Cursoring right through empty paragraphs'
+			},
+			{
+				htmlOrDoc: emptyParagraphsDoc,
+				rangeOrSelection: new ve.Range( 5 ),
+				keys: [ 'LEFT', 'LEFT' ],
+				expectedRangeOrSelection: new ve.Range( 1 ),
+				expectedDefaultPrevented: [ true, true ],
+				msg: 'Cursoring left through empty paragraphs'
 			}
 		];
 

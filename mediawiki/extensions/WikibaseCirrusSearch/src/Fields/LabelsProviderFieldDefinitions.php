@@ -4,7 +4,6 @@ namespace Wikibase\Search\Elastic\Fields;
 
 use MediaWiki\Config\ConfigFactory;
 use Wikibase\Repo\Search\Fields\FieldDefinitions;
-use Wikibase\Repo\Search\Fields\WikibaseIndexField;
 
 /**
  * Definitions for any entity that has labels.
@@ -15,11 +14,6 @@ use Wikibase\Repo\Search\Fields\WikibaseIndexField;
 class LabelsProviderFieldDefinitions implements FieldDefinitions {
 
 	/**
-	 * @var string[]
-	 */
-	private $languageCodes;
-
-	/**
 	 * @var array
 	 */
 	private $stemmingSettings;
@@ -28,8 +22,10 @@ class LabelsProviderFieldDefinitions implements FieldDefinitions {
 	 * @param string[] $languageCodes
 	 * @param ConfigFactory|null $configFactory
 	 */
-	public function __construct( array $languageCodes, ?ConfigFactory $configFactory = null ) {
-		$this->languageCodes = $languageCodes;
+	public function __construct(
+		private readonly array $languageCodes,
+		?ConfigFactory $configFactory = null,
+	) {
 		if ( $configFactory === null ) {
 			$this->stemmingSettings = [];
 		} else {
@@ -39,7 +35,7 @@ class LabelsProviderFieldDefinitions implements FieldDefinitions {
 	}
 
 	/**
-	 * @return WikibaseIndexField[]
+	 * @return WikibaseLabelsIndexField[]
 	 */
 	public function getFields() {
 		return [

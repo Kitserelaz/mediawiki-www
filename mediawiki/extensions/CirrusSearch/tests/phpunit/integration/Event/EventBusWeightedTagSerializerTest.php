@@ -3,15 +3,13 @@
 namespace CirrusSearch\Event;
 
 use CirrusSearch\EventBusWeightedTagSerializer;
-use MediaWiki\Config\HashConfig;
 use MediaWiki\Extension\EventBus\Serializers\EventSerializer;
 use MediaWiki\Extension\EventBus\Serializers\MediaWiki\PageEntitySerializer;
 use MediaWiki\Http\Telemetry;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Title\Title;
 use MediaWiki\WikiMap\WikiMap;
 use MediaWikiIntegrationTestCase;
-use Wikimedia\UUID\GlobalIdGenerator;
-use WikiPage;
 
 /**
  * @coversDefaultClass \CirrusSearch\EventBusWeightedTagSerializer
@@ -43,31 +41,16 @@ class EventBusWeightedTagSerializerTest extends MediaWikiIntegrationTestCase {
 	public function setUp(): void {
 		parent::setUp();
 
-		$config = new HashConfig( [
-			'ServerName' => self::MOCK_SERVER_NAME,
-			'CanonicalServer' => self::MOCK_CANONICAL_SERVER,
-			'ArticlePath' => self::MOCK_ARTICLE_PATH
-		] );
-		$globalIdGenerator = $this->createMock( GlobalIdGenerator::class );
-		$globalIdGenerator->method( 'newUUIDv4' )->willReturn( self::MOCK_UUID );
+		$this->markTestSkippedIfExtensionNotLoaded( 'EventBus' );
 
-		$telemetry = $this->createMock( Telemetry::class );
-		$telemetry->method( 'getRequestId' )->willReturn( 'requestid' );
-
-		$this->eventSerializer = new EventSerializer(
-			$config,
-			$globalIdGenerator,
-			$telemetry
-		);
-
-		$this->pageEntitySerializer = new PageEntitySerializer(
-			$config,
-			$this->getServiceContainer()->getTitleFormatter()
-		);
+		// Tests will use EventBus' MediaWiki Service instance of entity serializers.
+		$this->eventSerializer = $this->getServiceContainer()->get( 'EventBus.EventSerializer' );
+		$this->pageEntitySerializer = $this->getServiceContainer()->get( 'EventBus.PageEntitySerializer' );
 
 		$this->weightedTagSerializer = new EventBusWeightedTagSerializer(
 			$this->eventSerializer,
-			$this->pageEntitySerializer, self::MOCK_STREAM_NAME
+			$this->pageEntitySerializer,
+			self::MOCK_STREAM_NAME
 		);
 	}
 
@@ -87,6 +70,7 @@ class EventBusWeightedTagSerializerTest extends MediaWikiIntegrationTestCase {
 		?array $eventAttrs = null
 	): array {
 		$eventTimestamp = $eventTimestamp ?? $wikiPage->getRevisionRecord()->getTimestamp();
+		$wikiId = $wikiPage->getWikiId() ?: WikiMap::getCurrentWikiId();
 
 		return array_merge_recursive(
 			$this->eventSerializer->createEvent(
@@ -94,33 +78,19 @@ class EventBusWeightedTagSerializerTest extends MediaWikiIntegrationTestCase {
 				self::MOCK_STREAM_NAME,
 				$this->pageEntitySerializer->canonicalPageURL( $wikiPage ),
 				[
-					'wiki_id' => WikiMap::getCurrentWikiId(),
+					'wiki_id' => $wikiId,
 					'dt' => EventSerializer::timestampToDt( $eventTimestamp ),
 					'page' => $this->pageEntitySerializer->toArray( $wikiPage ),
-				]
+				],
+				$wikiId,
+				null,
+				Telemetry::getInstance()->getRequestId(),
 			),
 			$eventAttrs
 		);
 	}
 
-	/**
-	 * DRY helper to assert two events are equal
-	 * (minus dt and meta.dt, which is not deterministcally generated).
-	 * @param array $expected
-	 * @param array $actual
-	 * @return void
-	 */
-	private function assertEventEquals( array $expected, array $actual ): void {
-		// remove meta.dt from expected and actual,
-		// since it is dynamically set to current timestamp.
-		$this->assertTrue( isset( $actual['meta']['dt'] ) );
-		unset( $expected['meta']['dt'] );
-		unset( $actual['meta']['dt'] );
-
-		$this->assertEquals( $expected, $actual );
-	}
-
-	public static function getSetEventData(): array {
+	public static function provideSetEventData(): array {
 		return [
 			[ [ 'weighted_tags' => [ 'set' => [ 'prefix-0' => [ 'tag-a' => 1 ] ] ] ] ],
 			[ [ 'weighted_tags' => [ 'set' => [ 'prefix-0' => [ 'tag-a' => 1 ] ] ], 'rev_based' => true ] ],
@@ -132,7 +102,7 @@ class EventBusWeightedTagSerializerTest extends MediaWikiIntegrationTestCase {
 	 * @covers ::toSetEvent
 	 * @covers ::toArray
 	 * @param array $eventAttrs
-	 * @dataProvider getSetEventData
+	 * @dataProvider provideSetEventData
 	 */
 	public function testSetEvent( array $eventAttrs ) {
 		$wikiPage0 = $this->getExistingTestPage( Title::newFromText( 'MyPageToEdit', $this->getDefaultWikitextNS() ) );
@@ -152,10 +122,13 @@ class EventBusWeightedTagSerializerTest extends MediaWikiIntegrationTestCase {
 			$dt
 		);
 
-		$this->assertEventEquals( $expected, $actual );
+		// unset meta.id as it is not deterministic.
+		unset( $expected['meta']['id'] );
+		unset( $actual['meta']['id'] );
+		$this->assertEquals( $expected, $actual );
 	}
 
-	public static function getClearEventData(): array {
+	public static function provideClearEventData(): array {
 		return [
 			[ [ 'weighted_tags' => [ 'clear' => [ 'prefix-0' ] ] ] ],
 			[ [ 'weighted_tags' => [ 'clear' => [ 'prefix-0', 'prefix-1' ] ], 'rev_based' => true ] ],
@@ -167,7 +140,7 @@ class EventBusWeightedTagSerializerTest extends MediaWikiIntegrationTestCase {
 	 * @covers ::toSetEvent
 	 * @covers ::toArray
 	 * @param array $eventAttrs
-	 * @dataProvider getClearEventData
+	 * @dataProvider provideClearEventData
 	 */
 	public function testClearEvent( array $eventAttrs ) {
 		$wikiPage0 = $this->getExistingTestPage( Title::newFromText( 'MyPageToEdit', $this->getDefaultWikitextNS() ) );
@@ -187,6 +160,9 @@ class EventBusWeightedTagSerializerTest extends MediaWikiIntegrationTestCase {
 			$dt
 		);
 
-		$this->assertEventEquals( $expected, $actual );
+		// unset meta.id as it is not deterministic.
+		unset( $expected['meta']['id'] );
+		unset( $actual['meta']['id'] );
+		$this->assertEquals( $expected, $actual );
 	}
 }

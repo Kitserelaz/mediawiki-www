@@ -3,6 +3,7 @@
 namespace Wikibase\Search\Elastic\Tests;
 
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Search\SearchEngine;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\NumericPropertyId;
@@ -41,18 +42,21 @@ class PropertyHandlerTest extends EntityHandlerTestCase {
 	/**
 	 * @see EntityHandlerTestCase::contentProvider
 	 */
-	public function contentProvider() {
-		return [];
+	public static function contentProvider(): array {
+		// providers can't return empty arrays, return something empty to make testSerialization happy
+		// This whole TestCase class should probably be refactored with some re-usable traits instead
+		// of inheritance.
+		return [ [ self::newEntityContent() ] ];
 	}
 
 	/**
 	 * @return PropertyContent
 	 */
-	protected function newEmptyContent() {
+	protected static function newEmptyContent() {
 		return new PropertyContent();
 	}
 
-	protected function newEntity( ?EntityId $id = null ) {
+	protected static function newEntity( ?EntityId $id = null ) {
 		if ( !$id ) {
 			$id = new NumericPropertyId( 'P7' );
 		}
@@ -62,7 +66,7 @@ class PropertyHandlerTest extends EntityHandlerTestCase {
 		return $property;
 	}
 
-	public function entityIdProvider() {
+	public static function entityIdProvider() {
 		return [
 			[ 'P7' ]
 		];
@@ -78,19 +82,15 @@ class PropertyHandlerTest extends EntityHandlerTestCase {
 		return WikibaseRepo::getPropertyHandler();
 	}
 
-	protected function newEntityContent( ?EntityDocument $entity = null ): EntityContent {
-		if ( $entity === null ) {
-			$entity = $this->newEntity();
-		}
-
-		return new PropertyContent( new EntityInstanceHolder( $entity ) );
+	protected static function newEntityContent( ?EntityDocument $entity = null ): EntityContent {
+		return new PropertyContent( new EntityInstanceHolder( $entity ?? self::newEntity() ) );
 	}
 
-	protected function newRedirectContent( EntityId $id, EntityId $target ): ?EntityContent {
+	protected static function newRedirectContent( EntityId $id, EntityId $target ): ?EntityContent {
 		return null;
 	}
 
-	protected function getEntityTypeDefinitionsConfiguration(): array {
+	protected static function getEntityTypeDefinitionsConfiguration(): array {
 		return wfArrayPlus2d(
 			require __DIR__ . '/../../WikibaseSearch.entitytypes.php',
 			parent::getEntityTypeDefinitionsConfiguration()
@@ -113,7 +113,7 @@ class PropertyHandlerTest extends EntityHandlerTestCase {
 
 	public function testDataForSearchIndex() {
 		$handler = $this->getHandler();
-		$engine = $this->createMock( \SearchEngine::class );
+		$engine = $this->createMock( SearchEngine::class );
 
 		$page = $this->getMockWikiPage( $handler );
 

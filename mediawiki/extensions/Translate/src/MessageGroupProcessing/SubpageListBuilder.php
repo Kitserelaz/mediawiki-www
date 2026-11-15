@@ -3,8 +3,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Title\Title;
 
 /**
@@ -15,15 +15,11 @@ use MediaWiki\Title\Title;
  * @since 2022.04
  */
 class SubpageListBuilder {
-	private TranslatableBundleFactory $bundleFactory;
-	private LinkBatchFactory $linkBatchFactory;
 
 	public function __construct(
-		TranslatableBundleFactory $bundleFactory,
-		LinkBatchFactory $linkBatchFactory
+		private readonly TranslatableBundleFactory $bundleFactory,
+		private readonly LinkBatchFactory $linkBatchFactory,
 	) {
-		$this->bundleFactory = $bundleFactory;
-		$this->linkBatchFactory = $linkBatchFactory;
 	}
 
 	public function getSubpagesPerType( TranslatableBundle $bundle, bool $fetchTalkPages ): array {

@@ -3,7 +3,7 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\MassMessage;
 
-/*
+/**
  * @author Niklas Laxström
  * @license GPL-2.0-or-later
  */
@@ -30,17 +30,14 @@ class LanguageAwareText {
 		$this->languageDirection = $languageDirection;
 	}
 
-	/** @return string */
 	public function getWikitext(): string {
 		return $this->wikitext;
 	}
 
-	/** @return string */
 	public function getLanguageCode(): string {
 		return $this->languageCode;
 	}
 
-	/** @return string */
 	public function getLanguageDirection(): string {
 		return $this->languageDirection;
 	}

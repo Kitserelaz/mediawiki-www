@@ -2,12 +2,13 @@
 
 namespace CirrusSearch;
 
-use CirrusSearch\Extra\MultiList\MultiListBuilder;
+use CirrusSearch\SecondTry\SecondTryRunnerFactory;
+use CirrusSearch\SecondTry\SecondTrySearchFactory;
 use MediaWiki\HookContainer\HookContainer;
-use MediaWiki\Page\PageIdentityValue;
+use MediaWiki\Language\LanguageConverterFactory;
+use MediaWiki\Search\SearchEngine;
 use MediaWiki\Status\Status;
-use PHPUnit\Framework\Constraint\Callback;
-use Wikimedia\Assert\AssertionException;
+use Wikimedia\UUID\GlobalIdGenerator;
 
 /**
  * @group CirrusSearch
@@ -17,12 +18,12 @@ class CirrusSearchTest extends CirrusTestCase {
 	public static function provideProfiles() {
 		return [
 			'completion' => [
-				\SearchEngine::COMPLETION_PROFILE_TYPE,
+				SearchEngine::COMPLETION_PROFILE_TYPE,
 				CirrusSearch::AUTOSELECT_PROFILE,
 				[ CirrusSearch::AUTOSELECT_PROFILE, CirrusSearch::COMPLETION_PREFIX_FALLBACK_PROFILE ],
 			],
 			'fulltext query independent' => [
-				\SearchEngine::FT_QUERY_INDEP_PROFILE_TYPE,
+				SearchEngine::FT_QUERY_INDEP_PROFILE_TYPE,
 				CirrusSearch::AUTOSELECT_PROFILE,
 				[ CirrusSearch::AUTOSELECT_PROFILE, 'classic' ],
 			],
@@ -62,22 +63,22 @@ class CirrusSearchTest extends CirrusTestCase {
 	public static function provideExtractProfileFromFeatureData() {
 		return [
 			'engine defaults (completion)' => [
-				\SearchEngine::COMPLETION_PROFILE_TYPE,
+				SearchEngine::COMPLETION_PROFILE_TYPE,
 				CirrusSearch::AUTOSELECT_PROFILE,
 				null,
 			],
 			'engine defaults (fulltext qi)' => [
-				\SearchEngine::FT_QUERY_INDEP_PROFILE_TYPE,
+				SearchEngine::FT_QUERY_INDEP_PROFILE_TYPE,
 				CirrusSearch::AUTOSELECT_PROFILE,
 				null,
 			],
 			'profile set (completion)' => [
-				\SearchEngine::COMPLETION_PROFILE_TYPE,
+				SearchEngine::COMPLETION_PROFILE_TYPE,
 				'foobar',
 				'foobar',
 			],
 			'profile set (fulltext qi)' => [
-				\SearchEngine::FT_QUERY_INDEP_PROFILE_TYPE,
+				SearchEngine::FT_QUERY_INDEP_PROFILE_TYPE,
 				'foobar',
 				'foobar',
 			]
@@ -135,8 +136,17 @@ class CirrusSearchTest extends CirrusTestCase {
 		// use cirrus base profiles
 		// only set needed config for Connection
 		$config = $this->newHashSearchConfig( ( $config ?: [] ) + $this->getMinimalConfig() );
+		$languageConverterFactory = $this->createMock( LanguageConverterFactory::class );
+		$secondTryFactory = new SecondTrySearchFactory( $languageConverterFactory );
+		$generator = new GlobalIdGenerator(
+			true,
+			fn ( string $cmd ): never => $this->fail( 'should not be called' )
+		);
 		return new CirrusSearch( $config, CirrusDebugOptions::defaultOptions(),
-			$this->namespacePrefixParser(), $this->getInterWikiResolver( $config ), $this->newTitleHelper() );
+			$this->namespacePrefixParser(), $this->getInterWikiResolver( $config ), self::newTitleHelper(),
+			new SecondTryRunnerFactory( $secondTryFactory, $config ),
+			$generator
+		);
 	}
 
 	/**
@@ -159,71 +169,7 @@ class CirrusSearchTest extends CirrusTestCase {
 		$engine = $this->getSearchEngine();
 		$this->assertFalse( $engine->supports( 'search-update' ) );
 		$this->assertFalse( $engine->supports( 'list-redirects' ) );
-		$this->assertTrue( $engine->supports( \SearchEngine::FT_QUERY_INDEP_PROFILE_TYPE ) );
+		$this->assertTrue( $engine->supports( SearchEngine::FT_QUERY_INDEP_PROFILE_TYPE ) );
 		$this->assertTrue( $engine->supports( CirrusSearch::EXTRA_FIELDS_TO_EXTRACT ) );
-	}
-
-	/**
-	 * @covers       \CirrusSearch\CirrusSearch::updateWeightedTags
-	 * @dataProvider provideUpdateWeightedTags
-	 * @param string $tagPrefix
-	 * @param string|string[]|null $tagNames
-	 * @param int|int[]|null $tagWeights
-	 * @param bool $isValid
-	 */
-	public function testUpdateWeightedTags( $tagPrefix, $tagNames, $tagWeights, $isValid ) {
-		$normalizedTagWeights = [];
-		$pageIdentity = new PageIdentityValue( 1, 0, 'Test', PageIdentityValue::LOCAL );
-		$mockUpdater = $this->createPartialMock( Updater::class, [ 'updateWeightedTags' ] );
-		$mockUpdater->expects( $isValid ? $this->once() : $this->never() )
-			->method( 'updateWeightedTags' )->with(
-				$pageIdentity,
-				$tagPrefix,
-				$this->captureArg( $normalizedTagWeights )
-			);
-		$cirrusSearch = $this->createPartialMock( CirrusSearch::class, [ 'getUpdater' ] );
-		$cirrusSearch->method( 'getUpdater' )->willReturn( $mockUpdater );
-
-		try {
-			$cirrusSearch->updateWeightedTags( $pageIdentity, $tagPrefix, $tagNames, $tagWeights );
-			$this->assertTrue( $isValid, 'Expected exception not thrown' );
-			$this->assertArrayEquals(
-				MultiListBuilder::buildTagWeightsFromLegacyParameters( $tagNames, $tagWeights ),
-				$normalizedTagWeights
-			);
-		} catch ( AssertionException $e ) {
-			$this->assertFalse( $isValid, 'Unexpected exception thrown: ' . get_class( $e )
-				. ': ' . $e->getMessage() );
-		}
-	}
-
-	public static function provideUpdateWeightedTags() {
-		return [
-			// good
-			'prefix only' => [ 'foo', null, null, true ],
-			'one tag' => [ 'foo', 'bar', null, true ],
-			'multiple tags' => [ 'foo', [ 'bar', 'baz' ], null, true ],
-			'weight with no tag' => [ 'foo', null, 500, true ],
-			'weight with one tag' => [ 'foo', 'bar', [ 'bar' => 500 ], true ],
-			'weight with multiple tags' => [ 'foo', [ 'bar', 'baz' ], [ 'bar' => 500, 'baz' => 600 ], true ],
-			// bad
-			'/ in prefix' => [ 'foo/bar', null, null, false ],
-			'| in tag' => [ 'foo', 'bar|baz', null, false ],
-			'weight too large' => [ 'foo', null, 1500, false ],
-			'weight too large #2' => [ 'foo', [ 'bar', 'baz' ], [ 'bar' => 500, 'baz' => 1600 ], false ],
-			'weight too small' => [ 'foo', null, 0, false ],
-			'string weight' => [ 'foo', null, '500', false ],
-			'float weight' => [ 'foo', null, 0.5, false ],
-			'weight for non-existent tag' => [ 'foo', [ 'bar', 'baz' ],
-				[ 'bar' => 500, 'baz' => 600, 'boom' => 700 ], false ],
-		];
-	}
-
-	private function captureArg( &$captor ): Callback {
-		return $this->callback( static function ( $arg ) use ( &$captor ) {
-			$captor = $arg;
-
-			return true;
-		} );
 	}
 }

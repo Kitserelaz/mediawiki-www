@@ -29,11 +29,8 @@ class InLabelFeature extends SimpleKeywordFeature implements FilterQueryFeature 
 	/** @var int A limit to the number of fields that can be queried at once */
 	public const MAX_FIELDS = 30;
 
-	/** @var LanguageFallbackChainFactory */
-	private $languageChainFactory;
-
-	/** @var true[] Keyed by known language codes for set membership check */
-	private $languages;
+	/** @var array<string,int> Keyed by known language codes for set membership check */
+	private array $languages;
 
 	/**
 	 * @var array
@@ -55,12 +52,11 @@ class InLabelFeature extends SimpleKeywordFeature implements FilterQueryFeature 
 	 * @param LanguageFallbackChainFactory $languageChainFactory
 	 * @param string[] $languages list of languages indexed in elastic. Must all be lowercase.
 	 */
-	public function __construct( LanguageFallbackChainFactory $languageChainFactory, $languages ) {
-		$this->languageChainFactory = $languageChainFactory;
-		$this->languages = [];
-		foreach ( $languages as $lang ) {
-			$this->languages[$lang] = true;
-		}
+	public function __construct(
+		private readonly LanguageFallbackChainFactory $languageChainFactory,
+		array $languages,
+	) {
+		$this->languages = array_flip( $languages );
 	}
 
 	/**
@@ -144,15 +140,13 @@ class InLabelFeature extends SimpleKeywordFeature implements FilterQueryFeature 
 			$withFallbacks = false;
 			$withoutEnFallback = false;
 			$len = strlen( $languageCode );
-			if ( $len > 1 && $languageCode[$len - 1] === '*' ) {
+			if ( $len > 1 && str_ends_with( $languageCode, '*' ) ) {
 				$languageCode = substr( $languageCode, 0, -1 );
 				$withFallbacks = true;
-				$len--;
-			} elseif ( $len > 1 && $languageCode[$len - 1] === '+' ) {
+			} elseif ( $len > 1 && str_ends_with( $languageCode, '+' ) ) {
 				$languageCode = substr( $languageCode, 0, -1 );
 				$withFallbacks = true;
 				$withoutEnFallback = true;
-				$len--;
 			}
 
 			if ( !isset( $this->languages[$languageCode] ) ) {
@@ -237,7 +231,7 @@ class InLabelFeature extends SimpleKeywordFeature implements FilterQueryFeature 
 
 		$languages = substr( $value, $atPos + 1 );
 		// when $atPos + 1 === strlen( $value ) then php will return ''
-		if ( $languages === false || $languages === '' || $languages === '*' ) {
+		if ( $languages === '' || $languages === '*' ) {
 			return [
 				'fields' => $allLabelFields,
 				'string' => $search,

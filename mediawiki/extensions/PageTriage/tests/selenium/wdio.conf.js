@@ -1,18 +1,21 @@
-'use strict';
+import { config as wdioDefaults } from 'wdio-mediawiki/wdio-defaults.conf.js';
+import LocalSettingsSetup from './LocalSettingsSetup.cjs';
 
-const { config } = require( 'wdio-mediawiki/wdio-defaults.conf.js' ),
-	LocalSettingsSetup = require( __dirname + '/LocalSettingsSetup.cjs' );
-
-exports.config = { ...config,
+export const config = { ...wdioDefaults,
 	// Override, or add to, the setting from wdio-mediawiki.
 	// Learn more at https://webdriver.io/docs/configurationfile/
-	maxInstances: 4,
+	// To enable video recording, enable video and disable browser headless
+	// recordVideo: true,
+	// useBrowserHeadless: false,
+	//
+	// To enable screenshots on all tests, disable screenshotsOnFailureOnly
+	// screenshotsOnFailureOnly: false,
 	onPrepare: async function () {
 		await LocalSettingsSetup.overrideLocalSettings();
-		await LocalSettingsSetup.restartPhpFpmService();
+		await LocalSettingsSetup.resetPhpFpmOpCache();
 	},
 	onComplete: async function () {
 		await LocalSettingsSetup.restoreLocalSettings();
-		await LocalSettingsSetup.restartPhpFpmService();
+		await LocalSettingsSetup.resetPhpFpmOpCache();
 	}
 };

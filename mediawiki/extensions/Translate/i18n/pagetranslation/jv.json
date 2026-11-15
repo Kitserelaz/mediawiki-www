@@ -65,13 +65,10 @@
 	"tpt-aggregategroup-add": "Tambah",
 	"tpt-aggregategroup-save": "Simpen",
 	"tpt-aggregategroup-add-new": "Tambah klompok agrégat anyar",
-	"tpt-aggregategroup-new-name": "Jeneng:",
-	"tpt-aggregategroup-new-description": "Katerangan (manasuka):",
 	"tpt-aggregategroup-remove-confirm": "Panjenengan yakin arep mbusak klompok agrégat iki?",
 	"tpt-aggregategroup-invalid-group": "Klompok ora ana",
 	"tpt-aggregategroup-edit-name": "Jeneng:",
 	"tpt-aggregategroup-edit-description": "Wedharan:",
-	"tpt-aggregategroup-update": "Simpen",
 	"tpt-aggregategroup-update-cancel": "Wurung",
 	"pt-parse-open": "Tenger &lt;translate> ora imbang.\nCithakan pertalan: <pre>$1</pre>",
 	"pt-parse-close": "Tenger &lt;/translate> ora imbang.\nCithakan pertalan: <pre>$1</pre>",
@@ -144,7 +141,6 @@
 	"pm-pagename-missing": "Sumangga lebokaké jeneng kacané.",
 	"pm-add-icon-hover-text": "Wuwuh ékan ing ngisor iki",
 	"pm-delete-icon-hover-text": "Busak iji",
-	"pm-pagetitle-placeholder": "Lebokaké sesirah kacané",
 	"tpt-translate-title": "Idinaké mertal sesirah kaca",
 	"pp-pagename-placeholder": "Lebokaké jeneng kacané",
 	"pp-prepare-button-label": "Cepakaké",
@@ -155,7 +151,6 @@
 	"pp-diff-old-header": "Tulisan sumber",
 	"pp-diff-new-header": "Tulisan kang cumepak",
 	"tpt-unlink-button": "Buwang saka pertalan",
-	"tpt-unlink-summary": "Mbuwang kaca saka pertalan",
-	"tpt-generic-confirm": "Sumangga konfirmasi lakuné.",
-	"tpt-generic-button": "Konfirmasi"
+	"tpt-generic-button": "Konfirmasi",
+	"tpt-unlink-summary": "Mbuwang kaca saka pertalan"
 }

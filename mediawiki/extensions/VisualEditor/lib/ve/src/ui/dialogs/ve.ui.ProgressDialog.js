@@ -13,7 +13,7 @@
  * @constructor
  * @param {Object} [config] Configuration options
  */
-ve.ui.ProgressDialog = function VeUiProgressDialog( config ) {
+ve.ui.ProgressDialog = function VeUiProgressDialog( config = {} ) {
 	// Parent constructor
 	ve.ui.ProgressDialog.super.call( this, config );
 };
@@ -39,7 +39,9 @@ ve.ui.ProgressDialog.static.actions = [
 
 // Individual progress items can be cancellable, but the whole
 // dialog should not be escapable.
-ve.ui.ProgressDialog.static.escapable = false;
+ve.ui.ProgressDialog.prototype.getEscapeAction = function () {
+	return null;
+};
 
 /* Methods */
 
@@ -58,9 +60,7 @@ ve.ui.ProgressDialog.prototype.initialize = function () {
 /**
  * @inheritdoc
  */
-ve.ui.ProgressDialog.prototype.getSetupProcess = function ( data ) {
-	data = data || {};
-
+ve.ui.ProgressDialog.prototype.getSetupProcess = function ( data = {} ) {
 	// Parent method
 	return ve.ui.ProgressDialog.super.prototype.getSetupProcess.call( this, data )
 		.next( () => {
@@ -71,38 +71,40 @@ ve.ui.ProgressDialog.prototype.getSetupProcess = function ( data ) {
 			this.text.$element.empty();
 			this.cancelDeferreds = [];
 
-			for ( let i = 0, l = progresses.length; i < l; i++ ) {
+			progresses.forEach( ( progress ) => {
 				const cancelDeferred = ve.createDeferred();
 				const $row = $( '<div>' ).addClass( 've-ui-progressDialog-row' );
 				const progressBar = new OO.ui.ProgressBarWidget();
 				const fieldLayout = new OO.ui.FieldLayout(
 					progressBar,
 					{
-						label: progresses[ i ].label,
+						label: progress.label,
 						align: 'top'
 					}
 				);
 
 				$row.append( fieldLayout.$element );
 
-				if ( progresses[ i ].cancellable ) {
+				if ( progress.cancellable ) {
 					const cancelButton = new OO.ui.ButtonWidget( {
 						framed: false,
 						icon: 'cancel',
-						title: OO.ui.deferMsg( 'visualeditor-dialog-action-cancel' )
+						title: OO.ui.deferMsg( 'visualeditor-dialog-action-cancel' ),
+						label: OO.ui.deferMsg( 'visualeditor-dialog-action-cancel' ),
+						invisibleLabel: true
 					} ).on( 'click', cancelDeferred.reject.bind( cancelDeferred ) );
 					$row.append( cancelButton.$element );
 					cancellable = true;
 				}
 
 				this.text.$element.append( $row );
-				progresses[ i ].progressBarDeferred.resolve( progressBar, cancelDeferred.promise() );
-				progresses[ i ].progressCompletePromise.then(
+				progress.progressBarDeferred.resolve( progressBar, cancelDeferred.promise() );
+				progress.progressCompletePromise.then(
 					this.progressComplete.bind( this, $row, false ),
 					this.progressComplete.bind( this, $row, true )
 				);
 				this.cancelDeferreds.push( cancelDeferred );
-			}
+			} );
 			this.actions.setMode( cancellable ? 'cancellable' : 'default' );
 		} );
 };
@@ -113,11 +115,9 @@ ve.ui.ProgressDialog.prototype.getSetupProcess = function ( data ) {
 ve.ui.ProgressDialog.prototype.getActionProcess = function ( action ) {
 	return new OO.ui.Process( () => {
 		if ( action === 'cancel' ) {
-			for ( let i = 0, l = this.cancelDeferreds.length; i < l; i++ ) {
-				this.cancelDeferreds[ i ].reject();
-			}
+			this.cancelDeferreds.forEach( ( cancelDeferred ) => cancelDeferred.reject() );
 		}
-		this.close( { action: action } );
+		this.close( { action } );
 	} );
 };
 

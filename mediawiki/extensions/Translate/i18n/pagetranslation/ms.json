@@ -6,10 +6,12 @@
 			"Jeluang Terluang",
 			"Muhdnurhidayat",
 			"Pizza1016",
-			"Tofeiku"
+			"Tofeiku",
+			"شاه زمان پټان"
 		]
 	},
 	"pagetranslation": "Penterjemahan laman",
+	"nstab-translations": "Unit terjemahan",
 	"right-pagetranslation": "Menandai versi-versi laman untuk diterjemah",
 	"action-pagetranslation": "menguruskan halaman-halaman yang boleh diterjemah",
 	"tpt-section": "Unit penterjemahan $1",
@@ -76,8 +78,6 @@
 	"tpt-aggregategroup-add": "Tambahkan",
 	"tpt-aggregategroup-save": "Simpan",
 	"tpt-aggregategroup-add-new": "Tambahkan kumpulan agregat baru",
-	"tpt-aggregategroup-new-name": "Nama:",
-	"tpt-aggregategroup-new-description": "Keterangan (tidak wajib):",
 	"tpt-aggregategroup-remove-confirm": "Adakah anda benar-benar ingin menghapuskan kumpulan agregat ini?",
 	"tpt-aggregategroup-invalid-group": "Kumpulan tidak wujud",
 	"pt-parse-open": "Tag &lt;translate> tidak seimbang.\nTemplat penterjemahan: <pre>$1</pre>",

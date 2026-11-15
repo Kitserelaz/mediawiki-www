@@ -6,6 +6,7 @@ use CirrusSearch\CirrusDebugOptions;
 use CirrusSearch\CrossSearchStrategy;
 use CirrusSearch\Parser\AST\ParsedQuery;
 use CirrusSearch\SearchConfig;
+use MediaWiki\MainConfigNames;
 
 /**
  * A search query, it contains all the necessary information to build and send a query to the backend.
@@ -171,16 +172,10 @@ class SearchQuery {
 		$this->provideAllSnippets = $provideAllSnippets;
 	}
 
-	/**
-	 * @return CirrusDebugOptions
-	 */
 	public function getDebugOptions(): CirrusDebugOptions {
 		return $this->debugOptions;
 	}
 
-	/**
-	 * @return ParsedQuery
-	 */
 	public function getParsedQuery(): ParsedQuery {
 		return $this->parsedQuery;
 	}
@@ -192,16 +187,10 @@ class SearchQuery {
 		return $this->initialNamespaces;
 	}
 
-	/**
-	 * @return CrossSearchStrategy
-	 */
 	public function getInitialCrossSearchStrategy(): CrossSearchStrategy {
 		return $this->initialCrossSearchStrategy;
 	}
 
-	/**
-	 * @return CrossSearchStrategy
-	 */
 	public function getCrossSearchStrategy(): CrossSearchStrategy {
 		if ( $this->crossSearchStrategy === null ) {
 			if ( $this->contextualFilters !== [] ) {
@@ -237,9 +226,6 @@ class SearchQuery {
 		return $this->sort;
 	}
 
-	/**
-	 * @return int|null
-	 */
 	public function getRandomSeed(): ?int {
 		return $this->randomSeed;
 	}
@@ -263,6 +249,10 @@ class SearchQuery {
 	 */
 	public function getLimit() {
 		return $this->limit;
+	}
+
+	public function getMaximumResultPosition(): int {
+		return $this->offset + $this->limit;
 	}
 
 	/**
@@ -296,9 +286,6 @@ class SearchQuery {
 		return $this->parsedQuery->getActualNamespaces( $this->initialNamespaces, $additionalRequired );
 	}
 
-	/**
-	 * @return SearchConfig
-	 */
 	public function getSearchConfig(): SearchConfig {
 		return $this->searchConfig;
 	}
@@ -349,10 +336,45 @@ class SearchQuery {
 		return $this->extraFieldsToExtract;
 	}
 
-	/**
-	 * @return bool
-	 */
 	public function shouldProvideAllSnippets(): bool {
 		return $this->provideAllSnippets;
+	}
+
+	public function mustTrackTotalHits(): bool {
+		$queryClasses = $this->getSearchConfig()->get( 'CirrusSearchMustTrackTotalHits' ) ?: [];
+		foreach ( $queryClasses as $queryClass => $track ) {
+			if ( $queryClass === "default" ) {
+				continue;
+			}
+			if ( $this->parsedQuery->isQueryOfClass( $queryClass ) ) {
+				return $track;
+			}
+		}
+		return $queryClasses['default'] ?? true;
+	}
+
+	/**
+	 * Identify if this query targets the default set of namespaces
+	 * @return bool true if the target namespaces are equals to the default searched namespaces
+	 */
+	public function isTargetingDefaultSearchedNamespaces(): bool {
+		return $this->matchDefaultNamespaces( $this->getNamespaces() );
+	}
+
+	/**
+	 * Identify if this query initially targets the default set of namespaces
+	 * @return bool true if the initial namespaces are equals to the default searched namespaces
+	 */
+	public function isUsingDefaultSearchedNamespaces(): bool {
+		return $this->matchDefaultNamespaces( $this->initialNamespaces );
+	}
+
+	private function matchDefaultNamespaces( array $namespaces ): bool {
+		$defaultSearchedNamespaces = $this->getSearchConfig()->get( MainConfigNames::NamespacesToBeSearchedDefault );
+		if ( is_array( $defaultSearchedNamespaces ) ) {
+			$defaultSearchedNamespaces = array_map( static fn ( $n ) => intval( $n ), array_keys( $defaultSearchedNamespaces, true ) );
+			return $namespaces == $defaultSearchedNamespaces;
+		}
+		return false;
 	}
 }

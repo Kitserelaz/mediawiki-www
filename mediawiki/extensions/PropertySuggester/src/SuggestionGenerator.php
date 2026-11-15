@@ -23,36 +23,12 @@ use Wikibase\Repo\Api\EntitySearchHelper;
  */
 class SuggestionGenerator {
 
-	/**
-	 * @var EntityLookup
-	 */
-	private $entityLookup;
-
-	/**
-	 * @var EntitySearchHelper
-	 */
-	private $entityTermSearchHelper;
-
-	/**
-	 * @var SuggesterEngine
-	 */
-	private $suggester;
-
-	/**
-	 * @var SuggesterEngine|null
-	 */
-	private $fallbackSuggester;
-
 	public function __construct(
-		EntityLookup $entityLookup,
-		EntitySearchHelper $entityTermSearchHelper,
-		SuggesterEngine $suggester,
-		?SuggesterEngine $fallbackSuggester = null
+		private readonly EntityLookup $entityLookup,
+		private readonly EntitySearchHelper $entityTermSearchHelper,
+		private readonly SuggesterEngine $suggester,
+		private readonly ?SuggesterEngine $fallbackSuggester = null,
 	) {
-		$this->entityLookup = $entityLookup;
-		$this->entityTermSearchHelper = $entityTermSearchHelper;
-		$this->suggester = $suggester;
-		$this->fallbackSuggester = $fallbackSuggester;
 	}
 
 	/**
@@ -72,13 +48,13 @@ class SuggestionGenerator {
 	): Status {
 		try {
 			$itemId = new ItemId( $itemIdString );
-		} catch ( InvalidArgumentException $e ) {
+		} catch ( InvalidArgumentException ) {
 			return Status::newFatal( 'wikibase-api-invalid-entity-id' );
 		}
 		/** @var Item $item */
 		try {
 			$item = $this->entityLookup->getEntity( $itemId );
-		} catch ( UnresolvedEntityRedirectException $e ) {
+		} catch ( UnresolvedEntityRedirectException ) {
 			return Status::newFatal( 'wikibase-api-unresolved-redirect' );
 		}
 
@@ -132,7 +108,7 @@ class SuggestionGenerator {
 		foreach ( $propertyIdList as $stringId ) {
 			try {
 				$propertyIds[] = new NumericPropertyId( $stringId );
-			} catch ( InvalidArgumentException $e ) {
+			} catch ( InvalidArgumentException ) {
 				return Status::newFatal( 'wikibase-api-invalid-property-id' );
 			}
 		}
@@ -141,7 +117,7 @@ class SuggestionGenerator {
 		foreach ( $typesIdList as $stringId ) {
 			try {
 				$typesIds[] = new ItemId( $stringId );
-			} catch ( InvalidArgumentException $e ) {
+			} catch ( InvalidArgumentException ) {
 				return Status::newFatal( 'wikibase-api-invalid-entity-id' );
 			}
 		}

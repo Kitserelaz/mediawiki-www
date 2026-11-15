@@ -4,8 +4,8 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\EmbedVideo\Tests\EmbedService\YouTube;
 
-use InvalidArgumentException;
 use MediaWiki\Extension\EmbedVideo\EmbedService\AbstractEmbedService;
+use MediaWiki\Extension\EmbedVideo\EmbedVideoException;
 use MediaWikiIntegrationTestCase;
 use RuntimeException;
 
@@ -250,6 +250,42 @@ class AbstractEmbedServiceTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
+	 * @covers \MediaWiki\Extension\EmbedVideo\EmbedService\AbstractEmbedService::setWidth
+	 * @covers \MediaWiki\Extension\EmbedVideo\EmbedService\AbstractEmbedService::setHeight
+	 * @covers \MediaWiki\Extension\EmbedVideo\EmbedService\AbstractEmbedService::getHeight
+	 * @return void
+	 */
+	public function testSetHeightNullForAudio() {
+		$service = new class( '' ) extends AbstractEmbedService {
+			/**
+			 * @inheritDoc
+			 */
+			public function getBaseUrl(): string {
+				return '<base-url>';
+			}
+
+			/**
+			 * @inheritDoc
+			 */
+			public function getContentType(): ?string {
+				return 'audio';
+			}
+
+			/**
+			 * @inheritDoc
+			 */
+			public function getDefaultHeight(): int {
+				return 123;
+			}
+		};
+
+		$service->setWidth( 1920 );
+		$service->setHeight();
+
+		$this->assertEquals( 123, $service->getHeight() );
+	}
+
+	/**
 	 * @covers \MediaWiki\Extension\EmbedVideo\EmbedService\AbstractEmbedService::getUrlArgs
 	 * @return void
 	 */
@@ -341,7 +377,7 @@ class AbstractEmbedServiceTest extends MediaWikiIntegrationTestCase {
 		if ( version_compare( MW_VERSION, '1.41.0', '>=' ) ) {
 			$this->expectException( RuntimeException::class );
 		} else {
-			$this->expectException( InvalidArgumentException::class );
+			$this->expectException( EmbedVideoException::class );
 		}
 
 		$this->service->setLocalThumb( 'FooFile.jpg' );

@@ -11,8 +11,14 @@
                         "bool": {
                             "filter": [
                                 {
-                                    "match": {
-                                        "labels_all.prefix": "Abr"
+                                    "bool": {
+                                        "should": [
+                                            {
+                                                "match": {
+                                                    "labels_all.prefix": "Abr"
+                                                }
+                                            }
+                                        ]
                                     }
                                 }
                             ],
@@ -45,16 +51,6 @@
                                                 "constant_score": {
                                                     "filter": {
                                                         "match": {
-                                                            "labels.de.prefix": "Abr"
-                                                        }
-                                                    },
-                                                    "boost": 7
-                                                }
-                                            },
-                                            {
-                                                "constant_score": {
-                                                    "filter": {
-                                                        "match": {
                                                             "labels_all.near_match_folded": "Abr"
                                                         }
                                                     },
@@ -79,6 +75,16 @@
                                                         }
                                                     },
                                                     "boost": 5
+                                                }
+                                            },
+                                            {
+                                                "constant_score": {
+                                                    "filter": {
+                                                        "match": {
+                                                            "labels.de.prefix": "Abr"
+                                                        }
+                                                    },
+                                                    "boost": 7
                                                 }
                                             },
                                             {
@@ -143,6 +149,7 @@
                 "labels.de.prefix": {
                     "type": "experimental",
                     "fragmenter": "none",
+                    "order": "none",
                     "number_of_fragments": 0,
                     "options": {
                         "skip_if_last_matched": true,
@@ -152,6 +159,7 @@
                 "labels.pr.prefix": {
                     "type": "experimental",
                     "fragmenter": "none",
+                    "order": "none",
                     "number_of_fragments": 0,
                     "options": {
                         "skip_if_last_matched": true,
@@ -161,6 +169,7 @@
                 "labels.*.prefix": {
                     "type": "experimental",
                     "fragmenter": "none",
+                    "order": "none",
                     "number_of_fragments": 0,
                     "options": {
                         "skip_if_last_matched": true,

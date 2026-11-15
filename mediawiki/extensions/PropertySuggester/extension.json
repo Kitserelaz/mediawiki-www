@@ -7,16 +7,19 @@
 		"Felix Niemeyer",
 		"Virginia Weidhaas"
 	],
-	"url": "https://github.com/Wikidata-lib/PropertySuggester",
+	"url": "https://www.mediawiki.org/wiki/Extension:PropertySuggester",
 	"descriptionmsg": "propertysuggester-desc",
 	"license-name": "GPL-2.0-or-later",
 	"type": "wikibase",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"AutoloadNamespaces": {
 		"PropertySuggester\\": "src/",
 		"PropertySuggester\\Maintenance\\": "maintenance/"
+	},
+	"TestAutoloadNamespaces": {
+		"PropertySuggester\\Tests\\": "tests/phpunit/"
 	},
 	"APIModules": {
 		"wbsgetsuggestions": "PropertySuggester\\GetSuggestions"

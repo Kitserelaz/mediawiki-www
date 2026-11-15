@@ -3,11 +3,13 @@
 namespace CirrusSearch\Profile;
 
 use CirrusSearch\BuildDocument\DocumentSizeLimiter;
+use CirrusSearch\CirrusDebugOptions;
 use CirrusSearch\Dispatch\BasicSearchQueryRoute;
 use CirrusSearch\Dispatch\CirrusDefaultSearchQueryRoute;
 use CirrusSearch\Dispatch\DefaultSearchQueryDispatchService;
 use CirrusSearch\Dispatch\SearchQueryDispatchService;
 use CirrusSearch\Dispatch\SearchQueryRoute;
+use CirrusSearch\Dispatch\SemanticSearchQueryRoute;
 use CirrusSearch\Search\SearchQuery;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\RequestContext;
@@ -118,6 +120,18 @@ class SearchProfileService {
 	public const FALLBACKS = 'fallbacks';
 
 	/**
+	 * Profile type used to build second try searches.
+	 * @see \CirrusSearch\SecondTry\SecondTrySearch
+	 */
+	public const SECOND_TRY = 'second_try';
+
+	/**
+	 * Profile type used to build second try searches.
+	 * @see \CirrusSearch\NamespaceMatcher
+	 */
+	public const NAMESPACE_MATCHER = 'namespace_matcher';
+
+	/**
 	 * Profile context used for prefix search queries
 	 */
 	public const CONTEXT_PREFIXSEARCH = 'prefixsearch';
@@ -126,6 +140,16 @@ class SearchProfileService {
 	 * Default profile context (used by fulltext queries)
 	 */
 	public const CONTEXT_DEFAULT = 'default';
+
+	/**
+	 * Profile context used for completion (fuzzy autocomplete) queries.
+	 */
+	public const CONTEXT_COMPLETION = 'completion';
+
+	/**
+	 * Profile context used for semantic queries
+	 */
+	public const CONTEXT_SEMANTIC = 'semantic';
 
 	/**
 	 * List of profile repositories, grouped by type and then by repository name.
@@ -261,9 +285,7 @@ class SearchProfileService {
 		if ( $name === null && $context === null ) {
 			throw new SearchProfileException( '$name and $context cannot be both null' );
 		}
-		if ( $name === null ) {
-			$name = $this->getProfileName( $type, $context, $contextParams );
-		}
+		$name ??= $this->getProfileName( $type, $context, $contextParams );
 		return $this->loadProfileByName( $type, $name );
 	}
 
@@ -302,7 +324,6 @@ class SearchProfileService {
 
 	/**
 	 * Register a new profile repository
-	 * @param SearchProfileRepository $repository
 	 */
 	public function registerRepository( SearchProfileRepository $repository ) {
 		$this->checkFrozen();
@@ -355,6 +376,11 @@ class SearchProfileService {
 		if ( isset( $this->repositories[$type] ) ) {
 			foreach ( $this->repositories[$type] as $repo ) {
 				foreach ( $repo->listExposedProfiles() as $name => $profile ) {
+					if ( $profile['undocumented'] ?? false ) {
+						// Undocumented profiles are selected either internally or
+						// via CirrusDebugOptions.
+						continue;
+					}
 					if ( !isset( $profiles[$name] ) ) {
 						$profiles[$name] = $profile;
 					}
@@ -457,6 +483,20 @@ class SearchProfileService {
 	}
 
 	/**
+	 * Register a new static route for semantic search queries
+	 *
+	 * @param int[] $supportedNamespaces
+	 * @param float $score score of the route
+	 * @see SearchProfileService::getDispatchService()
+	 * @see SearchQueryDispatchService::CIRRUS_DEFAULTS_SCORE
+	 */
+	public function registerSemanticSearchQueryRoute( array $supportedNamespaces, float $score ) {
+		$debugOptions = CirrusDebugOptions::fromRequest( $this->request );
+		$this->registerSearchQueryRoute( new SemanticSearchQueryRoute(
+			SearchQuery::SEARCH_TEXT, $debugOptions, $supportedNamespaces, $score ) );
+	}
+
+	/**
 	 * Register a new static route for fulltext search queries.
 	 *
 	 * @param string $profileContext
@@ -483,8 +523,6 @@ class SearchProfileService {
 	/**
 	 * Return the service responsible for dispatching a SearchQuery
 	 * to its preferred profile context.
-	 *
-	 * @return SearchQueryDispatchService
 	 */
 	public function getDispatchService(): SearchQueryDispatchService {
 		if ( $this->dispatchService === null ) {

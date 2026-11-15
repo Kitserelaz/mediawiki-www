@@ -24,8 +24,8 @@ use Wikibase\DataModel\SiteLink;
  */
 class ItemDiffTest extends EntityDiffOldTestCase {
 
-	public function provideApplyData() {
-		$originalTests = $this->generateApplyData( Item::ENTITY_TYPE );
+	public static function provideApplyData() {
+		$originalTests = self::generateApplyData( Item::ENTITY_TYPE );
 		$tests = [];
 
 		// add link ------------------------------
@@ -191,27 +191,23 @@ class ItemDiffTest extends EntityDiffOldTestCase {
 		}
 	}
 
-	public static function isEmptyProvider() {
-		$argLists = [];
+	public static function isEmptyProvider(): iterable {
+		yield 'no ops' => [ [], true ];
 
-		$argLists['no ops'] = [ [], true ];
-
-		$argLists['label changed'] = [
+		yield 'label changed' => [
 			[ 'label' => new Diff( [ 'x' => new DiffOpAdd( 'foo' ) ] ) ],
 			false,
 		];
 
-		$argLists['empty links diff'] = [
+		yield 'empty links diff' => [
 			[ 'links' => new Diff( [], true ) ],
 			true,
 		];
 
-		$argLists['non-empty links diff'] = [
+		yield 'non-empty links diff' => [
 			[ 'links' => new Diff( [ new DiffOpAdd( 'foo' ) ], true ) ],
 			false,
 		];
-
-		return $argLists;
 	}
 
 	/**
@@ -229,14 +225,13 @@ class ItemDiffTest extends EntityDiffOldTestCase {
 	 * diffs for substructures even in recursive mode (bug 51363).
 	 */
 	public function testAtomicSubstructureWorkaround() {
-		$oldErrorLevel = error_reporting( E_USER_ERROR );
-
 		$atomicListDiff = new DiffOpChange(
 			[ 'a' => 'A', 'b' => 'B' ],
 			[ 'b' => 'B', 'a' => 'A' ]
 		);
 
-		$diff = new ItemDiff( [
+		// Ignore intentional warning for "Invalid substructure diff"
+		$diff = @new ItemDiff( [
 			'aliases' => $atomicListDiff,
 			'label' => $atomicListDiff,
 			'description' => $atomicListDiff,
@@ -249,8 +244,6 @@ class ItemDiffTest extends EntityDiffOldTestCase {
 		$this->assertInstanceOf( Diff::class, $diff->getDescriptionsDiff() );
 		$this->assertInstanceOf( Diff::class, $diff->getClaimsDiff() );
 		$this->assertInstanceOf( Diff::class, $diff->getSiteLinkDiff() );
-
-		error_reporting( $oldErrorLevel );
 	}
 
 }

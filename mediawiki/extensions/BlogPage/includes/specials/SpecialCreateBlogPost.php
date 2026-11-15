@@ -17,8 +17,19 @@ class SpecialCreateBlogPost extends SpecialPage {
 	/** @var int */
 	public $tabCounter = 1;
 
+	// MW <1.46 has restriction in constructor; >=1.46 via override
 	public function __construct() {
-		parent::__construct( 'CreateBlogPost', 'createblogpost' );
+		if ( version_compare( MW_VERSION, '1.46', '>=' ) ) {
+			parent::__construct( 'CreateBlogPost' );
+		} else {
+			// @phan-suppress-next-line PhanParamTooMany
+			parent::__construct( 'CreateBlogPost', 'createblogpost' );
+		}
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'createblogpost';
 	}
 
 	/** @inheritDoc */
@@ -74,9 +85,9 @@ class SpecialCreateBlogPost extends SpecialPage {
 		if (
 			$request->wasPosted() &&
 			!$request->getCheck( 'wpPreview' ) &&
-			$_SESSION['alreadysubmitted'] == false
+			$request->getSession()->get( 'alreadysubmitted' ) == false
 		) {
-			$_SESSION['alreadysubmitted'] = true;
+			$request->getSession()->set( 'alreadysubmitted', true );
 
 			// Protect against cross-site request forgery (CSRF)
 			if ( !$user->matchEditToken( $request->getVal( 'wpEditToken' ) ) ) {
@@ -253,7 +264,7 @@ class SpecialCreateBlogPost extends SpecialPage {
 
 			$out->addHTML( $this->getEditFormWithRules() );
 		} else {
-			$_SESSION['alreadysubmitted'] = false;
+			$request->getSession()->set( 'alreadysubmitted', false );
 
 			$out->addHTML( $this->getEditFormWithRules() );
 		}
@@ -329,7 +340,7 @@ class SpecialCreateBlogPost extends SpecialPage {
 		// No-JS version, "borrowed" from CreateAPage and slightly tweaked (nothing
 		// functional, just regular code cleanup), main container div ID changed, ...
 		$tagcloud .= '<noscript>';
-		if ( isset( $cloud->tags ) ) {
+		if ( $cloud->tags ) {
 			$tagcloud .= '<div id="create-tagcloud-nojs">';
 			$xnum = 0;
 			$array_category = [];

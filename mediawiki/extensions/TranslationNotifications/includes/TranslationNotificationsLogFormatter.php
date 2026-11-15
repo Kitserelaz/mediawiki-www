@@ -1,20 +1,16 @@
 <?php
-/**
- * Class for formatting TranslationNotifications logs.
- *
- * @file
- * @author Sucheta Ghoshal
- * @copyright Copyright © 2013, Sucheta Ghoshal
- * @license GPL-2.0-or-later
- */
+declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\TranslationNotifications;
 
-use LogFormatter;
 use MediaWiki\Extension\TranslationNotifications\Utilities\NotificationMessageBuilder;
+use MediaWiki\Logging\LogFormatter;
 
 /**
  * Class for formatting TranslationNotifications logs.
+ * @author Sucheta Ghoshal
+ * @copyright Copyright © 2013, Sucheta Ghoshal
+ * @license GPL-2.0-or-later
  */
 class TranslationNotificationsLogFormatter extends LogFormatter {
 	public function getMessageParameters(): array {

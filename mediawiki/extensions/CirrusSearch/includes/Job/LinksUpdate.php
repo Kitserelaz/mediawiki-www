@@ -18,20 +18,7 @@ use MediaWiki\Utils\MWTimestamp;
  * control which job is removed during deduplication.  In our case it'd only be
  * ok to remove the non-prioritized version.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class LinksUpdate extends CirrusTitleJob {
 	/**
@@ -56,9 +43,9 @@ class LinksUpdate extends CirrusTitleJob {
 	 * @param Title $title
 	 * @param RevisionRecord|null $revisionRecord
 	 * @param array $params
-	 * @return LinksUpdate
+	 * @return self
 	 */
-	public static function newPageChangeUpdate( Title $title, ?RevisionRecord $revisionRecord, array $params ): LinksUpdate {
+	public static function newPageChangeUpdate( Title $title, ?RevisionRecord $revisionRecord, array $params ): self {
 		if ( $revisionRecord !== null && $revisionRecord->getTimestamp() !== null ) {
 			$ts = (int)MWTimestamp::convert( TS_UNIX, $revisionRecord->getTimestamp() );
 		} else {
@@ -76,10 +63,8 @@ class LinksUpdate extends CirrusTitleJob {
 	/**
 	 * Prepare a cautionary update of a page that had some of its revision's visibility changed.
 	 * (Theoretically not required because old revisions should not be part of the index)
-	 * @param Title $title
-	 * @return LinksUpdate
 	 */
-	public static function newPastRevisionVisibilityChange( Title $title ): LinksUpdate {
+	public static function newPastRevisionVisibilityChange( Title $title ): self {
 		$params = [
 			self::PRIORITIZE => true,
 			self::UPDATE_KIND => self::VISIBILITY_CHANGE,
@@ -92,12 +77,8 @@ class LinksUpdate extends CirrusTitleJob {
 	/**
 	 * Prepare a page update for when the rendered output of the page might have changed due to a
 	 * change not directly related to this page (e.g. template update).
-	 *
-	 * @param Title $title
-	 * @param array $params
-	 * @return LinksUpdate
 	 */
-	public static function newPageRefreshUpdate( Title $title, array $params ): LinksUpdate {
+	public static function newPageRefreshUpdate( Title $title, array $params ): self {
 		$params += [
 			self::PRIORITIZE => false,
 			self::UPDATE_KIND => self::PAGE_REFRESH,
@@ -110,9 +91,9 @@ class LinksUpdate extends CirrusTitleJob {
 	 * New change emitted from the saneitizer
 	 * @param Title $title
 	 * @param string|null $cluster optional target cluster, null for all clusters
-	 * @return LinksUpdate
+	 * @return self
 	 */
-	public static function newSaneitizerUpdate( Title $title, ?string $cluster ): LinksUpdate {
+	public static function newSaneitizerUpdate( Title $title, ?string $cluster ): self {
 		$params = [
 			self::PRIORITIZE => false,
 			self::UPDATE_KIND => self::SANEITIZER,

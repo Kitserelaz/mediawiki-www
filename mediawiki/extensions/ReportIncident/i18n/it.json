@@ -2,15 +2,34 @@
 	"@metadata": {
 		"authors": [
 			"Beta16",
-			"Ontsed"
+			"Ontsed",
+			"Slow"
 		]
 	},
 	"reportincident-dialog-close-btn": "Chiudi",
+	"reportincident-dialog-additional-details-input-label": "Ulteriori informazioni",
 	"reportincident-dialog-optional-label": "(facoltativo)",
-	"reportincident-dialog-harassment-example-doxing": "Divulgazione dei dati personali (doxing)",
-	"reportincident-success-message-close": "Chiudi",
-	"reportincident-email-link-to-page-prefix": "Collegamento alla pagina",
-	"reportincident-email-something-else": "Qualcos'altro: \"$1\"",
+	"reportincident-dialog-harassment-type-hate-speech-or-discrimination": "Contenuti odiosi e discriminatori",
+	"reportincident-dialog-harassment-type-intimidation": "Bullismo, intimidazione, minacce o insulti",
+	"reportincident-dialog-harassment-type-spam": "Spam o contenuti promozionali",
 	"reportincident-emaildialog-close-button": "Annulla",
-	"reportincident-emaildialog-primary": "Vai alle impostazioni"
+	"reportincident-emaildialog-primary": "Vai alle impostazioni",
+	"reportincident-dialog-main-title": "Cosa ti piacerebbe fare",
+	"reportincident-dialog-report-immediate-harm-title": "Segnala una minaccia immediata di danno al team di emergenza",
+	"reportincident-nonemergency-help": "Bullismo, molestie, divulgazione di informazioni private, trolling, contenuti discriminatori o spam",
+	"reportincident-radio-header-nonemergency": "Ottieni aiuto con:",
+	"reportincident-choose-option": "Scegli un'opzione",
+	"reportincident-submit-behavior-section-support-item-info-is-public": "Tutte le conversazioni sui wiki sono pubbliche, non condividere informazioni personali.",
+	"reportincident-submit-back-to-page": "Torna alla pagina di discussione",
+	"communityconfiguration-reportincident-invalid-title": "La pagina deve essere una pagina wiki locale esistente",
+	"communityconfiguration-reportincident-invalid-email": "Il valore deve essere un indirizzo email valido",
+	"reportincident-nonemergency-submitsuccess-title": "Assistenza",
+	"reportincident-nonemergency-nextsteps-header": "Cosa faccio ora?",
+	"reportincident-nonemergency-requesthelp-header": "Come chiedere aiuto",
+	"reportincident-nonemergency-other-header": "Non riesci a trovare ciò che cerchi?",
+	"reportincident-nonemergency-sexualharassment-header": "Molestie sessuali",
+	"communityconfiguration-reportincident-reportincident_nonemergency_sexualharassment-label": "Molestie sessuali",
+	"reportincident-nonemergency-hatespeech-header": "Contenuti odiosi o discriminatori",
+	"communityconfiguration-reportincident-reportincident_nonemergency_hatespeech-label": "Contenuti odiosi o discriminatori",
+	"communityconfiguration-reportincident-reportincident_nonemergency_other-label": "Altro"
 }

@@ -5,6 +5,7 @@ namespace Wikibase\MediaInfo\Search;
 use CirrusSearch\Parser\FullTextKeywordRegistry;
 use CirrusSearch\SearchConfig;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use UnexpectedValueException;
 use Wikibase\Repo\WikibaseRepo;
@@ -30,8 +31,8 @@ if ( !function_exists( 'Wikibase\MediaInfo\Search\closureToAnonymousClass' ) ) {
 				$this->callable = $callable;
 			}
 
-			public function __invoke() {
-				return call_user_func_array( $this->callable, func_get_args() );
+			public function __invoke( ...$args ) {
+				return ( $this->callable )( ...$args );
 			}
 
 			public function __toString() {
@@ -88,14 +89,32 @@ return array_map( static function ( array $settings ) use ( $config ) {
 		'synonymsMinByteLength' => 2,
 		'synonymsMinSimilarityToCanonicalForm' => 0.75,
 		'synonymsMinDifferenceFromOthers' => 0.25,
+		'weightedTagsMinScoreThreshold' => 0.5,
 		'nearMatchBoost' => 3.0,
 	];
 	$settings = array_replace_recursive( $defaultSettings, $settings );
 
+	// work around '.' being replaced by '_' in query keys
+	$fixUnderscores = static function ( $underscored, $original ) use ( &$fixUnderscores ) {
+		$result = [];
+		foreach ( $underscored as $key => $value ) {
+			// build a regex where all underscores match either dot or underscore; rest has to be
+			// an exact match
+			$regex = '/^' . str_replace( '_', '[\._]', preg_quote( $key, '/' ) ) . '$/';
+			// then find a match in the expected keys
+			$matches = preg_grep( $regex, array_keys( $original ) );
+			if ( $matches ) {
+				$key = array_pop( $matches );
+			}
+			$result[ $key ] = is_array( $value ) ? $fixUnderscores( $value, $original[ $key ] ?? [] ) : $value;
+		}
+		return $result;
+	};
+
 	// allow settings (boost etc.) to be customized from URL query params
 	foreach ( RequestContext::getMain()->getRequest()->getQueryValues() as $key => $value ) {
 		// convert [ 'one:two' => 'three' ] into ['one']['two'] = 'three'
-		$flat = array_merge( explode( ':', $key ), [ floatval( $value ) ] );
+		$flat = array_merge( explode( ':', urldecode( $key ) ), [ floatval( $value ) ] );
 		$result = array_reduce(
 			array_reverse( $flat ),
 			static function ( $previous, $key ) {
@@ -103,18 +122,13 @@ return array_map( static function ( array $settings ) use ( $config ) {
 			},
 			null
 		);
-		$settings = array_replace_recursive( $settings, $result );
-	}
 
-	// work around '.' being replaced by '_'
-	if ( isset( $settings['boost']['redirect_title'] ) ) {
-		$settings['boost']['redirect.title'] = $settings['boost']['redirect_title'];
-		unset( $settings['boost']['redirect_title'] );
+		$settings = array_replace_recursive( $settings, $fixUnderscores( $result, $settings ) );
 	}
 
 	return [
 		'builder_factory' => closureToAnonymousClass( static function ( array $settings ) {
-			$languageCode = WikibaseRepo::getUserLanguage()->getCode();
+			$languageCode = RequestContext::getMain()->getLanguage()->getCode();
 			$languageFallbackChain = WikibaseRepo::getLanguageFallbackChainFactory()
 				->newFromLanguageCode( $languageCode );
 
@@ -139,11 +153,11 @@ return array_map( static function ( array $settings ) use ( $config ) {
 						$entitySearchBaseUri,
 						$titleMatchBaseUri,
 						$languageCode,
-						$config->get( 'LanguageCode' )
+						$config->get( MainConfigNames::LanguageCode )
 					),
 					$mwServices->getMainWANObjectCache(),
 					$languageCode,
-					$config->get( 'LanguageCode' ),
+					$config->get( MainConfigNames::LanguageCode ),
 					$entitySearchBaseUri . '-' . $titleMatchBaseUri
 				)
 			);
@@ -154,7 +168,7 @@ return array_map( static function ( array $settings ) use ( $config ) {
 					new MediaSearchASTEntitiesExtractor( $entitiesFetcher ),
 					$configFactory->makeConfig( 'WikibaseCirrusSearch' )->get( 'UseStemming' ),
 					$languages,
-					$config->get( 'LanguageCode' ),
+					$config->get( MainConfigNames::LanguageCode ),
 					$settings
 				)
 			);

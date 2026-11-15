@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Wizzard"
+		]
+	},
+	"countDownClock-desc": "Pridáva funkciu syntaktického analyzátora na zobrazenie odpočítavania času",
+	"countDownClock-invalidtime": "Zadajte, prosím, platný parameter endTime",
+	"countDownClock-days": "$1 {{PLURAL:$1|deň|dni|dní}}",
+	"countDownClock-hours": "$1 {{PLURAL:$1|hodina|hodiny|hodín}}",
+	"countDownClock-minutes": "$1 {{PLURAL:$1|minúta|minúty|minút}}",
+	"countDownClock-seconds": "$1 {{PLURAL:$1|sekunda|sekundy|sekúnd}}",
+	"countDownClock-expired": "Vypršalo"
+}

@@ -4,17 +4,16 @@ namespace TwoColConflict\Tests;
 
 use MediaWiki\Context\IContextSource;
 use MediaWiki\EditPage\EditPage;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
-use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Options\StaticUserOptionsLookup;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
-use MessageLocalizer;
 use OOUI\InputWidget;
 use PHPUnit\Framework\MockObject\MockObject;
 use TwoColConflict\Hooks\TwoColConflictHooks;
@@ -89,17 +88,6 @@ class TwoColConflictHooksTest extends \MediaWikiIntegrationTestCase {
 		$this->assertArrayNotHasKey( 'diff', $buttons );
 	}
 
-	public function testOnEditPageShowEditFormInitial() {
-		$calls = ExtensionRegistry::getInstance()->isLoaded( 'EventLogging' ) ? 1 : 0;
-		$outputPage = $this->createMock( OutputPage::class );
-		$outputPage->expects( $this->exactly( $calls ) )->method( 'addModules' );
-
-		$this->getHookHandlerInstance()->onEditPage__showEditForm_initial(
-			$this->createNoOpMock( EditPage::class ),
-			$outputPage
-		);
-	}
-
 	public function testOnGetBetaFeaturePreferences_whileInBeta() {
 		$this->markTestSkippedIfExtensionNotLoaded( 'BetaFeatures' );
 
@@ -150,7 +138,7 @@ class TwoColConflictHooksTest extends \MediaWikiIntegrationTestCase {
 	 *
 	 * @dataProvider provideGetOption
 	 */
-	public function testGetOption( ?string $origBeta, ?string $origEditing, bool $expectedEditing ) {
+	public function testGetOption( ?string $origBeta, ?string $origEditing, bool $newEditing ) {
 		$this->overrideConfigValue( 'TwoColConflictBetaFeature', false );
 		$user = $this->getTestUser()->getUser();
 
@@ -161,7 +149,7 @@ class TwoColConflictHooksTest extends \MediaWikiIntegrationTestCase {
 		$fetchedBeta = $userOptionsLookup->getOption( $user, TwoColConflictContext::BETA_PREFERENCE_NAME );
 		$fetchedEditing = $userOptionsLookup->getOption( $user, TwoColConflictContext::ENABLED_PREFERENCE );
 		$this->assertNull( $fetchedBeta );
-		$this->assertSame( $expectedEditing, (bool)$fetchedEditing );
+		$this->assertSame( $newEditing, (bool)$fetchedEditing );
 	}
 
 	public static function provideGetOption() {

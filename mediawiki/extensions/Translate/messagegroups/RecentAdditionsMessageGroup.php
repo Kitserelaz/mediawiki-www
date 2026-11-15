@@ -11,16 +11,19 @@
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\Translate\SystemUsers\FuzzyBot;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\RecentChanges\RecentChange;
 
 /**
  * @since 2012-11-01
  * @ingroup MessageGroup
  */
 class RecentAdditionsMessageGroup extends RecentMessageGroup {
+	/** @inheritDoc */
 	public function getId() {
 		return '!additions';
 	}
 
+	/** @inheritDoc */
 	public function getLabel( ?IContextSource $context = null ) {
 		$msg = wfMessage( 'translate-dynagroup-additions-label' );
 		$msg = self::addContext( $msg, $context );
@@ -28,6 +31,7 @@ class RecentAdditionsMessageGroup extends RecentMessageGroup {
 		return $msg->plain();
 	}
 
+	/** @inheritDoc */
 	public function getDescription( ?IContextSource $context = null ) {
 		$msg = wfMessage( 'translate-dynagroup-additions-desc' );
 		$msg = self::addContext( $msg, $context );
@@ -35,13 +39,13 @@ class RecentAdditionsMessageGroup extends RecentMessageGroup {
 		return $msg->plain();
 	}
 
-	protected function getQueryConditions() {
+	protected function getQueryConditions(): array {
 		global $wgTranslateMessageNamespaces;
-		$db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
+		$db = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 		return [
 			'rc_title ' . $db->buildLike( $db->anyString(), '/en' ),
 			'rc_namespace' => $wgTranslateMessageNamespaces,
-			'rc_type != ' . RC_LOG,
+			$db->expr( 'rc_source', '!=', RecentChange::SRC_LOG ),
 			'rc_id > ' . $this->getRCCutoff(),
 			'rc_actor' => FuzzyBot::getUser()->getActorId()
 		];

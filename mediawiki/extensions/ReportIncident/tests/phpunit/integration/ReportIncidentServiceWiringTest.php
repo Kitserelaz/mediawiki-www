@@ -2,7 +2,6 @@
 
 namespace MediaWiki\Extension\ReportIncident\Tests\Integration;
 
-use MediaWiki\MediaWikiServices;
 use MediaWikiIntegrationTestCase;
 
 /**
@@ -15,7 +14,7 @@ class ReportIncidentServiceWiringTest extends MediaWikiIntegrationTestCase {
 	 * @dataProvider provideService
 	 */
 	public function testService( string $name ) {
-		MediaWikiServices::getInstance()->get( $name );
+		$this->getServiceContainer()->get( $name );
 		$this->addToAssertionCount( 1 );
 	}
 

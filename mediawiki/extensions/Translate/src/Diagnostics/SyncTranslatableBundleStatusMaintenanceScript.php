@@ -3,7 +3,6 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Diagnostics;
 
-use LoggedUpdateMaintenance;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\RevTagStore;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundle;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundleFactory;
@@ -12,6 +11,7 @@ use MediaWiki\Extension\Translate\PageTranslation\PageTranslationSpecialPage;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePage;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePageStatus;
 use MediaWiki\Extension\Translate\Services;
+use MediaWiki\Maintenance\LoggedUpdateMaintenance;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use RuntimeException;
@@ -217,10 +217,7 @@ class SyncTranslatableBundleStatusMaintenanceScript extends LoggedUpdateMaintena
 			return;
 		}
 		$this->output( "Removing \"extra\" bundle statuses\n" );
-		$pageIds = [];
-		foreach ( $extraBundleInfo as $bundleInfo ) {
-			$pageIds[] = $bundleInfo['page_id'];
-		}
+		$pageIds = array_column( $extraBundleInfo, 'page_id' );
 
 		$tbStatusStore = Services::getInstance()->getTranslatableBundleStatusStore();
 		$tbStatusStore->removeStatus( ...$pageIds );
@@ -242,7 +239,7 @@ class SyncTranslatableBundleStatusMaintenanceScript extends LoggedUpdateMaintena
 		$titlePrefixedDbKey = $bundle['title'] instanceof Title ?
 			$bundle['title']->getPrefixedDBkey() : '<Title not available>';
 		$id = str_pad( (string)$bundle['page_id'], 7, ' ', STR_PAD_LEFT );
-		$status = self::STATUS_NAME_MAPPING[ $bundle['status']->getId() ];
+		$status = self::STATUS_NAME_MAPPING[$bundle['status']->getId()];
 		$this->output( self::INDENT_SPACER . "* [Id: $id] $titlePrefixedDbKey: $status\n" );
 	}
 }

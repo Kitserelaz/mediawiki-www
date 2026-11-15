@@ -1,4 +1,3 @@
--include .env-39
 export
 
 # setup for docker-compose-ci build directory
@@ -11,14 +10,14 @@ endif
 EXTENSION := SemanticFormsSelect
 
 # docker images
-MW_VERSION?=1.39
+MW_VERSION?=1.43
 PHP_VERSION?=8.1
-DB_TYPE?=sqlite
-DB_IMAGE?=""
+DB_TYPE?=mysql
+DB_IMAGE?="mariadb:11.4"
 
 # extensions
 SMW_VERSION?=dev-master
-PF_VERSION?=5.9
+PF_VERSION?=6.0.8
 
 # composer
 # Enables "composer update" inside of extension
@@ -30,4 +29,3 @@ NODE_JS?=true
 
 # check for build dir and git submodule init if it does not exist
 include build/Makefile
-

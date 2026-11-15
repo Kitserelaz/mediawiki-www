@@ -1,6 +1,6 @@
 {
 	"name": "VEForAll",
-	"version": "0.5.2",
+	"version": "0.8.1",
 	"author": [
 		"Pierre Boutet", "Clément Flipo", "Ike Hecht", "Yaron Koren", "Cindy Cicalese"
 	],
@@ -9,14 +9,17 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.35.0",
+		"MediaWiki": ">= 1.42.0",
 		"extensions": {
 			"VisualEditor": "*"
 		}
 	},
-	"callback": "VEForAll\\VEForAllHooks::registerClasses",
 	"AutoloadClasses": {
-		"VEForAll\\VEForAllHooks": "includes/VEForAllHooks.php"
+		"VEForAll\\VEForAllHooks": "includes/VEForAllHooks.php",
+		"VEForAll\\ApiParsoidUtils": "includes/ApiParsoidUtils.php"
+	},
+	"APIModules": {
+		"veforall-parsoid-utils": "VEForAll\\ApiParsoidUtils"
 	},
 	"Hooks": {
 		"BeforePageDisplay": "VEForAll\\VEForAllHooks::onBeforePageDisplay",

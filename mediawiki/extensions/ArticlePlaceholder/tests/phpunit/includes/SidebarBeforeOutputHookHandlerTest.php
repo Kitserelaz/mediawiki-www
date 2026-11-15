@@ -4,9 +4,9 @@ namespace ArticlePlaceholder\Tests;
 
 use ArticlePlaceholder\SidebarBeforeOutputHookHandler;
 use MediaWiki\Request\WebRequest;
+use MediaWiki\Skin\Skin;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
-use Skin;
 use Wikibase\Client\Tests\Mocks\MockClientStore;
 use Wikibase\Client\WikibaseClient;
 use Wikibase\DataModel\Entity\Item;
@@ -127,12 +127,7 @@ class SidebarBeforeOutputHookHandlerTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( $link, $result );
 	}
 
-	/**
-	 * @param string|null $subPage
-	 *
-	 * @return Title
-	 */
-	private function getAboutTopicTitle( $subPage = null ): Title {
+	private function getAboutTopicTitle( ?string $subPage = null ): Title {
 		$titleText = 'AboutTopic';
 
 		if ( $subPage ) {
@@ -151,15 +146,9 @@ class SidebarBeforeOutputHookHandlerTest extends MediaWikiIntegrationTestCase {
 		return $title;
 	}
 
-	/**
-	 * @param Title $title
-	 * @param string|null $itemIdParam
-	 *
-	 * @return Skin
-	 */
-	private function getSkin( Title $title, string $itemIdParam = null ): Skin {
+	private function getSkin( Title $title, ?string $itemIdParam = null ): Skin {
 		$request = $this->createMock( WebRequest::class );
-		$request->method( 'getText' )
+		$request->method( 'getVal' )
 			->willReturnCallback( function ( $name, $default ) use ( $itemIdParam ) {
 				$this->assertSame( 'entityid', $name );
 
@@ -191,7 +180,8 @@ class SidebarBeforeOutputHookHandlerTest extends MediaWikiIntegrationTestCase {
 		return new SidebarBeforeOutputHookHandler(
 			WikibaseClient::getEntityIdParser(),
 			WikibaseClient::getRepoLinker(),
-			WikibaseClient::getStore()->getEntityLookup()
+			WikibaseClient::getStore()->getEntityLookup(),
+			$this->getServiceContainer()->getSpecialPageFactory()
 		);
 	}
 

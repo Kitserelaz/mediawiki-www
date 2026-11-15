@@ -15,6 +15,7 @@ abstract class WBMIApiTestCase extends ApiUploadTestCase {
 	private function setupSearchEngine() {
 		MockSearchEngine::clearMockResults();
 		$this->overrideConfigValues( [
+			MainConfigNames::FileExtensions => [ 'svg' ],
 			MainConfigNames::SearchType => MockSearchEngine::class,
 		] );
 	}
@@ -25,41 +26,21 @@ abstract class WBMIApiTestCase extends ApiUploadTestCase {
 		$this->setupSearchEngine();
 	}
 
-	private function login() {
-		$user = $this->getTestUser();
-		$userName = $user->getUser()->getName();
-		$password = $user->getPassword();
-
-		$params = [
-			'action' => 'login',
-			'lgname' => $userName,
-			'lgpassword' => $password
-		];
-		[ , , $session ] = $this->doApiRequest( $params );
-		return $session;
-	}
-
 	protected function uploadRandomImage() {
-		$session = $this->login();
-		$extension = 'png';
-		$mimeType = 'image/png';
-
 		try {
-			$randomImageGenerator = new RandomImageGenerator();
-			$filePaths = $randomImageGenerator->writeImages(
+			$filePaths = ( new RandomImageGenerator() )->writeImages(
 				1,
-				$extension,
+				'svg',
 				$this->getNewTempDirectory()
 			);
 		} catch ( \Exception $e ) {
 			$this->markTestIncomplete( $e->getMessage() );
 		}
 
-		/** @var array $filePaths */
 		$filePath = $filePaths[0];
 		$fileName = basename( $filePath );
 
-		if ( !$this->fakeUploadFile( 'file', $fileName, $mimeType, $filePath ) ) {
+		if ( !$this->fakeUploadFile( 'file', $fileName, 'image/svg', $filePath ) ) {
 			$this->markTestIncomplete( "Couldn't upload file!\n" );
 		}
 
@@ -73,7 +54,7 @@ abstract class WBMIApiTestCase extends ApiUploadTestCase {
 
 		[ $result, , ] = $this->doApiRequestWithToken(
 			$params,
-			$session,
+			null,
 			$this->getTestUser()->getUser()
 		);
 

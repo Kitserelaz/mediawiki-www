@@ -3,10 +3,10 @@
 		"authors": [
 			"Edwingudfriend",
 			"Hussein m mmbaga",
+			"Jon Harald Søby",
 			"Kwisha",
 			"Lloffiwr",
-			"Stephenwanjau",
-			"Jon Harald Søby"
+			"Stephenwanjau"
 		]
 	},
 	"translate": "Kutafsiri",
@@ -56,7 +56,6 @@
 	"languagestats-stats-for": "Takwimu za fasiri ya $1 ($2).",
 	"languagestats-recenttranslations": "fasiri za hivi karibuni",
 	"translate-language-code": "Msimbo wa lugha",
-	"translate-language-code-field-name": "Msimbo wa lugha:",
 	"translate-suppress-complete": "Isionyeshwe vikundi vya jumbe zilizotafsiriwa zote",
 	"translate-language": "Lugha",
 	"translate-total": "Jumbe",

@@ -5,11 +5,11 @@ const { arrayContains } = require( '../ext.advancedSearch.util.js' );
 
 /**
  * @class
- * @property {Object.<int,string>} namespaces
+ * @property {Object.<number,string>} namespaces
  * @property {Object.<string,Function>} providerFunctions
  *
  * @constructor
- * @param {Object.<int,string>} namespaces Mapping namespace ids to localized names
+ * @param {Object.<number,string>} namespaces Mapping namespace ids to localized names
  */
 const NamespacePresetProviders = function ( namespaces ) {
 	this.namespaces = namespaces;
@@ -46,13 +46,11 @@ NamespacePresetProviders.prototype.hasProvider = function ( providerName ) {
  * @return {string[]}
  */
 NamespacePresetProviders.prototype.getNamespaceIdsFromProvider = function ( providerName ) {
-	const self = this;
-
 	return this.providerFunctions[ providerName ]( Object.keys( this.namespaces ) )
 		// Calling String() as a function casts numbers to strings
 		.map( String )
 		.filter( ( id ) => {
-			if ( id in self.namespaces ) {
+			if ( id in this.namespaces ) {
 				return true;
 			}
 			mw.log.warn( 'AdvancedSearch namespace preset provider "' + providerName + '" returned invalid namespace id' );

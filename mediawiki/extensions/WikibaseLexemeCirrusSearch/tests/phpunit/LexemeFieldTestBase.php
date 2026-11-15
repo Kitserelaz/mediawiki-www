@@ -17,12 +17,12 @@ abstract class LexemeFieldTestBase extends TestCase {
 	/**
 	 * @return array
 	 */
-	abstract protected function getTestData();
+	abstract protected static function provideTestData();
 
 	/**
 	 * @param WikibaseIndexField $field
 	 * @param mixed $expected
-	 * @dataProvider getTestData
+	 * @dataProvider provideTestData
 	 */
 	public function testLemmaField( $field, $expected ) {
 		$form1 = NewForm::havingId( 'F1' )
@@ -38,6 +38,7 @@ abstract class LexemeFieldTestBase extends TestCase {
 			->withId( 'L1' )
 			->withLanguage( self::LANGUAGE_ID )
 			->withLemma( 'en', 'Test Lemma' )
+			->withLemma( 'en-gb', 'Test lemma' )
 			->withForm( $form1 )
 			->withForm( $form2 )
 			->withLexicalCategory( self::CATEGORY_ID )

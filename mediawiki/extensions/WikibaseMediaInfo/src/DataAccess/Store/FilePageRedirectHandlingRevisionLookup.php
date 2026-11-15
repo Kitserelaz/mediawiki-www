@@ -27,31 +27,14 @@ use Wikimedia\Rdbms\IDBAccessObject;
  */
 class FilePageRedirectHandlingRevisionLookup implements EntityRevisionLookup {
 
-	/**
-	 * @var EntityRevisionLookup
-	 */
-	private $lookup;
-
-	/**
-	 * @var RevisionStore
-	 */
-	private $revisionStore;
-
-	/**
-	 * @var WikiPageEntityDataLoader
-	 */
-	private $entityDataLoader;
-
 	public function __construct(
-		EntityRevisionLookup $lookup,
-		RevisionStore $revisionStore,
-		WikiPageEntityDataLoader $entityDataLoader
+		private readonly EntityRevisionLookup $lookup,
+		private readonly RevisionStore $revisionStore,
+		private readonly WikiPageEntityDataLoader $entityDataLoader,
 	) {
-		$this->lookup = $lookup;
-		$this->revisionStore = $revisionStore;
-		$this->entityDataLoader = $entityDataLoader;
 	}
 
+	/** @inheritDoc */
 	public function getEntityRevision(
 		EntityId $entityId,
 		$revisionId = 0,
@@ -60,6 +43,7 @@ class FilePageRedirectHandlingRevisionLookup implements EntityRevisionLookup {
 		return $this->lookup->getEntityRevision( $entityId, $revisionId, $mode );
 	}
 
+	/** @inheritDoc */
 	public function getLatestRevisionId( EntityId $entityId, $mode = LookupConstants::LATEST_FROM_REPLICA ) {
 		try {
 			return $this->lookup->getLatestRevisionId( $entityId, $mode );

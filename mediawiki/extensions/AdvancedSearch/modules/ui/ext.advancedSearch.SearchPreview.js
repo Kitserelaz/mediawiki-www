@@ -16,10 +16,13 @@ const lookupTranslationForSortMethod = function ( name ) {
 	// The following messages are used here:
 	// * advancedsearch-sort-preview-create-timestamp-asc
 	// * advancedsearch-sort-preview-create-timestamp-desc
+	// * advancedsearch-sort-preview-incoming-links-asc
+	// * advancedsearch-sort-preview-incoming-links-asc
 	// * advancedsearch-sort-preview-last-edit-asc
 	// * advancedsearch-sort-preview-last-edit-desc
 	// * advancedsearch-sort-preview-relevance
-	// * advancedsearch-sort-preview-*
+	// * advancedsearch-sort-preview-title-natural-asc
+	// * advancedsearch-sort-preview-title-natural-desc
 	const msg = mw.message( 'advancedsearch-sort-preview-' + name.replace( /_/g, '-' ) );
 	return msg.exists() ? msg.text() : name;
 };
@@ -35,6 +38,7 @@ const lookupTranslationForLabel = function ( fieldId ) {
 	// * advancedsearch-field-filetype
 	// * advancedsearch-field-filew
 	// * advancedsearch-field-hastemplate
+	// * advancedsearch-field-incategory
 	// * advancedsearch-field-inlanguage
 	// * advancedsearch-field-intitle
 	// * advancedsearch-field-not
@@ -101,7 +105,10 @@ SearchPreview.prototype.updatePreview = function () {
 		}
 	} );
 
-	this.$previewTagList.append( this.generateTag( 'sort', this.store.getSortMethod() ).$element );
+	const sort = this.store.getSortMethod();
+	if ( sort !== 'relevance' ) {
+		this.$previewTagList.append( this.generateTag( 'sort', sort ).$element );
+	}
 };
 
 /**
@@ -135,10 +142,8 @@ SearchPreview.prototype.skipFieldInPreview = function ( fieldId, value ) {
 SearchPreview.prototype.generateTag = function ( fieldId, value ) {
 	const formattedValue = this.formatValue( fieldId, value );
 	let $label = $( '<span>' );
-	let disabled = false;
 	if ( fieldId === 'sort' ) {
 		$label.text( mw.msg( 'advancedsearch-field-preview-sort', formattedValue ) );
-		disabled = value === 'relevance';
 	} else {
 		$label = $label.text( lookupTranslationForLabel( fieldId ) + mw.msg( 'colon-separator' ) )
 			// redundant span to cover browsers without support for bdi tag
@@ -150,7 +155,6 @@ SearchPreview.prototype.generateTag = function ( fieldId, value ) {
 	const tag = new OO.ui.TagItemWidget( {
 		$element: $( '<li>' ),
 		label: $label,
-		disabled: disabled,
 		draggable: false
 	} );
 
@@ -166,6 +170,7 @@ SearchPreview.prototype.generateTag = function ( fieldId, value ) {
 	// * mw-advancedsearch-searchPreview-preview-filetype
 	// * mw-advancedsearch-searchPreview-preview-filew
 	// * mw-advancedsearch-searchPreview-preview-hastemplate
+	// * mw-advancedsearch-searchPreview-preview-incategory
 	// * mw-advancedsearch-searchPreview-preview-inlanguage
 	// * mw-advancedsearch-searchPreview-preview-intitle
 	// * mw-advancedsearch-searchPreview-preview-not
@@ -189,7 +194,7 @@ SearchPreview.prototype.generateTag = function ( fieldId, value ) {
  * @return {string}
  */
 SearchPreview.prototype.formatValue = function ( fieldId, value ) {
-	if ( fieldId === 'filetype' && value.indexOf( '/' ) !== -1 ) {
+	if ( fieldId === 'filetype' && value.includes( '/' ) ) {
 		const mimeTypes = mw.config.get( 'advancedSearch.mimeTypes' );
 		for ( const fileExtension in mimeTypes ) {
 			if ( mimeTypes[ fileExtension ] === value ) {
@@ -204,7 +209,9 @@ SearchPreview.prototype.formatValue = function ( fieldId, value ) {
 	}
 
 	if ( Array.isArray( value ) ) {
-		return value.map( ( v ) => String( v ).trim() ).filter( ( v ) => v !== '' ).join( mw.msg( 'comma-separator' ) );
+		return value.map( ( v ) => String( v ).trim() )
+			.filter( ( v ) => v )
+			.join( mw.msg( 'comma-separator' ) );
 	}
 
 	return value.trim();

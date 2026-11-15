@@ -9,6 +9,7 @@ use MediaWiki\EditPage\EditPage;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Page\WikiPageFactory;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
@@ -17,50 +18,23 @@ use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\User\TempUser\TempUserConfig;
+use MediaWiki\User\UserIdentity;
 
 class SpecialTemplateSandbox extends SpecialPage {
 	/** @var string[] */
 	private $prefixes = [];
 
-	/**
-	 * @var null|ParserOutput
-	 */
-	private $output = null;
+	private ?ParserOptions $parserOptions = null;
+	private ?ParserOutput $output = null;
 
-	/** @var RevisionLookup */
-	private $revisionLookup;
-
-	/** @var IContentHandlerFactory */
-	private $contentHandlerFactory;
-
-	/** @var WikiPageFactory */
-	private $wikiPageFactory;
-
-	/** @var ContentRenderer */
-	private $contentRenderer;
-
-	/** @var TempUserConfig */
-	private $tempUserConfig;
-
-	/**
-	 * @param RevisionLookup $revisionLookup
-	 * @param IContentHandlerFactory $contentHandlerFactory
-	 * @param WikiPageFactory $wikiPageFactory
-	 * @param ContentRenderer $contentRenderer
-	 */
 	public function __construct(
-		RevisionLookup $revisionLookup,
-		IContentHandlerFactory $contentHandlerFactory,
-		WikiPageFactory $wikiPageFactory,
-		ContentRenderer $contentRenderer,
-		TempUserConfig $tempUserConfig
+		private readonly RevisionLookup $revisionLookup,
+		private readonly IContentHandlerFactory $contentHandlerFactory,
+		private readonly WikiPageFactory $wikiPageFactory,
+		private readonly ContentRenderer $contentRenderer,
+		private readonly TempUserConfig $tempUserConfig,
 	) {
 		parent::__construct( 'TemplateSandbox' );
-		$this->revisionLookup = $revisionLookup;
-		$this->contentHandlerFactory = $contentHandlerFactory;
-		$this->wikiPageFactory = $wikiPageFactory;
-		$this->contentRenderer = $contentRenderer;
-		$this->tempUserConfig = $tempUserConfig;
 	}
 
 	/** @inheritDoc */
@@ -162,9 +136,21 @@ class SpecialTemplateSandbox extends SpecialPage {
 					)
 				);
 			} else {
-				Logic::addSubpageHandlerToOutput( $this->prefixes, $output );
+				$prefixes = $this->getPrefixesOwnedByUser( $user );
+				if ( $prefixes !== $this->prefixes ) {
+					$output->addHTML(
+						Html::warningBox(
+							$output->msg( 'templatesandbox-js-css-limited-preview' )->parse(),
+							'previewnote'
+						)
+					);
+				}
+				Logic::addSubpageHandlerToOutput( $prefixes, $output );
 			}
-			$output->addParserOutput( $this->output );
+			$output->addParserOutput(
+				$this->output,
+				$this->parserOptions ?? ParserOptions::newFromContext( $this->getContext() )
+			);
 
 			$output->addHTML( Html::rawElement(
 				'div',
@@ -174,10 +160,30 @@ class SpecialTemplateSandbox extends SpecialPage {
 			$output->addModules( 'mediawiki.collapseFooterLists' );
 
 			$titleText = $this->output->getTitleText();
-			if ( strval( $titleText ) !== '' ) {
+			if ( $titleText !== '' ) {
 				$output->setPageTitleMsg( $this->msg( 'templatesandbox-title-output', $titleText ) );
 			}
 		}
+	}
+
+	/**
+	 * Get sandbox prefixes in the user's own userspace, i.e. only the sandbox
+	 * templates they themselves saved.
+	 * @param UserIdentity $user
+	 * @return array
+	 */
+	private function getPrefixesOwnedByUser( UserIdentity $user ): array {
+		$prefixes = [];
+		foreach ( $this->prefixes as $prefix ) {
+			$prefixTitle = Title::newFromText( $prefix );
+			if ( $prefixTitle instanceof Title
+				&& $prefixTitle->getNamespace() === NS_USER
+				&& $prefixTitle->getRootText() === $user->getName()
+			) {
+				$prefixes[] = $prefix;
+			}
+		}
+		return $prefixes;
 	}
 
 	/**
@@ -192,6 +198,9 @@ class SpecialTemplateSandbox extends SpecialPage {
 		$title = Title::newFromText( $value );
 		if ( !$title instanceof Title ) {
 			return $this->msg( 'templatesandbox-invalid-title' )->parseAsBlock();
+		}
+		if ( !$this->getAuthority()->authorizeRead( 'read', $title ) ) {
+			return $this->msg( 'templatesandbox-cannot-view-title' )->parseAsBlock();
 		}
 		if ( !$title->exists() ) {
 			return $this->msg( 'templatesandbox-title-not-exists' )->parseAsBlock();
@@ -288,6 +297,7 @@ class SpecialTemplateSandbox extends SpecialPage {
 		$logic = new Logic( $this->prefixes, null, null );
 		$reset = $logic->setupForParse( $popts );
 		$this->output = $this->contentRenderer->getParserOutput( $content, $title, $rev, $popts );
+		$this->parserOptions = $popts;
 
 		return Status::newGood();
 	}

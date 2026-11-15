@@ -7,6 +7,7 @@ use MediaWiki\Extension\SecurePoll\Pages\CreatePage;
 use OOUI\DropdownInputWidget;
 use OOUI\FieldLayout;
 use OOUI\FieldsetLayout;
+use OOUI\PanelLayout;
 
 /**
  * A STVBallot class,
@@ -31,6 +32,17 @@ class STVBallot extends Ballot {
 		];
 	}
 
+	/** @inheritDoc */
+	public static function getTallyModifiers(): array {
+		return [
+			'stv-candidate-excluded' => [
+				'type' => 'check',
+				'field' => 'option'
+			]
+		];
+	}
+
+	/** @inheritDoc */
 	public static function getCreateDescriptors() {
 		$description = parent::getCreateDescriptors();
 		$description['question'] += [
@@ -60,11 +72,26 @@ class STVBallot extends Ballot {
 	 * @return FieldsetLayout
 	 */
 	public function getQuestionForm( $question, $options ): FieldsetLayout {
-		$name = 'securepoll_q' . $question->getId();
+		// The formatting to a fixed digit number here is important because
+		// `page.vote.stv.js` sorts the form entries alphabetically.
+		$name = 'securepoll_q' . $this->getFixedFormatValue( $question->getId() );
 		$fieldset = new FieldsetLayout();
 		$request = $this->getRequest();
 		$this->seatsLimit = $question->getProperty( 'limit-seats' );
 		$this->numberOfSeats = $question->getProperty( 'min-seats' );
+
+		$data = [
+			'questionId' => (int)$question->getId(),
+			'maxSeats' => $this->seatsLimit ? $this->numberOfSeats : count( $options ),
+			'selectedItems' => []
+		];
+
+		// Because the combobox -> boxmenu -> draggable pipeline doesn't pass along
+		// an id (for ux reasons, passing the id would result in exposing the id to
+		// the user), save an array of value => id pairs to re-associate the value with
+		// the id on form submission. This will transform the user-visible values back
+		// into ids the ballot knows how to process.
+		$allCandidates = [];
 
 		$allOptions = [
 			[
@@ -72,18 +99,41 @@ class STVBallot extends Ballot {
 				'label' => $this->msg( 'securepoll-stv-droop-default-value' )->text(),
 			]
 		];
-		foreach ( $options as $option ) {
+		foreach ( $options as $key => $option ) {
+			$formattedKey = $this->getFixedFormatValue( $key );
+			// Restore rankings from request if available
+			$selectedVal = $request->getVal( $name . "_opt" . $formattedKey );
+			if ( $selectedVal ) {
+				$data[ 'selectedItems' ][] = [
+					'option' => $name . "_opt" . $formattedKey,
+					'itemKey' => $key
+				];
+			}
+
+			$allCandidates[ $option->parseMessageInline( 'text' ) ] = $option->getId();
+
+			// Pass the candidate's name as both the value and the label by setting it
+			// as the data attribute.
+			// It would be ideal to correctly use the name as the label and the option id as
+			// the value but the combobox type will show the value instead of the label
+			// in its textarea (eg. selecting a candidate will reveal the option id in the UI).
+			// See https://stackoverflow.com/questions/42502268/label-data-mechanism-in-oo-ui-comboboxinputwidget
 			$allOptions[] = [
 				'data' => $option->getId(),
 				'label' => $option->parseMessageInline( 'text' ),
 			];
 		}
+		$data[ 'candidates' ] = $allCandidates;
+
 		$numberOfOptions = count( $options );
 		for ( $i = 0; $i < $numberOfOptions; $i++ ) {
 			if ( $this->numberOfSeatsReached( $i ) ) {
 				break;
 			}
-			$inputId = "{$name}_opt{$i}";
+			// The formatting to a fixed digit number here is important because
+			// `page.vote.stv.js` sorts the form entries alphabetically.
+			$formattedKey = $this->getFixedFormatValue( $i );
+			$inputId = "{$name}_opt{$formattedKey}";
 			$widget = new DropdownInputWidget( [
 				'infusable' => true,
 				'name' => $inputId,
@@ -94,15 +144,33 @@ class STVBallot extends Ballot {
 			$fieldset->appendContent( new FieldLayout(
 				$widget,
 				[
-					'classes' => [ 'securepoll-option-preferential' ],
+					'classes' => [ 'securepoll-option-preferential', 'securepoll-option-stv-dropdown' ],
 					'label' => $this->msg( 'securepoll-stv-droop-choice-rank', $i + 1 ),
 					'errors' => isset( $this->prevErrorIds[$inputId] ) ? [
 						$this->prevStatus->spGetMessageText( $inputId )
-						] : null,
+					] : null,
 					'align' => 'top',
 				]
 			) );
 		}
+
+		$fieldset->appendContent( new PanelLayout(
+			[
+				'infusable' => true,
+				'scrollable' => false,
+				'expanded' => false,
+				'data' => $data,
+				'classes' => [
+					'securepoll-option-preferential',
+					'securepoll-option-stv-panel',
+					'securepoll-option-stv-panel-outer',
+				],
+				'errors' => isset( $this->prevErrorIds[ $name ] ) ? [
+					$this->prevStatus->spGetMessageText( $name )
+				] : null,
+				'align' => 'top'
+			]
+		) );
 
 		return $fieldset;
 	}
@@ -118,7 +186,9 @@ class STVBallot extends Ballot {
 		$options = $question->getOptions();
 		$rankedChoices = [];
 		foreach ( $options as $rank => $option ) {
-			$id = 'securepoll_q' . $question->getId() . '_opt' . $rank;
+			$formattedId = $this->getFixedFormatValue( $question->getId() );
+			$formattedRank = $this->getFixedFormatValue( $rank );
+			$id = 'securepoll_q' . $formattedId . '_opt' . $formattedRank;
 			$rankedChoices[] = $this->getRequest()->getVal( $id );
 		}
 
@@ -198,6 +268,12 @@ class STVBallot extends Ballot {
 		return $record;
 	}
 
+	/**
+	 * @param Question $question
+	 * @param string $choice
+	 * @param int $rank
+	 * @return string
+	 */
 	public function packRecord( $question, $choice, $rank ) {
 		return sprintf(
 			'Q%08X-C%08X-R%08X--',
@@ -248,7 +324,6 @@ class STVBallot extends Ballot {
 	}
 
 	/**
-	 *
 	 * @param int $count
 	 * @return bool
 	 */
@@ -257,5 +332,17 @@ class STVBallot extends Ballot {
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Formats to a fixed digit number (as string). This ensures consistency
+	 * when sorting alphabetically and doesn't mis-sort IDs into an order
+	 * like 1, 10, 2, ...
+	 *
+	 * @param string|int $value
+	 * @return string
+	 */
+	private function getFixedFormatValue( $value ) {
+		return sprintf( '%07d', $value );
 	}
 }

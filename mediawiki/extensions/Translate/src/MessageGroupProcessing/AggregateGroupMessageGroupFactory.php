@@ -14,10 +14,10 @@ use Wikimedia\Rdbms\IReadableDatabase;
  * @author Niklas Laxström
  */
 final class AggregateGroupMessageGroupFactory implements CachedMessageGroupFactory {
-	private MessageGroupMetadata $messageGroupMetadata;
 
-	public function __construct( MessageGroupMetadata $messageGroupMetadata ) {
-		$this->messageGroupMetadata = $messageGroupMetadata;
+	public function __construct(
+		private readonly MessageGroupMetadata $messageGroupMetadata,
+	) {
 	}
 
 	public function getCacheKey(): string {
@@ -25,7 +25,7 @@ final class AggregateGroupMessageGroupFactory implements CachedMessageGroupFacto
 	}
 
 	public function getCacheVersion(): int {
-		return 1;
+		return 2;
 	}
 
 	public function getDependencies(): array {
@@ -56,6 +56,7 @@ final class AggregateGroupMessageGroupFactory implements CachedMessageGroupFacto
 		return $groups;
 	}
 
+	/** @inheritDoc */
 	public function createGroups( $data ): array {
 		// Parts that do not vary per group and do not need to be stored in the cache
 		$template = [

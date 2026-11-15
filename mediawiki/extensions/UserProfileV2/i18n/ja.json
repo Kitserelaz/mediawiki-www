@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Tensama0415",
 			"Waki285"
 		]
 	},
@@ -28,8 +29,8 @@
 	"userprofilev2-showglobalgroupshelp": "自分が所属しているグローバル利用者グループを表示 (誰でも閲覧可能)",
 	"userprofilev2-showglobaleditcounthelp": "CentralAuth からのグローバル編集回数を表示 (誰でも閲覧可能)",
 	"userprofilev2-edit": "編集",
-	"userprofilev2-edit-count": "<strong>$1</strong>回編集",
-	"userprofilev2-globaledit-count": "<strong>$1</strong>回編集 (グローバル)",
+	"userprofilev2-edit-count": "$1回編集",
+	"userprofilev2-globaledit-count": "$1回編集 (グローバル)",
 	"userprofilev2-editavatar": "アバターを編集",
 	"userprofilev2-edit-back": "戻る",
 	"userprofilev2-deleteavatar": "アバター削除",

@@ -22,6 +22,5 @@
 	"ipinfo-property-label-connectiontypes": "Llojet e lidhjeve",
 	"ipinfo-property-label-tunneloperators": "Operatori i tunelit",
 	"ipinfo-property-label-proxies": "Përfaqësuesit",
-	"ipinfo-property-tooltip-asn": "Një identifikues unik për rrjetet e caktuara ndaj një rajoni dhe më tepër ndaj organizatave si qeverive dhe operatorëve të internetit",
-	"ipinfo-property-label-isp": "Operatori i internetit"
+	"ipinfo-property-tooltip-asn": "Një identifikues unik për rrjetet e caktuara ndaj një rajoni dhe më tepër ndaj organizatave si qeverive dhe operatorëve të internetit"
 }

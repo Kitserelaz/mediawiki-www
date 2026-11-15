@@ -162,7 +162,7 @@ QUnit.test( 'treeDiff', ( assert ) => {
 	const doc = surface.documentModel;
 	ve.dm.treeModifier.setup( doc );
 	let j = 0;
-	for ( let i = 0, iLen = tx.operations.length; i < iLen; i++ ) {
+	for ( let i = 0; i < tx.operations.length; i++ ) {
 		ve.dm.treeModifier.processLinearOperation( tx.operations[ i ] );
 		assert.deepEqual(
 			ve.dm.treeModifier.treeOps.slice( j ),
@@ -321,6 +321,24 @@ QUnit.test( 'unbalanced insertion', ( assert ) => {
 	}, /Expected closing for paragraph but got closing for heading/, 'unbalanced insertion' );
 } );
 
+QUnit.test( 'retain and merge inline node', ( assert ) => {
+	const data = [
+		{ type: 'paragraph' }, ...'Foo', { type: '/paragraph' },
+		{ type: 'paragraph' }, ...'Bar', { type: 'comment' }, { type: '/comment' }, ...'Baz', { type: '/paragraph' }
+	];
+	const doc = ve.dm.example.createExampleDocumentFromData( data );
+	const tx = new ve.dm.Transaction( [
+		{ type: 'retain', length: 3 },
+		{ type: 'replace', remove: [ 'o', { type: '/paragraph' }, { type: 'paragraph' }, 'B' ], insert: [] },
+		{ type: 'retain', length: 8 }
+	] );
+	doc.commit( tx );
+	assert.equalLinearData(
+		doc.getFullData(),
+		[ { type: 'paragraph' }, ...'Foar', { type: 'comment' }, { type: '/comment' }, ...'Baz', { type: '/paragraph' } ]
+	);
+} );
+
 QUnit.test( 'applyTreeOperation: ensureNotText', ( assert ) => {
 	const data = [
 		{ type: 'paragraph' },
@@ -424,9 +442,9 @@ QUnit.test( 'checkEqualData', ( assert ) => {
 					attrs: {},
 					body: { id: 'mw-reference-text-cite_note-1' }
 				},
-				listIndex: 0,
 				listGroup: 'mwReference/',
 				listKey: 'auto/0',
+				listIndex: 0,
 				refGroup: '',
 				contentsUsed: true,
 				refListItemId: 'mw-reference-text-cite_note-1'
@@ -477,10 +495,10 @@ QUnit.test( 'TreeCursor#crossIgnoredNodes', ( assert ) => {
 	doc.commit( tx );
 	assert.deepEqual(
 		doc.data.data,
-		[].concat(
-			data.slice( 0, 3 ),
-			data.slice( 6 )
-		),
+		[
+			...data.slice( 0, 3 ),
+			...data.slice( 6 )
+		],
 		'Can remove an inline node after a text node'
 	);
 
@@ -536,11 +554,11 @@ QUnit.test( 'TreeCursor#normalizeCursor', ( assert ) => {
 	doc.commit( tx );
 	assert.deepEqual(
 		doc.data.data,
-		[].concat(
-			data.slice( 0, 2 ),
-			data.slice( 6, 8 ),
-			data.slice( 9 )
-		),
+		[
+			...data.slice( 0, 2 ),
+			...data.slice( 6, 8 ),
+			...data.slice( 9 )
+		],
 		'Ignore removed nodes properly when normalizing from a text node'
 	);
 

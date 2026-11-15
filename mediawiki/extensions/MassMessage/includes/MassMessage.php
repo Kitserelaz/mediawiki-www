@@ -3,8 +3,8 @@
 namespace MediaWiki\MassMessage;
 
 use LogicException;
-use ManualLogEntry;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePage;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MassMessage\Job\MassMessageJob;
 use MediaWiki\MassMessage\Job\MassMessageSubmitJob;
@@ -22,12 +22,17 @@ use MediaWiki\WikiMap\WikiMap;
 /**
  * Some core functions needed by the extension.
  *
- * @file
  * @author Kunal Mehta
  * @license GPL-2.0-or-later
  */
-
 class MassMessage {
+
+	/**
+	 * LinkBatch is backed by an LRU cache with a capacity of 10K entries.
+	 * So, pick a batch size smaller than that.
+	 * See T388935 for an example of this impacting production deploys.
+	 */
+	public const LINK_BATCH_SIZE = 5000;
 
 	/**
 	 * Sets up the messenger account for our use if it hasn't been already.

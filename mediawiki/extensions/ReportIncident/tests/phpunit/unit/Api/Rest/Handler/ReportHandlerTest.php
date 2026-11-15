@@ -2,15 +2,13 @@
 
 namespace MediaWiki\Extension\ReportIncident\Tests\Unit\Api\Rest\Handler;
 
+use Exception;
 use MediaWiki\Block\AbstractBlock;
-use MediaWiki\Config\Config;
 use MediaWiki\Config\HashConfig;
 use MediaWiki\Extension\ReportIncident\Api\Rest\Handler\ReportHandler;
 use MediaWiki\Extension\ReportIncident\IncidentReport;
-use MediaWiki\Extension\ReportIncident\IncidentReportEmailStatus;
 use MediaWiki\Extension\ReportIncident\Services\ReportIncidentManager;
-use MediaWiki\Json\FormatJson;
-use MediaWiki\Language\Language;
+use MediaWiki\Page\PageIdentityValue;
 use MediaWiki\Permissions\RateLimiter;
 use MediaWiki\Rest\LocalizedHttpException;
 use MediaWiki\Rest\RequestData;
@@ -21,10 +19,13 @@ use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Tests\Rest\Handler\HandlerTestTrait;
 use MediaWiki\Tests\Unit\MockServiceDependenciesTrait;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
+use MediaWiki\Title\TitleParser;
+use MediaWiki\Title\TitleValue;
 use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityLookup;
+use MediaWiki\User\UserIdentityValue;
 use MediaWiki\User\UserNameUtils;
 use MediaWikiUnitTestCase;
 use Psr\Log\LoggerInterface;
@@ -49,7 +50,10 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 		/** @var ReportHandler $handler */
 		$handler = $this->newServiceInstance( ReportHandler::class, [ 'config' => $config ] );
 		$this->expectExceptionObject(
-			new LocalizedHttpException( new MessageValue( 'rest-permission-denied-anon' ), 401 )
+			new LocalizedHttpException(
+				new MessageValue( 'rest-permission-denied-anon' ),
+				ReportHandler::HTTP_STATUS_FORBIDDEN
+			)
 		);
 		$authority = $this->mockAnonUltimateAuthority();
 		$this->executeHandler(
@@ -70,7 +74,7 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 
 		$userFactory = $this->createMock( UserFactory::class );
 		$reportingUser = $this->createMock( User::class );
-		$reportingUser->method( 'isRegistered' )->willReturn( true );
+		$reportingUser->method( 'isNamed' )->willReturn( true );
 		$reportingUser->method( 'getEditCount' )->willReturn( 0 );
 		$userFactory->method( 'newFromUserIdentity' )->willReturn( $reportingUser );
 
@@ -85,7 +89,12 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 		$authority = $this->newUserAuthority( [
 			'actor' => $reportingUser,
 		] );
-		$dummyBody = [ 'reportedUser' => 'user', 'revisionId' => 123, 'behaviors' => [] ];
+		$dummyBody = [
+			'reportedUser' => 'user',
+			'revisionId' => 123,
+			'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+			'physicalHarmType' => 'threats-physical-harm'
+		];
 		$this->executeHandler(
 			$handler,
 			new RequestData( [ 'parsedBody' => $dummyBody ] ),
@@ -104,6 +113,7 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 
 		$userFactory = $this->createMock( UserFactory::class );
 		$reportingUser = $this->createMock( User::class );
+		$reportingUser->method( 'isNamed' )->willReturn( true );
 		$reportingUser->method( 'isRegistered' )->willReturn( true );
 		$reportingUser->method( 'getBlock' )->willReturn( $this->createMock( AbstractBlock::class ) );
 		$userFactory->method( 'newFromUserIdentity' )->willReturn( $reportingUser );
@@ -119,7 +129,12 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 		$authority = $this->newUserAuthority( [
 			'actor' => $reportingUser,
 		] );
-		$dummyBody = [ 'reportedUser' => 'user', 'revisionId' => 123, 'behaviors' => [] ];
+		$dummyBody = [
+			'reportedUser' => 'user',
+			'revisionId' => 123,
+			'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+			'physicalHarmType' => 'threats-physical-harm'
+		];
 		$this->executeHandler(
 			$handler,
 			new RequestData( [ 'parsedBody' => $dummyBody ] ),
@@ -140,6 +155,7 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 
 		$userFactory = $this->createMock( UserFactory::class );
 		$reportingUser = $this->createMock( User::class );
+		$reportingUser->method( 'isNamed' )->willReturn( true );
 		$reportingUser->method( 'isRegistered' )->willReturn( true );
 		ConvertibleTimestamp::setFakeTime( '20231019120100' );
 		$reportingUser->method( 'getRegistration' )->willReturn( '20231019120000' );
@@ -156,7 +172,12 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 		$authority = $this->newUserAuthority( [
 			'actor' => $reportingUser,
 		] );
-		$dummyBody = [ 'reportedUser' => 'user', 'revisionId' => 123, 'behaviors' => [] ];
+		$dummyBody = [
+			'reportedUser' => 'user',
+			'revisionId' => 123,
+			'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+			'physicalHarmType' => 'threats-physical-harm'
+		];
 		$this->executeHandler(
 			$handler,
 			new RequestData( [ 'parsedBody' => $dummyBody ] ),
@@ -184,7 +205,7 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	public function testRevisionDoesntExist() {
+	public function testRevisionDoesntExistAndNoPageProvided() {
 		$config = new HashConfig( [
 			'ReportIncidentApiEnabled' => true,
 			'ReportIncidentDeveloperMode' => true,
@@ -194,9 +215,20 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 		$revisionStore->method( 'getRevisionById' )
 			->with( 1 )
 			->willReturn( null );
+
+		$user = $this->createMock( User::class );
+		$user->method( 'isNamed' )->willReturn( true );
+
+		$userFactory = $this->createMock( UserFactory::class );
+		$userFactory->method( 'newFromUserIdentity' )->willReturn( $user );
+
 		/** @var ReportHandler $handler */
 		$handler = $this->newServiceInstance( ReportHandler::class,
-			[ 'config' => $config, 'revisionStore' => $revisionStore ]
+			[
+				'config' => $config,
+				'revisionStore' => $revisionStore,
+				'userFactory' => $userFactory
+			]
 		);
 		$this->expectExceptionObject(
 			new LocalizedHttpException( new MessageValue( 'rest-nonexistent-revision' ), 404 )
@@ -212,28 +244,10 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	public function testBodyFailsValidationOnObjectAsReportedUser() {
-		$config = new HashConfig( [
-			'ReportIncidentApiEnabled' => true,
-			'ReportIncidentDeveloperMode' => true,
-			'ReportIncidentMinimumAccountAgeInSeconds' => null,
-		] );
-		$revisionStore = $this->createMock( RevisionStore::class );
-		$revisionStore->method( 'getRevisionById' )
-			->with( 1 )
-			->willReturn( $this->createMock( RevisionRecord::class ) );
-		$handler = $this->newServiceInstance( ReportHandler::class, [
-			'config' => $config,
-			'revisionStore' => $revisionStore
-		] );
-		$this->expectExceptionObject(
-			new LocalizedHttpException( new MessageValue( 'rest-body-validation-error' ), 400 )
-		);
-		$dummyBody = [ 'reportedUser' => [ 'test' => 'testing' ], 'revisionId' => 123, 'behaviors' => [] ];
-		$this->executeHandler( $handler, new RequestData( [ 'parsedBody' => $dummyBody ] ) );
-	}
-
-	public function testBodyFailsValidationOnObjectAsDetails() {
+	/**
+	 * @dataProvider provideValidationErrorDetails
+	 */
+	public function testBodyFailsValidation( array $parsedBody ) {
 		$config = new HashConfig( [
 			'ReportIncidentApiEnabled' => true,
 			'ReportIncidentDeveloperMode' => true,
@@ -254,87 +268,208 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 		$this->expectExceptionObject(
 			new LocalizedHttpException( new MessageValue( 'rest-body-validation-error' ), 400 )
 		);
-		$dummyBody = [ 'reportedUser' => 'user', 'revisionId' => 123, 'behaviors' => [],
-			'details' => [ 'test' => 'testing' ] ];
-		$this->executeHandler( $handler, new RequestData( [ 'parsedBody' => $dummyBody ] ) );
+
+		$this->executeHandler( $handler, new RequestData( [ 'parsedBody' => $parsedBody ] ) );
 	}
 
-	public function testBodyFailsValidationOnObjectAsSomethingElseDetails() {
+	public static function provideValidationErrorDetails(): iterable {
+		yield 'invalid "reportedUser" field' => [
+			[
+				'reportedUser' => [ 'test' => 'testing' ],
+				'revisionId' => 123,
+				'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+				'physicalHarmType' => '',
+			]
+		];
+
+		yield 'invalid "details" field' => [
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+				'physicalHarmType' => '',
+				'details' => [ 'test' => 'testing' ]
+			]
+		];
+
+		yield 'too long "details" field' => [
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+				'physicalHarmType' => '',
+				'details' => str_repeat( 'a', 2000 ),
+			]
+		];
+
+		yield 'invalid "somethingElseDetails" field' => [
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+				'physicalHarmType' => '',
+				'somethingElseDetails' => [ 'test' => 'testing' ]
+			]
+		];
+
+		yield 'too long "somethingElseDetails" field' => [
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+				'physicalHarmType' => '',
+				'somethingElseDetails' => str_repeat( 'a', 2000 ),
+			]
+		];
+
+		yield 'missing "incidentType" field' => [
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'physicalHarmType' => '',
+			]
+		];
+
+		yield 'invalid "incidentType" field' => [
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => 'foo',
+				'physicalHarmType' => '',
+			]
+		];
+
+		yield 'multi-value "incidentType" field' => [
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => [
+					IncidentReport::THREAT_TYPE_IMMEDIATE,
+					IncidentReport::THREAT_TYPE_UNACCEPTABLE_BEHAVIOR
+				],
+				'physicalHarmType' => '',
+			]
+		];
+
+		yield 'invalid "physicalHarmType" field' => [
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+				'physicalHarmType' => 'foo',
+			]
+		];
+
+		yield 'invalid "behaviorType" field' => [
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => IncidentReport::THREAT_TYPE_UNACCEPTABLE_BEHAVIOR,
+				'behaviorType' => 'bar',
+			]
+		];
+	}
+
+	/**
+	 * @dataProvider provideIncompatibleFields
+	 */
+	public function testValidateIncompatibleFields( array $body, Exception $expected ): void {
 		$config = new HashConfig( [
 			'ReportIncidentApiEnabled' => true,
 			'ReportIncidentDeveloperMode' => true,
 			'ReportIncidentMinimumAccountAgeInSeconds' => null,
 		] );
+		$page = new PageIdentityValue( 1, NS_TALK, 'TestPage', PageIdentityValue::LOCAL );
+		$revision = $this->createMock( RevisionRecord::class );
+		$revision->method( 'getPage' )
+			->willReturn( $page );
 		$revisionStore = $this->createMock( RevisionStore::class );
 		$revisionStore->method( 'getRevisionById' )
-			->with( 1 )
-			->willReturn( $this->createMock( RevisionRecord::class ) );
+			->with( 123 )
+			->willReturn( $revision );
 		$userNameUtils = $this->createMock( UserNameUtils::class );
 		$userNameUtils->method( 'isIP' )
 			->willReturn( true );
+
+		$userFactory = $this->createMock( UserFactory::class );
+		$user = $this->createMock( User::class );
+		$user->method( 'isNamed' )->willReturn( true );
+		$user->method( 'isEmailConfirmed' )->willReturn( false );
+		$userFactory->method( 'newFromUserIdentity' )->willReturn( $user );
+
 		$handler = $this->newServiceInstance( ReportHandler::class, [
 			'config' => $config,
 			'revisionStore' => $revisionStore,
 			'userNameUtils' => $userNameUtils,
+			'userFactory' => $userFactory
 		] );
-		$this->expectExceptionObject(
-			new LocalizedHttpException( new MessageValue( 'rest-body-validation-error' ), 400 )
+		$this->expectExceptionObject( $expected );
+
+		$this->executeHandler(
+			$handler,
+			new RequestData(),
+			[],
+			[],
+			[],
+			$body,
+			$this->mockRegisteredUltimateAuthority()
 		);
-		$dummyBody = [ 'reportedUser' => 'user', 'revisionId' => 123, 'behaviors' => [],
-			'somethingElseDetails' => [ 'test' => 'testing' ] ];
-		$this->executeHandler( $handler, new RequestData( [ 'parsedBody' => $dummyBody ] ) );
 	}
 
-	public function testTruncationOfTextareaFields() {
-		$revisionStore = $this->createMock( RevisionStore::class );
-		$revisionStore->method( 'getRevisionById' )
-			->with( 1 )
-			->willReturn( $this->createMock( RevisionRecord::class ) );
-		$userNameUtils = $this->createMock( UserNameUtils::class );
-		$userNameUtils->method( 'isIP' )
-			->willReturn( true );
-		// Return the text from Language::truncateForVisual with "-truncated" added
-		// to the end.
-		$contentLanguage = $this->createMock( Language::class );
-		$contentLanguage
-			->expects( $this->exactly( 2 ) )
-			->method( 'truncateForVisual' )
-			->willReturnCallback( static fn ( $str ) => "$str-truncated" );
-		$handler = $this->getMockBuilder( ReportHandler::class )
-			->setConstructorArgs( [
-				$this->createMock( Config::class ),
-				$revisionStore,
-				$userNameUtils,
-				$this->createMock( UserIdentityLookup::class ),
-				$this->createMock( ReportIncidentManager::class ),
-				$this->createMock( UserFactory::class ),
-				$contentLanguage,
-			] )
-			->onlyMethods( [ 'getAuthority', 'validateToken' ] )
-			->getMock();
-		$handler->method( 'getAuthority' )
-			->willReturn( $this->mockRegisteredUltimateAuthority() );
-		$handler->expects( $this->once() )
-			->method( 'validateToken' );
-		$handler = TestingAccessWrapper::newFromObject( $handler );
-		/** @var IncidentReport $incidentReportObject */
-		$incidentReportObject = $handler->getIncidentReportObjectFromValidatedBody( [
-			'revisionId' => 1,
-			'reportedUser' => '1.2.3.4',
-			'somethingElseDetails' => 'testing-something-else',
-			'details' => 'testing-details',
-			'behaviors' => [ 'test' ]
-		] );
-		$this->assertSame(
-			'testing-something-else-truncated',
-			$incidentReportObject->getSomethingElseDetails(),
-			'Something else textarea data was not truncated.'
-		);
-		$this->assertSame(
-			'testing-details-truncated',
-			$incidentReportObject->getDetails(),
-			'Additional details textarea data was not truncated.'
-		);
+	public static function provideIncompatibleFields(): iterable {
+		yield 'missing "physicalHarmType" field for immediate harm' => [
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+				'physicalHarmType' => null,
+			],
+			new LocalizedHttpException(
+				new MessageValue( 'rest-missing-body-field', [ 'physicalHarmType' ] ),
+				422
+			)
+		];
+
+		yield '"behaviorType" field provided for immediate harm' => [
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+				'behaviorType' => 'hate-or-discrimination',
+				'physicalHarmType' => 'threats-self-harm',
+			],
+			new LocalizedHttpException(
+				new MessageValue( 'rest-extraneous-body-fields', [ 'behaviorType' ] ),
+				422
+			)
+		];
+
+		yield 'missing "behaviorType" field for unacceptable behavior' => [
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => IncidentReport::THREAT_TYPE_UNACCEPTABLE_BEHAVIOR,
+				'behaviorType' => null,
+			],
+			new LocalizedHttpException(
+				new MessageValue( 'rest-missing-body-field', [ 'behaviorType' ] ),
+				422
+			)
+		];
+
+		yield '"physicalHarmType" field provided for unacceptable behavior' => [
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => IncidentReport::THREAT_TYPE_UNACCEPTABLE_BEHAVIOR,
+				'behaviorType' => 'hate-or-discrimination',
+				'physicalHarmType' => 'threats-self-harm',
+			],
+			new LocalizedHttpException(
+				new MessageValue( 'rest-extraneous-body-fields', [ 'physicalHarmType' ] ),
+				422
+			)
+		];
 	}
 
 	public function testDenyWithoutConfirmedEmail() {
@@ -347,6 +482,7 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 		$revisionStore->method( 'getRevisionById' )->willReturn( null );
 		$userFactory = $this->createMock( UserFactory::class );
 		$user = $this->createMock( User::class );
+		$user->method( 'isNamed' )->willReturn( true );
 		$user->method( 'isEmailConfirmed' )->willReturn( false );
 		$userFactory->method( 'newFromUserIdentity' )->willReturn( $user );
 		/** @var ReportHandler $handler */
@@ -378,17 +514,23 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 			'ReportIncidentMinimumAccountAgeInSeconds' => null,
 		] );
 		$revisionStore = $this->createMock( RevisionStore::class );
-		$revisionStore->method( 'getRevisionById' )->willReturn( $this->createMock( RevisionRecord::class ) );
+		$page = new PageIdentityValue( 1, NS_TALK, 'TestPage', PageIdentityValue::LOCAL );
+		$revision = $this->createMock( RevisionRecord::class );
+		$revision->method( 'getPage' )
+			->willReturn( $page );
+		$revisionStore->method( 'getRevisionById' )->willReturn( $revision );
 		$reportManager = $this->createMock( ReportIncidentManager::class );
 		$reportManager->method( 'record' )->willReturn( StatusValue::newGood() );
-		$reportManager->method( 'notify' )->willReturn( IncidentReportEmailStatus::newGood() );
+		$reportManager->method( 'notify' )->willReturn( StatusValue::newGood() );
 		$userFactory = $this->createMock( UserFactory::class );
 		$userIdentityLookup = $this->createMock( UserIdentityLookup::class );
 		$registeredUserMock = $this->createMock( User::class );
 		$registeredUserMock->method( 'isRegistered' )->willReturn( true );
+		$registeredUserMock->method( 'isNamed' )->willReturn( true );
 		$userIdentityLookup->method( 'getUserIdentityByName' )->willReturn( $registeredUserMock );
 		$user = $this->createMock( User::class );
 		$user->method( 'isEmailConfirmed' )->willReturn( false );
+		$user->method( 'isNamed' )->willReturn( true );
 		$userFactory->method( 'newFromUserIdentity' )->willReturn( $user );
 		/** @var ReportHandler $handler */
 		$handler = $this->newServiceInstance( ReportHandler::class,
@@ -407,14 +549,14 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 			[],
 			[],
 			[
-				'reportedUser' => 'Foo',
-				'revisionId' => 1,
-				'behaviors' => [ 'something', 'something_else' ],
-				'details' => 'More details'
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+				'physicalHarmType' => 'threats-physical-harm'
 			],
 			$this->mockRegisteredUltimateAuthority()
 		);
-		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( 204, $response->getStatusCode() );
 	}
 
 	/**
@@ -422,8 +564,9 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 	 */
 	public function testRestPayload(
 		array $data,
+		?UserIdentity $reportedUser,
 		StatusValue $recordStatus,
-		IncidentReportEmailStatus $notifyStatus,
+		StatusValue $notifyStatus,
 		bool $expectRecordException,
 		bool $expectNotifyException
 	) {
@@ -439,19 +582,41 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 		$reportManager->method( 'notify' )->willReturn( $notifyStatus );
 		// Mock the result of RevisionStore::getRevisionById
 		$revisionStore = $this->createMock( RevisionStore::class );
-		$revisionRecord = $this->createMock( RevisionRecord::class );
-		$revisionRecord->method( 'getId' )->willReturn( $data['revisionId'] );
-		$revisionStore->method( 'getRevisionById' )
-			->with( $data['revisionId'] )
-			->willReturn( $revisionRecord );
-		// Mock the result of UserIdentityLookup::getUserIdentityByName to always return
-		// an existing user.
+		$titleParser = $this->createMock( TitleParser::class );
+
+		if ( $data['revisionId'] !== 0 ) {
+			$page = new PageIdentityValue( 1, NS_TALK, 'TestPage', PageIdentityValue::LOCAL );
+			$revision = $this->createMock( RevisionRecord::class );
+			$revision->method( 'getPage' )
+				->willReturn( $page );
+			$revision->method( 'getId' )->willReturn( $data['revisionId'] );
+			$revisionStore->method( 'getRevisionById' )
+				->with( $data['revisionId'] )
+				->willReturn( $revision );
+		} else {
+			$revisionStore->expects( $this->never() )
+				->method( 'getRevisionById' );
+
+			$titleParser->method( 'parseTitle' )
+				->with( $data['page'] )
+				->willReturn( new TitleValue( NS_TALK, 'Test' ) );
+		}
+
+		$reportingUser = $this->createMock( User::class );
+		$reportingUser->method( 'isNamed' )->willReturn( true );
+		$reportingUser->method( 'getEditCount' )->willReturn( 1 );
+
 		$userIdentityLookup = $this->createMock( UserIdentityLookup::class );
-		$userIdentity = $this->createMock( UserIdentity::class );
-		$userIdentity->method( 'isRegistered' )->willReturn( true );
 		$userIdentityLookup->method( 'getUserIdentityByName' )
-			->with( $data['reportedUser'] )
-			->willReturn( $userIdentity );
+			->with( $data['reportedUser'] ?? '' )
+			->willReturn( $reportedUser );
+
+		$userFactory = $this->createMock( UserFactory::class );
+		$userFactory
+			->expects( $this->atLeastOnce() )
+			->method( 'newFromUserIdentity' )
+			->willReturn( $reportingUser );
+
 		// Disable the constructor and allow calling UserNameUtils::isIP which
 		// does not rely on the object properties.
 		$userNameUtils = $this->getMockBuilder( UserNameUtils::class )
@@ -465,7 +630,9 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 				'reportIncidentManager' => $reportManager,
 				'revisionStore' => $revisionStore,
 				'userIdentityLookup' => $userIdentityLookup,
+				'userFactory' => $userFactory,
 				'userNameUtils' => $userNameUtils,
+				'titleParser' => $titleParser,
 			]
 		);
 		if ( $expectRecordException ) {
@@ -486,115 +653,125 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 			$data,
 			$this->mockRegisteredAuthorityWithPermissions( [ 'reportincident' ] )
 		);
-		$this->assertSame( 200, $response->getStatusCode() );
+		$this->assertSame( 204, $response->getStatusCode() );
 	}
 
 	/**
 	 * Data provider for ::testRestPayload
 	 */
 	public static function provideTestRestPayload(): array {
+		$reportedUser = new UserIdentityValue( 3, 'ReportedUser' );
+
 		return [
 			'correct values' => [
 				[
-					'reportedUser' => 'test',
-					'revisionId' => 1,
-					'behaviors' => [ 'something', 'something_else' ],
-					'details' => 'More details'
+					'reportedUser' => 'user',
+					'revisionId' => 123,
+					'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+					'physicalHarmType' => 'threats-physical-harm',
+					'details' => 'foo',
 				],
+				$reportedUser,
 				StatusValue::newGood(),
-				IncidentReportEmailStatus::newGood(),
+				StatusValue::newGood(),
+				false,
+				false,
+			],
+			'correct values, non-existent page' => [
+				[
+					'reportedUser' => 'user',
+					'revisionId' => 0,
+					'page' => 'Talk:Test',
+					'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+					'physicalHarmType' => 'threats-physical-harm',
+					'details' => 'foo',
+				],
+				$reportedUser,
+				StatusValue::newGood(),
+				StatusValue::newGood(),
+				false,
+				false,
+			],
+			'correct values, missing reported user' => [
+				[
+					'revisionId' => 123,
+					'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+					'physicalHarmType' => 'threats-physical-harm',
+					'details' => 'foo',
+				],
+				null,
+				StatusValue::newGood(),
+				StatusValue::newGood(),
+				false,
+				false,
+			],
+			'correct values, empty reported user' => [
+				[
+					'reportedUser' => '',
+					'revisionId' => 123,
+					'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+					'physicalHarmType' => 'threats-physical-harm',
+					'details' => 'foo',
+				],
+				null,
+				StatusValue::newGood(),
+				StatusValue::newGood(),
 				false,
 				false,
 			],
 			'correct values, empty details' => [
 				[
-					'reportedUser' => '1.2.3.4',
-					'revisionId' => 1,
-					'behaviors' => [ 'something', 'something_else' ],
+					'reportedUser' => 'user',
+					'revisionId' => 123,
+					'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+					'physicalHarmType' => 'threats-physical-harm',
 				],
+				$reportedUser,
 				StatusValue::newGood(),
-				IncidentReportEmailStatus::newGood(),
+				StatusValue::newGood(),
 				false,
 				false,
 			],
 			'trigger a TypeError' => [
 				[
-					'reportedUser' => 'testing12234',
-					'revisionId' => 'foo',
-					'behaviors' => [ [], [] ]
+					'reportedUser' => 'user',
+					'revisionId' => 123,
+					'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+					'physicalHarmType' => 'threats-physical-harm',
 				],
+				$reportedUser,
 				StatusValue::newFatal( 'rest-bad-json-body' ),
-				IncidentReportEmailStatus::newGood(),
+				StatusValue::newGood(),
 				true,
 				false,
 			],
 			'record fails' => [
 				[
-					'reportedUser' => 'Userabc',
-					'revisionId' => 1,
-					'behaviors' => [ 'test' ]
+					'reportedUser' => 'user',
+					'revisionId' => 123,
+					'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+					'physicalHarmType' => 'threats-physical-harm',
 				],
+				$reportedUser,
 				StatusValue::newFatal( 'rest-bad-json-body' ),
-				IncidentReportEmailStatus::newGood(),
+				StatusValue::newGood(),
 				true,
 				false,
 			],
 			'notify fails' => [
 				[
-					'reportedUser' => 'testuser',
-					'revisionId' => 1,
-					'behaviors' => [ 'test' ],
+					'reportedUser' => 'user',
+					'revisionId' => 123,
+					'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+					'physicalHarmType' => 'threats-physical-harm',
 				],
+				$reportedUser,
 				StatusValue::newGood(),
-				IncidentReportEmailStatus::newFatal( 'reportincident-unable-to-send' ),
+				StatusValue::newFatal( 'reportincident-unable-to-send' ),
 				false,
 				true,
 			]
 		];
-	}
-
-	public function testSubmitIncidentReportWithDeveloperMode() {
-		$config = new HashConfig( [
-			'ReportIncidentDeveloperMode' => true,
-		] );
-		$reportManager = $this->createMock( ReportIncidentManager::class );
-		$incidentReport = $this->createMock( IncidentReport::class );
-		// Mock that the ::notify and ::record methods both return good statuses.
-		$incidentReportEmailStatus = IncidentReportEmailStatus::newGood();
-		$incidentReportEmailStatus->emailContents = [
-			'to' => 'test@test.com',
-			'from' => [ 'test@testing.com' ],
-			'subject' => 'testing',
-			'body' => "testing.\ntest"
-		];
-		$reportManager->method( 'notify' )->with( $incidentReport )
-			->willReturn( $incidentReportEmailStatus );
-		$reportManager->method( 'record' )->with( $incidentReport )
-			->willReturn( StatusValue::newGood() );
-		/** @var ReportHandler $handler */
-		$handler = $this->newServiceInstance( ReportHandler::class,
-			[
-				'config' => $config,
-				'reportIncidentManager' => $reportManager,
-			]
-		);
-		$handler = TestingAccessWrapper::newFromObject( $handler );
-		$handler->responseFactory = new ResponseFactory( [] );
-		/** @var Response $response */
-		$response = $handler->submitIncidentReport( $incidentReport );
-		$this->assertSame( 200, $response->getStatusCode() );
-		$this->assertArrayEquals(
-			[ 'sentEmail' => (object)[
-				'to' => 'test@test.com',
-				'from' => [ 'test@testing.com' ],
-				'subject' => 'testing',
-				'body' => "testing.\ntest"
-			] ],
-			(array)FormatJson::decode( $response->getBody() ),
-			true,
-			true,
-			'Response body did not contain email details on successful response.'
-		);
 	}
 
 	public function testSubmitIncidentReportWithoutDeveloperMode() {
@@ -605,7 +782,7 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 		$incidentReport = $this->createMock( IncidentReport::class );
 		// Mock that the ::notify and ::record methods both return good statuses.
 		$reportManager->method( 'notify' )->with( $incidentReport )
-			->willReturn( IncidentReportEmailStatus::newGood() );
+			->willReturn( StatusValue::newGood() );
 		$reportManager->method( 'record' )->with( $incidentReport )
 			->willReturn( StatusValue::newGood() );
 		/** @var ReportHandler $handler */
@@ -631,9 +808,17 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 		// Pass the performer registered check
 		$user = $this->createMock( User::class );
 		$user->method( 'isRegistered' )->willReturn( true );
+		$user->method( 'isNamed' )->willReturn( true );
+
+		$userFactory = $this->createMock( UserFactory::class );
+		$userFactory->method( 'newFromUserIdentity' )->willReturn( $user );
+
 		// Pass the revision check
 		$revisionStore = $this->createMock( RevisionStore::class );
+		$page = new PageIdentityValue( 1, NS_TALK, 'TestPage', PageIdentityValue::LOCAL );
 		$revision = $this->createMock( RevisionRecord::class );
+		$revision->method( 'getPage' )
+			->willReturn( $page );
 		$revisionStore->method( 'getRevisionById' )
 			->willReturn( $revision );
 		// Pass the reported user is IP check
@@ -645,6 +830,7 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 			[
 				'config' => $config,
 				'revisionStore' => $revisionStore,
+				'userFactory' => $userFactory,
 				'userNameUtils' => $userNameUtils,
 			]
 		);
@@ -665,7 +851,12 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 			[],
 			[],
 			[],
-			[ 'revisionId' => 1, 'reportedUser' => '127.0.0.1', 'behaviors' => [ 'test' ] ],
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+				'physicalHarmType' => 'threats-physical-harm',
+			],
 			$authority
 		);
 	}
@@ -678,18 +869,30 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 		] );
 		// Pass the revision check
 		$revisionStore = $this->createMock( RevisionStore::class );
+		$page = new PageIdentityValue( 1, NS_TALK, 'TestPage', PageIdentityValue::LOCAL );
 		$revision = $this->createMock( RevisionRecord::class );
+		$revision->method( 'getPage' )
+			->willReturn( $page );
 		$revisionStore->method( 'getRevisionById' )
 			->willReturn( $revision );
 		// Pass the reported user is IP check
 		$userNameUtils = $this->createMock( UserNameUtils::class );
 		$userNameUtils->method( 'isIP' )
 			->willReturn( true );
+
+		$user = $this->createMock( User::class );
+		$user->method( 'isNamed' )->willReturn( true );
+		$user->method( 'isEmailConfirmed' )->willReturn( true );
+
+		$userFactory = $this->createMock( UserFactory::class );
+		$userFactory->method( 'newFromUserIdentity' )->willReturn( $user );
+
 		/** @var ReportHandler $handler */
 		$handler = $this->newServiceInstance( ReportHandler::class,
 			[
 				'config' => $config,
 				'revisionStore' => $revisionStore,
+				'userFactory' => $userFactory,
 				'userNameUtils' => $userNameUtils,
 			]
 		);
@@ -703,7 +906,12 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 			[],
 			[],
 			[],
-			[ 'revisionId' => 1, 'reportedUser' => '127.0.0.1', 'behaviors' => [ 'test' ] ],
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+				'physicalHarmType' => 'threats-physical-harm',
+			],
 			$authority
 		);
 	}
@@ -716,7 +924,10 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 		] );
 		// Pass the revision check
 		$revisionStore = $this->createMock( RevisionStore::class );
+		$page = new PageIdentityValue( 1, NS_TALK, 'TestPage', PageIdentityValue::LOCAL );
 		$revision = $this->createMock( RevisionRecord::class );
+		$revision->method( 'getPage' )
+			->willReturn( $page );
 		$revisionStore->method( 'getRevisionById' )
 			->willReturn( $revision );
 		// Pass the reported user is IP check
@@ -727,6 +938,7 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 		$user = $this->createMock( User::class );
 		$user->method( 'isTemp' )->willReturn( true );
 		$user->method( 'isRegistered' )->willReturn( true );
+		$user->method( 'isNamed' )->willReturn( true );
 		$user->method( 'getName' )->willReturn( '*Unregistered 123' );
 		// Mock that the UserFactory returns the User object created above
 		$userFactory = $this->createMock( UserFactory::class );
@@ -764,91 +976,63 @@ class ReportHandlerTest extends MediaWikiUnitTestCase {
 			[],
 			[],
 			[],
-			[ 'revisionId' => 1, 'reportedUser' => '127.0.0.1', 'behaviors' => [ 'test' ] ],
+			[
+				'reportedUser' => 'user',
+				'revisionId' => 123,
+				'incidentType' => IncidentReport::THREAT_TYPE_IMMEDIATE,
+				'physicalHarmType' => 'threats-physical-harm',
+			],
 			$authority
 		);
 	}
 
-	public function testInvalidReportedUsername() {
+	public function testTempUserFailsFirstValidation(): void {
 		$config = new HashConfig( [
 			'ReportIncidentApiEnabled' => true,
 			'ReportIncidentDeveloperMode' => true,
 			'ReportIncidentMinimumAccountAgeInSeconds' => null,
 		] );
-		$revisionStore = $this->createMock( RevisionStore::class );
-		$revisionStore->method( 'getRevisionById' )
-			->willReturn( $this->createMock( RevisionRecord::class ) );
-		// Mock that UserNameUtils::isIP returns false.
-		$userNameUtils = $this->createMock( UserNameUtils::class );
-		$userNameUtils->method( 'isIP' )->willReturn( false );
-		// Mock that UserIdentityLookup::getUserIdentityByName returns null.
-		$userIdentityLookup = $this->createMock( UserIdentityLookup::class );
-		$userIdentityLookup->expects( $this->once() )
-			->method( 'getUserIdentityByName' )
-			->with( 'testing' )
-			->willReturn( null );
-		/** @var ReportHandler $handler */
-		$handler = $this->newServiceInstance( ReportHandler::class,
-			[
-				'config' => $config,
-				'revisionStore' => $revisionStore,
-				'userIdentityLookup' => $userIdentityLookup,
-				'userNameUtils' => $userNameUtils
-			]
-		);
-		$this->expectExceptionObject(
-			new LocalizedHttpException( new MessageValue( 'reportincident-dialog-violator-nonexistent' ), 404 )
-		);
-		$this->executeHandler(
-			$handler,
-			new RequestData( [ 'headers' => [ 'Content-Type' => 'application/json' ] ] ),
-			[],
-			[],
-			[],
-			[ 'revisionId' => 1, 'reportedUser' => 'testing' ],
-			$this->mockRegisteredUltimateAuthority()
-		);
-	}
 
-	public function testNonExistingUsername() {
-		$config = new HashConfig( [
-			'ReportIncidentApiEnabled' => true,
-			'ReportIncidentDeveloperMode' => true,
-			'ReportIncidentMinimumAccountAgeInSeconds' => null,
-		] );
-		$revisionStore = $this->createMock( RevisionStore::class );
-		$revisionStore->method( 'getRevisionById' )
-			->willReturn( $this->createMock( RevisionRecord::class ) );
-		// Mock that UserNameUtils::isIP returns false.
 		$userNameUtils = $this->createMock( UserNameUtils::class );
-		$userNameUtils->method( 'isIP' )->willReturn( false );
-		// Mock that UserIdentityLookup::getUserIdentityByName returns a UserIdentity for an unregistered user.
-		$userIdentityLookup = $this->createMock( UserIdentityLookup::class );
-		$userIdentityLookup->expects( $this->once() )
-			->method( 'getUserIdentityByName' )
-			->with( 'testing' )
-			->willReturn( null );
+		$userNameUtils->expects( $this->never() )->method( 'isIP' );
+
+		$user = $this->createMock( User::class );
+		$user->method( 'isTemp' )->willReturn( true );
+		$user->method( 'isRegistered' )->willReturn( true );
+		$user->method( 'isNamed' )->willReturn( false );
+		$user->method( 'getName' )->willReturn( '*Unregistered 123' );
+
+		// Mock that the UserFactory returns the User object created above
+		$userFactory = $this->createMock( UserFactory::class );
+		$userFactory->method( 'newFromUserIdentity' )
+			->with( $user )
+			->willReturnArgument( 0 );
+
+		$revisionStore = $this->createMock( RevisionStore::class );
+		$revisionStore->expects( $this->never() )->method( 'getRevisionById' );
+
 		/** @var ReportHandler $handler */
 		$handler = $this->newServiceInstance( ReportHandler::class,
 			[
 				'config' => $config,
 				'revisionStore' => $revisionStore,
-				'userIdentityLookup' => $userIdentityLookup,
 				'userNameUtils' => $userNameUtils,
+				'userFactory' => $userFactory,
 			]
 		);
+
 		$this->expectExceptionObject(
-			new LocalizedHttpException( new MessageValue( 'reportincident-dialog-violator-nonexistent' ), 404 )
+			new LocalizedHttpException( new MessageValue( 'rest-permission-denied-anon' ), 403 )
 		);
+
 		$this->executeHandler(
 			$handler,
 			new RequestData( [ 'headers' => [ 'Content-Type' => 'application/json' ] ] ),
 			[],
 			[],
 			[],
-			[ 'revisionId' => 1, 'reportedUser' => 'testing' ],
-			$this->mockRegisteredUltimateAuthority()
+			[ 'revisionId' => 1, 'reportedUser' => '127.0.0.1', 'behaviors' => [ 'test' ] ],
+			$this->newUserAuthority( [ 'actor' => $user ] )
 		);
 	}
-
 }

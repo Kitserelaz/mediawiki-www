@@ -8,8 +8,8 @@ use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserOptionsLookup;
 use Telepedia\UserProfileV2\Avatar\UserProfileV2Avatar;
+use Telepedia\UserProfileV2\ProfileFields;
 use Wikimedia\ParamValidator\ParamValidator;
-use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 
 class QueryUserProfileV2 extends ApiQueryBase {
 
@@ -19,16 +19,6 @@ class QueryUserProfileV2 extends ApiQueryBase {
 	/** @var UserFactory */
 	private UserFactory $userFactory;
 
-	/** @var string[] */
-	private static $preferences = [
-		'profile-aboutme',
-		'profile-show-globalgroups',
-		'profile-show-globaledits',
-		'profile-discord',
-		'profile-twitter',
-		'profile-mastodon'
-	];
-
 	/**
 	 * Main Constructor
 	 * @param ApiQuery $query
@@ -37,13 +27,11 @@ class QueryUserProfileV2 extends ApiQueryBase {
 	 * @param UserFactory $userFactory
 	 */
 	public function __construct( ApiQuery $query, string $moduleName,
-								UserOptionsLookup $userOptionsLookup, UserFactory $userFactory ) {
+			UserOptionsLookup $userOptionsLookup, UserFactory $userFactory ) {
 		parent::__construct( $query, $moduleName );
 		$this->userOptionsLookup = $userOptionsLookup;
 		$this->userFactory = $userFactory;
 	}
-
-	#[\Override]
 
 	/**
 	 * Main entrypoint; handles all the logic
@@ -52,6 +40,7 @@ class QueryUserProfileV2 extends ApiQueryBase {
 		$params = $this->extractRequestParams();
 
 		$userName = $params['user_name'] ?? null;
+		$userProfile = [];
 
 		if ( $userName !== null ) {
 			$userProfile = $this->getUserProfileFromName( $userName );
@@ -69,21 +58,15 @@ class QueryUserProfileV2 extends ApiQueryBase {
 	private function getUserProfileFromName( string $userName ): array {
 		$user = $this->getUserFromName( $userName );
 
-		if ( !$user->isRegistered() ) {
-			$this->dieWithError( [ 'userprofilev2-apierror-invalidusername', wfEscapeWikiText( $userName ) ] );
-		}
-
 		$userPreferences = [];
 
-		foreach ( self::$preferences as $preference ) {
-			$pref = $this->userOptionsLookup->getOption( $user, $preference );
-			$userPreferences[$preference] = $pref;
+		// The list of fields is configurable through $wgUserProfileV2ProfileFields.
+		foreach ( ProfileFields::getKeys() as $preference ) {
+			$userPreferences[$preference] = $this->userOptionsLookup->getOption( $user, $preference );
 		}
 
 		$avatar = new UserProfileV2Avatar( $user->getId() );
-		$avatarUrl = $avatar->getAvatarUrl( [ 'raw' => true ] );
-
-		$userPreferences['profile-avatar'] = $avatarUrl;
+		$userPreferences['profile-avatar'] = $avatar->getAvatarUrl( [ 'raw' => true ] );
 
 		return $userPreferences;
 	}
@@ -94,10 +77,20 @@ class QueryUserProfileV2 extends ApiQueryBase {
 	 * @return User
 	 */
 	private function getUserFromName( string $userName ): User {
-		return $this->userFactory->newFromName( $userName );
-	}
+		$user = $this->userFactory->newFromName( $userName );
 
-	#[\Override]
+		// replicate what core does and treat a suppressed/hidden user as non-existent unless the
+		// performer has the ability to hide user profiles
+		if (
+			!$user ||
+			!$user->isRegistered() ||
+			( $user->isHidden() && !$this->getAuthority()->isAllowed( 'hideuser' ) )
+		) {
+			$this->dieWithError( [ 'userprofilev2-apierror-invalidusername', wfEscapeWikiText( $userName ) ] );
+		}
+
+		return $user;
+	}
 
 	/**
 	 * Get the allowed parameters that can be passed to this API
@@ -107,7 +100,6 @@ class QueryUserProfileV2 extends ApiQueryBase {
 		return [
 			'user_name' => [
 				ParamValidator::PARAM_TYPE => 'string',
-				IntegerDef::PARAM_MIN => 1,
 				ParamValidator::PARAM_REQUIRED => true,
 			]
 		];

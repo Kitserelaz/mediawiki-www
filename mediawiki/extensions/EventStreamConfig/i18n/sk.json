@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Wizzard"
+		]
+	},
+	"eventstreamconfig-desc": "Sprístupňuje konfiguráciu prúdov udalostí cez koncový bod API. Možno ju sprístupniť aj cez ResourceLoader",
+	"apihelp-streamconfigs-summary": "Sprístupňuje konfiguráciu prúdov udalostí. Vracia iba format=json s formatversion=2.",
+	"apihelp-streamconfigs-param-streams": "Zoznam prúdov, pre ktoré sa má získať konfigurácia",
+	"apihelp-streamconfigs-param-all_settings": "Zahrnúť do výsledkov konfigurácie prúdov všetky nastavenia. Zastarané od verzie 1.41. Všetky nastavenia sú zahrnuté predvolene.",
+	"apihelp-streamconfigs-param-constraints": "Filtrovať výsledky na položky konfigurácie prúdov, ktoré majú tieto nastavenia",
+	"apihelp-streamconfigs-example-1": "Získať konfigurácie pre zoznam prúdov",
+	"apihelp-streamconfigs-example-2": "Získať konfiguráciu prúdov so všetkými nastaveniami",
+	"apihelp-streamconfigs-example-3": "Získať konfiguráciu prúdov, ktorých nastavenia zodpovedajú týmto obmedzeniam"
+}

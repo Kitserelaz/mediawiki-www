@@ -1,0 +1,39 @@
+{
+	"@metadata": {
+		"authors": [
+			"Tensama0415",
+			"Ykhwong"
+		]
+	},
+	"userprofilev2-desc": "위키 기반 사용자 프로필 시스템.",
+	"userprofilev2-selectavatar": "아바타 선택",
+	"userprofilev2-avatarchanged": "성공적으로 아바타를 변경했습니다.",
+	"userprofilev2-avatardeleted": "성공적으로 아바타를 삭제했습니다.",
+	"userprofilev2-user-locked": "이 사용자 계정은 전역적으로 비활성화되었습니다.",
+	"userprofilev2-edit-profile": "프로필 편집",
+	"userprofilev2-apierror-forbidden": "금지됨: 이 아바타를 변경할 권한이 없습니다.",
+	"userprofilev2-apierror-invalidpermission": "금지됨: $1의 프로필을 변경할 권한이 없습니다.",
+	"userprofilev2-apierror-nofile": "업로드할 파일이 없습니다.",
+	"userprofilev2-apierror-ratelimited": "지금은 이미지를 업로드할 수 없습니다.",
+	"userprofilev2-apierror-invalidusername": "이 위키에는 '$1'이라는 사용자 이름으로 등록된 사용자가 없습니다.",
+	"userprofilev2-about-me": "내 정보",
+	"userprofilev2-discord": "디스코드 사용자 이름",
+	"userprofilev2-twitter": "트위터 사용자 이름",
+	"userprofilev2-mastodon": "마스토돈 사용자 이름",
+	"userprofilev2-about-me-placeholder": "자신에 대해 소개해주세요...",
+	"userprofilev2-about-me-help": "자기소개를 해주세요. 최대 200자입니다.",
+	"userprofilev2-mastodon-help": "@를 포함한 마스토돈 사용자 이름",
+	"userprofilev2-twitter-help": "@를 포함한 트위터 사용자 이름",
+	"userprofilev2-discord-help": "@를 포함한 디스코드 사용자 이름",
+	"userprofilev2-showglobalgroups": "내 전역 그룹을 표시하시겠습니까?",
+	"userprofilev2-showglobaleditcount": "내 전역 편집 횟수를 표시하시겠습니까?",
+	"userprofilev2-showglobalgroupshelp": "내가 속한 전역 사용자 그룹을 표시합니다 (모든 사용자에게 공개됨).",
+	"userprofilev2-showglobaleditcounthelp": "CentralAuth에서 가져온 내 전역 편집 횟수를 표시합니다 (모든 사람에게 공개됨).",
+	"userprofilev2-edit": "편집",
+	"userprofilev2-edit-count": "$1회 편집",
+	"userprofilev2-globaledit-count": "전역 편집 $1개",
+	"userprofilev2-editavatar": "아바타 편집",
+	"userprofilev2-edit-back": "뒤로",
+	"userprofilev2-deleteavatar": "아바타 삭제",
+	"userprofilev2-helptext": "이 대화 상자를 사용하여 사용자 프로필 내용을 변경하세요."
+}

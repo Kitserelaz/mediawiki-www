@@ -3,11 +3,13 @@
 		v-model:open="wrappedOpen"
 		class="ext-reportincident-emaildialog"
 		:title="$i18n( 'reportincident-emaildialog-title' ).text()"
+		:use-close-button="true"
 		:close-button-label="$i18n( 'reportincident-emaildialog-close-button' ).text()"
 		:primary-action="primaryAction"
 		:default-action="defaultAction"
 		@primary="onPrimaryAction"
-		@default="onDefaultAction">
+		@default="onDefaultAction"
+	>
 		<p>{{ $i18n( 'reportincident-emaildialog-content' ).text() }}</p>
 	</cdx-dialog>
 </template>
@@ -36,7 +38,19 @@ module.exports = exports = {
 
 		function onPrimaryAction() {
 			wrappedOpen.value = false;
-			window.location.assign( mw.Title.newFromText( 'Special:ChangeEmail' ).getUrl() );
+
+			if ( mw.config.get( 'wgReportIncidentUserHasEmail' ) ) {
+				window.location.assign(
+					mw.Title.newFromText( 'Special:ConfirmEmail' ).getUrl()
+				);
+
+				return;
+			}
+
+			window.location.assign(
+				mw.Title.newFromText( 'Special:Preferences' ).getUrl() +
+					'#mw-prefsection-personal-email'
+			);
 		}
 
 		function onDefaultAction() {
@@ -54,12 +68,3 @@ module.exports = exports = {
 };
 
 </script>
-
-<style lang="less">
-@import ( reference ) 'mediawiki.skin.variables.less';
-
-.ext-reportincident-emaildialog {
-	font-size: @font-size-large;
-	line-height: @line-height-medium;
-}
-</style>

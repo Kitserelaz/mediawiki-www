@@ -13,14 +13,13 @@ use MediaWiki\Title\Title;
  *
  * @ingroup API
  */
-
 class ApiQueryMMContent extends ApiQueryBase {
 
 	public function execute() {
 		$pageSet = $this->getPageSet();
 		$pageids = array_keys( $pageSet->getGoodPages() );
 		if ( !$pageids ) {
-			return true;
+			return;
 		}
 
 		$spamlists = [];
@@ -55,7 +54,6 @@ class ApiQueryMMContent extends ApiQueryBase {
 				$content->getTargetStrings()
 			);
 		}
-		return true;
 	}
 
 	/**

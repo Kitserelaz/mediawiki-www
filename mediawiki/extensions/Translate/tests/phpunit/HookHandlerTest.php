@@ -3,8 +3,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate;
 
-use ContentHandler;
 use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\ContentHandler;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
 use MediaWikiLangTestCase;
@@ -17,7 +17,7 @@ use MockWikiMessageGroup;
  * @group medium
  * @author Niklas Laxström
  * @license GPL-2.0-or-later
- * @covers MediaWiki\Extension\Translate\HookHandler
+ * @covers \MediaWiki\Extension\Translate\HookHandler
  */
 class HookHandlerTest extends MediaWikiLangTestCase {
 	use MessageGroupTestTrait;

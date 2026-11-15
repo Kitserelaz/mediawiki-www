@@ -1,7 +1,6 @@
 /**
  * Some code adapted from the enwiki gadget https://w.wiki/5Ktj
  */
-// eslint-disable-next-line strict
 $( () => {
 	// eslint-disable-next-line no-jquery/no-global-selector
 	const $darkModeLink = $( '.ext-darkmode-link' );
@@ -21,9 +20,8 @@ $( () => {
 				.addClass( 'mw-ui-icon-moon' );
 		}
 		// Use different CSS selectors for the dark mode link based on the skin.
-		// eslint-disable-next-line unicorn/prefer-includes
-		const labelSelector = [ 'vector', 'vector-2022', 'minerva' ].indexOf( mw.config.get( 'skin' ) ) !== -1 ?
-			'span:not( .mw-ui-icon, .vector-icon, .minerva-icon )' :
+		const labelSelector = [ 'vector' ].includes( mw.config.get( 'skin' ) ) ?
+			'span:not( .mw-ui-icon, .vector-icon )' :
 			'a';
 
 		// Update the link text and tooltip.
@@ -50,16 +48,18 @@ $( () => {
 		} else {
 			// If the user is logged in write with API to user settings
 			new mw.Api().saveOption( 'darkmode', darkMode ? '1' : '0' );
-			if ( darkMode ) {
-				docClassList.add( 'skin-theme-clientpref-night' );
-				docClassList.add( 'client-darkmode' );
-				docClassList.remove( 'skin-theme-clientpref-day' );
-			} else {
-				docClassList.add( 'skin-theme-clientpref-day' );
-				docClassList.remove( 'client-darkmode' );
-				docClassList.remove( 'skin-theme-clientpref-night' );
-			}
 		}
+
+		if ( darkMode ) {
+			docClassList.add( 'skin-theme-clientpref-night' );
+			docClassList.add( 'client-darkmode' );
+			docClassList.remove( 'skin-theme-clientpref-day' );
+		} else {
+			docClassList.add( 'skin-theme-clientpref-day' );
+			docClassList.remove( 'client-darkmode' );
+			docClassList.remove( 'skin-theme-clientpref-night' );
+		}
+
 		updateLink( darkMode );
 
 		// Update the mobile theme-color

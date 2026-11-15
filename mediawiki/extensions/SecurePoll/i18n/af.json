@@ -18,13 +18,8 @@
 	"securepoll-gpg-receipt": "Baie dankie vir u stem.\n\nAs u wil, kan u kan die volgende kwitansie as bewys hou:\n\n<pre>$1</pre>",
 	"securepoll-thanks": "Dankie, u stem is ontvang en vasgelê.",
 	"securepoll-return": "Keer terug na $1",
-	"securepoll-no-gpg-home": "Nie in staat om GPG-tuisgids te skep nie.",
-	"securepoll-full-gpg-error": "Fout met die uitvoer van GPG:\n\nBevel: $1\n\nFout: <pre>$2</pre>",
-	"securepoll-gpg-config-error": "GPG-sleutels word verkeerd ingestel.",
-	"securepoll-gpg-parse-error": "Fout met die interpretasie van GPG uitset.",
 	"securepoll-no-decryption-key": "Geen dekripsiesleutel is ingestel.\nKan nie decrypt.",
 	"securepoll-jump": "Gaan na die stemming-bediener",
-	"securepoll-bad-ballot-submission": "U stem is ongeldig: $1",
 	"securepoll-unanswered-questions": "U moet alle vrae beantwoord.",
 	"securepoll-unranked-options": "Sommige opsies is nie ingedeel.\nJy moet alle opsies om 'n rang tussen 1 en 999.",
 	"securepoll-invalid-score": "Die telling moet 'n getal tussen $1 en $2 wees.",
@@ -75,7 +70,6 @@
 	"securepoll-subpage-translate": "Vertaal",
 	"securepoll-subpage-list": "Lys",
 	"securepoll-subpage-dump": "Dump",
-	"securepoll-subpage-tally": "Telling",
 	"securepoll-tally-title": "Telling: $1",
 	"securepoll-tally-not-finished": "Jammer, kan jy nie kerfstok die verkiesing tot na die stem is voltooi.",
 	"securepoll-tally-upload-submit": "Skep telling",
@@ -84,7 +78,5 @@
 	"securepoll-strength-matrix": "Pad krag Matrix",
 	"securepoll-ranks": "Eindstand",
 	"securepoll-average-score": "Gemiddelde punt",
-	"securepoll-round": "Ronde $1",
-	"securepoll-spoilt": "(Bedorwe)",
-	"securepoll-exhausted": "(Uitgeput)"
+	"securepoll-round": "Ronde $1"
 }

@@ -6,7 +6,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.42"
+		"MediaWiki": ">= 1.46"
 	},
 	"Hooks": {
 		"GetExtendedMetadata": "main",
@@ -16,7 +16,15 @@
 	},
 	"HookHandlers": {
 		"main": {
-			"class": "CommonsMetadata\\HookHandler"
+			"class": "CommonsMetadata\\HookHandler",
+			"services": [
+				"ConfigFactory",
+				"ContentLanguage",
+				"LanguageFactory",
+				"LanguageFallback",
+				"RepoGroup",
+				"TrackingCategories"
+			]
 		}
 	},
 	"MessagesDirs": {
@@ -25,7 +33,7 @@
 		]
 	},
 	"ConfigRegistry": {
-		"CommonsMetadata": "GlobalVarConfig::newInstance"
+		"CommonsMetadata": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"config": {
 		"CommonsMetadataForceRecalculate": {
@@ -43,6 +51,9 @@
 	},
 	"AutoloadNamespaces": {
 		"CommonsMetadata\\": "src/"
+	},
+	"TestAutoloadClasses": {
+		"CommonsMetadata\\ParserTestHelper": "tests/phpunit/ParserTestHelper.php"
 	},
 	"TrackingCategories": [
 		"commonsmetadata-trackingcategory-no-license",

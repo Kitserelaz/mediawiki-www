@@ -1,22 +1,18 @@
 parameters:
 	ignoreErrors:
+		# SMW classes (optional dependency)
 		-
-			message: "#^Call to static method getInstance\\(\\) on an unknown class SMW\\\\ApplicationFactory\\.$#"
+			message: "#^Call to static method getInstance\\(\\) on an unknown class SMW\\\\Services\\\\ServicesFactory\\.$#"
 			count: 1
 			path: src/MapsFactory.php
 
 		-
-			message: "#^Method Maps\\\\MapsFactory\\:\\:getSmwFactory\\(\\) has invalid return type SMW\\\\ApplicationFactory\\.$#"
+			message: "#^Method Maps\\\\MapsFactory\\:\\:getSmwFactory\\(\\) has invalid return type SMW\\\\Services\\\\ServicesFactory\\.$#"
 			count: 1
 			path: src/MapsFactory.php
 
 		-
-			message: "#^Access to constant PRINT_THIS on an unknown class SMWPrintRequest\\.$#"
-			count: 1
-			path: src/MapsHooks.php
-
-		-
-			message: "#^Call to an undefined static method MediaWiki\\\\Settings\\\\SettingsBuilder\\:\\:getInstance\\(\\)\\.$#"
+			message: "#^Access to constant PRINT_THIS on an unknown class SMW\\\\Query\\\\PrintRequest\\.$#"
 			count: 1
 			path: src/MapsHooks.php
 
@@ -30,3 +26,78 @@ parameters:
 			count: 1
 			path: src/MapsHooks.php
 
+		# MediaWiki classes that moved to namespaces (backward compat aliases not resolved by PHPStan)
+		-
+			message: "#^Property Maps\\\\DataAccess\\\\CachingGeocoder\\:\\:\\$cache has unknown class BagOStuff as its type\\.$#"
+			count: 1
+			path: src/DataAccess/CachingGeocoder.php
+
+		-
+			message: "#^Parameter \\$cache of method Maps\\\\DataAccess\\\\CachingGeocoder\\:\\:__construct\\(\\) has invalid type BagOStuff\\.$#"
+			count: 1
+			path: src/DataAccess/CachingGeocoder.php
+
+		-
+			message: "#^Property Maps\\\\DataAccess\\\\GeoJsonFetcherResult\\:\\:\\$source has unknown class TitleValue as its type\\.$#"
+			count: 1
+			path: src/DataAccess/GeoJsonFetcherResult.php
+
+		-
+			message: "#^Parameter \\$source of method Maps\\\\DataAccess\\\\GeoJsonFetcherResult\\:\\:__construct\\(\\) has invalid type TitleValue\\.$#"
+			count: 1
+			path: src/DataAccess/GeoJsonFetcherResult.php
+
+		-
+			message: "#^Method Maps\\\\DataAccess\\\\GeoJsonFetcherResult\\:\\:getTitleValue\\(\\) has invalid return type TitleValue\\.$#"
+			count: 1
+			path: src/DataAccess/GeoJsonFetcherResult.php
+
+		-
+			message: "#^Call to static method encode\\(\\) on an unknown class FormatJson\\.$#"
+			count: 1
+			path: src/Map/MapHtmlBuilder.php
+
+		-
+			message: "#^Parameter \\$po of method Maps\\\\Map\\\\MapOutput\\:\\:addResourcesToParserOutput\\(\\) has invalid type ParserOutput\\.$#"
+			count: 1
+			path: src/Map/MapOutput.php
+
+		-
+			message: "#^Method Maps\\\\MapsFactory\\:\\:getMediaWikiCache\\(\\) has invalid return type BagOStuff\\.$#"
+			count: 1
+			path: src/MapsFactory.php
+
+		-
+			message: "#^Parameter \\$parserOutput of method Maps\\\\MapsFactory\\:\\:newSemanticGeoJsonStore\\(\\) has invalid type ParserOutput\\.$#"
+			count: 1
+			path: src/MapsFactory.php
+
+		-
+			message: "#^Parameter \\$frame of anonymous function has invalid type PPFrame\\.$#"
+			count: 2
+			path: src/ParserHookSetup.php
+
+		-
+			message: "#^Parameter \\$frame of method Maps\\\\ParserHookSetup\\:\\:handleFunctionHook\\(\\) has invalid type PPFrame\\.$#"
+			count: 1
+			path: src/ParserHookSetup.php
+
+		-
+			message: "#^Property Maps\\\\Presentation\\\\OutputFacade\\:\\:\\$outputPage has unknown class OutputPage as its type\\.$#"
+			count: 1
+			path: src/Presentation/OutputFacade.php
+
+		-
+			message: "#^Property Maps\\\\Presentation\\\\OutputFacade\\:\\:\\$parserOutput has unknown class ParserOutput as its type\\.$#"
+			count: 1
+			path: src/Presentation/OutputFacade.php
+
+		-
+			message: "#^Parameter \\$outputPage of method Maps\\\\Presentation\\\\OutputFacade\\:\\:newFromOutputPage\\(\\) has invalid type OutputPage\\.$#"
+			count: 1
+			path: src/Presentation/OutputFacade.php
+
+		-
+			message: "#^Parameter \\$parserOutput of method Maps\\\\Presentation\\\\OutputFacade\\:\\:newFromParserOutput\\(\\) has invalid type ParserOutput\\.$#"
+			count: 1
+			path: src/Presentation/OutputFacade.php

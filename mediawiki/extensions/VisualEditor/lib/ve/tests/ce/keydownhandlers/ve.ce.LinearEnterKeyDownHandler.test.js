@@ -15,14 +15,15 @@ QUnit.module( 've.ce.LinearEnterKeyDownHandler', {
 
 QUnit.test( 'special key down: linear enter', ( assert ) => {
 	const done = assert.async(),
-		noChange = function () {},
+		noChange = () => {},
 		emptyList = '<ul><li><p></p></li></ul>',
+		// Doc can be reused because it is never modified
 		alienDoc = ve.dm.example.createExampleDocument( 'alienData' ),
 		cases = [
 			{
 				rangeOrSelection: new ve.Range( 57 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						57, 0,
 						{ type: '/paragraph' },
@@ -31,6 +32,14 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 				},
 				expectedRangeOrSelection: new ve.Range( 59 ),
 				msg: 'End of paragraph split by enter'
+			},
+			{
+				rangeOrSelection: new ve.Range( 57 ),
+				keys: [ 'ENTER' ],
+				readOnly: true,
+				expectedData: noChange,
+				expectedRangeOrSelection: new ve.Range( 57 ),
+				msg: 'No change when surface is read-only'
 			},
 			{
 				rangeOrSelection: new ve.Range( 57 ),
@@ -50,13 +59,11 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 57 ),
 				keys: [ 'ENTER' ],
-				htmlOrDoc: ( function () {
+				htmlOrDoc: ( () => {
 					const view = ve.test.utils.createSurfaceViewFromDocument( ve.dm.example.createExampleDocument() );
-					view.surface.isMultiline = function () {
-						return false;
-					};
+					view.surface.isMultiline = () => false;
 					return view;
-				}() ),
+				} )(),
 				expectedData: noChange,
 				expectedRangeOrSelection: new ve.Range( 57 ),
 				msg: 'Enter does nothing in single line mode'
@@ -64,7 +71,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 57 ),
 				keys: [ 'SHIFT+ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						57, 0,
 						{ type: '/paragraph' },
@@ -77,7 +84,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 56 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						56, 0,
 						{ type: '/paragraph' },
@@ -90,7 +97,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 39 ),
 				keys: [ 'SHIFT+ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						39, 0, '\n'
 					);
@@ -101,7 +108,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 38 ),
 				keys: [ 'SHIFT+ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						38, 0, '\n'
 					);
@@ -112,7 +119,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 42 ),
 				keys: [ 'SHIFT+ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						42, 0, '\n'
 					);
@@ -123,7 +130,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 39 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						39, 0,
 						{ type: '/preformatted' },
@@ -136,7 +143,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 38 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						37, 0,
 						{ type: 'paragraph' },
@@ -149,7 +156,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 42 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						43, 0,
 						{ type: 'paragraph' },
@@ -162,7 +169,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 3 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						3, 0,
 						{ type: '/heading' },
@@ -175,7 +182,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 2, 3 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						2, 1,
 						{ type: '/heading' },
@@ -188,7 +195,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 1 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						0, 0,
 						{ type: 'paragraph' },
@@ -201,7 +208,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 4 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						5, 0,
 						{ type: 'paragraph' },
@@ -214,7 +221,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 16 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						16, 0,
 						{ type: '/paragraph' },
@@ -229,7 +236,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 16 ),
 				keys: [ 'SHIFT+ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						16, 0,
 						{ type: '/paragraph' },
@@ -242,7 +249,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 30 ),
 				keys: [ 'ENTER', 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						33, 0,
 						{ type: 'paragraph' },
@@ -255,7 +262,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 			{
 				rangeOrSelection: new ve.Range( 21 ),
 				keys: [ 'ENTER', 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						24, 0,
 						{ type: '/listItem' },
@@ -271,7 +278,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 				htmlOrDoc: '<p>foo</p>' + emptyList + '<p>bar</p>',
 				rangeOrSelection: new ve.Range( 8 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 5, 6 );
 				},
 				expectedRangeOrSelection: new ve.Range( 6 ),
@@ -281,7 +288,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 				htmlOrDoc: '<p>foo</p>' + emptyList,
 				rangeOrSelection: new ve.Range( 8 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 5, 6 );
 				},
 				expectedRangeOrSelection: new ve.Range( 4 ),
@@ -291,7 +298,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 				htmlOrDoc: emptyList + '<p>bar</p>',
 				rangeOrSelection: new ve.Range( 3 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 0, 6 );
 				},
 				expectedRangeOrSelection: new ve.Range( 1 ),
@@ -301,7 +308,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 				htmlOrDoc: emptyList,
 				rangeOrSelection: new ve.Range( 3 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						0, 6,
 						{ type: 'paragraph' },
@@ -315,7 +322,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 				htmlOrDoc: '<p>foo</p><ul><li>bar' + emptyList + '</li></ul><p>baz</p>',
 				rangeOrSelection: new ve.Range( 15 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						12, 6,
 						{ type: '/listItem' }, { type: 'listItem' }, { type: 'paragraph' }, { type: '/paragraph' }
@@ -328,7 +335,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 				htmlOrDoc: '<div rel="ve:Alien">Bar</div><div rel="ve:Alien">Baz</div>',
 				rangeOrSelection: new ve.Range( 2 ),
 				keys: [ 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice( 2, 0, { type: 'paragraph' }, { type: '/paragraph' } );
 				},
 				expectedRangeOrSelection: new ve.Range( 3 ),
@@ -340,7 +347,7 @@ QUnit.test( 'special key down: linear enter', ( assert ) => {
 				htmlOrDoc: '<blockquote><p>Foo</p></blockquote>',
 				rangeOrSelection: new ve.Range( 5 ),
 				keys: [ 'ENTER', 'ENTER' ],
-				expectedData: function ( data ) {
+				expectedData: ( data ) => {
 					data.splice(
 						7, 0,
 						{ type: 'paragraph' },

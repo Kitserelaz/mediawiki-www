@@ -8,7 +8,6 @@ namespace SD;
  *
  * @author Yaron Koren
  */
-
 class AppliedFilterValue {
 	/**
 	 * The text.
@@ -71,7 +70,7 @@ class AppliedFilterValue {
 	 */
 	public $end_year = null;
 
-	public static function create( $actual_val, Filter $filter = null ) {
+	public static function create( $actual_val, ?Filter $filter = null ) {
 		$fv = new AppliedFilterValue();
 		$fv->text = str_replace( '_', ' ', $actual_val );
 
@@ -95,17 +94,13 @@ class AppliedFilterValue {
 			} else {
 				$date_parts = explode( ' ', $fv->text );
 				if ( count( $date_parts ) == 3 ) {
-					// check if array can be used instead of list
-					// [ $month_str, $day_str, $year ] = explode( ' ', $fv->text );
-					list( $month_str, $day_str, $year ) = explode( ' ', $fv->text );
+					[ $month_str, $day_str, $year ] = explode( ' ', $fv->text );
 					$fv->month = Utils::stringToMonth( $month_str );
 					$fv->day = str_replace( ',', '', $day_str );
 					$fv->year = $year;
 					$fv->time_period = 'day';
 				} elseif ( count( $date_parts ) == 2 ) {
-					// check if array can be used instead of list
-					// [ $month_str, $year ] = explode( ' ', $fv->text );
-					list( $month_str, $year ) = explode( ' ', $fv->text );
+					[ $month_str, $year ] = explode( ' ', $fv->text );
 					$fv->month = Utils::stringToMonth( $month_str );
 					$fv->year = $year;
 					$fv->time_period = 'month';
@@ -167,7 +162,7 @@ class AppliedFilterValue {
 
 		if ( $fv1->year != null && $fv2->year != null ) {
 			if ( $fv1->year == $fv2->year ) {
-				if ( $fv1->month == $fv1->month ) {
+				if ( $fv1->month == $fv2->month ) {
 					return 0;
 				}
 				return ( $fv1->month > $fv2->month ) ? 1 : -1;

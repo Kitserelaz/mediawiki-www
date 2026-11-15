@@ -4,14 +4,15 @@ namespace Telepedia\UserProfileV2\Api;
 
 use ApiBase;
 use ApiMain;
-use Exception;
+use ManualLogEntry;
+use MediaWiki\Api\ApiUsageException;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserOptionsManager;
+use Telepedia\UserProfileV2\ProfileFields;
 use Telepedia\UserProfileV2\UserInformation;
 use Wikimedia\ParamValidator\ParamValidator;
-use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 
 class SetUserProfileV2Preferences extends ApiBase {
 
@@ -24,7 +25,13 @@ class SetUserProfileV2Preferences extends ApiBase {
 	/** @var PermissionManager */
 	private PermissionManager $permissionManager;
 
-	public function __construct( ApiMain $apiMain, $moduleName, UserOptionsManager $userOptionsManager, UserFactory $userFactory, PermissionManager $permissionManager) {
+	public function __construct(
+		ApiMain $apiMain,
+		$moduleName,
+		UserOptionsManager $userOptionsManager,
+		UserFactory $userFactory,
+		PermissionManager $permissionManager
+	) {
 		parent::__construct( $apiMain, $moduleName );
 		$this->userOptionsManager = $userOptionsManager;
 		$this->userFactory = $userFactory;
@@ -42,28 +49,58 @@ class SetUserProfileV2Preferences extends ApiBase {
 
 		$actionUser = $this->getUser();
 
-		$user = $this->getTargetUser( $userName );
-
-		if ( !$user->isRegistered() ) {
-			$this->dieWithError( [ 'userprofilev2-apierror-invalidusername', wfEscapeWikiText( $userName ) ] );
+		if ( !$actionUser->isNamed() ) {
+			$this->dieWithError(
+				[ 'apierror-mustbeloggedin', $this->msg( 'action-editmyoptions' ) ],
+				'notloggedin'
+			);
 		}
+
+		$user = $this->getTargetUser( $userName );
 
 		// if the user is not trying to change their own preferences, and isn't a profile manager, die.
 		if ( !$this->checkPermissions( $actionUser, $user ) ) {
 			$this->dieWithError( [ 'userprofilev2-apierror-invalidpermission', wfEscapeWikiText( $userName ) ] );
 		}
 
+		if ( $actionUser->pingLimiter( 'userprofilev2-edit' ) ) {
+			$this->dieWithError( 'apierror-ratelimited' );
+		}
+
 		$userInformation = new UserInformation( $user );
 
-		try {
-			$userInformation->setPreferences( $this->userOptionsManager, $body );
-			$this->getResult()->addValue( null, 'result', 'success' );
-			return;
-		} catch ( Exception $e ) {
-			$this->getResult()->addValue( null, 'result', 'failure' );
-			$this->getResult()->addValue( null, 'errormsg', $e->getMessage() );
-			return;
+		$data = $userInformation->parseProfileData( $body );
+
+		foreach ( ProfileFields::getEditableFields() as $field ) {
+			$key = (string)$field['key'];
+			if ( !array_key_exists( $key, $data ) ) {
+				continue;
+			}
+
+			$error = ProfileFields::validateValue( $field, $data[$key] );
+			if ( $error !== null ) {
+				$this->dieWithError( [
+					$error,
+					ProfileFields::getLabel( $field ),
+					ProfileFields::getMaxLength( $field )
+				] );
+			}
+
+			$data[$key] = ProfileFields::normaliseValue( $field, $data[$key] );
 		}
+
+		$userInformation->setPreferences( $this->userOptionsManager, $data );
+
+		// if the editor is a profile manager editing someone elses profile, log it
+		if ( $actionUser->getId() !== $user->getId() ) {
+			$logEntry = new ManualLogEntry( 'userprofile', 'edit' );
+			$logEntry->setPerformer( $actionUser );
+			$logEntry->setTarget( $user->getUserPage() );
+			$logId = $logEntry->insert();
+			$logEntry->publish( $logId );
+		}
+
+		$this->getResult()->addValue( null, 'result', 'success' );
 	}
 
 	/**
@@ -84,16 +121,29 @@ class SetUserProfileV2Preferences extends ApiBase {
 			return true;
 		}
 
-		// The user can only edit the target's preferences if they are the target
-		return $user->getId() === $targetUser->getId();
+		// The user can only edit the target's preferences if they are the target,
+		// and are allowed to change their own preferences
+		return $user->getId() === $targetUser->getId() &&
+			$this->permissionManager->userHasRight( $user, 'editmyoptions' );
 	}
 
 	/**
 	 * @param string $userName
 	 * @return User
+	 * @throws ApiUsageException if the user does not exist
 	 */
 	private function getTargetUser( string $userName ): User {
-		return $this->userFactory->newFromName( $userName );
+		$user = $this->userFactory->newFromName( $userName );
+
+		if (
+			!$user ||
+			!$user->isNamed() ||
+			( $user->isHidden() && !$this->getAuthority()->isAllowed( 'hideuser' ) )
+		) {
+			$this->dieWithError( [ 'userprofilev2-apierror-invalidusername', wfEscapeWikiText( $userName ) ] );
+		}
+
+		return $user;
 	}
 
 	/**
@@ -124,7 +174,6 @@ class SetUserProfileV2Preferences extends ApiBase {
 		return [
 			'user_name' => [
 				ParamValidator::PARAM_TYPE => 'string',
-				IntegerDef::PARAM_MIN => 1,
 				ParamValidator::PARAM_REQUIRED => true,
 			],
 			'profile_data' => [

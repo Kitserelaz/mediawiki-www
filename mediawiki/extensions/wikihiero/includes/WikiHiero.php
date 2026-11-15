@@ -25,8 +25,8 @@
 namespace WikiHiero;
 
 use MediaWiki\Config\Config;
-use MediaWiki\Context\RequestContext;
 use MediaWiki\Html\Html;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Parser\Parser;
 
@@ -58,7 +58,7 @@ class WikiHiero {
 	 * @param Config|null $config
 	 */
 	public function __construct( ?Config $config = null ) {
-		$this->config = $config ?: RequestContext::getMain()->getConfig();
+		$this->config = $config ?: MediaWikiServices::getInstance()->getMainConfig();
 		self::loadData();
 	}
 
@@ -195,12 +195,12 @@ class WikiHiero {
 		);
 	}
 
-	private function getImageUrl( $fileName ) {
+	private function getImageUrl( string $fileName ): string {
 		$url = self::getImagePath() . self::IMAGE_PREFIX . $fileName . '.' . self::IMAGE_EXT;
 		return OutputPage::transformResourcePath( $this->config, $url );
 	}
 
-	private function isMirrored( $glyph ) {
+	private function isMirrored( string $glyph ): bool {
 		return substr( $glyph, -1 ) == '\\';
 	}
 

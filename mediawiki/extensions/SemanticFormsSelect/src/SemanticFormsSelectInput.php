@@ -1,7 +1,7 @@
 <?php
 
 /**
- * @license GNU GPL v2+
+ * @license GPL-2.0-or-later
  * @since 1.3
  *
  * @author Jason Zhang
@@ -11,11 +11,12 @@
 
 namespace SFS;
 
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
-use SMWQueryProcessor as QueryProcessor;
+use MediaWiki\Title\Title;
 use Parser;
+use ParserOptions;
 use PFFormInput;
-use MWDebug;
 
 class SemanticFormsSelectInput extends PFFormInput {
 
@@ -26,14 +27,32 @@ class SemanticFormsSelectInput extends PFFormInput {
 	 */
 	private static $data = [];
 
-	private $mSelectField;
+	/**
+	 * Create a dedicated, fully-initialized parser for SelectField.
+	 *
+	 * SelectField (for the "function=" parameter) calls Parser::replaceVariables()
+	 * directly. That requires a parser whose output type and parse state are
+	 * already initialized, otherwise typed properties such as Parser::$ot and
+	 * Parser::$mIncludeSizes are accessed before initialization and fatal under
+	 * MW 1.43+ (cf. issue #139, which fixed the equivalent path in the
+	 * sformsselect API).
+	 *
+	 * The shared global parser (MediaWikiServices::getParser()) must NOT be used
+	 * here: if it has not started a parse it is uninitialized, and if it is
+	 * mid-parse calling replaceVariables() on it re-entrantly would corrupt that
+	 * parse. Use a separate instance primed via startExternalParse() instead.
+	 *
+	 * @return Parser
+	 */
+	private function newInitializedParser(): Parser {
+		$parser = MediaWikiServices::getInstance()->getParserFactory()->create();
+		$parser->startExternalParse(
+			Title::newFromText( 'NO TITLE' ),
+			new ParserOptions( RequestContext::getMain()->getUser() ),
+			Parser::OT_HTML
+		);
 
-	public function __construct( $inputNumber, $curValue, $inputName, $disabled, $otherArgs ) {
-		parent::__construct( $inputNumber, $curValue, $inputName, $disabled, $otherArgs );
-
-		// SelectField is a simple value object - we accept creating it in the constructor
-		$parser = MediaWikiServices::getInstance()->getParser();
-		$this->mSelectField = new SelectField( $parser );
+		return $parser;
 	}
 
 	public static function getName() {
@@ -69,11 +88,18 @@ class SemanticFormsSelectInput extends PFFormInput {
 	 * @param    string[] $other_args Array of other field parameters
 	 * @return string
 	 */
-	public function getHTML( $is_mandatory, $is_disabled, Array $other_args, $cur_value = "", $input_name = "" ) {
-		global $wgPageFormsFieldNum, $wgUser;
+	public function getHTML( $is_mandatory, $is_disabled, array $other_args, $cur_value = "", $input_name = "" ) {
+		global $wgPageFormsFieldNum;
 
-		// shortcut to the SelectField object
-		$selectField = $this->mSelectField;
+		// Build the SelectField (and its dedicated, initialized parser) lazily
+		// here rather than overriding the constructor. This keeps the class
+		// agnostic to PFFormInput's constructor signature, which Page Forms
+		// changed in 6.0.6 (a leading OutputPage parameter); inheriting the
+		// parent constructor verbatim avoids the resulting ArgumentCountError.
+		// SelectField::__construct() takes the parser by reference, so pass a
+		// variable rather than the method-call result.
+		$parser = $this->newInitializedParser();
+		$selectField = new SelectField( $parser );
 
 		// get 'delimiter' before 'query' or 'function'
 		$selectField->setDelimiter( $other_args );
@@ -97,7 +123,7 @@ class SemanticFormsSelectInput extends PFFormInput {
 			$selectField->setValueField( $other_args );
 			$selectField->setSelectRemove( $other_args );
 
-			$item = Output::addToHeadItem( $selectField->getData() );
+			Output::addToHeadItem( $selectField->getData() );
 		}
 
 		Output::commitToParserOutput();
@@ -139,13 +165,13 @@ class SemanticFormsSelectInput extends PFFormInput {
 		// TODO Use Html::
 
 		$spanextra = $is_mandatory ? 'mandatoryFieldSpan' : '';
-		$is_single_select = (!$is_list) ? 'select-sfs-single' : '' ;
+		$is_single_select = ( !$is_list ) ? 'select-sfs-single' : '';
 		$ret = "<span class=\"inputSpan select-sfs $is_single_select $spanextra\"><select name='$inname' id='input_$wgPageFormsFieldNum' $extraatt>";
 
 		$curvalues = null;
 		if ( $cur_value ) {
 			if ( $cur_value === 'current user' ) {
-				$cur_value = $wgUser->getName();
+				$cur_value = RequestContext::getMain()->getUser()->getName();
 			}
 			if ( is_array( $cur_value ) ) {
 				$curvalues = $cur_value;
@@ -157,7 +183,6 @@ class SemanticFormsSelectInput extends PFFormInput {
 		} else {
 			$curvalues = [];
 		}
-
 
 		$labelArray = [];
 		if ( array_key_exists( "label", $other_args ) && $curvalues ) {
@@ -187,7 +212,7 @@ class SemanticFormsSelectInput extends PFFormInput {
 							$selected = " selected='selected'";
 						}
 
-						$ret.="<option".$selected." value='".$labelArray[ $val ][0]."'>".$labelArray[ $val ][1]."</option>";
+						$ret .= "<option" . $selected . " value='" . $labelArray[ $val ][0] . "'>" . $labelArray[ $val ][1] . "</option>";
 
 					} else {
 
@@ -204,7 +229,7 @@ class SemanticFormsSelectInput extends PFFormInput {
 							$selected = " selected='selected'";
 						}
 
-						$ret .= "<option".$selected.">$val</option>";
+						$ret .= "<option" . $selected . ">$val</option>";
 					}
 				}
 			}
@@ -219,13 +244,13 @@ class SemanticFormsSelectInput extends PFFormInput {
 						$selected = " selected='selected'";
 					}
 
-					$ret.="<option".$selected." value='".$labelArray[ $cur ][0]."'>".$labelArray[ $cur ][1]."</option>";
+					$ret .= "<option" . $selected . " value='" . $labelArray[ $cur ][0] . "'>" . $labelArray[ $cur ][1] . "</option>";
 
 				} else {
 					if ( in_array( $cur, $curvalues ) ) {
 						$selected = " selected='selected'";
 					}
-					$ret.="<option".$selected.">$cur</option>";
+					$ret .= "<option" . $selected . ">$cur</option>";
 				}
 			}
 
@@ -242,10 +267,8 @@ class SemanticFormsSelectInput extends PFFormInput {
 		return $ret;
 	}
 
-
 	private function getLabels( $labels ) {
-
-		$labelArray = [ ];
+		$labelArray = [];
 
 		if ( is_array( $labels ) ) {
 			foreach ( $labels as $label ) {
@@ -261,7 +284,7 @@ class SemanticFormsSelectInput extends PFFormInput {
 					$doneBr = 0;
 					$num = 0;
 
-					$labelArr = str_split ( $label );
+					$labelArr = str_split( $label );
 
 					$end = count( $labelArr ) - 1;
 					$iter = $end;
@@ -295,17 +318,16 @@ class SemanticFormsSelectInput extends PFFormInput {
 
 					}
 
-					$labelValue = implode( "", array_slice( $labelArr, $startBr+1, $endBr-$startBr-1 ) );
-					$labelKey = implode( "", array_slice( $labelArr, 0, $startBr-1 ) );
+					$labelValue = implode( "", array_slice( $labelArr, $startBr + 1, $endBr - $startBr - 1 ) );
+					$labelKey = implode( "", array_slice( $labelArr, 0, $startBr - 1 ) );
 
 				}
 
-				$labelArray[ $label ] = [ $labelKey, $labelValue ] ;
+				$labelArray[ $label ] = [ $labelKey, $labelValue ];
 			}
 
 		}
 
 		return $labelArray;
-
 	}
 }

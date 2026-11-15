@@ -9,9 +9,9 @@
 	"license-name": "MIT",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.43",
+		"MediaWiki": ">= 1.46",
 		"extensions": {
-			"TemplateData": "*",
+			"TemplateData": ">= 0.2.0",
 			"WikiEditor": ">= 0.5.3"
 		}
 	},
@@ -24,11 +24,14 @@
 	},
 	"HookHandlers": {
 		"main": {
-			"class": "MediaWiki\\Extension\\TemplateWizard\\Hooks"
+			"class": "MediaWiki\\Extension\\TemplateWizard\\Hooks",
+			"services": [
+				"ExtensionRegistry"
+			]
 		}
 	},
 	"ConfigRegistry": {
-		"templatewizard": "GlobalVarConfig::newInstance"
+		"templatewizard": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"attributes": {
 		"EventLogging": {
@@ -67,9 +70,6 @@
 				"redirectedfrom",
 				"templatewizard-add-all",
 				"templatewizard-cancel",
-				"templatewizard-close-dialog",
-				"templatewizard-close-dialog-body",
-				"templatewizard-close-dialog-retry",
 				"templatewizard-default",
 				"templatewizard-dialog-title",
 				"templatewizard-help",
@@ -91,6 +91,7 @@
 				"templatewizard-remove-all",
 				"templatewizard-remove-template",
 				"templatewizard-remove-template-body",
+				"templatewizard-remove-template-cancel",
 				"templatewizard-remove-template-retry",
 				"templatewizard-search-placeholder",
 				"templatewizard-parambutton-add-title",

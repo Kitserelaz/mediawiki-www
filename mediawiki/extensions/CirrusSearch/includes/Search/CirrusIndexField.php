@@ -6,9 +6,9 @@ use CirrusSearch\CirrusSearch;
 use CirrusSearch\SearchConfig;
 use Elastica\Document;
 use Elastica\Param;
-use SearchEngine;
-use SearchIndexField;
-use SearchIndexFieldDefinition;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchIndexField;
+use MediaWiki\Search\SearchIndexFieldDefinition;
 
 /**
  * Basic ElasticSearch index field
@@ -158,8 +158,6 @@ abstract class CirrusIndexField extends SearchIndexFieldDefinition {
 
 	/**
 	 * Clear all hints
-	 *
-	 * @param Param $doc
 	 */
 	public static function resetHints( Param $doc ) {
 		if ( $doc->hasParam( self::DOC_HINT_PARAM ) ) {
@@ -172,7 +170,6 @@ abstract class CirrusIndexField extends SearchIndexFieldDefinition {
 
 	/**
 	 * Remove multilist __DELETE_GROUPING__ records
-	 * @param Document $doc
 	 */
 	private static function resetMultiList( Document $doc ) {
 		$noopHandlers = self::getHint( $doc, self::NOOP_HINT ) ?: [];

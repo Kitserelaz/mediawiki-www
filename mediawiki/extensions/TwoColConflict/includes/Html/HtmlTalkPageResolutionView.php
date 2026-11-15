@@ -3,7 +3,7 @@
 namespace TwoColConflict\Html;
 
 use MediaWiki\Html\Html;
-use MessageLocalizer;
+use MediaWiki\Language\MessageLocalizer;
 use OOUI\ButtonWidget;
 use OOUI\FieldLayout;
 use OOUI\FieldsetLayout;
@@ -68,7 +68,7 @@ class HtmlTalkPageResolutionView {
 					$rows .= Html::rawElement(
 						'div',
 						[ 'class' => 'mw-twocolconflict-single-swap-button-container' ],
-						new ButtonWidget( [
+						(string)new ButtonWidget( [
 							'infusable' => true,
 							'framed' => true,
 							'icon' => 'markup',
@@ -153,7 +153,7 @@ class HtmlTalkPageResolutionView {
 		return Html::rawElement(
 			'div',
 			[ 'class' => 'mw-twocolconflict-order-selector' ],
-			$out
+			(string)$out
 		);
 	}
 

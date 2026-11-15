@@ -3,18 +3,18 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TranslatorInterface;
 
-use ApiBase;
-use ApiMain;
-use ManualLogEntry;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
 use MediaWiki\Extension\Translate\HookRunner;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\TitleFormatter;
 use MediaWiki\User\User;
 use Wikimedia\ParamValidator\ParamValidator;
-use Wikimedia\Rdbms\ILoadBalancer;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * API module for marking translations as reviewed
@@ -25,24 +25,16 @@ use Wikimedia\Rdbms\ILoadBalancer;
 class ReviewTranslationActionApi extends ApiBase {
 	/** @var string */
 	protected static $right = 'translate-messagereview';
-	private RevisionLookup $revisionLookup;
-	private TitleFormatter $titleFormatter;
-	private ILoadBalancer $loadBalancer;
-	private HookRunner $hookRunner;
 
 	public function __construct(
 		ApiMain $main,
 		string $moduleName,
-		RevisionLookup $revisionLookup,
-		TitleFormatter $titleFormatter,
-		ILoadBalancer $loadBalancer,
-		HookRunner $hookRunner
+		private readonly RevisionLookup $revisionLookup,
+		private readonly TitleFormatter $titleFormatter,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly HookRunner $hookRunner,
 	) {
 		parent::__construct( $main, $moduleName );
-		$this->revisionLookup = $revisionLookup;
-		$this->titleFormatter = $titleFormatter;
-		$this->loadBalancer = $loadBalancer;
-		$this->hookRunner = $hookRunner;
 	}
 
 	public function execute() {
@@ -84,7 +76,7 @@ class ReviewTranslationActionApi extends ApiBase {
 	 * @return bool whether the action was recorded.
 	 */
 	private function doReview( User $user, RevisionRecord $revRecord ): bool {
-		$dbw = $this->loadBalancer->getConnection( DB_PRIMARY );
+		$dbw = $this->dbProvider->getPrimaryDatabase();
 		$dbw->newInsertQueryBuilder()
 			->insertInto( 'translate_reviews' )
 			->ignore()
@@ -160,10 +152,6 @@ class ReviewTranslationActionApi extends ApiBase {
 		return [
 			'revision' => [
 				ParamValidator::PARAM_TYPE => 'integer',
-				ParamValidator::PARAM_REQUIRED => true,
-			],
-			'token' => [
-				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
 			],
 		];

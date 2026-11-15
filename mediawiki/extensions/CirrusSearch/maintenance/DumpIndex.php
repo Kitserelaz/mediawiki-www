@@ -12,28 +12,17 @@ use Elastica\Query;
 /**
  * Dump an index to stdout
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
 require_once __DIR__ . '/../includes/Maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
 
 /**
  * Dump an index from elasticsearch.
@@ -105,6 +94,16 @@ class DumpIndex extends Maintenance {
 		$this->addOption( 'sourceFields', 'List of comma separated source fields to extract.', false, true );
 	}
 
+	/**
+	 * @return bool True if this script only operates on clusters specified
+	 *  in CirrusSearchManagedClusters. Can be set to false for read-only
+	 *  scripts that don't care where they read from.
+	 */
+	protected function requireManagedCluster() {
+		return false;
+	}
+
+	/** @inheritDoc */
 	public function execute() {
 		$this->disablePoolCountersAndLogging();
 
@@ -128,7 +127,7 @@ class DumpIndex extends Maintenance {
 		$limit = (int)$this->getOption( 'limit', 0 );
 
 		$query = new Query();
-		$query->setStoredFields( [ '_id', '_type', '_source' ] );
+		$query->setStoredFields( [ '_id', '_source' ] );
 		$query->setSize( $this->inputChunkSize );
 		// Elasticsearch docs (mapping-id-field.html) say that sorting by _id is restricted
 		// from use, but at least on 7.10.2 this works as one would expect. The _id comes
@@ -136,7 +135,7 @@ class DumpIndex extends Maintenance {
 		// Additionally the cluster setting 'indices.id_field_data.enabled=false' breaks
 		// this.
 		$query->setSort( [
-			[ '_id' => 'asc' ],
+			[ 'page_id' => 'asc' ],
 		] );
 		$query->setTrackTotalHits( true );
 		if ( $this->hasOption( 'sourceFields' ) ) {
@@ -162,7 +161,7 @@ class DumpIndex extends Maintenance {
 
 		foreach ( $searchAfter as $results ) {
 			if ( $totalDocsInIndex === -1 ) {
-				$totalDocsInIndex = $this->getTotalHits( $results );
+				$totalDocsInIndex = $results->getTotalHits();
 				$totalDocsToDump = $limit > 0 ? $limit : $totalDocsInIndex;
 				$this->output( "Dumping $totalDocsToDump documents ($totalDocsInIndex in the index)\n" );
 			}
@@ -170,7 +169,6 @@ class DumpIndex extends Maintenance {
 			foreach ( $results as $result ) {
 				$document = [
 					'_id' => $result->getId(),
-					'_type' => $result->getType(),
 					'_source' => $result->getSource()
 				];
 				$this->write( $document );
@@ -178,6 +176,9 @@ class DumpIndex extends Maintenance {
 				if ( $docsDumped >= $totalDocsToDump ) {
 					break;
 				}
+			}
+			if ( $limit > 0 && $docsDumped > $limit ) {
+				break;
 			}
 			$this->outputProgress( $docsDumped, $totalDocsToDump );
 		}
@@ -192,7 +193,6 @@ class DumpIndex extends Maintenance {
 	public function write( array $document ) {
 		$indexOp = [
 			'index' => [
-				'_type' => $document['_type'],
 				'_id' => $document['_id']
 			] ];
 
@@ -204,6 +204,7 @@ class DumpIndex extends Maintenance {
 
 	/**
 	 * @param string $data
+	 * @throws IndexDumperException
 	 */
 	private function writeLine( $data ) {
 		if ( !fwrite( STDOUT, $data . "\n" ) ) {
@@ -272,17 +273,9 @@ class DumpIndex extends Maintenance {
 		return $this->getConnection()->getClient();
 	}
 
-	/**
-	 * @param Elastica\ResultSet $results
-	 * @return mixed|string
-	 */
-	private function getTotalHits( Elastica\ResultSet $results ) {
-		// hack to support ES6, switch to getTotalHits
-		return $results->getResponse()->getData()["hits"]["total"]["value"] ??
-			   $results->getResponse()->getData()["hits"]["total"];
-	}
-
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = DumpIndex::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

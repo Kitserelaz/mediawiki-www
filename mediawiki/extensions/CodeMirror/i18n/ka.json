@@ -56,6 +56,5 @@
 	"codemirror-special-char-line-separator": "სტრიქონის გამყოფი",
 	"codemirror-special-char-left-to-right-override": "გადაფარვა მარცხნიდან მარჯვნივ",
 	"codemirror-special-char-right-to-left-override": "გადაფარვა მარჯვნიდან მარცხნივ",
-	"prefs-accessibility": "ხელმისაწვდომობა",
-	"codemirror-v6-prefs-colorblind": "დალტონიზმზე მორგებული ფერების სქემის გამოყენება"
+	"prefs-accessibility": "ხელმისაწვდომობა"
 }

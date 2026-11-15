@@ -73,10 +73,14 @@ class SuggestionGeneratorTest extends MediaWikiIntegrationTestCase {
 		$p23 = new NumericPropertyId( 'P23' );
 
 		$suggestions = [
-			new Suggestion( $p12, 0.9 ), // this will stay at pos 0
-			new Suggestion( $p23, 0.8 ), // this doesn't match
-			new Suggestion( $p7, 0.7 ), // this will go to pos 1
-			new Suggestion( $p15, 0.6 ) // this is outside of resultSize
+			// this will stay at pos 0
+			new Suggestion( $p12, 0.9 ),
+			// this doesn't match
+			new Suggestion( $p23, 0.8 ),
+			// this will go to pos 1
+			new Suggestion( $p7, 0.7 ),
+			// this is outside of resultSize
+			new Suggestion( $p15, 0.6 )
 		];
 
 		$resultSize = 2;
@@ -149,8 +153,8 @@ class SuggestionGeneratorTest extends MediaWikiIntegrationTestCase {
 			'item',
 			SuggesterEngine::SUGGEST_NEW
 		);
-		$this->assertTrue( $result1->isGood() );
-		$this->assertEquals( [ 'foo' ], $result1->getValue() );
+		$this->assertStatusGood( $result1 );
+		$this->assertStatusValue( [ 'foo' ], $result1 );
 	}
 
 	public function testGenerateSuggestionsWithItem() {
@@ -178,8 +182,8 @@ class SuggestionGeneratorTest extends MediaWikiIntegrationTestCase {
 			SuggesterEngine::SUGGEST_NEW
 		);
 
-		$this->assertTrue( $result3->isGood() );
-		$this->assertEquals( [ 'foo' ], $result3->getValue() );
+		$this->assertStatusGood( $result3 );
+		$this->assertStatusValue( [ 'foo' ], $result3 );
 	}
 
 	public function testGenerateSuggestionsWithNonExistentItem() {
@@ -197,9 +201,7 @@ class SuggestionGeneratorTest extends MediaWikiIntegrationTestCase {
 			'item',
 			SuggesterEngine::SUGGEST_NEW
 		);
-		$this->assertFalse( $result->isGood() );
-		$this->assertSame( 'wikibase-api-no-such-entity',
-			$result->getErrors()[0]['message'] );
+		$this->assertStatusError( 'wikibase-api-no-such-entity', $result );
 	}
 
 	public function testFallbackBehaviourByItem() {
@@ -232,8 +234,8 @@ class SuggestionGeneratorTest extends MediaWikiIntegrationTestCase {
 			SuggesterEngine::SUGGEST_NEW
 		);
 
-		$this->assertTrue( $result4->isGood() );
-		$this->assertEquals( [ 'foo' ], $result4->getValue() );
+		$this->assertStatusGood( $result4 );
+		$this->assertStatusValue( [ 'foo' ], $result4 );
 	}
 
 	public function testFallbackBehaviourByPropertyIDs() {
@@ -261,8 +263,8 @@ class SuggestionGeneratorTest extends MediaWikiIntegrationTestCase {
 			'item',
 			SuggesterEngine::SUGGEST_NEW
 		);
-		$this->assertTrue( $result5->isGood() );
-		$this->assertEquals( [ 'foo' ], $result5->getValue() );
+		$this->assertStatusGood( $result5 );
+		$this->assertStatusValue( [ 'foo' ], $result5 );
 	}
 
 }

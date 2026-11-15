@@ -15,51 +15,22 @@ class LabeledSectionTransclusion {
 	 */
 
 	/**
-	 * Register what we're working on in the parser, so we don't fall into a trap.
-	 * @param Parser $parser
-	 * @param string $part1
-	 * @return bool
-	 */
-	private static function open( $parser, $part1 ) {
-		// This property on Parser has been deprecated: T360573
-		if ( !isset( $parser->mTemplatePath ) ) {
-			$parser->mTemplatePath = [];
-		}
-
-		// Infinite loop test
-		if ( isset( $parser->mTemplatePath[$part1] ) ) {
-			wfDebug( __METHOD__ . ": template loop broken at '$part1'\n" );
-			return false;
-		} else {
-			$parser->mTemplatePath[$part1] = 1;
-			return true;
-		}
-	}
-
-	/**
 	 * Handle recursive substitution here, so we can break cycles, and set up
 	 * return values so that edit sections will resolve correctly.
-	 * @param Parser $parser
 	 * @param Title $title of target page
 	 * @param string $text
-	 * @param string $part1 Key for cycle detection
 	 * @param int $skiphead Number of source string headers to skip for numbering
 	 * @return mixed string or magic array of bits
 	 * @todo handle mixed-case </section>
 	 */
-	private static function parse( $parser, $title, $text, $part1, $skiphead = 0 ) {
+	private static function parse( $title, $text, $skiphead = 0 ) {
 		// if someone tries something like<section begin=blah>lst only</section>
 		// text, may as well do the right thing.
 		$text = str_replace( '</section>', '', $text );
 
-		if ( self::open( $parser, $part1 ) ) {
-			// Try to get edit sections correct by munging around the parser's guts.
-			return [ $text, 'title' => $title, 'replaceHeadings' => true,
+		// Try to get edit sections correct by munging around the parser's guts.
+		return [ $text, 'title' => $title, 'replaceHeadings' => true,
 				'headingOffset' => $skiphead, 'noparse' => false, 'noargs' => false ];
-		} else {
-			return "[[" . $title->getPrefixedText() . "]]" .
-				"<!-- WARNING: LST loop detected -->";
-		}
 	}
 
 	/*
@@ -88,7 +59,8 @@ class LabeledSectionTransclusion {
 	 */
 	private static function getAttrPattern( $sec, $type, $lang ) {
 		$sec = preg_quote( $sec, '/' );
-		$ws = "(?:\s+[^>]*)?"; // was like $ws="\s*"
+		// Similiar like $ws="\s*", but special for attributes
+		$ws = "(?:\s+[^>]*)?";
 		$attrs = [ $type ];
 		$localName = Hooks::getLocalName( $type, $lang );
 		if ( $localName !== null ) {
@@ -188,6 +160,7 @@ class LabeledSectionTransclusion {
 			return "[[" . $title->getPrefixedText() . "]]";
 		}
 
+		$finalTitle = Title::newFromLinkTarget( $finalTitle );
 		$newFrame = $frame->newChild( false, $finalTitle );
 		if ( !count( $args ) ) {
 			return $newFrame->expand( $root );
@@ -487,6 +460,6 @@ class LabeledSectionTransclusion {
 		$result = $frame->expand( $dom );
 		$result = trim( $result );
 
-		return self::parse( $parser, $title, $result, "#lsth:{$page}|{$sec}", $nhead );
+		return self::parse( $title, $result, $nhead );
 	}
 }

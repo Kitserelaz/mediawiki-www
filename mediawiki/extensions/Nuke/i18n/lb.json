@@ -13,7 +13,7 @@
 	"nuke-defaultreason": "Masseläschung vu Säiten, déi vum [[Special:Contributions/$1|{{GENDER:$1|$1}}]] ugefaange goufen",
 	"nuke-defaultreason-tempaccount": "Masseläschung vu Säiten, déi vun temporäre Konten ugefaange goufen",
 	"nuke-multiplepeople": "Masseläschung vu Säiten, déi rezent ugefaange goufen",
-	"nuke-tools": "Dësen Tool erlaabt et fir vill Säite mateneen ze läschen, déi vun engem Benotzer oder vun enger IP-Adress ugeluecht goufen.\nGitt wgl. d'IP-Adress respektiv de Benotzer u fir eng Lëscht vun de Säiten ze kréien, déi geläscht solle ginn, oder loosst d'Feld eidel fir all Benotzer.",
+	"nuke-tools": "Dësen Tool erlaabt et, fir méi Säite mateneen ze läschen, déi viru Kuerzem vun engem Benotzer oder enger IP-Adress ugefaange goufen.\nGitt de Benotzernumm oder d'IP-Adress an, fir eng Lëscht vun de Säiten ze kréien, déi geläscht solle ginn, oder loosst d'Feld eidel fir all Benotzer.",
 	"nuke-tools-tempaccount": "Dësen Tool erlaabt et, fir méi Säite mateneen ze läschen, déi viru Kuerzem vun engem Benotzer oder engem temporäre Kont ugefaange goufen. Gitt e Benotzernumm oder eng IP-Adress an, fir eng Lëscht vun de Säiten ze kréien, déi geläscht solle ginn, oder loosst d'Feld eidel fir all Benotzer. Wann Dir eng IP-Adress agitt, ginn all d'Säiten opgelëscht, déi vun där IP-Adress oder vun engem temporäre Kont, dee mat där IP-Adress benotzt gouf, ugeluecht goufen.",
 	"nuke-tools-prompt": "Wielt nom Oplëschte vun de Säiten, wat fir eng Säite geläscht solle ginn a klickt dann op „{{int:nuke-submit-continue}}“. Viruleedunge gi kursiv ugewisen.",
 	"nuke-tools-prompt-restricted": "Dir kënnt dësen Tool nach ëmmer benotze fir Säiten opzelëschten, mee Dir wäert se net läsche kënnen.",

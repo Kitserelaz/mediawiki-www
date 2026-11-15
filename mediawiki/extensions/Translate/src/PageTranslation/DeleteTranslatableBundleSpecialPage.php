@@ -3,19 +3,19 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
-use ErrorPageError;
+use MediaWiki\Exception\ErrorPageError;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Exception\ReadOnlyError;
 use MediaWiki\Extension\Translate\MessageBundleTranslation\MessageBundle;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundleFactory;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
+use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\SpecialPage\UnlistedSpecialPage;
 use MediaWiki\Title\Title;
-use PermissionsError;
-use ReadOnlyError;
-use Xml;
 
 /**
  * Special page which enables deleting translations of translatable bundles and translation pages
@@ -34,9 +34,6 @@ class DeleteTranslatableBundleSpecialPage extends UnlistedSpecialPage {
 	private bool $doSubpages = false;
 	/** Contains the language code if we are working with translation page */
 	private ?string $code;
-	private PermissionManager $permissionManager;
-	private TranslatableBundleDeleter $bundleDeleter;
-	private TranslatableBundleFactory $bundleFactory;
 	private string $entityType;
 	private const PAGE_TITLE_MSG = [
 		'messagebundle' => 'pt-deletepage-mb-title',
@@ -55,20 +52,24 @@ class DeleteTranslatableBundleSpecialPage extends UnlistedSpecialPage {
 	];
 
 	public function __construct(
-		PermissionManager $permissionManager,
-		TranslatableBundleDeleter $bundleDeleter,
-		TranslatableBundleFactory $bundleFactory
+		private readonly PermissionManager $permissionManager,
+		private readonly TranslatableBundleDeleter $bundleDeleter,
+		private readonly TranslatableBundleFactory $bundleFactory,
 	) {
-		parent::__construct( 'PageTranslationDeletePage', 'pagetranslation' );
-		$this->permissionManager = $permissionManager;
-		$this->bundleFactory = $bundleFactory;
-		$this->bundleDeleter = $bundleDeleter;
+		parent::__construct( 'PageTranslationDeletePage' );
 	}
 
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'pagetranslation';
+	}
+
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function execute( $par ) {
 		$this->addHelpLink( 'Help:Deletion_and_undeletion' );
 
@@ -290,7 +291,8 @@ class DeleteTranslatableBundleSpecialPage extends UnlistedSpecialPage {
 			$this->getUser(),
 			$this->bundleDeleter->getPagesForDeletion( $this->title, $this->code, $this->isTranslation() ),
 			$this->doSubpages,
-			$this->reason
+			$this->reason,
+			$this->getContext()->exportSession()
 		);
 
 		$this->getOutput()->addWikiMsg( 'pt-deletepage-started', self::LOG_PAGE[ $this->entityType ] );
@@ -299,7 +301,7 @@ class DeleteTranslatableBundleSpecialPage extends UnlistedSpecialPage {
 	private function getCommonFormFields(): array {
 		$dropdownOptions = $this->msg( 'deletereason-dropdown' )->inContentLanguage()->text();
 
-		$options = Xml::listDropdownOptions(
+		$options = Html::listDropdownOptions(
 			$dropdownOptions,
 			[
 				'other' => $this->msg( 'pt-deletepage-reason-other' )->inContentLanguage()->text()

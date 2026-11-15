@@ -7,24 +7,26 @@ use MediaWiki\Content\JsonContentHandler;
 use MediaWiki\Extension\SecurePoll\Entities\Election;
 use MediaWiki\Extension\SecurePoll\Exceptions\InvalidDataException;
 use MediaWiki\Json\FormatJson;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 
 /**
  * SecurePoll Content Handler
  *
- * @file
  * @ingroup Extensions
  * @ingroup SecurePoll
  *
  * @author Brad Jorsch <bjorsch@wikimedia.org>
  */
 class SecurePollContentHandler extends JsonContentHandler {
+	/** @inheritDoc */
 	public function __construct( $modelId = 'SecurePoll' ) {
 		parent::__construct( $modelId );
 	}
 
 	/**
-	 * Load data from an election as a PHP array structure
+	 * Load data from an election as a PHP array structure. This data is safe for
+	 * public posting (it redacts things like encryption keys).
 	 *
 	 * @param Election $election
 	 * @param string $subpage Subpage to get content for
@@ -110,9 +112,7 @@ class SecurePollContentHandler extends JsonContentHandler {
 			];
 			foreach ( $election->getMessageNames() as $name ) {
 				$value = $election->getRawMessage( $name, $lang );
-				if ( $value !== false ) {
-					$data['messages'][$name] = $value;
-				}
+				$data['messages'][$name] = $value !== false ? $value : '';
 			}
 
 			foreach ( $election->getQuestions() as $question ) {
@@ -123,9 +123,7 @@ class SecurePollContentHandler extends JsonContentHandler {
 				];
 				foreach ( $question->getMessageNames() as $name ) {
 					$value = $question->getRawMessage( $name, $lang );
-					if ( $value !== false ) {
-						$q['messages'][$name] = $value;
-					}
+					$q['messages'][$name] = $value !== false ? $value : '';
 				}
 
 				foreach ( $question->getOptions() as $option ) {
@@ -135,9 +133,7 @@ class SecurePollContentHandler extends JsonContentHandler {
 					];
 					foreach ( $option->getMessageNames() as $name ) {
 						$value = $option->getRawMessage( $name, $lang );
-						if ( $value !== false ) {
-							$o['messages'][$name] = $value;
-						}
+						$o['messages'][$name] = $value !== false ? $value : '';
 					}
 					$q['options'][] = $o;
 				}
@@ -152,22 +148,26 @@ class SecurePollContentHandler extends JsonContentHandler {
 	}
 
 	/**
-	 * Create a SecurePollContent for an election
+	 * Figure out the title and JSON string content of a SecurePoll log page.
+	 *
+	 * Exactly which title is calculated depends on if $wgSecurePollUseNamespace or
+	 * wgSecurePollUseMediaWikiNamespace is set. Various transformations are made
+	 * to the JSON to try to introduce consistency and prevent dirty diffs.
 	 *
 	 * @param Election $election
 	 * @param string $subpage Subpage to get content for
 	 * @return array ( Title, SecurePollContent )
 	 */
-	public static function makeContentFromElection( Election $election, $subpage = '' ) {
-		$json = FormatJson::encode(
-			self::getDataFromElection( $election, $subpage, true ),
-			false,
-			FormatJson::ALL_OK
-		);
-		$title = Title::makeTitle(
-			NS_SECUREPOLL,
-			$election->getId() . ( $subpage === '' ? '' : "/$subpage" )
-		);
+	public static function makeContentFromElection(
+		Election $election,
+		string $subpage = ''
+	): array {
+		$data = self::getDataFromElection( $election, $subpage, true );
+		$data = self::normalizeDataForPage( $data );
+
+		$json = FormatJson::encode( $data, false, FormatJson::ALL_OK );
+
+		$title = self::getTitleForPage( $election->getId() . ( $subpage === '' ? '' : "/$subpage" ) );
 
 		return [
 			$title,
@@ -175,26 +175,42 @@ class SecurePollContentHandler extends JsonContentHandler {
 		];
 	}
 
+	/**
+	 * Normalize data to avoid dirty diffs while updating the SecurePoll log page. Sort keys,
+	 * stringify all values, and remove empty arrays. Array values are recursively normalized.
+	 */
+	public static function normalizeDataForPage( array $data, bool $sort = false ): array {
+		if ( $sort ) {
+			ksort( $data );
+		}
+		foreach ( $data as $key => &$value ) {
+			if ( $value === [] ) {
+				unset( $data[$key] );
+			} elseif ( is_array( $value ) ) {
+				$value = self::normalizeDataForPage( $value, true );
+			} elseif ( is_bool( $value ) ) {
+				$value = $value ? '1' : '0';
+			} else {
+				$value = strval( $value );
+			}
+		}
+		return $data;
+	}
+
+	public static function getTitleForPage( string $pageName ): Title {
+		$config = MediaWikiServices::getInstance()->getMainConfig();
+		if ( $config->get( 'SecurePollUseNamespace' ) ) {
+			return Title::makeTitle( NS_SECUREPOLL, $pageName );
+		}
+		return Title::makeTitle( NS_MEDIAWIKI, 'SecurePoll/' . $pageName );
+	}
+
+	/** @inheritDoc */
 	public function canBeUsedOn( Title $title ) {
-		global $wgSecurePollUseNamespace;
-
-		return $wgSecurePollUseNamespace && $title->getNamespace() == NS_SECUREPOLL;
+		return Context::isSecurePollPage( $title );
 	}
 
-	public function getActionOverrides() {
-		// Disable write actions
-		return [
-			'delete' => false,
-			'edit' => false,
-			'info' => false,
-			'protect' => false,
-			'revert' => false,
-			'rollback' => false,
-			'submit' => false,
-			'unprotect' => false,
-		];
-	}
-
+	/** @inheritDoc */
 	protected function getContentClass() {
 		return SecurePollContent::class;
 	}

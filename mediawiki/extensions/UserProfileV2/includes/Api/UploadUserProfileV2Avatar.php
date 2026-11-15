@@ -74,38 +74,34 @@ class UploadUserProfileV2Avatar extends ApiBase {
 			$this->dieWithError( 'userprofilev2-apierror-ratelimited' );
 		}
 
-		$status = $upload->performUpload( '', '', false, $user );
+		try {
+			$status = $upload->performUpload( '', '', false, $user );
+		} finally {
+			// Always remove the uploaded temp file, including when the upload fails
+			$upload->cleanupTempFile();
+		}
 
-		$result = [];
-
-		if ( $status->isGood() ) {
-			$backend = new UserProfileV2AvatarBackend( 'upv2avatars' );
-
-			$config = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'UserProfileV2' );
-
-			if ( $config->get( 'UserProfileV2UseGlobalAvatars' ) ) {
-				$lookup = MediaWikiServices::getInstance()->getCentralIdLookup();
-				$userId = $lookup->centralIdFromLocalUser( $targetUser );
-			} else {
-				$userId = $targetUser->getId();
-			}
-
-			$extension = $upload->mExtension;
-
-			$ts = rand();
-
-			$result = [
-				'result' => 'Success',
-				'url' => $backend->getFileHttpUrl( $avatarKey . '_', $userId, $extension ) . '?ts=' . $ts,
-			];
-		} else {
+		if ( !$status->isGood() ) {
 			$this->dieStatus( $status );
 		}
 
-		$this->getResult()->addValue( null, $this->getModuleName(), $result );
+		$backend = new UserProfileV2AvatarBackend( 'upv2avatars' );
 
-		// do some cleanup
-		$upload->cleanupTempFile();
+		$config = MediaWikiServices::getInstance()->getConfigFactory()->makeConfig( 'UserProfileV2' );
+
+		if ( $config->get( 'UserProfileV2UseGlobalAvatars' ) ) {
+			$lookup = MediaWikiServices::getInstance()->getCentralIdLookup();
+			$userId = $lookup->centralIdFromLocalUser( $targetUser );
+		} else {
+			$userId = $targetUser->getId();
+		}
+
+		$result = [
+			'result' => 'Success',
+			'url' => $backend->getFileHttpUrl( $avatarKey . '_', $userId, $upload->mExtension ) . '?ts=' . rand(),
+		];
+
+		$this->getResult()->addValue( null, $this->getModuleName(), $result );
 	}
 
 	/**
@@ -116,7 +112,7 @@ class UploadUserProfileV2Avatar extends ApiBase {
 	 * @return bool
 	 */
 	private function checkPermissions( User $user, User $targetUser ): bool {
-		if ( !$user->isRegistered() ) {
+		if ( !$user->isNamed() ) {
 			return false;
 		}
 
@@ -140,7 +136,7 @@ class UploadUserProfileV2Avatar extends ApiBase {
 	private function getTargetUser( string $username ): User {
 		$user = $this->userFactory->newFromName( $username );
 
-		if ( !$user->isRegistered() ) {
+		if ( !$user || !$user->isRegistered() ) {
 			$this->dieWithError( [ 'userprofilev2-apierror-invalidusername', wfEscapeWikiText( $username ) ] );
 		}
 

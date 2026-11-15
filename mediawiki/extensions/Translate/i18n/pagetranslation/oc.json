@@ -48,7 +48,6 @@
 	"tpt-aggregategroup-add": "Apondre",
 	"tpt-aggregategroup-save": "Enregistrar",
 	"tpt-aggregategroup-add-new": "Apondre un novèl grop d'agregacion",
-	"tpt-aggregategroup-new-name": "Nom :",
 	"pt-movepage-list-translation": "{{PLURAL:$1|pagina|paginas}} de traduccion",
 	"pt-movepage-new": "Nom novèl :",
 	"pt-movepage-reason": "Motiu :",
@@ -59,5 +58,5 @@
 	"pt-deletepage-reason": "Motiu :",
 	"pm-old-translations-missing": "$1 conten pas d’ancianas traduccions",
 	"pm-add-icon-hover-text": "Apondre una unitat çaijós",
-	"pm-pagetitle-placeholder": "Entrar lo títol de la pagina"
+	"tpt-manage-message-group-subscriptions-normal-check-all": "Marcar tot"
 }

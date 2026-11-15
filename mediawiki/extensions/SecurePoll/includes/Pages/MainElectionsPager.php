@@ -4,7 +4,6 @@ namespace MediaWiki\Extension\SecurePoll\Pages;
 
 use MediaWiki\Html\Html;
 use MediaWiki\Linker\LinkRenderer;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Pager\IndexPager;
 use MediaWiki\SpecialPage\SpecialPage;
 use Wikimedia\Rdbms\ILoadBalancer;
@@ -13,64 +12,66 @@ use Wikimedia\Rdbms\ILoadBalancer;
  * Pager for an election list. See TablePager documentation.
  */
 class MainElectionsPager extends ElectionPager {
-	/** @var array[] */
-	private $subpages = [
+	private array $subpages = [
 		'vote' => [
 			'public' => true,
+			'visible-before-start' => true,
 			'visible-after-start' => true,
 			'visible-after-close' => false,
 		],
 		'translate' => [
 			'public' => true,
+			'visible-before-start' => true,
 			'visible-after-start' => true,
 			'visible-after-close' => true,
 		],
 		'list' => [
 			'public' => true,
+			'visible-before-start' => false,
 			'visible-after-start' => true,
 			'visible-after-close' => true,
 		],
 		'edit' => [
 			'public' => false,
+			'visible-before-start' => true,
 			'visible-after-start' => true,
 			'visible-after-close' => false,
 		],
 		'votereligibility' => [
 			'public' => false,
+			'visible-before-start' => true,
 			'visible-after-start' => true,
-			'visible-after-close' => true,
+			'visible-after-close' => false,
 		],
 		'dump' => [
 			'public' => false,
-			'visible-after-start' => true,
+			'visible-before-start' => false,
+			'visible-after-start' => false,
 			'visible-after-close' => true,
 		],
-		'dump-blt' => [
+		'tallies' => [
 			'public' => false,
-			'visible-after-start' => true,
-			'visible-after-close' => true,
-		],
-		'tally' => [
-			'public' => false,
-			'visible-after-start' => true,
+			'visible-before-start' => false,
+			'visible-after-start' => false,
 			'visible-after-close' => true,
 		],
 		'log' => [
 			'public' => false,
+			'visible-before-start' => true,
 			'visible-after-start' => true,
 			'visible-after-close' => true,
 			'link' => 'getLogLink'
 		],
 		'archive' => [
 			'public' => false,
+			'visible-before-start' => false,
 			'visible-after-start' => false,
 			'visible-after-close' => true,
+			'token' => true
 		]
 	];
-	/** @var LinkRenderer */
-	private $linkRenderer;
-	/** @var ILoadBalancer */
-	private $loadBalancer;
+	private LinkRenderer $linkRenderer;
+	private ILoadBalancer $loadBalancer;
 
 	public function __construct(
 		EntryPage $specialPage,
@@ -84,6 +85,7 @@ class MainElectionsPager extends ElectionPager {
 		$this->loadBalancer = $loadBalancer;
 	}
 
+	/** @inheritDoc */
 	public function getQueryInfo() {
 		$subquery = $this->loadBalancer->getConnection( ILoadBalancer::DB_REPLICA )->newSelectQueryBuilder()
 			->select( 'pr_entity' )
@@ -103,70 +105,80 @@ class MainElectionsPager extends ElectionPager {
 	/**
 	 * @return string HTML
 	 */
-	public function getLinks() {
-		$id = (int)$this->mCurrentRow->el_entity;
+	public function getStatus(): string {
+		if ( $this->election->isFinished() ) {
+			return $this->msg( 'securepoll-status-completed' )->escaped();
+		} elseif ( $this->election->isStarted() ) {
+			return $this->msg( 'securepoll-status-in-progress' )->escaped();
+		} else {
+			return $this->msg( 'securepoll-status-not-started' )->escaped();
+		}
+	}
 
-		$s = '';
-		$sep = $this->msg( 'pipe-separator' )->escaped();
+	/**
+	 * @return string HTML
+	 */
+	public function getLinks(): string {
+		$pollId = (int)$this->mCurrentRow->el_entity;
+		$html = '';
+		$separator = $this->msg( 'pipe-separator' )->escaped();
+
+		// Only show "Logs" link if the page Special:SecurePollLog is enabled
+		if ( !$this->getConfig()->get( 'SecurePollUseLogging' ) ) {
+			unset( $this->subpages['log'] );
+		}
+
 		foreach ( $this->subpages as $subpage => $props ) {
 			// Message keys used here:
-			// securepoll-subpage-vote, securepoll-subpage-translate,
-			// securepoll-subpage-list, securepoll-subpage-dump, securepoll-subpage-dump-blt
-			// securepoll-subpage-tally, securepoll-subpage-votereligibility
+			// securepoll-subpage-list, securepoll-subpage-dump,
+			// securepoll-subpage-votereligibility
 			// securepoll-subpage-log, securepoll-subpage-archive
 			$linkText = $this->msg( "securepoll-subpage-$subpage" )->text();
-			if ( $subpage === "dump" ) {
-				$linkText .= ' (XML)';
-			}
-			if ( $subpage === "dump-blt" ) {
-				$linkText = $this->msg( "securepoll-subpage-dump" )->text() . ' (BLT)';
+
+			if ( $html !== '' ) {
+				$html .= $separator;
 			}
 
-			if ( $s !== '' ) {
-				$s .= $sep;
-			}
-			if (
+			$isNotStarted = !$this->election->isStarted() && !$this->election->isFinished();
+			$isStartedButNotFinished = $this->election->isStarted() && !$this->election->isFinished();
+			$isFinished = $this->election->isFinished();
+			$needsHyperlink =
 				( $this->isAdmin || $props['public'] ) &&
-				( !$this->election->isStarted() ||
-					( $this->election->isStarted() && $this->election->isFinished() ) ||
-					$props['visible-after-start'] ) &&
-				( !$this->election->isFinished() || $props['visible-after-close'] )
-			) {
+				(
+					( $isFinished && $props['visible-after-close'] ) ||
+					( $isStartedButNotFinished && $props['visible-after-start'] ) ||
+					( $isNotStarted && $props['visible-before-start'] )
+				);
+			if ( $needsHyperlink ) {
+				$queryParams = [];
+				if ( isset( $props['token'] ) && $props['token'] ) {
+					$queryParams[ 'token' ] = $this->page->specialPage->getContext()
+						->getCsrfTokenSet()->getToken();
+				}
 				if ( isset( $props['link'] ) ) {
-					$s .= $this->{$props['link']}( $id );
+					$html .= $this->{$props['link']}( $pollId );
 				} else {
-					if ( $subpage === "dump-blt" ) {
-						$title = $this->page->specialPage->getPageTitle( "dump/$id" );
-						$s .= $this->linkRenderer->makeKnownLink( $title, $linkText, [], [ 'format' => 'blt' ] );
-
-					} else {
-						$title = $this->page->specialPage->getPageTitle( "$subpage/$id" );
-						$s .= $this->linkRenderer->makeKnownLink( $title, $linkText );
-					}
+					$title = $this->page->specialPage->getPageTitle( "$subpage/$pollId" );
+					$html .= $this->linkRenderer->makeKnownLink( $title, $linkText, [], $queryParams );
 				}
 			} else {
-				$s .= Html::element(
+				$html .= Html::element(
 					'span',
-					[
-						'class' => 'securepoll-link-disabled',
-					],
+					[ 'class' => 'securepoll-link-disabled' ],
 					$linkText
 				);
 			}
 		}
 
-		return $s;
+		return $html;
 	}
 
 	/**
 	 * Generate the link to the logs on SecurePollLog for an election
-	 * @param int $id
 	 * @return string HTML
 	 */
-	public function getLogLink( $id ) {
-		$services = MediaWikiServices::getInstance();
-		$linkRenderer = $services->getLinkRenderer();
-		return $linkRenderer->makeLink(
+	public function getLogLink( int $id ): string {
+		return $this->linkRenderer->makeLink(
 			SpecialPage::getTitleValueFor( 'SecurePollLog' ),
 			$this->msg( 'securepoll-subpage-log' )->text(),
 			[],

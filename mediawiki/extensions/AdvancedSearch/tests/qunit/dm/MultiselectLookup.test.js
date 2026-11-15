@@ -1,39 +1,30 @@
 'use strict';
-( function () {
+QUnit.module( 'ext.advancedSearch.dm.MultiselectLookup', ( hooks ) => {
 
 	const { MultiselectLookup } = require( 'ext.advancedSearch.SearchFieldUI' );
 
-	let sandbox,
-		store,
-		config;
+	let store, config;
 
-	QUnit.testStart( () => {
+	hooks.beforeEach( function () {
 		const queryTemplatePages = sinon.match( ( value ) => value.action === 'query' &&
 				value.prop === 'info' &&
 				value.titles.startsWith( mw.config.get( 'wgFormattedNamespaces' )[ 10 ] ) );
-		sandbox = sinon.sandbox.create();
 		store = {
-			connect: sandbox.stub(),
-			getField: sandbox.stub().withArgs( 'hastemplate' ).returns( [] ),
-			hasFieldChanged: sandbox.stub(),
-			storeField: sandbox.stub()
+			connect: this.sandbox.stub(),
+			getField: this.sandbox.stub().withArgs( 'hastemplate' ).returns( [] ),
+			hasFieldChanged: this.sandbox.stub(),
+			storeField: this.sandbox.stub()
 		};
 		config = {
 			fieldId: 'hastemplate',
-			lookupId: 'template',
+			namespaceId: 10,
 			api: new mw.Api()
 		};
 		// Stub out API to avoid queries if template pages exist
-		sandbox.stub( config.api, 'get' ).withArgs( queryTemplatePages ).returns( $.Deferred().resolve( { query: { pages: {} } } ).promise() );
+		this.sandbox.stub( config.api, 'get' ).withArgs( queryTemplatePages ).returns( $.Deferred().resolve( { query: { pages: {} } } ).promise() );
 	} );
 
-	QUnit.testDone( () => {
-		sandbox.restore();
-	} );
-
-	QUnit.module( 'ext.advancedSearch.dm.MultiselectLookup' );
-
-	QUnit.test( 'Value picked from menu is added to tags and stored', ( assert ) => {
+	QUnit.test( 'Value picked from menu is added to tags and stored', function ( assert ) {
 		const lookup = new MultiselectLookup( store, config );
 		lookup.addTag( 'Preexisting' );
 		lookup.input.setValue( 'My Templ' );
@@ -41,7 +32,7 @@
 		item.setData( 'My Template' );
 
 		// reset storeField as is was invoked by addTag( 'Preexisting' ) before
-		store.storeField = sandbox.stub();
+		store.storeField = this.sandbox.stub();
 
 		lookup.onLookupMenuChoose( item );
 
@@ -56,8 +47,8 @@
 		assert.strictEqual( lookup.input.getValue(), '' );
 	} );
 
-	QUnit.test( 'Store data subscribed to and synced initially', ( assert ) => {
-		const setValueSpy = sandbox.spy( MultiselectLookup.prototype, 'setValue' );
+	QUnit.test( 'Store data subscribed to and synced initially', function ( assert ) {
+		const setValueSpy = this.sandbox.spy( MultiselectLookup.prototype, 'setValue' );
 
 		store.getField.withArgs( 'hastemplate' ).returns( [ 'Burg' ] );
 		store.hasFieldChanged.withArgs( 'hastemplate' ).returns( true );
@@ -107,7 +98,8 @@
 			]
 		];
 
-		const result = lookupField.getLookupMenuOptionsFromData( apiData );
+		const titles = lookupField.getLookupCacheDataFromResponse( apiData );
+		const result = lookupField.getLookupMenuOptionsFromData( titles );
 		assert.true( Array.isArray( result ) );
 		assert.strictEqual( result.length, 3 );
 
@@ -144,19 +136,13 @@
 			]
 		];
 
-		const result = lookupField.getLookupMenuOptionsFromData( apiData );
+		const titles = lookupField.getLookupCacheDataFromResponse( apiData );
+		const result = lookupField.getLookupMenuOptionsFromData( titles );
 		assert.true( Array.isArray( result ) );
 		assert.strictEqual( result.length, 1 );
 
 		assert.strictEqual( result[ 0 ].getLabel(), 'Jens' );
 		assert.strictEqual( result[ 0 ].getData(), 'Jens' );
-	} );
-
-	QUnit.test( 'Page titles post-processes nicely', ( assert ) => {
-		const lookupField = new MultiselectLookup( store, config );
-		assert.strictEqual( lookupField.removeNamespace( 'Test' ), 'Test' );
-		assert.strictEqual( lookupField.removeNamespace( 'Template:Test' ), 'Test' );
-		assert.strictEqual( lookupField.removeNamespace( 'User:Foo/Bar.js' ), 'Foo/Bar.js' );
 	} );
 
 	QUnit.test( 'Native browser autocomplete is not used', ( assert ) => {
@@ -165,9 +151,9 @@
 		assert.strictEqual( $( lookupField.$input ).attr( 'autocomplete' ), 'off' );
 	} );
 
-	QUnit.test( 'Well-formed API request yields result', ( assert ) => {
+	QUnit.test( 'Well-formed API request yields result', function ( assert ) {
 		config.api = new mw.Api();
-		const getStub = sandbox.stub( config.api, 'get' ).withArgs( {
+		const getStub = this.sandbox.stub( config.api, 'get' ).withArgs( {
 			action: 'opensearch',
 			search: 'Burg',
 			namespace: 10
@@ -197,9 +183,9 @@
 		} );
 	} );
 
-	QUnit.test( 'Empty query does not trigger API request', ( assert ) => {
+	QUnit.test( 'Empty query does not trigger API request', function ( assert ) {
 		config.api = new mw.Api();
-		const getStub = sandbox.stub( config.api, 'get' );
+		const getStub = this.sandbox.stub( config.api, 'get' );
 
 		const lookupField = new MultiselectLookup( store, config );
 		$( lookupField.$input ).val( '' );
@@ -213,4 +199,4 @@
 			assert.true( true, 'A failed promise is returned' );
 		} );
 	} );
-}() );
+} );

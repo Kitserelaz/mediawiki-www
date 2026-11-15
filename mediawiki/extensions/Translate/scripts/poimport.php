@@ -10,12 +10,16 @@
  */
 
 use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\ContentHandler;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageLoading\MessageCollection;
+use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Permissions\Authority;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
-use MediaWiki\User\User;
 
 // Standard boilerplate to define $IP
 if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
@@ -62,11 +66,18 @@ class Poimport extends Maintenance {
 			exit( 0 );
 		}
 
+		$performer = $this->getServiceContainer()
+			->getUserFactory()
+			->newFromName( $this->getOption( 'user' ) );
+		if ( !$performer || !$performer->isRegistered() ) {
+			$this->fatalError( 'Given user does not exist.' );
+		}
+
 		// Import changes to wiki.
 		$w = new WikiWriter(
 			$changes,
 			$group,
-			$this->getOption( 'user' ),
+			$performer,
 			!$this->hasOption( 'really' )
 		);
 
@@ -108,15 +119,18 @@ class PoImporter {
 		$this->file = $file;
 	}
 
-	public function setProgressCallback( $callback ) {
+	public function setProgressCallback( callable $callback ) {
 		$this->progressCallback = $callback;
 	}
 
-	/// @see Maintenance::output for param docs
+	/**
+	 * @see Maintenance::output for param docs
+	 * @inheritDoc
+	 */
 	protected function reportProgress( $text, $channel = null, $severity = 'status' ) {
 		if ( is_callable( $this->progressCallback ) ) {
 			$useErrorOutput = $severity === 'error';
-			call_user_func( $this->progressCallback, $text, $channel, $useErrorOutput );
+			( $this->progressCallback )( $text, $channel, $useErrorOutput );
 		}
 	}
 
@@ -226,8 +240,8 @@ class PoImporter {
 class WikiWriter {
 	/** @var callable|null Function to report progress updates */
 	private $progressCallback;
-	/** @var User */
-	private $user;
+	/** @var Authority */
+	private $performer;
 	/** @var string[] */
 	private $changes;
 	/** @var bool */
@@ -238,27 +252,28 @@ class WikiWriter {
 	/**
 	 * @param string[] $changes Array of key/langcode => translation.
 	 * @param string $groupId
-	 * @param string $user User who makes the edits in wiki.
+	 * @param Authority $performer User who makes the edits in wiki.
 	 * @param bool $dryrun Do not do anything that affects the database.
 	 */
-	public function __construct( array $changes, $groupId, $user, $dryrun = true ) {
+	public function __construct( array $changes, $groupId, $performer, $dryrun = true ) {
 		$this->changes = $changes;
 		$this->group = MessageGroups::getGroup( $groupId );
-		$this->user = MediaWikiServices::getInstance()
-			->getUserFactory()
-			->newFromName( $user );
+		$this->performer = $performer;
 		$this->dryrun = $dryrun;
 	}
 
-	public function setProgressCallback( $callback ) {
+	public function setProgressCallback( ?callable $callback ) {
 		$this->progressCallback = $callback;
 	}
 
-	/// @see Maintenance::output for param docs
+	/**
+	 * @see Maintenance::output for param docs
+	 * @inheritDoc
+	 */
 	protected function reportProgress( $text, $channel, $severity = 'status' ) {
 		if ( is_callable( $this->progressCallback ) ) {
 			$useErrorOutput = $severity === 'error';
-			call_user_func( $this->progressCallback, $text, $channel, $useErrorOutput );
+			( $this->progressCallback )( $text, $channel, $useErrorOutput );
 		}
 	}
 
@@ -268,12 +283,6 @@ class WikiWriter {
 	public function execute() {
 		if ( !$this->group ) {
 			$this->reportProgress( 'Given group does not exist.', 'groupId', 'error' );
-
-			return;
-		}
-
-		if ( !$this->user->idForName() ) {
-			$this->reportProgress( 'Given user does not exist.', 'user', 'error' );
 
 			return;
 		}
@@ -312,9 +321,9 @@ class WikiWriter {
 
 		$page = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
 		$content = ContentHandler::makeContent( $text, $title );
-		$updater = $page->newPageUpdater( $this->user )->setContent( SlotRecord::MAIN, $content );
+		$updater = $page->newPageUpdater( $this->performer->getUser() )->setContent( SlotRecord::MAIN, $content );
 
-		if ( $this->user->authorizeWrite( 'autopatrol', $title ) ) {
+		if ( $this->performer->authorizeWrite( 'autopatrol', $title ) ) {
 			$updater->setRcPatrolStatus( RecentChange::PRC_AUTOPATROLLED );
 		}
 

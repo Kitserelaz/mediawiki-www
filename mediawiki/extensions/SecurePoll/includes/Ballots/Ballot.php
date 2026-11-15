@@ -9,10 +9,10 @@ use MediaWiki\Extension\SecurePoll\Entities\Election;
 use MediaWiki\Extension\SecurePoll\Entities\Entity;
 use MediaWiki\Extension\SecurePoll\Entities\Question;
 use MediaWiki\Language\Language;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Message\Message;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\Status\Status;
-use MessageLocalizer;
 use OOUI\Element;
 use OOUI\FieldsetLayout;
 use OOUI\HtmlSnippet;
@@ -41,7 +41,7 @@ abstract class Ballot {
 	/** @var Language|null */
 	private $userLang;
 
-	/** @var string[] */
+	/** @var array<string,class-string<Ballot>> */
 	public const BALLOT_TYPES = [
 		'approval' => ApprovalBallot::class,
 		'preferential' => PreferentialBallot::class,
@@ -58,6 +58,25 @@ abstract class Ballot {
 	 */
 	public static function getTallyTypes() {
 		throw new LogicException( "Subclass must override ::getTallyTypes()" );
+	}
+
+	/**
+	 * Get a list of names of tally modifiers, which may be used to modify the
+	 * way a tally result is produced. A modifer is an array that describes
+	 * a `type` of indicator (eg. check) that represents a modification to a
+	 * `field` (eg. question). This information is recorded to the tally being
+	 * calculated and talliers are responsible for deciding what the modification
+	 * means in the context of tallying.
+	 *
+	 * No modifiers are provided by default.
+	 *
+	 * See STVBallot for an example of how to declare a modification and STVTallier
+	 * for the applied modification.
+	 *
+	 * @return array
+	 */
+	public static function getTallyModifiers() {
+		return [];
 	}
 
 	/**
@@ -159,6 +178,10 @@ abstract class Ballot {
 	 * @return Language
 	 */
 	protected function getUserLang(): Language {
+		if ( !$this->userLang ) {
+			throw new LogicException(
+				'Ballot::initRequest() must be called before Ballot::getUserLang()' );
+		}
 		return $this->userLang;
 	}
 
@@ -322,6 +345,10 @@ abstract class Ballot {
 		$this->usedErrorIds = [];
 	}
 
+	/**
+	 * @param string $id
+	 * @return IconWidget|string
+	 */
 	public function errorLocationIndicator( $id ) {
 		if ( !isset( $this->prevErrorIds[$id] ) ) {
 			return '';

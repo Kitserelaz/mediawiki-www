@@ -1,13 +1,10 @@
-'use strict';
-
-const assert = require( 'assert' ),
-	SearchPage = require( '../pageobjects/search.page' ),
-	UserLoginPage = require( 'wdio-mediawiki/LoginPage' );
+import SearchPage from '../pageobjects/search.page.js';
+import LoginPage from 'wdio-mediawiki/LoginPage';
 
 describe( 'Advanced Search', () => {
 
 	before( async () => {
-		await UserLoginPage.loginAdmin();
+		await LoginPage.loginAdmin();
 	} );
 
 	it( 'allows logged-in users to remember the selection of namespaces for future searches', async () => {
@@ -22,7 +19,7 @@ describe( 'Advanced Search', () => {
 		await SearchPage.submitForm();
 
 		await SearchPage.expandNamespacesPreview();
-		assert.deepStrictEqual( cache, await SearchPage.getSelectedNamespaceIDs() );
+		await expect( cache ).toStrictEqual( await SearchPage.getSelectedNamespaceIDs() );
 	} );
 
 	it( 'selects the users default namespaces when logged in', async () => {
@@ -36,8 +33,8 @@ describe( 'Advanced Search', () => {
 		selectedNamespaceIDs.sort();
 		namespaceOptions.sort();
 
-		assert( await SearchPage.default.isSelected(), 'The default checkbox is selected' );
-		assert.deepStrictEqual( selectedNamespaceIDs, namespaceOptions );
+		await expect( await SearchPage.default ).toBeSelected( { message: 'The default checkbox is selected' } );
+		await expect( selectedNamespaceIDs ).toStrictEqual( namespaceOptions );
 	} );
 
 	it( 'selects the namespaces from the URL', async () => {
@@ -50,7 +47,7 @@ describe( 'Advanced Search', () => {
 		selectedNamespaceIDs.sort();
 		expectedNamespaceIDs.sort();
 
-		assert.deepStrictEqual( selectedNamespaceIDs, expectedNamespaceIDs );
+		await expect( selectedNamespaceIDs ).toStrictEqual( expectedNamespaceIDs );
 	} );
 
 	after( async () => {

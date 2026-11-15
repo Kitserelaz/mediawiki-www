@@ -60,12 +60,14 @@ class SpecialBoardBlast extends UnlistedSpecialPage {
 		$out->addModules( $jsModules );
 
 		$output = '';
+		$messageText = $request->getVal( 'message' );
+		$messageType = $request->getInt( 'message_type' );
 		$errors = [];
 
 		if ( $request->wasPosted() && $user->matchEditToken( $request->getVal( 'wpEditToken' ) ) ) {
 			// Ensure that we have something to send, and if not, make a note to nag the
 			// user about that...
-			if ( empty( $request->getVal( 'message' ) ) ) {
+			if ( empty( $messageText ) ) {
 				$errors[] = 'boardblast-error-missing-message';
 			}
 
@@ -94,6 +96,16 @@ class SpecialBoardBlast extends UnlistedSpecialPage {
 				}
 			}
 
+			// Anti-spam checks
+			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable
+			$spamStatus = UserBoard::checkForSpam( $messageText, $user );
+			if ( !$spamStatus->isOK() ) {
+				// Use the generic error message from MW core.
+				// @todo Mildly silly, since we're totally ignoring the Status retval from the anti-spam method, but
+				// oh well.
+				$errors[] = 'spamprotectiontext';
+			}
+
 			// If no errors popped up, everything should be fine and we can send the message!
 			if ( empty( $errors ) ) {
 				$out->setPageTitle( $this->msg( 'messagesenttitle' )->plain() );
@@ -101,14 +113,20 @@ class SpecialBoardBlast extends UnlistedSpecialPage {
 
 				$count = 0;
 
+				$privateMessagesEnabled = $this->getConfig()->get( 'UserBoardAllowPrivateMessages' );
+				if ( !$privateMessagesEnabled && $messageType !== UserBoard::MESSAGE_PUBLIC ) {
+					$out->showErrorPage( 'userboard-private-messages-disabled-title', 'userboard-private-messages-disabled' );
+					return;
+				}
 				foreach ( $user_ids_to as $user_id ) {
 					$recipient = User::newFromId( (int)$user_id );
 					$recipient->loadFromId();
 					$b->sendBoardMessage(
 						$user,
 						$recipient,
-						$request->getVal( 'message' ),
-						UserBoard::MESSAGE_PRIVATE
+						// @phan-suppress-next-line PhanTypeMismatchArgumentNullable Why are you like this, phan?
+						$messageText,
+						$messageType
 					);
 					$count++;
 				}
@@ -148,14 +166,28 @@ class SpecialBoardBlast extends UnlistedSpecialPage {
 		$friendCount = $stats_data['friend_count'];
 		$foeCount = $stats_data['foe_count'];
 
+		$privateMessagesEnabled = $this->getConfig()->get( 'UserBoardAllowPrivateMessages' );
+		if ( $privateMessagesEnabled ) {
+			$messageTypeSelector = Html::element(
+				'span',
+				[],
+				$this->msg( 'userboard_messagetype' )->text()
+			) . Html::rawElement(
+				'select',
+				[ 'id' => 'message_type', 'name' => 'message_type' ],
+				Html::element( 'option', [ 'value' => '0' ], $this->msg( 'userboard_public' )->text() ) .
+					Html::element( 'option', [ 'value' => '1', 'selected' => true ], $this->msg( 'userboard_private' )->text() )
+			);
+		} else {
+			$messageTypeSelector = $this->msg( 'boardblast-message-type-note' )->escaped();
+		}
+
 		$output = '<div class="board-blast-message-form">
 				<h2>' . $this->msg( 'boardblaststep1' )->escaped() . '</h2>
 				<form method="post" name="blast" action="">
 					<input type="hidden" name="ids" id="ids" />
 					<input type="hidden" name="wpEditToken" value="' . htmlspecialchars( $user->getEditToken(), ENT_QUOTES ) . '" />
-					<div class="blast-message-text">'
-						. $this->msg( 'boardblastprivatenote' )->escaped() .
-					'</div>
+					<div class="blast-message-text">' . $messageTypeSelector . '</div>
 					<textarea name="message" id="message" cols="63" rows="4"></textarea>
 		</div>
 		<div class="blast-nav">

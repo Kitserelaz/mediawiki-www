@@ -22,9 +22,9 @@ class CompletionSearchProfileRepository implements SearchProfileRepository {
 	 * @param string $repoName
 	 * @param string $phpFile
 	 * @param SearchConfig $config
-	 * @return CompletionSearchProfileRepository
+	 * @return self
 	 */
-	public static function fromFile( $repoType, $repoName, $phpFile, SearchConfig $config ) {
+	public static function fromFile( $repoType, $repoName, $phpFile, SearchConfig $config ): self {
 		// TODO: find a construct that does not require duplicating ArrayProfileRepository::fromFile
 		return new self( $repoType, $repoName, $config, static function () use ( $phpFile ) {
 			return require $phpFile;
@@ -36,9 +36,9 @@ class CompletionSearchProfileRepository implements SearchProfileRepository {
 	 * @param string $repoName
 	 * @param string $configEntry
 	 * @param SearchConfig $config
-	 * @return CompletionSearchProfileRepository
+	 * @return self
 	 */
-	public static function fromConfig( $repoType, $repoName, $configEntry, SearchConfig $config ) {
+	public static function fromConfig( $repoType, $repoName, $configEntry, SearchConfig $config ): self {
 		return new self( $repoType, $repoName, $config, static function () use ( $configEntry, $config ) {
 			return ConfigProfileRepository::extractConfig( $configEntry, $config );
 		} );
@@ -70,7 +70,7 @@ class CompletionSearchProfileRepository implements SearchProfileRepository {
 			if ( $config->getElement( 'CirrusSearchCompletionSuggesterSubphrases', 'use' ) ) {
 				$allowedFields['suggest-subphrases'] = true;
 			}
-			$originalProfiles = call_user_func( $arrayLoader );
+			$originalProfiles = $arrayLoader();
 			if ( !is_array( $originalProfiles ) ) {
 				throw new SearchProfileException( "Expected an array but got a " . get_debug_type( $originalProfiles ) );
 			}

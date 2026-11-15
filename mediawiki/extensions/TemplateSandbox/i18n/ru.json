@@ -12,7 +12,9 @@
 			"Ole Yves",
 			"Olli",
 			"Pacha Tchernof",
+			"Shabe",
 			"Stjn",
+			"Vonavy",
 			"Wikisaurus"
 		]
 	},
@@ -31,7 +33,7 @@
 	"templatesandbox-editform-page-label": "Название страницы",
 	"templatesandbox-editform-view-label": "Показать предпросмотр",
 	"templatesandbox-preview": "Предпросмотр $2",
-	"templatesandbox-previewnote": "'''Помните, что это только предпросмотр для [[:$1]].''' Ваши изменения в шаблоне ещё не были сохранены!",
+	"templatesandbox-previewnote": "<strong>Помните, что это только предпросмотр для [[:$1]].</strong> Ваши изменения в шаблоне ещё не были сохранены!",
 	"templatesandbox-invalid-title": "Указанное вами название недействительно.",
 	"templatesandbox-title-not-exists": "Заголовок, который вы указали, не существует.",
 	"templatesandbox-revision-not-exists": "Версия, которую вы указали, не существует.",
@@ -47,5 +49,6 @@
 	"templatesandbox-editform-invalid-template": "Имя шаблона, которое вы указали, недопустимо.",
 	"templatesandbox-editform-invalid-title": "Заголовок, указанный вами для предварительного просмотра, недействителен.",
 	"templatesandbox-editform-title-not-exists": "Заголовок, указанный вами для предварительного просмотра, не существует.",
-	"templatesandbox-failed-replace-section": "Попытка замены раздела на существующей странице провалилась."
+	"templatesandbox-failed-replace-section": "Попытка замены раздела на существующей странице провалилась.",
+	"templatesandbox-template-not-used": "Шаблон не используется на указанной странице."
 }

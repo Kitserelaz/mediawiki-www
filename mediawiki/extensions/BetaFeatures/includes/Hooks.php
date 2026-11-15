@@ -30,15 +30,18 @@ use MediaWiki\Config\Config;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Extension\BetaFeatures\Hooks\HookRunner;
-use MediaWiki\Hook\ExtensionTypesHook;
 use MediaWiki\Hook\PreferencesGetIconHook;
-use MediaWiki\Hook\SkinTemplateNavigation__UniversalHook;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\JobQueue\JobQueueGroupFactory;
+use MediaWiki\ObjectCache\ObjectCacheFactory;
 use MediaWiki\Output\Hook\MakeGlobalVariablesScriptHook;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
+use MediaWiki\Skin\Hook\SkinTemplateNavigation__UniversalHook;
+use MediaWiki\Skin\SkinFactory;
+use MediaWiki\Skin\SkinTemplate;
 use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Specials\Hook\ExtensionTypesHook;
 use MediaWiki\User\Hook\UserGetDefaultOptionsHook;
 use MediaWiki\User\Options\Hook\SaveUserOptionsHook;
 use MediaWiki\User\Options\UserOptionsManager;
@@ -46,9 +49,6 @@ use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityUtils;
-use ObjectCacheFactory;
-use SkinFactory;
-use SkinTemplate;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 class Hooks implements
@@ -65,38 +65,19 @@ class Hooks implements
 	 * @var array An array of each of the available Beta Features, with their requirements, if any.
 	 * It is passed client-side for JavaScript rendering/responsiveness.
 	 */
-	private static $features = [];
-
-	private Config $config;
-	private IConnectionProvider $dbProvider;
-	private HookContainer $hookContainer;
-	private JobQueueGroupFactory $jobQueueGroupFactory;
-	private SkinFactory $skinFactory;
-	private UserFactory $userFactory;
-	private UserIdentityUtils $userIdentityUtils;
-	private UserOptionsManager $userOptionsManager;
-	private ObjectCacheFactory $objectCacheFactory;
+	private static array $features = [];
 
 	public function __construct(
-		Config $config,
-		IConnectionProvider $dbProvider,
-		HookContainer $hookContainer,
-		JobQueueGroupFactory $jobQueueGroupFactory,
-		SkinFactory $skinFactory,
-		UserFactory $userFactory,
-		UserIdentityUtils $userIdentityUtils,
-		UserOptionsManager $userOptionsManager,
-		ObjectCacheFactory $objectCacheFactory
+		private readonly Config $config,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly HookContainer $hookContainer,
+		private readonly JobQueueGroupFactory $jobQueueGroupFactory,
+		private readonly SkinFactory $skinFactory,
+		private readonly UserFactory $userFactory,
+		private readonly UserIdentityUtils $userIdentityUtils,
+		private readonly UserOptionsManager $userOptionsManager,
+		private readonly ObjectCacheFactory $objectCacheFactory,
 	) {
-		$this->config = $config;
-		$this->dbProvider = $dbProvider;
-		$this->hookContainer = $hookContainer;
-		$this->jobQueueGroupFactory = $jobQueueGroupFactory;
-		$this->skinFactory = $skinFactory;
-		$this->userFactory = $userFactory;
-		$this->userIdentityUtils = $userIdentityUtils;
-		$this->userOptionsManager = $userOptionsManager;
-		$this->objectCacheFactory = $objectCacheFactory;
 	}
 
 	/**
@@ -366,13 +347,11 @@ class Hooks implements
 					// T95839: If concurrent requests pile on (e.g. multiple tabs), only let one
 					// thread bother doing these updates. This avoids pointless error log spam.
 					if ( $cache->lock( $key, 0, $cache::TTL_MINUTE ) ) {
-						// Refresh, because the settings could be changed in the meantime by api or special page
-						$userLatest = $user->getInstanceForUpdate();
 						// Apply the settings and save
 						foreach ( $autoEnrollSaveSettings as $key => $option ) {
-							$this->userOptionsManager->setOption( $userLatest, $key, $option );
+							$this->userOptionsManager->setOption( $user, $key, $option );
 						}
-						$this->userOptionsManager->saveOptions( $userLatest );
+						$this->userOptionsManager->saveOptions( $user );
 						$cache->unlock( $key );
 					}
 				}
@@ -395,9 +374,7 @@ class Hooks implements
 	 * @param array &$defaultOptions Array of preference keys and their default values.
 	 */
 	public function onUserGetDefaultOptions( &$defaultOptions ) {
-		$betaPrefs = $this->config->get( 'BetaFeatures' );
-
-		foreach ( $betaPrefs as $key => $_ ) {
+		foreach ( $this->config->get( 'BetaFeatures' ) as $key => $info ) {
 			$defaultOptions[$key] = false;
 		}
 	}
@@ -418,15 +395,11 @@ class Hooks implements
 	/**
 	 * @param SkinTemplate $skintemplate
 	 * @param array[] &$links
-	 * @phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
 	 */
 	public function onSkinTemplateNavigation__Universal(
 		$skintemplate,
 		&$links
 	): void {
-		// phpcs:enable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-		// using // phpcs:ignore after docblock doesn't work, it shows
-		// MediaWiki.Commenting.FunctionComment.MissingDocumentationPublic
 		$user = $skintemplate->getUser();
 		if ( $user->isNamed() ) {
 			$personalUrls = $links['user-menu'] ?? [];

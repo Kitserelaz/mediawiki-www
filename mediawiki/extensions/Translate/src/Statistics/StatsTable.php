@@ -3,18 +3,17 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\Translate\Statistics;
 
-use HtmlArmor;
-use Language;
 use MediaWiki\Extension\Translate\MessageProcessing\MessageGroupMetadata;
 use MediaWiki\Extension\Translate\Utilities\ConfigHelper;
 use MediaWiki\Html\Html;
+use MediaWiki\Language\Language;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\TitleValue;
 use MessageGroup;
-use MessageLocalizer;
-use Xml;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * Implements generation of HTML stats table.
@@ -24,28 +23,18 @@ use Xml;
  */
 class StatsTable {
 	protected TitleValue $translate;
-	private LinkRenderer $linkRenderer;
-	private ConfigHelper $configHelper;
-	private MessageLocalizer $messageLocalizer;
-	protected Language $language;
 	protected string $mainColumnHeader;
 	/** @var Message[] */
 	protected array $extraColumns = [];
-	private MessageGroupMetadata $messageGroupMetadata;
 
 	public function __construct(
-		LinkRenderer $linkRenderer,
-		ConfigHelper $configHelper,
-		MessageLocalizer $messageLocalizer,
-		Language $language,
-		MessageGroupMetadata $messageGroupMetadata
+		private readonly LinkRenderer $linkRenderer,
+		private readonly ConfigHelper $configHelper,
+		private readonly MessageLocalizer $messageLocalizer,
+		private readonly Language $language,
+		private readonly MessageGroupMetadata $messageGroupMetadata,
 	) {
 		$this->translate = SpecialPage::getTitleValueFor( 'Translate' );
-		$this->linkRenderer = $linkRenderer;
-		$this->configHelper = $configHelper;
-		$this->messageLocalizer = $messageLocalizer;
-		$this->language = $language;
-		$this->messageGroupMetadata = $messageGroupMetadata;
 	}
 
 	/**
@@ -63,6 +52,7 @@ class StatsTable {
 		}
 
 		if ( $bgcolor ) {
+			$attributes['class'] = 'notheme skin-invert';
 			$attributes['style'] = 'background-color: #' . $bgcolor;
 		}
 
@@ -71,6 +61,7 @@ class StatsTable {
 		return $element;
 	}
 
+	// FIXME: should be moved to .less file to prevent potential Linter errors
 	public function getBackgroundColor( float $percentage, bool $fuzzy = false ): string {
 		if ( $fuzzy ) {
 			// Steeper scale for fuzzy
@@ -155,7 +146,7 @@ class StatsTable {
 		$out = "\t" . Html::openElement( 'tr' );
 		$out .= "\n\t\t" . Html::element( 'td', [], $message->text() );
 		$out .= $this->makeNumberColumns( $stats );
-		$out .= "\n\t" . Xml::closeElement( 'tr' ) . "\n";
+		$out .= "\n\t" . Html::closeElement( 'tr' ) . "\n";
 
 		return $out;
 	}
@@ -297,36 +288,7 @@ class StatsTable {
 	 * @param string $code Language code
 	 */
 	public function isExcluded( MessageGroup $group, string $code ): bool {
-		$excluded = null;
-		$groupId = $group->getId();
-
-		$checks = [
-			$groupId,
-			strtok( $groupId, '-' ),
-			'*'
-		];
-
-		$disabledLanguages = $this->configHelper->getDisabledTargetLanguages();
-
-		foreach ( $checks as $check ) {
-			if ( isset( $disabledLanguages[$check] ) && isset( $disabledLanguages[$check][$code] ) ) {
-				$excluded = $disabledLanguages[$check][$code];
-			}
-
-			if ( $excluded !== null ) {
-				break;
-			}
-		}
-
-		$languages = $group->getTranslatableLanguages();
-		if ( $languages !== null && !isset( $languages[$code] ) ) {
-			$excluded = true;
-		}
-
-		if ( $this->messageGroupMetadata->isExcluded( $groupId, $code ) ) {
-			$excluded = true;
-		}
-
-		return (bool)$excluded;
+		return $this->configHelper->isTargetLanguageDisabled( $group, $code )
+			|| $this->messageGroupMetadata->isExcluded( $group, $code );
 	}
 }

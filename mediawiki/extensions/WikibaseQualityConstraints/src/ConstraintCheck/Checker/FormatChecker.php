@@ -7,6 +7,9 @@ use DataValues\MultilingualTextValue;
 use DataValues\StringValue;
 use MediaWiki\Config\Config;
 use MediaWiki\Shell\ShellboxClientFactory;
+use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Shellbox\ShellboxError;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Entity\PropertyId;
@@ -17,6 +20,7 @@ use WikibaseQuality\ConstraintReport\ConstraintCheck\Context\Context;
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Helper\ConstraintParameterException;
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Helper\ConstraintParameterParser;
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Helper\DummySparqlHelper;
+use WikibaseQuality\ConstraintReport\ConstraintCheck\Helper\FormatCheckerHelper;
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Helper\SparqlHelper;
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Message\ViolationMessage;
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Result\CheckResult;
@@ -48,6 +52,10 @@ class FormatChecker implements ConstraintChecker {
 	 */
 	private $shellboxClientFactory;
 
+	private array $knownGoodPatternsAsKeys;
+
+	private LoggerInterface $logger;
+
 	/**
 	 * @param ConstraintParameterParser $constraintParameterParser
 	 * @param Config $config
@@ -58,30 +66,36 @@ class FormatChecker implements ConstraintChecker {
 		ConstraintParameterParser $constraintParameterParser,
 		Config $config,
 		SparqlHelper $sparqlHelper,
-		ShellboxClientFactory $shellboxClientFactory
+		ShellboxClientFactory $shellboxClientFactory,
+		?LoggerInterface $logger = null
 	) {
 		$this->constraintParameterParser = $constraintParameterParser;
 		$this->config = $config;
 		$this->sparqlHelper = $sparqlHelper;
 		$this->shellboxClientFactory = $shellboxClientFactory;
+		$this->knownGoodPatternsAsKeys = array_fill_keys(
+			$this->config->get( 'WBQualityConstraintsFormatCheckerKnownGoodRegexPatterns' ),
+			null
+		);
+		$this->logger = $logger ?? new NullLogger();
 	}
 
 	/**
 	 * @codeCoverageIgnore This method is purely declarative.
 	 */
-	public function getSupportedContextTypes() {
+	public function getSupportedContextTypes(): array {
 		return self::ALL_CONTEXT_TYPES_SUPPORTED;
 	}
 
 	/**
 	 * @codeCoverageIgnore This method is purely declarative.
 	 */
-	public function getDefaultContextTypes() {
+	public function getDefaultContextTypes(): array {
 		return Context::ALL_CONTEXT_TYPES;
 	}
 
 	/** @codeCoverageIgnore This method is purely declarative. */
-	public function getSupportedEntityTypes() {
+	public function getSupportedEntityTypes(): array {
 		return self::ALL_ENTITY_TYPES_SUPPORTED;
 	}
 
@@ -94,7 +108,7 @@ class FormatChecker implements ConstraintChecker {
 	 * @throws ConstraintParameterException
 	 * @return CheckResult
 	 */
-	public function checkConstraint( Context $context, Constraint $constraint ) {
+	public function checkConstraint( Context $context, Constraint $constraint ): CheckResult {
 		$constraintParameters = $constraint->getConstraintParameters();
 		$constraintTypeItemId = $constraint->getConstraintTypeItemId();
 
@@ -171,44 +185,71 @@ class FormatChecker implements ConstraintChecker {
 		return $message;
 	}
 
+	/** @throws ConstraintParameterException */
 	private function runRegexCheck( string $text, string $format ): string {
 		if ( !$this->config->get( 'WBQualityConstraintsCheckFormatConstraint' ) ) {
 			return CheckResult::STATUS_TODO;
 		}
-		if (
+		if ( \array_key_exists( $format, $this->knownGoodPatternsAsKeys ) ) {
+			$checkResult = FormatCheckerHelper::runRegexCheck( $format, $text );
+		} elseif (
 			$this->config->get( 'WBQualityConstraintsFormatCheckerShellboxRatio' ) > (float)wfRandom()
 		) {
-			return $this->runRegexCheckUsingShellbox( $text, $format );
+			$checkResult = $this->runRegexCheckUsingShellbox( $text, $format );
+		} else {
+			return $this->runRegexCheckUsingSparql( $text, $format );
 		}
 
-		return $this->runRegexCheckUsingSparql( $text, $format );
+		if ( $checkResult === 1 ) {
+			return CheckResult::STATUS_COMPLIANCE;
+		} elseif ( $checkResult === 0 ) {
+			return CheckResult::STATUS_VIOLATION;
+		} elseif ( $checkResult === false ) {
+			throw new ConstraintParameterException(
+				( new ViolationMessage( 'wbqc-violation-message-parameter-regex' ) )
+					->withInlineCode( $format, Role::CONSTRAINT_PARAMETER_VALUE )
+			);
+		} else {
+			return $checkResult;
+		}
 	}
 
-	private function runRegexCheckUsingShellbox( string $text, string $format ): string {
+	/**
+	 * @return false|int|string Possible return values are:
+	 *   - 1 if $format matches $text
+	 *   - 0 if $format does not match $text
+	 *   - FALSE if $format is invalid regex
+	 *   - CheckResult::STATUS_TODO if Shellbox is not enabled
+	 */
+	private function runRegexCheckUsingShellbox( string $text, string $format ) {
 		if ( !$this->shellboxClientFactory->isEnabled( 'constraint-regex-checker' ) ) {
 			return CheckResult::STATUS_TODO;
 		}
+
 		try {
-			$pattern = '/^(?:' . str_replace( '/', '\/', $format ) . ')$/u';
-			$shellboxResponse = $this->shellboxClientFactory->getClient( [
+			return $this->shellboxClientFactory->getClient( [
 				'timeout' => $this->config->get( 'WBQualityConstraintsSparqlMaxMillis' ) / 1000,
 				'service' => 'constraint-regex-checker',
 			] )->call(
 				'constraint-regex-checker',
-				'preg_match',
-				[ $pattern, $text ]
+				[ FormatCheckerHelper::class, 'runRegexCheck' ],
+				[ $format, $text ],
+				[ 'classes' => [ FormatCheckerHelper::class ] ],
 			);
-		} catch ( ShellboxError $exception ) {
-			throw new ConstraintParameterException(
-				( new ViolationMessage( 'wbqc-violation-message-parameter-regex' ) )
-					->withInlineCode( $pattern, Role::CONSTRAINT_PARAMETER_VALUE )
-			);
-		}
-
-		if ( $shellboxResponse ) {
-			return CheckResult::STATUS_COMPLIANCE;
-		} else {
-			return CheckResult::STATUS_VIOLATION;
+		} catch ( ClientExceptionInterface $ce ) {
+			$this->logger->notice( __METHOD__ . ': Network error, skipping check: {exception}', [
+				'exception' => $ce,
+				'text' => $text,
+				'format' => $format,
+			] );
+			return CheckResult::STATUS_TODO;
+		} catch ( ShellboxError $e ) {
+			$this->logger->error( __METHOD__ . ': Shellbox error, skipping check: {exception}', [
+				'exception' => $e,
+				'text' => $text,
+				'format' => $format,
+			] );
+			return CheckResult::STATUS_TODO;
 		}
 	}
 
@@ -224,7 +265,7 @@ class FormatChecker implements ConstraintChecker {
 		}
 	}
 
-	public function checkConstraintParameters( Constraint $constraint ) {
+	public function checkConstraintParameters( Constraint $constraint ): array {
 		$constraintParameters = $constraint->getConstraintParameters();
 		$constraintTypeItemId = $constraint->getConstraintTypeItemId();
 		$exceptions = [];

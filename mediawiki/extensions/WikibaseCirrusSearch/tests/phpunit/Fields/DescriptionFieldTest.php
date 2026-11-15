@@ -3,11 +3,13 @@
 namespace Wikibase\Search\Elastic\Tests\Fields;
 
 use MediaWiki\Registration\ExtensionRegistry;
-use SearchEngine;
+use MediaWiki\Search\SearchEngine;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\Property;
 use Wikibase\Search\Elastic\Fields\DescriptionsField;
+use Wikibase\Search\Elastic\Fields\LabelsField;
+use Wikibase\Search\Elastic\Fields\TermIndexField;
 use Wikibase\Search\Elastic\Tests\WikibaseSearchTestCase;
 
 /**
@@ -15,12 +17,11 @@ use Wikibase\Search\Elastic\Tests\WikibaseSearchTestCase;
  *
  * @group WikibaseElastic
  * @group Wikibase
- *
  */
 class DescriptionFieldTest extends SearchFieldTestCase {
 	use WikibaseSearchTestCase;
 
-	public function getFieldDataProvider() {
+	public static function getFieldDataProvider() {
 		$item = new Item();
 		$item->getFingerprint()->setDescription( 'es', 'Gato' );
 		$item->getFingerprint()->setDescription( 'ru', 'Кошка' );
@@ -31,43 +32,47 @@ class DescriptionFieldTest extends SearchFieldTestCase {
 		$prop->getFingerprint()->setDescription( 'en', 'astrological sign' );
 		$prop->getFingerprint()->setDescription( 'ru', 'знак зодиака' );
 
-		$mock = $this->createMock( EntityDocument::class );
-
-		return [
-			'item descriptions' => [
-				[
-					'es' => [ 'Gato' ],
-					'ru' => [ 'Кошка' ],
-					'de' => [ 'Katze' ],
-					'fr' => [ 'Chat' ],
-				],
-				$item
+		yield 'item descriptions' => [
+			[
+				'es' => [ 'Gato' ],
+				'ru' => [ 'Кошка' ],
+				'de' => [ 'Katze' ],
+				'fr' => [ 'Chat' ],
 			],
-			'empty item' => [
-				null,
-				new Item()
-			],
-			'property descriptions' => [
-				[
-					'en' => [ 'astrological sign' ],
-					'ru' => [ 'знак зодиака' ],
-				],
-				$prop
-			],
-			'empty property' => [
-				null,
-				Property::newFromType( 'string' )
-			],
-			'plain entity document' => [ null, $mock ],
+			$item,
+			true,
 		];
+		yield 'empty item' => [
+			null,
+			new Item(),
+			true,
+		];
+		yield 'property descriptions' => [
+			[
+				'en' => [ 'astrological sign' ],
+				'ru' => [ 'знак зодиака' ],
+			],
+			$prop,
+			true,
+		];
+		yield 'empty property' => [
+			null,
+			Property::newFromType( 'string' ),
+			true,
+		];
+		yield 'plain entity document' => [ null, null, false ];
 	}
 
 	/**
 	 * @dataProvider  getFieldDataProvider
 	 */
-	public function testDescriptions( ?array $expected, EntityDocument $entity ) {
+	public function testDescriptions( ?array $expected, ?EntityDocument $entity, bool $descriptionsProvider ) {
+		$entity ??= $this->createMock( EntityDocument::class );
 		$labels = new DescriptionsField( [ 'en', 'es', 'ru', 'de' ], [] );
 		$this->assertSame( $expected, $labels->getFieldData( $entity ) );
+		if ( $descriptionsProvider ) {
+			$this->assertSame( $expected, $labels->getDescriptionsIndexedData( $entity ) );
+		}
 	}
 
 	public function testGetMapping() {
@@ -114,6 +119,67 @@ class DescriptionFieldTest extends SearchFieldTestCase {
 		} else {
 			$this->assertEquals( [ 'noop' => 'equals' ], $labels->getEngineHints( $searchEngine ) );
 		}
+	}
+
+	/** @dataProvider provideMerge */
+	public function testMerge( DescriptionsField $sut, TermIndexField $that, $expected ): void {
+		$actual = $sut->merge( $that );
+
+		$this->assertEquals( $expected, $actual );
+	}
+
+	public static function provideMerge(): iterable {
+		$sutLanguages = [ 'en', 'de' ];
+		$sutStemmingSettings = [ 'stemming' => 'settings' ];
+		$sut = new DescriptionsField( $sutLanguages, $sutStemmingSettings );
+
+		yield 'same field' => [
+			'sut' => $sut,
+			'that' => $sut,
+			'expected' => $sut,
+		];
+
+		yield 'equal field' => [
+			'sut' => $sut,
+			'that' => new DescriptionsField( $sutLanguages, $sutStemmingSettings ),
+			'expected' => $sut,
+		];
+
+		yield 'superset of languages' => [
+			'sut' => $sut,
+			'that' => new DescriptionsField( [ 'en' /* no 'de' */ ], $sutStemmingSettings ),
+			'expected' => $sut,
+		];
+
+		yield 'subset of languages' => [
+			'sut' => $sut,
+			'that' => new DescriptionsField( [ 'en', 'de', 'pt' ], $sutStemmingSettings ),
+			'expected' => new DescriptionsField( [ 'en', 'de', 'pt' ], $sutStemmingSettings ),
+		];
+
+		yield 'intersecting languages' => [
+			'sut' => $sut,
+			'that' => new DescriptionsField( [ 'en', /* no 'de' */ 'pt' ], $sutStemmingSettings ),
+			'expected' => new DescriptionsField( [ 'en', 'de', 'pt' ], $sutStemmingSettings ),
+		];
+
+		yield 'compatible stemming settings (one side empty)' => [
+			'sut' => $sut,
+			'that' => new DescriptionsField( $sutLanguages, [] ),
+			'expected' => $sut,
+		];
+
+		yield 'different stemming settings' => [
+			'sut' => $sut,
+			'that' => new DescriptionsField( $sutLanguages, [ 'other' => 'stemmingSettings' ] ),
+			'expected' => false,
+		];
+
+		yield 'different type' => [
+			'sut' => $sut,
+			'that' => new LabelsField( $sutLanguages, $sutStemmingSettings ),
+			'expected' => false,
+		];
 	}
 
 }

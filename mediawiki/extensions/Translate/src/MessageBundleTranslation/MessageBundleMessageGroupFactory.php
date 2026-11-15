@@ -3,7 +3,7 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageBundleTranslation;
 
-use GlobalDependency;
+use MainConfigDependency;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\CachedMessageGroupFactory;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\RevTagStore;
@@ -20,14 +20,13 @@ class MessageBundleMessageGroupFactory implements CachedMessageGroupFactory {
 	public const SERVICE_OPTIONS = [
 		'TranslateEnableMessageBundleIntegration'
 	];
-	private MessageGroupMetadata $messageGroupMetadata;
+
 	private bool $enableIntegration;
 
 	public function __construct(
-		MessageGroupMetadata $messageGroupMetadata,
+		private readonly MessageGroupMetadata $messageGroupMetadata,
 		ServiceOptions $options
 	) {
-		$this->messageGroupMetadata = $messageGroupMetadata;
 		$options->assertRequiredOptions( self::SERVICE_OPTIONS );
 		$this->enableIntegration = $options->get( 'TranslateEnableMessageBundleIntegration' );
 	}
@@ -37,13 +36,14 @@ class MessageBundleMessageGroupFactory implements CachedMessageGroupFactory {
 	}
 
 	public function getCacheVersion(): int {
-		return 1;
+		return 3;
 	}
 
 	public function getDependencies(): array {
-		return [ new GlobalDependency( 'wgTranslateEnableMessageBundleIntegration' ) ];
+		return [ new MainConfigDependency( 'TranslateEnableMessageBundleIntegration' ) ];
 	}
 
+	/** @inheritDoc */
 	public function getData( IReadableDatabase $db ) {
 		if ( !$this->enableIntegration ) {
 			return [];
@@ -70,6 +70,7 @@ class MessageBundleMessageGroupFactory implements CachedMessageGroupFactory {
 		return $cacheData;
 	}
 
+	/** @inheritDoc */
 	public function createGroups( $data ): array {
 		$groups = [];
 		$groupIds = [];

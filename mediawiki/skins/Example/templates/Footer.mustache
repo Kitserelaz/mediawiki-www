@@ -1,10 +1,14 @@
-{{! `role` is unnecessary but kept to support selectors in any gadgets or user styles and
-	to mitigate a VoiceOver bug. }}
-<footer id="footer" class="mw-footer" role="contentinfo" {{{html-user-language-attributes}}}>
-	{{!}}{{#data-icons}}{{>FooterList}}{{/data-icons}}
-	{{!}}<div id="footer-list">
-	{{#data-last-modified}}{{>LastModifiedLine}}{{/data-last-modified}}
-	<div id="copyright">{{#data-copyright}}{{{html}}}{{/data-copyright}}</div>
-	{{!}}{{#data-places}}{{>FooterList}}{{/data-places}}
-	{{!}}</div>
+<footer id="footer" class="global-footer mw-footer" {{{html-user-language-attributes}}}>
+	<div class="global-footer__content">
+		<div>
+			<h2 class="global-footer__header">{{msg-sitetitle}}</h2>
+			<section class="global-footer__section global-footer__section-site-overview">
+				{{#data-places}}{{>FooterList}}{{/data-places}}
+			</section>
+		</div>
+		<div>{{#data-icons}}{{>FooterList}}{{/data-icons}}</div>
+	</div>
+	<div class="global-footer__bottom">
+		{{#data-last-modified}}{{>LastModifiedLine}}{{/data-last-modified}}
+	</div>
 </footer>

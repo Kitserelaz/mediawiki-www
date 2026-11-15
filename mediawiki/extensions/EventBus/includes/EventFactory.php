@@ -2,13 +2,14 @@
 
 namespace MediaWiki\Extension\EventBus;
 
-use IJobSpecification;
 use MediaWiki\Block\DatabaseBlock;
 use MediaWiki\Block\Restriction\Restriction;
 use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Content\IContentHandlerFactory;
+use MediaWiki\Content\UnknownContentModelException;
 use MediaWiki\Http\Telemetry;
+use MediaWiki\JobQueue\IJobSpecification;
 use MediaWiki\Language\Language;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
@@ -26,14 +27,12 @@ use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserGroupManager;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\WikiMap\WikiMap;
-use MWUnknownContentModelException;
 use Psr\Log\LoggerInterface;
 
 /**
  * Used to create events of particular types.
  *
  * @deprecated since EventBus 0.5.0. Use EventSerializer and specific Serializer instances instead.
- *
  */
 class EventFactory {
 
@@ -139,7 +138,7 @@ class EventFactory {
 	/**
 	 * Creates a full user page path
 	 *
-	 * @param string $userName userName
+	 * @param string $userName
 	 * @return string
 	 */
 	private function getUserPageURL( $userName ) {
@@ -223,7 +222,7 @@ class EventFactory {
 		if ( $contentFormat === null ) {
 			try {
 				$contentFormat = $this->contentHandlerFactory->getContentHandler( $contentModel )->getDefaultFormat();
-			} catch ( MWUnknownContentModelException $e ) {
+			} catch ( UnknownContentModelException ) {
 				// Ignore, the `rev_content_format` is not required.
 			}
 		}
@@ -231,7 +230,7 @@ class EventFactory {
 			$attrs['rev_content_format'] = $contentFormat;
 		}
 
-		if ( isset( $performer ) ) {
+		if ( $performer !== null ) {
 			$attrs['performer'] = $this->createPerformerAttrs( $performer );
 		}
 
@@ -247,7 +246,7 @@ class EventFactory {
 			} else {
 				$attrs['page_is_redirect'] = false;
 			}
-		} catch ( SuppressedDataException $e ) {
+		} catch ( SuppressedDataException ) {
 			$attrs['page_is_redirect'] = false;
 		}
 
@@ -327,6 +326,8 @@ class EventFactory {
 	 * @param array $attrs
 	 * @param string|null $wiki wikiId if provided
 	 * @param string|null $dt
+	 *        Deprecated. This parameter is unused.
+	 *        https://phabricator.wikimedia.org/T267648
 	 * @return array $attrs + meta sub object
 	 */
 	public function createEvent(
@@ -337,6 +338,11 @@ class EventFactory {
 		?string $wiki = null,
 		?string $dt = null
 	) {
+		// TODO: we should not rely on ServerName, but instead
+		// always rely on either ProperPageIdentity getWikiId or WikiMap::getCurrentWikiId.
+		// This has been done for newer Serializers, but not for these older EventFactory
+		// based events.
+		// See also https://phabricator.wikimedia.org/T388825
 		if ( $wiki !== null ) {
 			$wikiRef = WikiMap::getWiki( $wiki );
 			if ( $wikiRef === null ) {
@@ -355,7 +361,6 @@ class EventFactory {
 				'uri'        => $uri,
 				'request_id' => $this->telemetry->getRequestId(),
 				'id'         => $gen->newUUIDv4(),
-				'dt'         => $dt ?? wfTimestamp( TS_ISO_8601 ),
 				'domain'     => $domain,
 				'stream'     => $stream,
 			],
@@ -624,13 +629,13 @@ class EventFactory {
 	 * @return array
 	 */
 	public function createPageMoveEvent(
-		$stream,
+		string $stream,
 		LinkTarget $oldTitle,
 		LinkTarget $newTitle,
 		RevisionRecord $newRevision,
 		UserIdentity $user,
-		$reason,
-		$redirectPageId = 0
+		string $reason,
+		int $redirectPageId = 0
 	) {
 		// TODO: In MCR Content::isRedirect should not be used to derive a redirect directly.
 		$newPageIsRedirect = false;
@@ -639,7 +644,7 @@ class EventFactory {
 			if ( $content !== null ) {
 				$newPageIsRedirect = $content->isRedirect();
 			}
-		} catch ( SuppressedDataException $e ) {
+		} catch ( SuppressedDataException ) {
 		}
 
 		$attrs = [
@@ -679,7 +684,7 @@ class EventFactory {
 			}
 		}
 
-		if ( $reason !== null && strlen( $reason ) ) {
+		if ( $reason !== '' ) {
 			$attrs['comment'] = $reason;
 			if ( $this->commentFormatter ) {
 				$attrs['parsedcomment'] = $this->commentFormatter->format( $reason, $newTitle );
@@ -1062,7 +1067,7 @@ class EventFactory {
 
 		return $this->createEvent(
 			$this->getArticleURL( $title ),
-			'/mediawiki/page/restrictions-change/1.0.0',
+			'/mediawiki/page/restrictions-change/2.0.0',
 			$stream,
 			$attrs
 		);
@@ -1086,12 +1091,6 @@ class EventFactory {
 			$stream,
 			$attrs
 		);
-
-		// If timestamp exists on the recentchange event (it should),
-		// then use it as the meta.dt event datetime.
-		if ( array_key_exists( 'timestamp', $event ) ) {
-			$event['meta']['dt'] = wfTimestamp( TS_ISO_8601, $event['timestamp'] );
-		}
 
 		return $event;
 	}
@@ -1155,6 +1154,15 @@ class EventFactory {
 		return $event;
 	}
 
+	/**
+	 * @param string $stream
+	 * @param string $campaignName
+	 * @param UserIdentity $user
+	 * @param array $settings
+	 * @param string $summary
+	 * @param string $campaignUrl
+	 * @return array
+	 */
 	public function createCentralNoticeCampaignCreateEvent(
 		$stream,
 		$campaignName,
@@ -1174,6 +1182,16 @@ class EventFactory {
 		);
 	}
 
+	/**
+	 * @param string $stream
+	 * @param string $campaignName
+	 * @param UserIdentity $user
+	 * @param array $settings
+	 * @param array $priorState
+	 * @param string $summary
+	 * @param string $campaignUrl
+	 * @return array
+	 */
 	public function createCentralNoticeCampaignChangeEvent(
 		$stream,
 		$campaignName,
@@ -1197,6 +1215,15 @@ class EventFactory {
 		);
 	}
 
+	/**
+	 * @param string $stream
+	 * @param string $campaignName
+	 * @param UserIdentity $user
+	 * @param array $priorState
+	 * @param string $summary
+	 * @param string $campaignUrl
+	 * @return array
+	 */
 	public function createCentralNoticeCampaignDeleteEvent(
 		$stream,
 		$campaignName,

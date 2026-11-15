@@ -51,17 +51,6 @@ function GlobalWatchlistSiteBase(
 	// API failures still resolve the Promise rather than rejecting it. If Promise.allSettled
 	// becomes available for use, this should no longer be needed
 	this.apiError = false;
-
-	// Instance of GlobalWatchlistWikibaseHandler, only used for wikibase
-	// Don't create it if it will never be needed
-	if ( this.site === config.wikibaseSite ) {
-		var GlobalWatchlistWikibaseHandler = require( './WikibaseHandler.js' );
-		this.wikibaseHandler = new GlobalWatchlistWikibaseHandler(
-			globalWatchlistDebug,
-			api,
-			config.lang
-		);
-	}
 }
 
 /**
@@ -93,23 +82,23 @@ GlobalWatchlistSiteBase.prototype.error = function ( msg, data ) {
  * @return {Promise} Result of the api call
  */
 GlobalWatchlistSiteBase.prototype.api = function ( func, content, name ) {
-	var that = this;
+	const that = this;
 
-	return new Promise( function ( resolve, reject ) {
+	return new Promise( ( resolve, reject ) => {
 		that.debug( 'API.' + name + ' (called), with func & content:', [ func, content ] );
-		that.apiObject[ func ]( content ).then( function ( response ) {
+		that.apiObject[ func ]( content ).then( ( response ) => {
 			that.debug(
 				'API.' + name + ' (result); func, content, & response',
 				[ func, content, response ]
 			);
 			resolve( response );
-		} ).catch( function ( code, data ) {
+		} ).catch( ( code, data ) => {
 			that.error( 'API.' + name + ' ' + code, data );
 			that.apiError = true;
 
-			var $userNotification = $( '<div>' )
+			const $userNotification = $( '<div>' )
 				.append(
-					mw.msg( 'globalwatchlist-api-error', that.site ),
+					mw.message( 'globalwatchlist-api-error', that.site ).escaped(),
 					that.apiObject.getErrorMessage( data )
 				);
 
@@ -140,43 +129,128 @@ GlobalWatchlistSiteBase.prototype.api = function ( func, content, name ) {
  * @return {Promise} Promise of api result
  */
 GlobalWatchlistSiteBase.prototype.actuallyGetWatchlist = function ( iteration, continueFrom ) {
-	var that = this;
+	const that = this;
 
-	return new Promise( function ( resolve ) {
-		var query = {
+	return new Promise( ( resolve ) => {
+		const query = {
 			action: 'query',
 			formatversion: 2,
 			list: 'watchlist',
 			wllimit: 'max',
 			wlprop: that.config.watchlistQueryProps,
 			wlshow: that.config.watchlistQueryShow,
-			wltype: that.config.watchlistQueryTypes
+			wltype: that.config.watchlistQueryTypes,
+			responselanginfo: 1
 		};
 		if ( iteration > 1 ) {
 			query.wlcontinue = continueFrom;
+		} else {
+			query.meta = 'siteinfo';
+			query.siprop = that.isWikibase === undefined ?
+				// the check for Wikibase Handler is needed only once for the site
+				'general|namespaces' :
+				'general';
+			if ( !that.config.languageData ) {
+				query.meta += '|languageinfo';
+				query.liprop = 'dir';
+			}
+			if ( !that.labelsData ) {
+				query.meta += '|userinfo';
+				query.uiprop = 'watchlistlabels';
+			}
 		}
 		if ( !that.config.fastMode ) {
 			query.wlallrev = true;
 		}
 
-		that.api( 'get', query, 'actuallyGetWatchlist #' + iteration ).then( function ( response ) {
+		that.api( 'get', query, 'actuallyGetWatchlist #' + iteration ).then( ( response ) => {
 			if ( response === 'ERROR' ) {
-				resolve( [] );
+				resolve( {
+					wlraw: [],
+					rtl: undefined
+				} );
 				return;
 			}
-			var wlraw = response.query.watchlist;
+			const wlraw = response.query.watchlist;
+			const langinfo = response.query.languageinfo;
+			if ( langinfo ) {
+				that.config.languageData = langinfo;
+				that.debug( 'language data', langinfo );
+				if ( that.config.lang && !langinfo[ that.config.lang ] ) {
+					that.config.lang = null;
+				}
+			}
+			if ( response.query.userinfo ) {
+				const labelinfo = response.query.userinfo.watchlistlabels;
+				if ( labelinfo ) {
+					that.labelsData = [];
+					labelinfo.forEach( ( item ) => {
+						this.labelsData[ item.id ] = item.name;
+					} );
+					that.debug( 'user labels', labelinfo );
+				}
+			}
+			if ( response.query.namespaces ) {
+				const wbdefaultmodels = [ 'wikibase-item', 'wikibase-property', 'wikibase-lexeme', 'EntitySchema' ];
+				const wbns = { wikibase: [], entity: [] };
+				const wbnsNames = { wikibase: [], entity: [] };
+				Object.values( response.query.namespaces ).forEach( ( ns ) => {
+					const index = ns.defaultcontentmodel === 'EntitySchema' ? 'entity' : 'wikibase';
+					if ( wbdefaultmodels.includes( ns.defaultcontentmodel ) ) {
+						wbns[ index ].push( ns.id );
+						if ( ns.name ) {
+							wbnsNames[ index ].push( ns.name );
+						}
+						if ( ns.canonical && ns.canonical !== ns.name ) {
+							wbnsNames[ index ].push( ns.canonical );
+						}
+					}
+				} );
+				that.isWikibase = wbns.wikibase.length + wbns.entity.length > 0;
+				if ( that.isWikibase && response.uselang ) {
+					that.direction = that.config.languageData[ response.uselang ].dir;
+					that.debug( 'changing direction', that.direction );
+				}
+
+				if ( that.isWikibase && !that.wikibaseHandler ) {
+					// Instance of GlobalWatchlistWikibaseHandler, only used for wikibase
+					// Don't create it if it will never be needed
+					const GlobalWatchlistWikibaseHandler = require( './WikibaseHandler.js' );
+					const wikibaseLang = that.config.lang || response.uselang || mw.config.get( 'wgUserLanguage' );
+					that.debug( 'config lang', that.config.lang );
+					that.debug( 'response uselang', response.uselang );
+					that.debug( 'wgUserLanguage', mw.config.get( 'wgUserLanguage' ) );
+					that.debug( 'wikibaseLang', wikibaseLang );
+					that.wikibaseHandler = new GlobalWatchlistWikibaseHandler(
+						that.debugLogger,
+						that.apiObject,
+						wikibaseLang,
+						wbns,
+						wbnsNames
+					);
+					that.debug( 'Wikibase handler created', that.site );
+				}
+			}
+
+			const rtl = that.direction === 'rtl' || response.query.general && response.query.general.rtl;
+
 			if ( response.continue && response.continue.wlcontinue ) {
 				that.actuallyGetWatchlist(
 					iteration + 1,
 					response.continue.wlcontinue
-				).then( function ( innerResponse ) {
-					// If there was an error in the recursive call, this just
-					// adds an empty array. getWatchlist checks this.apiError
-					// before assuming that an empty response means nothing to show
-					resolve( wlraw.concat( innerResponse ) );
+				).then( ( innerResponse ) => {
+					resolve( {
+						// If there was an error in the recursive call, this just
+						// adds an empty array. getWatchlist checks this.apiError
+						// before assuming that an empty response means nothing to show
+						wlraw: wlraw.concat( innerResponse.wlraw ),
+						// `rtl` is present only in the outermost call, `innerResponse.rtl`
+						// will always be `undefined`
+						rtl: rtl
+					} );
 				} );
 			} else {
-				resolve( wlraw );
+				resolve( { wlraw, rtl } );
 			}
 		} );
 	} );
@@ -199,11 +273,11 @@ GlobalWatchlistSiteBase.prototype.actuallyGetWatchlist = function ( iteration, c
  */
 GlobalWatchlistSiteBase.prototype.changeWatched = function ( pageTitle, func ) {
 	this.debug( 'changeWatched - Going to ' + func + ': ' + pageTitle );
-	var that = this;
+	const that = this;
 	this.api( func, pageTitle, 'updateWatched' );
 	this.processUpdateWatched( pageTitle, func === 'unwatch' );
 	if ( !this.config.fastMode ) {
-		this.getAssociatedPageTitle( pageTitle ).then( function ( associatedTitle ) {
+		this.getAssociatedPageTitle( pageTitle ).then( ( associatedTitle ) => {
 			that.processUpdateWatched( associatedTitle, func === 'unwatch' );
 			// TODO re-add functionality for old checkChangesShown
 		} );
@@ -220,10 +294,10 @@ GlobalWatchlistSiteBase.prototype.changeWatched = function ( pageTitle, func ) {
  * is called, not necessarily after the api call is finished.
  */
 GlobalWatchlistSiteBase.prototype.markPageAsSeen = function ( pageTitle ) {
-	var that = this;
+	const that = this;
 
-	return new Promise( function ( resolve ) {
-		var setter = {
+	return new Promise( ( resolve ) => {
+		const setter = {
 			action: 'setnotificationtimestamp',
 			titles: pageTitle,
 			timestamp: that.config.time.toISOString()
@@ -257,16 +331,16 @@ GlobalWatchlistSiteBase.prototype.afterMarkPageAsSeen = function ( pageTitle ) {
  * @return {Promise} Promise of api result
  */
 GlobalWatchlistSiteBase.prototype.getAssociatedPageTitle = function ( pageTitle ) {
-	var that = this;
-	return new Promise( function ( resolve ) {
-		var query = {
+	const that = this;
+	return new Promise( ( resolve ) => {
+		const query = {
 			action: 'query',
 			prop: 'info',
 			titles: pageTitle,
 			inprop: 'associatedpage',
 			formatversion: 2
 		};
-		that.api( 'get', query, 'getAssociatedPageTitle' ).then( function ( response ) {
+		that.api( 'get', query, 'getAssociatedPageTitle' ).then( ( response ) => {
 			resolve( response.query.pages[ 0 ].associatedpage );
 		} );
 	} );
@@ -282,23 +356,23 @@ GlobalWatchlistSiteBase.prototype.getAssociatedPageTitle = function ( pageTitle 
  *   in fast mode
  */
 GlobalWatchlistSiteBase.prototype.getTagList = function () {
-	var that = this;
-	return new Promise( function ( resolve ) {
+	const that = this;
+	return new Promise( ( resolve ) => {
 		if ( that.config.fastMode || Object.keys( that.tags ).length > 0 ) {
 			// Either we are in fast mode, and we should return an empty object, which
 			// is the default value of that.tags, or we already fetched the tags info
 			// and its already available in that.tags
 			resolve( that.tags );
 		} else {
-			var query = {
+			const query = {
 				action: 'query',
 				list: 'tags',
 				tglimit: 'max',
 				tgprop: 'displayname'
 			};
-			that.api( 'get', query, 'getTags' ).then( function ( response ) {
-				var asObject = {};
-				response.query.tags.forEach( function ( tag ) {
+			that.api( 'get', query, 'getTags' ).then( ( response ) => {
+				const asObject = {};
+				response.query.tags.forEach( ( tag ) => {
 					asObject[ tag.name ] = ( tag.displayname || false ) ?
 						that.linker.fixLocalLinks( tag.displayname ) :
 						tag.name;
@@ -320,9 +394,9 @@ GlobalWatchlistSiteBase.prototype.getTagList = function () {
  */
 GlobalWatchlistSiteBase.prototype.getWatchlist = function ( latestConfig ) {
 	this.config = latestConfig;
-	var that = this;
-	return new Promise( function ( resolve ) {
-		that.actuallyGetWatchlist( 1, 0 ).then( function ( wlraw ) {
+	const that = this;
+	return new Promise( ( resolve ) => {
+		that.actuallyGetWatchlist( 1, 0 ).then( ( { wlraw, rtl } ) => {
 			if ( !( wlraw && wlraw[ 0 ] ) ) {
 				if ( that.apiError ) {
 					that.debug( 'getWatchlist - error' );
@@ -344,17 +418,18 @@ GlobalWatchlistSiteBase.prototype.getWatchlist = function ( latestConfig ) {
 
 			that.debug( 'getWatchlist wlraw', wlraw );
 
-			that.getTagList().then( function ( tagsInfo ) {
-				var prelimSummary = that.watchlistUtils.rawToSummary(
+			that.getTagList().then( ( tagsInfo ) => {
+				const prelimSummary = that.watchlistUtils.rawToSummary(
 					wlraw,
 					that.config.groupPage,
-					tagsInfo
+					tagsInfo,
+					that.labelsData || []
 				);
 				that.debug( 'getWatchlist prelimSummary', prelimSummary );
 
-				that.makeWikidataList( prelimSummary ).then( function ( summary ) {
+				that.makeWikidataList( prelimSummary ).then( ( summary ) => {
 					that.debug( 'getWatchlist summary', summary );
-					that.renderWatchlist( summary );
+					that.renderWatchlist( summary, { rtl } );
 					resolve();
 				} );
 			} );
@@ -368,8 +443,11 @@ GlobalWatchlistSiteBase.prototype.getWatchlist = function ( latestConfig ) {
  * Overriden in {@link GlobalWatchlistSiteDisplay}
  *
  * @param {GlobalWatchlistEntryBase[]} summary What should be rendered
+ * @param {Object} siteinfo Extra site information read live from the wiki
+ * @param {boolean|undefined} siteinfo.rtl Whether the site is right-to-left;
+ *  `undefined` if unknown
  */
-GlobalWatchlistSiteBase.prototype.renderWatchlist = function ( summary ) {
+GlobalWatchlistSiteBase.prototype.renderWatchlist = function ( summary, siteinfo ) {
 	// STUB
 };
 
@@ -377,19 +455,23 @@ GlobalWatchlistSiteBase.prototype.renderWatchlist = function ( summary ) {
  * Fetch and process wikibase labels when the watchlist is for wikidata
  *
  * @param {GlobalWatchlistEntryBase[]} summary Original summary, with page titles (Q1, P2, L3, etc.)
- * @return {Promise} Updated summary, with labels
+ * @return {Promise<Array>} Updated summary array, with labels
  */
 GlobalWatchlistSiteBase.prototype.makeWikidataList = function ( summary ) {
-	var that = this;
-	return new Promise( function ( resolve ) {
-		if ( that.site !== that.config.wikibaseSite || that.config.fastMode ) {
-			resolve( summary );
-		} else {
-			that.wikibaseHandler.addWikibaseLabels( summary ).then( function ( updatedSummary ) {
-				resolve( updatedSummary );
-			} );
-		}
-	} );
+	const that = this;
+
+	if ( !summary || summary.length === 0 ) {
+		return Promise.resolve( [] );
+	}
+
+	if ( !that.isWikibase || that.config.fastMode ) {
+		return Promise.resolve( summary );
+	}
+
+	// Not efficient for now
+	return Promise.all(
+		summary.map( ( item ) => that.wikibaseHandler.addWikibaseLabels( item ) )
+	);
 };
 
 /**
@@ -400,10 +482,10 @@ GlobalWatchlistSiteBase.prototype.makeWikidataList = function ( summary ) {
  */
 GlobalWatchlistSiteBase.prototype.markAllAsSeen = function () {
 	this.debug( 'markSiteAsSeen - marking' );
-	var that = this;
+	const that = this;
 
-	return new Promise( function ( resolve ) {
-		var setter = {
+	return new Promise( ( resolve ) => {
+		const setter = {
 			action: 'setnotificationtimestamp',
 			entirewatchlist: true,
 			timestamp: that.config.time.toISOString()
@@ -425,6 +507,48 @@ GlobalWatchlistSiteBase.prototype.markAllAsSeen = function () {
  */
 GlobalWatchlistSiteBase.prototype.afterMarkAllAsSeen = function () {
 	// STUB
+};
+
+/**
+ * Mark a set of pages as seen.
+ * This function is not efficient for now, and it will be very improved after T417357 will be resolved.
+ *
+ * @param {string[]} pageTitles - Array of page titles to mark as seen
+ * @return {Promise} resolves when all pages are marked
+ */
+GlobalWatchlistSiteBase.prototype.markSectionAsSeen = function ( pageTitles ) {
+	this.debug( 'markSectionAsSeen - marking', pageTitles );
+	const that = this;
+
+	if ( !pageTitles || pageTitles.length === 0 ) {
+		return Promise.resolve();
+	}
+
+	// Take first 50 titles (or all if <=50)
+	const batch = pageTitles.slice( 0, 50 );
+	const remaining = pageTitles.slice( 50 );
+
+	return new Promise( ( resolve, reject ) => {
+		const setter = {
+			action: 'setnotificationtimestamp',
+			titles: batch,
+			timestamp: that.config.time.toISOString()
+		};
+
+		that.api( 'postWithEditToken', setter, 'actuallyMarkSectionAsSeen' )
+			.then( () => {
+				// Update the display immediately for this batch
+				batch.forEach( ( title ) => that.afterMarkPageAsSeen( title ) );
+
+				if ( remaining.length > 0 ) {
+					// Recursively process the next batch
+					that.markSectionAsSeen( remaining ).then( resolve ).catch( reject );
+				} else {
+					resolve();
+				}
+			} )
+			.catch( reject );
+	} );
 };
 
 /**

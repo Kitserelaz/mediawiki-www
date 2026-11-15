@@ -73,9 +73,6 @@ class NonPhraseParser {
 	 */
 	private $wildcardRegex;
 
-	/**
-	 * @param Escaper $escaper
-	 */
 	public function __construct( Escaper $escaper ) {
 		$this->escaper = $escaper;
 		if ( $this->escaper->getAllowLeadingWildcard() ) {
@@ -147,9 +144,7 @@ class NonPhraseParser {
 			}
 		}
 
-		if ( $node === null ) {
-			$node = new WordsQueryNode( $wordStart, $wholeEnd, $this->escaper->unescape( $word ) );
-		}
+		$node ??= new WordsQueryNode( $wordStart, $wholeEnd, $this->escaper->unescape( $word ) );
 		if ( $negationType !== '' ) {
 			$node = new NegatedNode( $wholeStart, $wholeEnd, $node, $negationType );
 		}

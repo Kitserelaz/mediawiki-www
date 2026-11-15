@@ -229,7 +229,7 @@ local tests = {
 	},
 	{ name = 'mw.wikibase.getAllStatements (is cloned)', func = testGetAllStatementsTableIsCloned,
       expect = { true }
-	},
+  	},
 	{ name = 'mw.wikibase.getAllStatements (with references and using ipairs)',
 	  func = integrationTestTraverseReferencesWithIpairs,
 	  expect = { { 'A reference', 'More references' } }

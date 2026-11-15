@@ -314,7 +314,6 @@ class PFAutoeditAPI extends ApiBase {
 	}
 
 	protected function setupEditPage( $targetContent ) {
-		global $wgRequest;
 		// Find existing target article if it exists, or create a new one.
 		$targetTitle = Title::newFromText( $this->mOptions['target'] );
 
@@ -337,19 +336,19 @@ class PFAutoeditAPI extends ApiBase {
 				'wpUnicodeCheck' => 'ℳ𝒲♥𝓊𝓃𝒾𝒸ℴ𝒹ℯ',
 				'wpSummary' => '',
 				'wpStarttime' => wfTimestampNow(),
-				'wpEditToken' => isset( $this->mOptions[ 'token' ] ) ? $this->mOptions[ 'token' ] : $this->getUser()->getEditToken(),
+				'wpEditToken' => $this->mOptions[ 'token' ] ?? $this->getUser()->getEditToken(),
 				'action' => 'submit',
 			],
 			$this->mOptions
 		);
 
 		// Checks if the "Watch this page" checkbox is checked
-		if ( $wgRequest->getCheck( 'wpWatchthis' ) ) {
+		if ( $this->getRequest()->getCheck( 'wpWatchthis' ) ) {
 			$data[ 'wpWatchthis' ] = true;
 		}
 
 		// Checks if the "Minor edit" checkbox is checked
-		if ( $wgRequest->getCheck( 'wpMinoredit' ) ) {
+		if ( $this->getRequest()->getCheck( 'wpMinoredit' ) ) {
 			$data[ 'wpMinoredit' ] = true;
 		}
 
@@ -368,7 +367,7 @@ class PFAutoeditAPI extends ApiBase {
 	}
 
 	/**
-	 * Sets the output HTML of wgOut as the module's result
+	 * Sets the output HTML as the module's result
 	 */
 	protected function setResultFromOutput() {
 		// turn on output buffering
@@ -471,6 +470,7 @@ class PFAutoeditAPI extends ApiBase {
 
 		$request = $editor->pfFauxRequest;
 		if ( $this->tokenOk( $request ) ) {
+			// TODO Use $this->getContext() here?
 			$ctx = RequestContext::getMain();
 			$tempTitle = $ctx->getTitle();
 			// We add an @ before the setTitle() calls to silence
@@ -537,7 +537,7 @@ class PFAutoeditAPI extends ApiBase {
 			case EditPage::AS_SUCCESS_NEW_ARTICLE:
 				// Article successfully created
 				$query = $resultDetails['redirect'] ? 'redirect=no' : '';
-				$anchor = isset( $resultDetails['sectionanchor'] ) ? $resultDetails['sectionanchor'] : '';
+				$anchor = $resultDetails['sectionanchor'] ?? '';
 
 				// Give extensions a chance to modify URL query on create
 				$sectionanchor = '';
@@ -680,11 +680,7 @@ class PFAutoeditAPI extends ApiBase {
 	protected function finalizeResults() {
 		// set response text depending on the status and the requested action
 		if ( $this->mStatus === 200 ) {
-			if ( array_key_exists( 'ok text', $this->mOptions ) ) {
-				$targetTitle = Title::newFromText( $this->mOptions['target'] );
-				$messageCache = MediaWikiServices::getInstance()->getMessageCache();
-				$responseText = $messageCache->parse( $this->mOptions['ok text'], $targetTitle )->getText();
-			} elseif ( $this->mAction === self::ACTION_SAVE ) {
+			if ( $this->mAction === self::ACTION_SAVE ) {
 				// We turn this into a link of the form [[:A|A]]
 				// so that pages in the File: namespace won't
 				// cause the actual image to be displayed.
@@ -699,12 +695,8 @@ class PFAutoeditAPI extends ApiBase {
 				$responseText = null;
 			}
 		} else {
-			// get errortext (or use default)
-			if ( array_key_exists( 'error text', $this->mOptions ) ) {
-				$targetTitle = Title::newFromText( $this->mOptions['target'] );
-				$messageCache = MediaWikiServices::getInstance()->getMessageCache();
-				$responseText = $messageCache->parse( $this->mOptions['error text'], $targetTitle )->getText();
-			} elseif ( $this->mAction === self::ACTION_SAVE ) {
+			// Display error.
+			if ( $this->mAction === self::ACTION_SAVE ) {
 				$targetText = ':' . $this->mOptions['target'] . '|' . $this->mOptions['target'];
 				$responseText = $this->msg( 'pf_autoedit_fail', $targetText )->parse();
 			} else {
@@ -718,9 +710,9 @@ class PFAutoeditAPI extends ApiBase {
 			$result->addValue( null, 'responseText', $responseText );
 		}
 
-		$result->addValue( null, 'status', $this->mStatus, true );
+		$result->addValue( null, 'status', $this->mStatus, ApiResult::OVERRIDE );
 		$result->addValue( [ 'form' ], 'title', $this->mOptions['form'] );
-		$result->addValue( null, 'target', $this->mOptions['target'], true );
+		$result->addValue( null, 'target', $this->mOptions['target'], ApiResult::OVERRIDE );
 	}
 
 	/**
@@ -843,7 +835,7 @@ class PFAutoeditAPI extends ApiBase {
 					// pad it with leading 0s as well.
 					$titleNumber = 2;
 				} else {
-					$titleNumber = str_pad( $titleNumber + 1, strlen( $titleNumber ), '0', STR_PAD_LEFT );
+					$titleNumber = str_pad( strval( $titleNumber + 1 ), strlen( $titleNumber ), '0', STR_PAD_LEFT );
 				}
 
 				$targetTitle = Title::newFromText( preg_replace( '/{num.*}/', $titleNumber, $targetName ) );
@@ -886,7 +878,7 @@ class PFAutoeditAPI extends ApiBase {
 	 * @throws MWException
 	 */
 	public function doAction() {
-		global $wgRequest, $wgPageFormsFormPrinter;
+		global $wgPageFormsFormPrinter;
 
 		// If the wiki is read-only, do not save.
 		if ( MediaWikiServices::getInstance()->getReadOnlyMode()->isReadOnly() ) {
@@ -935,9 +927,6 @@ class PFAutoeditAPI extends ApiBase {
 		}
 
 		$preloadContent = '';
-
-		// save $wgRequest for later restoration
-		$oldRequest = $wgRequest;
 		$pageExists = false;
 
 		if ( $targetTitle !== null && $targetTitle->exists() ) {
@@ -970,9 +959,10 @@ class PFAutoeditAPI extends ApiBase {
 		$formContext = $this->mIsAutoEdit ? PFFormPrinter::CONTEXT_AUTOEDIT : PFFormPrinter::CONTEXT_REGULAR;
 
 		if ( $preloadContent !== '' ) {
-			// Spoof $wgRequest for PFFormPrinter::formHTML().
-			$session = RequestContext::getMain()->getRequest()->getSession();
-			$wgRequest = new FauxRequest( $this->mOptions, true, $session );
+			// Spoof request for PFFormPrinter::formHTML().
+			$context = new DerivativeContext( $this->getContext() );
+			$session = $this->getRequest()->getSession();
+			$context->setRequest( new FauxRequest( $this->mOptions, true, $session ) );
 			// Call PFFormPrinter::formHTML() to get at the form
 			// HTML of the existing page.
 			[ $formHTML, $targetContent, $form_page_title, $generatedTargetNameFormula ] =
@@ -981,7 +971,7 @@ class PFAutoeditAPI extends ApiBase {
 					// otherwise, multi-instance templates
 					// don't get saved, for some convoluted
 					// reason.
-					$formContent, ( $isFormSubmitted && !$this->mIsAutoEdit ), $pageExists,
+					$context, $formContent, ( $isFormSubmitted && !$this->mIsAutoEdit ), $pageExists,
 					$formArticleId, $preloadContent, $targetName, $targetNameFormula,
 					$formContext, $autocreate_query = [], $this->getUser()
 				);
@@ -1008,17 +998,16 @@ class PFAutoeditAPI extends ApiBase {
 		// Get wikitext for submitted data and form - call formHTML(),
 		// if we haven't called it already.
 		if ( $preloadContent == '' ) {
-			// Spoof $wgRequest for PFFormPrinter::formHTML().
-			$session = RequestContext::getMain()->getRequest()->getSession();
-			$wgRequest = new FauxRequest( $this->mOptions, true, $session );
+			// Spoof request for PFFormPrinter::formHTML().
+			$context = new DerivativeContext( $this->getContext() );
+			$session = $this->getRequest()->getSession();
+			$context->setRequest( new FauxRequest( $this->mOptions, true, $session ) );
 			[ $formHTML, $targetContent, $generatedFormName, $generatedTargetNameFormula ] =
 				$wgPageFormsFormPrinter->formHTML(
-					$formContent, $isFormSubmitted, $pageExists,
+					$context, $formContent, $isFormSubmitted, $pageExists,
 					$formArticleId, $preloadContent, $targetName, $targetNameFormula,
-					$formContext, $autocreate_query = [], $this->getUser()
+					$formContext, $autocreate_query = []
 				);
-			// Restore original request.
-			$wgRequest = $oldRequest;
 		} else {
 			$generatedFormName = $form_page_title;
 		}

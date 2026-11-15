@@ -2,7 +2,7 @@
 
 namespace AdvancedSearch;
 
-use MessageLocalizer;
+use MediaWiki\Language\MessageLocalizer;
 
 /**
  * Generate HTML tooltips from messages
@@ -21,6 +21,7 @@ class TooltipGenerator {
 		'advancedsearch-help-phrase',
 		'advancedsearch-help-or',
 		'advancedsearch-help-not',
+		'advancedsearch-help-incategory',
 		'advancedsearch-help-deepcategory',
 		'advancedsearch-help-hastemplate',
 		'advancedsearch-help-inlanguage',
@@ -32,10 +33,7 @@ class TooltipGenerator {
 		'advancedsearch-help-sort'
 	];
 
-	private MessageLocalizer $messageLocalizer;
-
-	public function __construct( MessageLocalizer $messageLocalizer ) {
-		$this->messageLocalizer = $messageLocalizer;
+	public function __construct( private readonly MessageLocalizer $messageLocalizer ) {
 	}
 
 	/**

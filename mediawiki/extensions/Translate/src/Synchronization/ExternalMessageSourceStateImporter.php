@@ -10,28 +10,24 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\Synchronization;
 
 use FileBasedMessageGroup;
-use JobQueueGroup;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroupSubscription;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Extension\Translate\MessageLoading\MessageIndex;
 use MediaWiki\Extension\Translate\MessageSync\MessageSourceChange;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\TitleFactory;
 use MessageGroup;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 use function wfWarn;
 
 class ExternalMessageSourceStateImporter {
-	private GroupSynchronizationCache $groupSynchronizationCache;
-	private JobQueueGroup $jobQueueGroup;
-	private LoggerInterface $logger;
-	private MessageIndex $messageIndex;
-	private TitleFactory $titleFactory;
-	private MessageGroupSubscription $messageGroupSubscription;
+
 	private bool $isGroupSyncCacheEnabled;
 	// Do not perform any import
 	public const IMPORT_NONE = 1;
@@ -43,20 +39,14 @@ class ExternalMessageSourceStateImporter {
 	public const CONSTRUCTOR_OPTIONS = [ 'TranslateGroupSynchronizationCache' ];
 
 	public function __construct(
-		GroupSynchronizationCache $groupSynchronizationCache,
-		JobQueueGroup $jobQueueGroup,
-		LoggerInterface $logger,
-		MessageIndex $messageIndex,
-		TitleFactory $titleFactory,
-		MessageGroupSubscription $messageGroupSubscription,
+		private readonly GroupSynchronizationCache $groupSynchronizationCache,
+		private readonly JobQueueGroup $jobQueueGroup,
+		private readonly LoggerInterface $logger,
+		private readonly MessageIndex $messageIndex,
+		private readonly TitleFactory $titleFactory,
+		private readonly MessageGroupSubscription $messageGroupSubscription,
 		ServiceOptions $options
 	) {
-		$this->groupSynchronizationCache = $groupSynchronizationCache;
-		$this->jobQueueGroup = $jobQueueGroup;
-		$this->logger = $logger;
-		$this->messageIndex = $messageIndex;
-		$this->titleFactory = $titleFactory;
-		$this->messageGroupSubscription = $messageGroupSubscription;
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 		$this->isGroupSyncCacheEnabled = $options->get( 'TranslateGroupSynchronizationCache' );
 	}
@@ -96,30 +86,43 @@ class ExternalMessageSourceStateImporter {
 			$languages = $changesForGroup->getLanguages();
 			$groupJobs = [];
 
-			$groupSafeLanguages = $this->identifySafeLanguages( $group, $changesForGroup, $importStrategy );
+			try {
+				$groupSafeLanguages = $this->identifySafeLanguages( $group, $changesForGroup, $importStrategy );
 
-			foreach ( $languages as $language ) {
-				if ( !$groupSafeLanguages[ $language ] ) {
-					$skipped[$groupId] = true;
-					continue;
+				foreach ( $languages as $language ) {
+					if ( !$groupSafeLanguages[ $language ] ) {
+						$skipped[$groupId] = true;
+						continue;
+					}
+
+					$additions = $changesForGroup->getAdditions( $language );
+					if ( $additions === [] ) {
+						continue;
+					}
+
+					[ $groupLanguageJobs, $groupProcessed ] = $this->createUpdateMessageJobs(
+						$group, $additions, $language
+					);
+
+					$groupJobs = array_merge( $groupJobs, $groupLanguageJobs );
+					$processed[$groupId][$language] = $groupProcessed;
+
+					// We only remove additions since if less-safe-import option is used, then
+					// changes to existing messages might still need to be processed manually.
+					$changesForGroup->removeAdditions( $language, null );
+					$group->getMessageGroupCache( $language )->create();
 				}
-
-				$additions = $changesForGroup->getAdditions( $language );
-				if ( $additions === [] ) {
-					continue;
-				}
-
-				[ $groupLanguageJobs, $groupProcessed ] = $this->createUpdateMessageJobs(
-					$group, $additions, $language
+			} catch ( Throwable $e ) {
+				$this->logger->warning(
+					'[ExternalMessageSourceStateImporter] Error during import. Group: {group}, language: {language}',
+					[
+						'group' => $groupId,
+						'language' => $language ?? 'N/A',
+						'exception' => $e,
+					]
 				);
-
-				$groupJobs = array_merge( $groupJobs, $groupLanguageJobs );
-				$processed[$groupId][$language] = $groupProcessed;
-
-				// We only remove additions since if less-safe-import option is used, then
-				// changes to existing messages might still need to be processed manually.
-				$changesForGroup->removeAdditions( $language, null );
-				$group->getMessageGroupCache( $language )->create();
+				$skipped[ $groupId ] = true;
+				continue;
 			}
 
 			// Mark the skipped group as in review
@@ -208,7 +211,7 @@ class ExternalMessageSourceStateImporter {
 				$this->messageGroupSubscription->queueMessage(
 					$title,
 					MessageGroupSubscription::STATE_ADDED,
-					[ $groupId ]
+					$groupId
 				);
 			}
 		}

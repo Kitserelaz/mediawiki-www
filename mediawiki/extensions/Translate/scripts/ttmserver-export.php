@@ -15,6 +15,7 @@ use MediaWiki\Extension\Translate\Statistics\MessageGroupStats;
 use MediaWiki\Extension\Translate\TtmServer\FakeTtmServer;
 use MediaWiki\Extension\Translate\TtmServer\ServiceCreationFailure;
 use MediaWiki\Extension\Translate\TtmServer\WritableTtmServer;
+use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\Title\Title;
 use Wikimedia\Assert\Assert;
 
@@ -72,7 +73,7 @@ class TTMServerBootstrap extends Maintenance {
 		$this->start = microtime( true );
 	}
 
-	public function statusLine( $text, $channel = null ) {
+	public function statusLine( string $text, ?string $channel = null ) {
 		$pid = sprintf( '%5s', getmypid() );
 		$prefix = sprintf( '%6.2f', microtime( true ) - $this->start );
 		$mem = sprintf( '%5.1fM', memory_get_usage( true ) / ( 1024 * 1024 ) );
@@ -118,6 +119,7 @@ class TTMServerBootstrap extends Maintenance {
 
 		$hasErrors = false;
 		$threads = $this->getOption( 'threads', 1 );
+		/** @var array<int,true> $pids */
 		$pids = [];
 
 		if ( $this->hasOption( 'clean' ) ) {
@@ -174,7 +176,7 @@ class TTMServerBootstrap extends Maintenance {
 	 * @param bool $isDryRun
 	 * @param bool $shouldReindex
 	 * @param string|null $ttmServerId
-	 * @return WritableTtmServer[]
+	 * @return array<string,WritableTtmServer>
 	 */
 	private function getServers(
 		bool $isDryRun,
@@ -252,7 +254,7 @@ class TTMServerBootstrap extends Maintenance {
 		$times[ 'init' ] += microtime( true );
 
 		$times[ 'stats' ] -= microtime( true );
-		$stats = MessageGroupStats::forGroup( $group->getId() );
+		$stats = MessageGroupStats::forGroup( $group );
 		$times[ 'stats' ] += microtime( true );
 		unset( $stats[ $sourceLanguage ] );
 
@@ -277,7 +279,7 @@ class TTMServerBootstrap extends Maintenance {
 				continue;
 			}
 
-			foreach ( $this->getTranslations( $collection, $targetLanguage ) as $batch ) {
+			foreach ( $this->getTranslations( $collection, $sourceLanguage, $targetLanguage ) as $batch ) {
 				$translationCount += count( $batch );
 				foreach ( $servers as $server ) {
 					$transWrites -= microtime( true );
@@ -331,17 +333,21 @@ class TTMServerBootstrap extends Maintenance {
 		}
 	}
 
-	private function getTranslations( MessageCollection $collection, string $targetLanguage ): Generator {
+	private function getTranslations(
+		MessageCollection $collection,
+		string $sourceLanguage,
+		string $targetLanguage
+	): Generator {
 		$collection->resetForNewLanguage( $targetLanguage );
-		$collection->filter( 'ignored' );
-		$collection->filter( 'translated', false );
+		$collection->filter( MessageCollection::FILTER_IGNORED, MessageCollection::EXCLUDE_MATCHING );
+		$collection->filter( MessageCollection::FILTER_TRANSLATED, MessageCollection::INCLUDE_MATCHING );
 		$collection->loadTranslations();
 		$translations = [];
 
 		foreach ( $collection->keys() as $mkey => $titleValue ) {
 			$title = Title::newFromLinkTarget( $titleValue );
 			$handle = new MessageHandle( $title );
-			$translations[] = [ $handle, $targetLanguage, $collection[$mkey]->translation() ];
+			$translations[] = [ $handle, $sourceLanguage, $collection[$mkey]->translation() ];
 			if ( $this->mBatchSize && count( $translations ) === $this->mBatchSize ) {
 				yield $translations;
 				$translations = [];
@@ -403,7 +409,7 @@ class TTMServerBootstrap extends Maintenance {
 
 	private function getCollection( MessageGroup $group, string $sourceLanguage ): MessageCollection {
 		$collection = $group->initCollection( $sourceLanguage );
-		$collection->filter( 'ignored' );
+		$collection->filter( MessageCollection::FILTER_IGNORED, MessageCollection::EXCLUDE_MATCHING );
 		$collection->initMessages();
 		return $collection;
 	}

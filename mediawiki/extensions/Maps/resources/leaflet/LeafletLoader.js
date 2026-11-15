@@ -11,9 +11,7 @@ window.mapsLeafletList = [];
 
 			$this.data( 'initialized', true );
 
-			let jqueryMap = $this.leafletmaps(
-				JSON.parse( $this.find( 'div.mapdata' ).text() )
-			);
+			let jqueryMap = $this.leafletmaps( $this.data( 'mw-maps-mapdata' ) || {} );
 
 			jqueryMap.setup();
 
@@ -34,9 +32,9 @@ window.mapsLeafletList = [];
 			1000
 		);
 
-		// mw.hook( 've.deactivationComplete' ).add( function() {
-		// 	clearInterval( thread );
-		// } );
+		mw.hook( 've.deactivationComplete' ).add( function() {
+			clearInterval( thread );
+		} );
 
 		// surface.getModel().on( 'history', function() {
 		// 	console.log('history');

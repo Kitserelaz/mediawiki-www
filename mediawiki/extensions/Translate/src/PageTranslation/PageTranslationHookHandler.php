@@ -4,12 +4,12 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
 use MediaWiki\Context\IContextSource;
-use MediaWiki\Hook\LonelyPagesQueryHook;
-use MediaWiki\Hook\SpecialPrefixIndexGetFormFiltersHook;
-use MediaWiki\Hook\SpecialPrefixIndexQueryHook;
-use MediaWiki\Hook\SpecialWhatLinksHereQueryHook;
 use MediaWiki\HTMLForm\Field\HTMLCheckField;
 use MediaWiki\SpecialPage\Hook\SpecialPageBeforeFormDisplayHook;
+use MediaWiki\Specials\Hook\LonelyPagesQueryHook;
+use MediaWiki\Specials\Hook\SpecialPrefixIndexGetFormFiltersHook;
+use MediaWiki\Specials\Hook\SpecialPrefixIndexQueryHook;
+use MediaWiki\Specials\Hook\SpecialWhatLinksHereQueryHook;
 use Wikimedia\Rdbms\SelectQueryBuilder;
 
 class PageTranslationHookHandler implements
@@ -19,7 +19,7 @@ class PageTranslationHookHandler implements
 	SpecialPageBeforeFormDisplayHook,
 	SpecialWhatLinksHereQueryHook
 {
-
+	/** @inheritDoc */
 	public function onSpecialPrefixIndexGetFormFilters( IContextSource $contextSource, array &$filters ) {
 		$filters[ 'translate-hidetranslations' ] = [
 			'class' => HTMLCheckField::class,
@@ -28,6 +28,7 @@ class PageTranslationHookHandler implements
 		];
 	}
 
+	/** @inheritDoc */
 	public function onSpecialPrefixIndexQuery( array $fieldData, SelectQueryBuilder $queryBuilder ) {
 		if ( $fieldData[ 'translate-hidetranslations' ] === true ) {
 			$queryBuilder->leftJoin(
@@ -41,6 +42,7 @@ class PageTranslationHookHandler implements
 		}
 	}
 
+	/** @inheritDoc */
 	public function onLonelyPagesQuery( &$tables, &$conds, &$joinConds ) {
 		$tables[ 'translate_pp' ] = 'page_props';
 		$joinConds['translate_pp'] = [
@@ -52,7 +54,9 @@ class PageTranslationHookHandler implements
 		$conds['translate_pp.pp_value'] = null;
 	}
 
+	/** @inheritDoc */
 	public function onSpecialPageBeforeFormDisplay( $name, $form ): void {
+		// Temporarily disabled: https://phabricator.wikimedia.org/T385139#10559646
 		if ( $name === 'Whatlinkshere' ) {
 			$form->addFields( [
 				'translate-hidetranslations' => [
@@ -65,7 +69,9 @@ class PageTranslationHookHandler implements
 		}
 	}
 
+	/** @inheritDoc */
 	public function onSpecialWhatLinksHereQuery( $table, $data, $queryBuilder ) {
+		// Temporarily disabled: https://phabricator.wikimedia.org/T385139#10559646
 		$isSupportedTable = in_array( $table, [ 'pagelinks', 'templatelinks', 'imagelinks' ] );
 
 		if ( $data[ 'translate-hidetranslations' ] && $isSupportedTable ) {

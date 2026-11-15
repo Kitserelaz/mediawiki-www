@@ -3,46 +3,25 @@
 namespace MediaWiki\Extension\SecurePoll;
 
 use MediaWiki\CommentStore\CommentStoreComment;
-use MediaWiki\Config\Config;
+use MediaWiki\Exception\MWExceptionHandler;
 use MediaWiki\Extension\SecurePoll\Entities\Election;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\User\User;
 use MediaWiki\WikiMap\WikiMap;
-use MWExceptionHandler;
 use Wikimedia\Rdbms\DBError;
 use Wikimedia\Rdbms\ILoadBalancer;
 use Wikimedia\Rdbms\LBFactory;
 
 class TranslationRepo {
 
-	/** @var LBFactory */
-	private $lbFactory;
-
-	/**
-	 * @var WikiPageFactory
-	 */
-	private $wikiPageFactory = null;
-
-	/**
-	 * @var bool
-	 */
-	private $useNamespace = false;
-
-	/**
-	 *
-	 * @param LBFactory $lbFactory
-	 * @param WikiPageFactory $wikiPageFactory
-	 * @param Config $config
-	 */
-	public function __construct( LBFactory $lbFactory, WikiPageFactory $wikiPageFactory, Config $config ) {
-		$this->lbFactory = $lbFactory;
-		$this->wikiPageFactory = $wikiPageFactory;
-		$this->useNamespace = $config->get( 'SecurePollUseNamespace' );
+	public function __construct(
+		private readonly LBFactory $lbFactory,
+		private readonly WikiPageFactory $wikiPageFactory,
+	) {
 	}
 
 	/**
-	 *
 	 * @param Election $election
 	 * @param array $data
 	 * @param string $language
@@ -97,7 +76,7 @@ class TranslationRepo {
 				->caller( __METHOD__ )
 				->execute();
 
-			if ( $this->useNamespace ) {
+			if ( Context::isNamespacedLoggingEnabled() ) {
 				// Create a new context to bypass caching
 				$context = new Context;
 				$contextElection = $context->getElection( $election->getId() );

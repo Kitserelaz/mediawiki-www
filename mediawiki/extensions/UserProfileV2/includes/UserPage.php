@@ -4,6 +4,7 @@ namespace Telepedia\UserProfileV2;
 
 use Article;
 use MediaWiki\Html\Html;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
@@ -59,7 +60,11 @@ class UserPage extends Article {
 
 		// if this user doesn't exist, bail early without loading our css or js
 		// and just show the regular 'user doesn't exist' message from core.
-		if ( !$this->mUserProfile->getUser()->isRegistered() ) {
+		// also replicate what MW core does and treat a hidden user as non-existent
+		if (
+			!$this->mUserProfile->isRegistered() ||
+			( $this->mUserProfile->isHidden() && !$con->getAuthority()->isAllowed( 'hideuser' ) )
+		) {
 			parent::view();
 			return;
 		}
@@ -69,7 +74,14 @@ class UserPage extends Article {
 		// set the page title
 		$output->setPageTitle( $this->getTitle()->getPrefixedText() );
 		$output->addModuleStyles( [ 'ext.userProfileV2.styles' ] );
-		$output->addModules( [ 'ext.userProfileV2.edit' ] );
+
+		if ( $this->canEditProfile() ) {
+			$output->addModules( [ 'ext.userProfileV2.edit' ] );
+			$output->addJsConfigVars( [
+				'wgUserProfileV2Fields' => ProfileFields::getClientFields(),
+				'wgUserProfileV2IsOwner' => $this->mIsOwner,
+			] );
+		}
 
 		$output->addHTML( $this->getProfileLayout( $userInformation ) );
 		parent::view(); // add the default contents of the userpage back under the header
@@ -155,7 +167,7 @@ class UserPage extends Article {
 			$this->mUserProfile->getName()
 		);
 
-		if ( $this->mUserProfile->getRealName() ) {
+		if ( $this->canShowRealUserName() && $this->mUserProfile->getRealName() ) {
 			$html .= Html::element(
 				"h2",
 				[],
@@ -169,7 +181,7 @@ class UserPage extends Article {
 			foreach ( $groups as $group ) {
 				$html .= Html::element(
 					"span",
-					[ 
+					[
 						'class' => 'profile-user-group',
 						'data-group' => $group
 				    ],
@@ -213,12 +225,8 @@ class UserPage extends Article {
 
 		// get edit counts and put it in the string — Pisces
 		$userEdits = $this->context->msg( 'userprofilev2-edit-count' )
-				->numParams( $this->mUserProfile->getEditCount() )
+				->numParams( $this->mUserProfile->getEditCount() ?? 0 )
 				->text();
-
-		$userGlobalEdits = $this->context->msg( 'userprofilev2-globaledit-count' )
-			->numParams( $userInformation->getGlobalEditCount() )
-			->text();
 
 		$html .= Html::element(
 			"li",
@@ -226,11 +234,16 @@ class UserPage extends Article {
 			$userEdits
 		);
 
-		if ( $userInformation->shouldShowGlobalEditCount() && $userGlobalEdits !== null ) {
+		// Only look up the global edit count (a CentralAuth query) when it will be shown
+		$globalEditCount = $userInformation->shouldShowGlobalEditCount()
+			? $userInformation->getGlobalEditCount()
+			: null;
+
+		if ( $globalEditCount !== null ) {
 			$html .= Html::element(
 				"li",
 				[],
-				$userGlobalEdits
+				$this->context->msg( 'userprofilev2-globaledit-count' )->numParams( $globalEditCount )->text()
 			);
 		}
 
@@ -287,6 +300,16 @@ class UserPage extends Article {
 		$hookRunner->onUserProfileV2ProfileAfterMasthead( $this->mUserProfile, $html );
 
 		return $html;
+	}
+
+	/**
+	 * Attribution: This function was taken from the following file in MediaWiki core:
+	 *   `includes/Actions/CreditsAction.php`
+	 * @return bool
+	 */
+	private function canShowRealUserName(): bool {
+		$hiddenPrefs = $this->context->getConfig()->get( MainConfigNames::HiddenPrefs );
+		return !in_array( 'realname', $hiddenPrefs );
 	}
 
 	/**

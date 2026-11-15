@@ -2,33 +2,20 @@
 
 namespace CirrusSearch\Search;
 
-use BaseSearchResultSet;
-use HtmlArmor;
-use ISearchResultSet;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Search\BaseSearchResultSet;
+use MediaWiki\Search\ISearchResultSet;
+use MediaWiki\Search\SearchResult;
+use MediaWiki\Search\SearchResultSetTrait;
 use MediaWiki\Title\Title;
-use SearchResult;
-use SearchResultSetTrait;
 use Wikimedia\Assert\Assert;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * A set of results from Elasticsearch.
  * Extending this class from another extension is not supported, use BaseCirrusSearchResultSet
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  * @deprecated use a subclass of BaseCirrusSearchResultSet
  */
 class ResultSet extends BaseSearchResultSet implements CirrusSearchResultSet {
@@ -50,7 +37,7 @@ class ResultSet extends BaseSearchResultSet implements CirrusSearchResultSet {
 	private $suggestionSnippet;
 
 	/**
-	 * @var array
+	 * @var array<int,array<string,CirrusSearchResultSet>>
 	 */
 	private $interwikiResults = [];
 
@@ -101,7 +88,7 @@ class ResultSet extends BaseSearchResultSet implements CirrusSearchResultSet {
 	) {
 		$this->searchContainedSyntax = $searchContainedSyntax;
 		$this->result = $elasticResultSet;
-		$this->titleHelper = $titleHelper ?: new TitleHelper();
+		$this->titleHelper = $titleHelper ?? new TitleHelper();
 		$this->resultBuilder = new FullTextCirrusSearchResultBuilder( $this->titleHelper, [] );
 	}
 
@@ -175,7 +162,7 @@ class ResultSet extends BaseSearchResultSet implements CirrusSearchResultSet {
 		return $this->suggestionSnippet;
 	}
 
-	public function extractResults() {
+	public function extractResults(): array {
 		if ( $this->results === null ) {
 			$this->results = [];
 			if ( $this->result !== null ) {
@@ -211,7 +198,7 @@ class ResultSet extends BaseSearchResultSet implements CirrusSearchResultSet {
 	}
 
 	/**
-	 * @param int $type
+	 * @param int $type One of the ISearchResultSet::…_RESULTS constants
 	 * @return ISearchResultSet[]
 	 */
 	public function getInterwikiResults( $type = self::SECONDARY_RESULTS ) {
@@ -219,11 +206,11 @@ class ResultSet extends BaseSearchResultSet implements CirrusSearchResultSet {
 	}
 
 	/**
-	 * @param int $type
+	 * @param int $type One of the ISearchResultSet::…_RESULTS constants
 	 * @return bool
 	 */
-	public function hasInterwikiResults( $type = self::SECONDARY_RESULTS ) {
-		return isset( $this->interwikiResults[$type] );
+	public function hasInterwikiResults( $type = self::SECONDARY_RESULTS ): bool {
+		return (bool)( $this->interwikiResults[$type] ?? [] );
 	}
 
 	/**

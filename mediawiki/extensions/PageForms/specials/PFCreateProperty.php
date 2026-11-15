@@ -82,14 +82,14 @@ class PFCreateProperty extends SpecialPage {
 
 			// Validate property name.
 			if ( $property_name === '' ) {
-				$property_name_error_str = $this->msg( 'pf_blank_error' )->escaped();
+				$property_name_error_str = $this->msg( 'pf_blank_error' )->text();
 			} else {
 				// Redirect to wiki interface.
 				$out->setArticleBodyOnly( true );
 				$title = Title::makeTitleSafe( SMW_NS_PROPERTY, $property_name );
 				$full_text = self::createPropertyText( $property_type, $allowed_values );
 				$edit_summary = $this->msg( 'pf_createproperty_editsummary', $property_type )->inContentLanguage()->text();
-				$text = PFUtils::printRedirectForm( $title, $full_text, $edit_summary, $save_page, $this->getUser() );
+				$text = PFUtils::printRedirectForm( $title, $full_text, $edit_summary, $save_page, $this->getUser(), $out );
 				$out->addHTML( $text );
 				return;
 			}
@@ -123,7 +123,7 @@ END;
 		$text .= "\n$type_label\n";
 		$select_body = "";
 		foreach ( $datatypeLabels as $label ) {
-			$select_body .= "\t" . Html::element( 'option', null, $label ) . "\n";
+			$select_body .= "\t" . Html::element( 'option', [], $label ) . "\n";
 		}
 		$text .= Html::rawElement( 'select', [ 'id' => 'property_dropdown', 'name' => 'property_type' ], $select_body ) . "\n";
 

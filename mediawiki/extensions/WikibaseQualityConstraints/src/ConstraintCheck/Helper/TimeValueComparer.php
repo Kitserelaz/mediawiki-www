@@ -6,7 +6,6 @@ use DataValues\TimeValue;
 use DataValues\TimeValueCalculator;
 
 /**
- *
  * @license GPL-2.0-or-later
  */
 class TimeValueComparer {
@@ -20,7 +19,7 @@ class TimeValueComparer {
 		$this->timeValueCalculator = $timeValueCalculator ?: new TimeValueCalculator();
 	}
 
-	public function getComparison( TimeValue $lhs, TimeValue $rhs ) {
+	public function getComparison( TimeValue $lhs, TimeValue $rhs ): int {
 		$lhsTimestamp = $this->timeValueCalculator->getTimestamp( $lhs );
 		$rhsTimestamp = $this->timeValueCalculator->getTimestamp( $rhs );
 
@@ -31,11 +30,11 @@ class TimeValueComparer {
 		return $lhsTimestamp < $rhsTimestamp ? -1 : 1;
 	}
 
-	public function getMinimum( TimeValue $timeValue1, TimeValue $timeValue2 ) {
+	public function getMinimum( TimeValue $timeValue1, TimeValue $timeValue2 ): TimeValue {
 		return $this->getComparison( $timeValue1, $timeValue2 ) <= 0 ? $timeValue1 : $timeValue2;
 	}
 
-	public function isFutureTime( TimeValue $timeValue ) {
+	public function isFutureTime( TimeValue $timeValue ): bool {
 		return $this->getComparison( $timeValue, new NowValue() ) >= 0;
 	}
 

@@ -75,6 +75,5 @@
 	"nuke-daterange-helper-text-max-age-different": "Jeśli podana została nazwa użytkownika bądź adres IP, można pobrać strony utworzone w ciągu {{PLURAL:$1|dnia|$1 dni}} od chwili obecnej. W innym wypadku, ze względu na wydajność, można pobrać strony utworzone w ciągu {{PLURAL:$2|dnia|$2 dni}} od chwili obecnej.",
 	"nuke-daterange-helper-text-max-age-same": "Ze względu na wydajność, można pobrać strony utworzone w ciągu {{PLURAL:$1|dnia|$1 dni}} od chwili obecnej.",
 	"tag-nuke": "Masowe usuwanie",
-	"tag-nuke-description": "Usuwanie zostało wykonane masowo przy użyciu rozszerzenia Nuke",
-	"nuke-list-tempaccount": "Następujące strony zostały ostatnio utworzone przez konta tymczasowe wykorzystujące adres IP $1.\nProszę wybrać strony do usunięcia, podać powód, a następnie nacisnąć „Usuń wybrane”, aby zainicjować proces usuwania. '''Nie umieszczaj adresów IP w powodzie usuwania.'''\n\nPrzekierowania są oznaczone kursywą."
+	"tag-nuke-description": "Usuwanie zostało wykonane masowo przy użyciu rozszerzenia Nuke"
 }

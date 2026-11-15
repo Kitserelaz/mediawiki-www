@@ -1,3 +1,7 @@
+'use strict';
+
+/* global Backbone, $, mw */
+
 // dependencies provided by ext.pageTriage.external
 global.jQuery = require( 'jquery' );
 global.$ = global.jQuery;
@@ -16,7 +20,22 @@ class Message {
 		return '<message>';
 	}
 }
+
 class Title {
+	constructor( title, namespace ) {
+		this.title = title;
+		this.namespace = namespace ? mw.config.get(
+			'wgFormattedNamespaces'
+		)[ namespace ] + ':' : '';
+	}
+
+	toString() {
+		return this.namespace + this.title;
+	}
+
+	getUrl() {
+		return '/wiki/' + this.toString();
+	}
 }
 
 class MessagePoster {
@@ -39,6 +58,18 @@ class Api {
 	}
 }
 
+class Rest {
+	post() {
+		return Promise.resolve( {
+			'~2025-3939': {
+				revIps: {
+					5: '127.0.0.1'
+				}
+			}
+		} );
+	}
+}
+
 class IntersectionObserver {
 	observe() {
 		return null;
@@ -53,5 +84,16 @@ global.mw.messagePoster = {
 	}
 };
 global.mw.Api = Api;
+global.mw.Rest = Rest;
+global.mw.message = function ( key ) {
+	return {
+		text: function () {
+			return `${ key }`;
+		},
+		escaped: function () {
+			return `${ key }`;
+		}
+	};
+};
 global.IntersectionObserver = IntersectionObserver;
 global.mw.user.options = new mw.Map();

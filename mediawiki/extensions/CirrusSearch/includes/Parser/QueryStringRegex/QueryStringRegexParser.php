@@ -24,6 +24,7 @@ use CirrusSearch\Util;
 use LogicException;
 use MediaWiki\Message\Message;
 use Wikimedia\Assert\Assert;
+use Wikimedia\Message\ListType;
 
 /**
  * Full text query parser that uses regex to parse its token.
@@ -93,7 +94,7 @@ class QueryStringRegexParser implements QueryParser {
 	private $query;
 
 	/**
-	 * @var string Either "all", "break", or "final"
+	 * @var string Either "all", "break", "final", or "none"
 	 */
 	private $questionMarkStripLevel;
 
@@ -179,7 +180,7 @@ class QueryStringRegexParser implements QueryParser {
 	 * @param \CirrusSearch\Parser\KeywordRegistry $keywordRegistry
 	 * @param Escaper $escaper
 	 * @param string $qmarkStripLevel Level of question mark stripping to apply, either "all",
-	 *  "break", or "final"
+	 *  "break", "final", or "none"
 	 * @param ParsedQueryClassifiersRepository $classifierRepository
 	 * @param NamespacePrefixParser $namespacePrefixParser
 	 * @param int|null $maxQueryLen maximum length of the query in chars
@@ -321,7 +322,7 @@ class QueryStringRegexParser implements QueryParser {
 			$this->namespaceHeader, $additionalNamespaces, $this->warnings, $this->classifierRepository );
 	}
 
-	private function createClause( ParsedNode $node, $explicit = false, $occur = null ) {
+	private function createClause( ParsedNode $node, bool $explicit = false, ?string $occur = null ): BooleanClause {
 		if ( $node instanceof NegatedNode ) {
 			// OR NOT is simply MUST_NOT, there's no SHOULD_NOT in lucene
 			// so simply do what lucene QueryString does: force MUST_NOT whenever
@@ -486,7 +487,7 @@ class QueryStringRegexParser implements QueryParser {
 		return $word;
 	}
 
-	private function mergeWords( WordsQueryNode $left, WordsQueryNode $right ) {
+	private function mergeWords( WordsQueryNode $left, WordsQueryNode $right ): WordsQueryNode {
 		$start = $left->getStartOffset();
 		$end = $right->getEndOffset();
 		return new WordsQueryNode( $start, $end,
@@ -525,7 +526,7 @@ class QueryStringRegexParser implements QueryParser {
 			$this->lookBehind->getImage() );
 	}
 
-	private function negatedLeaf() {
+	private function negatedLeaf(): ?ParsedNode {
 		if ( $this->token->getType() === Token::NOT ) {
 			$this->advance();
 			if ( !$this->nextToken() ) {
@@ -536,7 +537,7 @@ class QueryStringRegexParser implements QueryParser {
 		return $this->leaf();
 	}
 
-	private function leaf() {
+	private function leaf(): ?ParsedNode {
 		$node = $this->token->getNode();
 		$this->advance();
 		return $node;
@@ -750,9 +751,6 @@ class QueryStringRegexParser implements QueryParser {
 			/** @var string|int[] */
 			public $total = [];
 
-			/**
-			 * @param KeywordFeatureNode $node
-			 */
 			public function doVisitKeyword( KeywordFeatureNode $node ) {
 				if ( $this->total === 'all' ) {
 					return;
@@ -826,7 +824,7 @@ class QueryStringRegexParser implements QueryParser {
 			if ( $exemptKeywords ) {
 				sort( $exemptKeywords );
 				throw new SearchQueryParseException( 'cirrussearch-query-too-long-with-exemptions',
-					$queryLen, $this->maxQueryLen, Message::listParam( array_unique( $exemptKeywords ), 'comma' ) );
+					$queryLen, $this->maxQueryLen, Message::listParam( array_unique( $exemptKeywords ), ListType::COMMA ) );
 			} else {
 				throw new SearchQueryParseException( 'cirrussearch-query-too-long', $queryLen,
 					$this->maxQueryLen );

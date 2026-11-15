@@ -2,6 +2,7 @@
 
 use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\ParserOutputFlags;
 use MediaWiki\Title\Title;
 
 /**
@@ -55,7 +56,7 @@ class PFFormLink {
 		$hasPopup = $hasReturnTo = false;
 		$className = static::class;
 		if ( $className == 'PFQueryFormLink' ) {
-			$inLinkStr = wfMessage( 'runquery' )->parse();
+			$inLinkStr = wfMessage( 'runquery' )->text();
 		}
 		$inCreatePage = false;
 		$classStr = '';
@@ -157,6 +158,7 @@ class PFFormLink {
 			// Skip if we're not looking at the current revision of this page.
 			$parser->getRevisionRecordObject()->isCurrent() ) {
 			$targetTitle = Title::newFromText( $inTargetName );
+			$parser->getOutput()->setOutputFlag( ParserOutputFlags::ENABLE_OOUI );
 			PFFormLinker::createPageWithForm( $targetTitle, $inFormName, $inQueryArr );
 		}
 
@@ -199,6 +201,9 @@ class PFFormLink {
 			}
 		}
 		if ( $inLinkType == 'button' || $inLinkType == 'post button' ) {
+			// The 'oo-ui-layout' class is needed for at least the Timeless skin.
+			$classStr = 'oo-ui-layout ' . $classStr;
+
 			$parser->getOutput()->setEnableOOUI( true );
 			OutputPage::setupOOUI();
 			$buttonAttrs = [

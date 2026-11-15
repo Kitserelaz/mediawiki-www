@@ -3,7 +3,7 @@
 namespace CirrusSearch;
 
 use MediaWiki\Context\RequestContext;
-use MediaWiki\Language\Language;
+use MediaWiki\Exception\MWException;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\PoolCounter\PoolCounterWorkViaCallback;
@@ -12,27 +12,14 @@ use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\WikiMap\WikiMap;
-use Wikimedia\Assert\Assert;
 use Wikimedia\IPUtils;
 use Wikimedia\Stats\StatsFactory;
+use Wikimedia\UUID\GlobalIdGenerator;
 
 /**
  * Random utility functions that don't have a better home
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class Util {
 	/**
@@ -71,12 +58,10 @@ class Util {
 		if ( $pos !== false ) {
 			$type = substr( $type, $pos + 1 );
 		}
-		$postfix = $isSuccess ? 'successMs' : 'failureMs';
 		self::getStatsFactory()
 			->getTiming( "pool_counter_seconds" )
 			->setLabel( "type", $type )
 			->setLabel( "status", $isSuccess ? "success" : "failure" )
-			->copyToStatsdAt( "CirrusSearch.poolCounter.$type.$postfix" )
 			->observe( $observation );
 	}
 
@@ -92,13 +77,13 @@ class Util {
 		$isSuccess,
 		callable $callback
 	) {
-		return function () use ( $type, $isSuccess, $callback, $startPoolWork ) {
+		return function ( ...$args ) use ( $type, $isSuccess, $callback, $startPoolWork ) {
 			self::recordPoolStats(
 				$type,
 				$isSuccess,
 				1000 * ( microtime( true ) - $startPoolWork ) );
 
-			return $callback( ...func_get_args() );
+			return $callback( ...$args );
 		};
 	}
 
@@ -211,7 +196,7 @@ class Util {
 	public static function overrideNumeric( &$dest, $request, $name, $limit = null, $upperLimit = true ) {
 		$val = $request->getVal( $name );
 		if ( $val !== null && is_numeric( $val ) ) {
-			if ( !isset( $limit ) ) {
+			if ( $limit === null ) {
 				$dest = $val;
 			} elseif ( $upperLimit && $val <= $limit ) {
 				$dest = $val;
@@ -302,7 +287,7 @@ class Util {
 	 * punctuation or use insource. Don't remove escaped \?s, but unescape them.
 	 *
 	 * @param string $term
-	 * @param string $strippingLevel Either "all", "break", or "final"
+	 * @param string $strippingLevel Either "all", "break", "final", or "none"
 	 * @return string modified term, based on strippingLevel
 	 */
 	public static function stripQuestionMarks( $term, $strippingLevel ) {
@@ -356,14 +341,15 @@ class Util {
 	 * history.replaceState(). This means click through's from supported browsers
 	 * will record this token as part of the referrer.
 	 *
+	 * @param GlobalIdGenerator|null $gen id generator
 	 * @return string
 	 */
-	public static function getRequestSetToken() {
+	public static function getRequestSetToken( ?GlobalIdGenerator $gen = null ): string {
 		static $token;
 		if ( $token === null ) {
 			// random UID, 70B tokens have a collision probability of 4*10^-16
 			// so should work for marking unique queries.
-			$gen = MediaWikiServices::getInstance()->getGlobalIdGenerator();
+			$gen = $gen ?: MediaWikiServices::getInstance()->getGlobalIdGenerator();
 			$uuid = $gen->newUUIDv4();
 			// make it a little shorter by using straight base36
 			$hex = substr( $uuid, 0, 8 ) . substr( $uuid, 9, 4 ) .
@@ -382,7 +368,7 @@ class Util {
 		$request = RequestContext::getMain()->getRequest();
 		try {
 			$ip = $request->getIP();
-		} catch ( \MWException $e ) {
+		} catch ( MWException ) {
 			// No ip, probably running cli?
 			$ip = 'unknown';
 		}
@@ -407,53 +393,6 @@ class Util {
 		} else {
 			return 'misc';
 		}
-	}
-
-	/**
-	 * Identify a namespace by attempting some unicode folding techniques.
-	 * 2 methods supported:
-	 * - naive: case folding + naive accents removal (only some combined accents are removed)
-	 * - utr30: (slow to load) case folding + strong accent squashing based on the withdrawn UTR30 specs
-	 * all methods will apply something similar to near space flattener.
-	 * @param string $namespace name of the namespace to identify
-	 * @param string $method either naive or utr30
-	 * @param Language|null $language
-	 * @return bool|int
-	 */
-	public static function identifyNamespace( $namespace, $method = 'naive', ?Language $language = null ) {
-		static $naive = null;
-		static $utr30 = null;
-
-		$normalizer = null;
-		if ( $method === 'naive' ) {
-			if ( $naive === null ) {
-				$naive = \Transliterator::createFromRules(
-					'::NFD;::Upper;::Lower;::[:Nonspacing Mark:] Remove;::NFC;[\_\-\'\u2019\u02BC]>\u0020;'
-				);
-			}
-			$normalizer = $naive;
-		} elseif ( $method === 'utr30' ) {
-			if ( $utr30 === null ) {
-				$utr30 =
-				$normalizer = \Transliterator::createFromRules( file_get_contents( __DIR__ . '/../data/utr30.txt' ) );
-			}
-			$normalizer = $utr30;
-		}
-
-		Assert::postcondition( $normalizer !== null,
-			'Failed to load Transliterator with method ' . $method );
-		$namespace = $normalizer->transliterate( $namespace );
-		if ( $namespace === '' ) {
-			return false;
-		}
-		$language ??= MediaWikiServices::getInstance()->getContentLanguage();
-		foreach ( $language->getNamespaceIds() as $candidate => $nsId ) {
-			if ( $normalizer->transliterate( $candidate ) === $namespace ) {
-				return $nsId;
-			}
-		}
-
-		return false;
 	}
 
 	/**
@@ -568,10 +507,12 @@ class Util {
 	/**
 	 * If we're supposed to create raw result, create and return it,
 	 * or output it and finish.
-	 * @param mixed $result Search result data
+	 * @template T the type of the result passed and the return value of this function
+	 *
+	 * @param T $result Search result data
 	 * @param WebRequest $request Request context
 	 * @param CirrusDebugOptions $debugOptions
-	 * @return string The new raw result.
+	 * @return T
 	 */
 	public static function processSearchRawReturn( $result, WebRequest $request,
 												   CirrusDebugOptions $debugOptions ) {

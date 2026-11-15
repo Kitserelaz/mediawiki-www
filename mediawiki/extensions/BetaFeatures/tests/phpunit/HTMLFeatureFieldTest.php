@@ -25,18 +25,19 @@
 
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\BetaFeatures\HTMLFeatureField;
-use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\HTMLForm\OOUIHTMLForm;
 use MediaWiki\Title\Title;
 
 /**
  * @covers \MediaWiki\Extension\BetaFeatures\HTMLFeatureField
  *
  * @group BetaFeatures
+ * @group Database
  */
 class HTMLFeatureFieldTest extends MediaWikiIntegrationTestCase {
 
 	public function testCreatingFieldGivesExpectedStrings() {
-		$form = new HTMLForm( [
+		$form = new OOUIHTMLForm( [
 			'blahblahblah' => [
 				'class' => HTMLFeatureField::class,
 				'label-message' => 'betafeatures-test-check-field',
@@ -51,8 +52,8 @@ class HTMLFeatureFieldTest extends MediaWikiIntegrationTestCase {
 
 		$cases = [
 			[
-				'pattern' => '#<tr class="mw-htmlform-field-HTMLFeatureField">#',
-				'message' => 'Table row with class name not found.',
+				'pattern' => "#<div .*class='mw-htmlform-field-HTMLFeatureField#",
+				'message' => 'Container with class name not found.',
 			],
 			[
 				'pattern' => "#<input type='checkbox' tabindex='0' (?:aria-disabled='false' )?" .
@@ -65,8 +66,8 @@ class HTMLFeatureFieldTest extends MediaWikiIntegrationTestCase {
 				'message' => 'Checkbox label not found.',
 			],
 			[
-				'pattern' => '#<p class="mw-ui-feature-description">This is a test feature - ' .
-					'it should not show up.</p>#',
+				'pattern' => '#<div class="mw-ui-feature-description">This is a test feature - ' .
+					'it should not show up.</div>#',
 				'message' => 'Feature description not found',
 			],
 			[
@@ -82,7 +83,7 @@ class HTMLFeatureFieldTest extends MediaWikiIntegrationTestCase {
 				'message' => 'Discussion link not found',
 			],
 			[
-				'pattern' => '#<div class="mw-ui-feature-screenshot-contain"></div>#',
+				'pattern' => '#<div class="mw-ui-feature-screenshot-contain skin-invert"></div>#',
 				'message' => 'Screenshot div not empty or not found.',
 			],
 		];

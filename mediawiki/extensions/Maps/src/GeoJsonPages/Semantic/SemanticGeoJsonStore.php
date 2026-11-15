@@ -5,20 +5,20 @@ declare( strict_types = 1 );
 namespace Maps\GeoJsonPages\Semantic;
 
 use Maps\GeoJsonPages\GeoJsonStore;
-use Onoi\EventDispatcher\EventDispatcher;
+use MediaWiki\Title\Title;
 use SMW\DIProperty;
 use SMW\ParserData;
 use SMWDIContainer;
-use Title;
 
 class SemanticGeoJsonStore implements GeoJsonStore {
 
 	private ParserData $parserData;
 	private Title $subjectPage;
-	private EventDispatcher $smwEventDispatcher;
+	/** @var \SMW\EventDispatcher\EventDispatcher|\Onoi\EventDispatcher\EventDispatcher Namespaced in SMW 7, the Onoi interface in SMW 6. */
+	private $smwEventDispatcher;
 	private SubObjectBuilder $subObjectBuilder;
 
-	public function __construct( ParserData $parserData, Title $subjectPage, EventDispatcher $smwEventDispatcher, SubObjectBuilder $subObjectBuilder ) {
+	public function __construct( ParserData $parserData, Title $subjectPage, $smwEventDispatcher, SubObjectBuilder $subObjectBuilder ) {
 		$this->parserData = $parserData;
 		$this->subjectPage = $subjectPage;
 		$this->smwEventDispatcher = $smwEventDispatcher;

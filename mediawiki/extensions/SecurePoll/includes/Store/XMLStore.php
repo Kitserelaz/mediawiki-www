@@ -154,7 +154,7 @@ class XMLStore extends MemoryStore {
 				# Notify tallier of vote record if requested
 				if ( $this->voteCallback && $electionInfo && $electionInfo['id'] == $this->voteElectionId ) {
 					$record = $this->readStringElement();
-					$status = call_user_func( $this->voteCallback, $this, $record );
+					$status = ( $this->voteCallback )( $this, $record );
 					if ( !$status->isOK() ) {
 						$this->voteCallbackStatus = $status;
 
@@ -329,6 +329,7 @@ class XMLStore extends MemoryStore {
 		return $s;
 	}
 
+	/** @inheritDoc */
 	public function callbackValidVotes( $electionId, $callback, $voterId = null ) {
 		$this->voteCallback = $callback;
 		$this->voteElectionId = $electionId;

@@ -3,6 +3,7 @@
 namespace MediaWiki\Extension\SecurePoll\Pages;
 
 use MediaWiki\Extension\SecurePoll\Entities\Election;
+use MediaWiki\Html\Html;
 use MediaWiki\Pager\TablePager;
 use stdClass;
 
@@ -25,6 +26,7 @@ abstract class ElectionPager extends TablePager {
 		'el_title',
 		'el_start_date',
 		'el_end_date',
+		'status',
 		'links'
 	];
 
@@ -32,13 +34,14 @@ abstract class ElectionPager extends TablePager {
 		parent::__construct();
 	}
 
+	/** @inheritDoc */
 	protected function isFieldSortable( $field ) {
 		return in_array(
 			$field,
 			[
 				'el_title',
 				'el_start_date',
-				'el_end_date'
+				'el_end_date',
 			]
 		);
 	}
@@ -63,7 +66,13 @@ abstract class ElectionPager extends TablePager {
 		switch ( $name ) {
 			case 'el_start_date':
 			case 'el_end_date':
-				return htmlspecialchars( $this->getLanguage()->timeanddate( $value ) );
+				return Html::element(
+					'time',
+					[ 'datetime' => wfTimestamp( TS_ISO_8601, $value ) ],
+					$this->getLanguage()->timeanddate( $value )
+				);
+			case 'status':
+				return $this->getStatus();
 			case 'links':
 				return $this->getLinks();
 			default:
@@ -71,6 +80,7 @@ abstract class ElectionPager extends TablePager {
 		}
 	}
 
+	/** @inheritDoc */
 	public function formatRow( $row ) {
 		$id = $row->el_entity;
 		$this->election = $this->page->context->getElection( $id );
@@ -87,35 +97,40 @@ abstract class ElectionPager extends TablePager {
 	 * Return html for election-specific links
 	 * @return string HTML
 	 */
-	abstract public function getLinks();
+	abstract public function getLinks(): string;
 
+	/**
+	 * Return escaped HTML for election-specific status
+	 * @return string HTML
+	 */
+	abstract public function getStatus(): string;
+
+	/** @inheritDoc */
 	public function getDefaultSort() {
 		return 'el_start_date';
 	}
 
+	/** @inheritDoc */
 	protected function getFieldNames() {
 		$names = [];
 		foreach ( self::FIELDS as $field ) {
-			if ( $field == 'links' ) {
-				$names[$field] = '';
-			} else {
-				// Give grep a chance to find the usages:
-				// securepoll-header-title, securepoll-header-start-date,
-				// securepoll-header-end-date
-				$msgName = 'securepoll-header-' . strtr(
-						$field,
-						[
-							'el_' => '',
-							'_' => '-'
-						]
-					);
-				$names[$field] = $this->msg( $msgName )->text();
+			// Give grep a chance to find the usages:
+			// securepoll-header-title, securepoll-header-start-date,
+			// securepoll-header-end-date, securepoll-header-status
+			// securepoll-header-links
+			$fieldForMsg = $field;
+			if ( str_starts_with( $field, 'el_' ) ) {
+				$fieldForMsg = substr( $fieldForMsg, 3 );
 			}
+			$fieldForMsg = str_replace( '_', '-', $fieldForMsg );
+			$msgName = 'securepoll-header-' . $fieldForMsg;
+			$names[$field] = $this->msg( $msgName )->text();
 		}
 
 		return $names;
 	}
 
+	/** @inheritDoc */
 	public function getTitle() {
 		return $this->page->getTitle();
 	}

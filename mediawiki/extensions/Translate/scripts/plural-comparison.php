@@ -10,8 +10,12 @@
  */
 
 use CLDRPluralRuleParser\Evaluator;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\MediaWikiServices;
+use Wikimedia\Leximorph\Provider as LeximorphProvider;
 
 // Standard boilerplate to define $IP
 if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
@@ -21,7 +25,9 @@ if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
 }
 require_once "$IP/maintenance/Maintenance.php";
 
-/// Script for comparing different plural implementations.
+/**
+ * Script for comparing different plural implementations.
+ */
 class PluralCompare extends Maintenance {
 	public function __construct() {
 		parent::__construct();
@@ -65,19 +71,25 @@ class PluralCompare extends Maintenance {
 		}
 	}
 
-	protected function tryMatch( $code, $mws, $gtLanguages, $clLanguages ) {
+	protected function tryMatch( string $code, string $mws, array $gtLanguages, array $clLanguages ): string {
+		$mwExp = false;
+		$mwCompiled = null;
+
 		if ( $mws !== '' ) {
 			$mwExp = true;
-			$lang = MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage( $code );
-		} else {
-			$mwExp = false;
+			if ( $this->isLeximorphEnabled() ) {
+				$logger = LoggerFactory::getInstance( 'localisation' );
+				$leximorphProvider = new LeximorphProvider( $code, $logger );
+				$mwCompiled = $leximorphProvider->getPluralProvider()->getCompiledPluralRules();
+			} else {
+				$lang = MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage( $code );
+				$mwCompiled = $lang->getCompiledPluralRules();
+			}
 		}
 
-		if ( isset( $gtLanguages[$code] ) ) {
-			$gtExp = 'return (int) ' . str_replace( 'n', '$i', $gtLanguages[$code] ) . ';';
-		} else {
-			$gtExp = false;
-		}
+		$gtExp = isset( $gtLanguages[$code] )
+			? 'return (int) ' . str_replace( 'n', '$i', $gtLanguages[$code] ) . ';'
+			: false;
 
 		$cldrExp = $clLanguages[$code] ?? false;
 
@@ -85,9 +97,7 @@ class PluralCompare extends Maintenance {
 			$mw = $gt = $cl = '?';
 
 			if ( $mwExp ) {
-				// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
-				$exp = $lang->getCompiledPluralRules();
-				$mw = Evaluator::evaluateCompiled( $i, $exp );
+				$mw = Evaluator::evaluateCompiled( $i, $mwCompiled );
 			}
 
 			if ( $gtExp ) {
@@ -109,11 +119,11 @@ class PluralCompare extends Maintenance {
 		return '';
 	}
 
-	public static function comp( $a, $b ) {
+	public static function comp( string $a, string $b ): bool {
 		return $a === '?' || $b === '?' || $a === $b;
 	}
 
-	protected function loadPluralFile( $fileName ) {
+	protected function loadPluralFile( string $fileName ): array {
 		$doc = new DOMDocument;
 		$doc->load( $fileName );
 		$rulesets = $doc->getElementsByTagName( 'pluralRules' );
@@ -133,22 +143,32 @@ class PluralCompare extends Maintenance {
 		return $plurals;
 	}
 
-	public function loadCLDR() {
+	public function loadCLDR(): array {
 		global $IP;
 
-		return $this->loadPluralFile( "$IP/languages/data/plurals.xml" );
+		// Use Leximorph data files when the feature flag is enabled
+		$base = $this->isLeximorphEnabled()
+			? "$IP/includes/libs/Leximorph/data"
+			: "$IP/languages/data";
+
+		return $this->loadPluralFile( "$base/plurals.xml" );
 	}
 
-	public function loadMediaWiki() {
+	public function loadMediaWiki(): array {
 		global $IP;
 
-		$rules = $this->loadPluralFile( "$IP/languages/data/plurals.xml" );
-		$rulesMW = $this->loadPluralFile( "$IP/languages/data/plurals-mediawiki.xml" );
+		// Use Leximorph data files when the feature flag is enabled
+		$base = $this->isLeximorphEnabled()
+			? "$IP/includes/libs/Leximorph/data"
+			: "$IP/languages/data";
+
+		$rules = $this->loadPluralFile( "$base/plurals.xml" );
+		$rulesMW = $this->loadPluralFile( "$base/plurals-mediawiki.xml" );
 
 		return array_merge( $rules, $rulesMW );
 	}
 
-	public function loadGettext() {
+	public function loadGettext(): array {
 		$gtData = file_get_contents( __DIR__ . '/../data/plural-gettext.txt' );
 		$gtLanguages = [];
 		foreach ( preg_split( '/\n|\r/', $gtData, -1, PREG_SPLIT_NO_EMPTY ) as $line ) {
@@ -158,6 +178,21 @@ class PluralCompare extends Maintenance {
 		}
 
 		return $gtLanguages;
+	}
+
+	/**
+	 * Checks whether the UseLeximorph feature flag is enabled.
+	 *
+	 * When enabled, MediaWiki plural rule comparisons in this script will
+	 * use Leximorph's PluralProvider instead of the legacy Language class
+	 * methods.
+	 *
+	 * @return bool True if Leximorph is enabled, false otherwise
+	 */
+	private function isLeximorphEnabled(): bool {
+		return MediaWikiServices::getInstance()
+			->getMainConfig()
+			->get( MainConfigNames::UseLeximorph );
 	}
 }
 

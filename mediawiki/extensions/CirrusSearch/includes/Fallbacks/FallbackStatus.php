@@ -4,7 +4,8 @@ namespace CirrusSearch\Fallbacks;
 
 use CirrusSearch\Search\CirrusSearchResultSet;
 use Closure;
-use HtmlArmor;
+use MediaWiki\Search\SearchResultSet;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * Representation of the result of running a FallbackMethod.
@@ -52,9 +53,9 @@ class FallbackStatus {
 	/**
 	 * @param string $query
 	 * @param HtmlArmor|string|null $snippet
-	 * @return FallbackStatus
+	 * @return self
 	 */
-	public static function suggestQuery( string $query, $snippet = null ): FallbackStatus {
+	public static function suggestQuery( string $query, $snippet = null ): self {
 		return new self( self::ACTION_SUGGEST_QUERY, static function ( CirrusSearchResultSet $currentSet ) use ( $query, $snippet ) {
 			$currentSet->setSuggestionQuery( $query, $snippet );
 			return $currentSet;
@@ -65,9 +66,9 @@ class FallbackStatus {
 	 * @param CirrusSearchResultSet $rewrittenResults New result set to replace existing results with
 	 * @param string $query The search query performed in the new result set.
 	 * @param HtmlArmor|string|null $snippet A highlighted snippet showing the changes in $query.
-	 * @return FallbackStatus
+	 * @return self
 	 */
-	public static function replaceLocalResults( CirrusSearchResultSet $rewrittenResults, string $query, $snippet = null ): FallbackStatus {
+	public static function replaceLocalResults( CirrusSearchResultSet $rewrittenResults, string $query, $snippet = null ): self {
 		return new self(
 			self::ACTION_REPLACE_LOCAL_RESULTS,
 			static function ( CirrusSearchResultSet $currentSet ) use ( $rewrittenResults, $query, $snippet ) {
@@ -79,18 +80,18 @@ class FallbackStatus {
 	/**
 	 * @param CirrusSearchResultSet $results Interwiki results to add to current result set
 	 * @param string $wikiId The wiki these results come from
-	 * @return FallbackStatus
+	 * @return self
 	 */
-	public static function addInterwikiResults( CirrusSearchResultSet $results, string $wikiId ): FallbackStatus {
+	public static function addInterwikiResults( CirrusSearchResultSet $results, string $wikiId ): self {
 		return new self( self::ACTION_ADD_INTERWIKI_RESULTS, static function (
 			CirrusSearchResultSet $currentSet
 		) use ( $results, $wikiId ) {
-			$currentSet->addInterwikiResults( $results, \SearchResultSet::INLINE_RESULTS, $wikiId );
+			$currentSet->addInterwikiResults( $results, SearchResultSet::INLINE_RESULTS, $wikiId );
 			return $currentSet;
 		} );
 	}
 
-	public static function noSuggestion(): FallbackStatus {
+	public static function noSuggestion(): self {
 		return new self( self::NO_ACTION, static function ( CirrusSearchResultSet $currentSet ) {
 			return $currentSet;
 		} );

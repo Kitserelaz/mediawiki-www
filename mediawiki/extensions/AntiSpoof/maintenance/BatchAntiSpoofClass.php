@@ -18,12 +18,15 @@
 
 use MediaWiki\Extension\AntiSpoof\SpoofUser;
 use MediaWiki\Maintenance\Maintenance;
+use MediaWiki\Utils\BatchRowIterator;
 
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
+
+// phpcs:disable MediaWiki.Files.ClassMatchesFilename.NotMatch
 
 /**
  * Go through all usernames and calculate and record spoof thingies
@@ -37,39 +40,26 @@ class BatchAntiSpoof extends Maintenance {
 		$this->setBatchSize( 1000 );
 	}
 
-	/**
-	 * @param array $items
-	 */
-	protected function batchRecord( $items ) {
+	protected function batchRecord( array $items ): void {
 		SpoofUser::batchRecord( $this->getDB( DB_PRIMARY ), $items );
 	}
 
-	/**
-	 * @return string
-	 */
-	protected function getTableName() {
+	protected function getTableName(): string {
 		return 'user';
 	}
 
-	/**
-	 * @return string
-	 */
-	protected function getUserColumn() {
+	protected function getUserColumn(): string {
 		return 'user_name';
 	}
 
 	/**
 	 * @return string Primary key of the table returned by getTableName()
 	 */
-	protected function getPrimaryKey() {
+	protected function getPrimaryKey(): string {
 		return 'user_id';
 	}
 
-	/**
-	 * @param string $name
-	 * @return SpoofUser
-	 */
-	protected function makeSpoofUser( $name ) {
+	protected function makeSpoofUser( string $name ): SpoofUser {
 		return new SpoofUser( $name );
 	}
 

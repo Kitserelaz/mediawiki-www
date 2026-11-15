@@ -12,11 +12,11 @@ use Maps\Presentation\MapsDistanceParser;
 use SMW\Query\Language\Description;
 use SMW\Query\Language\ThingDescription;
 use SMW\Query\QueryComparator;
-use SMWDataItem;
+use ValueParsers\ParseException;
 use SMWDataValue;
 use SMWDIGeoCoord;
-use SMWOutputs;
-use ValueParsers\ParseException;
+use SMWDataItem;
+use SMW\Highlighter;
 
 /**
  * @property SMWDIGeoCoord m_dataitem
@@ -43,7 +43,7 @@ class CoordinateValue extends SMWDataValue {
 			throw new InvalidArgumentException( '$value needs to be a string' );
 		}
 
-		[ $distance, $comparator ] = $this->parseCoordinateValue( $value );
+		[ $distance, $comparator ] = $this->parseAndReturnUserValue( $value );
 		$distance = $this->parserDistance( $distance );
 
 		$this->setUserValue( $value );
@@ -70,10 +70,10 @@ class CoordinateValue extends SMWDataValue {
 	 * @see SMWDataValue::parseUserValue
 	 */
 	protected function parseUserValue( $value ): void {
-		$this->parseCoordinateValue( $value );
+		$this->parseAndReturnUserValue( $value );
 	}
 
-	private function parseCoordinateValue( $value ): array {
+	private function parseAndReturnUserValue( $value ): array {
 		if ( !is_string( $value ) ) {
 			throw new InvalidArgumentException( '$value needs to be a string' );
 		}
@@ -164,14 +164,16 @@ class CoordinateValue extends SMWDataValue {
 	 *
 	 * @return string|null
 	 */
-	private function getFormattedCoord( SMWDIGeoCoord $dataItem, string $format = null ) {
+	private function getFormattedCoord( SMWDIGeoCoord $dataItem, ?string $format = null ) {
+		$config = MapsFactory::globalInstance()->getEffectiveSettings();
+
 		return MapsFactory::globalInstance()->getCoordinateFormatter()->format(
 			new LatLongValue(
 				$dataItem->getLatitude(),
 				$dataItem->getLongitude()
 			),
-			$format ?? $GLOBALS['smgQPCoodFormat'],
-			$GLOBALS['smgQPCoodDirectional']
+			$format ?? $config->get( 'smgQPCoodFormat' ),
+			$config->get( 'smgQPCoodDirectional' )
 		);
 	}
 
@@ -189,12 +191,8 @@ class CoordinateValue extends SMWDataValue {
 	 */
 	public function getLongWikiText( $linked = null ) {
 		if ( $this->isValid() ) {
-			SMWOutputs::requireHeadItem( SMW_HEADER_TOOLTIP );
-
 			// TODO: fix lang keys so they include the space and coordinates.
 			$coordinateSet = $this->m_dataitem->getCoordinateSet();
-
-			$text = $this->getFormattedCoord( $this->m_dataitem );
 
 			$lines = [
 				wfMessage( 'semanticmaps-latitude', $coordinateSet['lat'] )->inContentLanguage()->escaped(),
@@ -205,9 +203,14 @@ class CoordinateValue extends SMWDataValue {
 				$lines[] = wfMessage( 'semanticmaps-altitude', $coordinateSet['alt'] )->inContentLanguage()->escaped();
 			}
 
-			return '<span class="smwttinline">' . htmlspecialchars( $text ) . '<span class="smwttcontent">' .
-				implode( '<br />', $lines ) .
-				'</span></span>';
+			$highlighter = Highlighter::factory( Highlighter::TYPE_QUANTITY );
+			$highlighter->setContent( [
+				'caption' => htmlspecialchars( $this->getFormattedCoord( $this->m_dataitem ) ),
+				'content' => implode( '<br />', $lines ),
+				'title' => 'semanticmaps-coordinates',
+			] );
+
+			return $highlighter->getHtml();
 		} else {
 			return $this->getErrorText();
 		}
@@ -249,8 +252,6 @@ class CoordinateValue extends SMWDataValue {
 	 * $2: The location in directional DMS notation.
 	 * $3: The latitude in non-directional float notation.
 	 * $4 The longitude in non-directional float notation.
-	 *
-	 * @return array
 	 */
 	protected function getServiceLinkParams(): array {
 		$coordinateSet = $this->m_dataitem->getCoordinateSet();
@@ -258,7 +259,7 @@ class CoordinateValue extends SMWDataValue {
 			$this->getFormattedCoord( $this->m_dataitem, 'float' ), // TODO
 			$this->getFormattedCoord( $this->m_dataitem, 'dms' ), // TODO
 			$coordinateSet['lat'],
-			$coordinateSet['lon']
+			$coordinateSet['lon'],
 		];
 	}
 

@@ -2,9 +2,9 @@
 
 namespace ArticlePlaceholder;
 
-use MediaWiki\Hook\SidebarBeforeOutputHook;
-use MediaWiki\MediaWikiServices;
-use Skin;
+use MediaWiki\Skin\Hook\SidebarBeforeOutputHook;
+use MediaWiki\Skin\Skin;
+use MediaWiki\SpecialPage\SpecialPageFactory;
 use Wikibase\Client\RepoLinker;
 use Wikibase\Client\WikibaseClient;
 use Wikibase\DataModel\Entity\EntityIdParser;
@@ -20,45 +20,21 @@ use Wikibase\DataModel\Services\Lookup\EntityLookup;
  */
 class SidebarBeforeOutputHookHandler implements SidebarBeforeOutputHook {
 
-	/**
-	 * @var EntityIdParser
-	 */
-	private $entityIdParser;
-
-	/**
-	 * @var RepoLinker
-	 */
-	private $repoLinker;
-
-	/**
-	 * @var EntityLookup
-	 */
-	private $entityLookup;
-
-	/**
-	 * @return self
-	 */
-	public static function newFromGlobalState() {
+	public static function newFromGlobalState( SpecialPageFactory $specialPageFactory ): self {
 		return new self(
 			WikibaseClient::getEntityIdParser(),
 			WikibaseClient::getRepoLinker(),
-			WikibaseClient::getStore()->getEntityLookup()
+			WikibaseClient::getStore()->getEntityLookup(),
+			$specialPageFactory
 		);
 	}
 
-	/**
-	 * @param EntityIdParser $entityIdParser
-	 * @param RepoLinker $repoLinker
-	 * @param EntityLookup $entityLookup
-	 */
 	public function __construct(
-		EntityIdParser $entityIdParser,
-		RepoLinker $repoLinker,
-		EntityLookup $entityLookup
+		private readonly EntityIdParser $entityIdParser,
+		private readonly RepoLinker $repoLinker,
+		private readonly EntityLookup $entityLookup,
+		private readonly SpecialPageFactory $specialPageFactory,
 	) {
-		$this->entityIdParser = $entityIdParser;
-		$this->repoLinker = $repoLinker;
-		$this->entityLookup = $entityLookup;
 	}
 
 	/**
@@ -102,19 +78,18 @@ class SidebarBeforeOutputHookHandler implements SidebarBeforeOutputHook {
 		];
 	}
 
-	/**
-	 * @param Skin $skin
-	 *
-	 * @return ItemId|null
-	 */
 	private function getItemId( Skin $skin ): ?ItemId {
 		$title = $skin->getTitle();
+
+		if ( !$title ) {
+			return null;
+		}
+
 		$request = $skin->getRequest();
 
-		$factory = MediaWikiServices::getInstance()->getSpecialPageFactory();
-		$idSerialization = $request->getText(
+		$idSerialization = $request->getVal(
 			'entityid',
-			$factory->resolveAlias( $title->getText() )[1]
+			$this->specialPageFactory->resolveAlias( $title->getText() )[1]
 		);
 
 		if ( !$idSerialization ) {
@@ -124,7 +99,7 @@ class SidebarBeforeOutputHookHandler implements SidebarBeforeOutputHook {
 		try {
 			// @phan-suppress-next-line PhanTypeMismatchReturn
 			return $this->entityIdParser->parse( $idSerialization );
-		} catch ( EntityIdParsingException $ex ) {
+		} catch ( EntityIdParsingException ) {
 			// Ignore
 		}
 

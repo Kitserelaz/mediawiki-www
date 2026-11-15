@@ -16,7 +16,7 @@ ve.ce.KeyDownHandlerFactory = function VeCeKeyDownHandlerFactory() {
 	ve.ce.KeyDownHandlerFactory.super.apply( this, arguments );
 
 	// Handlers which match all kinds and a specific type
-	this.handlerNamesByKeys = {};
+	this.handlerNamesByKeys = new Map();
 };
 
 /* Inheritance */
@@ -37,9 +37,6 @@ OO.inheritClass( ve.ce.KeyDownHandlerFactory, OO.Factory );
  * See https://doc.wikimedia.org/oojs/master/OO.Factory.html
  *
  * @param {Function} constructor Constructor to use when creating object
- * @param {string} [name] Symbolic name to use for #create().
- *  This parameter may be omitted in favour of letting the constructor decide
- *  its own name, through `constructor.static.name`.
  * @throws {Error} If a parameter is invalid
  */
 ve.ce.KeyDownHandlerFactory.prototype.register = function ( constructor ) {
@@ -50,12 +47,10 @@ ve.ce.KeyDownHandlerFactory.prototype.register = function ( constructor ) {
 	const name = constructor.static.name;
 
 	// TODO: Clean up handlerNamesByKeys in unregister
-	for ( let i = 0, ilen = keys.length; i < ilen; i++ ) {
-		this.handlerNamesByKeys[ keys[ i ] ] = this.handlerNamesByKeys[ keys[ i ] ] || [];
-		if ( this.handlerNamesByKeys[ keys[ i ] ].indexOf( name ) === -1 ) {
-			this.handlerNamesByKeys[ keys[ i ] ].push( name );
-		}
-	}
+	keys.forEach( ( key ) => {
+		this.handlerNamesByKeys.set( key, this.handlerNamesByKeys.get( key ) || new Set() );
+		this.handlerNamesByKeys.get( key ).add( name );
+	} );
 };
 
 /**
@@ -66,17 +61,19 @@ ve.ce.KeyDownHandlerFactory.prototype.register = function ( constructor ) {
  * @return {Function[]} Matched handlers
  */
 ve.ce.KeyDownHandlerFactory.prototype.lookupHandlersForKey = function ( key, selectionName ) {
-	const constructors = [],
-		names = this.handlerNamesByKeys[ key ] || [];
+	if ( !this.handlerNamesByKeys.has( key ) ) {
+		return [];
+	}
+	const constructors = [];
 
 	// Length is likely to be 1 or 0 so don't cache
-	for ( let i = 0; i < names.length; i++ ) {
-		const constructor = this.registry[ names[ i ] ];
+	this.handlerNamesByKeys.get( key ).forEach( ( name ) => {
+		const constructor = this.registry[ name ];
 		const supportedSelections = constructor.static.supportedSelections;
-		if ( !supportedSelections || supportedSelections.indexOf( selectionName ) !== -1 ) {
+		if ( !supportedSelections || supportedSelections.includes( selectionName ) ) {
 			constructors.push( constructor );
 		}
-	}
+	} );
 
 	return constructors;
 };
@@ -95,11 +92,11 @@ ve.ce.KeyDownHandlerFactory.prototype.executeHandlersForKey = function ( key, se
 
 	let acted = false;
 	// Length is likely to be 1 or 0 so don't cache
-	for ( let i = 0; i < handlers.length; i++ ) {
-		if ( handlers[ i ].static.execute( surface, e ) ) {
+	handlers.forEach( ( handler ) => {
+		if ( handler.static.execute( surface, e ) ) {
 			acted = true;
 		}
-	}
+	} );
 
 	return acted;
 };

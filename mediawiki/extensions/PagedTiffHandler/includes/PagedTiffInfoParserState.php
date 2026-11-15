@@ -23,14 +23,12 @@
 namespace MediaWiki\Extension\PagedTiffHandler;
 
 class PagedTiffInfoParserState {
-	/** @var array All data */
-	public $metadata;
+	/** All data */
+	public array $metadata;
 
-	/** @var array Current page */
-	public $page;
-
-	/** @var int */
-	public $prevPage;
+	/** Current page */
+	public array $page;
+	public int $prevPage;
 
 	public function __construct() {
 		$this->metadata = [];
@@ -40,6 +38,9 @@ class PagedTiffInfoParserState {
 		$this->metadata['page_data'] = [];
 	}
 
+	/**
+	 * @param bool $finishPage
+	 */
 	public function finish( $finishPage = true ) {
 		if ( $finishPage ) {
 			$this->finishPage();
@@ -67,7 +68,7 @@ class PagedTiffInfoParserState {
 		$this->page = [];
 	}
 
-	public function finishPage() {
+	public function finishPage(): bool {
 		if ( !isset( $this->page['page'] ) ) {
 			$this->page['page'] = $this->prevPage + 1;
 		} else {
@@ -92,34 +93,63 @@ class PagedTiffInfoParserState {
 		return true;
 	}
 
+	/**
+	 * @param string $key
+	 * @param mixed $value
+	 */
 	public function setPageProperty( $key, $value ) {
 		$this->page[$key] = $value;
 	}
 
+	/**
+	 * @param string $key
+	 * @return bool
+	 */
 	public function hasPageProperty( $key ) {
 		return isset( $this->page[$key] ) && $this->page[$key] !== null;
 	}
 
+	/**
+	 * @param string $key
+	 * @param mixed $value
+	 */
 	public function setFileProperty( $key, $value ) {
 		$this->metadata[$key] = $value;
 	}
 
+	/**
+	 * @param string $key
+	 * @param mixed $value
+	 * @return bool
+	 */
 	public function hasFileProperty( $key, $value ) {
 		return isset( $this->metadata[$key] ) && $this->metadata[$key] !== null;
 	}
 
+	/**
+	 * @param string $message
+	 */
 	public function addError( $message ) {
 		$this->metadata['errors'][] = $message;
 	}
 
+	/**
+	 * @param string $message
+	 */
 	public function addWarning( $message ) {
 		$this->metadata['warnings'][] = $message;
 	}
 
+	/**
+	 * @return array
+	 */
 	public function getMetadata() {
 		return $this->metadata;
 	}
 
+	/**
+	 * @return bool
+	 */
 	public function hasErrors() {
 		return !empty( $this->metadata['errors'] );
 	}

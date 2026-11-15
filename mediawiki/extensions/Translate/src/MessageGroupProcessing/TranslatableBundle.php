@@ -51,10 +51,11 @@ abstract class TranslatableBundle {
 	/** Check if this is a deletable translatable bundle */
 	abstract public function isDeletable(): bool;
 
+	/** @return Title[] */
 	protected function getTranslationUnitPagesByTitle( PageReference $title, ?string $code = null ): array {
 		$mwServices = MediaWikiServices::getInstance();
 
-		$dbw = $mwServices->getDBLoadBalancer()->getConnection( DB_PRIMARY );
+		$dbw = $mwServices->getConnectionProvider()->getPrimaryDatabase();
 		$base = $mwServices->getTitleFormatter()->getPrefixedDBkey( $title );
 		// Including the / used as separator
 		$baseLength = strlen( $base ) + 1;

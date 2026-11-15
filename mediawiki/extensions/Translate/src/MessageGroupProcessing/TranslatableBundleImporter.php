@@ -5,21 +5,24 @@ namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
 use Closure;
 use Exception;
-use ImportStreamSource;
-use ManualLogEntry;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePage;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePageParser;
 use MediaWiki\Extension\Translate\Services;
-use MediaWiki\Hook\AfterImportPageHook;
+use MediaWiki\Import\Hook\AfterImportPageHook;
+use MediaWiki\Import\ImportStreamSource;
+use MediaWiki\Import\WikiImporterFactory;
+use MediaWiki\Language\FormatterFactory;
+use MediaWiki\Language\MessageLocalizer;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Permissions\UltimateAuthority;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Title\ForeignTitle;
 use MediaWiki\Title\NamespaceInfo;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\UserIdentity;
-use TextContent;
-use WikiImporterFactory;
 
 /**
  * Service to import a translatable bundle from a file. Uses WikiImporter from MediaWiki core.
@@ -28,27 +31,20 @@ use WikiImporterFactory;
  * @author Abijeet Patro
  */
 class TranslatableBundleImporter implements AfterImportPageHook {
-	private WikiImporterFactory $wikiImporterFactory;
-	private TranslatablePageParser $translatablePageParser;
-	private RevisionLookup $revisionLookup;
+
 	private ?Title $bundleTitle;
+	/** @var null|callable(Title,ForeignTitle):void */
 	private ?Closure $pageImportCompleteCallback = null;
-	private NamespaceInfo $namespaceInfo;
-	private TitleFactory $titleFactory;
 	private bool $importInProgress = false;
 
 	public function __construct(
-		WikiImporterFactory $wikiImporterFactory,
-		TranslatablePageParser $translatablePageParser,
-		RevisionLookup $revisionLookup,
-		NamespaceInfo $namespaceInfo,
-		TitleFactory $titleFactory
+		private readonly WikiImporterFactory $wikiImporterFactory,
+		private readonly TranslatablePageParser $translatablePageParser,
+		private readonly RevisionLookup $revisionLookup,
+		private readonly NamespaceInfo $namespaceInfo,
+		private readonly TitleFactory $titleFactory,
+		private readonly FormatterFactory $formatterFactory,
 	) {
-		$this->wikiImporterFactory = $wikiImporterFactory;
-		$this->translatablePageParser = $translatablePageParser;
-		$this->revisionLookup = $revisionLookup;
-		$this->namespaceInfo = $namespaceInfo;
-		$this->titleFactory = $titleFactory;
 	}
 
 	/** Factory method used to initialize this HookHandler */
@@ -56,18 +52,21 @@ class TranslatableBundleImporter implements AfterImportPageHook {
 		return Services::getInstance()->getTranslatableBundleImporter();
 	}
 
+	/** @throws TranslatableBundleImportException */
 	public function import(
 		string $importFilePath,
 		string $interwikiPrefix,
 		bool $assignKnownUsers,
 		UserIdentity $user,
+		MessageLocalizer $localizer,
 		?Title $targetPage,
 		?string $comment
 	): Title {
 		$importSource = ImportStreamSource::newFromFile( $importFilePath );
 		if ( !$importSource->isOK() ) {
 			throw new TranslatableBundleImportException(
-				"Error while reading import file '$importFilePath': " . $importSource->getMessage()->text()
+				"Error while reading import file '$importFilePath': " .
+				$this->formatterFactory->getStatusFormatter( $localizer )->getMessage( $importSource )->text()
 			);
 		}
 
@@ -98,6 +97,7 @@ class TranslatableBundleImporter implements AfterImportPageHook {
 			$this->importInProgress = false;
 		}
 
+		// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 		if ( $importResult === false ) {
 			throw new TranslatableBundleImportException( 'Unknown error while importing translatable bundle.' );
 		}
@@ -114,6 +114,7 @@ class TranslatableBundleImporter implements AfterImportPageHook {
 		return $this->bundleTitle;
 	}
 
+	/** @param callable(Title,ForeignTitle):void $callable */
 	public function setPageImportCompleteCallback( callable $callable ): void {
 		$this->pageImportCompleteCallback = Closure::fromCallable( $callable );
 	}
@@ -129,7 +130,11 @@ class TranslatableBundleImporter implements AfterImportPageHook {
 		$entry->publish( $logId );
 	}
 
-	/** Add ready tag in case the page imported has <translate> markup */
+	/**
+	 * Add ready tag in case the page imported has <translate> markup
+	 *
+	 * @throws TranslatableBundleImportException
+	 */
 	private function addReadyTagForTranslatablePage( Title $translatablePageTitle ) {
 		$revisionRecord = $this->revisionLookup->getRevisionByTitle( $translatablePageTitle );
 		if ( !$revisionRecord ) {
@@ -152,11 +157,12 @@ class TranslatableBundleImporter implements AfterImportPageHook {
 		}
 	}
 
+	/** @inheritDoc */
 	public function onAfterImportPage( $title, $foreignTitle, $revCount, $sRevCount, $pageInfo ) {
 		if ( $this->importInProgress ) {
 			$this->bundleTitle ??= $title;
 			if ( $this->pageImportCompleteCallback ) {
-				call_user_func( $this->pageImportCompleteCallback, $title, $foreignTitle );
+				( $this->pageImportCompleteCallback )( $title, $foreignTitle );
 			}
 		}
 	}

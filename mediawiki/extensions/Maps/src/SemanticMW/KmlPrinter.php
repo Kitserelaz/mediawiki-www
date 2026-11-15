@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 
 namespace Maps\SemanticMW;
 
+use Maps\MapsFactory;
 use Maps\Presentation\KmlFormatter;
 use ParamProcessor\ParamDefinition;
 use SMW\Query\QueryResult;
@@ -58,6 +59,10 @@ class KmlPrinter extends FileExportPrinter {
 			$link->setParameter( $this->params['text'], 'text' );
 		}
 
+		if ( $this->params['filename'] !== '' ) {
+			$link->setParameter( $this->params['filename'], 'filename' );
+		}
+
 		// Fix for offset-error in getQueryLink()
 		// (getQueryLink by default sets offset to point to the next
 		// result set, fix by setting it to 0 if now explicitly set)
@@ -79,23 +84,21 @@ class KmlPrinter extends FileExportPrinter {
 	}
 
 	/**
-	 * @see SMWResultPrinter::getParamDefinitions
+	 * @see \SMW\Query\ResultPrinters\ResultPrinter::getParamDefinitions
 	 *
 	 * @param ParamDefinition[] $definitions
-	 *
-	 * @return array
 	 */
 	public function getParamDefinitions( array $definitions ): array {
-		global $egMapsDefaultLabel, $egMapsDefaultTitle;
+		$config = MapsFactory::globalInstance()->getEffectiveSettings();
 
 		$definitions['text'] = [
 			'message' => 'semanticmaps-kml-text',
-			'default' => $egMapsDefaultLabel,
+			'default' => $config->get( 'egMapsDefaultLabel' ),
 		];
 
 		$definitions['title'] = [
 			'message' => 'semanticmaps-kml-title',
-			'default' => $egMapsDefaultTitle,
+			'default' => $config->get( 'egMapsDefaultTitle' ),
 		];
 
 		$definitions['linkabsolute'] = [
@@ -104,11 +107,16 @@ class KmlPrinter extends FileExportPrinter {
 			'default' => true,
 		];
 
+		$definitions['filename'] = [
+			'message' => 'semanticmaps-kml-filename',
+			'default' => '',
+		];
+
 		return $definitions;
 	}
 
 	/**
-	 * @see SMWIExportPrinter::getMimeType
+	 * @see \SMW\Query\ExportPrinter::getMimeType
 	 *
 	 * @param QueryResult $queryResult
 	 *
@@ -119,25 +127,34 @@ class KmlPrinter extends FileExportPrinter {
 	}
 
 	/**
-	 * @see SMWIExportPrinter::getFileName
+	 * @see \SMW\Query\ExportPrinter::getFileName
 	 *
 	 * @param QueryResult $queryResult
 	 *
 	 * @return string|boolean
 	 */
-	public function getFileName( QueryResult $queryResult ): string {
+	public function getFileName( QueryResult $queryResult ): false|string {
+		if ( $this->params['filename'] !== '' ) {
+			$filename = $this->params['filename'];
+
+			if ( !str_ends_with( strtolower( $filename ), '.kml' ) ) {
+				$filename .= '.kml';
+			}
+
+			return $filename;
+		}
 		return 'kml.kml';
 	}
 
 	/**
-	 * @see SMWResultPrinter::getName()
+	 * @see \SMW\Query\ResultPrinters\ResultPrinter::getName()
 	 */
 	final public function getName() {
 		return wfMessage( 'semanticmaps-kml' )->text();
 	}
 
 	/**
-	 * @see SMWResultPrinter::handleParameters
+	 * @see \SMW\Query\ResultPrinters\ResultPrinter::handleParameters
 	 *
 	 * @param array $params
 	 * @param $outputMode

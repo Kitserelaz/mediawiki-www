@@ -1,9 +1,10 @@
 {
 	"@metadata": {
 		"authors": [
+			"Juwan",
 			"Purodha",
 			"Reedy",
-			"Juwan"
+			"Tacsipacsi"
 		]
 	},
 	"translate": "Övversäze",
@@ -56,7 +57,7 @@
 	"translate-checks-links-missing": "Hee {{PLURAL:$2|dä Lengk fäält:|di $2 Lenks fäähle:|fäähle kei Lengks.}} <strong><nowiki>$1</nowiki></strong>",
 	"translate-checks-plural": "De Ojjinaal-Nohreesch bruch <code><nowiki>{{PLURAL:}}</nowiki></code>, ävver de Övversäzong deijt dat nit?",
 	"translate-checks-plural-forms": "<nowiki>{{PLURAL:}}</nowiki> es med {{PLURAL:$1|eine Form|$1 Forme|keine Form}} enjesaz, ävver {{PLURAL:$2|bloß ein Form weed|bloß $2 Forme wääde|kein Form weed heh}} ongerschtöz, ävver zohsäzlesch noch 0= un 1=",
-	"translate-checks-plural-dupe": "<nowiki>{{PLURAL:}}</nowiki> hät {{PLURAL:$1|en dubbelte Form|dubbelte Forme|kein dubbelte Forme}} aam Ängk, ävver <nowiki>{{PLURAL:$1|Metmaacher|Metmaacher|Metmaacher}}</nowiki> sullt als <nowiki>{{PLURAL:$1|Metmaacher}}</nowiki> jeschrevve wääde.",
+	"translate-checks-plural-dupe": "<nowiki>{{PLURAL:}}</nowiki> hät dubbelte Forme aam Ängk, ävver <nowiki>{{PLURAL:$1|Metmaacher|Metmaacher|Metmaacher}}</nowiki> sullt als <nowiki>{{PLURAL:$1|Metmaacher}}</nowiki> jeschrevve wääde.",
 	"translate-checks-pagename": "Dat Appachtemang es anders wi em ojinaal Tex",
 	"translate-checks-format": "De Övversäzong paß nit zor Definizjuhn udder dä ier Süntax es nit en Ohdenong: $1",
 	"translate-checks-escape": "He de <i lang=\"en\">escapes</i> künnte esu nit jewollt sin: <strong>$1</strong>",
@@ -66,7 +67,6 @@
 	"translate-pref-editassistlang": "Schprohche för ze Hällfe:",
 	"prefs-translate": "Enshtällunge för et Övversäze",
 	"translate-pref-editassistlang-help": "En Leß met Köözelle för Schprohche.\nDe Övversäzonge en di Schprohche wääde Der jezeich, wann De aam Övversäze bes.\nWat De jezeisch kreß, wann De nix enndrähß, deiht vun dä Schprohch afhange, en di De övversaz.",
-	"translate-pref-editassistlang-bad": "En dä Leß es en onjöltesch Kööözel för en Schprohch: <code><nowiki>$1</nowiki></code>.",
 	"right-translate": "Met dä Schnettshtäll zom Övverseze ärrbeide",
 	"right-translate-manage": "Jroppe vun Täxte un Nohreeschte för et Övversäze verwallde",
 	"action-translate-manage": "Jroppe vun Täxte un Nohreeschte för et Övversäze verwallde",
@@ -128,7 +128,6 @@
 	"translate-langstats-expandall": "alle opfallde",
 	"translate-langstats-collapseall": "alle zohklappe",
 	"translate-language-code": "Donn de Enschtällonge för et Aanzeije ußwähle",
-	"translate-language-code-field-name": "Et Schprohcheköözel:&nbsp;",
 	"translate-suppress-complete": "Kumplät övversaz Nohreechtejroppe fott lohße",
 	"translate-ls-noempty": "Kumplät onövversaz Nohreechtejroppe fott lohße",
 	"translate-language": "Schprohch",

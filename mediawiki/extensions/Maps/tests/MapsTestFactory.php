@@ -4,9 +4,12 @@ declare( strict_types = 1 );
 
 namespace Maps\Tests;
 
+use FileFetcher\FileFetcher;
+use Maps\Config\WikiConfigSource;
 use Maps\DataAccess\ImageRepository;
 use Maps\MapsFactory;
 use Maps\Tests\TestDoubles\InMemoryImageRepository;
+use Maps\Tests\TestDoubles\StubWikiConfigSource;
 
 class MapsTestFactory extends MapsFactory {
 
@@ -15,6 +18,20 @@ class MapsTestFactory extends MapsFactory {
 	 * @var InMemoryImageRepository
 	 */
 	public $imageRepo;
+
+	/**
+	 * When set, the effective settings read this as the MediaWiki:Maps config instead of the
+	 * default hermetic (empty) source. Reset to null in tearDown.
+	 *
+	 * @var array<string, mixed>|null
+	 */
+	public static ?array $wikiConfig = null;
+
+	/**
+	 * When set, GeoJson urls are fetched from this instead of over the network. Reset to null in
+	 * tearDown.
+	 */
+	public static ?FileFetcher $geoJsonFileFetcher = null;
 
 	/**
 	 * Initializes a new test instance, updates the global instance used by production code and returns it.
@@ -29,6 +46,18 @@ class MapsTestFactory extends MapsFactory {
 
 	public function getImageRepository(): ImageRepository {
 		return $this->imageRepo;
+	}
+
+	public function getGeoJsonFileFetcher(): FileFetcher {
+		return self::$geoJsonFileFetcher ?? parent::getGeoJsonFileFetcher();
+	}
+
+	/**
+	 * Keeps tests hermetic: the effective settings use the PHP settings only, unless a test sets
+	 * self::$wikiConfig, and never read the MediaWiki:Maps page from the database.
+	 */
+	protected function newWikiConfigSource(): WikiConfigSource {
+		return new StubWikiConfigSource( self::$wikiConfig );
 	}
 
 }

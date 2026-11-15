@@ -209,12 +209,12 @@ class EventBus {
 	 * @return void
 	 */
 	private function incrementMetricByValue( string $metricName, int $value, ...$labels ): void {
-		if ( isset( $this->statsFactory ) ) {
+		if ( $this->statsFactory !== null ) {
 			$metric = $this->statsFactory->getCounter( $metricName );
 			foreach ( $labels as $label ) {
 				foreach ( $label as $k => $v ) {
 					// Bug: T373086
-					if ( !isset( $v ) ) {
+					if ( $v === null ) {
 						$v = self::VALUE_UNKNOWN;
 						self::logger()->warning(
 							' Initialized metric label does not have an assigned value. ',
@@ -232,6 +232,10 @@ class EventBus {
 
 	/**
 	 * Deliver an array of events to the remote event intake service.
+	 *
+	 * When emitting events, consider using {@link EventBusSendUpdate} instead of manually wrapping this
+	 * method in a callable deferred update, to take advantage of automatic batching for events destined
+	 * for the same underlying event service.
 	 *
 	 * Statslib metrics emitted by this method:
 	 *
@@ -451,13 +455,12 @@ class EventBus {
 					// }
 					$failureInfosByKind = FormatJson::decode( $res['body'], true );
 					if ( is_array( $failureInfosByKind ) ) {
-
 						foreach ( $failureInfosByKind as $failureKind => $failureInfos ) {
 							// $failureInfos should not be null or empty.
 							// This is just a guard against what the intake
 							// service returns (or the behavior of different json parsing methods - possibly).
 							// https://www.mediawiki.org/wiki/Manual:Coding_conventions/PHP#empty()
-							if ( !isset( $failureInfos ) || $failureInfos === [] ) {
+							if ( $failureInfos === null || $failureInfos === [] ) {
 								continue;
 							}
 
@@ -498,7 +501,6 @@ class EventBus {
 								);
 							}
 						}
-
 					} else {
 						self::logger()->error( "Invalid event service response body", $context );
 					}
@@ -515,11 +517,7 @@ class EventBus {
 			$baseMetricLabels,
 		);
 
-		if ( $results !== [] ) {
-			return $results;
-		}
-
-		return true;
+		return $results ?: true;
 	}
 
 	// == static helper functions below ==
@@ -676,6 +674,10 @@ class EventBus {
 		}
 	}
 
+	/**
+	 * @param int $eventType
+	 * @return int
+	 */
 	private function shouldSendEvent( $eventType ) {
 		return $this->allowedEventTypes & $eventType;
 	}

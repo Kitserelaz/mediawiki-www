@@ -28,11 +28,8 @@ if ( $IP === false ) {
 }
 require_once "$IP/maintenance/Maintenance.php";
 
-if ( is_readable( __DIR__ . '/../vendor/autoload.php' ) ) {
-	include_once __DIR__ . '/../vendor/autoload.php';
-}
-
 use MediaWiki\Extension\PageProperties\Aliases\Title as TitleClass;
+use MediaWiki\Revision\RevisionRecord;
 
 class MigrateSlots extends Maintenance {
 
@@ -116,7 +113,7 @@ class MigrateSlots extends Maintenance {
 		echo 'migrating slot pageproperties to table' . PHP_EOL;
 
 		$slotContent = $slots['pageproperties']->getContent();
-		$contents = $slotContent->getNativeData();
+		$contents = $slotContent instanceof TextContent ? $slotContent->getText() : '';
 		$contents = json_decode( $contents, true );
 
 		$pageProperties = [

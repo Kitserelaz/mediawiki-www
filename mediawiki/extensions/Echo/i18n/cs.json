@@ -254,7 +254,7 @@
 	"right-echo-read-notifications": "Čtení svých upozornění",
 	"action-echo-read-notifications": "číst svoje upozornění",
 	"notification-subject-email-verify-email-reminder": "Ověřte si {{GENDER:$1|svou}} e-mailovou adresu",
-	"notification-header-verify-email-reminder": "<strong>Potvrďte prosím {{GENDER:$1|svoji}} e-mailovou adresu</strong>, abychom věděli, že e-mailová adresa {{GENDER:$1|vašeho}} účtu opravdu patří {{GENDER:$1|vám}}.",
+	"notification-header-verify-email-reminder": "Dobrý den, {{GENDER:$1|uživateli|uživatelko}} $2,\n<strong>potvrďte prosím svoji e-mailovou adresu</strong>, abychom věděli, že e-mailová adresa vašeho účtu opravdu patří vám.",
 	"notification-link-text-verify-email-reminder": "Spravovat předvolby e-mailu",
 	"notification-verify-email-reminder-link-label": "Potvrdit e-mail"
 }

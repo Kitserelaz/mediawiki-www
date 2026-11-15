@@ -21,6 +21,5 @@
 	"right-spamblacklistlog": "Xem nhật trình chặn spam vì danh sách chặn",
 	"action-spamblacklistlog": "xem nhật trình chặn spam vì danh sách chặn",
 	"right-sboverride": "Vượt qua danh sách chống spam",
-	"action-sboverride": "vượt qua danh sách chống spam",
-	"spam-invalid-lines": "{{PLURAL:$1|Dòng|Những dòng}} sau đây trong danh sách chặn spam không hợp lệ; xin hãy sửa chữa {{PLURAL:$1|nó|chúng}} để tuân theo cú pháp biểu thức chính quy trước khi lưu trang:"
+	"action-sboverride": "vượt qua danh sách chống spam"
 }

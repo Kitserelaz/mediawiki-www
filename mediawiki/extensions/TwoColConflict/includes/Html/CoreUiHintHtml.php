@@ -3,7 +3,7 @@
 namespace TwoColConflict\Html;
 
 use MediaWiki\Html\Html;
-use MessageLocalizer;
+use MediaWiki\Language\MessageLocalizer;
 use OOUI\HtmlSnippet;
 use OOUI\IconWidget;
 use OOUI\MessageWidget;
@@ -41,7 +41,7 @@ class CoreUiHintHtml {
 					Html::rawElement(
 						'label',
 						[ 'for' => 'mw-twocolconflict-disable-core-hint' ],
-						$closeIcon
+						(string)$closeIcon
 					)
 				)
 			] )

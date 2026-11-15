@@ -1,7 +1,8 @@
 {
 	"@metadata": {
 		"authors": [
-			"Pyscowicz"
+			"Pyscowicz",
+			"Hosumaija"
 		]
 	},
 	"wminc-desc": "Testiwiki-systeemi Wikimeetia-hautomoa varten",
@@ -23,6 +24,7 @@
 	"randombytest": "Satunhainen sivu testiwikistä",
 	"randombytest-nopages": "Testiwikisi nimityhjyyessä $1 ei ole sivuja.",
 	"wminc-viewuserlang": "Hae esiin käyttäjän kieli ja testiwiki",
+	"wminc-viewuserlang-user": "Käyttäjänimi:",
 	"wminc-ip": "$1 oon IP-atressi.",
 	"action-viewuserlang": "tarkastella käyttäjän kieltä ja testiwikiä",
 	"right-viewuserlang": "Tarkastella käyttäjän kieltä ja testiwikiä",
@@ -79,6 +81,5 @@
 	"wminc-infopage-status-approved": "Tämä hautomo-wiki oon hyväksytty [[meta:Special:MyLanguage/Language_committee|kielikomitean]] toimesta ja tullaan luomaan pian.",
 	"wminc-infopage-status-created": "Kielikomitea oon hyväksynyt tämän prujektin ja se oon nyt saatavilla atressissa $1.",
 	"wminc-infopage-status-beforeincubator": "Tämä prujekti luotiin ennen kuin Wikimeetia-hautomo käynnistettiin, ja se oon saatavilla atressissa $1.",
-	"wminc-infopage-status-beforeincubator-sister": "Tämä prujekti oon saatavilla atressista $1.",
-	"wminc-infopage-error": "Virhe: {{#infopage}} voiaan käyttää vain etuliitteisilä sivuila."
+	"wminc-infopage-status-beforeincubator-sister": "Tämä prujekti oon saatavilla atressista $1."
 }

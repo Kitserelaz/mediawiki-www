@@ -2,8 +2,8 @@
 
 namespace MediaWiki\Extension\PageTriage;
 
-use Job;
 use MediaWiki\Extension\PageTriage\ArticleCompile\ArticleCompileProcessor;
+use MediaWiki\JobQueue\Job;
 
 class CompileArticleMetadataJob extends Job {
 
@@ -22,6 +22,7 @@ class CompileArticleMetadataJob extends Job {
 		return $info['params']['pageId'];
 	}
 
+	/** @inheritDoc */
 	public function ignoreDuplicates() {
 		return true;
 	}

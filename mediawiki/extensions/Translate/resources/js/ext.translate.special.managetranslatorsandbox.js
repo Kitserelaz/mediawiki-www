@@ -28,7 +28,7 @@
 
 	function doApiAction( options ) {
 		var api = new mw.Api(),
-			optionsWithDefaults = $.extend( {}, { action: 'translatesandbox' }, options );
+			optionsWithDefaults = Object.assign( {}, { action: 'translatesandbox' }, options );
 
 		return api.postWithToken( 'csrf', optionsWithDefaults ).promise();
 	}
@@ -68,13 +68,14 @@
 	function displayRequestDetails( request ) {
 		var $reminderStatus = $( '<span>' ).addClass( 'reminder-status' ),
 			$detailsPane = $( '.details.pane' );
+		const userLanguage = mw.config.get( 'wgUserLanguage' );
 		if ( request.reminderscount ) {
 			var agoText = moment.isMoment( request.lastreminder ) ? moment( request.lastreminder ).fromNow() : request.lastreminder;
 			$reminderStatus.text( mw.msg(
 				'tsb-reminder-sent',
 				request.reminderscount,
 				agoText
-			) );
+			) ).prop( 'title', moment( request.lastreminderts ).toDate().toLocaleString( userLanguage ) );
 		}
 
 		$detailsPane.empty().append(
@@ -103,6 +104,7 @@
 							} ).done( function () {
 								request.lastreminder = moment();
 								request.reminderscount++;
+								request.lastreminderts = moment().toDate().toLocaleString( userLanguage );
 								$reminderStatus.text( mw.msg( 'tsb-reminder-sent-new' ) );
 							} ).fail( function () {
 								$reminderStatus.text( mw.msg( 'tsb-reminder-failed' ) );
@@ -118,7 +120,7 @@
 				.addClass( 'actions row' )
 				.append(
 					$( '<button>' )
-						.addClass( 'accept mw-ui-button mw-ui-progressive' )
+						.addClass( 'accept cdx-button cdx-button--weight-primary cdx-button--action-progressive' )
 						.text( mw.msg( 'tsb-accept-button-label' ) )
 						.on( 'click', function () {
 							mw.notify( mw.msg( 'tsb-accept-confirmation', 1 ) );
@@ -135,7 +137,7 @@
 							} );
 						} ),
 					$( '<button>' )
-						.addClass( 'reject mw-ui-button mw-ui-destructive' )
+						.addClass( 'reject cdx-button cdx-button--weight-primary cdx-button--action-destructive' )
 						.text( mw.msg( 'tsb-reject-button-label' ) )
 						.on( 'click', function () {
 							mw.notify( mw.msg( 'tsb-reject-confirmation', 1 ) );
@@ -295,7 +297,7 @@
 				.addClass( 'actions row' )
 				.append(
 					$( '<button>' )
-						.addClass( 'accept-all mw-ui-button mw-ui-progressive' )
+						.addClass( 'accept-all cdx-button cdx-button--weight-primary cdx-button--action-progressive' )
 						.text( mw.msg( 'tsb-accept-all-button-label' ) )
 						.on( 'click', function () {
 							mw.notify( mw.msg( 'tsb-accept-confirmation', selectedUserIDs.length ) );
@@ -312,7 +314,7 @@
 							} );
 						} ),
 					$( '<button>' )
-						.addClass( 'reject-all mw-ui-button mw-ui-destructive' )
+						.addClass( 'reject-all cdx-button cdx-button--weight-primary cdx-button--action-destructive' )
 						.text( mw.msg( 'tsb-reject-all-button-label' ) )
 						.on( 'click', function () {
 							mw.notify( mw.msg( 'tsb-reject-confirmation', selectedUserIDs.length ) );
@@ -636,7 +638,7 @@
 			if ( !language ||
 				( requestData.languagepreferences &&
 					requestData.languagepreferences.languages &&
-					requestData.languagepreferences.languages.indexOf( language ) > -1 )
+					requestData.languagepreferences.languages.includes( language ) )
 			) {
 				// Found language
 				$request.removeClass( 'hide' );
@@ -686,8 +688,8 @@
 				requestData = $request.data( 'data' );
 
 			if ( query.length === 0 ||
-				requestData.username.toLowerCase().indexOf( query ) === 0 ||
-				requestData.email.toLowerCase().indexOf( query ) === 0
+				requestData.username.toLowerCase().startsWith( query ) ||
+				requestData.email.toLowerCase().startsWith( query )
 			) {
 				$request.removeClass( 'hide' );
 			} else {

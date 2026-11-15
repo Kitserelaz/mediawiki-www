@@ -7,7 +7,11 @@
 	"reportincident-report-btn-label": "رپورٹ",
 	"reportincident-dialog-close-btn": "بند کرو",
 	"reportincident-dialog-submit-btn": "جمع کرواؤ",
-	"reportincident-success-message-close": "بند کرو",
+	"reportincident-dialog-harassment-type-spam": "ردی",
 	"reportincident-emaildialog-close-button": "منسوخ",
-	"reportincident-emaildialog-primary": "ترتیباں تے ون٘ڄو"
+	"reportincident-emaildialog-primary": "ترتیباں تے ون٘ڄو",
+	"reportincident-dialog-cancel": "منسوخ",
+	"reportincident-dialog-continue": "جاری",
+	"reportincident-dialog-harassment-type-other": "ٻیا",
+	"communityconfiguration-reportincident-reportincident_nonemergency_other-label": "ٻیا"
 }

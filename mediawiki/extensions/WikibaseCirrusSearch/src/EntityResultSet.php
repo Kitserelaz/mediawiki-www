@@ -9,42 +9,20 @@ use Wikibase\Lib\TermLanguageFallbackChain;
  */
 class EntityResultSet extends BaseCirrusSearchResultSet {
 
-	/**
-	 * Display fallback chain.
-	 * @var TermLanguageFallbackChain
-	 */
-	private $termFallbackChain;
-	/**
-	 * Display language code
-	 * @var string
-	 */
-	private $displayLanguage;
-
-	/**
-	 * @var \Elastica\ResultSet|null
-	 */
-	private $result;
-
-	/**
-	 * @param string $displayLanguage
-	 * @param TermLanguageFallbackChain $displayFallbackChain
-	 * @param \Elastica\ResultSet $result
-	 */
-	public function __construct( $displayLanguage,
-		TermLanguageFallbackChain $displayFallbackChain,
-		\Elastica\ResultSet $result
+	public function __construct(
+		private readonly string $displayLanguage,
+		private readonly TermLanguageFallbackChain $termFallbackChain,
+		private readonly \Elastica\ResultSet $result,
 	) {
-		$this->result = $result;
-		$this->termFallbackChain = $displayFallbackChain;
-		$this->displayLanguage = $displayLanguage;
 	}
 
+	/** @inheritDoc */
 	protected function transformOneResult( \Elastica\Result $result ) {
 		return new EntityResult( $this->displayLanguage, $this->termFallbackChain, $result );
 	}
 
 	/**
-	 * @return \Elastica\ResultSet|null
+	 * @return \Elastica\ResultSet
 	 */
 	public function getElasticaResultSet() {
 		return $this->result;

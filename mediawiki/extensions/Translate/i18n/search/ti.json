@@ -29,5 +29,6 @@
 	"tux-sst-match-message": "ምስ ዝኾነ ካብቶም ናይ ምድላይ ቃላት ዝሰማምዑ ትርጉማት ምርኣይ። $1",
 	"tux-sst-case-sensitive": "ዓበይትን ንኣሽቱን ፊደላት ከምዘትኩሩ",
 	"tux-sst-error-offset": "ካብዚ ንላዕሊ ውጽኢታት ክረአ ኣይክእሉን እዮም። እቲ ምድላይ ክድረት ኣለዎ።",
-	"tux-sst-error-language": "እዚ ቋንቋ እዚ ምስዚ ዓይነት ምድላይ ክጥቀመሉ ኣይክእልን እዩ።"
+	"tux-sst-error-language": "እዚ ቋንቋ እዚ ምስዚ ዓይነት ምድላይ ክጥቀመሉ ኣይክእልን እዩ።",
+	"tux-sst-error-unsupported-language": "ብቋንቋ ምድላይ <code>$1</code> ኣይድገፍን እዩ።"
 }

@@ -11,7 +11,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "wikibase",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"MessagesDirs": {
 		"WikibaseQualityConstraints": [
@@ -29,7 +29,7 @@
 	],
 	"Hooks": {
 		"LoadExtensionSchemaUpdates": "schema",
-		"WikibaseChangeNotification": "WikibaseQuality\\ConstraintReport\\WikibaseQualityConstraintsHooks::onWikibaseChange",
+		"WikibaseChangeNotification": "WikibaseChangeNotification",
 		"ArticlePurge": "main",
 		"BeforePageDisplay": "main"
 	},
@@ -39,6 +39,13 @@
 		},
 		"schema": {
 			"class": "WikibaseQuality\\ConstraintReport\\WikibaseQualityConstraintsSchemaHooks"
+		},
+		"WikibaseChangeNotification": {
+			"class": "WikibaseQuality\\ConstraintReport\\WikibaseChangeNotificationHookHandler",
+			"services": [
+				"JobQueueGroup",
+				"MainConfig"
+			]
 		}
 	},
 	"SpecialPages": {
@@ -47,7 +54,7 @@
 			"factory": "WikibaseQuality\\ConstraintReport\\Specials\\SpecialConstraintReport::factory",
 			"services": [
 				"MainConfig",
-				"StatsdDataFactory",
+				"StatsFactory",
 				"WikibaseRepo.EntityIdHtmlLinkFormatterFactory",
 				"WikibaseRepo.EntityIdLabelFormatterFactory",
 				"WikibaseRepo.EntityIdParser",
@@ -64,7 +71,7 @@
 			"class": "WikibaseQuality\\ConstraintReport\\Api\\CheckConstraints",
 			"factory": "WikibaseQuality\\ConstraintReport\\Api\\CheckConstraints::factory",
 			"services": [
-				"StatsdDataFactory",
+				"StatsFactory",
 				"WikibaseRepo.ApiHelperFactory",
 				"WikibaseRepo.EntityIdLabelFormatterFactory",
 				"WikibaseRepo.EntityIdParser",
@@ -79,7 +86,7 @@
 			"class": "WikibaseQuality\\ConstraintReport\\Api\\CheckConstraintParameters",
 			"factory": "WikibaseQuality\\ConstraintReport\\Api\\CheckConstraintParameters::newFromGlobalState",
 			"services": [
-				"StatsdDataFactory",
+				"StatsFactory",
 				"WikibaseRepo.ApiHelperFactory",
 				"WikibaseRepo.LanguageFallbackChainFactory",
 				"WikibaseRepo.StatementGuidParser",
@@ -122,14 +129,18 @@
 				"wikibase"
 			],
 			"messages": [
+				"wbqc-issue-heading",
 				"wbqc-issues-short",
 				"wbqc-issues-long",
+				"wbqc-potentialissue-heading",
 				"wbqc-potentialissues-short",
 				"wbqc-potentialissues-long",
+				"wbqc-suggestion-heading",
 				"wbqc-suggestions-short",
 				"wbqc-suggestions-long",
 				"wbqc-badparameters-short",
 				"wbqc-badparameters-long",
+				"wbqc-parameterissue-heading",
 				"wbqc-parameterissues-short",
 				"wbqc-parameterissues-long",
 				"wbqc-constrainttypehelp-short",
@@ -154,7 +165,10 @@
 		},
 		"wikibase.quality.constraints.gadget": {
 			"scripts": "gadget.js",
-			"styles": "gadget.less",
+			"styles": [
+				"gadget.less",
+				"wbui2025-gadget.less"
+			],
 			"dependencies": [
 				"mediawiki.api",
 				"oojs-ui-core",
@@ -162,8 +176,7 @@
 				"oojs-ui.styles.icons-alerts",
 				"wikibase.quality.constraints.icon",
 				"wikibase.quality.constraints.ui"
-			],
-			"skipFunction": "gadget-skip.js"
+			]
 		},
 		"wikibase.quality.constraints.suggestions": {
 			"packageFiles": [
@@ -693,9 +706,9 @@
 			"description": "Float value between 0 and 1 determining ratio of requests made to shellbox (vs. WDQS) in FormatChecker in evaluating regexes. Zero disables requesting to shellbox (all going to WDQS) and one means all requests will go to shellbox.",
 			"public": true
 		},
-		"WBQualityConstraintsShowConstraintViolationToNonLoggedInUsers": {
-			"value": true,
-			"description": "Whether or not show the constraint violation indicator to users that are not logged in.",
+		"WBQualityConstraintsFormatCheckerKnownGoodRegexPatterns": {
+			"value": [],
+			"description": "An array of known-good regex patterns that can be checked directly, without using Shellbox. These regexes should be immune to ReDoS attacks.",
 			"public": true
 		}
 	},
@@ -705,6 +718,24 @@
 	},
 	"TestAutoloadNamespaces": {
 		"WikibaseQuality\\ConstraintReport\\Tests\\": "tests/phpunit/"
+	},
+	"GroupPermissions": {
+		"*": {
+			"wbqc-check-constraints": true
+		},
+		"user": {
+			"wbqc-check-constraints-uncached": true
+		}
+	},
+	"AvailableRights": [
+		"wbqc-check-constraints",
+		"wbqc-check-constraints-uncached"
+	],
+	"GrantPermissions": {
+		"basic": {
+			"wbqc-check-constraints": true,
+			"wbqc-check-constraints-uncached": true
+		}
 	},
 	"manifest_version": 2
 }

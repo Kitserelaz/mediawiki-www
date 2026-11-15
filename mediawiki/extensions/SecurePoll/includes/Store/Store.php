@@ -70,6 +70,13 @@ interface Store {
 	public function getElectionInfoByTitle( $names );
 
 	/**
+	 * Get election information for a given set of tally ids.
+	 * @param array $ids
+	 * @return array[]
+	 */
+	public function getElectionInfoByTally( $ids );
+
+	/**
 	 * Convert a row from the securepoll_elections table into an associative
 	 * array suitable for return by getElectionInfo().
 	 * @param stdClass $row
@@ -83,14 +90,6 @@ interface Store {
 	 * @return IDatabase
 	 */
 	public function getDB( $index = DB_PRIMARY );
-
-	/**
-	 * Set a flag which, if true, forces subsequent calls to getDB() to return
-	 * a primary connection even if $index is DB_REPLICA.
-	 *
-	 * @param bool $forcePrimary
-	 */
-	public function setForcePrimary( $forcePrimary );
 
 	/**
 	 * Get an associative array of information about all questions in a given

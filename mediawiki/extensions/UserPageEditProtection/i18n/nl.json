@@ -2,7 +2,8 @@
 	"@metadata": {
 		"authors": [
 			"Mainframe98",
-			"Siebrand"
+			"Siebrand",
+			"McDutchie"
 		]
 	},
 	"userpageeditprotection-desc": "Beperkt het bewerken van gebruikerspagina's tot de gebruiker zelf en gebruikers met rechten",

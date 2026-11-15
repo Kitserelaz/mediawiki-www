@@ -390,5 +390,6 @@ if ( getenv( 'MW_DOCKER' ) && getenv( 'MW_ENV' ) === 'development'
     && $wi->dbname === 'testwiki'
 ) {
     wfLoadSkin( 'Example' );
+    wfLoadExtension( 'PortableInfobox' );
     $wgDefaultSkin = 'example';
 }

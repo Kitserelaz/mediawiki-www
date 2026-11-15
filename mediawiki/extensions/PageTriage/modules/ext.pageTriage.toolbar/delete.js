@@ -53,7 +53,7 @@ const specialDeletionTagging = {
 				/(<!-- Add new entries to the TOP of the following list -->\n+)/,
 				'$1{{subst:afd3|pg=' + page + '}}\n'
 			);
-			data.summary = 'Adding [[' + tagObj.prefix + '/' + pageName + ']].';
+			data.summary = 'Adding [[' + tagObj.prefix + '/' + page + ']].';
 		},
 
 		getLogPageTitle: function ( prefix ) {
@@ -74,6 +74,7 @@ const specialDeletionTagging = {
 				'$1\n{{subst:rfd2|text=' + reason + '|redirect=' + pageName +
 				'|target=' + redirectTarget + '}} ~~~~\n'
 			);
+			data.summary = 'Adding [[' + pageName + ']].';
 		},
 
 		getLogPageTitle: function ( prefix ) {
@@ -133,14 +134,31 @@ module.exports = ToolView.extend( {
 	setupDeletionTags: function () {
 		this.deletionTagsOptions = deletionTagOptions.main;
 		const xfd = this.deletionTagsOptions.xfd;
+		const csd = this.deletionTagsOptions.speedydeletioncommon;
 		// redirect
 		if ( Number( this.model.get( 'is_redirect' ) ) === 1 ) {
 			xfd.label = xfd.tags.redirectsfordiscussion.label;
 			delete xfd.tags.articlefordeletion;
+			// Remove proposed deletion (PROD) for redirects. See T377062
+			delete this.deletionTagsOptions.proposeddeletion;
+			// If articleonly is true, remove the tag
+			// from redirects. See T343399
+			for ( const tag in csd.tags ) {
+				if ( csd.tags[ tag ].articleonly ) {
+					delete csd.tags[ tag ];
+				}
+			}
 		// non-redirect
 		} else {
 			xfd.label = xfd.tags.articlefordeletion.label;
 			delete xfd.tags.redirectsfordiscussion;
+			// If redirectonly is true, remove the tag
+			// from non-redirects. See T343399
+			for ( const tag in csd.tags ) {
+				if ( csd.tags[ tag ].redirectonly ) {
+					delete csd.tags[ tag ];
+				}
+			}
 		}
 	},
 
@@ -148,9 +166,6 @@ module.exports = ToolView.extend( {
 	 * Render deletion tagging template
 	 */
 	render: function () {
-		let key;
-		const that = this;
-
 		this.setupDeletionTags();
 		this.$tel.html( this.template( {
 			tags: this.deletionTagsOptions,
@@ -164,30 +179,30 @@ module.exports = ToolView.extend( {
 		}
 
 		// add click event for each category
-		$( '#mwe-pt-delete-categories' ).find( 'div' ).each( function () {
-			const cat = $( $( this ).html() ).attr( 'cat' );
-			$( this ).on( 'click', function () {
-				that.visibleParamsFormCount = 0;
-				that.refreshSubmitButton();
+		$( '#mwe-pt-delete-categories' ).find( 'div' ).each( ( i, el ) => {
+			const cat = $( el ).find( '[cat]' ).attr( 'cat' );
+			$( el ).on( 'click', () => {
+				this.visibleParamsFormCount = 0;
+				this.refreshSubmitButton();
 
-				$( this ).find( 'a' ).trigger( 'blur' );
-				that.displayTags( cat );
+				$( el ).find( 'a' ).trigger( 'blur' );
+				this.displayTags( cat );
 				return false;
 			} ).end();
 		} );
 
 		// add click event for tag submission
-		$( '#mwe-pt-delete-submit-button' ).button( { disabled: true } )
+		$( '#mwe-pt-delete-submit-button' ).attr( 'disabled', true )
 			.on( 'click', () => {
-				$( '#mwe-pt-delete-submit-button' ).button( 'disable' );
+				$( '#mwe-pt-delete-submit-button' ).attr( 'disabled', true ); // disable button
 				$( '#mwe-pt-delete-submit' ).append( $.createSpinner( 'delete-spinner' ) ); // show spinner
-				that.submit();
+				this.submit();
 				return false;
 			} ).end();
 
 		// show the first category as default
 		// eslint-disable-next-line no-unreachable-loop
-		for ( key in this.deletionTagsOptions ) {
+		for ( const key in this.deletionTagsOptions ) {
 			this.displayTags( key );
 			break;
 		}
@@ -322,16 +337,14 @@ module.exports = ToolView.extend( {
 	 * @param {string} cat
 	 */
 	displayTags: function ( cat ) {
-		let key, param;
-		const that = this,
-			tagSet = this.deletionTagsOptions[ cat ].tags,
+		const tagSet = this.deletionTagsOptions[ cat ].tags,
 			elementType = this.deletionTagsOptions[ cat ].multiple ? 'checkbox' : 'radio',
 			$tagList = $( '<div>' ).attr( 'id', 'mwe-pt-delete-list' );
 		let tagCount = 0;
 
 		// unselect any previously selected tags and disable submit button
 		this.selectedTag = {};
-		$( '#mwe-pt-delete-submit-button' ).button( 'disable' );
+		$( '#mwe-pt-delete-submit-button' ).attr( 'disabled', true );
 
 		if ( this.deletionTagsOptions[ cat ].desc ) {
 			const tagDesc = '<div id="mwe-pt-delete-category-desc">' + mw.html.escape( this.deletionTagsOptions[ cat ].desc ) + '</div>';
@@ -347,7 +360,7 @@ module.exports = ToolView.extend( {
 		$( '#mwe-pt-delete' ).append( this.renderSearchTextBox( 'mwe-pt-delete-row' ) );
 		$( '#mwe-pt-delete' ).append( $tagList );
 
-		for ( key in tagSet ) {
+		for ( const key in tagSet ) {
 
 			// Keep a running total of tags in the category
 			if ( Object.prototype.hasOwnProperty.call( tagSet, key ) ) {
@@ -364,57 +377,57 @@ module.exports = ToolView.extend( {
 
 			// add click events for checking/unchecking tags to both the
 			// checkboxes and tag labels
-			// eslint-disable-next-line no-loop-func
-			$( '#mwe-pt-delete-' + key + ', #mwe-pt-checkbox-delete-' + key ).on( 'click', function () {
+
+			$( '#mwe-pt-delete-' + key + ', #mwe-pt-checkbox-delete-' + key ).on( 'click', ( e ) => {
 				// Extract the tag key from the id of whatever was clicked on
-				const tagKeyMatches = $( this ).attr( 'id' ).match( /.*-delete-(.*)/ ),
+				const tagKeyMatches = $( e.delegateTarget ).attr( 'id' ).match( /.*-delete-(.*)/ ),
 					tagKey = tagKeyMatches[ 1 ];
 
 				// if user unchecks a checkbox and there is an adjacent paramsForm
 				// that will be closed by this action, decrease the counter
 				if ( $( '#mwe-pt-delete-params-form-' + tagKey ).css( 'display' ) === 'block' ) {
-					that.visibleParamsFormCount--;
-					that.refreshSubmitButton();
+					this.visibleParamsFormCount--;
+					this.refreshSubmitButton();
 				}
 
 				$( '#mwe-pt-delete-params-form-' + tagKey ).hide();
-				if ( !that.selectedTag[ tagKey ] ) {
+				if ( !this.selectedTag[ tagKey ] ) {
 					$( '#mwe-pt-checkbox-delete-' + tagKey ).prop( 'checked', true );
 
 					// different category from the selected one, refresh data
-					if ( that.selectedCat !== cat ) {
-						that.multiHideParamsLink( that.selectedTag );
-						that.selectedTag = {};
-						that.selectedCat = cat;
+					if ( this.selectedCat !== cat ) {
+						this.multiHideParamsLink( this.selectedTag );
+						this.selectedTag = {};
+						this.selectedCat = cat;
 					// this category doesn't allow multiple selection
-					} else if ( !that.deletionTagsOptions[ cat ].multiple ) {
-						that.multiHideParamsLink( that.selectedTag );
-						that.selectedTag = {};
+					} else if ( !this.deletionTagsOptions[ cat ].multiple ) {
+						this.multiHideParamsLink( this.selectedTag );
+						this.selectedTag = {};
 					}
 
-					that.selectedTag[ tagKey ] = tagSet[ tagKey ];
-					that.showParamsLink( tagKey );
+					this.selectedTag[ tagKey ] = tagSet[ tagKey ];
+					this.showParamsLink( tagKey );
 					// show the param form if there is required parameter
-					for ( param in tagSet[ tagKey ].params ) {
+					for ( const param in tagSet[ tagKey ].params ) {
 						if ( tagSet[ tagKey ].params[ param ].input === 'required' ) {
-							that.showParamsForm( tagKey );
+							this.showParamsForm( tagKey );
 							break;
 						}
 					}
 				} else {
 					// deactivate checkbox
 					$( '#mwe-pt-checkbox-delete-' + tagKey ).prop( 'checked', false );
-					delete that.selectedTag[ tagKey ];
+					delete this.selectedTag[ tagKey ];
 
-					if ( $.isEmptyObject( that.selectedTag ) ) {
-						that.selectedCat = '';
+					if ( $.isEmptyObject( this.selectedTag ) ) {
+						this.selectedCat = '';
 					}
 
-					that.hideParamsLink( tagKey );
+					this.hideParamsLink( tagKey );
 					// If the param form is visible, hide it
-					that.hideParamsForm( tagKey );
+					this.hideParamsForm( tagKey );
 				}
-				that.refreshSubmitButton();
+				this.refreshSubmitButton();
 			} ).end();
 		}
 
@@ -432,9 +445,9 @@ module.exports = ToolView.extend( {
 		// Do not display the submit button until all visible paramsForms have
 		// had their "Add details" buttons clicked. T238025, T313108
 		if ( this.objectPropCount( this.selectedTag ) > 0 && this.visibleParamsFormCount === 0 ) {
-			$( '#mwe-pt-delete-submit-button' ).button( 'enable' );
+			$( '#mwe-pt-delete-submit-button' ).attr( 'disabled', false );
 		} else {
-			$( '#mwe-pt-delete-submit-button' ).button( 'disable' );
+			$( '#mwe-pt-delete-submit-button' ).attr( 'disabled', true );
 		}
 	},
 
@@ -481,9 +494,8 @@ module.exports = ToolView.extend( {
 		);
 		$( '#mwe-pt-delete-params-link-' + key ).html( '+&#160;' + link );
 		// Add click event to the link that shows the param form
-		const that = this;
 		$( '#mwe-pt-delete-params-' + key ).on( 'click', () => {
-			that.showParamsForm( key );
+			this.showParamsForm( key );
 		} );
 	},
 
@@ -515,7 +527,6 @@ module.exports = ToolView.extend( {
 	 * @param {string} key
 	 */
 	showParamsForm: function ( key ) {
-		const that = this;
 		const tag = this.selectedTag[ key ];
 		let html = '',
 			firstField = '';
@@ -538,7 +549,7 @@ module.exports = ToolView.extend( {
 			'button',
 			{
 				id: 'mwe-pt-delete-set-param-' + key,
-				class: 'mwe-pt-delete-set-param-button ui-button-red'
+				class: 'mwe-pt-delete-set-param-button cdx-button'
 			},
 			mw.msg( 'pagetriage-button-add-details' )
 		);
@@ -546,7 +557,7 @@ module.exports = ToolView.extend( {
 			'button',
 			{
 				id: 'mwe-pt-delete-cancel-param-' + key,
-				class: 'ui-button-red'
+				class: 'cdx-button cdx-button--action-destructive'
 			},
 			mw.msg( 'cancel' )
 		);
@@ -558,37 +569,37 @@ module.exports = ToolView.extend( {
 		$( '#mwe-pt-delete-params-form-' + key ).show();
 
 		// Add click event for the paramsForm "Add details" button
-		$( '#mwe-pt-delete-set-param-' + key ).button().on( 'click', () => {
-			if ( that.setParams( key ) ) {
-				that.visibleParamsFormCount--;
-				that.refreshSubmitButton();
+		$( '#mwe-pt-delete-set-param-' + key ).on( 'click', () => {
+			if ( this.setParams( key ) ) {
+				this.visibleParamsFormCount--;
+				this.refreshSubmitButton();
 
 				// Hide the form and show the link to reopen it
-				that.hideParamsForm( key );
-				that.showParamsLink( key );
+				this.hideParamsForm( key );
+				this.showParamsLink( key );
 			}
 		} );
 
 		// Add click event for the paramsForm "Cancel" button
-		$( '#mwe-pt-delete-cancel-param-' + key ).button().on( 'click', () => {
+		$( '#mwe-pt-delete-cancel-param-' + key ).on( 'click', () => {
 			for ( const param in tag.params ) {
-				that.visibleParamsFormCount--;
-				that.refreshSubmitButton();
+				this.visibleParamsFormCount--;
+				this.refreshSubmitButton();
 
 				if ( tag.params[ param ].input === 'required' && !tag.params[ param ].value ) {
-					delete that.selectedTag[ key ];
+					delete this.selectedTag[ key ];
 					$( '#mwe-pt-checkbox-delete-' + key ).prop( 'checked', false );
 					break;
 				}
 			}
 
 			// Hide the form and show the link to reopen it
-			that.hideParamsForm( key );
+			this.hideParamsForm( key );
 			// Show the link if this tag is still selected
-			if ( that.selectedTag[ key ] ) {
-				that.showParamsLink( key );
+			if ( this.selectedTag[ key ] ) {
+				this.showParamsLink( key );
 			}
-			that.refreshSubmitButton();
+			this.refreshSubmitButton();
 		} );
 
 		// If there is an input field, focus the cursor on it
@@ -669,10 +680,12 @@ module.exports = ToolView.extend( {
 			return;
 		}
 
-		const that = this,
-			promises = [];
+		const promises = [];
 
 		// check for any missing parameters
+		// also check if there are duplicate tag codes
+		// (and removing the duplicates. See: T354403)
+		const uniqueTags = new Set();
 		// eslint-disable-next-line no-jquery/no-each-util
 		$.each( this.selectedTag, ( key, tagObj ) => {
 			for ( const param in tagObj.params ) {
@@ -680,7 +693,7 @@ module.exports = ToolView.extend( {
 					tagObj.params[ param ].input === 'required' &&
 					!tagObj.params[ param ].value
 				) {
-					that.handleError(
+					this.handleError(
 						mw.msg(
 							'pagetriage-tags-param-missing-required',
 							tagObj.tag
@@ -690,13 +703,23 @@ module.exports = ToolView.extend( {
 			}
 
 			if ( tagObj.usesSubpages ) {
-				promises.push( that.pickDiscussionPageName( tagObj.prefix )
+				promises.push( this.pickDiscussionPageName( tagObj.prefix )
 					.then( ( data ) => {
 						tagObj.subpage = data.page;
 						tagObj.subpageNumber = data.number;
 					} )
 				);
 			}
+
+			if ( tagObj.code !== undefined ) {
+				if ( uniqueTags.has( tagObj.code ) ) {
+					// Remove tagObject from the array of selected tags
+					delete this.selectedTag[ key ];
+				} else {
+					uniqueTags.add( tagObj.code );
+				}
+			}
+
 		} );
 
 		// reviewed value must be either '0' or '1'
@@ -709,43 +732,25 @@ module.exports = ToolView.extend( {
 				}
 			} )
 			.then( $.when.apply( null, promises ) )
-			// Applying deletion tags should mark the page as reviewed depending on the selected tag's
-			// reviewed option. If it is not set then the page will be marked as not reviewed.
-			.then( () => new mw.Api().postWithToken( 'csrf', {
-				action: 'pagetriageaction',
-				pageid: mw.config.get( 'wgArticleId' ),
-				// reviewed value must be either '0' or '1'
-				reviewed: markAsReviewed,
-				skipnotif: '1'
-			} ) )
 			.then( () => {
-				if ( markAsReviewed === '1' ) {
-					// Page was also marked as reviewed, so we want to fire the action for that, too.
-					// The 'reviewed' and 'reviewer' attributes on the model are not yet populated,
-					// so we have to pass those in manually.
-					actionQueue.mark = {
-						reviewed: true,
-						reviewer: mw.config.get( 'wgUserName' )
-					};
-				}
-				actionQueue.delete = { tags: that.selectedTag };
+				actionQueue.delete = { tags: this.selectedTag };
 
 				const rootPromise = $.Deferred();
 				// End of the promise chain.
 				let chainEnd = rootPromise;
 
-				const isXFD = !that.deletionTagsOptions[ that.selectedCat ].multiple;
+				const isXFD = !this.deletionTagsOptions[ this.selectedCat ].multiple;
 				if ( isXFD ) {
-					for ( const key in that.selectedTag ) {
-						const tagObj = that.selectedTag[ key ];
+					for ( const key in this.selectedTag ) {
+						const tagObj = this.selectedTag[ key ];
 						if ( tagObj.prefix ) {
 							// Handles writing to the XFD daily log and creating the XFD page. This
 							// code path is only used for the XFD options (AFD for mainspace, RFD
 							// for redirects)
 							chainEnd = chainEnd
-								.then( that.shouldLog.bind( that, tagObj ) )
-								.then( that.addToLog.bind( that ) )
-								.then( that.makeDiscussionPage.bind( that, tagObj ) );
+								.then( this.shouldLog.bind( this, tagObj ) )
+								.then( this.addToLog.bind( this ) )
+								.then( this.makeDiscussionPage.bind( this, tagObj ) );
 							break;
 						}
 					}
@@ -755,13 +760,34 @@ module.exports = ToolView.extend( {
 				// deletion options (CSD, PROD, XFD).
 				// Functions using `this` must be bound to avoid losing context.
 				chainEnd = chainEnd
-					.then( that.tagPage.bind( that ) )
-					.then( that.notifyUser.bind( that ) )
-					.then( that.tagTalkPage.bind( that ) )
+					.then( this.tagPage.bind( this ) )
+					.then( this.notifyUser.bind( this ) )
+					.then( this.tagTalkPage.bind( this ) )
 					.then( mw.pageTriage.actionQueue.runAndRefresh.bind(
-						null, actionQueue, that.getDataForActionQueue()
+						null, actionQueue, this.getDataForActionQueue()
 					) )
-					.catch( that.handleError );
+					// Reviewing is done after the page is tagged to ensure that redirects
+					// are reviewed after they become an article with an RfD tag.
+					// See T382996
+					.then( () => new mw.Api().postWithToken( 'csrf', {
+						action: 'pagetriageaction',
+						pageid: mw.config.get( 'wgArticleId' ),
+						// reviewed value must be either '0' or '1'
+						reviewed: markAsReviewed,
+						skipnotif: '1'
+					} ) )
+					.then( () => {
+						if ( markAsReviewed === '1' ) {
+							// Page was also marked as reviewed, so we want to fire the action
+							// for that, too. The 'reviewed' and 'reviewer' attributes on the
+							// model are not yet populated, so we have to pass those in manually.
+							actionQueue.mark = {
+								reviewed: true,
+								reviewer: mw.config.get( 'wgUserName' )
+							};
+						}
+					} )
+					.catch( this.handleError );
 
 				// Begin running the promise chain.
 				rootPromise.resolve();
@@ -770,9 +796,9 @@ module.exports = ToolView.extend( {
 			.catch( ( _errorCode, data ) => {
 				if ( _errorCode === 'previousdeletion' ) {
 					// isAnyRejectionTemplatePresent
-					that.handleError( mw.msg( 'pagetriage-tag-previousdeletion-error', data ) );
+					this.handleError( mw.msg( 'pagetriage-tag-previousdeletion-error', data ) );
 				} else {
-					that.handleError( mw.msg( 'pagetriage-mark-as-reviewed-error', data.error.info ) );
+					this.handleError( mw.msg( 'pagetriage-mark-as-reviewed-error', data.error.info ) );
 				}
 			} );
 	},
@@ -799,12 +825,13 @@ module.exports = ToolView.extend( {
 		mw.log.error( errorMessage );
 		const err = new Error( errorMessage );
 		err.name = 'pageTriageHandleError';
-		const sitename = mw.config.get( 'wgDBname' );
-		mw.track( 'counter.MediaWiki.extension.PageTriage.' + sitename + '.viewsToolbar.delete.error' );
+		const dbname = mw.config.get( 'wgDBname' );
+		mw.track( 'counter.MediaWiki.extension.PageTriage.' + dbname + '.viewsToolbar.delete.error' );
+		mw.track( 'stats.mediawiki_pagetriage_viewstoolbar_delete_error_total', 1, { wiki: dbname } );
 
 		$.removeSpinner( 'delete-spinner' );
 		// Re-enable the submit button (in case it is disabled)
-		$( '#mwe-pt-delete-submit-button' ).button( 'enable' );
+		$( '#mwe-pt-delete-submit-button' ).attr( 'disabled', false );
 		// Show error message to the user
 		// eslint-disable-next-line no-alert
 		alert( msg );
@@ -817,10 +844,9 @@ module.exports = ToolView.extend( {
 	 * an `Error` if not.
 	 */
 	tagTalkPage: function () {
-		let key, tagObj;
 		// eslint-disable-next-line no-unreachable-loop
-		for ( key in this.selectedTag ) {
-			tagObj = this.selectedTag[ key ];
+		for ( const key in this.selectedTag ) {
+			const tagObj = this.selectedTag[ key ];
 			if ( !( 'articletalkpagenotiftpl' in tagObj ) ||
 				tagObj.articletalkpagenotiftpl === '' ) {
 				break;
@@ -874,24 +900,27 @@ module.exports = ToolView.extend( {
 	 * of the tag added to the page).
 	 */
 	tagPage: function () {
-		const that = this,
-			tagList = [],
+		const tagList = [],
 			count = this.objectPropCount( this.selectedTag );
-		let key,
-			text = '',
+		let text = '',
 			tagText = '',
 			paramsText = '';
+		let blankPage;
 
 		if ( count === 0 ) {
 			return;
 		}
 
+		let key;
 		// for multiple tags, they must be in db-xxx format, when combining them in
 		// db-multiple, remove 'db-' from each individual tags
 		for ( key in this.selectedTag ) {
 			const tagObj = this.selectedTag[ key ];
 			let tempTag = tagObj.tag;
 			const tagging = specialDeletionTagging[ tagObj.tag ];
+			// Get if a page should be blanked while deletion tagging
+			// Used for blanking a page when {{speedy deletion-attack}} tagged, see T381226
+			blankPage = tagObj.blank || false;
 
 			if ( !( 'discussionPage' in tagObj ) ||
 				tagObj.discussionPage === ''
@@ -925,7 +954,7 @@ module.exports = ToolView.extend( {
 				tagText += '|';
 			}
 			tagText += tempTag;
-			paramsText += that.buildParams( tagObj );
+			paramsText += this.buildParams( tagObj );
 		}
 
 		if ( count === 1 ) {
@@ -936,23 +965,27 @@ module.exports = ToolView.extend( {
 			text = '{{' + deletionTagOptions.multiple.tag + '|' + tagText + paramsText + '}}';
 		}
 
-		return this.fetchArticleContent().then( ( wikitext ) => new mw.Api().postWithToken( 'csrf', {
-			action: 'pagetriagetagging',
-			pageid: mw.config.get( 'wgArticleId' ),
-			wikitext: text + wikitext,
-			deletion: 1,
-			taglist: tagList.join( '|' )
-		} )
-			// To be passed into `addToLog`.
-			.then( () => ( { tagCount: count, tagKey: key } )
-			)
-			.catch( ( errorCode ) => {
-				if ( errorCode === 'pagetriage-tag-deletion-error' ) {
-					throw new Error( mw.msg( 'pagetriage-tag-deletion-error' ) );
-				} else {
-					throw new Error( mw.msg( 'pagetriage-tagging-error' ) );
-				}
-			} ) );
+		return this.fetchArticleContent().then( ( wikitext ) => {
+			const postData = {
+				action: 'pagetriagetagging',
+				pageid: mw.config.get( 'wgArticleId' ),
+				// If 'blankPage' is true, then replace the page content with only the deletion tags
+				wikitext: ( blankPage === true ) ? text : text + wikitext,
+				deletion: 1,
+				taglist: tagList.join( '|' )
+			};
+			return new mw.Api().postWithToken( 'csrf', postData )
+				// To be passed into `addToLog`.
+				.then( () => ( { tagCount: count, tagKey: key } )
+				)
+				.catch( ( errorCode ) => {
+					if ( errorCode === 'pagetriage-tag-deletion-error' ) {
+						throw new Error( mw.msg( 'pagetriage-tag-deletion-error' ) );
+					} else {
+						throw new Error( mw.msg( 'pagetriage-tagging-error' ) );
+					}
+				} );
+		} );
 	},
 
 	/**
@@ -1187,8 +1220,7 @@ module.exports = ToolView.extend( {
 	},
 
 	pickDiscussionPageName: function ( prefix ) {
-		const that = this,
-			baseTitle = prefix + '/' + pageName,
+		const baseTitle = prefix + '/' + pageName,
 			baseTitleNoNS = new mw.Title( baseTitle ).getMainText();
 
 		return new mw.Api().get( {
@@ -1204,19 +1236,18 @@ module.exports = ToolView.extend( {
 		} )
 			.then( ( data ) => {
 				const pages = {};
-				let page, i, suffix;
 
 				if ( !data || !data.query ) {
 					throw new Error( 'API error' );
 				}
 				if ( data.query.pages ) {
-					page = data.query.pages[ 0 ];
+					const page = data.query.pages[ 0 ];
 					if ( page && page.title && !page.missing ) {
 						pages[ page.title ] = true;
 					}
 				}
 				if ( data.query.allpages ) {
-					for ( page in data.query.allpages ) {
+					for ( const page in data.query.allpages ) {
 						pages[ data.query.allpages[ page ].title ] = true;
 					}
 				}
@@ -1224,10 +1255,10 @@ module.exports = ToolView.extend( {
 				if ( !pages[ baseTitle ] ) {
 					return { page: pageName, number: undefined };
 				}
-				for ( i = 2; i < 50; i++ ) {
-					suffix = ' (' + that.getNumeral( i ) + ' nomination)';
+				for ( let i = 2; i < 50; i++ ) {
+					const suffix = ' (' + this.getNumeral( i ) + ' nomination)';
 					if ( !pages[ baseTitle + suffix ] ) {
-						return { page: pageName + suffix, number: that.getNumeral( i ) };
+						return { page: pageName + suffix, number: this.getNumeral( i ) };
 					}
 				}
 				// If a page was nominated over 50 times (API limit for unprivileged users),

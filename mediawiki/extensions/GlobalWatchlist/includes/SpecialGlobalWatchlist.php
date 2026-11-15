@@ -36,22 +36,21 @@ use Wikimedia\Stats\IBufferingStatsdDataFactory;
  */
 class SpecialGlobalWatchlist extends SpecialPage {
 
-	/** @var IBufferingStatsdDataFactory */
-	private $statsdDataFactory;
+	public function __construct(
+		private readonly IBufferingStatsdDataFactory $statsdDataFactory,
+	) {
+		parent::__construct( 'GlobalWatchlist' );
+	}
 
-	/**
-	 * @param IBufferingStatsdDataFactory $statsdDataFactory
-	 */
-	public function __construct( IBufferingStatsdDataFactory $statsdDataFactory ) {
-		parent::__construct( 'GlobalWatchlist', 'viewmywatchlist' );
-
-		$this->statsdDataFactory = $statsdDataFactory;
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'viewmywatchlist';
 	}
 
 	/**
 	 * @param string|null $par
 	 */
-	public function execute( $par ) {
+	public function execute( $par ): void {
 		$this->setHeaders();
 
 		$this->addHelpLink( 'Extension:GlobalWatchlist' );
@@ -64,7 +63,6 @@ class SpecialGlobalWatchlist extends SpecialPage {
 		$out->addModules( 'ext.globalwatchlist.specialglobalwatchlist' );
 
 		$out->addJsConfigVars( [
-			'wgGlobalWatchlistWikibaseSite' => $config->get( 'GlobalWatchlistWikibaseSite' ),
 			'wgGlobalWatchlistDevMode' => $config->get( 'GlobalWatchlistDevMode' )
 		] );
 
@@ -74,26 +72,21 @@ class SpecialGlobalWatchlist extends SpecialPage {
 		$message = Html::rawElement(
 			'div',
 			[ 'class' => 'ext-globalwatchlist-content' ],
-			$this->msg( 'globalwatchlist-javascript-required' )
+			$this->msg( 'globalwatchlist-javascript-required' )->parse()
 		);
 		$out->addHTML( $message );
 
 		$this->statsdDataFactory->increment( 'globalwatchlist.load_special_page' );
 	}
 
-	/**
-	 * @return string
-	 */
-	protected function getGroupName() {
+	protected function getGroupName(): string {
 		return 'changes';
 	}
 
 	/**
 	 * Only shown for logged in users
-	 *
-	 * @return bool
 	 */
-	public function isListed() {
+	public function isListed(): bool {
 		return $this->getUser()->isNamed();
 	}
 

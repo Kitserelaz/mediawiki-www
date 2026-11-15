@@ -1,5 +1,4 @@
 'use strict';
-/* eslint-disable no-implicit-globals */
 
 /*!
  * Used to embed translation stats graph on other pages.
@@ -22,7 +21,8 @@ var EmbeddedHandler = function ( $graphContainer ) {
 		return {
 			measure: graphOptions.count,
 			days: graphOptions.days,
-			start: graphOptions.start,
+			// the JSON contains only a date, the graph expects a timestamp
+			start: graphOptions.start ? graphOptions.start + 'T00:00:00' : null,
 			granularity: graphOptions.scale,
 			group: graphOptions.group,
 			language: graphOptions.language,

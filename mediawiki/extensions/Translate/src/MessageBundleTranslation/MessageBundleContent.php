@@ -3,12 +3,9 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageBundleTranslation;
 
-use FormatJson;
-use JsonContent;
+use MediaWiki\Content\JsonContent;
+use MediaWiki\Json\FormatJson;
 use MediaWiki\Message\Message;
-use MediaWiki\Status\Status;
-use MediaWiki\User\User;
-use WikiPage;
 
 /**
  * @author Niklas Laxström
@@ -29,6 +26,7 @@ class MessageBundleContent extends JsonContent {
 	private ?array $messages = null;
 	private ?MessageBundleMetadata $metadata = null;
 
+	/** @inheritDoc */
 	public function __construct( $text, $modelId = self::CONTENT_MODEL_ID ) {
 		parent::__construct( $text, $modelId );
 	}
@@ -38,7 +36,7 @@ class MessageBundleContent extends JsonContent {
 			$this->getMessages();
 			$this->getMetadata();
 			return parent::isValid();
-		} catch ( MalformedBundle $e ) {
+		} catch ( MalformedBundle ) {
 			return false;
 		}
 	}
@@ -49,23 +47,9 @@ class MessageBundleContent extends JsonContent {
 		$this->getMetadata();
 	}
 
-	public function prepareSave( WikiPage $page, $flags, $parentRevId, User $user ) {
-		// TODO: Should be removed when it is no longer needed for backwards compatibility.
-
-		// This will give an informative error message when trying to change the content model
-		try {
-			$this->getMessages();
-			$this->getMetadata();
-			return Status::newGood();
-		} catch ( MalformedBundle $e ) {
-			// XXX: We have no context source nor is there Message::messageParam :(
-			return Status::newFatal( 'translate-messagebundle-validation-error', wfMessage( $e ) );
-		}
-	}
-
 	/** @throws MalformedBundle */
 	public function getMessages(): array {
-		if ( isset( $this->messages ) ) {
+		if ( $this->messages !== null ) {
 			return $this->messages;
 		}
 
@@ -111,8 +95,9 @@ class MessageBundleContent extends JsonContent {
 		return $this->messages;
 	}
 
+	/** @throws MalformedBundle */
 	public function getMetadata(): MessageBundleMetadata {
-		if ( isset( $this->metadata ) ) {
+		if ( $this->metadata !== null ) {
 			return $this->metadata;
 		}
 
@@ -180,12 +165,13 @@ class MessageBundleContent extends JsonContent {
 		return $this->metadata;
 	}
 
+	/** @throws MalformedBundle */
 	private function getRawData(): array {
 		$status = FormatJson::parse( $this->getText(), FormatJson::FORCE_ASSOC );
 		if ( !$status->isOK() ) {
 			throw new MalformedBundle(
 				'translate-messagebundle-error-parsing',
-				[ $status->getMessage()->text() ]
+				[ $status->getMessages( 'error' )[0] ]
 			);
 		}
 

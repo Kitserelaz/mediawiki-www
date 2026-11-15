@@ -12,7 +12,7 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\EmbedVideo;
 
-use ApiBase;
+use MediaWiki\Api\ApiBase;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ApiEmbedVideo extends ApiBase {
@@ -29,9 +29,9 @@ class ApiEmbedVideo extends ApiBase {
 			'alignment' => $this->getMain()->getVal( 'alignment' ),
 			'description' => $this->getMain()->getVal( 'description' ),
 			'container' => $this->getMain()->getVal( 'container' ),
-			'urlargs' => $this->getMain()->getVal( 'urlargs' ),
+			'urlArgs' => $this->getMain()->getVal( 'urlargs' ),
 			'autoresize' => $this->getMain()->getVal( 'autoresize' ),
-			'valignment' => $this->getMain()->getVal( 'valignment' ),
+			'vAlignment' => $this->getMain()->getVal( 'valignment' ),
 		], true );
 
 		$getHTML = $ev->output();
@@ -82,6 +82,10 @@ class ApiEmbedVideo extends ApiBase {
 				ParamValidator::PARAM_REQUIRED => false
 			],
 			'autoresize' => [
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => false
+			],
+			'valignment' => [
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => false
 			],

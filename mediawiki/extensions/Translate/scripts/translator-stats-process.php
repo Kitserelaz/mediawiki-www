@@ -7,6 +7,8 @@
  * @file
  */
 
+use MediaWiki\Maintenance\Maintenance;
+
 // Standard boilerplate to define $IP
 if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
 	$IP = getenv( 'MW_INSTALL_PATH' );
@@ -27,7 +29,7 @@ class TSP extends Maintenance {
 		);
 	}
 
-	protected function median( $a ) {
+	protected function median( array $a ): int {
 		sort( $a );
 		$len = count( $a );
 		if ( $len === 0 ) {
@@ -75,8 +77,7 @@ class TSP extends Maintenance {
 			$avg = 'N/A';
 			$sbar = [];
 
-			foreach ( $period as $p ) {
-				[ , $reg, $edits, $translator, $promtime, $method ] = $p;
+			foreach ( $period as [ , $reg, $edits, $translator, $promtime, $method ] ) {
 				$total++;
 				if ( $translator === 'translator' ) {
 					$promoted++;
@@ -91,13 +92,8 @@ class TSP extends Maintenance {
 				}
 
 				if ( $method === 'sandbox' ) {
-					if ( $promtime ) {
-						$sbar[] = true;
-					} else {
-						$sbar[] = false;
-					}
+					$sbar[] = (bool)$promtime;
 				}
-
 			}
 
 			$median = round( $this->median( $delay ) / 3600 );

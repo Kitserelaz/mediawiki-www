@@ -14,6 +14,7 @@
  */
 
 use MediaWiki\Language\Language;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Site\SiteLookup;
 use MediaWiki\Title\Title;
@@ -155,6 +156,7 @@ return [
 				new LabelsProviderFieldDefinitions( $languageCodes ),
 				new DescriptionsProviderFieldDefinitions( $languageCodes, $configFactory ),
 				StatementProviderFieldDefinitions::newFromSettings(
+					WikibaseRepo::getDataTypeFactory( $services ),
 					new InProcessCachingDataTypeLookup(
 						WikibaseRepo::getPropertyDataTypeLookup( $services ) ),
 					WikibaseRepo::getDataTypeDefinitions( $services )
@@ -164,9 +166,7 @@ return [
 				)
 			);
 		},
-		Def::CONTENT_HANDLER_FACTORY_CALLBACK => static function () {
-			return MediaInfoServices::getMediaInfoHandler();
-		},
+		Def::CONTENT_HANDLER_FACTORY_CALLBACK => MediaInfoServices::getMediaInfoHandler( ... ),
 		Def::ENTITY_ID_PATTERN => MediaInfoId::PATTERN,
 		Def::ENTITY_ID_BUILDER => static function ( $serialization ) {
 			return new MediaInfoId( $serialization );
@@ -319,9 +319,7 @@ return [
 		Def::PREFETCHING_TERM_LOOKUP_CALLBACK => static function ( EntitySource $entitySource ) {
 			return new MediaInfoPrefetchingTermLookup( WikibaseRepo::getEntityRevisionLookup() );
 		},
-		Def::ENTITY_ID_LOOKUP_CALLBACK => static function () {
-			return MediaInfoServices::getMediaInfoIdLookup();
-		},
+		Def::ENTITY_ID_LOOKUP_CALLBACK => MediaInfoServices::getMediaInfoIdLookup( ... ),
 		Def::LUA_ENTITY_MODULE => 'mw.wikibase.mediainfo.entity',
 		Def::URL_LOOKUP_CALLBACK => static function () {
 			return new TitleLookupBasedEntityUrlLookup( WikibaseRepo::getEntityTitleLookup() );

@@ -3,7 +3,7 @@
 namespace Wikibase\Search\Elastic\Fields;
 
 use CirrusSearch\CirrusSearch;
-use SearchEngine;
+use MediaWiki\Search\SearchEngine;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Term\DescriptionsProvider;
 
@@ -13,32 +13,14 @@ use Wikibase\DataModel\Term\DescriptionsProvider;
  * @license GPL-2.0-or-later
  * @author Stas Malyshev
  */
-class DescriptionsField extends TermIndexField {
+class DescriptionsField extends TermIndexField implements WikibaseDescriptionsIndexField {
+
+	use LabelsDescriptionsFieldTrait;
 
 	/**
 	 * Field name
 	 */
 	public const NAME = 'descriptions';
-
-	/**
-	 * List of available languages
-	 * @var string[]
-	 */
-	private $languages;
-	/**
-	 * @var array
-	 */
-	private $stemmingSettings;
-
-	/**
-	 * @param string[] $languages Available languages list.
-	 * @param array $stemmingSettings Stemming config
-	 */
-	public function __construct( array $languages, array $stemmingSettings ) {
-		$this->languages = $languages;
-		parent::__construct( static::NAME, \SearchIndexField::INDEX_TYPE_NESTED );
-		$this->stemmingSettings = $stemmingSettings;
-	}
 
 	/**
 	 * @param SearchEngine $engine
@@ -83,6 +65,10 @@ class DescriptionsField extends TermIndexField {
 		if ( !( $entity instanceof DescriptionsProvider ) ) {
 			return null;
 		}
+		return $this->getDescriptionsIndexedData( $entity );
+	}
+
+	public function getDescriptionsIndexedData( DescriptionsProvider $entity ): ?array {
 		$data = [];
 		foreach ( $entity->getDescriptions() as $language => $desc ) {
 			// While wikibase can only have a single description,
@@ -94,21 +80,6 @@ class DescriptionsField extends TermIndexField {
 		// empty list instead of an empty map. Elastic doesn't mind, but this
 		// allows more consistency working with the resulting cirrus docs
 		return $data ?: null;
-	}
-
-	/**
-	 * Set engine hints.
-	 * Specifically, sets noop hint so that descriptions would be compared
-	 * as arrays and removal of description would be processed correctly.
-	 * @param SearchEngine $engine
-	 * @return array
-	 */
-	public function getEngineHints( SearchEngine $engine ) {
-		if ( !( $engine instanceof CirrusSearch ) ) {
-			// For now only Cirrus/Elastic is supported
-			return [];
-		}
-		return [ \CirrusSearch\Search\CirrusIndexField::NOOP_HINT => "equals" ];
 	}
 
 }

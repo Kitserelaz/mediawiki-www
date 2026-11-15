@@ -3,12 +3,13 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Statistics;
 
-use Language;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageLoading\MessageIndex;
 use MediaWiki\Extension\Translate\Services;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
+use MediaWiki\Language\Language;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\RecentChanges\RecentChange;
 use stdClass;
 use Wikimedia\Rdbms\IReadableDatabase;
 use Wikimedia\Rdbms\SelectQueryBuilder;
@@ -44,7 +45,7 @@ class TranslatePerLanguageStats extends TranslationStatsBase {
 		$conds = [
 			'rc_namespace' => $wgTranslateMessageNamespaces,
 			'rc_bot' => 0,
-			'rc_type != ' . RC_LOG,
+			$database->expr( 'rc_source', '!=', RecentChange::SRC_LOG ),
 		];
 
 		$this->groups = array_map( [ MessageGroups::class, 'normalizeId' ], $this->opts->getGroups() );
@@ -110,7 +111,7 @@ class TranslatePerLanguageStats extends TranslationStatsBase {
 		if ( $this->groups ) {
 			// Get list of keys that the message belongs to, and filter
 			// out those which are not requested.
-			$groups = $this->messageIndex->getGroupIdsForDatabaseTitle( (int)$row->rc_namespace, $key );
+			$groups = $this->messageIndex->getGroupIdsForBaseDatabaseTitle( (int)$row->rc_namespace, $key );
 			$groups = array_intersect( $this->groups, $groups );
 		}
 

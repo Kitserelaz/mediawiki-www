@@ -35,20 +35,22 @@ module.exports = ToolView.extend( {
 	// overwrite parent function
 	setIcon: function ( dir ) {
 		if ( this.model.get( 'patrol_status' ) === '3' ) {
+			dir = 'special';
 			this.icon = 'icon_mark_autopatrolled.png'; // autopatrolled icon
 		}
 		if ( typeof dir !== 'string' ) {
 			dir = 'normal';
 		}
-		if ( dir === 'normal' && this.model.get( 'patrol_status' ) > 0 ) {
+		if ( dir === 'normal' && this.model.get( 'patrol_status' ) > 0 &&
+			this.model.get( 'patrol_status' ) !== '3' ) {
 			dir = 'special';
+			this.icon = 'icon_mark_reviewed.png';
 		}
 		this.$icon.attr( 'src', this.iconPath( dir ) );
 	},
 
 	submit: function ( action ) {
-		const that = this,
-			note = '',
+		const note = '',
 			reviewed = action === 'reviewed';
 
 		new mw.Api().postWithToken( 'csrf', {
@@ -58,7 +60,7 @@ module.exports = ToolView.extend( {
 		} )
 			.then( () => {
 				// Data to be sent back to consumers of the actionQueue API.
-				const actionData = that.getDataForActionQueue( {
+				const actionData = this.getDataForActionQueue( {
 					reviewed: reviewed,
 					reviewer: mw.config.get( 'wgUserName' )
 				} );
@@ -70,20 +72,19 @@ module.exports = ToolView.extend( {
 				// a note needs to be posted to article talk page when an article is marked as
 				// unreviewed and it meets the use case set in talkPageNote
 				if ( action === 'unreviewed' ) {
-					that.talkPageNote( note, action, '' );
+					this.talkPageNote( note, action, '' );
 				} else {
-					that.hideFlyout( action );
+					this.hideFlyout( action );
 				}
 
 				mw.pageTriage.actionQueue.run( 'mark', actionData );
 			} )
 			.catch( ( _errorCode, data ) => {
-				that.showMarkError( action, data.error.info || mw.msg( 'unknown-error' ) );
+				this.showMarkError( action, data.error.info || mw.msg( 'unknown-error' ) );
 			} );
 	},
 
 	submitNote: function () {
-		const that = this;
 		const action = 'sendnote';
 		let recipient = 'creator';
 		const note = $( '#mwe-pt-review-note-input' ).val().trim();
@@ -95,11 +96,10 @@ module.exports = ToolView.extend( {
 		if ( this.model.get( 'ptrp_last_reviewed_by' ) > 0 ) {
 			recipient = $( '#mwe-pt-review-note-recipient' ).val().trim();
 		}
-		that.talkPageNote( note, action, recipient );
+		this.talkPageNote( note, action, recipient );
 	},
 
 	talkPageNote: function ( note, action, noteRecipient ) {
-		const that = this;
 		const pageTitle = mw.config.get( 'wgPageName' ).replace( /_/g, ' ' );
 		let talkPageTitle,
 			topicTitle,
@@ -122,13 +122,13 @@ module.exports = ToolView.extend( {
 					'|2=' + pageTitle +
 					'}}';
 			} else {
-				that.hideFlyout( action );
+				this.hideFlyout( action );
 				return;
 			}
 		} else {
 			// there is no note, should not write anything in user talk page
 			if ( !note ) {
-				that.hideFlyout( action );
+				this.hideFlyout( action );
 				return;
 			}
 
@@ -147,7 +147,7 @@ module.exports = ToolView.extend( {
 			sendNoteToArticleTalkPage = noteRecipient === 'creator';
 		}
 
-		const sendNote1 = that.sendNote( talkPageTitle, topicTitle, topicMessage );
+		const sendNote1 = this.sendNote( talkPageTitle, topicTitle, topicMessage );
 
 		// If the note needs to be posted to article talk page as well then we handle
 		// both post note promises resolve/reject states through a single promise
@@ -160,7 +160,7 @@ module.exports = ToolView.extend( {
 				'pagetriage-feedback-from-new-page-review-process-message',
 				note
 			).text();
-			const sendNote2 = that.sendNote( talkPageTitle, topicTitle, topicMessage );
+			const sendNote2 = this.sendNote( talkPageTitle, topicTitle, topicMessage );
 			sendNotePromise = $.when( sendNote1, sendNote2 );
 		} else { // Do not post note to article talk page
 			sendNotePromise = sendNote1;
@@ -168,13 +168,13 @@ module.exports = ToolView.extend( {
 
 		sendNotePromise
 			.then( () => {
-				that.hideFlyout( action );
+				this.hideFlyout( action );
 			} )
 			.catch( ( _errorCode, error ) => {
 				if ( error !== undefined ) {
-					that.showMarkError( action, error );
+					this.showMarkError( action, error );
 				} else {
-					that.showMarkError( action, mw.msg( 'unknown-error' ) );
+					this.showMarkError( action, mw.msg( 'unknown-error' ) );
 				}
 			} );
 	},
@@ -191,14 +191,13 @@ module.exports = ToolView.extend( {
 		$.removeSpinner( 'mark-spinner' );
 
 		if ( action === 'sendnote' ) {
-			$( '#mwe-pt-send-message-button' ).button( 'disable' );
+			$( '#mwe-pt-send-message-button' ).attr( 'disabled', true );
 		} else {
-			$( '#mwe-pt-mark-as-' + action + '-button' ).button( 'enable' );
+			$( '#mwe-pt-mark-as-' + action + '-button' ).attr( 'disabled', false );
 		}
 
 		$( '#mwe-pt-review-note-input' ).val( '' );
 		this.model.fetch();
-		this.hide();
 	},
 
 	/**
@@ -209,10 +208,10 @@ module.exports = ToolView.extend( {
 	 */
 	showMarkError: function ( action, errorMsg ) {
 		if ( action === 'sendnote' ) {
-			$( '#mwe-pt-send-message-button' ).button( 'enable' );
+			$( '#mwe-pt-send-message-button' ).attr( 'disabled', false );
 		} else {
 			action = 'mark-as-' + action;
-			$( '#mwe-pt-' + action + '-button' ).button( 'enable' );
+			$( '#mwe-pt-' + action + '-button' ).attr( 'disabled', false );
 		}
 
 		// The following messages are used here:
@@ -226,8 +225,7 @@ module.exports = ToolView.extend( {
 
 	render: function () {
 		let note = '';
-		const that = this,
-			status = this.model.get( 'patrol_status' ) === '0' ? 'reviewed' : 'unreviewed',
+		const status = this.model.get( 'patrol_status' ) === '0' ? 'reviewed' : 'unreviewed',
 			hasPreviousReviewer = this.model.get( 'ptrp_last_reviewed_by' ) > 0,
 			articleCreator = this.model.get( 'user_name' ),
 			articleCreatorHidden = this.model.get( 'creator_hidden' ),
@@ -279,16 +277,16 @@ module.exports = ToolView.extend( {
 		// * pagetriage-mark-as-unreviewed-error
 		$( '#mwe-pt-mark .mwe-pt-tool-title' ).text( mw.msg( 'pagetriage-mark-as-' + status ) );
 
-		const noteIsEnabledForThisNamespace = this.moduleConfig.note.indexOf( mw.config.get( 'wgNamespaceNumber' ) ) !== -1;
+		const noteIsEnabledForThisNamespace = this.moduleConfig.note.includes( mw.config.get( 'wgNamespaceNumber' ) );
 		if ( noteIsEnabledForThisNamespace && numRecipients > 0 ) {
 			$( '#mwe-pt-review-note' ).show();
 			$( '#mwe-pt-review-note-input, #mwe-pt-review-note-recipient' ).on( 'input', () => {
 				const recipient = $( '#mwe-pt-review-note-recipient' ).val();
 				note = $( '#mwe-pt-review-note-input' ).val().trim();
 				if ( note.length && recipient.length ) {
-					$( '#mwe-pt-send-message-button' ).button( 'enable' );
+					$( '#mwe-pt-send-message-button' ).attr( 'disabled', false );
 				} else {
-					$( '#mwe-pt-send-message-button' ).button( 'disable' );
+					$( '#mwe-pt-send-message-button' ).attr( 'disabled', true );
 				}
 			} );
 
@@ -314,20 +312,18 @@ module.exports = ToolView.extend( {
 
 		// initialize the buttons
 		$( '#mwe-pt-mark-as-' + status + '-button' )
-			.button( { icons: { secondary: 'ui-icon-triangle-1-e' } } )
 			.on( 'click', ( e ) => {
-				$( '#mwe-pt-mark-as-' + status + '-button' ).button( 'disable' );
+				$( '#mwe-pt-mark-as-' + status + '-button' ).attr( 'disabled', true );
 				$( '#mwe-pt-mark-as-' + status ).append( $.createSpinner( 'mark-spinner' ) ); // show spinner
-				that.submit( status );
+				this.submit( status );
 				e.stopPropagation();
 			} );
 
-		$( '#mwe-pt-send-message-button' )
-			.button( { disabled: true, icons: { secondary: 'ui-icon-triangle-1-e' } } )
+		$( '#mwe-pt-send-message-button' ).attr( 'disabled', true )
 			.on( 'click', ( e ) => {
-				$( '#mwe-pt-send-message-button' ).button( 'disable' );
+				$( '#mwe-pt-send-message-button' ).attr( 'disabled', true );
 				$( '#mwe-pt-send-message' ).append( $.createSpinner( 'mark-spinner' ) ); // show spinner
-				that.submitNote();
+				this.submitNote();
 				e.stopPropagation();
 			} );
 
@@ -335,7 +331,7 @@ module.exports = ToolView.extend( {
 		// Only bind this once
 		if ( !this.renderWasBound ) {
 			this.model.bind( 'change:patrol_status', () => {
-				that.render();
+				this.render();
 			} );
 			this.renderWasBound = true;
 		}

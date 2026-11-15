@@ -151,7 +151,6 @@ class LexemeTermResult extends BaseResultsType {
 			} else {
 				// matched one of the forms
 				$matchedTermType = 'alias';
-				// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset
 				$matchedTerm = new Term( $lemmaCode, $highlight['lexeme_forms.representation'][0] );
 			}
 

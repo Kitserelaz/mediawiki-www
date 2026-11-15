@@ -8,7 +8,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"SpecialPages": {
 		"GlobalWatchlist": {
@@ -19,10 +19,10 @@
 		},
 		"GlobalWatchlistSettings": {
 			"class": "MediaWiki\\Extension\\GlobalWatchlist\\SpecialGlobalWatchlistSettings",
-			"factory": "MediaWiki\\Extension\\GlobalWatchlist\\SpecialGlobalWatchlistSettings::newFromGlobalState",
 			"services": [
+				"ExtensionRegistry",
 				"GlobalWatchlistSettingsManager",
-				"SpecialPageFactory",
+				"UrlUtils",
 				"UserOptionsLookup"
 			]
 		}
@@ -37,7 +37,9 @@
 		},
 		"GlobalWatchlistGuidedTourHooks": {
 			"class": "MediaWiki\\Extension\\GlobalWatchlist\\GlobalWatchlistGuidedTourHooks",
-			"factory": "MediaWiki\\Extension\\GlobalWatchlist\\GlobalWatchlistGuidedTourHooks::newFromGlobalState"
+			"services": [
+				"ExtensionRegistry"
+			]
 		}
 	},
 	"Hooks": {
@@ -72,10 +74,6 @@
 		"includes/ServiceWiring.php"
 	],
 	"config": {
-		"GlobalWatchlistWikibaseSite": {
-			"value": false,
-			"description": "Site for which labels should be fetched for items on the watchlist, or false for none"
-		},
 		"GlobalWatchlistDevMode": {
 			"value": false,
 			"description": "Whether to send debug entries to the console"
@@ -108,7 +106,7 @@
 				"WikibaseHandler.js"
 			],
 			"styles": [
-				"SpecialGlobalWatchlist.display.css"
+				"SpecialGlobalWatchlist.display.less"
 			],
 			"templates": [
 				"templates/allEmptySites.mustache",
@@ -133,6 +131,7 @@
 				"globalwatchlist-markseen-allconfirm",
 				"globalwatchlist-option-grouppage",
 				"globalwatchlist-option-live",
+				"globalwatchlist-permalink",
 				"globalwatchlist-refresh",
 				"globalwatchlist-rewatch",
 				"globalwatchlist-tags",
@@ -144,6 +143,7 @@
 				"ntimes",
 				"newpageletter",
 				"parentheses",
+				"quotation-marks",
 				"rev-deleted-user",
 				"watchlist-expiring-days-full-text",
 				"watchlist-expiring-hours-full-text"
@@ -151,6 +151,8 @@
 			"dependencies": [
 				"jquery.makeCollapsible",
 				"mediawiki.ForeignApi",
+				"mediawiki.jqueryMsg",
+				"mediawiki.util",
 				"oojs",
 				"oojs-ui-core",
 				"oojs-ui-widgets",

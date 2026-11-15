@@ -3,8 +3,8 @@
 namespace Wikibase\Search\Elastic\Tests\Fields;
 
 use CirrusSearch\CirrusSearch;
+use MediaWiki\Search\SearchEngine;
 use MediaWikiIntegrationTestCase;
-use SearchEngine;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\Property;
@@ -23,28 +23,30 @@ use Wikibase\Search\Elastic\Tests\WikibaseSearchTestCase;
 class AllLabelsFieldTest extends MediaWikiIntegrationTestCase {
 	use WikibaseSearchTestCase;
 
-	public function provideFieldData() {
+	public static function provideFieldData() {
 		$item = new Item();
 		$item->getFingerprint()->setLabel( 'es', 'Gato' );
 
 		$prop = Property::newFromType( 'string' );
 		$prop->getFingerprint()->setLabel( 'en', 'astrological sign' );
 
-		$mock = $this->createMock( EntityDocument::class );
-
 		return [
-			[ $item ],
-			[ $prop ],
-			[ $mock ]
+			[ $item, true ],
+			[ $prop, true ],
+			[ null, false ]
 		];
 	}
 
 	/**
 	 * @dataProvider provideFieldData
 	 */
-	public function testGetFieldData( EntityDocument $entity ) {
+	public function testGetFieldData( ?EntityDocument $entity, bool $labelsProvider ) {
+		$entity ??= $this->createMock( EntityDocument::class );
 		$labels = new AllLabelsField();
 		$this->assertNull( $labels->getFieldData( $entity ) );
+		if ( $labelsProvider ) {
+			$this->assertNull( $labels->getLabelsIndexedData( $entity ) );
+		}
 	}
 
 	public function testGetMapping() {

@@ -120,9 +120,6 @@ class SearchProfileServiceFactory {
 	 */
 	private $userOptionsLookup;
 
-	/**
-	 * @var ExtensionRegistry
-	 */
 	private ExtensionRegistry $extensionRegistry;
 
 	public function __construct(
@@ -147,9 +144,12 @@ class SearchProfileServiceFactory {
 	 */
 	public function loadService( SearchConfig $config, ?WebRequest $request = null, ?UserIdentity $user = null, $forceHook = false ) {
 		$service = new SearchProfileService( $this->userOptionsLookup, $request, $user );
+		$this->loadSemanticSearch( $service, $config );
 		$this->loadCrossProjectBlockScorer( $service, $config );
 		$this->loadSimilarityProfiles( $service, $config );
 		$this->loadRescoreProfiles( $service, $config );
+		$this->loadSecondTryProfiles( $service, $config );
+		$this->loadNamespaceMatcherProfile( $service, $config );
 		$this->loadCompletionProfiles( $service, $config );
 		$this->loadPhraseSuggesterProfiles( $service, $config );
 		$this->loadIndexLookupFallbackProfiles( $service, $config );
@@ -172,10 +172,20 @@ class SearchProfileServiceFactory {
 		return $service;
 	}
 
-	/**
-	 * @param SearchProfileService $service
-	 * @param SearchConfig $config
-	 */
+	private function loadSemanticSearch( SearchProfileService $service, SearchConfig $config ) {
+		$defaultProfile = $config->get( 'CirrusSearchDefaultSemanticProfile' );
+		if ( !$defaultProfile ) {
+			return;
+		}
+		$service->registerSemanticSearchQueryRoute( [ NS_MAIN ], 1.0 );
+		// Seems incorrect that all FT_QUERY_BUILDER's have access to semantic profile?
+		// Maybe we should allow the profile to define the profile to get query building from?
+		$service->registerDefaultProfile( SearchProfileService::FT_QUERY_BUILDER,
+			SearchProfileService::CONTEXT_SEMANTIC, $defaultProfile );
+		$service->registerDefaultProfile( SearchProfileService::RESCORE,
+			SearchProfileService::CONTEXT_SEMANTIC, 'empty' );
+	}
+
 	private function loadCrossProjectBlockScorer( SearchProfileService $service, SearchConfig $config ) {
 		$service->registerFileRepository( SearchProfileService::CROSS_PROJECT_BLOCK_SCORER,
 			self::CIRRUS_BASE, __DIR__ . '/../../profiles/CrossProjectBlockScorerProfiles.config.php' );
@@ -189,10 +199,6 @@ class SearchProfileServiceFactory {
 			SearchProfileService::CONTEXT_DEFAULT, $config, 'CirrusSearchCrossProjectOrder' );
 	}
 
-	/**
-	 * @param SearchProfileService $service
-	 * @param SearchConfig $config
-	 */
 	private function loadSimilarityProfiles( SearchProfileService $service, SearchConfig $config ) {
 		$service->registerFileRepository( SearchProfileService::SIMILARITY, self::CIRRUS_BASE,
 			__DIR__ . '/../../profiles/SimilarityProfiles.config.php' );
@@ -207,10 +213,6 @@ class SearchProfileServiceFactory {
 			SearchProfileService::CONTEXT_DEFAULT, $config, 'CirrusSearchSimilarityProfile' );
 	}
 
-	/**
-	 * @param SearchProfileService $service
-	 * @param SearchConfig $config
-	 */
 	private function loadRescoreProfiles( SearchProfileService $service, SearchConfig $config ) {
 		$service->registerFileRepository( SearchProfileService::RESCORE,
 			self::CIRRUS_BASE, __DIR__ . '/../../profiles/RescoreProfiles.config.php' );
@@ -242,10 +244,35 @@ class SearchProfileServiceFactory {
 		// No default profiles for function chains, these profiles are always accessed explicitly
 	}
 
-	/**
-	 * @param SearchProfileService $service
-	 * @param SearchConfig $config
-	 */
+	private function loadSecondTryProfiles( SearchProfileService $service, SearchConfig $config ) {
+		$service->registerFileRepository( SearchProfileService::SECOND_TRY,
+			self::CIRRUS_BASE, __DIR__ . '/../../profiles/SecondTryProfiles.config.php' );
+		$service->registerRepository( new ConfigProfileRepository( SearchProfileService::SECOND_TRY,
+			self::CIRRUS_CONFIG, 'CirrusSearchSecondTryProfiles', $config ) );
+		$service->registerDefaultProfile( SearchProfileService::SECOND_TRY,
+			SearchProfileService::CONTEXT_COMPLETION, 'default' );
+		$service->registerConfigOverride( SearchProfileService::SECOND_TRY,
+			SearchProfileService::CONTEXT_COMPLETION, $config, 'CirrusSearchCompletionUseSecondTryProfile' );
+		$service->registerUriParamOverride( SearchProfileService::SECOND_TRY,
+			SearchProfileService::CONTEXT_COMPLETION, 'cirrusUseSecondTryProfile' );
+	}
+
+	private function loadNamespaceMatcherProfile( SearchProfileService $service, SearchConfig $config ): void {
+		$service->registerFileRepository( SearchProfileService::NAMESPACE_MATCHER,
+			self::CIRRUS_BASE, __DIR__ . '/../../profiles/NamespaceMatcherProfiles.config.php' );
+		$service->registerRepository( new ConfigProfileRepository( SearchProfileService::NAMESPACE_MATCHER,
+			self::CIRRUS_CONFIG, 'CirrusSearchNamespaceMatcherProfiles', $config ) );
+
+		$service->registerDefaultProfile( SearchProfileService::NAMESPACE_MATCHER,
+			SearchProfileService::CONTEXT_DEFAULT, 'naive' );
+
+		$service->registerConfigOverride( SearchProfileService::NAMESPACE_MATCHER,
+			SearchProfileService::CONTEXT_DEFAULT, $config, 'CirrusSearchNamespaceResolutionMethod' );
+
+		$service->registerUriParamOverride( SearchProfileService::NAMESPACE_MATCHER,
+			SearchProfileService::CONTEXT_DEFAULT, 'cirrusUseNamespaceMatcherProfile' );
+	}
+
 	private function loadCompletionProfiles( SearchProfileService $service, SearchConfig $config ) {
 		$service->registerRepository( CompletionSearchProfileRepository::fromFile( SearchProfileService::COMPLETION,
 			self::CIRRUS_BASE, __DIR__ . '/../../profiles/SuggestProfiles.config.php', $config ) );
@@ -255,21 +282,17 @@ class SearchProfileServiceFactory {
 			new ExtensionRegistryProfileRepository( SearchProfileService::COMPLETION,
 			self::EXTENSION_REGISTRY, 'CirrusSearchCompletionProfiles', $this->extensionRegistry ), $config ) );
 		$service->registerDefaultProfile( SearchProfileService::COMPLETION,
-			SearchProfileService::CONTEXT_DEFAULT, 'fuzzy' );
+			SearchProfileService::CONTEXT_COMPLETION, 'fuzzy' );
 		// XXX: We don't really override the default here
 		// Due to the way User preference works we may always end up using
 		// the user pref overrides because we initialize default user pref
 		// in Hooks::onUserGetDefaultOptions
 		$service->registerConfigOverride( SearchProfileService::COMPLETION,
-			SearchProfileService::CONTEXT_DEFAULT, $config, 'CirrusSearchCompletionSettings' );
+			SearchProfileService::CONTEXT_COMPLETION, $config, 'CirrusSearchCompletionSettings' );
 		$service->registerUserPrefOverride( SearchProfileService::COMPLETION,
-			SearchProfileService::CONTEXT_DEFAULT, 'cirrussearch-pref-completion-profile' );
+			SearchProfileService::CONTEXT_COMPLETION, 'cirrussearch-pref-completion-profile' );
 	}
 
-	/**
-	 * @param SearchProfileService $service
-	 * @param SearchConfig $config
-	 */
 	private function loadPhraseSuggesterProfiles( SearchProfileService $service, SearchConfig $config ) {
 		$service->registerRepository( PhraseSuggesterProfileRepoWrapper::fromFile( SearchProfileService::PHRASE_SUGGESTER,
 			self::CIRRUS_BASE, __DIR__ . '/../../profiles/PhraseSuggesterProfiles.config.php', $this->localServerCache ) );
@@ -293,19 +316,12 @@ class SearchProfileServiceFactory {
 			self::EXTENSION_REGISTRY, 'CirrusSearchIndexLookupFallbackProfiles', $this->extensionRegistry ) );
 	}
 
-	/**
-	 * @param SearchProfileService $service
-	 */
 	private function loadSaneitizerProfiles( SearchProfileService $service ) {
 		$service->registerFileRepository( SearchProfileService::SANEITIZER, self::CIRRUS_BASE,
 			__DIR__ . '/../../profiles/SaneitizeProfiles.config.php' );
 		// no name resolver, profile is automatically chosen based on wiki
 	}
 
-	/**
-	 * @param SearchProfileService $service
-	 * @param SearchConfig $config
-	 */
 	private function loadDocumentSizeLimiterProfiles( SearchProfileService $service, SearchConfig $config ) {
 		$service->registerFileRepository( SearchProfileService::DOCUMENT_SIZE_LIMITER, self::CIRRUS_BASE,
 			__DIR__ . '/../../profiles/DocumentSizeLimiterProfiles.config.php' );
@@ -319,10 +335,6 @@ class SearchProfileServiceFactory {
 			SearchProfileService::CONTEXT_DEFAULT, $config, "CirrusSearchDocumentSizeLimiterProfile" );
 	}
 
-	/**
-	 * @param SearchProfileService $service
-	 * @param SearchConfig $config
-	 */
 	private function loadFullTextQueryProfiles( SearchProfileService $service, SearchConfig $config ) {
 		$service->registerFileRepository( SearchProfileService::FT_QUERY_BUILDER, self::CIRRUS_BASE,
 			__DIR__ . '/../../profiles/FullTextQueryBuilderProfiles.config.php' );

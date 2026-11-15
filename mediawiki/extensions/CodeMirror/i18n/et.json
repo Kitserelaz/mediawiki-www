@@ -50,7 +50,7 @@
 	"codemirror-match-case": "Tõstutundlik",
 	"codemirror-regexp": "Regulaaravaldis",
 	"codemirror-regexp-invalid": "Vigane regulaaravaldis",
-	"codemirror-by-word": "Terved sõnad",
+	"codemirror-by-word": "Terve sõna",
 	"codemirror-replace": "Asenda",
 	"codemirror-replace-placeholder": "Asendaja",
 	"codemirror-replace-all": "Asenda kõik",
@@ -165,7 +165,5 @@
 	"codemirror-wikilint-unclosed-quotes": "sulgemata jutumärgid",
 	"codemirror-wikilint-unclosed-table": "sulgemata tabel",
 	"codemirror-wikilint-unnecessary-encoding": "tarbetu protsentkodeering siselingis",
-	"codemirror-potentially-slow": "võib olla aeglane",
-	"codemirror-v6-prefs-colorblind": "Kasuta värvipimedasõbralikku skeemi",
-	"codemirror-fold-template": "Voldi malliparameetrid"
+	"codemirror-potentially-slow": "võib olla aeglane"
 }

@@ -4,10 +4,13 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\TtmServer;
 
 use Elastica\Document;
+use Elastica\Exception\ExceptionInterface;
 use Elastica\ResultSet;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Extension\Translate\MessageLoading\MessageCollection;
 use MediaWiki\Extension\Translate\MessageLoading\MessageDefinitions;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Title\Title;
 
 /**
@@ -17,17 +20,18 @@ use MediaWiki\Title\Title;
  * @ingroup TTMServer
  */
 class CrossLanguageTranslationSearchQuery {
-	private SearchableTtmServer $server;
-	private array $params;
+
 	private ?ResultSet $resultSet = null;
 	private int $total = 0;
 	private array $hl = [ '', '' ];
 
-	public function __construct( array $params, SearchableTtmServer $server ) {
-		$this->params = $params;
-		$this->server = $server;
+	public function __construct(
+		private readonly array $params,
+		private readonly SearchableTtmServer $server,
+	) {
 	}
 
+	/** @throws TtmServerException if the search backend failed. */
 	public function getDocuments(): array {
 		$documents = [];
 		$offset = $this->params['offset'];
@@ -51,32 +55,45 @@ class CrossLanguageTranslationSearchQuery {
 		// Used for aggregations. Only the first scroll response has them.
 		$this->resultSet = null;
 
-		foreach ( $scroll as $resultSet ) {
+		try {
+			foreach ( $scroll as $resultSet ) {
+				if ( !$this->resultSet ) {
+					$this->resultSet = $resultSet;
+					$this->total = $resultSet->getTotalHits();
+				}
+
+				$results = $this->extractMessages( $resultSet->getDocuments() );
+				$documents = array_merge( $documents, $results );
+
+				$count = count( $documents );
+
+				if ( $count >= $offset + $limit ) {
+					break;
+				}
+			}
 			if ( !$this->resultSet ) {
-				$this->resultSet = $resultSet;
-				$this->total = $resultSet->getTotalHits();
+				// No hits for documents, just set the result set.
+				$this->resultSet = $scroll->current();
+				$this->total = $scroll->current()->getTotalHits();
 			}
-
-			$results = $this->extractMessages( $resultSet->getDocuments() );
-			$documents = array_merge( $documents, $results );
-
-			$count = count( $documents );
-
-			if ( $count >= $offset + $limit ) {
-				break;
+		} catch ( ExceptionInterface $e ) {
+			// TODO: might need more fine-grained exception handling
+			throw new TtmServerException(
+				"Search backend issue: " . $e->getMessage(),
+				TtmServerException::TRANSIENT_SEARCH_BACKEND_FAILURE,
+				$e
+			);
+		} finally {
+			try {
+				$scroll->clear();
+			} catch ( ExceptionInterface $e ) {
+				LoggerFactory::getInstance( LogNames::ELASTIC_SEARCH_TTMSERVER )->warning(
+					'Failed to clear search backend scroll: {exception}',
+					[ 'exception' => $e ]
+				);
 			}
 		}
 
-		if ( !$this->resultSet ) {
-			// No hits for documents, just set the result set.
-			$this->resultSet = $scroll->current();
-			$this->total = $scroll->current()->getTotalHits();
-		}
-
-		// clear was introduced in Elastica 5.3.1, but Elastica extension uses 5.3.0
-		if ( is_callable( [ $scroll, 'clear' ] ) ) {
-			$scroll->clear();
-		}
 		return array_slice( $documents, $offset, $limit );
 	}
 
@@ -86,6 +103,7 @@ class CrossLanguageTranslationSearchQuery {
 	 * Filter the message collection to get filtered messages.
 	 * Slice messages according to limit and offset given.
 	 * @param Document[] $documents
+	 * @return array[]
 	 */
 	private function extractMessages( array $documents ): array {
 		$messages = $ret = [];
@@ -118,9 +136,9 @@ class CrossLanguageTranslationSearchQuery {
 
 		$filter = $this->params['filter'];
 		if ( $filter === 'untranslated' ) {
-			$collection->filter( 'hastranslation', true );
+			$collection->filter( MessageCollection::FILTER_HAS_TRANSLATION, MessageCollection::EXCLUDE_MATCHING );
 		} elseif ( in_array( $filter, $this->getAvailableFilters() ) ) {
-			$collection->filter( $filter, false );
+			$collection->filter( $filter, MessageCollection::INCLUDE_MATCHING );
 		}
 
 		if ( $filter === 'translated' || $filter === 'fuzzy' ) {

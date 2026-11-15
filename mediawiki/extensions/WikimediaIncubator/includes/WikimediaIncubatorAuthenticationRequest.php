@@ -40,11 +40,12 @@ class WikimediaIncubatorAuthenticationRequest extends AuthenticationRequest {
 		];
 	}
 
+	/** @inheritDoc */
 	public function loadFromSubmission( array $data ) {
-		global $wmincProjects;
+		global $wgWmincProjects;
 
 		return parent::loadFromSubmission( $data ) &&
 			WikimediaIncubator::validateLanguageCode( $this->testwikicode ) &&
-			isset( $wmincProjects[$this->testwikiproject] );
+			isset( $wgWmincProjects[$this->testwikiproject] );
 	}
 }

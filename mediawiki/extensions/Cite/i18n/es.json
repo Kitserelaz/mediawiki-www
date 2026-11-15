@@ -93,11 +93,5 @@
 	"communityconfiguration-cite-description": "Personaliza el formato y la apariencia de las referencias.",
 	"cite-configuration-title": "Configuración de citas",
 	"cite-configuration-info": "Estos ajustes afectan a todas las páginas que utilizan Cite. Solo los administradores pueden modificarlos.",
-	"cite-configuration-submit": "Guardar cambios",
-	"cite_error_ref_nested_extends": "No se permite extender las etiquetas <code>&lt;ref&gt;</code> más allá de un nivel de profundidad",
-	"cite-tracking-category-ref-extends": "Páginas que utilizan referencias extendidas",
-	"cite-tracking-category-ref-extends-desc": "Las páginas de esta categoría utilizan el atributo «extends» de la etiqueta &lt;ref&gt;.",
-	"popups-prefs-navpopups-gadget-conflict-info": "Tienes habilitado el accesorio [[$1|Popups de navegación]], por lo que no verás las vistas previas proporcionadas por esta funcionalidad. Dependiendo de tu wiki, el accesorio puede tener un nombre ligeramente diferente. Si sigues teniendo problemas, revisa tus accesorios y scripts de usuario, incluidos los globales.",
-	"popups-prefs-reftooltips-and-navpopups-gadget-conflict-info": "Tienes habilitados los accesorios [[$1|Popups de navegación]] y [[$1|Tooltips de referencia]], por lo que no verás las vistas previas proporcionadas por esta funcionalidad. Dependiendo de tu wiki, el accesorio puede tener un nombre ligeramente diferente. Si sigues teniendo problemas, revisa tus accesorios y scripts de usuario, incluidos los globales.",
-	"popups-prefs-reftooltips-gadget-conflict-info": "Tienes habilitado el accesorio [[$1|Tooltips de referencia]], por lo que no verás las vistas previas de referencias proporcionadas por esta funcionalidad. Dependiendo de tu wiki, el accesorio puede tener un nombre ligeramente diferente. Si sigues teniendo problemas, por favor revisa tus accesorios y scripts de usuario, incluidos los globales."
+	"cite-configuration-submit": "Guardar cambios"
 }

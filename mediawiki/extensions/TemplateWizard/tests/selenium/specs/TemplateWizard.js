@@ -1,16 +1,14 @@
-'use strict';
-
-const assert = require( 'assert' ),
-	Util = require( 'wdio-mediawiki/Util' ),
-	CreateTemplate = require( '../pageobjects/CreateTemplate.page' ),
-	UseTemplatePage = require( '../pageobjects/UseTemplatePage.page' );
+import assert from 'assert';
+import { getTestString } from 'wdio-mediawiki/Util';
+import CreateTemplate from '../pageobjects/CreateTemplate.page.js';
+import UseTemplatePage from '../pageobjects/UseTemplatePage.page.js';
 
 describe( 'TemplateWizard', () => {
 	let testTemplateName;
 
 	beforeEach( async () => {
 		// Create a test template
-		testTemplateName = Util.getTestString( 'Example ' );
+		testTemplateName = getTestString( 'Example ' );
 		await CreateTemplate.create( testTemplateName );
 		// Open the template page, to confirm that it's what we expect.
 		await CreateTemplate.open( testTemplateName );
@@ -24,7 +22,7 @@ describe( 'TemplateWizard', () => {
 		// Wait for the dialog to open, and enter a search term.
 		await UseTemplatePage.dialog.waitForDisplayed();
 		await UseTemplatePage.searchInput.click();
-		await $( '.ext-templatewizard-searchform input' ).setValue( testTemplateName );
+		await UseTemplatePage.searchInput.setValue( testTemplateName );
 		// Wait for the search results to appear.
 		await UseTemplatePage.searchResultMenu.waitForDisplayed( { timeout: 35000 } );
 
@@ -56,11 +54,11 @@ describe( 'TemplateWizard', () => {
 		// Remove Username, test that focus is now on Date of Death.
 		await UseTemplatePage.usernameField.click();
 		await UseTemplatePage.deathDate.isFocused();
-		// Try to close the dialog, test that an error is shown.
-		await UseTemplatePage.cancelField.click();
+
+		// Try to return to search, and test that an error is shown.
+		await UseTemplatePage.closeTemplateButton.click();
 		await UseTemplatePage.dialogError.waitForDisplayed();
 
-		// Cancel that, and try to close the template, and test that an error is shown.
 		await UseTemplatePage.dialogErrorCancelButton.click();
 		await UseTemplatePage.closeTemplateButton.waitForDisplayed();
 		await UseTemplatePage.closeTemplateButton.click();
@@ -72,6 +70,13 @@ describe( 'TemplateWizard', () => {
 		await $( '#wpTextbox1' ).waitForDisplayed();
 		await browser.waitUntil( async () => !( await UseTemplatePage.dialog.isDisplayed() ) );
 		assert.equal( await $( '#wpTextbox1' ).getValue(), `{{${ testTemplateName }|dob=2018-08-22|dod=|photo=|citizenship=}}` );
+
+		// Reset the textbox, to avoid the unsaved-edit confirmation.
+		await $( '#wpTextbox1' ).setValue( '' );
 	} );
 
+	it( 'can be closed from search', async () => {
+		await UseTemplatePage.closeTemplateButton.click();
+		await UseTemplatePage.closeDialogButton.click();
+	} );
 } );

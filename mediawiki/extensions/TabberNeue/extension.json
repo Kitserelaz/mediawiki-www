@@ -1,6 +1,6 @@
 {
 	"name": "TabberNeue",
-	"version": "3.0.0",
+	"version": "4.1.1",
 	"author": [
 		"alistair3149",
 		"Eric Fortin",
@@ -43,8 +43,20 @@
 						"updateLocationOnTabChange": "TabberNeueUpdateLocationOnTabChange"
 					}
 				},
-				"ext.tabberNeue/Transclude.js",
-				"ext.tabberNeue/Util.js"
+				"ext.tabberNeue/tabberRegistry.js",
+				"ext.tabberNeue/createTabber.js",
+				"ext.tabberNeue/createOverflowController.js",
+				"ext.tabberNeue/createKeyboardNavigator.js",
+				"ext.tabberNeue/createVisibilityObserver.js",
+				"ext.tabberNeue/createPanelTransition.js",
+				"ext.tabberNeue/createPanelAligner.js",
+				"ext.tabberNeue/createTabIndicator.js",
+				"ext.tabberNeue/createViewTransitionWrapper.js",
+				"ext.tabberNeue/createHashRouter.js",
+				"ext.tabberNeue/createFindReveal.js",
+				"ext.tabberNeue/loadTransclusion.js",
+				"ext.tabberNeue/overflowMath.js",
+				"ext.tabberNeue/domHelpers.js"
 			],
 			"messages": [
 				"error",
@@ -56,6 +68,7 @@
 				"ext.tabberNeue/ext.tabberNeue.mobile.less"
 			],
 			"dependencies": [
+				"mediawiki.api",
 				"mediawiki.util"
 			]
 		},
@@ -63,27 +76,53 @@
 			"scripts": [
 				"ve-tabberNeue/ve.ce.MWTabberNode.js",
 				"ve-tabberNeue/ve.dm.MWTabberNode.js",
+				"ve-tabberNeue/ve.ui.MWTabberBaseDialog.js",
 				"ve-tabberNeue/ve.ui.MWTabberContextItem.js",
 				"ve-tabberNeue/ve.ui.MWTabberDialog.js",
 				"ve-tabberNeue/ve.ui.MWTabberDialogTool.js",
 				"ve-tabberNeue/ve.ce.MWTabberTranscludeNode.js",
 				"ve-tabberNeue/ve.dm.MWTabberTranscludeNode.js",
 				"ve-tabberNeue/ve.ui.MWTabberTranscludeContextItem.js",
-				"ve-tabberNeue/ve.ui.MWTabberTranscludeInspector.js",
-				"ve-tabberNeue/ve.ui.MWTabberTranscludeInspectorTool.js"
+				"ve-tabberNeue/ve.ui.MWTabberTranscludeDialog.js",
+				"ve-tabberNeue/ve.ui.MWTabberTranscludeDialogTool.js"
 			],
 			"styles": [
-				"ve-tabberNeue/ve.ui.MWTabberDialog.less",
-				"ve-tabberNeue/ve.ui.MWTabberIcons.less"
+				"ve-tabberNeue/ve.ui.MWTabberDialog.less"
 			],
 			"dependencies": [
-				"ext.visualEditor.mwcore"
+				"ext.visualEditor.mwcore",
+				"ext.tabberNeue.visualEditor.icons"
 			],
 			"messages": [
 				"tabberneue-visualeditor-mwtabberdialog-title",
 				"tabberneue-visualeditor-mwtabberdialog-desc",
+				"tabberneue-visualeditor-mwtabberdialog-addtab",
+				"tabberneue-visualeditor-mwtabberdialog-removetab",
+				"tabberneue-visualeditor-mwtabberdialog-moveleft",
+				"tabberneue-visualeditor-mwtabberdialog-moveright",
+				"tabberneue-visualeditor-mwtabberdialog-duplicate",
+				"tabberneue-visualeditor-mwtabberdialog-tab",
+				"tabberneue-visualeditor-mwtabberdialog-label",
+				"tabberneue-visualeditor-mwtabberdialog-label-placeholder",
+				"tabberneue-visualeditor-mwtabberdialog-error-empty-label",
+				"tabberneue-visualeditor-mwtabberdialog-content",
+				"tabberneue-visualeditor-mwtabberdialog-content-placeholder",
 				"tabberneue-visualeditor-mwtabbertranscludeinspector-title",
-				"tabberneue-visualeditor-mwtabbertranscludeinspector-desc"
+				"tabberneue-visualeditor-mwtabbertranscludeinspector-desc",
+				"tabberneue-visualeditor-mwtabbertranscludeinspector-addtab",
+				"tabberneue-visualeditor-mwtabbertranscludeinspector-removetab",
+				"tabberneue-visualeditor-mwtabbertranscludeinspector-moveleft",
+				"tabberneue-visualeditor-mwtabbertranscludeinspector-moveright",
+				"tabberneue-visualeditor-mwtabbertranscludeinspector-duplicate",
+				"tabberneue-visualeditor-mwtabbertranscludeinspector-tab",
+				"tabberneue-visualeditor-mwtabbertranscludeinspector-label",
+				"tabberneue-visualeditor-mwtabbertranscludeinspector-label-placeholder",
+				"tabberneue-visualeditor-mwtabbertranscludeinspector-page",
+				"tabberneue-visualeditor-mwtabbertranscludeinspector-page-placeholder",
+				"tabberneue-visualeditor-mwtabbertranscludeinspector-error-empty-label",
+				"tabberneue-visualeditor-mwtabbertranscludeinspector-error-empty-page",
+				"tabberneue-visualeditor-mwtabbertranscludeinspector-error-empty-both",
+				"tabberneue-visualeditor-copy-suffix"
 			]
 		},
 		"ext.tabberNeue.icons": {
@@ -100,6 +139,29 @@
 					"file": {
 						"ltr": "ext.tabberNeue.icons/previous-ltr.svg",
 						"rtl": "ext.tabberNeue.icons/previous-rtl.svg"
+					}
+				}
+			}
+		},
+		"ext.tabberNeue.visualEditor.icons": {
+			"class": "MediaWiki\\ResourceLoader\\ImageModule",
+			"selectorWithoutVariant": ".oo-ui-icon-{name}",
+			"selectorWithVariant": ".oo-ui-image-{variant}.oo-ui-icon-{name}",
+			"variants": {
+				"progressive": {
+					"color": "#36c",
+					"global": true
+				},
+				"invert": {
+					"color": "#fff",
+					"global": true
+				}
+			},
+			"images": {
+				"tabber": {
+					"file": {
+						"ltr": "ve-tabberNeue/tabber-ltr.svg",
+						"rtl": "ve-tabberNeue/tabber-rtl.svg"
 					}
 				}
 			}
@@ -130,19 +192,28 @@
 			"value": true,
 			"description": "If enabled, tabpanel IDs will be prepended with \"tabber-\". This avoids potential conflicts with page headings that use the same IDs.",
 			"public": true
+		},
+		"TabberNeueEnableTabWrap": {
+			"value": false,
+			"description": "If enabled, tab headers wrap onto multiple rows instead of using a horizontally-scrollable overflow container. Can be overridden per-tag with the `wrap` attribute (e.g. <tabber wrap> or <tabber wrap=false>).",
+			"public": true
 		}
 	},
 	"Hooks": {
 		"ParserFirstCallInit": "TabberHooks",
+		"ParserTestGlobals": "TabberParserTestHooks",
 		"ScribuntoExternalLibraries": "MediaWiki\\Extension\\TabberNeue\\Hooks::onScribuntoExternalLibraries"
 	},
 	"HookHandlers": {
 		"TabberHooks": {
 			"class": "MediaWiki\\Extension\\TabberNeue\\Hooks",
 			"services": [
-				"MainConfig",
-				"TabberNeue.TabNameHelper"
+				"TabberNeue.TabberHandler",
+				"TabberNeue.TabberTranscludeHandler"
 			]
+		},
+		"TabberParserTestHooks": {
+			"class": "MediaWiki\\Extension\\TabberNeue\\Hook\\ParserTestGlobalsHandler"
 		}
 	},
 	"ServiceWiringFiles": [
@@ -160,5 +231,8 @@
 			]
 		}
 	},
+	"ParserTestFiles": [
+		"tests/parser/tabberneue.txt"
+	],
 	"manifest_version": 2
 }

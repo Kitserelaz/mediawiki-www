@@ -5,12 +5,10 @@ namespace MediaWiki\Extension\EventBus\Adapters\EventRelayer;
 use InvalidArgumentException;
 use MediaWiki\Extension\EventBus\EventBus;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Utils\MWTimestamp;
 use Wikimedia\Assert\Assert;
 use Wikimedia\EventRelayer\EventRelayer;
 
 /**
- * @package MediaWiki\Extension\EventBus
  * @since 1.35
  */
 class CdnPurgeEventRelayer extends EventRelayer {
@@ -56,8 +54,7 @@ class CdnPurgeEventRelayer extends EventRelayer {
 					'/resource_change/1.0.0',
 					$this->purgeStream,
 					[ 'tags' => [ 'mediawiki' ] ],
-					null,
-					MWTimestamp::convert( TS_ISO_8601, $event['timestamp'] )
+					null
 				);
 			}, $events ),
 			EventBus::TYPE_PURGE

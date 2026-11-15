@@ -4,12 +4,12 @@ namespace ArticlePlaceholder\Tests\Specials;
 
 use ArticlePlaceholder\AboutTopicRenderer;
 use ArticlePlaceholder\Specials\SpecialAboutTopic;
-use DerivativeContext;
+use MediaWiki\Context\DerivativeContext;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
-use RequestContext;
 use Wikibase\Client\WikibaseClient;
 use Wikibase\DataModel\Entity\EntityIdParser;
 use Wikibase\DataModel\Entity\Item;
@@ -41,9 +41,16 @@ class SpecialAboutTopicTest extends MediaWikiIntegrationTestCase {
 		$siteGroup = $settings->getSetting( 'siteGroup' );
 		$settings->setSetting( 'siteGroup', 'wikipedia' );
 
+		$services = $this->getServiceContainer();
 		$this->assertInstanceOf(
 			SpecialAboutTopic::class,
-			SpecialAboutTopic::newFromGlobalState()
+			SpecialAboutTopic::newFromGlobalState(
+				$services->getMainConfig(),
+				$services->getLanguageNameUtils(),
+				$services->getPermissionManager(),
+				$services->getSiteLookup(),
+				$services->getTitleFactory()
+			)
 		);
 
 		$settings->setSetting( 'siteGroup', $siteGroup );
@@ -90,9 +97,6 @@ class SpecialAboutTopicTest extends MediaWikiIntegrationTestCase {
 		$context->setTitle( $title );
 		$outputPage = new OutputPage( $context );
 
-		// initial robot policy should be like the one gotten from the SpecialPage
-		$outputPage->setRobotPolicy( 'noindex,nofollow' );
-
 		$context->setOutput( $outputPage );
 
 		$instance = new SpecialAboutTopic(
@@ -110,9 +114,6 @@ class SpecialAboutTopicTest extends MediaWikiIntegrationTestCase {
 		return $instance->getOutput();
 	}
 
-	/**
-	 * @return SiteLinkLookup
-	 */
 	private function getSiteLinkLookup(): SiteLinkLookup {
 		$siteLinkLookup = $this->createMock( SiteLinkLookup::class );
 
@@ -123,9 +124,6 @@ class SpecialAboutTopicTest extends MediaWikiIntegrationTestCase {
 		return $siteLinkLookup;
 	}
 
-	/**
-	 * @return EntityIdParser
-	 */
 	private function getEntityIdParser(): EntityIdParser {
 		$idParser = $this->createMock( EntityIdParser::class );
 
@@ -162,15 +160,13 @@ class SpecialAboutTopicTest extends MediaWikiIntegrationTestCase {
 	 */
 	public function testRobotPolicy( $searchEngineIndexed, bool $expected ) {
 		$output = $this->getInstanceOutput( 'Q1234', $searchEngineIndexed );
-		$metatags = $output->getHeadLinksArray();
 
 		if ( $expected === true ) {
-			$metaRobots = $metatags['meta-robots'] ?? '';
-			$this->assertStringNotContainsString( 'noindex', $metaRobots );
-			$this->assertStringNotContainsString( 'nofollow', $metaRobots );
+			$this->assertSame( 'index', $output->getMetadata()->getIndexPolicy() );
+			$this->assertSame( 'follow', $output->getFollowPolicy() );
 		} else {
-			$this->assertArrayHasKey( 'meta-robots', $metatags );
-			$this->assertStringContainsString( 'noindex,nofollow', $metatags['meta-robots'] );
+			$this->assertSame( 'noindex', $output->getMetadata()->getIndexPolicy() );
+			$this->assertSame( 'nofollow', $output->getFollowPolicy() );
 		}
 	}
 

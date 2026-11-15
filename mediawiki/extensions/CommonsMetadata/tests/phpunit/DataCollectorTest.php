@@ -2,10 +2,12 @@
 
 namespace CommonsMetadata;
 
-use File;
-use Language;
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\FileRepo\File\LocalFile;
+use MediaWiki\Language\Language;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Title\Title;
-use ParserOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 
 /**
@@ -43,8 +45,6 @@ class DataCollectorTest extends \MediaWikiIntegrationTestCase {
 		$this->dataCollector->setTemplateParser( $this->templateParser );
 		$this->dataCollector->setLicenseParser( $this->licenseParser );
 	}
-
-	/*------------------------------- Format tests --------------------------*/
 
 	public function testEmptyMetadata() {
 		$this->templateParser->expects( $this->once() )->method( 'parsePage' )
@@ -134,9 +134,9 @@ class DataCollectorTest extends \MediaWikiIntegrationTestCase {
 	}
 
 	public function testFilePageAbsoluteUrls() {
-		$this->setMwGlobals( 'wgServer', '//TESTING_SERVER' );
+		$this->overrideConfigValue( MainConfigNames::Server, '//TESTING_SERVER' );
 		$this->editPage( __METHOD__, '[[Test]]', '', NS_FILE );
-		$file = new \LocalFile(
+		$file = new LocalFile(
 			Title::makeTitle( NS_FILE, __METHOD__ ),
 			$this->getServiceContainer()->getRepoGroup()->getLocalRepo()
 		);
@@ -150,12 +150,9 @@ class DataCollectorTest extends \MediaWikiIntegrationTestCase {
 		$this->dataCollector->collect( $metadata, $file );
 	}
 
-	/*------------------------------- Logic tests --------------------------*/
-
 	public function testGetCategoryMetadata() {
 		$getCategoryMetadataMethod = new \ReflectionMethod(
 			$this->dataCollector, 'getCategoryMetadata' );
-		$getCategoryMetadataMethod->setAccessible( true );
 
 		$categories = [ 'Foo', 'Bar',
 			'Pictures of the year (2012)', 'Pictures of the day (2012)', 'CC-BY-SA-2.0' ];
@@ -182,7 +179,6 @@ class DataCollectorTest extends \MediaWikiIntegrationTestCase {
 	public function testGetTemplateMetadata() {
 		$getTemplateMetadataMethod = new \ReflectionMethod(
 			$this->dataCollector, 'getTemplateMetadata' );
-		$getTemplateMetadataMethod->setAccessible( true );
 
 		$this->licenseParser->expects( $this->any() )
 			->method( 'parseLicenseString' )
@@ -210,7 +206,6 @@ class DataCollectorTest extends \MediaWikiIntegrationTestCase {
 	public function testGetTemplateMetadataForMultipleInfoTemplates() {
 		$getTemplateMetadataMethod = new \ReflectionMethod(
 			$this->dataCollector, 'getTemplateMetadata' );
-		$getTemplateMetadataMethod->setAccessible( true );
 
 		$template1 = [ 'Artist' => 'a1', 'Foo' => 'x' ];
 		$template2 = [ 'Artist' => 'a2', 'Bar' => 'y' ];
@@ -227,7 +222,6 @@ class DataCollectorTest extends \MediaWikiIntegrationTestCase {
 	public function testNonfreeFlag() {
 		// T131896 - NonFree flag cannot be overwritten
 		$getTemplateMetadataMethod = new \ReflectionMethod( $this->dataCollector, 'getTemplateMetadata' );
-		$getTemplateMetadataMethod->setAccessible( true );
 
 		$template1 = [ 'LicenseShortName' => 'Fair Use' ];
 		$template2 = [ 'LicenseShortName' => 'Fair Use', 'NonFree' => '1' ];
@@ -247,8 +241,6 @@ class DataCollectorTest extends \MediaWikiIntegrationTestCase {
 		] ] );
 		$this->assertMetadataValue( 'NonFree', '1', $templateData );
 	}
-
-	/*-------------------- verifyAttributionMetadata tests -------------*/
 
 	public function testVerifyAttributionMetadata() {
 		$this->templateParser->expects( $this->once() )->method( 'parsePage' )
@@ -363,8 +355,6 @@ class DataCollectorTest extends \MediaWikiIntegrationTestCase {
 
 		$this->assertNotContains( 'no-patent', $problems );
 	}
-
-	/*------------------------------- Helpers --------------------------*/
 
 	protected function assertMetadataValue( $field, $expected, $metadata, $message = '' ) {
 		$this->assertArrayHasKey( $field, $metadata,

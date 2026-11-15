@@ -8,9 +8,9 @@ use DataValues\DataValue;
 use InvalidArgumentException;
 use LogicException;
 use MediaWiki\Config\Config;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Message\Message;
-use MessageLocalizer;
 use ValueFormatters\ValueFormatter;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\ItemId;
@@ -42,6 +42,9 @@ class ViolationMessageRenderer {
 	/**
 	 * @param EntityIdFormatter $entityIdFormatter
 	 * @param ValueFormatter $dataValueFormatter
+	 * @param LanguageNameUtils $languageNameUtils
+	 * @param string $userLanguageCode
+	 * @param TermLanguageFallbackChain $languageFallbackChain
 	 * @param MessageLocalizer $messageLocalizer
 	 * @param Config $config
 	 * @param int $maxListLength The maximum number of elements to be rendered in a list parameter.
@@ -74,11 +77,8 @@ class ViolationMessageRenderer {
 			$params = $this->renderArgument( $argument );
 			$paramsLists[] = $params;
 		}
-		$allParams = call_user_func_array( 'array_merge', $paramsLists );
-		return $this->messageLocalizer
-			->msg( $messageKey )
-			->params( $allParams )
-			->escaped();
+		$allParams = array_merge( ...$paramsLists );
+		return $this->messageLocalizer->msg( $messageKey, ...$allParams )->escaped();
 	}
 
 	/**
@@ -156,9 +156,9 @@ class ViolationMessageRenderer {
 			];
 		}
 
-		if ( count( $list ) > $this->maxListLength ) {
+		$truncated = count( $list ) > $this->maxListLength;
+		if ( $truncated ) {
 			$list = array_slice( $list, 0, $this->maxListLength );
-			$truncated = true;
 		}
 
 		$renderedParamsLists = array_map(
@@ -167,22 +167,18 @@ class ViolationMessageRenderer {
 			array_fill( 0, count( $list ), $role )
 		);
 		$renderedParams = array_column( $renderedParamsLists, 0 );
-		$renderedElements = array_map( fn ( MessageParam $msg ) => $msg->getValue(), $renderedParams );
-		if ( isset( $truncated ) ) {
+		$renderedElements = array_map( static fn ( MessageParam $p ) => $p->getValue(), $renderedParams );
+		if ( $truncated ) {
 			$renderedElements[] = $this->msgEscaped( 'ellipsis' );
 		}
 
-		return array_merge(
-			[
-				Message::numParam( count( $list ) ),
-				Message::rawParam(
-					'<ul><li>' .
-					implode( '</li><li>', $renderedElements ) .
-					'</li></ul>'
-				),
-			],
-			$renderedParams
-		);
+		return [
+			Message::numParam( count( $list ) ),
+			Message::rawParam(
+				'<ul><li>' . implode( '</li><li>', $renderedElements ) . '</li></ul>'
+			),
+			...$renderedParams,
+		];
 	}
 
 	/**
@@ -379,6 +375,7 @@ class ViolationMessageRenderer {
 	 * @param string $languageCode MediaWiki language code
 	 * @param string|null $role one of the Role::* constants
 	 * @return MessageParam[] list of parameters as accepted by Message::params()
+	 * @suppress PhanUnusedPrivateMethodParameter
 	 */
 	private function renderLanguage( string $languageCode, ?string $role ): array {
 		return [

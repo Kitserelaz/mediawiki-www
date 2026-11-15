@@ -144,7 +144,11 @@ class PFTemplateDisplay {
 			} elseif ( $fieldType == 'Rating' ) {
 				$formattedFieldValue = self::ratingText( $fieldValue );
 			} elseif ( $fieldType == 'File' ) {
-				$formattedFieldValue = self::fileText( $fieldValue );
+				if ( $templateField->isList() ) {
+					$formattedFieldValue = self::fileListText( $fieldValue, $templateField );
+				} else {
+					$formattedFieldValue = self::fileText( $fieldValue );
+				}
 			} elseif ( $templateField->isList() ) {
 				$formattedFieldValue = self::stringListText( $fieldValue, $templateField );
 			} else {
@@ -251,10 +255,10 @@ class PFTemplateDisplay {
 	private static function ratingText( $value ) {
 		global $wgServer, $wgScriptPath;
 
-		$rate = $value * 20;
+		$rate = (int)$value * 20;
 		$url = $wgServer . $wgScriptPath . '/' . 'extensions/Cargo/resources/images/star-rating-sprite-1.png';
 		$text = '<span style="display: block; width: 65px; height: 13px; background: url(\'' . $url . '\') 0 0;">
-			<span style="display: block; width: ' . $rate . '%; height: 13px; background: url(\'' . $url . '\') 0 -13px;"></span>';
+			<span style="display: block; width: ' . (string)$rate . '%; height: 13px; background: url(\'' . $url . '\') 0 -13px;"></span>';
 		return $text;
 	}
 
@@ -270,4 +274,16 @@ class PFTemplateDisplay {
 		);
 	}
 
+	private static function fileListText( $value, $templateField ) {
+		$text = '';
+		$delimiter = $templateField->getDelimiter();
+		$fieldValues = explode( $delimiter, $value );
+		foreach ( $fieldValues as $i => $fieldValue ) {
+			if ( trim( $fieldValue ) == '' ) {
+				continue;
+			}
+			$text .= self::fileText( $fieldValue );
+		}
+		return $text;
+	}
 }

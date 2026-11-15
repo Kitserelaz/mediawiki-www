@@ -1,10 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
+			"Tensama0415",
 			"Ykhwong"
 		]
 	},
-	"eventstreamconfig-desc": "API 엔드포인트의 이벤트 스트림 구성을 공개합니다. 리소스로더를 통해 구성을 공개하기 위해 사용할 수도 있습니다",
+	"eventstreamconfig-desc": "API 종단점의 이벤트 스트림 구성을 공개합니다. 리소스로더를 통해 구성을 공개하기 위해 사용할 수도 있습니다",
 	"apihelp-streamconfigs-summary": "이벤트 스트림 구성을 노출합니다. formatversion=2의 format=json만 반환합니다.",
 	"apihelp-streamconfigs-param-streams": "구성을 가져올 스트림 목록",
 	"apihelp-streamconfigs-param-all_settings": "스트림 구성 결과 내 모든 설정을 포함합니다. 1.41부터 구식입니다. 모든 설정은 기본적으로 포함됩니다.",

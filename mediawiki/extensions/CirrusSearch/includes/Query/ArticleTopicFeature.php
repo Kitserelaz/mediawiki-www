@@ -2,34 +2,27 @@
 
 namespace CirrusSearch\Query;
 
-use CirrusSearch\Search\SearchContext;
-use CirrusSearch\WarningCollector;
-use CirrusSearch\Wikimedia\WeightedTagsHooks;
-use Elastica\Query\DisMax;
-use Elastica\Query\Term;
-use MediaWiki\Message\Message;
-
 /**
- * Finds pages based on how well they match a given topic, based on scores provided by the
- * (Wikimedia-specific) articletopic ORES model.
- * @package CirrusSearch\Wikimedia
- * @see WeightedTagsHooks
- * @see https://www.mediawiki.org/wiki/Help:CirrusSearch#Articletopic
+ * This class has been refactored into ArticlePredictionKeyword.
+ *
+ * We preserve it only to avoid breaking extensions that required direct access
+ * to ArticleTopicFeature::TERMS_TO_LABELS.
  */
-class ArticleTopicFeature extends SimpleKeywordFeature {
-	public const ARTICLE_TOPIC_TAG_PREFIX = 'classification.ores.articletopic';
-	public const DRAFT_TOPIC_TAG_PREFIX = 'classification.ores.drafttopic';
-
-	private const PREFIX_PER_KEYWORD = [
-		'articletopic' => self::ARTICLE_TOPIC_TAG_PREFIX,
-		'drafttopic' => self::DRAFT_TOPIC_TAG_PREFIX
-	];
-
+class ArticleTopicFeature {
+	/**
+	 * Maps search terms to tags.
+	 *
+	 * Structure:
+	 * - Keys: search terms
+	 * - Values: tags
+	 *
+	 * @var array<string, string>
+	 */
 	public const TERMS_TO_LABELS = [
 		'biography' => 'Culture.Biography.Biography*',
 		'women' => 'Culture.Biography.Women',
-		'food-and-drink' => 'Culture.Food and drink',
-		'internet-culture' => 'Culture.Internet culture',
+		'food-and-drink' => 'Culture.Food_and_drink',
+		'internet-culture' => 'Culture.Internet_culture',
 		'linguistics' => 'Culture.Linguistics',
 		'literature' => 'Culture.Literature',
 		'books' => 'Culture.Media.Books',
@@ -40,123 +33,55 @@ class ArticleTopicFeature extends SimpleKeywordFeature {
 		'radio' => 'Culture.Media.Radio',
 		'software' => 'Culture.Media.Software',
 		'television' => 'Culture.Media.Television',
-		'video-games' => 'Culture.Media.Video games',
-		'performing-arts' => 'Culture.Performing arts',
-		'philosophy-and-religion' => 'Culture.Philosophy and religion',
+		'video-games' => 'Culture.Media.Video_games',
+		'performing-arts' => 'Culture.Performing_arts',
+		'philosophy-and-religion' => 'Culture.Philosophy_and_religion',
 		'sports' => 'Culture.Sports',
-		'architecture' => 'Culture.Visual arts.Architecture',
-		'comics-and-anime' => 'Culture.Visual arts.Comics and Anime',
-		'fashion' => 'Culture.Visual arts.Fashion',
-		'visual-arts' => 'Culture.Visual arts.Visual arts*',
+		'architecture' => 'Culture.Visual_arts.Architecture',
+		'comics-and-anime' => 'Culture.Visual_arts.Comics_and_Anime',
+		'fashion' => 'Culture.Visual_arts.Fashion',
+		'visual-arts' => 'Culture.Visual_arts.Visual_arts*',
 		'geographical' => 'Geography.Geographical',
 		'africa' => 'Geography.Regions.Africa.Africa*',
-		'central-africa' => 'Geography.Regions.Africa.Central Africa',
-		'eastern-africa' => 'Geography.Regions.Africa.Eastern Africa',
-		'northern-africa' => 'Geography.Regions.Africa.Northern Africa',
-		'southern-africa' => 'Geography.Regions.Africa.Southern Africa',
-		'western-africa' => 'Geography.Regions.Africa.Western Africa',
-		'central-america' => 'Geography.Regions.Americas.Central America',
-		'north-america' => 'Geography.Regions.Americas.North America',
-		'south-america' => 'Geography.Regions.Americas.South America',
+		'central-africa' => 'Geography.Regions.Africa.Central_Africa',
+		'eastern-africa' => 'Geography.Regions.Africa.Eastern_Africa',
+		'northern-africa' => 'Geography.Regions.Africa.Northern_Africa',
+		'southern-africa' => 'Geography.Regions.Africa.Southern_Africa',
+		'western-africa' => 'Geography.Regions.Africa.Western_Africa',
+		'central-america' => 'Geography.Regions.Americas.Central_America',
+		'north-america' => 'Geography.Regions.Americas.North_America',
+		'south-america' => 'Geography.Regions.Americas.South_America',
 		'asia' => 'Geography.Regions.Asia.Asia*',
-		'central-asia' => 'Geography.Regions.Asia.Central Asia',
-		'east-asia' => 'Geography.Regions.Asia.East Asia',
-		'north-asia' => 'Geography.Regions.Asia.North Asia',
-		'south-asia' => 'Geography.Regions.Asia.South Asia',
-		'southeast-asia' => 'Geography.Regions.Asia.Southeast Asia',
-		'west-asia' => 'Geography.Regions.Asia.West Asia',
-		'eastern-europe' => 'Geography.Regions.Europe.Eastern Europe',
+		'central-asia' => 'Geography.Regions.Asia.Central_Asia',
+		'east-asia' => 'Geography.Regions.Asia.East_Asia',
+		'north-asia' => 'Geography.Regions.Asia.North_Asia',
+		'south-asia' => 'Geography.Regions.Asia.South_Asia',
+		'southeast-asia' => 'Geography.Regions.Asia.Southeast_Asia',
+		'west-asia' => 'Geography.Regions.Asia.West_Asia',
+		'eastern-europe' => 'Geography.Regions.Europe.Eastern_Europe',
 		'europe' => 'Geography.Regions.Europe.Europe*',
-		'northern-europe' => 'Geography.Regions.Europe.Northern Europe',
-		'southern-europe' => 'Geography.Regions.Europe.Southern Europe',
-		'western-europe' => 'Geography.Regions.Europe.Western Europe',
+		'northern-europe' => 'Geography.Regions.Europe.Northern_Europe',
+		'southern-europe' => 'Geography.Regions.Europe.Southern_Europe',
+		'western-europe' => 'Geography.Regions.Europe.Western_Europe',
 		'oceania' => 'Geography.Regions.Oceania',
-		'business-and-economics' => 'History and Society.Business and economics',
-		'education' => 'History and Society.Education',
-		'history' => 'History and Society.History',
-		'military-and-warfare' => 'History and Society.Military and warfare',
-		'politics-and-government' => 'History and Society.Politics and government',
-		'society' => 'History and Society.Society',
-		'transportation' => 'History and Society.Transportation',
+		'business-and-economics' => 'History_and_Society.Business_and_economics',
+		'education' => 'History_and_Society.Education',
+		'history' => 'History_and_Society.History',
+		'military-and-warfare' => 'History_and_Society.Military_and_warfare',
+		'politics-and-government' => 'History_and_Society.Politics_and_government',
+		'society' => 'History_and_Society.Society',
+		'transportation' => 'History_and_Society.Transportation',
 		'biology' => 'STEM.Biology',
 		'chemistry' => 'STEM.Chemistry',
 		'computing' => 'STEM.Computing',
-		'earth-and-environment' => 'STEM.Earth and environment',
+		'earth-and-environment' => 'STEM.Earth_and_environment',
 		'engineering' => 'STEM.Engineering',
-		'libraries-and-information' => 'STEM.Libraries & Information',
+		'libraries-and-information' => 'STEM.Libraries_&_Information',
 		'mathematics' => 'STEM.Mathematics',
-		'medicine-and-health' => 'STEM.Medicine & Health',
+		'medicine-and-health' => 'STEM.Medicine_&_Health',
 		'physics' => 'STEM.Physics',
 		'stem' => 'STEM.STEM*',
 		'space' => 'STEM.Space',
 		'technology' => 'STEM.Technology',
 	];
-
-	/**
-	 * Helper method for turning raw ORES score data (as stored in the Cirrus document) into
-	 * search terms, for analytics/debugging.
-	 * @param array $rawTopicData The unprefixed content of the document's weighted_tags field
-	 * @return array corresponding search term => ORES score (rounded to three decimals)
-	 */
-	public static function getTopicScores( array $rawTopicData ): array {
-		$labelsToTerms = array_flip( self::TERMS_TO_LABELS );
-		$topicScores = [];
-		foreach ( $rawTopicData as $rawTopic ) {
-			[ $oresLabel, $scaledScore ] = explode( '|', $rawTopic );
-			$topicId = $labelsToTerms[$oresLabel];
-			$topicScores[$topicId] = (int)$scaledScore / 1000;
-		}
-		return $topicScores;
-	}
-
-	/**
-	 * @inheritDoc
-	 * @phan-return array{topics:string[],tag_prefix:string}
-	 */
-	public function parseValue(
-		$key, $value, $quotedValue, $valueDelimiter, $suffix, WarningCollector $warningCollector
-	) {
-		$topics = explode( '|', $value );
-		$invalidTopics = array_diff( $topics, array_keys( self::TERMS_TO_LABELS ) );
-		$validTopics = array_filter( array_map( static function ( $topic ) {
-			return self::TERMS_TO_LABELS[$topic];
-		}, array_diff( $topics, $invalidTopics ) ) );
-
-		if ( $invalidTopics ) {
-			$warningCollector->addWarning( 'cirrussearch-articletopic-invalid-topic',
-				Message::listParam( $invalidTopics, 'comma' ), count( $invalidTopics ) );
-		}
-		return [ 'topics' => $validTopics, 'tag_prefix' => self::PREFIX_PER_KEYWORD[$key] ];
-	}
-
-	/** @inheritDoc */
-	protected function getKeywords() {
-		return array_keys( self::PREFIX_PER_KEYWORD );
-	}
-
-	/** @inheritDoc */
-	protected function doApply( SearchContext $context, $key, $value, $quotedValue, $negated ) {
-		$parsed = $this->parseValue( $key, $value, $quotedValue, '', '', $context );
-		$topics = $parsed['topics'];
-		$tagPrefix = $parsed['tag_prefix'];
-		if ( $topics === [] ) {
-			$context->setResultsPossible( false );
-			return [ null, true ];
-		}
-
-		$query = new DisMax();
-		foreach ( $topics as $topic ) {
-			$topicQuery = new Term();
-			$topicQuery->setTerm( WeightedTagsHooks::FIELD_NAME, $tagPrefix . '/' . $topic );
-			$query->addQuery( $topicQuery );
-		}
-
-		if ( !$negated ) {
-			$context->addNonTextQuery( $query );
-			return [ null, false ];
-		} else {
-			return [ $query, false ];
-		}
-	}
-
 }

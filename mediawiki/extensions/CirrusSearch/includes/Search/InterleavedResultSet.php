@@ -2,12 +2,12 @@
 
 namespace CirrusSearch\Search;
 
-use BaseSearchResultSet;
 use Elastica\Response;
-use HtmlArmor;
-use ISearchResultSet;
+use MediaWiki\Search\BaseSearchResultSet;
+use MediaWiki\Search\ISearchResultSet;
+use MediaWiki\Search\SearchResultSetTrait;
 use MediaWiki\Title\Title;
-use SearchResultSetTrait;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 class InterleavedResultSet extends BaseSearchResultSet implements CirrusSearchResultSet, SearchMetricsProvider {
 	use SearchResultSetTrait;
@@ -44,6 +44,7 @@ class InterleavedResultSet extends BaseSearchResultSet implements CirrusSearchRe
 		$this->delegate = $nested;
 	}
 
+	/** @inheritDoc */
 	public function getMetrics() {
 		return [
 			'wgCirrusSearchTeamDraft' => [
@@ -183,7 +184,7 @@ class InterleavedResultSet extends BaseSearchResultSet implements CirrusSearchRe
 	/**
 	 * Return a result set of hits on other (multiple) wikis associated with this one
 	 *
-	 * @param int $type
+	 * @param int $type One of the ISearchResultSet::…_RESULTS constants
 	 * @return ISearchResultSet[]
 	 */
 	public function getInterwikiResults( $type = self::SECONDARY_RESULTS ) {
@@ -193,7 +194,7 @@ class InterleavedResultSet extends BaseSearchResultSet implements CirrusSearchRe
 	/**
 	 * Check if there are results on other wikis
 	 *
-	 * @param int $type
+	 * @param int $type One of the ISearchResultSet::…_RESULTS constants
 	 * @return bool
 	 */
 	public function hasInterwikiResults( $type = self::SECONDARY_RESULTS ) {
@@ -215,6 +216,13 @@ class InterleavedResultSet extends BaseSearchResultSet implements CirrusSearchRe
 	 */
 	public function hasMoreResults() {
 		return $this->delegate->hasMoreResults();
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function isApproximateTotalHits(): bool {
+		return $this->delegate->isApproximateTotalHits();
 	}
 
 	/**

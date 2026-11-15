@@ -3,9 +3,9 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Synchronization;
 
-use ContentHandler;
 use FileBasedMessageGroup;
 use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\ContentHandler;
 use MediaWiki\Content\TextContent;
 use MediaWiki\Extension\Translate\Jobs\GenericTranslateJob;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
@@ -16,11 +16,11 @@ use MediaWiki\Extension\Translate\Services;
 use MediaWiki\Extension\Translate\SystemUsers\FuzzyBot;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Storage\PageUpdater;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
-use RecentChange;
 
 /**
  * Job for updating translation pages when translation or message definition changes.
@@ -87,8 +87,8 @@ class UpdateMessageJob extends GenericTranslateJob {
 		$originalTitle = Title::newFromLinkTarget( $this->title->getTitleValue(), Title::NEW_CLONE );
 
 		if ( $isRename ) {
-			$this->title = $this->handleRename( $params['target'], $params['replacement'] );
-			if ( $this->title === null ) {
+			$renamedTitle = $this->handleRename( $params['target'], $params['replacement'] );
+			if ( $renamedTitle === null ) {
 				// There was a failure, return true, but don't proceed further.
 				$this->logWarning(
 					'Rename process could not find the source title.',
@@ -101,6 +101,7 @@ class UpdateMessageJob extends GenericTranslateJob {
 				$this->removeFromCache( $originalTitle );
 				return true;
 			}
+			$this->title = $renamedTitle;
 		}
 		$title = $this->title;
 		$baseRevId = $title->getLatestRevId();
@@ -289,7 +290,7 @@ class UpdateMessageJob extends GenericTranslateJob {
 			}
 		}
 
-		$dbw = $mwInstance->getDBLoadBalancer()->getMaintenanceConnectionRef( DB_PRIMARY );
+		$dbw = $mwInstance->getConnectionProvider()->getPrimaryDatabase();
 
 		if ( $fuzzies !== [] ) {
 			$inserts = [];

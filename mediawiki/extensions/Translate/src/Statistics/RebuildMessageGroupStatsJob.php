@@ -3,10 +3,10 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Statistics;
 
-use GenericParameterJob;
 use InvalidArgumentException;
 use MediaWiki\Extension\Translate\Jobs\GenericTranslateJob;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
+use MediaWiki\JobQueue\GenericParameterJob;
 use MediaWiki\MediaWikiServices;
 
 /**
@@ -21,7 +21,7 @@ class RebuildMessageGroupStatsJob extends GenericTranslateJob implements Generic
 	public const LANGUAGE_CODE = 'languagecode';
 	public const CLEAR_GROUPS = 'cleargroups';
 	public const REFRESH = 'purge';
-	/** @inheritdoc */
+	/** @inheritDoc */
 	protected $removeDuplicates = true;
 
 	public static function newJob( array $params ): self {

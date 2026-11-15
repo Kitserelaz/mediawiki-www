@@ -9,31 +9,53 @@ on:
 jobs:
   test:
     name: "PHPUnit: MW ${{ matrix.mw }}, PHP ${{ matrix.php }}"
+    continue-on-error: ${{ matrix.experimental }}
 
     strategy:
+      fail-fast: false
       matrix:
+        # smwCache keeps the cache key free of the version constraint's special
+        # characters, which would otherwise collide and share one cache.
         include:
-          - mw: 'REL1_35'
-            php: 7.4
-          - mw: 'REL1_36'
-            php: 7.4
-          - mw: 'REL1_37'
-            php: 7.4
-          - mw: 'REL1_38'
-            php: 8.0
-          - mw: 'REL1_39'
-            php: 8.1
-          - mw: 'REL1_40'
-            php: 8.1
-          - mw: 'REL1_41'
-            php: 8.2
-          - mw: 'REL1_42'
-            php: 8.2
           - mw: 'REL1_43'
-            php: 8.2
+            php: 8.3
+            smw: ''
+            smwCache: 'none'
+            experimental: false
+          - mw: 'REL1_44'
+            php: 8.3
+            smw: ''
+            smwCache: 'none'
+            experimental: false
+          - mw: 'REL1_45'
+            php: 8.3
+            smw: ''
+            smwCache: 'none'
+            experimental: false
+          - mw: 'REL1_46'
+            php: 8.3
+            smw: ''
+            smwCache: 'none'
+            experimental: false
+          - mw: 'master'
+            php: 8.3
+            smw: ''
+            smwCache: 'none'
+            experimental: true
+          # Exercises the Semantic MediaWiki integration, which self-skips when SMW is absent.
+          # Both supported major versions are tested, as they differ in API (e.g. class namespaces).
+          - mw: 'REL1_43'
+            php: 8.3
+            smw: '^6.0'
+            smwCache: 'smw6'
+            experimental: false
+          - mw: 'REL1_43'
+            php: 8.3
+            smw: '^7.0'
+            smwCache: 'smw7'
+            experimental: false
 
     runs-on: ubuntu-latest
-    continue-on-error: ${{ matrix.php == 8.3 }}
 
     defaults:
       run:
@@ -55,7 +77,7 @@ jobs:
             mediawiki
             !mediawiki/extensions/
             !mediawiki/vendor/
-          key: mw_${{ matrix.mw }}-php${{ matrix.php }}-v21
+          key: mw_${{ matrix.mw }}-php${{ matrix.php }}-${{ matrix.smwCache }}-v24
 
       - name: Cache Composer cache
         uses: actions/cache@v4
@@ -70,7 +92,7 @@ jobs:
       - name: Install MediaWiki
         if: steps.cache-mediawiki.outputs.cache-hit != 'true'
         working-directory: ~
-        run: bash EarlyCopy/.github/workflows/installMediaWiki.sh ${{ matrix.mw }} Maps
+        run: bash EarlyCopy/.github/workflows/installMediaWiki.sh ${{ matrix.mw }} Maps ${{ matrix.smw }}
 
       - uses: actions/checkout@v4
         with:
@@ -81,15 +103,29 @@ jobs:
 
       - run: composer update
 
+      - name: Set up Semantic MediaWiki
+        if: matrix.smw != ''
+        run: php maintenance/update.php --quick
+
+      # MediaWiki 1.46 replaced tests/phpunit/phpunit.php with a configuration that composer generates from a template,
+      # which the release tarballs leave out. That configuration fails tests without a @covers annotation, which many
+      # Maps tests lack, so the jobs relax that as tests/phpunit/phpunit.php did.
       - name: Run PHPUnit
-        run: php tests/phpunit/phpunit.php -c extensions/Maps
-        if: matrix.mw != 'REL1_37'
+        run: |
+          if [ -f tests/phpunit/phpunit.php ]; then
+            php tests/phpunit/phpunit.php -c extensions/Maps
+          else
+            wget -nv -O phpunit.xml.template "https://raw.githubusercontent.com/wikimedia/mediawiki/${{ matrix.mw }}/phpunit.xml.template"
+            composer phpunit:config
+            sed -i -e 's/forceCoversAnnotation="true"/forceCoversAnnotation="false"/' -e 's/failOnRisky="true"/failOnRisky="false"/' phpunit.xml
+            vendor/bin/phpunit extensions/Maps/tests
+          fi
 
       - name: Run PHPUnit with code coverage
+        if: matrix.mw == 'REL1_43' || matrix.mw == 'REL1_44' || matrix.mw == 'REL1_45'
         run: |
           php tests/phpunit/phpunit.php -c extensions/Maps --coverage-clover coverage.xml
           bash <(curl -s https://codecov.io/bash)
-        if: matrix.mw == 'REL1_38'
 
 
 #  Psalm:
@@ -146,6 +182,81 @@ jobs:
 #      - name: Psalm
 #        run: cd extensions/Maps && php vendor/bin/psalm --config=psalm.xml --shepherd --stats
 
+  qunit:
+    name: "QUnit"
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mediawiki
+
+    steps:
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          extensions: mbstring, intl
+          tools: composer
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Clone MediaWiki
+        run: git clone --depth 1 -b REL1_43 https://github.com/wikimedia/mediawiki.git mediawiki
+        working-directory: ~
+
+      - uses: actions/checkout@v4
+        with:
+          path: mediawiki/extensions/Maps
+
+      - name: Composer allow-plugins
+        run: composer config --no-plugins allow-plugins.composer/installers true
+
+      - name: Configure Composer merge for Maps
+        run: |
+          cat <<'EOJSON' > composer.local.json
+          {
+            "extra": {
+              "merge-plugin": {
+                "merge-dev": true,
+                "include": [
+                  "extensions/Maps/composer.json"
+                ]
+              }
+            }
+          }
+          EOJSON
+
+      - run: composer update
+
+      - name: Install MediaWiki
+        run: php maintenance/install.php --dbtype sqlite --dbuser root --dbname mw --dbpath "$(pwd)" --scriptpath="/w" --pass AdminPassword WikiName AdminUser
+
+      - name: Configure MediaWiki
+        run: |
+          echo 'error_reporting(E_ALL | E_STRICT);' >> LocalSettings.php
+          echo '$wgShowExceptionDetails = true;' >> LocalSettings.php
+          echo 'wfLoadExtension( "Maps" );' >> LocalSettings.php
+          echo '$wgEnableJavaScriptTest = true;' >> LocalSettings.php
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Run QUnit tests
+        env:
+          MW_SERVER: http://127.0.0.1:8080
+          MW_SCRIPT_PATH: /w
+          FORCE_COLOR: 1
+        run: |
+          ln -s . w
+          nohup php -S 0.0.0.0:8080 -t . > /tmp/php-server.log 2>&1 &
+          sleep 2
+          curl -sf http://127.0.0.1:8080/w/index.php/Special:BlankPage > /dev/null || (echo "Server failed:" && cat /tmp/php-server.log && exit 1)
+          npx grunt qunit --qunit-component=Maps
+
   PHPStan:
     name: "PHPStan"
 
@@ -159,7 +270,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.0
+          php-version: 8.3
           extensions: mbstring
           tools: composer, cs2pr
 
@@ -169,15 +280,15 @@ jobs:
         with:
           path: |
             mediawiki
-            mediawiki/extensions/
-            mediawiki/vendor/
-          key: mw_phpstan
+            !mediawiki/extensions/
+            !mediawiki/vendor/
+          key: mw_phpstan-v2
 
       - name: Cache Composer cache
         uses: actions/cache@v4
         with:
           path: ~/.composer/cache
-          key: composer_static_analysis
+          key: composer_phpstan
 
       - uses: actions/checkout@v4
         with:
@@ -186,7 +297,7 @@ jobs:
       - name: Install MediaWiki
         if: steps.cache-mediawiki.outputs.cache-hit != 'true'
         working-directory: ~
-        run: bash EarlyCopy/.github/workflows/installMediaWiki.sh REL1_39 Maps
+        run: bash EarlyCopy/.github/workflows/installMediaWiki.sh REL1_43 Maps
 
       - uses: actions/checkout@v4
         with:
@@ -211,60 +322,26 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: mediawiki
-
     steps:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.0
+          php-version: 8.3
           extensions: mbstring, intl, php-ast
           tools: composer
-
-      - name: Cache MediaWiki
-        id: cache-mediawiki
-        uses: actions/cache@v4
-        with:
-          path: |
-            mediawiki
-            !mediawiki/extensions/
-            !mediawiki/vendor/
-          key: mw_static_analysis
 
       - name: Cache Composer cache
         uses: actions/cache@v4
         with:
           path: ~/.composer/cache
-          key: composer_static_analysis
+          key: composer_code_style
 
       - uses: actions/checkout@v4
-        with:
-          path: EarlyCopy
-
-      - name: Install MediaWiki
-        if: steps.cache-mediawiki.outputs.cache-hit != 'true'
-        working-directory: ~
-        run: bash EarlyCopy/.github/workflows/installMediaWiki.sh REL1_39 Maps
-
-      - uses: actions/checkout@v4
-        with:
-          path: mediawiki/extensions/Maps
 
       - name: Composer allow-plugins
         run: composer config --no-plugins allow-plugins.composer/installers true
 
-      - name: Composer update (core)
-        run: composer update
-
-      - name: Composer allow-plugins (extension)
-        run: composer config --no-plugins allow-plugins.composer/installers true
-        working-directory: mediawiki/extensions/Maps
-
-      - name: Composer update (extension)
-        run: composer update
-        working-directory: mediawiki/extensions/Maps
+      - name: Composer install
+        run: composer install --no-progress --no-interaction --prefer-dist --optimize-autoloader
 
       - run: make phpcs
-        working-directory: mediawiki/extensions/Maps

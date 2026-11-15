@@ -4,8 +4,11 @@ declare( strict_types = 1 );
 
 namespace Maps;
 
-use Html;
+use Maps\Config\EffectiveSettings;
 use Maps\Map\MapData;
+use MediaWiki\Html\Html;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\Parser;
 use ParamProcessor\ProcessedParam;
 use ParamProcessor\ProcessingResult;
 
@@ -34,7 +37,14 @@ class GoogleMapsService implements MappingService {
 		'dropdown' => 'DROPDOWN_MENU'
 	];
 
+	private EffectiveSettings $config;
+	private FileUrlFinder $fileUrlFinder;
 	private $addedDependencies = [];
+
+	public function __construct( EffectiveSettings $config, FileUrlFinder $fileUrlFinder ) {
+		$this->config = $config;
+		$this->fileUrlFinder = $fileUrlFinder;
+	}
 
 	public function getName(): string {
 		return 'googlemaps3';
@@ -45,10 +55,6 @@ class GoogleMapsService implements MappingService {
 	}
 
 	public function getParameterInfo(): array {
-		global $egMapsGMaps3Type, $egMapsGMaps3Types, $egMapsGMaps3Controls, $egMapsGMaps3Layers;
-		global $egMapsGMaps3DefTypeStyle, $egMapsGMaps3DefZoomStyle, $egMapsGMaps3AutoInfoWindows;
-		global $egMapsResizableByDefault;
-
 		$params = MapsFunctions::getCommonParameters();
 
 		$params['visitedicon'] = [
@@ -66,12 +72,12 @@ class GoogleMapsService implements MappingService {
 		$params['zoom'] = [
 			'type' => 'integer',
 			'range' => [ 0, 20 ],
-			'default' => $GLOBALS['egMapsGMaps3Zoom'],
+			'default' => $this->config->get( 'egMapsGMaps3Zoom' ),
 			'message' => 'maps-par-zoom',
 		];
 
 		$params['type'] = [
-			'default' => $egMapsGMaps3Type,
+			'default' => $this->config->get( 'egMapsGMaps3Type' ),
 			'values' => self::getTypeNames(),
 			'message' => 'maps-googlemaps3-par-type',
 			'post-format' => function ( $value ) {
@@ -81,7 +87,7 @@ class GoogleMapsService implements MappingService {
 
 		$params['types'] = [
 			'dependencies' => 'type',
-			'default' => $egMapsGMaps3Types,
+			'default' => $this->config->get( 'egMapsGMaps3Types' ),
 			'values' => self::getTypeNames(),
 			'message' => 'maps-googlemaps3-par-types',
 			'islist' => true,
@@ -95,7 +101,7 @@ class GoogleMapsService implements MappingService {
 		];
 
 		$params['layers'] = [
-			'default' => $egMapsGMaps3Layers,
+			'default' => $this->config->get( 'egMapsGMaps3Layers' ),
 			'values' => [
 				'traffic',
 				'bicycling',
@@ -106,7 +112,7 @@ class GoogleMapsService implements MappingService {
 		];
 
 		$params['controls'] = [
-			'default' => $egMapsGMaps3Controls,
+			'default' => $this->config->get( 'egMapsGMaps3Controls' ),
 			'values' => [
 				'pan',
 				'zoom',
@@ -123,14 +129,14 @@ class GoogleMapsService implements MappingService {
 		];
 
 		$params['zoomstyle'] = [
-			'default' => $egMapsGMaps3DefZoomStyle,
+			'default' => $this->config->get( 'egMapsGMaps3DefZoomStyle' ),
 			'values' => [ 'default', 'small', 'large' ],
 			'message' => 'maps-googlemaps3-par-zoomstyle',
 			'post-format' => 'strtoupper',
 		];
 
 		$params['typestyle'] = [
-			'default' => $egMapsGMaps3DefTypeStyle,
+			'default' => $this->config->get( 'egMapsGMaps3DefTypeStyle' ),
 			'values' => array_keys( self::TYPE_CONTROL_STYLES ),
 			'message' => 'maps-googlemaps3-par-typestyle',
 			'post-format' => function ( $value ) {
@@ -140,25 +146,25 @@ class GoogleMapsService implements MappingService {
 
 		$params['autoinfowindows'] = [
 			'type' => 'boolean',
-			'default' => $egMapsGMaps3AutoInfoWindows,
+			'default' => $this->config->get( 'egMapsGMaps3AutoInfoWindows' ),
 			'message' => 'maps-googlemaps3-par-autoinfowindows',
 		];
 
 		$params['resizable'] = [
 			'type' => 'boolean',
-			'default' => $egMapsResizableByDefault,
+			'default' => $this->config->get( 'egMapsResizableByDefault' ),
 			'message' => 'maps-par-resizable',
 		];
 
 		$params['kmlrezoom'] = [
 			'type' => 'boolean',
-			'default' => $GLOBALS['egMapsRezoomForKML'],
+			'default' => $this->config->get( 'egMapsRezoomForKML' ),
 			'message' => 'maps-googlemaps3-par-kmlrezoom',
 		];
 
 		$params['poi'] = [
 			'type' => 'boolean',
-			'default' => $GLOBALS['egMapsShowPOI'],
+			'default' => $this->config->get( 'egMapsShowPOI' ),
 			'message' => 'maps-googlemaps3-par-poi',
 		];
 
@@ -211,21 +217,7 @@ class GoogleMapsService implements MappingService {
 			'default' => [],
 			'message' => 'maps-par-kml',
 			'islist' => true,
-			'post-format' => function( array $kmlFileNames ) {
-				return array_values(
-					array_filter(
-						array_map(
-							function( string $fileName ) {
-								return wfExpandUrl( MapsFunctions::getFileUrl( $fileName ) );
-							},
-							$kmlFileNames
-						),
-						function( string $fileName ) {
-							return $fileName !== '';
-						}
-					)
-				);
-			}
+			'post-format' => fn( array $kmlFileNames ) => $this->getKmlUrls( $kmlFileNames ),
 		];
 
 		$params['gkml'] = [
@@ -280,6 +272,42 @@ class GoogleMapsService implements MappingService {
 	 */
 	private function getTypeNames(): array {
 		return array_keys( self::MAP_TYPES );
+	}
+
+	/**
+	 * @param string[] $kmlFileNames
+	 * @return string[]
+	 */
+	private function getKmlUrls( array $kmlFileNames ): array {
+		$urls = [];
+
+		foreach ( $kmlFileNames as $fileName ) {
+			$url = $this->getKmlUrl( $fileName );
+
+			if ( $url !== '' ) {
+				$urls[] = $url;
+			}
+		}
+
+		return $urls;
+	}
+
+	/**
+	 * The url the browser should fetch this kml value from. Empty when there is none: the value is
+	 * blank, or it is not a file on this wiki while the wiki does not allow external data files.
+	 */
+	private function getKmlUrl( string $fileName ): string {
+		$url = $this->fileUrlFinder->findFileUrl( $fileName ) ?? $this->getExternalDataFileUrl( $fileName );
+
+		return (string)MediaWikiServices::getInstance()->getUrlUtils()->expand( $url );
+	}
+
+	private function getExternalDataFileUrl( string $fileName ): string {
+		return $this->allowsExternalDataFiles() ? trim( $fileName ) : '';
+	}
+
+	private function allowsExternalDataFiles(): bool {
+		return (bool)$this->config->get( 'egMapsAllowExternalDataFiles' );
 	}
 
 	public function newMapId(): string {
@@ -343,15 +371,14 @@ class GoogleMapsService implements MappingService {
 	}
 
 	private function getDependencies(): array {
+		$language = $this->config->get( 'egMapsGMaps3Language' );
+
 		return [
-			self::getApiScript(
-				is_string( $GLOBALS['egMapsGMaps3Language'] ) ?
-					$GLOBALS['egMapsGMaps3Language'] : $GLOBALS['egMapsGMaps3Language']->getCode()
-			)
+			self::getApiScript( is_string( $language ) ? $language : $language->getCode() )
 		];
 	}
 
-	public function newMapDataFromProcessingResult( ProcessingResult $processingResult ): MapData {
+	public function newMapDataFromProcessingResult( ProcessingResult $processingResult, Parser $parser ): MapData {
 		$parameters = $processingResult->getParameters();
 
 		if ( array_key_exists( 'zoom', $parameters ) && $parameters['zoom']->wasSetToDefault() && count(
@@ -366,7 +393,7 @@ class GoogleMapsService implements MappingService {
 			$mapParams[$parameter->getName()] = $parameter->getValue();
 		}
 
-		return $this->newMapDataFromParameters( $mapParams );
+		return $this->newMapDataFromParameters( $mapParams, $parser );
 	}
 
 	private function getParameterWithValue( ProcessedParam $param, $value ) {
@@ -379,7 +406,11 @@ class GoogleMapsService implements MappingService {
 		);
 	}
 
-	public function newMapDataFromParameters( array $params ): MapData {
+	public function newMapDataFromParameters( array $params, Parser $parser ): MapData {
+		// The browser fetches the documents that NetworkLink elements point at, and only sees the
+		// urls once it has the KML in hand, so it needs to know the policy itself.
+		$params['allowexternaldatafiles'] = $this->allowsExternalDataFiles();
+
 		return new MapData( $params );
 	}
 

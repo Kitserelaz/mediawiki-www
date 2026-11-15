@@ -132,10 +132,6 @@ class LangDetectFallbackMethod implements FallbackMethod, SearchMetricsProvider 
 		return 0.0;
 	}
 
-	/**
-	 * @param FallbackRunnerContext $context
-	 * @return FallbackStatus
-	 */
 	public function rewrite( FallbackRunnerContext $context ): FallbackStatus {
 		$previousSet = $context->getPreviousResultSet();
 		Assert::precondition( $this->detectedLangWikiConfig !== null,
@@ -168,6 +164,7 @@ class LangDetectFallbackMethod implements FallbackMethod, SearchMetricsProvider 
 		return FallbackStatus::noSuggestion();
 	}
 
+	/** @inheritDoc */
 	public function getMetrics() {
 		return $this->searchMetrics;
 	}

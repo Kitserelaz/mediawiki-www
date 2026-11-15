@@ -7,9 +7,9 @@ namespace MediaWiki\Extension\EmbedVideo\Tests\EmbedService;
 use Exception;
 use MediaWiki\Extension\EmbedVideo\EmbedService\Ccc;
 use MediaWiki\Extension\EmbedVideo\EmbedVideo;
+use MediaWiki\Parser\ParserOptions;
+use MediaWiki\Parser\PPCustomFrame_Hash;
 use MediaWikiIntegrationTestCase;
-use ParserOptions;
-use PPCustomFrame_Hash;
 
 /**
  * @group EmbedVideo
@@ -80,7 +80,7 @@ class CccTest extends MediaWikiIntegrationTestCase {
 	public function testEvu(): void {
 		$parser = $this->getServiceContainer()->getParser();
 		$parser->setOptions( ParserOptions::newFromAnon() );
-		$parser->resetOutput();
+		$parser->clearState();
 
 		$out = EmbedVideo::parseEVU(
 			$parser, new PPCustomFrame_Hash( $parser->getPreprocessor(), [] ), [
@@ -88,10 +88,10 @@ class CccTest extends MediaWikiIntegrationTestCase {
 		] );
 
 		$this->assertIsArray( $out );
-		$this->assertCount( 3, $out );
+		$this->assertCount( 2, $out );
 		$this->assertStringContainsString(
 			'media.ccc.de/v/rc3-791680-introducing_utk_web_a_web_developer_s_view_on_firmware',
-			$out[0]
+			$parser->getStripState()->unstripNoWiki( $out[0] )
 		);
 	}
 }

@@ -2,8 +2,8 @@
  * Step definitions. Each step definition is bound to the World object,
  * so any methods or properties in World are available here.
  *
- * Not: Do not use the fat-arrow syntax to define step functions, because
- * Cucumber explicity binds the 'this' to 'World'. Arrow function would
+ * Note: Do not use the fat-arrow syntax to define step functions, because
+ * Cucumber explicitly binds the 'this' to 'World'. Arrow function would
  * bind `this` to the parent function instead, which is not what we want.
  */
 
@@ -14,8 +14,7 @@ const { defineParameterType, Given, When, Then } = require( '@cucumber/cucumber'
 	ArticlePage = require( '../support/pages/article_page' ),
 	TitlePage = require( '../support/pages/title_page' ),
 	expect = require( 'chai' ).expect,
-	querystring = require( 'querystring' ),
-	Promise = require( 'bluebird' );
+	querystring = require( 'querystring' );
 
 const namedPositions = [ 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eigth', 'ninth', 'tenth' ];
 
@@ -44,7 +43,7 @@ function withApi( world, fn ) {
 const epoch = Date.now();
 const searchVars = {};
 // These expressions are string matches against capture groups in steps. For
-// any capture group whos regex string matches against the expression apply a
+// any capture group whose regex string matches against the expression apply a
 // few minor transformations from an explicit name into the actual underlying
 // value desired.
 const expressions = [ '.+', '.+?' ];
@@ -79,6 +78,14 @@ When( /^I go to (.+)$/, async function ( title ) {
 
 When( /^I ask suggestion API for (.+)$/, function ( query ) {
 	return this.stepHelpers.suggestionSearch( query );
+} );
+
+When( /^I ask suggestion API using the second try profile (.+?) for (.+?)$/, function ( profile, query ) {
+	return this.stepHelpers.suggestionSearch( query, 'max', profile );
+} );
+
+When( /^I ask suggestion API using the alternative index (\d+) for (.+)$/, function ( idx, query ) {
+	return this.stepHelpers.suggestionSearch( query, 'max', undefined, idx );
 } );
 
 When( /^I ask suggestion API at most (\d+) items? for (.+)$/, function ( limit, query ) {
@@ -118,8 +125,7 @@ When( /^the api returns error code (.+)$/, function ( code ) {
 } );
 
 When( /^I get api suggestions for (.+?)(?: using the (.+) profile)?(?: on namespaces (\d+(?:,\d+)*))?$/, function ( search, profile, namespaces ) {
-	// TODO: Add step helper
-	return this.stepHelpers.suggestionsWithProfile( search, profile || 'fuzzy', namespaces );
+	return withApi( this, () => this.stepHelpers.suggestionsWithProfile( search, profile || 'fuzzy', namespaces ) );
 } );
 
 Then( /^(.+) is the (.+) api suggestion$/, function ( title, position ) {
@@ -343,10 +349,8 @@ Then( /^the first api search result is a match to file content$/, function () {
 	} );
 } );
 
-Then( /^I locate the page id of (.+) and store it as (%.+%)$/, function ( title, varname ) {
-	return Promise.coroutine( function* () {
-		searchVars[ varname ] = yield this.stepHelpers.pageIdOf( title );
-	} ).call( this );
+Then( /^I locate the page id of (.+) and store it as (%.+%)$/, async function ( title, varname ) {
+	searchVars[ varname ] = await this.stepHelpers.pageIdOf( title );
 } );
 
 Then( /^I wait (\d+) seconds/, function ( seconds ) {
@@ -371,8 +375,13 @@ Then( /^I am on a page titled (.+)$/, async ( title ) => {
 	expect( await ArticlePage.articleTitle(), `I am on ${ title }` ).to.equal( title );
 } );
 
-Given( /^I am at a random page$/, async function () {
-	return this.visit( new TitlePage( 'Special:Random' ) );
+Given( /^I am at a random page(?: not named (.+))?$/, async function ( not_named ) {
+	await this.visit( new TitlePage( 'Special:Random' ) );
+	if ( not_named ) {
+		while ( ( await ArticlePage.articleTitle() ) === not_named ) {
+			await this.visit( new TitlePage( 'Special:Random' ) );
+		}
+	}
 } );
 
 Given( /^I am logged in and at a random page$/, async function () {
@@ -439,7 +448,11 @@ Then( /^deleted page search returns (.+) as first result$/, async ( title ) => {
 } );
 
 When( /^I dump the cirrus data for (.+)$/, async function ( title ) {
-	return this.visit( new TitlePage( title + '&action=cirrusDump' ) );
+	return this.visit( new TitlePage( title + '&action=cirrusdump' ) );
+} );
+
+When( /^I dump the cirrus suggest data for (.+)$/, async function ( title ) {
+	return this.visit( new TitlePage( title + '&action=cirrussuggestdump' ) );
 } );
 
 Then( /^the page text contains (.+)$/, async ( text ) => {
@@ -483,17 +496,17 @@ Then( /^I wait for (.+) to have (.+) of (.+)$/, function ( title, field, value )
 	} ) );
 } );
 
-When( /^I dump the cirrus config$/, Promise.coroutine( function* () {
-	const client = yield this.onWiki();
+When( /^I dump the cirrus config$/, async function () {
+	const client = await this.onWiki();
 	try {
-		const response = yield client.request( {
+		const response = await client.request( {
 			action: 'cirrus-config-dump'
 		} );
 		this.setApiResponse( response );
 	} catch ( err ) {
 		this.setApiError( err );
 	}
-} ) );
+} );
 
 Then( /^the config dump contains (.+)$/, function ( key ) {
 	return withApi( this, () => {
@@ -508,69 +521,56 @@ Then( /^the config dump text does not contain (.+)$/, function ( key ) {
 	} );
 } );
 
-When( /^I dump the cirrus mapping$/, Promise.coroutine( function* () {
-	const client = yield this.onWiki();
+When( /^I dump the cirrus schema$/, async function () {
+	const client = await this.onWiki();
 	try {
-		const response = yield client.request( {
-			action: 'cirrus-mapping-dump'
+		const response = await client.request( {
+			action: 'cirrus-schema-dump'
 		} );
 		this.setApiResponse( response );
 	} catch ( err ) {
 		this.setApiError( err );
 	}
-} ) );
+} );
 
 Then( /^A valid mapping dump is produced$/, function () {
 	return withApi( this, () => {
 		expect( this.apiError ).to.equal( undefined );
-		expect( this.apiResponse ).to.include.all.keys( 'content', 'general', 'archive' );
-		expect( this.apiResponse.content ).to.have.all.keys(
+		expect( this.apiResponse ).to.include.all.keys( 'content', 'general', 'archive', 'titlesuggest' );
+		expect( this.apiResponse.content ).to.include.all.keys( 'mappings' );
+		expect( this.apiResponse.content.mappings ).to.have.all.keys(
 			'dynamic', 'properties' );
-		expect( this.apiResponse.general ).to.have.all.keys(
+		expect( this.apiResponse.general.mappings ).to.have.all.keys(
 			'dynamic', 'properties' );
-		expect( this.apiResponse.archive ).to.have.all.keys(
+		expect( this.apiResponse.archive.mappings ).to.have.all.keys(
 			'dynamic', 'properties' );
-		expect( this.apiResponse.content.properties ).to.include.keys(
+		expect( this.apiResponse.content.mappings.properties ).to.include.keys(
 			'all', 'all_near_match', 'title', 'category', 'redirect' );
 	} );
 } );
 
-When( /^I dump the cirrus settings$/, Promise.coroutine( function* () {
-	const client = yield this.onWiki();
+Then( /^A valid settings dump is produced$/, function () {
+	return withApi( this, () => {
+		expect( this.apiError ).to.equal( undefined );
+		expect( this.apiResponse ).to.include.all.keys( 'content', 'general', 'archive', 'titlesuggest' );
+		expect( this.apiResponse.content.settings ).to.include.all.keys( 'index' );
+		expect( this.apiResponse.content.settings.index ).to.include.all.keys( 'refresh_interval' );
+	} );
+} );
+
+Given( /^I request a query dump for (.+)$/, async function ( query ) {
+	const client = await this.onWiki();
 	try {
-		const response = yield client.request( {
-			action: 'cirrus-settings-dump'
+		const response = await client.request( {
+			action: 'query',
+			list: 'search',
+			srsearch: query,
+			cirrusDumpQuery: 1
 		} );
 		this.setApiResponse( response );
 	} catch ( err ) {
 		this.setApiError( err );
 	}
-} ) );
-
-Then( /^A valid settings dump is produced$/, function () {
-	return withApi( this, () => {
-		expect( this.apiError ).to.equal( undefined );
-		expect( this.apiResponse ).to.include.all.keys( 'content', 'general' );
-		expect( this.apiResponse.content ).to.include.all.keys( 'page' );
-		expect( this.apiResponse.content.page.index ).to.include.all.keys( 'refresh_interval' );
-	} );
-} );
-
-Given( /^I request a query dump for (.+)$/, function ( query ) {
-	return Promise.coroutine( function* () {
-		const client = yield this.onWiki();
-		try {
-			const response = yield client.request( {
-				action: 'query',
-				list: 'search',
-				srsearch: query,
-				cirrusDumpQuery: 1
-			} );
-			this.setApiResponse( response );
-		} catch ( err ) {
-			this.setApiError( err );
-		}
-	} ).call( this );
 } );
 
 Then( /^A valid query dump for (.+) is produced$/, function ( query ) {
@@ -585,22 +585,20 @@ Then( /^A valid query dump for (.+) is produced$/, function ( query ) {
 	} );
 } );
 
-When( /^I wbsearchentities on (.+) for (.+)/, function ( wiki, query ) {
-	return Promise.coroutine( function* () {
-		const client = yield this.onWiki( wiki );
-		try {
-			const response = yield client.request( {
-				action: 'wbsearchentities',
-				search: query,
-				language: 'en',
-				format: 'json',
-				formatversion: 2
-			} );
-			this.setApiResponse( response );
-		} catch ( err ) {
-			this.setApiError( err );
-		}
-	} ).call( this );
+When( /^I wbsearchentities on (.+) for (.+)/, async function ( wiki, query ) {
+	const client = await this.onWiki( wiki );
+	try {
+		const response = await client.request( {
+			action: 'wbsearchentities',
+			search: query,
+			language: 'en',
+			format: 'json',
+			formatversion: 2
+		} );
+		this.setApiResponse( response );
+	} catch ( err ) {
+		this.setApiError( err );
+	}
 } );
 
 Then( /^(.+) is the label of the (.+) wbsearchentities result/, function ( label, position ) {

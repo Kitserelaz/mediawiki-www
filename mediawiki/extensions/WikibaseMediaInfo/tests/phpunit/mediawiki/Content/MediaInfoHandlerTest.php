@@ -9,6 +9,7 @@ use MediaWiki\Title\TitleFactory;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\ItemIdParser;
 use Wikibase\DataModel\Services\Lookup\PropertyDataTypeLookup;
+use Wikibase\Lib\DataTypeFactory;
 use Wikibase\Lib\Store\EntityContentDataCodec;
 use Wikibase\MediaInfo\Content\MediaInfoHandler;
 use Wikibase\MediaInfo\Content\MissingMediaInfoHandler;
@@ -17,6 +18,7 @@ use Wikibase\MediaInfo\DataModel\MediaInfoId;
 use Wikibase\MediaInfo\Search\MediaInfoFieldDefinitions;
 use Wikibase\MediaInfo\Services\FilePageLookup;
 use Wikibase\MediaInfo\Services\MediaInfoIdLookup;
+use Wikibase\Repo\Hooks\WikibaseTextForSearchIndexHook;
 use Wikibase\Repo\Validators\EntityConstraintProvider;
 use Wikibase\Repo\Validators\ValidatorErrorLocalizer;
 use Wikibase\Search\Elastic\Fields\DescriptionsProviderFieldDefinitions;
@@ -82,6 +84,7 @@ class MediaInfoHandlerTest extends \MediaWikiIntegrationTestCase {
 				new LabelsProviderFieldDefinitions( [ 'ar', 'de' ] ),
 				new DescriptionsProviderFieldDefinitions( [ 'ar', 'de' ], null ),
 				new StatementProviderFieldDefinitions(
+					new DataTypeFactory( [] ),
 					$propertyLookup,
 					[],
 					[],
@@ -92,6 +95,7 @@ class MediaInfoHandlerTest extends \MediaWikiIntegrationTestCase {
 			),
 			$this->getServiceContainer()->getPageStore(),
 			$this->getServiceContainer()->getTitleFactory(),
+			$this->createMock( WikibaseTextForSearchIndexHook::class ),
 			null
 		);
 	}
@@ -169,9 +173,7 @@ class MediaInfoHandlerTest extends \MediaWikiIntegrationTestCase {
 
 		$mediaInfoHandler = $this->newMediaInfoHandler();
 
-		$mockId = $this->createMock( MediaInfoId::class );
-		$mockId->method( 'getNumericId' )
-			->willReturn( $testId );
+		$mockId = new MediaInfoId( "M$testId" );
 
 		$this->assertEquals( $testTitle, $mediaInfoHandler->getTitleForId( $mockId ) );
 	}

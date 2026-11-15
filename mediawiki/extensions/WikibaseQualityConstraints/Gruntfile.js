@@ -18,7 +18,6 @@ module.exports = function ( grunt ) {
 			all: [
 				'**/*.{js,json}',
 				'!Gruntfile.js',
-				'!modules/gadget-skip.js',
 				'!tests/coverage/**',
 				'!node_modules/**',
 				'!vendor/**'
@@ -35,6 +34,9 @@ module.exports = function ( grunt ) {
 			}
 		),
 		stylelint: {
+			options: {
+				cache: true
+			},
 			all: [
 				'**/*.css',
 				'**/*.less',

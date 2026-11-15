@@ -78,10 +78,16 @@ class Page {
 		const config = wiki ?
 			world.config.wikis[ wiki ] :
 			world.config.wikis[ world.config.wikis.default ];
-		world.visit( 'Special:UserLogin' );
-		await browser.$( '#wpName1' ).setValue( config.username );
-		await browser.$( '#wpPassword1' ).setValue( config.password );
-		await browser.$( '#wpLoginAttempt' ).click();
+		await world.visit( 'Special:UserLogin' );
+		const name = await browser.$( '#wpName1' );
+		await name.setValue( config.username );
+
+		const password = await browser.$( '#wpPassword1' );
+		await password.setValue( config.password );
+
+		const login = await browser.$( '#wpLoginAttempt' );
+		await login.click();
+
 		// skip password reset, not always present?
 		const skip = await $( '#mw-input-skipReset' );
 		if ( await skip.isExisting() ) {

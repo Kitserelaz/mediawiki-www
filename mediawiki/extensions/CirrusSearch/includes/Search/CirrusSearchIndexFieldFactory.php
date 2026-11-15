@@ -3,26 +3,13 @@
 namespace CirrusSearch\Search;
 
 use CirrusSearch\SearchConfig;
-use NullIndexField;
-use SearchIndexField;
+use MediaWiki\Search\NullIndexField;
+use MediaWiki\Search\SearchIndexField;
 
 /**
  * Create different types of SearchIndexFields.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class CirrusSearchIndexFieldFactory {
 
@@ -31,9 +18,6 @@ class CirrusSearchIndexFieldFactory {
 	 */
 	private $searchConfig;
 
-	/**
-	 * @param SearchConfig $searchConfig
-	 */
 	public function __construct( SearchConfig $searchConfig ) {
 		$this->searchConfig = $searchConfig;
 	}
@@ -45,7 +29,7 @@ class CirrusSearchIndexFieldFactory {
 	 * @return SearchIndexField
 	 */
 	public function makeSearchFieldMapping( $name, $type ): SearchIndexField {
-		// Specific type for opening_text
+		// Specific types
 		switch ( $name ) {
 			case 'opening_text':
 				return new OpeningTextIndexField( $name, $type, $this->searchConfig );
@@ -82,6 +66,8 @@ class CirrusSearchIndexFieldFactory {
 	 *   ENABLE_NORMS: Enable norms on the field.  Good for text you search against but bad for array fields and useless
 	 *     for fields that don't get involved in the score.
 	 *   COPY_TO_SUGGEST: Copy the contents of this field to the suggest field for "Did you mean".
+	 *   COPY_TO_SUGGEST_VARIANT: Copy the contents of this field to the secondary suggest field for ab testing
+	 *     "Did you mean".
 	 *   SPEED_UP_HIGHLIGHTING: Store extra data in the field to speed up highlighting.  This is important for long
 	 *     strings or fields with many values.
 	 * @param array $extra Extra analyzers for this field beyond the basic text and plain.

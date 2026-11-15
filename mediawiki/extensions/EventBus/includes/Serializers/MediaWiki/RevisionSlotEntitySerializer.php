@@ -21,8 +21,8 @@
 namespace MediaWiki\Extension\EventBus\Serializers\MediaWiki;
 
 use MediaWiki\Content\IContentHandlerFactory;
+use MediaWiki\Content\UnknownContentModelException;
 use MediaWiki\Revision\SlotRecord;
-use MWUnknownContentModelException;
 
 /**
  * Converts a SlotRecord into an array that matches the
@@ -56,7 +56,7 @@ class RevisionSlotEntitySerializer {
 			try {
 				$contentHandler = $this->contentHandlerFactory->getContentHandler( $contentModel );
 				$contentFormat = $contentHandler->getDefaultFormat();
-			} catch ( MWUnknownContentModelException $e ) {
+			} catch ( UnknownContentModelException ) {
 				// Ignore, `content_format` is not required.
 			}
 		}

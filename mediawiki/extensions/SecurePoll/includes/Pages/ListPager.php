@@ -4,9 +4,9 @@ namespace MediaWiki\Extension\SecurePoll\Pages;
 
 use MediaWiki\Extension\SecurePoll\Entities\Election;
 use MediaWiki\Extension\SecurePoll\User\Voter;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Pager\TablePager;
-use MediaWiki\Xml\Xml;
 use OOUI\ButtonWidget;
 use Wikimedia\IPUtils;
 
@@ -57,6 +57,9 @@ class ListPager extends TablePager {
 	 */
 	private $includeVoterPii;
 
+	/**
+	 * @param ListPage $listPage
+	 */
 	public function __construct( $listPage ) {
 		$this->listPage = $listPage;
 		$this->election = $listPage->election;
@@ -72,6 +75,7 @@ class ListPager extends TablePager {
 		parent::__construct();
 	}
 
+	/** @inheritDoc */
 	public function getQueryInfo() {
 		return [
 			'tables' => 'securepoll_votes',
@@ -83,6 +87,7 @@ class ListPager extends TablePager {
 		];
 	}
 
+	/** @inheritDoc */
 	protected function isFieldSortable( $field ) {
 		return in_array(
 			$field,
@@ -151,7 +156,7 @@ class ListPager extends TablePager {
 				$voteId = intval( $this->mCurrentRow->vote_id );
 				$title = $this->listPage->specialPage->getPageTitle( "details/$voteId" );
 
-				return Xml::element(
+				return Html::element(
 					'a',
 					[ 'href' => $title->getLocalURL() ],
 					$this->msg( 'securepoll-details-link' )->text()
@@ -167,7 +172,7 @@ class ListPager extends TablePager {
 				}
 				$id = 'securepoll-popup-' . $voteId;
 
-				return ( new ButtonWidget( [
+				return (string)( new ButtonWidget( [
 					'id' => $id,
 					'label' => $label,
 				] ) )->setAttributes( [
@@ -193,11 +198,13 @@ class ListPager extends TablePager {
 		}
 	}
 
+	/** @inheritDoc */
 	public function getDefaultSort() {
 		// See T298434
 		return 'vote_id';
 	}
 
+	/** @inheritDoc */
 	protected function getFieldNames() {
 		$names = [];
 		if ( $this->isAdmin ) {
@@ -210,6 +217,10 @@ class ListPager extends TablePager {
 			$fields = self::$publicFields;
 		}
 
+		if ( !$this->election->getProperty( 'prompt-active-wiki', true ) ) {
+			unset( $fields['vote_voter_domain'] );
+		}
+
 		foreach ( $fields as $field => $headerMessageName ) {
 			$names[$field] = $this->msg( $headerMessageName )->text();
 		}
@@ -217,6 +228,7 @@ class ListPager extends TablePager {
 		return $names;
 	}
 
+	/** @inheritDoc */
 	protected function getRowClass( $row ) {
 		$classes = [];
 		if ( !$row->vote_current ) {
@@ -229,6 +241,7 @@ class ListPager extends TablePager {
 		return implode( ' ', $classes );
 	}
 
+	/** @inheritDoc */
 	public function getTitle() {
 		return $this->listPage->getTitle();
 	}

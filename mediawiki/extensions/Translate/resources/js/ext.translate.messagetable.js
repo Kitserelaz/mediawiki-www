@@ -1,6 +1,6 @@
 ( function () {
 	'use strict';
-
+	var logger = require( 'ext.translate.eventlogginghelpers' );
 	var itemsClass = {
 		proofread: '.tux-message-proofread',
 		page: '.tux-message-pagemode',
@@ -33,7 +33,7 @@
 	function MessageTable( container, options, settings ) {
 		this.$container = $( container );
 		this.options = options;
-		this.options = $.extend( {}, $.fn.messagetable.defaults, options );
+		this.options = Object.assign( {}, $.fn.messagetable.defaults, options );
 		this.settings = settings;
 		// mode can be proofread, page or translate
 		this.mode = this.options.mode;
@@ -79,14 +79,17 @@
 
 			this.$actionBar.find( 'button.proofread-mode-button' ).on( 'click', function () {
 				messageTable.switchMode( 'proofread' );
+				logger.logClickEvent( 'change_mode', 'review' );
 			} );
 
 			this.$actionBar.find( 'button.translate-mode-button' ).on( 'click', function () {
 				messageTable.switchMode( 'translate' );
+				logger.logClickEvent( 'change_mode', 'list' );
 			} );
 
 			this.$actionBar.find( 'button.page-mode-button' ).on( 'click', function () {
 				messageTable.switchMode( 'page' );
+				logger.logClickEvent( 'change_mode', 'page' );
 			} );
 
 			this.$proofreadOwnTranslations.on( 'click', function () {
@@ -149,7 +152,7 @@
 			message.proofreadable = false;
 
 			if ( message.tags.length &&
-				message.tags.indexOf( 'optional' ) >= 0 &&
+				message.tags.includes( 'optional' ) &&
 				status === 'untranslated'
 			) {
 				status = 'optional';
@@ -337,9 +340,13 @@
 						$message.data( 'pagemode' ) ||
 						$message.data( 'proofread' ) ).message;
 
+				// If a message is not translated, the value of message.translation is null.
+				// The RegExp test() method changes the null value to string, which is
+				// not desirable here (see T410757).
+				// Message definition and key are never supposed to be null.
 				if (
 					matcher.test( message.definition ) ||
-					matcher.test( message.translation ) ||
+					( message.translation !== null && matcher.test( message.translation ) ) ||
 					matcher.test( message.key )
 				) {
 					$message.removeClass( 'hide' );
@@ -355,7 +362,7 @@
 					.addClass( 'advanced-search' );
 
 				var $button = $( '<button>' )
-					.addClass( 'mw-ui-button' )
+					.addClass( 'cdx-button' )
 					.text( mw.msg( 'tux-message-filter-advanced-button' ) );
 
 				$result = $( '<div>' )
@@ -502,6 +509,10 @@
 						var currentWarning = result.warnings[ i ];
 						if ( currentWarning.code === 'translate-language-disabled-source' ) {
 							self.handleLoadErrors( [ currentWarning ] );
+							logger.logEvent(
+								'message_prompt',
+								'change_lang'
+							);
 							// Since translation to source language is disabled, do not display any messages
 							return;
 						}
@@ -598,7 +609,7 @@
 		 */
 		otherActionButton: function ( labelMsg, callback ) {
 			return $( '<button>' )
-				.addClass( 'mw-ui-button mw-ui-progressive mw-ui-big' )
+				.addClass( 'cdx-button cdx-button--weight-primary cdx-button--action-progressive cdx-button--size-large' )
 				.text( mw.msg( labelMsg ) )
 				.on( 'click', callback );
 		},
@@ -642,7 +653,6 @@
 						'tux-empty-list-other-action',
 						function () {
 							$( '.tux-tab-unproofread' ).trigger( 'click' );
-							// @todo untranslated
 						} )
 					);
 					// @todo View all
@@ -655,7 +665,7 @@
 							messageTable.switchMode( 'translate' );
 						} )
 					);
-				} else if ( selectedTab === 'unproofread' ) {
+				} else if ( [ 'untranslated', 'unproofread' ].includes( selectedTab ) ) {
 					$emptyListHeader.text( mw.msg( 'tux-empty-nothing-new-to-proofread' ) );
 					$guide.text( mw.msg( 'tux-empty-you-can-help-providing' ) );
 					$actions.append( messageTable.otherActionButton(
@@ -716,15 +726,11 @@
 				userId = mw.config.get( 'wgUserId' );
 
 			messageTable.$actionBar.find( '.tux-view-switcher .down' ).removeClass( 'down' );
-			if ( mode === 'translate' ) {
-				messageTable.$actionBar.find( '.translate-mode-button' ).addClass( 'down' );
-			}
-			if ( mode === 'proofread' ) {
-				messageTable.$actionBar.find( '.proofread-mode-button' ).addClass( 'down' );
-			}
-			if ( mode === 'page' ) {
-				messageTable.$actionBar.find( '.page-mode-button' ).addClass( 'down' );
-			}
+			// The following classes are used here:
+			// * translate-mode-button
+			// * proofread-mode-button
+			// * page-mode-button
+			messageTable.$actionBar.find( '.' + mode + '-mode-button' ).addClass( 'down' );
 
 			messageTable.firstProofreadTipShown = false;
 
@@ -745,7 +751,7 @@
 
 				// Fix the filter if it is untranslated. Untranslated does not make sense
 				// for proofread mode. Keep the filter if it is not 'untranslated'
-				if ( !filter || filter.indexOf( '!translated' ) >= 0 ) {
+				if ( !filter || filter.includes( '!translated' ) ) {
 					messageTable.messages = [];
 					// default filter for proofread mode
 					mw.translate.changeFilter( 'translated|!reviewer:' + userId +
@@ -759,11 +765,11 @@
 				$tuxTabUntranslated.removeClass( 'hide' );
 				$tuxTabUnproofread.addClass( 'hide' );
 
-				if ( filter.indexOf( '!translated' ) > -1 ) {
+				if ( filter.includes( '!translated' ) ) {
 					$hideTranslatedButton.removeClass( 'hide' );
 				}
 
-				if ( filter && filter.indexOf( '!last-translator' ) >= 0 ) {
+				if ( filter && filter.includes( '!last-translator' ) ) {
 					messageTable.messages = [];
 					// default filter for translate mode
 					mw.translate.changeFilter( '!translated' );
@@ -789,6 +795,7 @@
 
 		/**
 		 * Clear errors encountered during the loading state
+		 *
 		 * @private
 		 */
 		clearLoadErrors: function () {
@@ -861,7 +868,7 @@
 	$.fn.messagetable.Constructor = MessageTable;
 
 	$.fn.messagetable.defaults = {
-		mode: new mw.Uri().query.action || 'translate'
+		mode: mw.util.getParamValue( 'action' ) || 'translate'
 	};
 
 	/**

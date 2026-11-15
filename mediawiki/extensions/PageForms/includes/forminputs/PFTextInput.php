@@ -99,15 +99,11 @@ class PFTextInput extends PFFormInput {
 		], true ), true );
 
 		$api->execute();
-		if ( defined( 'ApiResult::META_CONTENT' ) ) {
-			$result = $api->getResult()->getResultData( null, [
-				'BC' => [],
-				'Types' => [],
-				'Strip' => 'all',
-			] );
-		} else {
-			$result = $api->getResultData();
-		}
+		$result = $api->getResult()->getResultData( null, [
+			'BC' => [],
+			'Types' => [],
+			'Strip' => 'all',
+		] );
 
 		$url = false;
 
@@ -137,7 +133,7 @@ class PFTextInput extends PFFormInput {
 
 		if ( $wgPageFormsSimpleUpload ) {
 			$text = "\n" . '<img class="loading" style="display:none;" src="' . $wgPageFormsScriptPath . '/skins/loading.gif"/>' . "\n";
-			$text .= Html::rawElement( 'span', [ 'class' => 'simpleUploadInterface' ], null );
+			$text .= Html::rawElement( 'span', [ 'class' => 'simpleUploadInterface' ], '' );
 
 			return $text;
 		}

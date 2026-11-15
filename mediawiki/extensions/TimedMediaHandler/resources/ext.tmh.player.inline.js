@@ -70,6 +70,7 @@ class InlinePlayer {
 		require( './videojs-resolution-switcher/videojs-resolution-switcher.js' );
 		require( './mw-subtitles-button/mw-subtitles-create.js' );
 		require( './mw-subtitles-button/mw-subtitles-button.js' );
+		require( './mw-endcard/mw-endcard.js' );
 
 		// Add translations for the plugins
 		// video.js translations don't have region postfixes (yet)
@@ -176,11 +177,8 @@ class InlinePlayer {
 		}
 		// We remove SRT subtitles tracks as we can't handle them
 		this.$videoplayer.find( 'track[type="text/x-srt"]' ).remove();
-		// Make sure the menu's can overflow thumbnail frames
-		this.$videoplayer.closest( '.thumbinner' ).addClass( 'mw-overflow' );
-		this.$videoplayer.addClass( 'video-js' );
+		this.$videoplayer.addClass( 'video-js' ).removeClass( 'mw-file-element' );
 
-		// eslint-disable-next-line es-x/no-array-prototype-fill
 		if ( this.playerConfig.fill ) {
 			// In fill mode, remove any inline width/height
 			// from the inline player
@@ -213,6 +211,7 @@ class InlinePlayer {
 					this.selectDefaultTrack();
 					/* More custom stuff goes here */
 					d.resolve( this.videojsPlayer );
+					mw.hook( 'tmh.player.loaded' ).fire( this.videojsPlayer );
 				} );
 				return d.promise();
 			} );
@@ -358,7 +357,8 @@ InlinePlayer.globalConfig = {
 	},
 	techOrder: [ 'html5' ],
 	plugins: {
-		infoButton: {}
+		infoButton: {},
+		endCard: {}
 	},
 	html5: InlinePlayer.html5techOpt
 };

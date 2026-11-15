@@ -1,5 +1,29 @@
 This file contains the RELEASE-NOTES of the Semantic Forms Select (a.k.a. SFS) extension.
 
+### 5.0.0
+
+Released on June 8, 2026.
+
+Compatible with MediaWiki 1.43 up to 1.45, PHP 8.1 up to 8.4, and Semantic MediaWiki 7.0.
+
+* Raised the minimum required Semantic MediaWiki version to 7.0
+* Raised the minimum required Page Forms version to 6.0.6
+* Added support for Semantic MediaWiki 7.0
+* Migrated the query processing to Semantic MediaWiki 7.0's namespaced `SMW\Query\QueryProcessor` API
+* Completed the migration of extension registration to `extension.json` (declarative API module and autoloading, removed the procedural registration callback and the root entry-point file)
+* Removed the unused `$wgScriptSelectCount` configuration setting (it was read nowhere)
+
+### 4.0.0
+
+Released on June 4, 2026.
+
+Compatible with MediaWiki 1.43 up to 1.45, PHP 8.1 up to 8.4, and SMW 6.0 up to 6.x.
+
+* Dropped support for MediaWiki 1.42 and lower
+* Dropped support for PHP 8.0 and lower
+* Added support for MediaWiki up to 1.45.
+* Various fixes.
+
 ### 4.0.0-beta
 
 Released on April 28, 2022.

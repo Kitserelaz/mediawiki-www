@@ -4,29 +4,18 @@ namespace MediaWiki\MassMessage\Content;
 
 use MediaWiki\Content\Content;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Diff\SlotDiffRenderer;
+use MediaWiki\Diff\TextSlotDiffRenderer;
 use MediaWiki\Html\Html;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Title\Title;
-use MessageLocalizer;
-use TextSlotDiffRenderer;
 
-class MassMessageListSlotDiffRenderer extends \SlotDiffRenderer {
-	/** @var TextSlotDiffRenderer */
-	private $textSlotDiffRenderer;
-
-	/** @var MessageLocalizer */
-	private $localizer;
-
-	/**
-	 * @param TextSlotDiffRenderer $textSlotDiffRenderer
-	 * @param MessageLocalizer $localizer
-	 */
+class MassMessageListSlotDiffRenderer extends SlotDiffRenderer {
 	public function __construct(
-		TextSlotDiffRenderer $textSlotDiffRenderer,
-		MessageLocalizer $localizer
+		private readonly TextSlotDiffRenderer $textSlotDiffRenderer,
+		private readonly MessageLocalizer $localizer,
 	) {
-		$this->textSlotDiffRenderer = $textSlotDiffRenderer;
-		$this->localizer = $localizer;
 	}
 
 	/**
@@ -87,9 +76,6 @@ class MassMessageListSlotDiffRenderer extends \SlotDiffRenderer {
 		return $this->textSlotDiffRenderer->getExtraCacheKeys();
 	}
 
-	/**
-	 * @param OutputPage $output
-	 */
 	public function addModules( OutputPage $output ) {
 		$this->textSlotDiffRenderer->addModules( $output );
 	}

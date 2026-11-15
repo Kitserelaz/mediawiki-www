@@ -3,22 +3,22 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
-use BagOStuff;
-use JobQueueGroup;
 use LogicException;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MoveTranslatableBundleJob;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\SubpageListBuilder;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundle;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundleFactory;
 use MediaWiki\Extension\Translate\SystemUsers\FuzzyBot;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Message\Message;
+use MediaWiki\ObjectCache\ObjectCacheFactory;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Page\MovePageFactory;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
-use ObjectCacheFactory;
 use SplObjectStorage;
+use Wikimedia\ObjectCache\BagOStuff;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
@@ -69,6 +69,7 @@ class TranslatableBundleMover {
 		$this->cache = $objectCacheFactory->getInstance( CACHE_ANYTHING );
 	}
 
+	/** @throws ImpossiblePageMove */
 	public function getPageMoveCollection(
 		Title $source,
 		?Title $target,
@@ -90,9 +91,12 @@ class TranslatableBundleMover {
 			throw new ImpossiblePageMove( $blockers );
 		}
 
+		// Set allowTargetEdit = true so Hooks knows you're going through the right system
+		Hooks::$allowTargetEdit = true;
 		$movePage = $this->movePageFactory->newMovePage( $source, $target );
 		$status = $movePage->isValidMove();
 		$status->merge( $movePage->probablyCanMove( $user, $reason ) );
+		Hooks::$allowTargetEdit = false;
 		if ( !$status->isOK() ) {
 			$blockers[$source] = $status;
 		}
@@ -159,8 +163,11 @@ class TranslatableBundleMover {
 				 * - 2 queries by core
 				 * - 3 queries by lqt
 				 * - and no obvious way to preload the data! */
+				Hooks::$allowTargetEdit = true;
 				$movePage = $this->movePageFactory->newMovePage( $old, $new );
 				$status = $movePage->isValidMove();
+				Hooks::$allowTargetEdit = false;
+
 				// Do not check for permissions here, as these pages are not editable/movable
 				// in regular use
 				if ( !$status->isOK() ) {
@@ -190,7 +197,8 @@ class TranslatableBundleMover {
 		User $user,
 		string $moveReason,
 		bool $moveTalkPages,
-		bool $leaveRedirect
+		bool $leaveRedirect,
+		array $userSessionInfo
 	): void {
 		$pageCollection = $this->getPagesToMove(
 			$source, $target, $moveSubPages, !self::FETCH_TRANSLATABLE_SUBPAGES, $moveTalkPages, $leaveRedirect
@@ -205,6 +213,7 @@ class TranslatableBundleMover {
 			$pagesToLeaveRedirect,
 			$moveReason,
 			$user,
+			$userSessionInfo
 		);
 
 		$this->lock( array_keys( $pagesToMove ) );
@@ -231,6 +240,9 @@ class TranslatableBundleMover {
 		string $moveReason,
 		?callable $progressCallback = null
 	): void {
+		$this->lock( array_keys( $pagesToMove ) );
+		$this->lock( array_values( $pagesToMove ) );
+
 		$sourceBundle = $this->bundleFactory->getValidBundle( $source );
 
 		$this->move( $sourceBundle, $performer, $pagesToMove, $pagesToRedirect, $moveReason, $progressCallback );

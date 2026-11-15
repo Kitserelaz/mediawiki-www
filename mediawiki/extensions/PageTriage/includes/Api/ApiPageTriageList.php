@@ -14,12 +14,15 @@ use MediaWiki\Page\RedirectLookup;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFormatter;
-use MediaWiki\User\UserFactory;
+use MediaWiki\User\TempUser\TempUserDetailsLookup;
+use MediaWiki\User\User;
+use MediaWiki\User\UserArray;
 use ORES\Services\ORESServices;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 use Wikimedia\Rdbms\IExpression;
 use Wikimedia\Rdbms\IReadableDatabase;
+use Wikimedia\Rdbms\LikeValue;
 
 /**
  * API module to generate a list of pages to triage
@@ -29,34 +32,14 @@ use Wikimedia\Rdbms\IReadableDatabase;
  */
 class ApiPageTriageList extends ApiBase {
 
-	/** @var UserFactory */
-	private UserFactory $userFactory;
-
-	/** @var RedirectLookup */
-	private $redirectLookup;
-
-	/** @var TitleFormatter */
-	private $titleFormatter;
-
-	/** @var LinksMigration */
-	private $linksMigration;
-
-	/**
-	 * @param ApiMain $query
-	 * @param string $moduleName
-	 */
 	public function __construct(
 		ApiMain $query,
 		string $moduleName,
-		UserFactory $userFactory,
-		RedirectLookup $redirectLookup,
-		TitleFormatter $titleFormatter,
-		LinksMigration $linksMigration
+		private readonly RedirectLookup $redirectLookup,
+		private readonly TitleFormatter $titleFormatter,
+		private readonly LinksMigration $linksMigration,
+		private readonly TempUserDetailsLookup $tempUserDetailsLookup,
 	) {
-		$this->userFactory = $userFactory;
-		$this->linksMigration = $linksMigration;
-		$this->redirectLookup = $redirectLookup;
-		$this->titleFormatter = $titleFormatter;
 		parent::__construct( $query, $moduleName );
 	}
 
@@ -70,6 +53,14 @@ class ApiPageTriageList extends ApiBase {
 			$pages = [ $opts['page_id'] ];
 			$pageIdValidated = false;
 		} else {
+			$config = $this->getContext()->getConfig();
+
+			// If keyword search is disabled, remove manually unset the 'keyword'
+			// key from the query array
+			if ( !$config->get( 'PageTriageEnableKeywordSearch' ) ) {
+				unset( $opts['keyword'] );
+			}
+
 			// Retrieve the list of page IDs
 			$pages = self::getPageIds( $opts );
 			$pageIdValidated = true;
@@ -95,6 +86,9 @@ class ApiPageTriageList extends ApiBase {
 				$oresMetadata = OresMetadata::newFromGlobalState( $this->getContext(), $pages );
 			}
 
+			$creatorsByName = $this->preloadCreators( $metaData );
+			$reviewersByName = $this->preloadReviewers( $metaData );
+
 			// Sort data according to page order returned by our query. Also convert it to a
 			// slightly different format that's more Backbone-friendly.
 			foreach ( $pages as $page ) {
@@ -110,9 +104,21 @@ class ApiPageTriageList extends ApiBase {
 					$metaData[$page]['creation_date']
 				);
 
-				if ( $metaData[$page]['user_name'] ) {
+				$creatorName = $metaData[$page]['user_name'];
+				if ( $creatorName ) {
 					// Page creator
-					$user = $this->userFactory->newFromName( $metaData[$page]['user_name'] );
+					$user = $creatorsByName[$creatorName] ?? null;
+
+					if ( $user && $user->isTemp() ) {
+						$metaData[$page]['creator_is_temp_account'] = true;
+						$metaData[$page]['creator_is_expired_temp_account'] = $this->tempUserDetailsLookup->isExpired(
+							$user
+						);
+					} else {
+						$metaData[$page]['creator_is_temp_account'] = false;
+						$metaData[$page]['creator_is_expired_temp_account'] = false;
+					}
+
 					if ( $user && $user->isHidden() ) {
 						$metaData[$page]['user_name'] = null;
 						$metaData[$page]['creator_hidden'] = true;
@@ -126,12 +132,23 @@ class ApiPageTriageList extends ApiBase {
 				}
 
 				// Page reviewer
-				if ( $metaData[$page]['reviewer'] ) {
-					$metaData[$page] += $this->createUserInfo(
-						$metaData[$page]['reviewer'],
-						$userPageStatus,
-						'reviewer'
-					);
+				$reviewerName = $metaData[$page]['reviewer'];
+				if ( $reviewerName ) {
+					$reviewer = $reviewersByName[$reviewerName] ?? null;
+
+					if ( $reviewer && $reviewer->isHidden() ) {
+						// Do not show the name or the ID of a suppressed reviewer. The clients
+						// then show the page as reviewed by an unknown user.
+						$metaData[$page]['reviewer'] = null;
+						$metaData[$page]['ptrp_last_reviewed_by'] = '0';
+						$metaData[$page]['reviewer_hidden'] = true;
+					} else {
+						$metaData[$page] += $this->createUserInfo(
+							$reviewerName,
+							$userPageStatus,
+							'reviewer'
+						);
+					}
 				}
 
 				$pageTitle = Title::newFromText( $metaData[ $page ]['title'] );
@@ -159,7 +176,8 @@ class ApiPageTriageList extends ApiBase {
 
 				$metaData[$page][ApiResult::META_BC_BOOLS] = [
 					'creator_hidden', 'creator_user_page_exist', 'creator_user_talk_page_exist',
-					'reviewer_user_page_exist', 'reviewer_user_talk_page_exist', 'is_orphan'
+					'reviewer_hidden', 'reviewer_user_page_exist', 'reviewer_user_talk_page_exist',
+					'is_orphan'
 				];
 
 				$sortedMetaData[] = [ 'pageid' => $page ] + $metaData[$page];
@@ -179,6 +197,61 @@ class ApiPageTriageList extends ApiBase {
 		// Output the results
 		$result['pages'] = $sortedMetaData;
 		$this->getResult()->addValue( null, $this->getModuleName(), $result );
+	}
+
+	/**
+	 * Preload user data for page creators.
+	 * @param array $metaData Combined metadata returned by ArticleMetadata::getMetadata().
+	 * @return User[] Map of User objects keyed by user name.
+	 */
+	private function preloadCreators( array $metaData ): array {
+		$creatorNames = [];
+
+		foreach ( $metaData as $data ) {
+			if ( $data['user_name'] ) {
+				$creatorNames[] = $data['user_name'];
+			}
+		}
+
+		$creatorsByName = array_fill_keys( $creatorNames, null );
+
+		$users = UserArray::newFromNames( $creatorNames );
+
+		foreach ( $users as $user ) {
+			$creatorsByName[$user->getName()] = $user;
+		}
+
+		// Preload expiration status for temporary accounts in this list (T358469).
+		$this->tempUserDetailsLookup->preloadExpirationStatus( $users );
+
+		return $creatorsByName;
+	}
+
+	/**
+	 * Preload user data for page reviewers.
+	 *
+	 * The API does not report temporary account status for reviewers. Thus this
+	 * method does not preload temporary account data, and preloadCreators() does.
+	 *
+	 * @param array $metaData Combined metadata returned by ArticleMetadata::getMetadata().
+	 * @return User[] Map of User objects keyed by user name.
+	 */
+	private function preloadReviewers( array $metaData ): array {
+		$reviewerNames = [];
+
+		foreach ( $metaData as $data ) {
+			if ( $data['reviewer'] ?? null ) {
+				$reviewerNames[] = $data['reviewer'];
+			}
+		}
+
+		$reviewersByName = array_fill_keys( $reviewerNames, null );
+
+		foreach ( UserArray::newFromNames( $reviewerNames ) as $user ) {
+			$reviewersByName[$user->getName()] = $user;
+		}
+
+		return $reviewersByName;
 	}
 
 	/**
@@ -589,6 +662,14 @@ class ApiPageTriageList extends ApiBase {
 			}
 		}
 
+		// add keyword search condition
+		if ( isset( $opts['keyword'] ) && $opts['keyword'] ) {
+			$keyword = $opts['keyword'];
+			$tagConds[] = $dbr
+				->expr( "$table.ptrpt_tag_id", "=", $tagIDs['snippet'] )
+				->and( "$table.ptrpt_value", IExpression::LIKE,
+						new LikeValue( $dbr->anyString(), $keyword, $dbr->anyString() ) );
+		}
 		return $tagConds;
 	}
 

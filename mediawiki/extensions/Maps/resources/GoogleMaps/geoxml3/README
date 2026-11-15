@@ -3,3 +3,28 @@ from the branch kmz (which seems to be the branch containing the most features)
 http://code.google.com/p/geoxml3/source/browse/#svn%2Fbranches%2Fkmz
 
 The latest version fetched when writing this was https://github.com/geocodezip/geoxml3/tree/a07796fa205d9d40a3c6f898a44324245935984f.
+
+Local modifications
+-------------------
+
+The library builds HTML and code from the KML document it renders, which is fetched from an arbitrary
+URL and therefore untrusted. Three places were changed to stop the document from supplying markup or
+code of its own:
+
+* geoxml3.js: createInfoWindow() runs the composed info window content through DOMPurify.
+* geoxml3.js: the NetworkLink refresh schedules a call instead of a string for setInterval to evaluate.
+* ProjectedOverlay.js: draw() builds the ground overlay image with the DOM API instead of an HTML string.
+
+A KML document also names further documents for the library to fetch, through NetworkLink and
+styleUrl. Two more places were changed to bound which of those the browser retrieves:
+
+* geoxml3.js: the allowExternalDocuments parser option, false on wikis that do not allow KML from
+  elsewhere, limits every fetch to the origin of the page and to those of the wikiDocumentUrls
+  option, which names the files this wiki resolved. A wiki can serve its uploads from another host.
+* geoxml3.js: NetworkLink elements are followed at most geoXML3.maxNetworkLinkDepth levels deep, so a
+  document linking back to itself cannot make the browser fetch forever.
+
+ProjectedOverlay.js additionally exports its constructor on window, because ResourceLoader runs module
+scripts inside a function, where the declaration geoxml3.js looks for never becomes global.
+
+All are marked with a "Local modification" comment. Keep them when updating the library.

@@ -4,12 +4,12 @@ namespace TwoColConflict;
 
 use MediaWiki\Config\Config;
 use MediaWiki\Extension\BetaFeatures\BetaFeatures;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\UserIdentity;
 use MobileContext;
-use WikiPage;
 
 /**
  * @license GPL-2.0-or-later
@@ -20,21 +20,12 @@ class TwoColConflictContext {
 	public const ENABLED_PREFERENCE = 'twocolconflict-enabled';
 	public const HIDE_CORE_HINT_PREFERENCE = 'userjs-twocolconflict-hide-core-hint';
 
-	private Config $config;
-	private UserOptionsLookup $userOptionsLookup;
-	private ExtensionRegistry $extensionRegistry;
-	private ?MobileContext $mobileContext;
-
 	public function __construct(
-		Config $config,
-		UserOptionsLookup $userOptionsLookup,
-		ExtensionRegistry $extensionRegistry,
-		?MobileContext $mobileContext = null
+		private readonly Config $config,
+		private readonly UserOptionsLookup $userOptionsLookup,
+		private readonly ExtensionRegistry $extensionRegistry,
+		private readonly ?MobileContext $mobileContext = null,
 	) {
-		$this->config = $config;
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->extensionRegistry = $extensionRegistry;
-		$this->mobileContext = $mobileContext;
 	}
 
 	/**

@@ -73,6 +73,13 @@ class Entity {
 	}
 
 	/**
+	 * Set the id for a form-backed entity.
+	 */
+	public function setId( int $id ): void {
+		$this->id = $id;
+	}
+
+	/**
 	 * Get the parent election
 	 * @return Election|null
 	 */
@@ -198,7 +205,7 @@ class Entity {
 			$parserOptions
 		);
 
-		$html = $out->getText( [ 'unwrap' => true ] );
+		$html = $out->runOutputPipeline( $parserOptions, [ 'unwrap' => true ] )->getContentHolderText();
 		if ( !$block ) {
 			$html = Parser::stripOuterParagraph( $html );
 		}

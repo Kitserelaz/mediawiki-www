@@ -6,7 +6,7 @@ namespace Maps\ParserHooks;
 
 use Maps\MapsFactory;
 use ParamProcessor\ProcessingResult;
-use Parser;
+use MediaWiki\Parser\Parser;
 use ParserHooks\HookDefinition;
 use ParserHooks\HookHandler;
 
@@ -23,7 +23,7 @@ class CoordinatesFunction implements HookHandler {
 		foreach ( $result->getErrors() as $error ) {
 			if ( $error->isFatal() ) {
 				return '<div><span class="errorbox">' .
-					wfMessage( 'validator-fatal-error', $error->getMessage() )->parse() .
+					wfMessage( 'maps-validator-fatal-error', $error->getMessage() )->parse() .
 				'</span></div><br /><br />';
 			}
 		}
@@ -46,9 +46,7 @@ class CoordinatesFunction implements HookHandler {
 	}
 
 	private static function getParameterInfo(): array {
-		global $egMapsAvailableCoordNotations;
-		global $egMapsCoordinateNotation;
-		global $egMapsCoordinateDirectional;
+		$config = MapsFactory::globalInstance()->getEffectiveSettings();
 
 		$params = [];
 
@@ -57,15 +55,15 @@ class CoordinatesFunction implements HookHandler {
 		];
 
 		$params['format'] = [
-			'default' => $egMapsCoordinateNotation,
-			'values' => $egMapsAvailableCoordNotations,
+			'default' => $config->get( 'egMapsCoordinateNotation' ),
+			'values' => $config->get( 'egMapsAvailableCoordNotations' ),
 			'aliases' => 'notation',
 			'tolower' => true,
 		];
 
 		$params['directional'] = [
 			'type' => 'boolean',
-			'default' => $egMapsCoordinateDirectional,
+			'default' => $config->get( 'egMapsCoordinateDirectional' ),
 		];
 
 		// Give grep a chance to find the usages:

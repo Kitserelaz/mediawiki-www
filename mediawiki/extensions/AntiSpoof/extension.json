@@ -6,7 +6,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "antispam",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"GroupPermissions": {
 		"sysop": {
@@ -67,8 +67,7 @@
 	"config": {
 		"AntiSpoofAccounts": {
 			"description": "Whether to stop spoofed accounts from being created. When false, only log.",
-			"value": true,
-			"public": true
+			"value": true
 		},
 		"AntiSpoofProhibitedCharacters": {
 			"description": "List of characters prohibited from use in your wiki.",
@@ -83,8 +82,7 @@
 				"⫻",
 				"⫽",
 				"／"
-			],
-			"public": true
+			]
 		}
 	},
 	"load_composer_autoloader": true,

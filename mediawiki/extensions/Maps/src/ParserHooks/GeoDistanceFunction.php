@@ -5,9 +5,10 @@ declare( strict_types = 1 );
 namespace Maps\ParserHooks;
 
 use Maps\GeoFunctions;
+use Maps\MapsFactory;
 use Maps\Presentation\MapsDistanceParser;
 use ParamProcessor\ProcessingResult;
-use Parser;
+use MediaWiki\Parser\Parser;
 use ParserHooks\HookDefinition;
 use ParserHooks\HookHandler;
 
@@ -24,7 +25,7 @@ class GeoDistanceFunction implements HookHandler {
 		foreach ( $result->getErrors() as $error ) {
 			if ( $error->isFatal() ) {
 				return '<div><span class="errorbox">' .
-					wfMessage( 'validator-fatal-error', $error->getMessage() )->parse() .
+					wfMessage( 'maps-validator-fatal-error', $error->getMessage() )->parse() .
 					'</span></div><br /><br />';
 			}
 		}
@@ -50,18 +51,18 @@ class GeoDistanceFunction implements HookHandler {
 	}
 
 	private static function getParameterInfo(): array {
-		global $egMapsDistanceUnit, $egMapsDistanceDecimals;
+		$config = MapsFactory::globalInstance()->getEffectiveSettings();
 
 		$params = [];
 
 		$params['unit'] = [
-			'default' => $egMapsDistanceUnit,
+			'default' => $config->get( 'egMapsDistanceUnit' ),
 			'values' => MapsDistanceParser::getUnits(),
 		];
 
 		$params['decimals'] = [
 			'type' => 'integer',
-			'default' => $egMapsDistanceDecimals,
+			'default' => $config->get( 'egMapsDistanceDecimals' ),
 		];
 
 		$params['location1'] = [

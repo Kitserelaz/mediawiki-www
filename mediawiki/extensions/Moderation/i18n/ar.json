@@ -2,6 +2,7 @@
 	"@metadata": {
 		"authors": [
 			"Meno25",
+			"Mohammed Qays",
 			"Sonic N800",
 			"ديفيد"
 		]
@@ -47,7 +48,7 @@
 	"moderation-edit-conflict": "تضارب تحرير (يتطلب دمجا يدويا).",
 	"moderation-editing-your-version": "أنت تقوم بتحرير نسختك من هذه المقالة، وهي حاليا في انتظار المراجعة.<br> بمجرد الموافقة عليها، ستكون مرئية للمستخدمين الآخرين.",
 	"moderation-edit-not-found": "تحرير غير موجود، ربما تمت الموافقة عليه بالفعل.",
-	"moderation-edit-queued": "النجاح: تم إرسال تعديلك إلى الإشراف.<br>يمكنك متابعة تحرير <a href='$1'>إصدارك لهذه الصفحة</a>.",
+	"moderation-edit-queued": "<p>النجاح: تم إرسال تحريرك إلى المعتدلة.</p><p>يمكنك الاستمرار في تحرير [$1 نسخة هذه الصفحة].</p>",
 	"moderation-editchange": "تعديل",
 	"moderation-editchange-not-edit": "هذا ليس تعديلا، يمكن الإشراف على التعديلات فقط.",
 	"moderation-editchange-ok": "في انتظار تغيير المراجعة.",
@@ -81,7 +82,7 @@
 	"moderation-rejectall": "رفض الكل",
 	"moderation-rejected-auto": "مرفوض تلقائيا",
 	"moderation-rejected-batch": "تم الرفض عبر الزر \"رفض الكل\"",
-	"moderation-rejected-by": "{{GENDER:$2|تم الرفض}} بواسطة $1",
+	"moderation-rejected-by": "{{GENDER:$2|رُفض}} بواسطة $1",
 	"moderation-rejected-long-ago": "تم رفض هذا التعديل منذ فترة طويلة، ولم يعد من الممكن الموافقة عليه.",
 	"moderation-rejected-ok": "تم رفض $1 {{plural:$1|تعديل|تعديلات}}",
 	"moderation-reject": "رفض",

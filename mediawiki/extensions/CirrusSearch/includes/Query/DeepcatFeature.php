@@ -2,6 +2,7 @@
 
 namespace CirrusSearch\Query;
 
+use CirrusSearch\CachedSparqlClient;
 use CirrusSearch\CrossSearchStrategy;
 use CirrusSearch\Parser\AST\KeywordFeatureNode;
 use CirrusSearch\Query\Builder\QueryBuildingContext;
@@ -10,10 +11,10 @@ use CirrusSearch\SearchConfig;
 use CirrusSearch\Util;
 use CirrusSearch\WarningCollector;
 use Elastica\Query\AbstractQuery;
+use Elastica\Query\Terms;
 use MediaWiki\Config\Config;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Sparql\SparqlClient;
 use MediaWiki\Sparql\SparqlException;
 use MediaWiki\Title\Title;
 
@@ -41,9 +42,9 @@ class DeepcatFeature extends SimpleKeywordFeature implements FilterQueryFeature 
 	 */
 	private $prefix;
 	/**
-	 * @var SparqlClient
+	 * @var CachedSparqlClient
 	 */
-	private $client;
+	private $sparql;
 
 	/**
 	 * User agent to use for SPARQL queries
@@ -57,14 +58,14 @@ class DeepcatFeature extends SimpleKeywordFeature implements FilterQueryFeature 
 
 	/**
 	 * @param Config $config
-	 * @param SparqlClient|null $client
+	 * @param ?CachedSparqlClient $sparql
 	 */
-	public function __construct( Config $config, ?SparqlClient $client = null ) {
+	public function __construct( Config $config, ?CachedSparqlClient $sparql = null ) {
 		$this->depth = (int)$config->get( 'CirrusSearchCategoryDepth' );
 		$this->limit = (int)$config->get( 'CirrusSearchCategoryMax' );
 		$endpoint = $config->get( 'CirrusSearchCategoryEndpoint' );
 		if ( $endpoint !== null && $endpoint !== '' ) {
-			$this->client = $client ?: MediaWikiServices::getInstance()->getService( 'CirrusCategoriesClient' );
+			$this->sparql = $sparql ?? MediaWikiServices::getInstance()->getService( 'CirrusCategoriesClient' );
 		}
 	}
 
@@ -133,7 +134,7 @@ class DeepcatFeature extends SimpleKeywordFeature implements FilterQueryFeature 
 	 * @return array
 	 */
 	private function doExpand( $value, WarningCollector $warningCollector ) {
-		if ( !$this->client ) {
+		if ( !$this->sparql ) {
 			$warningCollector->addWarning( 'cirrussearch-feature-deepcat-endpoint' );
 			return [];
 		}
@@ -185,7 +186,6 @@ class DeepcatFeature extends SimpleKeywordFeature implements FilterQueryFeature 
 		$timeTaken = intval( 1000 * ( microtime( true ) - $startQueryTime ) );
 		Util::getStatsFactory()
 			->getTiming( 'deepcat_sparql_query_seconds' )
-			->copyToStatsdAt( 'CirrusSearch.deepcat.sparql' )
 			->observe( $timeTaken );
 	}
 
@@ -215,17 +215,15 @@ SELECT ?out WHERE {
 } ORDER BY ASC(?depth)
 LIMIT $limit1
 SPARQL;
-		$result = $this->client->query( $query );
+		$result = $this->sparql->query( $query );
 
 		if ( count( $result ) > $this->limit ) {
 			// We went over the limit.
-			// According to T181549 this means we fail the filter application
 			$warningCollector->addWarning( 'cirrussearch-feature-deepcat-toomany' );
 			Util::getStatsFactory()
 				->getCounter( 'deepcat_too_many_total' )
-				->copyToStatsdAt( 'CirrusSearch.deepcat.toomany' )
 				->increment();
-			return [];
+			$result = array_slice( $result, 0, $this->limit );
 		}
 
 		$prefixLen = strlen( $this->getCategoryPrefix() );
@@ -247,18 +245,18 @@ SPARQL;
 
 	/**
 	 * @param array $categories
-	 * @return \Elastica\Query\BoolQuery|null
+	 * @return \Elastica\Query\AbstractQuery|null
 	 */
 	protected function doGetFilterQuery( array $categories ) {
 		if ( $categories == [] ) {
 			return null;
 		}
 
-		$filter = new \Elastica\Query\BoolQuery();
-		foreach ( $categories as $cat ) {
-			$filter->addShould( QueryHelper::matchPage( 'category.lowercase_keyword', $cat ) );
+		// Categories are stored in search with spaces, but deepcat has the underscored variant
+		foreach ( $categories as &$cat ) {
+			$cat = strtr( $cat, '_', ' ' );
 		}
 
-		return $filter;
+		return new Terms( 'category.lowercase_keyword', $categories );
 	}
 }

@@ -5,11 +5,16 @@
 		]
 	},
 	"unlinkedwikibase": "قاعدة بيانات ويكي غير مرتبطة",
+	"unlinkedwikibase-desc": "يمكنك الوصول إلى بيانات كيان Wikibase من الويكيات غير المرتبطة بموقع Wikibase.",
 	"unlinkedwikibase-error-label": "خطأ في قاعدة بيانات ويكي غير المرتبطة:",
 	"unlinkedwikibase-error-missing-id": "يجب توفير المعلمة 'id'.",
+	"unlinkedwikibase-error-missing-property": "معلمة الخاصية مطلوبة.",
+	"unlinkedwikibase-error-statements-entity-not-set": "لم يتم تعيين أي كيان لهذه الصفحة. استخدم {{#unlinkedwikibase:id=Q...}} أو حدد المعلمة |from=Q...",
 	"unlinkedwikibase-error-invalid-id": "المعرف ' $1 ' ليس بالتنسيق المطلوب للعدد الصحيح الذي يسبقه 'Q'.",
 	"unlinkedwikibase-error-property-name-not-found": "لم يتم العثور على الخاصية ' $1 '.",
 	"unlinkedwikibase-sidebar-link": "كيان ويكيبيس",
 	"unlinkedwikibase-infoaction-label": "معرف كيان ويكيبيس",
-	"unlinkedwikibase-infoaction-other-usage": "تمت إزالة $1 {{PLURAL:$1|صفحة}}"
+	"unlinkedwikibase-infoaction-other-usage": "تمت إزالة $1 {{PLURAL:$1|صفحة}}",
+	"unlinkedwikibase-special-jobqueue-size": "حجم قائمة مهام ويكيبيديا غير المرتبطة: $1",
+	"unlinkedwikibase-special-no-jobs": "لم يتم تكوين [[mw:Object cache#WAN_cache|ذاكرة التخزين المؤقت للموقع]] لاستخدام قائمة المهام لجلب البيانات، لذا قد يتم تحميل الصفحات التي تستخدم UnlinkedWikibase ببطء."
 }

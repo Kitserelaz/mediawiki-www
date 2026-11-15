@@ -10,9 +10,9 @@ use Maps\GeoFunctions;
 use Maps\Presentation\MapsDistanceParser;
 use SMW\DataValueFactory;
 use SMW\DIProperty;
+use SMW\Query\Language\Description;
 use SMW\Query\Language\ThingDescription;
 use SMW\Query\Language\ValueDescription;
-use SMW\Query\Language\Description;
 use SMWDataItem;
 use SMWDIGeoCoord;
 use Wikimedia\Rdbms\IDatabase;
@@ -30,7 +30,7 @@ class AreaDescription extends ValueDescription {
 	private SMWDIGeoCoord $center;
 	private string $radius;
 
-	public function __construct( SMWDataItem $areaCenter, int $comparator, string $radius, DIProperty $property = null ) {
+	public function __construct( SMWDataItem $areaCenter, int $comparator, string $radius, ?DIProperty $property = null ) {
 		if ( !( $areaCenter instanceof SMWDIGeoCoord ) ) {
 			throw new InvalidArgumentException( '$areaCenter needs to be a SMWDIGeoCoord' );
 		}

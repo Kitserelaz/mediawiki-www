@@ -23,6 +23,7 @@
 				{
 					"name": "example",
 					"responsive": true,
+					"templateSectionLinks": "SectionLinks",
 					"menus": [
 						"user-page",
 						"notifications",
@@ -31,7 +32,8 @@
 						"views",
 						"actions",
 						"user-interface-preferences",
-						"languages"
+						"languages",
+						"user-menu"
 					],
 					"messages": [
 						"example-no-categories",
@@ -39,7 +41,41 @@
 						"search",
 						"otherlanguages",
 						"tagline",
-						"navigation-heading"
+						"navigation-heading",
+						"mainpage",
+						"categories",
+						"example-skip",
+						"example-top-navigation",
+						"example-pages",
+						"example-discuss",
+						"example-theme-light",
+						"example-theme-dark",
+						"example-width",
+						"example-save",
+						"example-page-tools",
+						"example-sign-in",
+						"example-create-account",
+						"example-home",
+						"example-explore",
+						"example-saved",
+						"example-progress",
+						"example-history",
+						"example-utilities",
+						"example-network",
+						"example-settings",
+						"example-more",
+						"example-in-categories",
+						"example-user-menu",
+						"example-recent-activity",
+						"example-my-tools",
+						"example-customize",
+						"example-shortcuts",
+						"toc",
+						"recentchanges",
+						"watchlist",
+						"close",
+						"example-notifications",
+						"example-ranks"
 					],
 					"styles": [
 						"skins.example.styles"
@@ -70,12 +106,21 @@
 				"toc": true
 			},
 			"styles": [
-				"resources/skin.less"
+				"resources/fonts.css",
+				"resources/fandom-theme.css",
+				"resources/fandom-desktop.css",
+				"resources/skin.css"
 			]
 		},
 		"skins.example": {
 			"packageFiles": [
 				"resources/skin.js"
+			],
+			"dependencies": [
+				"mediawiki.storage",
+				"jquery.makeCollapsible",
+				"mediawiki.api",
+				"mediawiki.util"
 			]
 		}
 	},

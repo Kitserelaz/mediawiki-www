@@ -27,12 +27,11 @@ class EditSummariesAid extends TranslationAid {
 		$revisionFactory = $mwService->getRevisionFactory();
 
 		// Build the query to fetch the last x revisions
-		$dbr = $mwService->getDBLoadBalancer()->getConnection( DB_REPLICA );
-		$aid = $pageTitle->getArticleID();
+		$dbr = $mwService->getConnectionProvider()->getReplicaDatabase();
 		$result = $revisionFactory
 			->newSelectQueryBuilder( $dbr )
 			->joinComment()
-			->where( [ 'rev_page' => $aid ] )
+			->where( [ 'rev_page' => $pageTitle->getId() ] )
 			->orderBy( [ 'rev_timestamp', 'rev_id' ], SelectQueryBuilder::SORT_DESC )
 			->limit( self::COMMENT_COUNT )
 			->caller( __METHOD__ )

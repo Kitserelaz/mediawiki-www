@@ -1,0 +1,38 @@
+{
+	"@metadata": {
+		"authors": [
+			"AhmedG612"
+		]
+	},
+	"userprofilev2-desc": "Nidaam astaanta guud ee isticmaalayaasha oo ku salaysan wiki.",
+	"userprofilev2-selectavatar": "Dooro sawirka astaanta guud",
+	"userprofilev2-avatarchanged": "Sawirka astaanta guud si guul leh ayaa loo beddelay.",
+	"userprofilev2-avatardeleted": "Sawirka astaanta guud si guul leh ayaa loo tirtiray.",
+	"userprofilev2-user-locked": "Akoonkan isticmaalaha si caalami ah ayaa loo naafeeyay.",
+	"userprofilev2-edit-profile": "Tafatir astaantaada",
+	"userprofilev2-apierror-forbidden": "Waa mamnuuc: ma lihid oggolaanshaha aad ku beddeli karto sawirkan astaanta guud.",
+	"userprofilev2-apierror-invalidpermission": "Waa mamnuuc: ma lihid oggolaanshaha aad ku tafatiri karto astaanta guud ee $1",
+	"userprofilev2-apierror-nofile": "Lama soo gudbin wax fayl ah oo la soo geliyo.",
+	"userprofilev2-apierror-ratelimited": "Hadda ma soo gelin kartid sawirrada.",
+	"userprofilev2-apierror-invalidusername": "Wiki-gan ma jiro isticmaale ku diiwaangashan magaca isticmaalaha '$1'.",
+	"userprofilev2-about-me": "Aniga igu saabsan",
+	"userprofilev2-discord": "Magaca isticmaalaha Discord",
+	"userprofilev2-twitter": "Magaca isticmaalaha Twitter",
+	"userprofilev2-mastodon": "Magaca isticmaalaha Mastodon",
+	"userprofilev2-about-me-placeholder": "Wax ka qor naftaada...",
+	"userprofilev2-about-me-help": "Nooga warran naftaada. Ugu badnaan 200 xaraf.",
+	"userprofilev2-mastodon-help": "Magaca isticmaalahaaga Mastodon, oo ay ku jirto @",
+	"userprofilev2-twitter-help": "Magaca isticmaalahaaga Twitter, oo ay ku jirto @",
+	"userprofilev2-discord-help": "Magaca isticmaalahaaga Discord, oo aan lahayn #",
+	"userprofilev2-showglobalgroups": "Ma muujiyaa kooxahayga caalamiga ah?",
+	"userprofilev2-showglobaleditcount": "Ma muujiyaa tirada wax ka beddelladayda caalamiga ah?",
+	"userprofilev2-showglobalgroupshelp": "Muuji kooxaha isticmaalayaasha caalamiga ah ee aan xubin ka ahay (qof walba wuu arki karaa)",
+	"userprofilev2-showglobaleditcounthelp": "Muuji tirada wax ka beddelladayda caalamiga ah ee CentralAuth (qof walba wuu arki karaa)",
+	"userprofilev2-edit": "Wax ka badal",
+	"userprofilev2-edit-count": "$1 wax ka beddel",
+	"userprofilev2-globaledit-count": "$1 wax ka beddel oo caalami ah",
+	"userprofilev2-editavatar": "Tafatir sawirka astaanta guud",
+	"userprofilev2-edit-back": "Dib u noqo",
+	"userprofilev2-deleteavatar": "Tirtir sawirka astaanta guud",
+	"userprofilev2-helptext": "Isticmaal sanduuqan wadahadalka si aad u beddesho waxa ku jira astaanta guud ee isticmaalahaaga."
+}

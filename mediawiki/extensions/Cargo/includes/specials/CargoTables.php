@@ -116,7 +116,7 @@ class CargoTables extends IncludableSpecialPage {
 
 		// Then, display a count.
 		$cdb = CargoUtils::getDB();
-		$numRows = $cdb->selectRowCount( $tableName, '*', null, __METHOD__ );
+		$numRows = $cdb->selectRowCount( $tableName, '*', [], __METHOD__ );
 		$numRowsMessage =
 			$this->msg( 'cargo-cargotables-totalrows' )->numParams( $numRows )->parse();
 		$out->addWikiTextAsInterface( $numRowsMessage . "\n" );
@@ -129,6 +129,10 @@ class CargoTables extends IncludableSpecialPage {
 			// Most likely, there's only one.
 			$templateID = $templatesThatDeclareThisTable[0];
 			$templateTitle = Title::newFromID( $templateID );
+			$templateLinkWikitext = '[[' . $templateTitle->getPrefixedText() . '|' . $templateTitle->getText() . ']]';
+			$definingTemplateText =
+				$this->msg( 'cargo-cargotables-definingtemplate' )->params( $templateLinkWikitext )->escaped();
+			$out->addWikiTextAsInterface( $definingTemplateText . "\n" );
 			$recreateDataURL = $templateTitle->getLocalURL( [ 'action' => 'recreatedata' ] );
 			$recreateDataMessage = $this->msg( 'recreatedata' )->escaped();
 			$recreateDataLink = Html::element( 'a', [ 'href' => $recreateDataURL ], $recreateDataMessage );
@@ -236,16 +240,18 @@ class CargoTables extends IncludableSpecialPage {
 		global $wgCargoDecimalMark;
 		global $wgCargoDigitGroupingCharacter;
 
-		$res = $cdb->select( $tableName, 'COUNT(*) AS total', '', __METHOD__ );
-		$row = $res->fetchRow();
+		$numRows = $cdb->newSelectQueryBuilder()
+			->from( $tableName )
+			->caller( __METHOD__ )
+			->fetchRowCount();
 
-		return number_format( intval( $row['total'] ), 0, $wgCargoDecimalMark,
+		return number_format( $numRows, 0, $wgCargoDecimalMark,
 			$wgCargoDigitGroupingCharacter );
 	}
 
 	public function displayNumColumnsForTable( $tableName ) {
 		$tableSchemas = CargoUtils::getTableSchemas( [ $tableName ] );
-		return count( $tableSchemas[$tableName]->mFieldDescriptions );
+		return (string)count( $tableSchemas[$tableName]->mFieldDescriptions );
 	}
 
 	private function getTableLinkedToView( $tableName, $isReplacementTable ) {
@@ -528,18 +534,18 @@ class CargoTables extends IncludableSpecialPage {
 				->numParams( count( $tableNames ) )
 				->escaped() ) . "\n";
 
-		$headerText = Html::element( 'th', [], $this->msg( "cargo-cargotables-header-table" ) );
+		$headerText = Html::element( 'th', [], $this->msg( "cargo-cargotables-header-table" )->text() );
 		$headerText .= Html::element( 'th', [],
-			$this->msg( "cargo-cargotables-header-rowcount" ) );
+			$this->msg( "cargo-cargotables-header-rowcount" )->text() );
 		$headerText .= Html::element( 'th', [ 'class' => 'cargotables-columncount' ],
-			$this->msg( "cargo-cargotables-header-columncount" ) );
+			$this->msg( "cargo-cargotables-header-columncount" )->text() );
 
 		foreach ( $listOfColumns as $action ) {
 			$headerText .= Html::rawElement( 'th', [], $this->getActionIcon( $action ) );
 		}
 
 		$headerText .= Html::element( 'th', [],
-			$this->msg( "cargo-cargotables-header-templates" ) );
+			$this->msg( "cargo-cargotables-header-templates" )->text() );
 
 		$wikitableText = Html::rawElement( 'tr', [], $headerText );
 
@@ -605,7 +611,7 @@ class CargoTables extends IncludableSpecialPage {
 		$text .= '<br />';
 		$text .= Html::element( 'p', [], $this->msg( 'cargo-cargotables-specialtables' )->escaped() );
 		$specialTableNames = CargoUtils::specialTableNames();
-		$headerText = Html::element( 'th', [], $this->msg( "cargo-cargotables-header-table" ) );
+		$headerText = Html::element( 'th', [], $this->msg( "cargo-cargotables-header-table" )->escaped() );
 		$headerText .= Html::element( 'th', [],
 			$this->msg( "cargo-cargotables-header-rowcount" )->escaped() );
 		$headerText .= Html::element( 'th', [ 'class' => 'cargotables-columncount' ],

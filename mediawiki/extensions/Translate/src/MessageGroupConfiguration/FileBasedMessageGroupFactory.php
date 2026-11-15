@@ -4,7 +4,7 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\MessageGroupConfiguration;
 
 use FileDependency;
-use GlobalDependency;
+use MainConfigDependency;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\CachedMessageGroupFactory;
 use MessageGroupBase;
@@ -19,15 +19,14 @@ use Wikimedia\Rdbms\IReadableDatabase;
 final class FileBasedMessageGroupFactory implements CachedMessageGroupFactory {
 	public const SERVICE_OPTIONS = [ 'TranslateGroupFiles' ];
 
-	private MessageGroupConfigurationParser $messageGroupConfigurationParser;
 	/** @var string[] */
 	private array $groupFiles;
 
 	public function __construct(
-		MessageGroupConfigurationParser $messageGroupConfigurationParser,
+		private readonly MessageGroupConfigurationParser $messageGroupConfigurationParser,
+		private readonly string $contentLanguageCode,
 		ServiceOptions $serviceOptions
 	) {
-		$this->messageGroupConfigurationParser = $messageGroupConfigurationParser;
 		$serviceOptions->assertRequiredOptions( self::SERVICE_OPTIONS );
 		$this->groupFiles = $serviceOptions->get( 'TranslateGroupFiles' );
 	}
@@ -37,11 +36,11 @@ final class FileBasedMessageGroupFactory implements CachedMessageGroupFactory {
 	}
 
 	public function getCacheVersion(): int {
-		return 1;
+		return 2;
 	}
 
 	public function getDependencies(): array {
-		$deps = [ new GlobalDependency( 'wgTranslateGroupFiles' ) ];
+		$deps = [ new MainConfigDependency( 'TranslateGroupFiles' ) ];
 
 		foreach ( $this->groupFiles as $configFile ) {
 			$deps[] = new FileDependency( realpath( $configFile ) );
@@ -80,12 +79,14 @@ final class FileBasedMessageGroupFactory implements CachedMessageGroupFactory {
 		return $value;
 	}
 
+	/** @inheritDoc */
 	public function createGroups( $data ): array {
 		global $wgAutoloadClasses;
 		self::appendAutoloader( $data['autoload'], $wgAutoloadClasses );
 
 		$groups = [];
 		foreach ( $data['groups'] as $id => $conf ) {
+			$conf['BASIC']['sourcelanguage'] ??= $this->contentLanguageCode;
 			$groups[$id] = MessageGroupBase::factory( $conf );
 		}
 

@@ -4,6 +4,7 @@ namespace MediaWiki\Extension\EventStreamConfig;
 
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Extension\EventStreamConfig\Hooks\HookRunner;
+use MediaWiki\HookContainer\HookContainer;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -21,20 +22,16 @@ class StreamConfigsFactory {
 		'EventStreamsDefaultSettings',
 	];
 
-	private ServiceOptions $options;
 	private HookRunner $hookRunner;
-	private LoggerInterface $logger;
 
 	public function __construct(
-		ServiceOptions $options,
-		HookRunner $hookRunner,
-		LoggerInterface $logger
+		private readonly ServiceOptions $options,
+		HookContainer $hookContainer,
+		private readonly LoggerInterface $logger,
 	) {
 		$options->assertRequiredOptions( self::CONSTRUCTOR_OPTIONS );
 
-		$this->options = $options;
-		$this->hookRunner = $hookRunner;
-		$this->logger = $logger;
+		$this->hookRunner = new HookRunner( $hookContainer );
 	}
 
 	/**

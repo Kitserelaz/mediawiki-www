@@ -90,15 +90,19 @@
 		],
 		"styles": [
 			"lib/oojs-ui/oojs-ui-apex.css",
+			"lib/oojs-ui/oojs-ui-apex-icons-accessibility.css",
 			"lib/oojs-ui/oojs-ui-apex-icons-alerts.css",
 			"lib/oojs-ui/oojs-ui-apex-icons-content.css",
 			"lib/oojs-ui/oojs-ui-apex-icons-interactions.css",
 			"lib/oojs-ui/oojs-ui-apex-icons-layout.css",
+			"lib/oojs-ui/oojs-ui-apex-icons-location.css",
+			"lib/oojs-ui/oojs-ui-apex-icons-media.css",
 			"lib/oojs-ui/oojs-ui-apex-icons-moderation.css",
 			"lib/oojs-ui/oojs-ui-apex-icons-movement.css",
 			"lib/oojs-ui/oojs-ui-apex-icons-user.css",
 			"lib/oojs-ui/oojs-ui-apex-icons-editing-core.css",
 			"lib/oojs-ui/oojs-ui-apex-icons-editing-advanced.css",
+			"lib/oojs-ui/oojs-ui-apex-icons-editing-functions.css",
 			"lib/oojs-ui/oojs-ui-apex-icons-editing-styling.css",
 			"lib/oojs-ui/oojs-ui-apex-icons-editing-list.css"
 		],
@@ -113,15 +117,19 @@
 		],
 		"styles": [
 			"lib/oojs-ui/oojs-ui-wikimediaui.css",
+			"lib/oojs-ui/oojs-ui-wikimediaui-icons-accessibility.css",
 			"lib/oojs-ui/oojs-ui-wikimediaui-icons-alerts.css",
 			"lib/oojs-ui/oojs-ui-wikimediaui-icons-content.css",
 			"lib/oojs-ui/oojs-ui-wikimediaui-icons-interactions.css",
 			"lib/oojs-ui/oojs-ui-wikimediaui-icons-layout.css",
+			"lib/oojs-ui/oojs-ui-wikimediaui-icons-location.css",
+			"lib/oojs-ui/oojs-ui-wikimediaui-icons-media.css",
 			"lib/oojs-ui/oojs-ui-wikimediaui-icons-moderation.css",
 			"lib/oojs-ui/oojs-ui-wikimediaui-icons-movement.css",
 			"lib/oojs-ui/oojs-ui-wikimediaui-icons-user.css",
 			"lib/oojs-ui/oojs-ui-wikimediaui-icons-editing-core.css",
 			"lib/oojs-ui/oojs-ui-wikimediaui-icons-editing-advanced.css",
+			"lib/oojs-ui/oojs-ui-wikimediaui-icons-editing-functions.css",
 			"lib/oojs-ui/oojs-ui-wikimediaui-icons-editing-styling.css",
 			"lib/oojs-ui/oojs-ui-wikimediaui-icons-editing-list.css"
 		],
@@ -285,16 +293,24 @@
 			"src/ve.js"
 		]
 	},
+	"visualEditor.track": {
+		"scripts": [
+			"src/ve.track.js"
+		],
+		"dependencies": [
+			"visualEditor.core.ve"
+		]
+	},
 	"visualEditor.core.utils": {
 		"scripts": [
 			"src/ve.utils.js",
 			"src/ve.TriggerListener.js",
 			{ "file": "src/ve.debug.js", "debug": true },
-			{ "file": "src/ve.freeze.js", "debug": true },
-			"src/ve.track.js"
+			{ "file": "src/ve.freeze.js", "debug": true }
 		],
 		"dependencies": [
-			"visualEditor.core.ve"
+			"visualEditor.core.ve",
+			"visualEditor.track"
 		]
 	},
 	"visualEditor.core.utils.parsing": {
@@ -372,6 +388,7 @@
 			"src/dm/ve.dm.LeafNode.js",
 			"src/dm/ve.dm.Annotation.js",
 			"src/dm/ve.dm.InternalList.js",
+			"src/dm/ve.dm.InternalListNodeGroup.js",
 			"src/dm/ve.dm.MetaItem.js",
 			"src/dm/ve.dm.MetaList.js",
 			"src/dm/ve.dm.TableMatrix.js",
@@ -387,18 +404,20 @@
 			"src/dm/ve.dm.SurfaceFragment.js",
 			"src/dm/ve.dm.SourceSurfaceFragment.js",
 			"src/dm/ve.dm.DataString.js",
+			"src/dm/ve.dm.TextFinder.js",
 			"src/dm/ve.dm.Document.js",
 			"src/dm/ve.dm.DocumentSlice.js",
 			"src/dm/ve.dm.TableSlice.js",
+			"src/dm/ve.dm.NodeAnnotationRange.js",
 			"src/dm/ve.dm.LinearData.js",
 			"src/dm/ve.dm.HashValueStore.js",
+			"src/dm/converters/ve.dm.DomFromModelConverter.js",
+			"src/dm/converters/ve.dm.ModelFromDomConverter.js",
 			"src/dm/ve.dm.Converter.js",
 			"src/dm/ve.dm.SourceConverter.js",
 			"src/dm/selections/ve.dm.LinearSelection.js",
 			"src/dm/selections/ve.dm.NullSelection.js",
 			"src/dm/selections/ve.dm.TableSelection.js",
-			"src/dm/lineardata/ve.dm.FlatLinearData.js",
-			"src/dm/lineardata/ve.dm.ElementLinearData.js",
 			"src/dm/nodes/ve.dm.GeneratedContentNode.js",
 			"src/dm/nodes/ve.dm.AlienNode.js",
 			"src/dm/nodes/ve.dm.AlienBlockNode.js",
@@ -420,6 +439,7 @@
 			"src/dm/nodes/ve.dm.ListNode.js",
 			"src/dm/nodes/ve.dm.ParagraphNode.js",
 			"src/dm/nodes/ve.dm.PreformattedNode.js",
+			"src/dm/nodes/ve.dm.ReferenceNode.js",
 			"src/dm/nodes/ve.dm.SectionNode.js",
 			"src/dm/nodes/ve.dm.TableCaptionNode.js",
 			"src/dm/nodes/ve.dm.TableCellNode.js",
@@ -434,6 +454,7 @@
 			"src/dm/annotations/ve.dm.TextStyleAnnotation.js",
 			"src/dm/annotations/ve.dm.LanguageAnnotation.js",
 			"src/dm/annotations/ve.dm.LinkAnnotation.js",
+			"src/dm/annotations/ve.dm.ImportedDataAnnotation.js",
 			"src/dm/annotations/ve.dm.AbbreviationAnnotation.js",
 			"src/dm/annotations/ve.dm.BidiAnnotation.js",
 			"src/dm/annotations/ve.dm.BigAnnotation.js",
@@ -487,6 +508,10 @@
 			"src/ce/ve.ce.ResizableNode.js",
 			"src/ce/ve.ce.TableCellableNode.js",
 			"src/ce/ve.ce.Selection.js",
+			"src/ce/ve.ce.PasteSourceDetectorRegistry.js",
+			"src/ce/ve.ce.ClipboardHandler.js",
+			"src/ce/ve.ce.DragDropHandler.js",
+			"src/ce/ve.ce.SelectionManager.js",
 			"src/ce/ve.ce.Surface.js",
 			"src/ce/ve.ce.SurfaceObserver.js",
 			"src/ce/ve.ce.KeyDownHandlerFactory.js",
@@ -541,6 +566,7 @@
 			"src/ce/annotations/ve.ce.TextStyleAnnotation.js",
 			"src/ce/annotations/ve.ce.LanguageAnnotation.js",
 			"src/ce/annotations/ve.ce.LinkAnnotation.js",
+			"src/ce/annotations/ve.ce.ImportedDataAnnotation.js",
 			"src/ce/annotations/ve.ce.AbbreviationAnnotation.js",
 			"src/ce/annotations/ve.ce.BidiAnnotation.js",
 			"src/ce/annotations/ve.ce.BigAnnotation.js",
@@ -582,7 +608,8 @@
 			"src/ce/styles/nodes/ve.ce.TableCellNode.less",
 			"src/ce/styles/nodes/ve.ce.TableNode.less",
 			"src/ce/styles/ve.ce.less",
-			"src/ce/styles/ve.ce.Surface.less"
+			"src/ce/styles/ve.ce.Surface.less",
+			"src/ce/styles/ve.ce.SelectionManager.less"
 		],
 		"styleGroup": "ve"
 	},
@@ -633,7 +660,6 @@
 			"src/ui/ve.ui.FragmentWindow.js",
 			"src/ui/ve.ui.NodeWindow.js",
 			"src/ui/ve.ui.TabIndexScope.js",
-			"src/ui/windowmanagers/ve.ui.SurfaceWindowManager.js",
 			"src/ui/actions/ve.ui.AnnotationAction.js",
 			"src/ui/actions/ve.ui.BlockquoteAction.js",
 			"src/ui/actions/ve.ui.CompletionAction.js",
@@ -652,6 +678,7 @@
 			"src/ui/commands/ve.ui.MergeCellsCommand.js",
 			"src/ui/dialogs/ve.ui.FragmentDialog.js",
 			"src/ui/dialogs/ve.ui.NodeDialog.js",
+			"src/ui/dialogs/ve.ui.SidebarDialog.js",
 			"src/ui/dialogs/ve.ui.ToolbarDialog.js",
 			"src/ui/dialogs/ve.ui.CommandHelpDialog.js",
 			"src/ui/dialogs/ve.ui.FindAndReplaceDialog.js",
@@ -665,6 +692,8 @@
 			"src/ui/datatransferhandlers/ve.ui.HTMLFileTransferHandler.js",
 			"src/ui/datatransferhandlers/ve.ui.UrlStringTransferHandler.js",
 			"src/ui/elements/ve.ui.PreviewElement.js",
+			"src/ui/windowmanagers/ve.ui.SurfaceWindowManager.js",
+			"src/ui/windowmanagers/ve.ui.SidebarDialogWindowManager.js",
 			"src/ui/windowmanagers/ve.ui.ToolbarDialogWindowManager.js",
 			"src/ui/widgets/ve.ui.AlignWidget.js",
 			"src/ui/widgets/ve.ui.LanguageSearchWidget.js",
@@ -707,6 +736,7 @@
 		],
 		"styles": [
 			"src/ui/styles/ve.ui.icons.less",
+			"src/ui/styles/dialogs/ve.ui.SidebarDialog.less",
 			"src/ui/styles/dialogs/ve.ui.ToolbarDialog.less",
 			"src/ui/styles/dialogs/ve.ui.CommandHelpDialog.less",
 			"src/ui/styles/dialogs/ve.ui.FindAndReplaceDialog.less",
@@ -738,8 +768,10 @@
 			"src/ui/styles/ve.ui.Overlay.less",
 			"src/ui/styles/ve.ui.Surface.less",
 			"src/ui/styles/widgets/ve.ui.TargetWidget.less",
+			"src/ui/styles/windowmanagers/ve.ui.SidebarDialogWindowManager.less",
 			"src/ui/styles/ve.ui.TableLineContext.less",
-			"src/ui/styles/ve.ui.Toolbar.less"
+			"src/ui/styles/ve.ui.Toolbar.less",
+			{ "file": "src/ui/styles/ve.ui.DebugBar.less", "debug": true }
 		],
 		"styleGroup": "ve"
 	},
@@ -763,6 +795,7 @@
 			"src/ve.DiffTreeNode.js",
 			"src/ve.DiffMatchPatch.js",
 			"src/dm/ve.dm.VisualDiff.js",
+			"src/dm/annotations/ve.dm.DiffAnnotation.js",
 			"src/ui/elements/ve.ui.DiffElement.js",
 			"src/ui/widgets/ve.ui.ChangeDescriptionsSelectWidget.js"
 		],
@@ -804,10 +837,12 @@
 			"src/ve.FakePeer.js",
 			"src/dm/ve.dm.RebaseClient.js",
 			"src/dm/ve.dm.SurfaceSynchronizer.js",
+			"src/ce/ve.ce.SurfaceSynchronizer.js",
 			"src/ui/widgets/ve.ui.AuthorItemWidget.js",
 			"src/ui/tools/ve.ui.AuthorListPopupTool.js"
 		],
 		"styles": [
+			"src/ce/styles/ve.ce.SurfaceSynchronizer.less",
 			"src/ui/styles/widgets/ve.ui.AuthorItemWidget.less"
 		],
 		"dependencies": [
@@ -822,7 +857,7 @@
 		"dependencies": [
 			"visualEditor.build",
 			"visualEditor.rebase",
-			"visualEditor.theme.apex"
+			"visualEditor.theme.wikimediaui"
 		]
 	},
 	"visualEditor.test": {
@@ -862,8 +897,10 @@
 			"tests/dm/ve.dm.LeafNode.test.js",
 			"tests/dm/nodes/ve.dm.TextNode.test.js",
 			"tests/dm/ve.dm.Document.test.js",
+			"tests/dm/ve.dm.TextFinder.test.js",
 			"tests/dm/ve.dm.HashValueStore.test.js",
 			"tests/dm/ve.dm.InternalList.test.js",
+			"tests/dm/ve.dm.InternalListNodeGroup.test.js",
 			"tests/dm/ve.dm.LinearData.test.js",
 			"tests/dm/ve.dm.Transaction.test.js",
 			"tests/dm/ve.dm.TransactionBuilder.test.js",
@@ -887,10 +924,10 @@
 			"tests/dm/selections/ve.dm.LinearSelection.test.js",
 			"tests/dm/selections/ve.dm.NullSelection.test.js",
 			"tests/dm/selections/ve.dm.TableSelection.test.js",
-			"tests/dm/lineardata/ve.dm.FlatLinearData.test.js",
-			"tests/dm/lineardata/ve.dm.ElementLinearData.test.js",
 			"tests/ce/ve.ce.test.js",
 			"tests/ce/ve.ce.Document.test.js",
+			"tests/ce/ve.ce.ClipboardHandler.test.js",
+			"tests/ce/ve.ce.DragDropHandler.test.js",
 			"tests/ce/ve.ce.Surface.test.js",
 			"tests/ce/ve.ce.RangeState.test.js",
 			"tests/ce/ve.ce.TextState.test.js",
@@ -917,6 +954,7 @@
 			"tests/init/ve.init.ConflictableStorage.test.js",
 			"tests/ui/ve.ui.DataTransferHandlerFactory.test.js",
 			"tests/ui/ve.ui.Trigger.test.js",
+			"tests/ui/ve.ui.TriggerRegistry.test.js",
 			"tests/ui/ve.ui.Sequence.test.js",
 			"tests/ui/ve.ui.DiffElement.test.js",
 			"tests/ui/ve.ui.PreviewElement.test.js",
@@ -932,7 +970,12 @@
 			"tests/ui/datatransferhandlers/ve.ui.DSVFileTransferHandler.test.js",
 			"tests/ui/datatransferhandlers/ve.ui.UrlStringTransferHandler.test.js",
 			"tests/ui/dialogs/ve.ui.FindAndReplaceDialog.test.js",
+			"tests/ui/dialogs/ve.ui.TableDialog.test.js",
+			"tests/ui/dialogs/ve.ui.CommandHelpDialog.test.js",
 			"tests/ui/inspectors/ve.ui.FragmentInspector.test.js",
+			"tests/ui/inspectors/ve.ui.LinkAnnotationInspector.test.js",
+			"tests/ui/inspectors/ve.ui.CommentInspector.test.js",
+			"tests/ui/inspectors/ve.ui.LanguageInspector.test.js",
 			"tests/ce/ve.ce.TestRunner.js",
 			"tests/ce/ve.ce.imetests.test.js",
 			"tests/ce/imetests/backspace-chromium-ubuntu-none.js",
@@ -974,7 +1017,8 @@
 		"dependencies": [
 			"jsdifflib",
 			"qunit",
-			"visualEditor.desktop.standalone.apex",
+			"visualEditor.desktop.standalone.wikimediaui",
+			"visualEditor.mobile.build",
 			"visualEditor.rebase",
 			"visualEditor.collab"
 		]
@@ -1015,6 +1059,7 @@
 			"src/ui/windowmanagers/ve.ui.MobileWindowManager.js"
 		],
 		"styles": [
+			"src/init/styles/ve.init.Target-mobile.less",
 			"src/ui/styles/ve.ui.MobileContext.less"
 		],
 		"dependencies": [
@@ -1041,8 +1086,7 @@
 			"src/init/sa/ve.init.sa.Target.js"
 		],
 		"styles": [
-			"src/init/sa/styles/ve.init.sa.Platform.less",
-			{ "file": "src/ui/styles/ve.ui.DebugBar.less", "debug": true }
+			"src/init/sa/styles/ve.init.sa.Platform.less"
 		],
 		"dependencies": [
 			"visualEditor.base.build",
@@ -1116,6 +1160,7 @@
 			"rebaser/src/dm/ve.dm.ProtocolServer.js",
 			"src/dm/ve.dm.RebaseClient.js",
 			"src/dm/ve.dm.SurfaceSynchronizer.js",
+			"src/ce/ve.ce.SurfaceSynchronizer.js",
 			"src/ui/widgets/ve.ui.AuthorItemWidget.js",
 			"src/ui/tools/ve.ui.AuthorListPopupTool.js",
 			"src/ve.FakePeer.js",
@@ -1125,7 +1170,9 @@
 			"collab/ve.ui.CollabTool.js"
 		],
 		"styles": [
-			"src/ui/styles/widgets/ve.ui.AuthorItemWidget.less"
+			"src/ce/styles/ve.ce.SurfaceSynchronizer.less",
+			"src/ui/styles/widgets/ve.ui.AuthorItemWidget.less",
+			"collab/styles/ve.ui.CollabProcessDialog.less"
 		],
 		"styleGroup": "read",
 		"dependencies": [
@@ -1172,8 +1219,16 @@
 			"demos/ve/demo.wikimediaui.less"
 		],
 		"dependencies": [
-			"visualEditor.desktop.standalone.demo"
+			"visualEditor.desktop.standalone.demo",
+			"visualEditor.standalone.wikimediaui.demo.dark"
 		]
+	},
+	"visualEditor.standalone.wikimediaui.demo.dark": {
+		"styles": [
+			"lib/codex-design-tokens/theme-wikimedia-ui-mode-dark.css",
+			"demos/ve/demo.wikimediaui.dark.less"
+		],
+		"styleGroup": "dark"
 	},
 	"visualEditor.mobile.standalone.demo": {
 		"scripts": [
@@ -1186,7 +1241,8 @@
 		],
 		"styleGroup": "read",
 		"dependencies": [
-			"visualEditor.standalone.demo"
+			"visualEditor.standalone.demo",
+			"visualEditor.standalone.wikimediaui.demo.dark"
 		]
 	},
 	"visualEditor.minimal.standalone.demo": {

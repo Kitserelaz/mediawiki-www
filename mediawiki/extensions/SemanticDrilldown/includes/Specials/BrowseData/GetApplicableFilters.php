@@ -2,9 +2,11 @@
 
 namespace SD\Specials\BrowseData;
 
-use Html;
+use MediaWiki\Config\GlobalVarConfig;
+use MediaWiki\Html\Html;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Request\WebRequest;
 use MediaWiki\Widget\DateInputWidget;
-use OutputPage;
 use SD\AppliedFilter;
 use SD\AppliedFilterValue;
 use SD\DbService;
@@ -12,7 +14,6 @@ use SD\Filter;
 use SD\PossibleFilterValue;
 use SD\PossibleFilterValues;
 use SD\Utils;
-use WebRequest;
 
 class GetApplicableFilters {
 
@@ -34,16 +35,23 @@ class GetApplicableFilters {
 	}
 
 	public function __invoke(): array {
-		global $sdgFiltersSmallestFontSize, $sdgFiltersLargestFontSize;
+		$sdgConfig = new GlobalVarConfig( 'sdg' );
+		$sdgFiltersSmallestFontSize = $sdgConfig->get( 'FiltersSmallestFontSize' );
+		$sdgFiltersLargestFontSize = $sdgConfig->get( 'FiltersLargestFontSize' );
 
 		$remainingHtml = '';
 		// display the list of subcategories on one line, and below
 		// it every filter, each on its own line; each line will
 		// contain the possible values, and, in parentheses, the
 		// number of pages that match that value
-		$cur_url = $this->getUrl( $this->query->category(), $this->query->appliedFilters(), $this->query->subcategory() );
+		$cur_url = $this->getUrl(
+			$this->query->category(), $this->query->appliedFilters(), $this->query->subcategory()
+		);
 		$cur_url .= ( strpos( $cur_url, '?' ) ) ? '&' : '?';
-		$this->db->createTempTable( $this->query->category(), $this->query->subcategory(), $this->query->allSubcategories(), $this->query->appliedFilters() );
+		$this->db->createTempTable(
+			$this->query->category(), $this->query->subcategory(),
+			$this->query->allSubcategories(), $this->query->appliedFilters()
+		);
 		$num_printed_values = 0;
 		if ( count( $this->query->nextLevelSubcategories() ) > 0 ) {
 			$results_line = "";
@@ -64,26 +72,35 @@ class GetApplicableFilters {
 				$lowest_num_results = min( $subcat_values );
 				$highest_num_results = max( $subcat_values );
 				if ( $lowest_num_results != $highest_num_results ) {
-					$scale_factor = ( $sdgFiltersLargestFontSize - $sdgFiltersSmallestFontSize ) / ( log( $highest_num_results ) - log( $lowest_num_results ) );
+					$scale_factor = ( $sdgFiltersLargestFontSize - $sdgFiltersSmallestFontSize )
+						/ ( log( $highest_num_results ) - log( $lowest_num_results ) );
 				}
 			}
 
+			$filterBySubcategoryMessage = wfMessage( 'sd_browsedata_filterbysubcategory' )->text();
 			foreach ( $subcat_values as $subcat => $num_results ) {
 				if ( $num_results > 0 ) {
 					if ( $num_printed_values++ > 0 ) {
 						$results_line .= " · ";
 					}
 					$filter_text = str_replace( '_', ' ', $subcat ) . " ($num_results)";
-					$filter_url = $cur_url . '_subcat=' . urlencode( $subcat );
+					$currentSubcat = $this->query->subcategory();
+					$newSubcat = $currentSubcat ? $currentSubcat . '/' . $subcat : $subcat;
+					$filter_url = $cur_url . '_subcat=' . urlencode( $newSubcat );
 					if ( $sdgFiltersSmallestFontSize > 0 && $sdgFiltersLargestFontSize > 0 ) {
 						if ( $lowest_num_results != $highest_num_results ) {
-							$font_size = round( ( ( log( $num_results ) - log( $lowest_num_results ) ) * $scale_factor ) + $sdgFiltersSmallestFontSize );
+							$font_size = round(
+								( ( log( $num_results ) - log( $lowest_num_results ) ) * $scale_factor )
+								+ $sdgFiltersSmallestFontSize
+							);
 						} else {
 							$font_size = ( $sdgFiltersSmallestFontSize + $sdgFiltersLargestFontSize ) / 2;
 						}
-						$results_line .= '<a href="' . $filter_url . '" title="' . wfMessage( 'sd_browsedata_filterbysubcategory' )->text() . '" style="font-size: ' . $font_size . 'px">' . $filter_text . '</a>';
+						$results_line .= '<a href="' . $filter_url . '" title="' . $filterBySubcategoryMessage
+							. '" style="font-size: ' . $font_size . 'px">' . $filter_text . '</a>';
 					} else {
-						$results_line .= '<a href="' . $filter_url . '" title="' . wfMessage( 'sd_browsedata_filterbysubcategory' )->text() . '">' . $filter_text . '</a>';
+						$results_line .= '<a href="' . $filter_url . '" title="' . $filterBySubcategoryMessage
+							. '">' . $filter_text . '</a>';
 					}
 				}
 			}
@@ -120,7 +137,7 @@ class GetApplicableFilters {
 	 */
 	private function getFilterLine( $filterName, $isApplied, $isNormalFilter, $resultsLine, Filter $filter ): string {
 		global $wgScriptPath;
-		global $wgSdgDisableFilterCollapsible;
+		$sdgDisableFilterCollapsible = ( new GlobalVarConfig( 'sdg' ) )->get( 'DisableFilterCollapsible' );
 		$sdSkinsPath = "$wgScriptPath/extensions/SemanticDrilldown/skins";
 
 		if ( $filter->int() !== null ) {
@@ -135,7 +152,7 @@ class GetApplicableFilters {
 			$additionalClasses .= ' is-normal-filter';
 		}
 
-		if ( $wgSdgDisableFilterCollapsible ) {
+		if ( $sdgDisableFilterCollapsible ) {
 			$text  = '<div class="drilldown-filter' . $additionalClasses . '">';
 			$text .= "	<div class='drilldown-filter-label'>$filterName</div>";
 			$text .= '	<div class="drilldown-filter-values">' . $resultsLine . '</div>';
@@ -237,7 +254,9 @@ END;
 				$results_line .= "$filter_text";
 			} else {
 				$filter_url = $this->getUrl( $this->query->category(), $applied_filters, $this->query->subcategory() );
-				$results_line .= '<a href="' . $filter_url . '" title="' . wfMessage( 'sd_browsedata_filterbyvalue' )->text() . '">' . $filter_text . '</a>';
+				$results_line .= '<a href="' . $filter_url
+					. '" title="' . wfMessage( 'sd_browsedata_filterbyvalue' )->text()
+					. '">' . $filter_text . '</a>';
 			}
 			foreach ( $applied_filters as $af2 ) {
 				if ( $af->filter->name() == $af2->filter->name() ) {
@@ -249,7 +268,9 @@ END;
 	}
 
 	private function printUnappliedFilterValues( $cur_url, Filter $f, PossibleFilterValues $possibleValues ) {
-		global $sdgFiltersSmallestFontSize, $sdgFiltersLargestFontSize;
+		$sdgConfig = new GlobalVarConfig( 'sdg' );
+		$sdgFiltersSmallestFontSize = $sdgConfig->get( 'FiltersSmallestFontSize' );
+		$sdgFiltersLargestFontSize = $sdgConfig->get( 'FiltersLargestFontSize' );
 
 		$results_line = "";
 		// set font-size values for filter "tag cloud", if the
@@ -257,7 +278,8 @@ END;
 		if ( $sdgFiltersSmallestFontSize > 0 && $sdgFiltersLargestFontSize > 0 ) {
 			[ $lowest_num_results, $highest_num_results ] = $possibleValues->countRange();
 			if ( $lowest_num_results != $highest_num_results ) {
-				$scale_factor = ( $sdgFiltersLargestFontSize - $sdgFiltersSmallestFontSize ) / ( log( $highest_num_results ) - log( $lowest_num_results ) );
+				$scale_factor = ( $sdgFiltersLargestFontSize - $sdgFiltersSmallestFontSize )
+					/ ( log( $highest_num_results ) - log( $lowest_num_results ) );
 			}
 		}
 		// now print the values
@@ -271,18 +293,23 @@ END;
 			$filter_text = Utils::escapeString( Utils::getNiceFilterValue( $f->propertyType(),
 				$value->displayValue() ) );
 			$filter_text .= "&nbsp;($num_results)";
-			$filter_url = $cur_url . urlencode( str_replace( ' ', '_', $f->name() ) ) . '=' . urlencode( str_replace( ' ', '_', $value->value() ) );
+			$filter_url = $cur_url . urlencode( str_replace( ' ', '_', $f->name() ) )
+				. '=' . urlencode( str_replace( ' ', '_', $value->value() ) );
 			$styleAttribute = "";
 			if ( $sdgFiltersSmallestFontSize > 0 && $sdgFiltersLargestFontSize > 0 ) {
 				if ( $lowest_num_results != $highest_num_results ) {
-					$font_size = round( ( ( log( $num_results ) - log( $lowest_num_results ) ) * $scale_factor ) + $sdgFiltersSmallestFontSize );
+					$font_size = round(
+						( ( log( $num_results ) - log( $lowest_num_results ) ) * $scale_factor )
+						+ $sdgFiltersSmallestFontSize
+					);
 				} else {
 					$font_size = ( $sdgFiltersSmallestFontSize + $sdgFiltersLargestFontSize ) / 2;
 				}
 				$styleAttribute = " style=\"font-size: {$font_size}px;\"";
 			}
 			$results_line .=
-				"<span class=\"drilldown-filter-value\"><a href=\"$filter_url\" title=\"$filterByValueMessage\"$styleAttribute>$filter_text</a></span>";
+				"<span class=\"drilldown-filter-value\"><a href=\"$filter_url\""
+				. " title=\"$filterByValueMessage\"$styleAttribute>$filter_text</a></span>";
 		}
 		return $results_line;
 	}
@@ -291,7 +318,9 @@ END;
 		// We generate $cur_url here, instead of passing it in, because
 		// if there's a previous value for this filter it may be
 		// removed.
-		$cur_url = $this->getUrl( $this->query->category(), $this->query->appliedFilters(), $this->query->subcategory(), $filter_name );
+		$cur_url = $this->getUrl(
+			$this->query->category(), $this->query->appliedFilters(), $this->query->subcategory(), $filter_name
+		);
 		$cur_url .= ( strpos( $cur_url, '?' ) ) ? '&' : '?';
 
 		$numberArray = [];
@@ -324,7 +353,9 @@ END;
 		return $text;
 	}
 
-	private function getComboBoxInput( $filter_name, $instance_num, PossibleFilterValues $possibleValues, $cur_value = null ): string {
+	private function getComboBoxInput(
+		$filter_name, $instance_num, PossibleFilterValues $possibleValues, $cur_value = null
+	): string {
 		$filter_name = str_replace( ' ', '_', $filter_name );
 		// URL-decode the filter name - necessary if it contains
 		// any non-Latin characters.
@@ -336,7 +367,9 @@ END;
 
 		$inputName = "_search_$filter_name";
 
-		$filter_url = $this->getUrl( $this->query->category(), $this->query->appliedFilters(), $this->query->subcategory() );
+		$filter_url = $this->getUrl(
+			$this->query->category(), $this->query->appliedFilters(), $this->query->subcategory()
+		);
 
 		$text = <<< END
 <form method="get" action="$filter_url">
@@ -355,11 +388,16 @@ END;
 			}
 		}
 
-		$text .= <<< END
-	<div class="ui-widget">
-		<select class="semanticDrilldownCombobox" name="$cur_value">
-			<option value="$inputName"></option>;
-END;
+		// data-mw-input-name: the name used for free-text search (_search_FilterName[N])
+		// data-mw-filter-name: the name used for direct-match selection (FilterName[N])
+		// The JS widget switches between these on submit depending on how the user interacts.
+		$text .= Html::openElement( 'div', [ 'class' => 'ui-widget' ] );
+		$text .= Html::openElement( 'select', [
+			'class' => 'semanticDrilldownCombobox',
+			'style' => 'display: none;',
+			'data-mw-input-name' => $inputName,
+			'data-mw-filter-name' => $filter_name,
+		] );
 		foreach ( $possibleValues as $value ) {
 			if ( $value->value() != '_other' && $value->value() != '_none' ) {
 				$text .= Html::element(
@@ -368,11 +406,8 @@ END;
 					$value->displayValue() );
 			}
 		}
-
-		$text .= <<<END
-		</select>
-	</div>
-END;
+		$text .= Html::closeElement( 'select' );
+		$text .= Html::closeElement( 'div' );
 
 		$text .= Html::input(
 			null,
@@ -433,8 +468,9 @@ END;
 	 * been applied to the drilldown
 	 */
 	private function getUnappliedFilterLine( Filter $f ): string {
-		global $sdgMinValuesForComboBox;
-		global $sdgHideFiltersWithoutValues;
+		$sdgConfig = new GlobalVarConfig( 'sdg' );
+		$sdgMinValuesForComboBox = $sdgConfig->get( 'MinValuesForComboBox' );
+		$sdgHideFiltersWithoutValues = $sdgConfig->get( 'HideFiltersWithoutValues' );
 
 		$possibleValues = $this->getPossibleValues( $f );
 
@@ -448,7 +484,9 @@ END;
 			$results_line = $this->getComboBoxInput( $filter_name, 0, $possibleValues );
 			$normal_filter = false;
 		} else {
-			$cur_url = $this->getUrl( $this->query->category(), $this->query->appliedFilters(), $this->query->subcategory(), $f->name() );
+			$cur_url = $this->getUrl(
+				$this->query->category(), $this->query->appliedFilters(), $this->query->subcategory(), $f->name()
+			);
 			$cur_url .= ( strpos( $cur_url, '?' ) ) ? '&' : '?';
 			$results_line = $this->printUnappliedFilterValues( $cur_url, $f, $possibleValues );
 		}
@@ -477,7 +515,9 @@ END;
 			$possibleValues = [];
 			foreach ( $f->allowedValues() as $value ) {
 				$new_filter = AppliedFilter::create( $f, $value );
-				$num_results = $this->db->getNumResults( $this->query->subcategory(), $this->query->allSubcategories(), $new_filter );
+				$num_results = $this->db->getNumResults(
+					$this->query->subcategory(), $this->query->allSubcategories(), $new_filter
+				);
 				if ( $num_results > 0 ) {
 					$possibleValues[] = new PossibleFilterValue( $value, $num_results );
 				}
@@ -492,7 +532,9 @@ END;
 		// obtained dynamically.
 		if ( !empty( $f->allowedValues() ) ) {
 			$other_filter = AppliedFilter::create( $f, ' other' );
-			$num_results = $this->db->getNumResults( $this->query->subcategory(), $this->query->allSubcategories(), $other_filter );
+			$num_results = $this->db->getNumResults(
+				$this->query->subcategory(), $this->query->allSubcategories(), $other_filter
+			);
 			if ( $num_results > 0 ) {
 				$additionalPossibleValues[] = new PossibleFilterValue( '_other', $num_results );
 			}
@@ -503,7 +545,9 @@ END;
 			$fv = AppliedFilterValue::create( $f->allowedValues()[0] );
 			if ( !$fv->is_numeric ) {
 				$none_filter = AppliedFilter::create( $f, ' none' );
-				$num_results = $this->db->getNumResults( $this->query->subcategory(), $this->query->allSubcategories(), $none_filter );
+				$num_results = $this->db->getNumResults(
+					$this->query->subcategory(), $this->query->allSubcategories(), $none_filter
+				);
 				if ( $num_results > 0 ) {
 					$additionalPossibleValues[] = new PossibleFilterValue( '_none', $num_results );
 				}

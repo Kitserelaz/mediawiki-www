@@ -1,6 +1,4 @@
-'use strict';
-
-const Page = require( 'wdio-mediawiki/Page' );
+import Page from 'wdio-mediawiki/Page';
 
 class GlobalWatchlist extends Page {
 	// The content that is shown, for either version of the display
@@ -8,9 +6,9 @@ class GlobalWatchlist extends Page {
 		return $( '.ext-globalwatchlist-content' );
 	}
 
-	openDisplay() {
-		super.openTitle( 'Special:GlobalWatchlist' );
+	async openDisplay() {
+		return super.openTitle( 'Special:GlobalWatchlist' );
 	}
 }
 
-module.exports = new GlobalWatchlist();
+export default new GlobalWatchlist();

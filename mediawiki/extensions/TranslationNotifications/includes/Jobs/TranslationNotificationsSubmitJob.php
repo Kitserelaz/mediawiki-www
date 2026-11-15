@@ -1,24 +1,25 @@
 <?php
-/*
-* @file
-* @license GPL-2.0-or-later
-*/
+declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\TranslationNotifications\Jobs;
 
 use Exception;
-use ManualLogEntry;
+use MediaWiki\Config\Config;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePage;
 use MediaWiki\Extension\TranslationNotifications\Utilities\LanguageSet;
 use MediaWiki\Extension\TranslationNotifications\Utilities\TranslationNotifyUser;
+use MediaWiki\JobQueue\IJobSpecification;
 use MediaWiki\JobQueue\JobQueueGroupFactory;
-use MediaWiki\Languages\LanguageFactory;
-use MediaWiki\Languages\LanguageNameUtils;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\JobQueue\JobSpecification;
+use MediaWiki\Language\LanguageFactory;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Options\UserOptionsManager;
 use MediaWiki\User\User;
+use MediaWiki\User\UserFactory;
 use MediaWiki\WikiMap\WikiMap;
+use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IExpression;
 use Wikimedia\Rdbms\IResultWrapper;
 use Wikimedia\Rdbms\LikeValue;
@@ -26,82 +27,66 @@ use Wikimedia\Rdbms\LikeValue;
 /**
  * Handles a notification request. Uses the TranslationNotifyUsers to create the necessary jobs
  * to deliver users messages based on their preferences.
- * @since 2019.11
  * @ingroup JobQueue
+ * @license GPL-2.0-or-later
  */
 class TranslationNotificationsSubmitJob extends GenericTranslationNotificationsJob {
 
-	/**
-	 * Id of the current wiki
-	 * @var string
-	 */
-	private $currentWikiId;
+	/** Id of the current wiki */
+	private string $currentWikiId;
+	private const JOB_NAME = 'TranslationNotificationsSubmitJob';
 
-	/**
-	 * @var UserOptionsManager
-	 */
-	private $userOptionsManager;
-
-	/**
-	 * @var JobQueueGroupFactory
-	 */
-	private $jobQueueGroupFactory;
-
-	/** @var LanguageNameUtils */
-	private $languageNameUtils;
-
-	/** @var LanguageFactory */
-	private $languageFactory;
-
-	/**
-	 * Returns an instance of the TranslationNotificationsSubmitJob
-	 * @param Title $title
-	 * @param array $requestData
-	 * @param int $notifierId
-	 * @param string $translatorLang
-	 * @return self
-	 */
+	/** Returns an instance of the TranslationNotificationsSubmitJob */
 	public static function newJob(
-		Title $title, $requestData, $notifierId, $translatorLang
-	) {
-		return new TranslationNotificationsSubmitJob(
-			$title,
+		Title $title, array $requestData, int $notifierId, string $translatorLang
+	): IJobSpecification {
+		return new JobSpecification(
+			self::JOB_NAME,
 			[
 				'requestData' => $requestData,
 				'notifierId' => $notifierId,
 				'translatorLanguage' => $translatorLang
-			]
+			],
+			[],
+			$title
 		);
 	}
 
-	public function __construct( Title $title, array $params ) {
-		$services = MediaWikiServices::getInstance();
-		$this->userOptionsManager = $services->getUserOptionsManager();
-		$this->jobQueueGroupFactory = $services->getJobQueueGroupFactory();
-		$this->languageNameUtils = $services->getLanguageNameUtils();
-		$this->languageFactory = $services->getLanguageFactory();
-		parent::__construct( 'TranslationNotificationsSubmitJob', $title, $params );
+	public function __construct(
+		Title $title,
+		array $params,
+		private readonly UserOptionsManager $userOptionsManager,
+		private readonly JobQueueGroupFactory $jobQueueGroupFactory,
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly LanguageFactory $languageFactory,
+		private readonly UserFactory $userFactory,
+		private readonly IConnectionProvider $connectionProvider,
+		private readonly Config $mainConfig,
+	) {
+		parent::__construct( self::JOB_NAME, $title, $params );
 		$this->currentWikiId = WikiMap::getCurrentWikiDbDomain()->getId();
 	}
 
-	/**
-	 * Execute the job
-	 * @return bool
-	 */
-	public function run() {
+	/** Execute the job */
+	public function run(): bool {
 		$this->logInfo( 'Processing translation notification submit request.' );
 
 		$params = $this->params;
 		$translatableTitle = $this->title;
-		$notifier = User::newFromId( $params['notifierId'] );
+		$notifier = $this->userFactory->newFromId( $params['notifierId'] );
 		$sourceLanguage = $this->getSourceLanguage( $translatableTitle );
 		$translatorLangCode = $params['translatorLanguage'];
 
 		// Request information
+		// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
 		$notificationText = $params['requestData']['notificationText'];
+		// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
 		$priority = $params['requestData']['priority'];
+		// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
 		$selectedLanguages = $params['requestData']['selectedLanguages'];
+		// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
 		$deadlineDate = $params['requestData']['deadlineDate'];
+		// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
 		$languageSet = $params['requestData']['languageSet'];
 
 		if ( !$languageSet instanceof LanguageSet ) {
@@ -120,22 +105,22 @@ class TranslationNotificationsSubmitJob extends GenericTranslationNotificationsJ
 
 		$frequencies = [
 			'always' => 0,
-			'week' => 604800, // seconds in week
-			'month' => 2678400, // seconds in month
-			'weekly' => 604800, // seconds in week
-			'monthly' => 2678400, // seconds in month
+			// seconds in week
+			'week' => 604800,
+			// seconds in month
+			'month' => 2678400,
+			// seconds in week
+			'weekly' => 604800,
+			// seconds in month
+			'monthly' => 2678400,
 			'none' => null
 		];
 		$currentUnixTime = wfTimestamp();
-		$mwServices = MediaWikiServices::getInstance();
-		$currentDBTime = $mwServices
-			->getConnectionProvider()
+		$currentDBTime = $this->connectionProvider
 			->getReplicaDatabase()
 			->timestamp( $currentUnixTime );
 
 		$timestampOptionName = 'translationnotifications-timestamp';
-
-		$config = $mwServices->getMainConfig();
 
 		$allLanguages = array_keys( $this->languageNameUtils->getLanguageNames() );
 		$languagesToNotify = [];
@@ -157,9 +142,9 @@ class TranslationNotificationsSubmitJob extends GenericTranslationNotificationsJ
 		$notifyUser = new TranslationNotifyUser(
 			$translatableTitle,
 			$notifier,
-			$config->get( 'LocalInterwikis' ),
-			$config->get( 'NoReplyAddress' ),
-			$config->get( 'TranslationNotificationsAlwaysHttpsInEmail' ),
+			$this->mainConfig->get( 'LocalInterwikis' ),
+			$this->mainConfig->get( 'NoReplyAddress' ),
+			$this->mainConfig->get( 'TranslationNotificationsAlwaysHttpsInEmail' ),
 			[
 				'text' => $notificationText,
 				'priority' => $priority,
@@ -185,7 +170,7 @@ class TranslationNotificationsSubmitJob extends GenericTranslationNotificationsJ
 
 		$usersWithEmptyWikiId = [];
 		foreach ( $translatorsToNotify as $translator ) {
-			$user = User::newFromID( $translator->up_user )->getInstanceForUpdate();
+			$user = $this->userFactory->newFromId( (int)$translator->up_user );
 
 			$userTranslationFrequency =
 				$frequencies[$this->userOptionsManager->getOption( $user, 'translationnotifications-freq' )];
@@ -196,13 +181,10 @@ class TranslationNotificationsSubmitJob extends GenericTranslationNotificationsJ
 				continue;
 			}
 
-			$userTimestamp = $this->userOptionsManager->getOption(
-				$user,
-				$timestampOptionName,
-				null
-			);
+			$userTimestamp = $this->userOptionsManager->getOption( $user, $timestampOptionName );
 			$userUnixTimestamp = ( $userTimestamp == null ) ?
-				wfTimestamp( TS_UNIX, '20120101000000' ) : // An old timestamp
+				// An old timestamp
+				wfTimestamp( TS_UNIX, '20120101000000' ) :
 				wfTimestamp( TS_UNIX, $userTimestamp );
 
 			$timeSinceNotification = (int)$currentUnixTime - (int)$userUnixTimestamp;
@@ -220,7 +202,7 @@ class TranslationNotificationsSubmitJob extends GenericTranslationNotificationsJ
 					$this->addUserJobsToList( $userJobs, $jobsByTarget, $stats );
 
 					$this->userOptionsManager->setOption( $user, $timestampOptionName, $currentDBTime );
-					$user->saveSettings();
+					$this->userOptionsManager->saveOptions( $user );
 
 					$stats['processedUsers']++;
 				} catch ( Exception $e ) {
@@ -294,15 +276,13 @@ class TranslationNotificationsSubmitJob extends GenericTranslationNotificationsJ
 		return $translatablePage->getMessageGroup()->getSourceLanguage();
 	}
 
-	/**
-	 * Returns translators who match the given language criteria.
-	 * @param array $selectedLanguages
-	 * @param string $sourceLanguage
-	 * @param LanguageSet $languageSet
-	 * @return IResultWrapper
-	 */
-	private function fetchTranslators( $selectedLanguages, $sourceLanguage, $languageSet ) {
-		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
+	/** Returns translators who match the given language criteria. */
+	private function fetchTranslators(
+		array $selectedLanguages,
+		string $sourceLanguage,
+		LanguageSet $languageSet
+	): IResultWrapper {
+		$dbr = $this->connectionProvider->getReplicaDatabase();
 		$queryBuilder = $dbr->newSelectQueryBuilder()
 			->select( 'up_user' )
 			->from( 'user_properties' )
@@ -326,14 +306,7 @@ class TranslationNotificationsSubmitJob extends GenericTranslationNotificationsJ
 		return $queryBuilder->fetchResultSet();
 	}
 
-	/**
-	 * Return jobs for a user based on the user's preferences.
-	 * @param User $user
-	 * @param TranslationNotifyUser $notifyUser
-	 * @param string $currentWikiId
-	 * @param array &$usersWithEmptyWikiId
-	 * @return array
-	 */
+	/** Return jobs for a user based on the user's preferences. */
 	private function getJobsForUser(
 		User $user,
 		TranslationNotifyUser $notifyUser,
@@ -391,13 +364,7 @@ class TranslationNotificationsSubmitJob extends GenericTranslationNotificationsJ
 		return $jobs;
 	}
 
-	/**
-	 * Add jobs for a user to the list of all jobs, also updates the stats.
-	 * @param array $userJobs
-	 * @param array &$jobList
-	 * @param array &$stats
-	 * @return void
-	 */
+	/** Add jobs for a user to the list of all jobs, also updates the stats. */
 	private function addUserJobsToList( array $userJobs, array &$jobList, array &$stats ): void {
 		if ( !count( $userJobs ) ) {
 			$stats[ 'jobNoPref' ]++;

@@ -1,17 +1,18 @@
 {
 	"@metadata": {
 		"authors": [
-			"McDutchie"
+			"McDutchie",
+			"Siebrand"
 		]
 	},
 	"prefs-profile": "GebruikersprofielV2",
 	"userprofilev2-desc": "Een wiki-gebaseerd gebruikersprofielsysteem.",
-	"userprofilev2-selectavatar": "Avatar selecteren",
-	"userprofilev2-avatarchanged": "De avatar is gewijzigd.",
-	"userprofilev2-avatardeleted": "De avatar is verwijderd.",
+	"userprofilev2-selectavatar": "Profielafbeelding selecteren",
+	"userprofilev2-avatarchanged": "De profielafbeelding is gewijzigd.",
+	"userprofilev2-avatardeleted": "De profielafbeelding is verwijderd.",
 	"userprofilev2-user-locked": "Dit gebruikersaccount is globaal uitgeschakeld.",
 	"userprofilev2-edit-profile": "Uw profiel aanpassen",
-	"userprofilev2-apierror-forbidden": "Verboden: u hebt geen toestemming om deze avatar te wijzigen.",
+	"userprofilev2-apierror-forbidden": "Verboden: u hebt geen toestemming om deze profielafbeelding te wijzigen.",
 	"userprofilev2-apierror-invalidpermission": "Verboden: u hebt geen toestemming om het profiel van $1 te bewerken",
 	"userprofilev2-apierror-nofile": "Er is geen bestand gegeven om te uploaden.",
 	"userprofilev2-apierror-ratelimited": "U kunt op dit moment geen afbeeldingen uploaden.",
@@ -32,8 +33,8 @@
 	"userprofilev2-edit": "Bewerken",
 	"userprofilev2-edit-count": "$1 bewerkingen",
 	"userprofilev2-globaledit-count": "$1 globale bewerkingen",
-	"userprofilev2-editavatar": "Avatar bewerken",
+	"userprofilev2-editavatar": "Profielafbeelding bewerken",
 	"userprofilev2-edit-back": "Terug",
-	"userprofilev2-deleteavatar": "Avatar verwijderen",
+	"userprofilev2-deleteavatar": "Profielafbeelding verwijderen",
 	"userprofilev2-helptext": "Met dit dialoogvenster kunt u de inhoud van uw gebruikersprofiel wijzigen."
 }

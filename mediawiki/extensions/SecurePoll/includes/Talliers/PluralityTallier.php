@@ -42,7 +42,6 @@ class PluralityTallier extends Tallier {
 
 	/**
 	 * @inheritDoc
-	 *
 	 */
 	public function finishTally() {
 		// Sort the scores
@@ -51,19 +50,18 @@ class PluralityTallier extends Tallier {
 
 	/**
 	 * @inheritDoc
-	 *
 	 */
 	public function loadJSONResult( $data ) {
 		$this->tally = $data;
 	}
 
+	/** @inheritDoc */
 	public function getJSONResult() {
 		return $this->tally;
 	}
 
 	/**
 	 * @inheritDoc
-	 *
 	 */
 	public function getHtmlResult() {
 		// Show the results
@@ -80,6 +78,7 @@ class PluralityTallier extends Tallier {
 		return $s;
 	}
 
+	/** @inheritDoc */
 	public function getTextResult() {
 		// Calculate column width
 		$width = 10;
@@ -111,6 +110,9 @@ class PluralityTallier extends Tallier {
 		return $s;
 	}
 
+	/**
+	 * @return array
+	 */
 	public function getRanks() {
 		$ranks = [];
 		$currentRank = 1;

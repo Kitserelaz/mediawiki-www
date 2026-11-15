@@ -56,10 +56,6 @@ class CirrusSearchResultBuilder {
 		return $this->setValue( ArrayCirrusSearchResult::SCORE, $score );
 	}
 
-	/**
-	 * @param array $explanation
-	 * @return self
-	 */
 	public function explanation( array $explanation ): self {
 		return $this->setValue( ArrayCirrusSearchResult::EXPLANATION, $explanation );
 	}
@@ -113,7 +109,7 @@ class CirrusSearchResultBuilder {
 	}
 
 	/**
-	 * @param string $redirectTitle
+	 * @param Title|null $redirectTitle
 	 * @return self
 	 */
 	public function redirectTitle( $redirectTitle ): self {
@@ -136,17 +132,13 @@ class CirrusSearchResultBuilder {
 		return $this->setValue( ArrayCirrusSearchResult::SECTION_SNIPPET_FIELD, $sectionSnippetField );
 	}
 
-	/**
-	 * @param Title $sectionTitle
-	 * @return self
-	 */
 	public function sectionTitle( Title $sectionTitle ): self {
 		return $this->setValue( ArrayCirrusSearchResult::SECTION_TITLE, $sectionTitle );
 	}
 
 	/**
 	 * @param string $categorySnippet
-	 * @return CirrusSearchResultBuilder
+	 * @return self
 	 */
 	public function categorySnippet( $categorySnippet ): self {
 		return $this->setValue( ArrayCirrusSearchResult::CATEGORY_SNIPPET, $categorySnippet );
@@ -154,16 +146,12 @@ class CirrusSearchResultBuilder {
 
 	/**
 	 * @param string $categorySnippetField
-	 * @return CirrusSearchResultBuilder
+	 * @return self
 	 */
 	public function categorySnippetField( $categorySnippetField ): self {
 		return $this->setValue( ArrayCirrusSearchResult::CATEGORY_SNIPPET_FIELD, $categorySnippetField );
 	}
 
-	/**
-	 * @param MWTimestamp $timestamp
-	 * @return self
-	 */
 	public function timestamp( MWTimestamp $timestamp ): self {
 		return $this->setValue( ArrayCirrusSearchResult::TIMESTAMP, $timestamp );
 	}

@@ -2,11 +2,16 @@
 	"@metadata": {
 		"authors": []
 	},
+	"unlinkedwikibase-desc": "Zugriff auf Wikibase-Objekt-Daten aus Wikis, die nicht mit einer Wikibase-Site verknüpft sind.",
 	"unlinkedwikibase-error-label": "UnlinkedWikibase-Fehler:",
 	"unlinkedwikibase-error-missing-id": "Der Parameter „id“ muss angegeben werden.",
+	"unlinkedwikibase-error-missing-property": "Ein Eigenschaftsparameter ist erforderlich.",
+	"unlinkedwikibase-error-statements-entity-not-set": "Für diese Seite ist keine Entität festgelegt. Verwende {{#unlinkedwikibase:id=Q...}} oder gib den Parameter |from=Q... an.",
 	"unlinkedwikibase-error-invalid-id": "Die ID „$1“ weist nicht das erforderliche Format einer Ganzzahl mit dem Präfix „Q“ auf.",
 	"unlinkedwikibase-error-property-name-not-found": "Die Eigenschaft „$1“ konnte nicht gefunden werden.",
 	"unlinkedwikibase-sidebar-link": "Wikibase-Objekt",
 	"unlinkedwikibase-infoaction-label": "Wikibase-Objekt-ID",
-	"unlinkedwikibase-infoaction-other-usage": "(verwendet auf {{PLURAL:$1|einer Seite|$1 Seiten}})"
+	"unlinkedwikibase-infoaction-other-usage": "(verwendet auf {{PLURAL:$1|einer Seite|$1 Seiten}})",
+	"unlinkedwikibase-special-jobqueue-size": "Größe der UnlinkedWikibase-Warteschlange: $1",
+	"unlinkedwikibase-special-no-jobs": "Der [[mw:Object cache#WAN_cache|Site-Cache]] ist nicht für die Verwendung der Job Queue zum Abrufen von Daten konfiguriert, so dass Seiten, die die UnlinkedWikibase verwenden, langsam laden können."
 }

@@ -9,8 +9,17 @@ use MediaWiki\MediaWikiServices;
  */
 class GiftManager extends SpecialPage {
 
+	// MW 1.46+ compatibility, remove comparison with 1.47 LTS release
 	public function __construct() {
-		parent::__construct( 'GiftManager'/*class*/, 'giftadmin'/*restriction*/ );
+		if ( version_compare( MW_VERSION, '1.46', '>=' ) ) {
+			parent::__construct( 'GiftManager' );
+		} else {
+			parent::__construct( 'GiftManager', 'giftadmin' );
+		}
+	}
+
+	public function getRestriction(): string {
+		return 'giftadmin';
 	}
 
 	public function doesWrites() {
@@ -366,7 +375,6 @@ class GiftManager extends SpecialPage {
 			( isset( $gift['gift_description'] ) ? htmlspecialchars( $gift['gift_description'] ) : '' ) . '</textarea></td>
 		</tr>';
 		if ( $gift_id ) {
-			// @phan-suppress-next-line PhanTypeArraySuspiciousNullable $gift de facto can't be null
 			$creator = User::newFromActorId( $gift['creator_actor'] );
 			$form .= '<tr>
 			<td class="view-form">' .

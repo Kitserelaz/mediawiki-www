@@ -9,12 +9,13 @@ QUnit.module( 've.ui.ContentAction' );
 /* Tests */
 
 QUnit.test( 'insert/remove/select/selectAll', ( assert ) => {
+	const noChange = () => {};
 	const cases = [
 		{
 			rangeOrSelection: new ve.Range( 3, 4 ),
 			method: 'insert',
 			args: [ 'Foo' ],
-			expectedData: function ( data ) {
+			expectedData: ( data ) => {
 				data.splice( 3, 1,
 					...'Foo'
 				);
@@ -27,11 +28,9 @@ QUnit.test( 'insert/remove/select/selectAll', ( assert ) => {
 			rangeOrSelection: new ve.Range( 3, 4 ),
 			method: 'insert',
 			args: [ 'Foo', true ],
-			expectedData: function ( data ) {
+			expectedData: ( data ) => {
 				data.splice( 3, 1,
-					[ 'F', [ ve.dm.example.italic ] ],
-					[ 'o', [ ve.dm.example.italic ] ],
-					[ 'o', [ ve.dm.example.italic ] ]
+					...ve.dm.example.annotateText( 'Foo', ve.dm.example.italic )
 				);
 			},
 			expectedRangeOrSelection: new ve.Range( 3, 6 ),
@@ -42,7 +41,7 @@ QUnit.test( 'insert/remove/select/selectAll', ( assert ) => {
 			rangeOrSelection: new ve.Range( 3, 4 ),
 			method: 'insert',
 			args: [ 'Foo', false, true ],
-			expectedData: function ( data ) {
+			expectedData: ( data ) => {
 				data.splice( 3, 1,
 					...'Foo'
 				);
@@ -54,12 +53,30 @@ QUnit.test( 'insert/remove/select/selectAll', ( assert ) => {
 		{
 			rangeOrSelection: new ve.Range( 1, 4 ),
 			method: 'remove',
-			expectedData: function ( data ) {
+			expectedData: ( data ) => {
 				data.splice( 1, 3 );
 			},
 			expectedRangeOrSelection: new ve.Range( 1 ),
 			undo: true,
 			msg: 'remove text'
+		},
+		{
+			rangeOrSelection: new ve.Range( 39 ),
+			method: 'remove',
+			createView: true,
+			args: [ 'delete' ],
+			expectedData: noChange,
+			expectedRangeOrSelection: new ve.Range( 39, 41 ),
+			msg: 'delete key before focusable node focuses node'
+		},
+		{
+			rangeOrSelection: new ve.Range( 41 ),
+			method: 'remove',
+			createView: true,
+			args: [ 'backspace' ],
+			expectedData: noChange,
+			expectedRangeOrSelection: new ve.Range( 39, 41 ),
+			msg: 'backspace key after focusable node focuses node'
 		},
 		{
 			rangeOrSelection: new ve.Range( 0 ),
@@ -108,4 +125,62 @@ QUnit.test( 'insert/remove/select/selectAll', ( assert ) => {
 			}
 		);
 	} );
+} );
+
+QUnit.test( 'changeDirectionality', ( assert ) => {
+	const surfaceView = ve.test.utils.createSurfaceViewFromHtml( '<p>Foo</p>' );
+	const surfaceModel = surfaceView.getModel();
+	const docView = surfaceView.getDocument();
+	const action = new ve.ui.ContentAction( surfaceView.getSurface() );
+
+	let contextChangeFired = false;
+	let positionFired = false;
+	surfaceModel.on( 'contextChange', () => {
+		contextChangeFired = true;
+	} );
+	surfaceView.on( 'position', () => {
+		positionFired = true;
+	} );
+
+	docView.setDir( 'ltr' );
+	assert.strictEqual( docView.getDir(), 'ltr', 'Initial direction is ltr' );
+
+	contextChangeFired = false;
+	positionFired = false;
+	action.changeDirectionality();
+	assert.strictEqual( docView.getDir(), 'rtl', 'Direction changes to rtl' );
+	assert.true( contextChangeFired, 'Model emits contextChange' );
+	assert.true( positionFired, 'View emits position' );
+
+	contextChangeFired = false;
+	positionFired = false;
+	action.changeDirectionality();
+	assert.strictEqual( docView.getDir(), 'ltr', 'Direction changes back to ltr' );
+	assert.true( contextChangeFired, 'Model emits contextChange again' );
+	assert.true( positionFired, 'View emits position again' );
+} );
+
+QUnit.test( 'focusContext', ( assert ) => {
+	const surface = ve.test.utils.createSurfaceFromHtml( '<p>Foo</p>' );
+
+	const context = surface.getContext();
+	context.toggle( true );
+
+	const $focusable = $( '<button>' ).text( 'Focusable' );
+	context.popup.$element.append( $focusable );
+
+	let deactivateCalled = false;
+	surface.getView().deactivate = () => {
+		deactivateCalled = true;
+	};
+
+	const action = new ve.ui.ContentAction( surface );
+	$focusable[ 0 ].blur();
+	assert.notStrictEqual( document.activeElement, $focusable[ 0 ], 'Button is not focused initially' );
+	const result = action.focusContext();
+	assert.true( result, 'focusContext returns true when context is visible and focusable' );
+	assert.strictEqual( document.activeElement, $focusable[ 0 ], 'Button is focused after focusContext' );
+	assert.true( deactivateCalled, 'Surface view deactivate is called' );
+
+	surface.destroy();
 } );

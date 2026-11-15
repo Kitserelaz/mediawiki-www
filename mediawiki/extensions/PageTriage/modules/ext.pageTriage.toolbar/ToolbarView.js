@@ -84,7 +84,7 @@ const ToolbarView = Backbone.View.extend( {
 		}
 
 		// this flyout is disabled for current namespace
-		return ( modules[ flyout ].namespace.indexOf( mw.config.get( 'wgNamespaceNumber' ) ) !== -1 );
+		return ( modules[ flyout ].namespace.includes( mw.config.get( 'wgNamespaceNumber' ) ) );
 	},
 
 	render: function () {
@@ -130,21 +130,14 @@ const ToolbarView = Backbone.View.extend( {
 			$toolbar.css( newPosition );
 		} );
 
-		const that = this;
 		// make clicking on the minimized toolbar expand to normal size
 		$( '#mwe-pt-toolbar-vertical' ).on( 'click', () => {
-			that.maximize( true );
+			this.maximize( true );
 		} );
-
-		// since transform only works in IE 9 and higher, use writing-mode
-		// to rotate the minimized toolbar content in older versions
-		if ( $.client.test( { msie: [ [ '<', 9 ] ] }, null, true ) ) {
-			$( '#mwe-pt-toolbar-vertical' ).css( 'writing-mode', 'tb-rl' );
-		}
 
 		// make the close button do something
 		$( '.mwe-pt-toolbar-close-button' ).on( 'click', () => {
-			that.hide( true );
+			this.hide( true );
 		} );
 
 		// Auto-resize all textareas as they type.
@@ -270,22 +263,21 @@ const ToolbarView = Backbone.View.extend( {
 		return new mw.Api().saveOption( 'userjs-curationtoolbar', state );
 	},
 	insertLink: function () {
-		const that = this,
-			pageCurationLink = mw.util.addPortletLink(
-				'p-tb',
-				'#',
-				mw.msg( 'pagetriage-toolbar-linktext' ),
-				this.openCurationToolbarLinkId
-			);
+		const pageCurationLink = mw.util.addPortletLink(
+			'p-tb',
+			'#',
+			mw.msg( 'pagetriage-toolbar-linktext' ),
+			this.openCurationToolbarLinkId
+		);
 
 		if ( !pageCurationLink ) {
 			return;
 		}
 		$( pageCurationLink )
 			.hide()
-			.on( 'click', function () {
-				that.maximize( true );
-				this.blur();
+			.on( 'click', ( e ) => {
+				this.maximize( true );
+				e.delegateTarget.blur();
 				return false;
 			} );
 	}

@@ -11,6 +11,7 @@ use CirrusSearch\Search\Filters;
 use CirrusSearch\Search\SearchContext;
 use CirrusSearch\SearchConfig;
 use Elastica\Query\AbstractQuery;
+use MediaWiki\MainConfigNames;
 
 /**
  * Handles non-regexp version of insource: keyword.  The value
@@ -46,12 +47,12 @@ class InSourceFeature extends BaseRegexFeature {
 	 */
 	private $escaper;
 
-	/**
-	 * @param SearchConfig $config
-	 */
 	public function __construct( SearchConfig $config ) {
 		parent::__construct( $config, [ self::FIELD => HighlightedField::TARGET_MAIN_SNIPPET ] );
-		$this->escaper = new Escaper( $config->get( 'LanguageCode' ), $config->get( 'CirrusSearchAllowLeadingWildcard' ) );
+		$this->escaper = new Escaper(
+			$config->get( MainConfigNames::LanguageCode ),
+			$config->get( 'CirrusSearchAllowLeadingWildcard' )
+		);
 	}
 
 	/**
@@ -59,6 +60,10 @@ class InSourceFeature extends BaseRegexFeature {
 	 */
 	protected function getKeywords() {
 		return [ 'insource' ];
+	}
+
+	protected function getRegexHLFlavor(): string {
+		return "lucene_extended";
 	}
 
 	/**

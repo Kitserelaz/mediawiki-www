@@ -90,10 +90,6 @@
 				labelClass: 'markerwithlabel'
 			};
 
-			if ( markerOptions.text !== '' ) {
-				markerOptions.text = $('<div>' + markerOptions.text + '</div>').text();
-			}
-
 			if (!markerData.hasOwnProperty('icon') || markerData.icon !== '') {
 				markerOptions.icon = markerData.icon;
 			}
@@ -154,12 +150,10 @@
 
 			for (var i = this.markers.length - 1; i >= 0; i--) {
 				if (this.markers[i] === marker) {
-					delete this.markers[i];
+					this.markers.splice(i, 1);
 					break;
 				}
 			}
-
-			delete marker;
 		};
 
 		/**
@@ -208,6 +202,11 @@
 					var geoXml = new geoXML3.parser({
 						map:_this.map,
 						zoom:options.kmlrezoom,
+						allowExternalDocuments:options.allowexternaldatafiles === true,
+						// Only a wiki that refused external data files filtered kml down to the files it
+						// resolved itself. Anything else, map data from before the setting included,
+						// says nothing about what is on this wiki.
+						wikiDocumentUrls:options.allowexternaldatafiles === false ? options.kml : [],
 						failedParse:function(document){
 							console.log(options.kml);
 							console.log(document);
@@ -274,14 +273,12 @@
 		this.removeLine = function (line) {
 			line.setMap(null);
 
-			for (var i = this.line.length - 1; i >= 0; i--) {
-				if (this.line[i] === line) {
-					delete this.line[i];
+			for (var i = this.lines.length - 1; i >= 0; i--) {
+				if (this.lines[i] === line) {
+					this.lines.splice(i, 1);
 					break;
 				}
 			}
-
-			delete line;
 		};
 
 		this.removeLines = function () {
@@ -401,21 +398,19 @@
 		this.removePolygon = function (polygon) {
 			polygon.setMap(null);
 
-			for (var i = this.polygon.length - 1; i >= 0; i--) {
-				if (this.polygon[i] === polygon) {
-					delete this.polygon[i];
+			for (var i = this.polygons.length - 1; i >= 0; i--) {
+				if (this.polygons[i] === polygon) {
+					this.polygons.splice(i, 1);
 					break;
 				}
 			}
-
-			delete polygon;
 		};
 
 		this.removePolygons = function () {
-			for (var i = this.polygon.length - 1; i >= 0; i--) {
-				this.polygon[i].setMap(null);
+			for (var i = this.polygons.length - 1; i >= 0; i--) {
+				this.polygons[i].setMap(null);
 			}
-			this.polygon = [];
+			this.polygons = [];
 		};
 
 		//Rezoom's the map to show all visible markers.

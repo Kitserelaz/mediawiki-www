@@ -2,9 +2,9 @@
 
 namespace MediaWiki\MassMessage\Job;
 
-use Job;
 use LqtDispatch;
-use ManualLogEntry;
+use MediaWiki\JobQueue\Job;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\MassMessage\DedupeHelper;
 use MediaWiki\MassMessage\Job\Hooks\HookRunner;
 use MediaWiki\MassMessage\LanguageAwareText;
@@ -27,12 +27,10 @@ use MediaWiki\WikiMap\WikiMap;
  * Based on code from TranslationNotifications
  * https://mediawiki.org/wiki/Extension:TranslationNotifications
  *
- * @file
  * @ingroup JobQueue
  * @author Kunal Mehta
  * @license GPL-2.0-or-later
  */
-
 class MassMessageJob extends Job {
 	/**
 	 * @var bool Whether to use sender account (if possible)
@@ -43,14 +41,13 @@ class MassMessageJob extends Job {
 	private $messageSender;
 	/** @var HookRunner */
 	private $hookRunner;
+	/** @var Title The title before any page redirects. */
+	private $originalTitle;
 
-	/**
-	 * @param Title $title
-	 * @param array $params
-	 */
 	public function __construct( Title $title, array $params ) {
 		parent::__construct( 'MassMessageJob', $title, $params );
 		$this->removeDuplicates = true;
+
 		// Create a fresh Title object so namespaces are evaluated
 		// in the context of the target site. See T59464.
 		// Note that jobs created previously might not have a
@@ -59,6 +56,12 @@ class MassMessageJob extends Job {
 			$this->title = Title::newFromText( $params['title'] );
 		} else {
 			$this->title = $title;
+		}
+
+		if ( isset( $params['originalTitle'] ) ) {
+			$this->originalTitle = Title::newFromText( $params['originalTitle'] );
+		} else {
+			$this->originalTitle = $this->title;
 		}
 
 		$this->hookRunner = new HookRunner(
@@ -228,8 +231,6 @@ class MassMessageJob extends Job {
 	/**
 	 * Send a message to a user.
 	 * Modified from the TranslationNotification extension.
-	 *
-	 * @return bool
 	 */
 	protected function sendMessage(): bool {
 		$title = $this->normalizeTitle( $this->title );
@@ -419,6 +420,13 @@ class MassMessageJob extends Job {
 			return true;
 		}
 
+		// Was the original target page a redirect? If so, let's tell the buildMessage()
+		// method the original title, so it can append a special comment about the redirection.
+		$originalTitle = null;
+		if ( !$this->title->equals( $this->originalTitle ) ) {
+			$originalTitle = $this->originalTitle;
+		}
+
 		// If the page is using a different discussion system, handle it specially
 		if ( $isLqtThreads || $isStructuredDiscussion ) {
 			$subject = $messageBuilder->buildPlaintextSubject( $subject, $pageSubject );
@@ -432,7 +440,8 @@ class MassMessageJob extends Job {
 				$messageBuilder->stripTildes( $message ),
 				$pageMessage,
 				$targetLanguage,
-				$comment
+				$comment,
+				$originalTitle
 			);
 
 			if ( $isLqtThreads ) {
@@ -442,7 +451,8 @@ class MassMessageJob extends Job {
 			}
 		}
 		$subject = $messageBuilder->buildSubject( $subject, $pageSubject, $targetLanguage );
-		$message = $messageBuilder->buildMessage( $message, $pageMessage, $targetLanguage, $comment );
+		$message = $messageBuilder->buildMessage( $message, $pageMessage, $targetLanguage,
+			$comment, $originalTitle );
 
 		if ( $subject === '' ) {
 			$this->logLocalSubjectSectionFailure();

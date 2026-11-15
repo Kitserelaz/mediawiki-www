@@ -5,6 +5,7 @@ namespace MediaWiki\MassMessage;
 
 use MediaWiki\Html\Html;
 use MediaWiki\Language\Language;
+use MediaWiki\Title\Title;
 
 /**
  * Contains logic to build the message and subject to be posted
@@ -17,9 +18,6 @@ class MessageBuilder {
 
 	/**
 	 * Strip tildes at the end of the message
-	 *
-	 * @param string $customMessage
-	 * @return string
 	 */
 	public function stripTildes( string $customMessage ): string {
 		$strippedText = rtrim( $customMessage );
@@ -42,13 +40,17 @@ class MessageBuilder {
 	 * @param LanguageAwareText|null $pageContent
 	 * @param Language|null $targetLanguage
 	 * @param string[] $commentParams
+	 * @param Title|null $originalTitle If the original Title was a redirect, include it
+	 * in this param so that a comment about the redirection can be appended to the
+	 * message. Null if the redirect message should not be included.
 	 * @return string
 	 */
 	public function buildMessage(
 		string $customMessageText,
 		?LanguageAwareText $pageContent,
 		?Language $targetLanguage,
-		array $commentParams
+		array $commentParams,
+		$originalTitle = null
 	): string {
 		$trimmedText = rtrim( $customMessageText );
 		$fullMessageText = '';
@@ -59,6 +61,16 @@ class MessageBuilder {
 
 		// If either is empty, the extra new lines will be trimmed
 		$fullMessageText = trim( $fullMessageText . "\n\n" . $trimmedText );
+
+		if ( $originalTitle ) {
+			$redirectMessage = wfMessage( 'massmessage-redirect-notice' )->params(
+				$originalTitle->getPrefixedText()
+			);
+			if ( $targetLanguage ) {
+				$redirectMessage = $redirectMessage->inLanguage( $targetLanguage );
+			}
+			$fullMessageText .= "\n\n" . $redirectMessage->text();
+		}
 
 		// $commentParams will always be present unless we are runnning tests.
 		if ( $commentParams ) {

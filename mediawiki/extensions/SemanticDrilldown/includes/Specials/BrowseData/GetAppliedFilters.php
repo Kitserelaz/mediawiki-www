@@ -2,9 +2,9 @@
 
 namespace SD\Specials\BrowseData;
 
-use PageProps;
+use MediaWiki\Page\PageProps;
+use MediaWiki\Title\Title;
 use SD\Utils;
-use Title;
 
 class GetAppliedFilters {
 
@@ -32,14 +32,25 @@ class GetAppliedFilters {
 		if ( $query->subcategory() ) {
 			$remainingHtml .= " > ";
 			$remainingHtml .= "$subcategory_text: ";
-			$subcat_string = str_replace( '_', ' ', $query->subcategory() );
-			$remove_filter_url = $this->getUrl( $query->category(), $query->appliedFilters() );
-			$remainingHtml .= '<span class="drilldown-header-value">' . $subcat_string . '</span>' .
-				'<a href="' . $remove_filter_url . '" title="' . wfMessage( 'sd_browsedata_removesubcategoryfilter' )->text() . '"><img src="' . $sdSkinsPath . '/filter-x.png" /></a> ';
+			$removeTitle = wfMessage( 'sd_browsedata_removesubcategoryfilter' )->text();
+			$path = $query->subcategoryPath();
+			foreach ( $path as $depth => $segment ) {
+				if ( $depth > 0 ) {
+					$remainingHtml .= ' / ';
+				}
+				$segmentLabel = str_replace( '_', ' ', $segment );
+				$parentPath = $depth > 0 ? implode( '/', array_slice( $path, 0, $depth ) ) : null;
+				$remove_url = $this->getUrl( $query->category(), $query->appliedFilters(), $parentPath );
+				$remainingHtml .= '<span class="drilldown-header-value">' . $segmentLabel . '</span>'
+					. '<a href="' . $remove_url . '" title="' . $removeTitle
+					. '"><img src="' . $sdSkinsPath . '/filter-x.png" /></a>';
+			}
+			$remainingHtml .= ' ';
 		}
 
 		foreach ( $query->appliedFilters() as $i => $af ) {
-			$remainingHtml .= ( !$query->subcategory() && $i == 0 ) ? " > " : "<span class=\"drilldown-header-value\">&</span>";
+			$remainingHtml .= ( !$query->subcategory() && $i == 0 )
+				? " > " : "<span class=\"drilldown-header-value\">&</span>";
 			$filter_label = $af->filter->name();
 			// add an "x" to remove this filter, if it has more
 			// than one value
@@ -48,38 +59,53 @@ class GetAppliedFilters {
 				array_splice( $temp_filters_array, $i, 1 );
 				$remove_filter_url = $this->getUrl( $query->category(), $temp_filters_array, $query->subcategory() );
 				array_splice( $temp_filters_array, $i, 0 );
-				$remainingHtml .= $filter_label . ' <a href="' . $remove_filter_url . '" title="' . wfMessage( 'sd_browsedata_removefilter' )->text() . '"><img src="' . $sdSkinsPath . '/filter-x.png" /></a> : ';
+				$removeTitle = wfMessage( 'sd_browsedata_removefilter' )->text();
+				$remainingHtml .= $filter_label . ' <a href="' . $remove_filter_url
+					. '" title="' . $removeTitle . '"><img src="' . $sdSkinsPath . '/filter-x.png" /></a> : ';
 			} else {
 				$remainingHtml .= "$filter_label: ";
 			}
 			foreach ( $af->values as $j => $fv ) {
 				if ( $j > 0 ) {
-					$remainingHtml .= ' <span class="drilldown-or">' . wfMessage( 'sd_browsedata_or' )->text() . '</span> ';
+					$orText = wfMessage( 'sd_browsedata_or' )->text();
+					$remainingHtml .= ' <span class="drilldown-or">' . $orText . '</span> ';
 				}
-				$filter_text = Utils::escapeString( $this->getNiceAppliedFilterValue( $af->filter->propertyType(), $fv->text ) );
+				$filter_text = Utils::escapeString(
+					$this->getNiceAppliedFilterValue( $af->filter->propertyType(), $fv->text )
+				);
 				$temp_filters_array = $query->appliedFilters();
 				$removed_values = array_splice( $temp_filters_array[$i]->values, $j, 1 );
 				$remove_filter_url = $this->getUrl( $query->category(), $temp_filters_array, $query->subcategory() );
 				array_splice( $temp_filters_array[$i]->values, $j, 0, $removed_values );
-				$remainingHtml .= '<span class="drilldown-header-value">' . $filter_text . '</span> <a href="' . $remove_filter_url
-					. '" title="' . wfMessage( 'sd_browsedata_removefilter' )->text() . '"><img src="' . $sdSkinsPath . '/filter-x.png" /></a>';
+				$removeTitle = wfMessage( 'sd_browsedata_removefilter' )->text();
+				$remainingHtml .= '<span class="drilldown-header-value">' . $filter_text . '</span>'
+					. ' <a href="' . $remove_filter_url . '" title="' . $removeTitle
+					. '"><img src="' . $sdSkinsPath . '/filter-x.png" /></a>';
 			}
 
 			if ( $af->search_terms != null ) {
 				foreach ( $af->search_terms as $j => $search_term ) {
 					if ( $j > 0 ) {
-						$remainingHtml .= ' <span class="drilldown-or">' . wfMessage( 'sd_browsedata_or' )->text() . '</span> ';
+						$orText = wfMessage( 'sd_browsedata_or' )->text();
+						$remainingHtml .= ' <span class="drilldown-or">' . $orText . '</span> ';
 					}
-					$filter_text = Utils::escapeString( $this->getNiceAppliedFilterValue( $af->filter->propertyType(), $search_term ) );
+					$filter_text = Utils::escapeString(
+						$this->getNiceAppliedFilterValue( $af->filter->propertyType(), $search_term )
+					);
 					$temp_filters_array = $query->appliedFilters();
 					$removed_values = array_splice( $temp_filters_array[$i]->search_terms, $j, 1 );
-					$remove_filter_url = $this->getUrl( $query->category(), $temp_filters_array, $query->subcategory() );
+					$remove_filter_url = $this->getUrl(
+						$query->category(), $temp_filters_array, $query->subcategory()
+					);
 					array_splice( $temp_filters_array[$i]->search_terms, $j, 0, $removed_values );
-					$remainingHtml .= '<span class="drilldown-header-value">~ \'' . $filter_text . '\'</span> <a href="' . $remove_filter_url
-						. '" title="' . wfMessage( 'sd_browsedata_removefilter' )->text() . '"><img src="' . $sdSkinsPath . '/filter-x.png" /> </a>';
+					$removeTitle = wfMessage( 'sd_browsedata_removefilter' )->text();
+					$remainingHtml .= '<span class="drilldown-header-value">~ \'' . $filter_text . '\'</span>'
+						. ' <a href="' . $remove_filter_url . '" title="' . $removeTitle
+						. '"><img src="' . $sdSkinsPath . '/filter-x.png" /> </a>';
 				}
 			} elseif ( $af->lower_date != null || $af->upper_date != null ) {
-				$remainingHtml .= "<span class=\"drilldown-header-value\">" . $af->lower_date_string . " - " . $af->upper_date_string . "</span>";
+				$remainingHtml .= '<span class="drilldown-header-value">'
+					. $af->lower_date_string . " - " . $af->upper_date_string . '</span>';
 			}
 		}
 

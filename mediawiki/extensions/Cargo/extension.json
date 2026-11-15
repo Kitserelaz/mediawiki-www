@@ -1,7 +1,7 @@
 {
 	"name": "Cargo",
 	"namemsg": "cargo-extensionname",
-	"version": "3.9",
+	"version": "3.9.5",
 	"author": "Yaron Koren",
 	"url": "https://www.mediawiki.org/wiki/Extension:Cargo",
 	"descriptionmsg": "cargo-desc",
@@ -179,7 +179,8 @@
 		"CargoDrilldownPage": "drilldown/CargoDrilldownPage.php"
 	},
 	"TestAutoloadClasses": {
-		"CargoIntegrationTestUtils": "tests/phpunit/integration/CargoIntegrationTestUtils.php"
+		"CargoIntegrationTestUtils": "tests/phpunit/integration/CargoIntegrationTestUtils.php",
+		"CargoRecreateData": "maintenance/cargoRecreateData.php"
 	},
 	"ResourceModules": {
 		"ext.cargo.main": {
@@ -481,6 +482,8 @@
 		"CargoDBuser": null,
 		"CargoDBpassword": null,
 		"CargoDBprefix": null,
+		"CargoDBschema": null,
+		"CargoDBport": null,
 		"CargoDBfilePath": null,
 		"CargoDBRowFormat": null,
 		"CargoDefaultStringBytes": 300,

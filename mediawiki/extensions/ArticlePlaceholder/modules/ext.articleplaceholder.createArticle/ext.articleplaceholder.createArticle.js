@@ -4,7 +4,7 @@
  * @author Jonas M. Kress
  */
 
-( function ( $, mw, OO, module ) {
+( function () {
 	'use strict';
 
 	/**
@@ -201,4 +201,4 @@
 
 	module.exports.CreateArticleDialog = CreateArticleDialog;
 
-}( jQuery, mediaWiki, OO, module ) );
+}() );

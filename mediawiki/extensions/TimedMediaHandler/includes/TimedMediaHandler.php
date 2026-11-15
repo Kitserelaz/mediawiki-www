@@ -2,33 +2,18 @@
 
 namespace MediaWiki\TimedMediaHandler;
 
-use File;
-use MediaHandler;
-use MediaTransformError;
-use MediaTransformOutput;
-use MediaWiki\Context\RequestContext;
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Media\MediaHandler;
+use MediaWiki\Media\MediaTransformError;
+use MediaWiki\Media\MediaTransformOutput;
+use MediaWiki\Media\TransformParameterError;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\Parser;
-use TransformParameterError;
 
 class TimedMediaHandler extends MediaHandler {
 
-	/**
-	 * Get an image size array like that returned by getimagesize(), or false if it
-	 * can't be determined.
-	 * @param File $file
-	 * @param string $path
-	 * @param string|false $metadata
-	 * @return array|false
-	 */
-	public function getImageSize( $file, $path, $metadata = false ) {
-		/* override by handler */
-		return false;
-	}
-
-	/**
-	 * Get the list of supported wikitext embed params
-	 * @return array
-	 */
+	/** @inheritDoc */
 	public function getParamMap() {
 		return [
 			'img_width' => 'width',
@@ -41,19 +26,19 @@ class TimedMediaHandler extends MediaHandler {
 		];
 	}
 
-	/**
-	 * Validate a embed file parameters
-	 *
-	 * @param string $name Name of the param
-	 * @param mixed $value Value to validated
-	 * @return bool
-	 */
+	/** @inheritDoc */
 	public function validateParam( $name, $value ) {
 		if ( $name === 'thumbtime' || $name === 'start' || $name === 'end' ) {
-			if ( self::parseTimeString( $value ) === false ) {
+			if (
+				!( is_string( $value ) || is_numeric( $value ) ) ||
+				self::parseTimeString( (string)$value ) === false
+			) {
 				return false;
 			}
 		} elseif ( $name === 'disablecontrols' ) {
+			if ( !is_string( $value ) ) {
+				return false;
+			}
 			$values = explode( ',', $value );
 			foreach ( $values as $v ) {
 				if ( !in_array( $v, [ 'options', 'timedText', 'fullscreen' ] ) ) {
@@ -61,7 +46,7 @@ class TimedMediaHandler extends MediaHandler {
 				}
 			}
 		} elseif ( $name === 'width' || $name === 'height' ) {
-			return $value > 0;
+			return (int)$value > 0;
 		}
 		return true;
 	}
@@ -73,7 +58,8 @@ class TimedMediaHandler extends MediaHandler {
 	 */
 	public function makeParamString( $params ) {
 		// Add the width param string ( same as images {width}px )
-		$paramString = ( isset( $params['width'] ) ) ? $params['width'] . 'px' : '';
+		$width = $params['physicalWidth'] ?? $params['width'] ?? null;
+		$paramString = ( $width ) ? $width . 'px' : '';
 		$paramString .= ( $paramString !== '' ) ? '-' : '';
 
 		// Get the raw thumbTime from thumbtime or start param
@@ -128,11 +114,7 @@ class TimedMediaHandler extends MediaHandler {
 		return false;
 	}
 
-	/**
-	 * @param File $image
-	 * @param array &$params
-	 * @return bool
-	 */
+	/** @inheritDoc */
 	public function normaliseParams( $image, &$params ) {
 		$timeParam = [ 'thumbtime', 'start', 'end' ];
 		// Parse time values if endtime or thumbtime can't be more than length -1
@@ -175,9 +157,19 @@ class TimedMediaHandler extends MediaHandler {
 			if ( $params['width'] * $size['height'] > $params['height'] * $size['width'] ) {
 				$params['width'] = self::fitBoxWidth( $size['width'], $size['height'], $params['height'] );
 			}
+			$params['physicalHeight'] = $params['height'];
 		}
 		if ( isset( $params['width'] ) ) {
 			$params['height'] = File::scaleHeight( $size['width'], $size['height'], $params['width'] );
+			$params['physicalWidth'] = $params['width'];
+
+			// Follow thumb steps
+			$srcWidth = $image->getWidth();
+			$srcHeight = $image->getHeight();
+			$params['physicalWidth'] = $this->getSteppedThumbWidth(
+				$image, $params['physicalWidth'], $srcWidth, $srcHeight
+			);
+			$params['physicalHeight'] = File::scaleHeight( $srcWidth, $srcHeight, $params['physicalWidth'] );
 		}
 
 		// Make sure start time is not > than end time
@@ -194,6 +186,39 @@ class TimedMediaHandler extends MediaHandler {
 			$params[ $flag ] = isset( $params[ $flag ] );
 		}
 		return true;
+	}
+
+	/**
+	 * Copy of ImageHandler::getSteppedThumbWidth()
+	 * @todo move ImageHandler::getSteppedThumbWidth() to MediaHandler
+	 *  and reuse it here
+	 */
+	protected function getSteppedThumbWidth(
+		File $image, int $requestWidth, int $srcWidth, int $srcHeight
+	): int {
+		$mainConfig = MediaWikiServices::getInstance()->getMainConfig();
+		$thumbnailSteps = $mainConfig->get( MainConfigNames::ThumbnailSteps );
+		$thumbnailStepsRatio = $mainConfig->get( MainConfigNames::ThumbnailStepsRatio );
+
+		if ( !$thumbnailSteps || !$thumbnailStepsRatio ) {
+			return $requestWidth;
+		}
+
+		$prevStep = $thumbnailSteps[0];
+		foreach ( $thumbnailSteps as $widthStep ) {
+			if ( ( $widthStep > $srcWidth ) ) {
+				return $prevStep;
+			}
+			if ( $widthStep == $requestWidth ) {
+				return $requestWidth;
+			}
+			if ( $widthStep > $requestWidth ) {
+				return $widthStep;
+			}
+			$prevStep = $widthStep;
+		}
+
+		return $requestWidth;
 	}
 
 	/**
@@ -269,44 +294,16 @@ class TimedMediaHandler extends MediaHandler {
 			wfDebug( __METHOD__ . ": trying to time on negative value: " . $time );
 			return false;
 		}
-		$hours = floor( $time / 3600 );
-		$min = floor( $time / 60 ) % 60;
-		$sec = floor( $time ) % 60;
-		$ms = floor( $time * 1000 ) % 1000;
-		$ms = ( $ms != 0 ) ? sprintf( '.%03d', $ms ) : '';
+		$hours = (int)floor( $time / 3600 );
+		$min = (int)floor( $time / 60 ) % 60;
+		$sec = (int)floor( $time ) % 60;
+		$ms = (int)floor( $time * 1000 ) % 1000;
+		$ms = ( $ms !== 0 ) ? sprintf( '.%03d', $ms ) : '';
 
 		return sprintf( '%02d:%02d:%02d%s', $hours, $min, $sec, $ms );
 	}
 
-	/**
-	 * @param string $metadata
-	 * @return false|mixed
-	 */
-	public function unpackMetadata( $metadata ) {
-		// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
-		$unser = @unserialize( $metadata );
-		if ( isset( $unser['version'] ) ) {
-			return $unser;
-		}
-
-		return false;
-	}
-
-	/**
-	 * @param File $image
-	 * @param string $metadata
-	 * @return bool
-	 */
-	public function isMetadataValid( $image, $metadata ) {
-		return $this->unpackMetadata( $metadata ) !== false;
-	}
-
-	/**
-	 * @param string $ext
-	 * @param string $mime
-	 * @param null $params
-	 * @return array
-	 */
+	/** @inheritDoc */
 	public function getThumbType( $ext, $mime, $params = null ) {
 		return [ 'jpg', 'image/jpeg' ];
 	}
@@ -426,7 +423,9 @@ class TimedMediaHandler extends MediaHandler {
 		}
 
 		// Generate thumb:
-		$thumbStatus = TimedMediaThumbnail::get( $options );
+		$timedMediaThumbnail = MediaWikiServices::getInstance()
+			->getService( 'TimedMediaHandler.TimedMediaThumbnail' );
+		$thumbStatus = $timedMediaThumbnail->get( $options );
 		if ( $thumbStatus !== true ) {
 			return $thumbStatus;
 		}
@@ -434,10 +433,7 @@ class TimedMediaHandler extends MediaHandler {
 		return new TimedMediaTransformOutput( $options );
 	}
 
-	/**
-	 * @param File $file
-	 * @return bool
-	 */
+	/** @inheritDoc */
 	public function mustRender( $file ) {
 		return true;
 	}
@@ -451,19 +447,12 @@ class TimedMediaHandler extends MediaHandler {
 		return 0.0;
 	}
 
-	/**
-	 * Get length of a file
-	 * @param File $file
-	 * @return float
-	 */
+	/** @inheritDoc */
 	public function getLength( $file ) {
 		return $file->getLength();
 	}
 
-	/**
-	 * @param File $file
-	 * @return string
-	 */
+	/** @inheritDoc */
 	public function getDimensionsString( $file ) {
 		if ( $file->getWidth() ) {
 			return wfMessage(
@@ -473,11 +462,12 @@ class TimedMediaHandler extends MediaHandler {
 				)->numParams(
 					$file->getWidth(),
 					$file->getHeight()
+				)->inLanguage(
+					$this->getLanguage()
 				)->text();
 		}
 
-		$lang = RequestContext::getMain()->getLanguage();
-		return $lang->formatTimePeriod( $this->getLength( $file ) );
+		return $this->getLanguage()->formatTimePeriod( $this->getLength( $file ) );
 	}
 
 	/**

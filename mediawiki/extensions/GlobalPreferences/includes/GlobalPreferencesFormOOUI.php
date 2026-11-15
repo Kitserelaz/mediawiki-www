@@ -2,7 +2,7 @@
 
 namespace GlobalPreferences;
 
-use PreferencesFormOOUI;
+use MediaWiki\Specials\Forms\PreferencesFormOOUI;
 
 /**
  * The GlobalPreferencesForm changes the display format, and adds section headers linking back to
@@ -32,7 +32,7 @@ class GlobalPreferencesFormOOUI extends PreferencesFormOOUI {
 					'classes' => [ 'globalprefs-section-header' ],
 				]
 			);
-			$this->addHeaderHtml( $secHeader, $section );
+			$this->addHeaderHtml( (string)$secHeader, $section );
 		}
 
 		return parent::getBody();

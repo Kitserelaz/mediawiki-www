@@ -5,7 +5,7 @@
 		]
 	},
 	"ipinfo-desc": "Ofrece información sobre un enderezo IP.",
-	"ipinfo-infobox-title": "Información sobre o enderezo IP",
+	"ipinfo-infobox-title": "Información sobre o enderezo IP para $1",
 	"ipinfo-infobox-temporary-account-help": "Hai varios enderezos IP asociados a esta conta temporal. Estás a ver a información do enderezo IP usado máis recentemente. [[Special:IPInfo/$1|Ver a información para todos os enderezos IP]].",
 	"ipinfo-property-label-location": "Localización",
 	"ipinfo-property-label-ipversion": "Versión",
@@ -18,7 +18,7 @@
 	"ipinfo-property-label-connectiontypes": "Tipos de conexión",
 	"ipinfo-property-label-tunneloperators": "Operador do túnel",
 	"ipinfo-property-label-proxies": "Proxies",
-	"ipinfo-property-label-usercount": "Usuarios neste enderezo IP",
+	"ipinfo-property-label-usercount": "Dispositivos únicos en Internet",
 	"ipinfo-property-value-connectiontype-cableordsl": "Cable ou DSL",
 	"ipinfo-property-value-connectiontype-cellular": "Móbil",
 	"ipinfo-property-value-connectiontype-corporate": "Corporativo",
@@ -60,7 +60,7 @@
 	"ipinfo-property-label-source": "Fonte",
 	"ipinfo-property-label-active-blocks": "Bloqueos activos",
 	"ipinfo-property-label-number-of-ips": "Número de enderezos IP",
-	"ipinfo-property-tooltip-proxytypes": "Os proxies agochan os enderezos IP. Nalgúns casos isto ocorre automaticamente, como no caso dos proxies residenciais ou corporativos, noutros casos faise intencionadamente para agochar a orixe do enderezo IP.",
+	"ipinfo-property-tooltip-proxytypes": "Os proxies agochan os enderezos IP. Nalgúns casos isto ocorre automaticamente, como no caso dos proxies residenciais ou corporativos. Noutros casos os usuarios utilizan os proxies intencionadamente para agocharen a orixe do seu enderezo IP.",
 	"ipinfo-property-tooltip-connectiontype": "A tecnoloxía a través da cal se conectan a Internet.",
 	"ipinfo-property-tooltip-usertype": "O tipo de entidade propietaria da conexión a Internet.",
 	"ipinfo-property-tooltip-behaviors": "Tipos específicos de actividades nas que participaron ou coas que estiveron asociados previamente os dispositivos neste enderezo IP.",
@@ -129,10 +129,10 @@
 	"ipinfo-blocklist-url-text": "Lista de bloqueos",
 	"ipinfo-value-deleted-edits": "{{PLURAL:$1|$1 edición eliminada|$1 edicións eliminadas|0=Sen edicións eliminadas}}",
 	"ipinfo-special-ipinfo": "Información sobre o enderezo IP",
-	"ipinfo-special-ipinfo-legend": "Busca información sobre todos os enderezos IP empregados por un usuario temporal. Móstrase un máximo de $1 {{PLURAL:$1|resultado|resultados}}.",
+	"ipinfo-special-ipinfo-legend": "Busca información sobre todos os enderezos IP empregados por un usuario temporal ou un enderezo IP arbitrario. Móstrase un máximo {{PLURAL:$1|dun resultado|de $1 resultados}}.",
 	"ipinfo-deleted-edits-url-text": "Contribucións eliminadas",
 	"ipinfo-special-ipinfo-table-caption": "Información sobre o enderezo IP para $1",
-	"ipinfo-special-ipinfo-target": "Nome de usuario obxectivo:",
+	"ipinfo-special-ipinfo-target": "Nome de usuario ou enderezo IP obxectivo:",
 	"ipinfo-special-ipinfo-user-tool-links": "De $1",
 	"ipinfo-special-ipinfo-sort-explainer": "Os botóns das cabeceiras das táboas pódense usar para ordenar a táboa polo valor desa columna.",
 	"ipinfo-special-ipinfo-column-ip": "IP",
@@ -144,6 +144,5 @@
 	"ipinfo-special-ipinfo-no-right-ip": "Non tes permiso para buscar a información IP de enderezos IP arbitrarios.",
 	"ipinfo-special-ipinfo-table-caption-ip": "Información sobre o enderezo IP para $1",
 	"right-ipinfo-view-arbitrary-ip": "Buscar información IP de enderezos IP arbitrarios en «Special:IPInfo»",
-	"action-ipinfo-view-arbitrary-ip": "buscar información IP de enderezos IP arbitrarios",
-	"ipinfo-property-label-isp": "Provedor de servizos de Internet"
+	"action-ipinfo-view-arbitrary-ip": "buscar información IP de enderezos IP arbitrarios"
 }

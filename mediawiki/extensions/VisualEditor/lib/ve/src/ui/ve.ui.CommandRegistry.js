@@ -184,17 +184,17 @@ ve.ui.commandRegistry.register(
 );
 ve.ui.commandRegistry.register(
 	new ve.ui.Command(
-		'findAndReplace', 'window', 'open', { args: [ 'findAndReplace', null, 'findSelected' ] }
+		'findAndReplace', 'window', 'open', { args: [ 'findAndReplace', {}, 'findSelected' ] }
 	)
 );
 ve.ui.commandRegistry.register(
 	new ve.ui.Command(
-		'findNext', 'window', 'open', { args: [ 'findAndReplace', null, 'findNext' ] }
+		'findNext', 'window', 'open', { args: [ 'findAndReplace', {}, 'findNext' ] }
 	)
 );
 ve.ui.commandRegistry.register(
 	new ve.ui.Command(
-		'findPrevious', 'window', 'open', { args: [ 'findAndReplace', null, 'findPrevious' ] }
+		'findPrevious', 'window', 'open', { args: [ 'findAndReplace', {}, 'findPrevious' ] }
 	)
 );
 ve.ui.commandRegistry.register(
@@ -219,7 +219,7 @@ ve.ui.commandRegistry.register(
 		ve.ui.commandRegistry.register(
 			new ve.ui.Command(
 				'heading' + level, 'format', 'convert',
-				{ args: [ 'heading', { level: level } ], supportedSelections: [ 'linear' ] }
+				{ args: [ 'heading', { level } ], supportedSelections: [ 'linear' ] }
 			)
 		);
 	}

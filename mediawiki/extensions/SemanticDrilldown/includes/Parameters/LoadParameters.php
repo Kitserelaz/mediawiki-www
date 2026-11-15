@@ -2,7 +2,9 @@
 
 namespace SD\Parameters;
 
-use PageProps;
+use MediaWiki\Page\PageProps;
+use MediaWiki\Title\Title;
+use SD\Parameters\Title as SDTitle;
 
 class LoadParameters {
 
@@ -13,9 +15,9 @@ class LoadParameters {
 	}
 
 	public function __invoke( $category ): Parameters {
-		$title = \Title::newFromText( $category, NS_CATEGORY );
+		$title = Title::newFromText( $category, NS_CATEGORY );
 		$properties = $this->pageProps->getProperties( $title, [
-			Title::PAGE_PROPERTY_NAME,
+			SDTitle::PAGE_PROPERTY_NAME,
 			Header::PAGE_PROPERTY_NAME,
 			Footer::PAGE_PROPERTY_NAME,
 			Filters::PAGE_PROPERTY_NAME,
@@ -27,10 +29,10 @@ class LoadParameters {
 		}
 
 		$values = array_values( $properties )[0];
-		$get = fn ( $propertyName ) =>
+		$get = static fn ( $propertyName ) =>
 			array_key_exists( $propertyName, $values ) ? $values[ $propertyName ] : null;
 		return new Parameters(
-			Title::fromPropertyValue( $get( Title::PAGE_PROPERTY_NAME ) )->value,
+			SDTitle::fromPropertyValue( $get( SDTitle::PAGE_PROPERTY_NAME ) )->value,
 			Header::fromPropertyValue( $get( Header::PAGE_PROPERTY_NAME ) )->value,
 			Footer::fromPropertyValue( $get( Footer::PAGE_PROPERTY_NAME ) )->value,
 			Filters::fromPropertyValue( $get( Filters::PAGE_PROPERTY_NAME ) ),

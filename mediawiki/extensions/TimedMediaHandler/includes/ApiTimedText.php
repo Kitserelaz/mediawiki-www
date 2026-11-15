@@ -24,7 +24,6 @@
 
 namespace MediaWiki\TimedMediaHandler;
 
-use File;
 use LogicException;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiFormatRaw;
@@ -32,78 +31,50 @@ use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiResult;
 use MediaWiki\Api\ApiUsageException;
 use MediaWiki\Content\TextContent;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\FileRepo\RepoGroup;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\TimedMediaHandler\Handlers\TextHandler\TextHandler;
 use MediaWiki\Title\Title;
-use RepoGroup;
 use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\ParamValidator\ParamValidator;
-use WikiPage;
 
 /**
  * Implements the timedtext module that outputs subtitle files
  * for consumption by <track> elements
  *
  * @ingroup API
- * @emits error.code timedtext-notfound, invalidlang, invalid-title
  */
 class ApiTimedText extends ApiBase {
-	/** @var LanguageNameUtils */
-	private $languageNameUtils;
-
-	/** @var RepoGroup */
-	private $repoGroup;
-
-	/** @var WANObjectCache */
-	private $cache;
-
-	/** @var WikiPageFactory */
-	private $wikiPageFactory;
-
 	/** @var int version of the cache format */
 	private const CACHE_VERSION = 1;
 
 	/** @var int default 24 hours */
 	private const CACHE_TTL = 86400;
 
-	/**
-	 * @param ApiMain $main
-	 * @param string $action
-	 * @param LanguageNameUtils $languageNameUtils
-	 * @param RepoGroup $repoGroup
-	 * @param WANObjectCache $cache
-	 * @param WikiPageFactory $wikiPageFactory
-	 */
 	public function __construct(
 		ApiMain $main,
-		$action,
-		LanguageNameUtils $languageNameUtils,
-		RepoGroup $repoGroup,
-		WANObjectCache $cache,
-		WikiPageFactory $wikiPageFactory
+		string $action,
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly RepoGroup $repoGroup,
+		private readonly WANObjectCache $cache,
+		private readonly WikiPageFactory $wikiPageFactory,
 	) {
 		parent::__construct( $main, $action );
-		$this->languageNameUtils = $languageNameUtils;
-		$this->repoGroup = $repoGroup;
-		$this->cache = $cache;
-		$this->wikiPageFactory = $wikiPageFactory;
 	}
 
 	/**
 	 * URLs to this API endpoint are intended to be created internally and provided
 	 * opaquely in track lists. Not (yet) considered stable for external use.
-	 *
-	 * @return bool
 	 */
-	public function isInternal() {
+	public function isInternal(): bool {
 		return true;
 	}
 
 	/**
 	 * This module uses a raw printer to directly output SRT, VTT or other subtitle formats
-	 *
-	 * @return ApiFormatRaw
 	 */
 	public function getCustomPrinter(): ApiFormatRaw {
 		$printer = new ApiFormatRaw( $this->getMain(), null );
@@ -111,7 +82,7 @@ class ApiTimedText extends ApiBase {
 		return $printer;
 	}
 
-	public function execute() {
+	public function execute(): void {
 		$params = $this->extractRequestParams();
 
 		if ( $params['lang'] === null ) {
@@ -186,19 +157,15 @@ class ApiTimedText extends ApiBase {
 	}
 
 	/**
-	 * @param File $file
-	 * @param string $langCode
-	 * @param string $preferredFormat
-	 * @return WikiPage|null
 	 * @throws ApiUsageException
 	 */
-	protected function findTimedText( File $file, $langCode, $preferredFormat ) {
+	protected function findTimedText( File $file, string $langCode, string $preferredFormat ): ?WikiPage {
 		// In future, add TimedTextPage::VTT_SUBTITLE_FORMAT as a supported input format as well.
 		$sourceFormats = [ TimedTextPage::SRT_SUBTITLE_FORMAT ];
 
 		$textHandler = new TextHandler( $file, $sourceFormats );
 		$ns = $textHandler->getTimedTextNamespace();
-		if ( !$ns ) {
+		if ( $ns === null ) {
 			$this->dieWithError( 'apierror-timedmedia-no-timedtext-support', 'invalidconfig' );
 		}
 
@@ -237,7 +204,7 @@ class ApiTimedText extends ApiBase {
 	 * @param WikiPage $page the TimedText page being loaded
 	 * @return string text of the output in desired format
 	 */
-	protected function convertTimedText( $from, $to, $page ) {
+	protected function convertTimedText( string $from, string $to, WikiPage $page ): string {
 		$revId = $page->getLatest();
 		$key = $this->cache->makeKey(
 			'apitimedtext',
@@ -263,12 +230,7 @@ class ApiTimedText extends ApiBase {
 		);
 	}
 
-	/**
-	 * @param int $flags
-	 *
-	 * @return array
-	 */
-	public function getAllowedParams( $flags = 0 ) {
+	public function getAllowedParams( int $flags = 0 ): array {
 		$ret = [
 			'title' => [
 				ParamValidator::PARAM_TYPE => 'string',
@@ -300,7 +262,7 @@ class ApiTimedText extends ApiBase {
 	 * @see ApiBase::getExamplesMessages()
 	 * @return array of examples
 	 */
-	protected function getExamplesMessages() {
+	protected function getExamplesMessages(): array {
 		return [
 			'action=timedtext&title=File:Example.ogv&lang=de&trackformat=vtt'
 				=> 'apihelp-timedtext-example-1',
@@ -308,7 +270,7 @@ class ApiTimedText extends ApiBase {
 	}
 
 	/** @inheritDoc */
-	public function getHelpUrls() {
+	public function getHelpUrls(): string {
 		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/Extension:TimedMediaHandler';
 	}
 }

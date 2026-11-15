@@ -5,9 +5,10 @@ namespace WikibaseQuality\ConstraintReport\Tests\Specials;
 use DataValues\StringValue;
 use HamcrestPHPUnitIntegration;
 use MediaWiki\Config\MultiConfig;
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Request\FauxRequest;
-use SpecialPageTestBase;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use Wikibase\DataModel\Entity\EntityId;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\Property;
@@ -18,7 +19,7 @@ use Wikibase\Repo\WikibaseRepo;
 use WikibaseQuality\ConstraintReport\ConstraintsServices;
 use WikibaseQuality\ConstraintReport\Specials\SpecialConstraintReport;
 use WikibaseQuality\ConstraintReport\Tests\DefaultConfig;
-use Wikimedia\Stats\NullStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @covers WikibaseQuality\ConstraintReport\Specials\SpecialConstraintReport
@@ -55,7 +56,6 @@ class SpecialConstraintReportTest extends SpecialPageTestBase {
 	}
 
 	protected function newSpecialPage() {
-
 		return new SpecialConstraintReport(
 			WikibaseRepo::getEntityLookup(),
 			WikibaseRepo::getEntityTitleLookup(),
@@ -66,7 +66,7 @@ class SpecialConstraintReportTest extends SpecialPageTestBase {
 			ConstraintsServices::getDelegatingConstraintChecker(),
 			ConstraintsServices::getViolationMessageRendererFactory(),
 			self::getDefaultConfig(),
-			new NullStatsdDataFactory()
+			StatsFactory::newNull()
 		);
 	}
 
@@ -120,11 +120,14 @@ class SpecialConstraintReportTest extends SpecialPageTestBase {
 	 * @dataProvider provideRequestsAndMatchers
 	 */
 	public function testExecute( $subPage, array $request, $userLanguage, array $matchers ) {
+		$this->setGroupPermissions( '*', 'wbqc-check-constraints-uncached', true );
 		$request = new FauxRequest( $request );
 
-		// the added item is Q1; this solves the problem that the provider is executed before the test
-		$id = self::$idMap[ 'Q1' ];
-		$subPage = str_replace( '$id', $id->getSerialization(), $subPage );
+		if ( $subPage !== null ) {
+			// the added item is Q1; this solves the problem that the provider is executed before the test
+			$id = self::$idMap['Q1'];
+			$subPage = str_replace( '$id', $id->getSerialization(), $subPage );
+		}
 
 		// assert matchers
 		[ $output ] = $this->executeSpecialPage( $subPage, $request, $userLanguage );
@@ -179,6 +182,8 @@ class SpecialConstraintReportTest extends SpecialPageTestBase {
 
 		$cases[ 'invalid input 1' ] = [ 'Qwertz', [], $userLanguage, $matchers ];
 		$cases[ 'invalid input 2' ] = [ '300', [], $userLanguage, $matchers ];
+		$cases[ 'invalid input 3 (subpage)' ] = [ '_', [], $userLanguage, $matchers ];
+		$cases[ 'invalid input 3 (POST)' ] = [ null, [ 'entityid' => '_' ], $userLanguage, $matchers ];
 
 		// Valid input but entity does not exist
 		unset( $matchers[ 'error' ] );
@@ -206,7 +211,7 @@ class SpecialConstraintReportTest extends SpecialPageTestBase {
 		$matchers['result for'] = both(
 			withTagName( 'h3' )
 		)->andAlso(
-			havingTextContents( containsString( '(wbqc-constraintreport-result-headline) ' ) )
+			havingTextContents( containsString( '(wbqc-constraintreport-result-headline)(word-separator)' ) )
 		);
 
 		$matchers['result table'] = tagMatchingOutline(
@@ -264,6 +269,13 @@ class SpecialConstraintReportTest extends SpecialPageTestBase {
 		$cases[ 'valid input - existing item' ] = [ '$id', [], $userLanguage, $matchers ];
 
 		return $cases;
+	}
+
+	public function testExecuteAnonymous(): void {
+		$this->setGroupPermissions( '*', 'wbqc-check-constraints-uncached', false );
+
+		$this->expectException( PermissionsError::class );
+		$this->executeSpecialPage();
 	}
 
 }

@@ -16,124 +16,143 @@
  *
  * BetaFeatures styles.
  *
- * Stripped version of the core MediaWiki styles used for agora-style
- * checkboxes and feature fields.
- *
  * @copyright 2013 Mark Holmquist and others; see AUTHORS
  * @license GPL-2.0-or-later
  */
 
-@import 'mediawiki.mixins.less';
+@import 'mediawiki.skin.variables.less';
 
-@indent: 28px;
-
-table.mw-htmlform-container {
-	border-collapse: separate;
-	border-spacing: 0 4px;
-}
-
-.mw-htmlform-field-HTMLFeatureField .mw-input {
-	padding-top: 10px;
-}
+@beta-features-checkbox-indent: @spacing-200;
 
 .mw-ui-feature-header {
-	width: 100%;
-	border-bottom: 1px solid #eaecf0;
-	margin-bottom: 0.5em;
+	width: @size-full;
+	border-bottom: @border-width-base @border-style-base @border-color-muted;
+}
+
+.mw-ui-feature-main {
+	margin-top: @spacing-100;
 }
 
 .mw-ui-feature-meta,
 .mw-ui-feature-screenshot-contain,
-.mw-ui-feature-title-contain {
-	width: 50%;
+.mw-ui-feature-title-contain,
+.mw-ui-feature-info-links {
+	box-sizing: border-box;
+
+	@media ( min-width: @min-width-breakpoint-tablet ) {
+		display: inline-block;
+		width: @size-half;
+	}
 }
 
 .mw-ui-feature-info-links,
 .mw-ui-feature-title-contain {
-	display: inline-block;
 	vertical-align: bottom;
 }
 
-.mw-ui-feature-screenshot-contain,
-.mw-ui-feature-meta {
-	display: inline-block;
+.mw-ui-feature-meta,
+.mw-ui-feature-screenshot-contain {
 	vertical-align: top;
 }
 
-.mw-ui-feature-field {
-	margin-bottom: 68px;
-	position: relative;
+.mw-ui-feature-screenshot-contain {
+	@media ( max-width: @max-width-breakpoint-mobile ) {
+		margin-top: @spacing-100;
+	}
 }
 
-.mw-htmlform-field-HTMLHorizontalRuleField .mw-input hr {
-	background-color: #c8ccd1;
+.mw-ui-feature-meta {
+	padding-right: @spacing-100;
+}
+
+.mw-ui-feature-field {
+	margin-bottom: @spacing-400;
+	position: relative;
 }
 
 .mw-htmlform-field-HTMLHorizontalRuleField .mw-input hr,
 .mw-ui-feature-contain {
-	margin-left: @indent;
-	width: 80%;
+	margin-left: @beta-features-checkbox-indent;
+	transition: width @transition-duration-medium @transition-timing-function-system;
+
+	@media ( min-width: @min-width-breakpoint-tablet ) {
+		// Indent to full size minus 64px.
+		width: calc( @size-full - @size-400 );
+	}
 }
 
-.mw-body-content p.mw-ui-feature-description {
-	margin: 1em 0 0 0;
-	padding-right: 1em;
+.mw-htmlform-field-HTMLHorizontalRuleField .mw-input hr {
+	// <hr>s are close enough to borders, so use a @border- color,
+	// there's no matching background color variable
+	background-color: @border-color-subtle;
+}
+
+// Paragraphs in the description of a feature. Specificity to override MinervaNeue styles.
+.mw-special-Preferences .mw-htmlform-ooui .mw-ui-feature-description {
+	padding-right: @spacing-100;
+
+	@media ( max-width: @max-width-breakpoint-mobile ) {
+		margin-top: @spacing-100;
+		padding-right: 0;
+	}
 }
 
 .mw-ui-feature-discussion-link,
 .mw-ui-feature-info-link {
-	height: 24px;
-	line-height: 24px;
-	padding: 6px 10px;
 	display: inline-block;
-	border-left: 1px solid #eaecf0;
+	min-height: @size-150;
+	line-height: @size-200;
+	padding: @spacing-25 @spacing-50;
+	border-left: @border-width-base @border-style-base @border-color-muted;
 }
 
 .mw-ui-feature-info-links {
-	.oo-ui-iconWidget {
-		margin-right: 5px;
-		opacity: 0.8;
+	margin-top: @spacing-25;
+	// Ensure the info links are always side-by-side.
+	white-space: nowrap;
+
+	@media ( min-width: @min-width-breakpoint-desktop ) {
+		display: inline-block;
 	}
 
-	a:hover .oo-ui-iconWidget {
-		opacity: 1;
+	.oo-ui-iconWidget {
+		margin-right: @spacing-50;
 	}
 }
 
 .mw-ui-feature-screenshot {
-	margin: 1em 0 0 0;
-	max-height: 150px;
-	max-width: 100%;
+	max-height: @size-1200;
+	max-width: @size-full;
 }
 
 .mw-ui-feature-user-count {
-	color: #14866d;
-	margin: 1em 0 0 0;
+	color: @color-success;
+	margin: @spacing-100 0 0 0;
 }
 
 .mw-ui-feature-field .mw-ui-feature-checkbox {
-	float: left;
-
 	.oo-ui-fieldLayout.oo-ui-fieldLayout-align-inline {
 		margin-bottom: 0;
 	}
 }
 
 .mw-ui-feature-title-contain {
-	margin-left: -@indent;
-	margin-right: @indent;
+	margin-left: -@beta-features-checkbox-indent;
+	margin-right: @beta-features-checkbox-indent;
 
 	.oo-ui-fieldLayout-field {
-		padding-top: 0.4em;
+		padding-top: @spacing-25;
 
 		.skin-monobook & {
 			padding-top: 0.7em;
 		}
 	}
 
-	.oo-ui-labelElement-label {
-		font-size: 24px;
-		line-height: 36px;
+	// Overwrite MinervaNeue styles in second selector.
+	.oo-ui-labelElement-label,
+	.oo-ui-window-body.mw-mobile-pref-dialog-body & .oo-ui-labelElement-label {
+		font-size: @size-150;
+		line-height: @size-200;
 	}
 }
 
@@ -141,12 +160,11 @@ table.mw-htmlform-container {
 	margin-left: 0;
 
 	li {
-		color: #d73333;
+		color: @color-error;
 	}
 
 	> li {
-		list-style-type: none;
-		list-style-image: none;
+		list-style: none;
 	}
 
 	// Hidden by default, shown with JavaScript

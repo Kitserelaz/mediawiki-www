@@ -91,8 +91,8 @@
 		'<input type="checkbox" id="webfonts-enable-checkbox" class="cdx-checkbox__input" />' +
 		'<span class="cdx-checkbox__icon"></span>' +
 		'<label class="checkbox cdx-checkbox__label" for="webfonts-enable-checkbox" >' +
-		'<strong data-i18n="ext-uls-webfonts-settings-title"></strong> ' +
-		'<span data-i18n="ext-uls-webfonts-settings-info"></span> ' +
+		'<strong data-i18n="ext-uls-webfonts-settings-title"></strong>&nbsp;' +
+		'<span data-i18n="ext-uls-webfonts-settings-info"></span>&nbsp;' +
 		'<a target="_blank" href="https://www.mediawiki.org/wiki/Universal_Language_Selector/WebFonts" data-i18n="ext-uls-webfonts-settings-info-link"></a>' +
 		'</label>' +
 		'</div>' +
@@ -126,7 +126,7 @@
 		setupWebFonts: function () {
 			const d = $.Deferred();
 			mw.loader.using( [ 'ext.uls.webfonts.repository', '@wikimedia/codex' ] ).then( () => {
-				if ( this.isWebFontsEnabled ) {
+				if ( this.isWebFontsEnabled() ) {
 					mw.webfonts.setup();
 				}
 
@@ -205,7 +205,7 @@
 					);
 
 				new mw.Api().parse( $.i18n( 'ext-uls-display-settings-anon-log-in-cta' ) )
-					.done( ( parsedCta ) => {
+					.then( ( parsedCta ) => {
 						// The parsed CTA is HTML
 						$loginCta.html( parsedCta );
 						$loginCta.find( 'a' ).on( 'click', () => {
@@ -373,7 +373,7 @@
 			this.$template.attr( 'lang', language )
 				.css( 'font-family', '' );
 			$.i18n().locale = language;
-			mw.uls.loadLocalization( language ).done( () => {
+			mw.uls.loadLocalization( language ).then( () => {
 				this.i18n();
 				if ( this.$webfonts ) {
 					this.$webfonts.refresh();

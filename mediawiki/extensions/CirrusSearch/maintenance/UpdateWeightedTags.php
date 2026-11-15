@@ -2,7 +2,7 @@
 
 namespace CirrusSearch\Maintenance;
 
-use CirrusSearch\CirrusSearch;
+use CirrusSearch\WeightedTagsUpdater;
 use Generator;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\ProperPageIdentity;
@@ -13,28 +13,17 @@ use SplFileObject;
 /**
  * Update the weighted_tags field for a page for a specific tag.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
 require_once __DIR__ . '/../includes/Maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
 
 class UpdateWeightedTags extends Maintenance {
 	public function __construct() {
@@ -56,17 +45,20 @@ class UpdateWeightedTags extends Maintenance {
 		$this->validateParams();
 		foreach ( $this->getPageIdentities() as $pageIdentity ) {
 			$tagPrefix = $this->getOption( 'tagType' );
-			$cirrusSearch = new CirrusSearch();
+			/** @var WeightedTagsUpdater $updater */
+			$updater = $this->getServiceContainer()->getService( WeightedTagsUpdater::SERVICE );
 			if ( $this->hasOption( 'reset' ) ) {
-				$cirrusSearch->resetWeightedTags( $pageIdentity, $tagPrefix );
+				$updater->resetWeightedTags( $pageIdentity, [ $tagPrefix ] );
 			} else {
 				$tagNames = $this->getOption( 'tagName' );
 				$tagWeights = $this->getOption( 'weight' );
 				if ( $tagWeights !== null ) {
-					$tagWeights = array_map( 'intval', $tagWeights );
+					$tagWeights = array_map( static fn ( string $w ) => intval( $w ), $tagWeights );
 					$tagWeights = array_combine( $tagNames, $tagWeights );
+				} else {
+					$tagWeights = array_fill_keys( array_flip( $tagNames ), null );
 				}
-				$cirrusSearch->updateWeightedTags( $pageIdentity, $tagPrefix, $tagNames, $tagWeights );
+				$updater->updateWeightedTags( $pageIdentity, $tagPrefix, $tagWeights );
 			}
 		}
 	}
@@ -95,9 +87,7 @@ class UpdateWeightedTags extends Maintenance {
 			$tagWeights = $this->getOption( 'weight' );
 
 			if ( $tagNames === null ) {
-				if ( $tagWeights !== null ) {
-					$this->fatalError( '--weight should be used together with --tagName' );
-				}
+				$this->fatalError( '--tagName is mandatory when setting tags' );
 			} else {
 				if ( $tagWeights && count( $tagNames ) !== count( $tagWeights ) ) {
 					$this->fatalError( 'When --weight is used, it must occur the same number of times as --tagName' );
@@ -192,7 +182,7 @@ class UpdateWeightedTags extends Maintenance {
 			} else {
 				try {
 					$identifiers[] = $titleParser->parseTitle( $line );
-				} catch ( MalformedTitleException $e ) {
+				} catch ( MalformedTitleException ) {
 					$this->error( "Invalid page title: $line\n" );
 					continue;
 				}
@@ -205,5 +195,7 @@ class UpdateWeightedTags extends Maintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = UpdateWeightedTags::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

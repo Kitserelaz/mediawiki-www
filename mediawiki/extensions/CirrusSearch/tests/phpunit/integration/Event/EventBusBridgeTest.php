@@ -20,8 +20,11 @@ use MediaWiki\User\UserIdentity;
 use Wikimedia\UUID\GlobalIdGenerator;
 
 class EventBusBridgeTest extends CirrusIntegrationTestCase {
-	protected function setUp(): void {
+
+	public function setUp(): void {
 		parent::setUp();
+
+		$this->markTestSkippedIfExtensionNotLoaded( 'EventBus' );
 	}
 
 	/**
@@ -55,7 +58,7 @@ class EventBusBridgeTest extends CirrusIntegrationTestCase {
 		$this->assertNotInstanceOf( EventBusBridge::class, $service );
 	}
 
-	public function provideTestFactory(): array {
+	public static function provideTestFactory(): array {
 		return [
 			'enabled' => [ true ],
 			'disabled' => [ false ]
@@ -114,7 +117,7 @@ class EventBusBridgeTest extends CirrusIntegrationTestCase {
 		DeferredUpdates::doUpdates();
 	}
 
-	public function provideTestLinksUpdate(): array {
+	public static function provideTestLinksUpdate(): array {
 		return [
 			'no rerender on redirect, non null edit' => [ true, true, false, false ],
 			'no rerender on redirect, null edit' => [ true, true, true, false ],

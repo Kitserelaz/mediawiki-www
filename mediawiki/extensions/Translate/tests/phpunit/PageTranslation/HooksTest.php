@@ -3,18 +3,18 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
-use ContentHandler;
+use MediaWiki\Content\ContentHandler;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\Translate\HookHandler;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
 use MessageGroupTestTrait;
 use MockWikiValidationMessageGroup;
-use ParserOptions;
+use StatusValue;
 use Wikimedia\TestingAccessWrapper;
 
 /**
@@ -23,8 +23,8 @@ use Wikimedia\TestingAccessWrapper;
  * @license GPL-2.0-or-later
  * @group Database
  * @group medium
- * @covers MediaWiki\Extension\Translate\HookHandler
- * @covers MediaWiki\Extension\Translate\PageTranslation\Hooks
+ * @covers \MediaWiki\Extension\Translate\HookHandler
+ * @covers \MediaWiki\Extension\Translate\PageTranslation\Hooks
  */
 class HooksTest extends MediaWikiIntegrationTestCase {
 	use MessageGroupTestTrait;
@@ -151,7 +151,7 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 
 		$title = Title::newFromText( 'MediaWiki:translated/fi' );
 		$content = ContentHandler::makeContent( 'pupuliini', $title );
-		$status = new Status();
+		$status = new StatusValue();
 
 		$requestContext = new RequestContext();
 		$requestContext->setLanguage( 'en-gb' );
@@ -159,21 +159,21 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 
 		HookHandler::validateMessage( $requestContext, $content, $status, '', $plainUser );
 
-		$this->assertFalse( $status->isOK(),
+		$this->assertStatusNotOK( $status,
 			'translation with errors is not saved if a normal user is translating.' );
 		$this->assertGreaterThan( 0, $status->getErrors(),
 			'errors are specified when translation fails validation.' );
 
-		$newStatus = new Status();
+		$newStatus = new StatusValue();
 		$superUser = $this->getTestSysop()->getUser();
 
 		HookHandler::validateMessage( $requestContext, $content, $newStatus, '', $superUser );
 
-		$this->assertTrue( $newStatus->isOK(),
+		$this->assertStatusOK( $newStatus,
 			"translation with errors is saved if user with 'translate-manage' permission is translating." );
 	}
 
-	/** @covers MediaWiki\Extension\Translate\PageTranslation\Hooks::updateTranstagOnNullRevisions */
+	/** @covers \MediaWiki\Extension\Translate\PageTranslation\Hooks::updateTranstagOnNullRevisions */
 	public function testTagNullRevision() {
 		$title = Title::newFromText( 'translated' );
 		$status = $this->editPage(
@@ -191,7 +191,7 @@ class HooksTest extends MediaWikiIntegrationTestCase {
 			'Sanity: must tag revision 1 ready for translate'
 		);
 
-		$wikiPage = $this->getServiceContainer()->getWikiPageFactory()->newFromID( $title->getArticleID() );
+		$wikiPage = $this->getServiceContainer()->getWikiPageFactory()->newFromID( $title->getID() );
 
 		if ( method_exists( MediaWikiServices::class, 'getProtectPageFactory' ) ) {
 			// Planned future change (T292683)

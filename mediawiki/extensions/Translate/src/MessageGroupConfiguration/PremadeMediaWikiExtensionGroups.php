@@ -22,9 +22,7 @@ use UnexpectedValueException;
 class PremadeMediaWikiExtensionGroups {
 	protected string $idPrefix = 'ext-';
 	protected ?int $namespace = null;
-	/** @see __construct */
 	protected string $path;
-	/** @see __construct */
 	protected string $definitionFile;
 
 	/**
@@ -80,11 +78,14 @@ class PremadeMediaWikiExtensionGroups {
 	 * @param array $info array of group info
 	 */
 	protected function createMessageGroup( string $id, array $info ): MessageGroup {
-		$conf = [];
-		$conf['BASIC']['class'] = MediaWikiExtensionMessageGroup::class;
-		$conf['BASIC']['id'] = $id;
-		$conf['BASIC']['namespace'] = $this->getNamespace();
-		$conf['BASIC']['label'] = $info['name'];
+		$conf = [
+			'BASIC' => [
+				'class' => MediaWikiExtensionMessageGroup::class,
+				'id' => $id,
+				'namespace' => $this->getNamespace(),
+				'label' => $info['name'],
+			],
+		];
 
 		if ( isset( $info['desc'] ) ) {
 			$conf['BASIC']['description'] = $info['desc'];
@@ -92,8 +93,10 @@ class PremadeMediaWikiExtensionGroups {
 			$conf['BASIC']['descriptionmsg'] = $info['descmsg'];
 		}
 
-		$conf['FILES']['class'] = JsonFormat::class;
-		$conf['FILES']['sourcePattern'] = $this->path . '/' . $info['file'];
+		$conf['FILES'] = [
+			'class' => JsonFormat::class,
+			'sourcePattern' => $this->path . '/' . $info['file'],
+		];
 
 		// @todo Find a better way
 		if ( isset( $info['aliasfile'] ) ) {
@@ -106,9 +109,11 @@ class PremadeMediaWikiExtensionGroups {
 		}
 
 		if ( isset( $info['prefix'] ) ) {
-			$conf['MANGLER']['class'] = StringMatcher::class;
-			$conf['MANGLER']['prefix'] = $info['prefix'];
-			$conf['MANGLER']['patterns'] = $info['mangle'];
+			$conf['MANGLER'] = [
+				'class' => StringMatcher::class,
+				'prefix' => $info['prefix'],
+				'patterns' => $info['mangle'],
+			];
 
 			$mangler = new StringMatcher( $info['prefix'], $info['mangle'] );
 			if ( isset( $info['ignored'] ) ) {
@@ -177,7 +182,7 @@ class PremadeMediaWikiExtensionGroups {
 			$newGroup = [];
 
 			foreach ( $lines as $line ) {
-				if ( $line === '' || $line[0] === '#' ) {
+				if ( $line === '' || str_starts_with( $line, '#' ) ) {
 					continue;
 				}
 

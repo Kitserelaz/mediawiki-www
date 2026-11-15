@@ -2,9 +2,12 @@
 
 namespace MediaWiki\Extension\SecurePoll\Pages;
 
+use MediaWiki\Extension\SecurePoll\SpecialSecurePoll;
 use MediaWiki\Extension\SecurePoll\User\Voter;
+use MediaWiki\Html\Html;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\Title\Title;
-use MediaWiki\Xml\Xml;
 use Wikimedia\IPUtils;
 
 /**
@@ -13,6 +16,13 @@ use Wikimedia\IPUtils;
 class DetailsPage extends ActionPage {
 	/** @var int|null */
 	public $voteId;
+
+	public function __construct(
+		SpecialSecurePoll $specialPage,
+		private readonly JobQueueGroup $jobQueueGroup,
+	) {
+		parent::__construct( $specialPage );
+	}
 
 	/**
 	 * Execute the subpage.
@@ -29,7 +39,7 @@ class DetailsPage extends ActionPage {
 
 		$this->voteId = intval( $params[0] );
 
-		$db = $this->context->getDB();
+		$db = $this->context->getDB( DB_REPLICA );
 		$row = $db->newSelectQueryBuilder()
 			->select( '*' )
 			->from( 'securepoll_votes' )
@@ -60,9 +70,10 @@ class DetailsPage extends ActionPage {
 			$vote_ua = $row->vote_ua;
 		}
 
+		$electionId = $this->election->getId();
 		$this->specialPage->setSubtitle(
 			[
-				$this->specialPage->getPageTitle( 'list/' . $this->election->getId() ),
+				$this->specialPage->getPageTitle( 'list/' . $electionId ),
 				$this->msg( 'securepoll-list-title', $this->election->getMessage( 'title' ) )->text()
 			]
 		);
@@ -72,35 +83,31 @@ class DetailsPage extends ActionPage {
 
 			return;
 		}
+
 		// Show vote properties
 		$out->setPageTitleMsg( $this->msg( 'securepoll-details-title', $this->voteId ) );
 
 		$out->addHTML(
-			'<table class="mw-datatable TablePager">' . $this->detailEntry(
-				'securepoll-header-id',
-				$row->vote_id
-			) . $this->detailEntry(
-				'securepoll-header-timestamp',
-				$row->vote_timestamp
-			) . $this->detailEntry(
-				'securepoll-header-voter-name',
-				$row->voter_name
-			) . $this->detailEntry(
-				'securepoll-header-voter-type',
-				$row->voter_type
-			) . $this->detailEntry(
-				'securepoll-header-voter-domain',
-				$row->voter_domain
-			) . $this->detailEntry( 'securepoll-header-url', $row->voter_url ) . $this->detailEntry(
-				'securepoll-header-ip',
-				$vote_ip
-			) . $this->detailEntry( 'securepoll-header-xff', $vote_xff ) . $this->detailEntry(
-				'securepoll-header-ua',
-				$vote_ua
-			) . $this->detailEntry(
-				'securepoll-header-token-match',
-				$row->vote_token_match
-			) . '</table>'
+			'<table class="mw-datatable TablePager">' .
+			$this->detailEntry( 'securepoll-header-id', $row->vote_id ) .
+			$this->detailEntry( 'securepoll-header-timestamp', $row->vote_timestamp ) .
+			$this->detailEntry( 'securepoll-header-voter-name', $row->voter_name ) .
+			$this->detailEntry( 'securepoll-header-voter-type', $row->voter_type ) .
+			$this->detailEntry( 'securepoll-header-voter-domain', $row->voter_domain ) .
+			$this->detailEntry( 'securepoll-header-url', $row->voter_url )
+		);
+
+		if ( $this->specialPage->getAuthority()->isAllowed( 'securepoll-view-voter-pii' ) ) {
+			$out->addHTML(
+				$this->detailEntry( 'securepoll-header-ip', $vote_ip ) .
+				$this->detailEntry( 'securepoll-header-xff', $vote_xff ) .
+				$this->detailEntry( 'securepoll-header-ua', $vote_ua )
+			);
+		}
+
+		$out->addHTML(
+			$this->detailEntry( 'securepoll-header-token-match', $row->vote_token_match ) .
+			'</table>'
 		);
 
 		// Show voter properties
@@ -159,7 +166,7 @@ class DetailsPage extends ActionPage {
 				$out->addHTML(
 					'<tr>' . '<td>' . htmlspecialchars(
 						$lang->timeanddate( $row->cm_timestamp )
-					) . '</td>' . '<td>' . Xml::element(
+					) . '</td>' . '<td>' . Html::element(
 						'a',
 						[ 'href' => $voter->getUrl() ],
 						$voter->getName() . '@' . $voter->getDomain()
@@ -173,8 +180,29 @@ class DetailsPage extends ActionPage {
 		$out->addHTML( '<h2>' . $this->msg( 'securepoll-strike-log' )->escaped() . "</h2>\n" );
 		$pager = new StrikePager( $this, $this->voteId );
 		$out->addParserOutputContent(
-			$pager->getFullOutput()
+			$pager->getFullOutput(),
+			$this->context->getParserOptions()
 		);
+
+		// If someone that can see PII is viewing this details page (and the PII), log it
+		$securePollUseLogging = $this->specialPage->getConfig()->get( 'SecurePollUseLogging' );
+		$canViewPii = $this->specialPage->getUser()->isAllowed( 'securepoll-view-voter-pii' );
+		// if ( $isAdmin ) is checked above
+		if ( $securePollUseLogging && $canViewPii ) {
+			$fields = [
+				'spl_election_id' => $electionId,
+				'spl_user' => $this->specialPage->getUser()->getId(),
+				'spl_type' => self::LOG_TYPE_VIEWVOTEDETAILS,
+			];
+			$this->jobQueueGroup->push(
+				new JobSpecification(
+					'securePollLogAdminAction',
+					[ 'fields' => $fields ],
+					[],
+					$this->getTitle()
+				)
+			);
+		}
 	}
 
 	/**

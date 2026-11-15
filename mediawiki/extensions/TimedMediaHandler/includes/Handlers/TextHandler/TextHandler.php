@@ -11,11 +11,11 @@
 namespace MediaWiki\TimedMediaHandler\Handlers\TextHandler;
 
 use Exception;
-use File;
-use ForeignDBFile;
-use IForeignRepoWithDB;
-use IForeignRepoWithMWApi;
-use LocalRepo;
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\FileRepo\File\ForeignDBFile;
+use MediaWiki\FileRepo\IForeignRepoWithDB;
+use MediaWiki\FileRepo\IForeignRepoWithMWApi;
+use MediaWiki\FileRepo\LocalRepo;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\TimedMediaHandler\TimedText\ParseError;
 use MediaWiki\TimedMediaHandler\TimedText\SrtReader;
@@ -29,54 +29,35 @@ use Wikimedia\Rdbms\IResultWrapper;
 use Wikimedia\Rdbms\LikeValue;
 
 class TextHandler {
-	/** @var int|null lazy init remote Namespace number */
-	public $remoteNs;
-	/** @var string|null lazy init remote Namespace name */
-	public $remoteNsName;
-
-	/**
-	 * @var File
-	 */
-	protected $file;
-
-	/**
-	 * @var array of string keys for subtitle formats
-	 */
-	protected $formats;
+	/** Lazy init remote Namespace number */
+	public ?int $remoteNs = null;
+	/** Lazy init remote Namespace name */
+	public ?string $remoteNsName = null;
 
 	/**
 	 * @param File $file
-	 * @param array $formats
+	 * @param array $formats Array of string keys for subtitle formats
 	 */
 	public function __construct(
-		$file,
-		$formats = [ TimedTextPage::VTT_SUBTITLE_FORMAT, TimedTextPage::SRT_SUBTITLE_FORMAT ]
+		protected readonly File $file,
+		protected readonly array $formats = [ TimedTextPage::VTT_SUBTITLE_FORMAT, TimedTextPage::SRT_SUBTITLE_FORMAT ],
 	) {
-		$this->file = $file;
-		$this->formats = $formats;
 	}
 
 	/**
 	 * Get the timed text tracks elements as an associative array
-	 * @return array[]
 	 */
-	public function getTracks() {
-		if ( $this->file->isLocal() ) {
-			return $this->getLocalDbTextSources();
-		}
-		if ( $this->file instanceof ForeignDBFile ) {
-			return $this->getForeignDbTextSources();
-		}
-		if ( $this->file->getRepo() instanceof IForeignRepoWithMWApi ) {
+	public function getTracks(): array {
+		if ( $this->file->isLocal() || $this->file instanceof ForeignDBFile ) {
+			$data = $this->getTextPagesFromDb();
+			return $data ? $this->getTextTracksFromRows( $data ) : [];
+		} elseif ( $this->file->getRepo() instanceof IForeignRepoWithMWApi ) {
 			return $this->getRemoteTextSources( $this->file );
 		}
 		return [];
 	}
 
-	/**
-	 * @return false|int
-	 */
-	public function getTimedTextNamespace() {
+	public function getTimedTextNamespace(): ?int {
 		$repo = $this->file->getRepo();
 
 		if ( $this->file->isLocal() ) {
@@ -119,7 +100,7 @@ class TextHandler {
 			}
 		}
 
-		return false;
+		return null;
 	}
 
 	/**
@@ -127,15 +108,13 @@ class TextHandler {
 	 * the name of the file associated with this handler.
 	 *
 	 * If the file is on a foreign repo, will query the ForeignDb
-	 *
-	 * @return IResultWrapper|false
 	 */
-	private function getTextPagesFromDb() {
+	private function getTextPagesFromDb(): ?IResultWrapper {
 		$ns = $this->getTimedTextNamespace();
-		if ( $ns === false ) {
+		if ( $ns === null ) {
 			wfDebug( 'Repo: ' . $this->file->getRepoName() . " does not have a TimedText namespace \n" );
 			// No timed text namespace, don't try to look up timed text tracks
-			return false;
+			return null;
 		}
 
 		$repo = $this->file->getRepo();
@@ -155,19 +134,18 @@ class TextHandler {
 				->fetchResultSet();
 		}
 
-		return false;
+		return null;
 	}
 
 	/**
 	 * Build the api query to find TimedText pages belonging to a remote file
-	 * @return array|false
 	 */
-	public function getRemoteTextPagesQuery() {
+	private function getRemoteTextPagesQuery(): ?array {
 		$ns = $this->getTimedTextNamespace();
-		if ( $ns === false ) {
+		if ( $ns === null ) {
 			wfDebug( 'Repo: ' . $this->file->getRepoName() . " does not have a TimedText namespace \n" );
 			// No timed text namespace, don't try to look up timed text tracks
-			return false;
+			return null;
 		}
 		$canonicalTitle = Title::makeName(
 			$this->file->getTitle()->getNamespace(),
@@ -189,9 +167,8 @@ class TextHandler {
 	/**
 	 * Retrieve the text sources belonging to a remote file
 	 * @param File $file The File's repo must implement IForeignRepoWithMWApi
-	 * @return array[]
 	 */
-	private function getRemoteTextSources( File $file ) {
+	private function getRemoteTextSources( File $file ): array {
 		$regenerator = function () use ( $file ) {
 			/** @var IForeignRepoWithMWApi $repo */
 			$repo = $file->getRepo();
@@ -199,7 +176,7 @@ class TextHandler {
 			wfDebug( "Get text tracks from remote api \n" );
 			$query = $this->getRemoteTextPagesQuery();
 			// Error in getting timed text namespace return empty array;
-			if ( $query === false || !( $repo instanceof IForeignRepoWithMWApi ) ) {
+			if ( $query === null || !( $repo instanceof IForeignRepoWithMWApi ) ) {
 				return [];
 			}
 
@@ -230,37 +207,12 @@ class TextHandler {
 	}
 
 	/**
-	 * Retrieve the text sources belonging to a foreign db accessible file
-	 * @return array[]
-	 */
-	public function getForeignDbTextSources() {
-		$data = $this->getTextPagesFromDb();
-		if ( $data !== false ) {
-			return $this->getTextTracksFromRows( $data );
-		}
-		return [];
-	}
-
-	/**
-	 * Retrieve the text sources belonging to a local file
-	 * @return array[]
-	 */
-	public function getLocalDbTextSources() {
-		$data = $this->getTextPagesFromDb();
-		if ( $data !== false ) {
-			return $this->getTextTracksFromRows( $data );
-		}
-		return [];
-	}
-
-	/**
 	 * Build an array of track information using a Database result
 	 * Handles both local and foreign Db results
 	 *
 	 * @param IResultWrapper $data Database result with page titles
-	 * @return array[]
 	 */
-	public function getTextTracksFromRows( IResultWrapper $data ) {
+	public function getTextTracksFromRows( IResultWrapper $data ): array {
 		$textTracks = [];
 
 		$services = MediaWikiServices::getInstance();
@@ -300,9 +252,8 @@ class TextHandler {
 	/**
 	 * Build an array of track information using an API result
 	 * @param mixed $data JSON decoded result from a query API request
-	 * @return array[]
 	 */
-	public function getTextTracksFromData( $data ) {
+	public function getTextTracksFromData( $data ): array {
 		$textTracks = [];
 		foreach ( $data['query']['pages'] ?? [] as $page ) {
 			foreach ( $page['videoinfo'] ?? [] as $info ) {
@@ -319,12 +270,7 @@ class TextHandler {
 		return $textTracks;
 	}
 
-	/**
-	 * @param string $timedTextExtension
-	 *
-	 * @return string
-	 */
-	public function getContentType( $timedTextExtension ) {
+	public function getContentType( string $timedTextExtension ): string {
 		if ( $timedTextExtension === TimedTextPage::SRT_SUBTITLE_FORMAT ) {
 			return 'text/x-srt';
 		}
@@ -337,12 +283,8 @@ class TextHandler {
 	/**
 	 * Retrieve a url to the raw subtitle file
 	 * Only use for local and foreignDb requests
-	 *
-	 * @param string $lang
-	 * @param string $format
-	 * @return string
 	 */
-	public function getFullURL( $lang, $format ) {
+	public function getFullURL( string $lang, string $format ): string {
 		$title = $this->file->getTitle();
 		// Note we need to use the canonical namespace in case this is a
 		// foreign DB repo (Wikimedia Commons style) in a different language
@@ -384,7 +326,7 @@ class TextHandler {
 	 * @param ParseError[] &$errors optional outparam to capture errors
 	 * @return string destination-formatted subtitles
 	 */
-	public static function convertSubtitles( $from, $to, $data, &$errors = [] ) {
+	public static function convertSubtitles( string $from, string $to, string $data, array &$errors = [] ): string {
 		// Note that we convert even if the format is the same, to ensure
 		// data format integrity.
 		//

@@ -7,11 +7,14 @@
  */
 
 use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Content\ContentHandler;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\RevTagStore;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Page\PageReference;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Storage\EditResult;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 
@@ -19,7 +22,8 @@ use MediaWiki\User\UserIdentity;
  * Tests for fuzzy flag change on edits.
  * @group Database
  * @group medium
- * @covers MediaWiki\Extension\Translate\TranslatorInterface\TranslateEditAddons
+ * @covers \MediaWiki\Extension\Translate\TranslatorInterface\TranslateEditAddons
+ * @covers \MediaWiki\Extension\Translate\HookHandler::onRevisionRecordInserted
  */
 class TranslationFuzzyUpdaterTest extends MediaWikiIntegrationTestCase {
 	use MessageGroupTestTrait;
@@ -49,6 +53,21 @@ class TranslationFuzzyUpdaterTest extends MediaWikiIntegrationTestCase {
 		$contentObj = ContentHandler::makeContent( $content, $page->getTitle() );
 		$updater = $page->newPageUpdater( $user )->setContent( SlotRecord::MAIN, $contentObj );
 		$revisionRecord = $updater->saveRevision( CommentStoreComment::newUnsavedComment( $comment ) );
+		$this->assertTrue( $updater->wasSuccessful(), "Saving edit should have suceeded" );
+		return $revisionRecord;
+	}
+
+	private function saveRevert(
+		WikiPage $page,
+		string $content,
+		UserIdentity $user,
+		int $revertMethod,
+		int $revertedId
+	): ?RevisionRecord {
+		$contentObj = ContentHandler::makeContent( $content, $page->getTitle() );
+		$updater = $page->newPageUpdater( $user )->setContent( SlotRecord::MAIN, $contentObj );
+		$updater->markAsRevert( $revertMethod, $revertedId );
+		$revisionRecord = $updater->saveRevision( CommentStoreComment::newUnsavedComment( __METHOD__ ) );
 		$this->assertTrue( $updater->wasSuccessful(), "Saving edit should have suceeded" );
 		return $revisionRecord;
 	}
@@ -139,10 +158,21 @@ class TranslationFuzzyUpdaterTest extends MediaWikiIntegrationTestCase {
 			'Failed unfuzzy should not have generated log entry'
 		);
 
-		// Now add the required rights and try null-edit unfuzzy again
+		// Now add the required rights
 		$rightsCallback = $permissionManager->addTemporaryUserRights( $user,
 			[ 'editinterface', 'unfuzzy' ]
 		);
+
+		// Test that PageUpdater dummy revisions (like page moves, protections, etc. ) don't unfuzzy
+		$page->newPageUpdater( $user )->saveDummyRevision( CommentStoreComment::newUnsavedComment( 'Blah' ) );
+		$this->assertTrue( $handle->isFuzzy(), 'Dummy revision should not unfuzzy' );
+		$this->assertEquals(
+			$oldLastLogId,
+			$this->getLastLogId( $title ),
+			'Failed unfuzzy should not have generated log entry'
+		);
+
+		// Try null-edit unfuzzy again
 		$nullEditUnfuzzySummaries = [
 			[
 				'',
@@ -208,6 +238,48 @@ class TranslationFuzzyUpdaterTest extends MediaWikiIntegrationTestCase {
 			$this->getLastLogId( $title ),
 			'Unfuzzying translation with changes should not have created a log entry'
 		);
+	}
+
+	public function testFuzzyHandlingOnUndo() {
+		// Setup
+		$user = $this->getTestUser()->getUser();
+		$container = $this->getServiceContainer();
+		$container->getPermissionManager()->overrideUserRightsForTesting( $user, [ 'editinterface', 'unfuzzy' ] );
+		$title = Title::newFromText( 'MediaWiki:Ugakey/nl' );
+		$page = $container->getWikiPageFactory()->newFromTitle( $title );
+		$originalRevisionRecord = $this->saveRevision( $page, '$1 van $2', $user );
+		$this->fuzzyRevision( $originalRevisionRecord );
+		$handle = new MessageHandle( $title );
+
+		// Manual reverts aren't handled specially
+		$tweakManual = $this->saveRevision( $page, '$1 van $2 tweaked', $user );
+		$this->assertFalse( $handle->isFuzzy() );
+		$revertRevision = $this->saveRevert( $page, '$1 van $2', $user,
+			EditResult::REVERT_MANUAL, $tweakManual->getId()
+		);
+		$this->assertFalse( $handle->isFuzzy(), "Undo detection shouldn't work on manual reverts" );
+		$this->fuzzyRevision( $revertRevision );
+
+		// Undos and rollbacks are
+		$revertMechanisms = [ EditResult::REVERT_UNDO, EditResult::REVERT_ROLLBACK ];
+		foreach ( $revertMechanisms as $revertHow ) {
+			$tweakedRevert = $this->saveRevision( $page, '$1 van $2 tweaked 2', $user );
+			$this->assertFalse( $handle->isFuzzy() );
+			$revertRevision = $this->saveRevert( $page, '$1 van $2', $user,
+				$revertHow, $tweakedRevert->getId()
+			);
+			$this->assertTrue( $handle->isFuzzy(), "Undoing or rolling back edit should refuzzy" );
+		}
+
+		// Make sure you can't unfuzzy by reverting to an unfuzzy version if you don't have permission to do so
+		// (the code doesn't actually detect reverts to unfuzzy, but it's worth testing anyway)
+
+		$container->getPermissionManager()->overrideUserRightsForTesting( $user, [] );
+		$this->saveRevert(
+			$page, '$1 van $2 tweaked 2', $user,
+			EditResult::REVERT_UNDO, $revertRevision->getId()
+		);
+		$this->assertTrue( $handle->isFuzzy(), "Undoing without permission should not unfuzzy" );
 	}
 
 	public function testValidationFuzzy() {

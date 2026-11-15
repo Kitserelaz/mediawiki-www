@@ -18,13 +18,44 @@ ve.dm.InternalList = function VeDmInternalList( doc ) {
 	OO.EventEmitter.call( this );
 
 	// Properties
+	/**
+	 * @private Please use {@link #getDocument} instead
+	 * @property {ve.dm.Document} document The document this internal list is in a 1:1 relationship
+	 * with
+	 */
 	this.document = doc;
+
+	/**
+	 * @private See {@link #queueItemHtml}
+	 * @property {string[]} itemHtmlQueue Array of HTML strings. Emptied after {@link #convertToData}
+	 * is called.
+	 */
 	this.itemHtmlQueue = [];
+
+	/**
+	 * @private See {@link #getListNode}
+	 * @property {ve.dm.InternalListNode|null} listNode The corresponding data model node this meta
+	 * item belongs to. Lazy-initialized via {@link #getListNode}.
+	 */
 	this.listNode = null;
+
+	/**
+	 * @private Please use {@link #getNodeGroups} instead
+	 * @property {Object.<string,ve.dm.InternalListNodeGroup>} nodes Keyed by group name
+	 */
 	this.nodes = {};
+
+	/**
+	 * @private See {@link #markGroupAsChanged}
+	 * @property {string[]} groupsChanged Array of group names; array index is meaningless
+	 */
 	this.groupsChanged = [];
+
+	/**
+	 * @private Please use {@link #getKeyIndex} instead
+	 * @property {Object.<string,number>} keyIndexes Internal item index, keyed by "groupName/key"
+	 */
 	this.keyIndexes = {};
-	this.keys = [];
 
 	// Event handlers
 	doc.connect( this, { transact: 'onTransact' } );
@@ -52,7 +83,7 @@ OO.mixinClass( ve.dm.InternalList, OO.EventEmitter );
  * @param {string} groupName Item group
  * @param {string} key Item key
  * @param {string} html Item contents
- * @return {Object} Object containing index of the item in the index-value store
+ * @return {{index: number, isNew: boolean}} Object containing index of the item in the index-value store
  * (and also its index in the internal list node), and a flag indicating if it is a new item.
  */
 ve.dm.InternalList.prototype.queueItemHtml = function ( groupName, key, html ) {
@@ -69,19 +100,8 @@ ve.dm.InternalList.prototype.queueItemHtml = function ( groupName, key, html ) {
 		this.itemHtmlQueue[ index ] = html;
 		isNew = true;
 	}
-	return {
-		index: index,
-		isNew: isNew
-	};
-};
 
-/**
- * Gets all the item's HTML strings
- *
- * @return {Object} Name-indexed object containing HTMLElements
- */
-ve.dm.InternalList.prototype.getItemHtmlQueue = function () {
-	return this.itemHtmlQueue;
+	return { index, isNew };
 };
 
 /**
@@ -101,13 +121,7 @@ ve.dm.InternalList.prototype.getDocument = function () {
 ve.dm.InternalList.prototype.getListNode = function () {
 	// Find listNode if not set, or unattached
 	if ( !this.listNode || !this.listNode.doc ) {
-		const nodes = this.getDocument().getDocumentNode().children;
-		for ( let i = nodes.length; i >= 0; i-- ) {
-			if ( nodes[ i ] instanceof ve.dm.InternalListNode ) {
-				this.listNode = nodes[ i ];
-				break;
-			}
-		}
+		this.listNode = this.getDocument().getNodesByType( 'internalList' )[ 0 ];
 	}
 	return this.listNode;
 };
@@ -124,8 +138,8 @@ ve.dm.InternalList.prototype.getItemNodeCount = function () {
 /**
  * Get the item node from a specific index.
  *
- * @param {number} index Item index
- * @return {ve.dm.InternalItemNode} Item node
+ * @param {number} index Item index, use {@link #getKeyIndex} to map group and key to an index
+ * @return {ve.dm.InternalItemNode|undefined}
  */
 ve.dm.InternalList.prototype.getItemNode = function ( index ) {
 	return this.getListNode().children[ index ];
@@ -134,7 +148,7 @@ ve.dm.InternalList.prototype.getItemNode = function ( index ) {
 /**
  * Get all node groups.
  *
- * @return {Object.<string,Object>} Node groups, keyed by group name
+ * @return {Object.<string,ve.dm.InternalListNodeGroup>} Node groups, keyed by group name
  */
 ve.dm.InternalList.prototype.getNodeGroups = function () {
 	return this.nodes;
@@ -144,39 +158,10 @@ ve.dm.InternalList.prototype.getNodeGroups = function () {
  * Get the node group object for a specified group name.
  *
  * @param {string} groupName Name of the group
- * @return {Object|undefined} Node group object, containing nodes and key order array
+ * @return {ve.dm.InternalListNodeGroup|undefined} Node group object, containing nodes and key order array
  */
 ve.dm.InternalList.prototype.getNodeGroup = function ( groupName ) {
 	return this.nodes[ groupName ];
-};
-
-/**
- * Get a unique list key for a given group.
- *
- * The returned list key is added to the list of unique list keys used in this group so that it
- * won't be allocated again. It will also be associated to oldListKey so that if the same oldListKey
- * is passed in again later, the previously allocated name will be returned.
- *
- * @param {string} groupName Name of the group
- * @param {string} oldListKey Current list key to associate the generated list key with
- * @param {string} prefix Prefix to distinguish generated keys from non-generated ones
- * @return {string} Generated unique list key, or existing unique key associated with oldListKey
- */
-ve.dm.InternalList.prototype.getUniqueListKey = function ( groupName, oldListKey, prefix ) {
-	const group = this.getNodeGroup( groupName );
-
-	if ( group.uniqueListKeys[ oldListKey ] !== undefined ) {
-		return group.uniqueListKeys[ oldListKey ];
-	}
-
-	let num = 0;
-	while ( group.keyedNodes[ prefix + num ] || group.uniqueListKeysInUse[ prefix + num ] ) {
-		num++;
-	}
-
-	group.uniqueListKeys[ oldListKey ] = prefix + num;
-	group.uniqueListKeysInUse[ prefix + num ] = true;
-	return prefix + num;
 };
 
 /**
@@ -199,32 +184,32 @@ ve.dm.InternalList.prototype.getNextUniqueNumber = function () {
  *
  * Stored HTML is deleted after conversion.
  *
- * @param {ve.dm.Converter} converter
+ * @param {ve.dm.ModelFromDomConverter} converter
  * @param {HTMLDocument} doc Document to create nodes in
- * @return {Array} Linear model data
+ * @return {ve.dm.LinearData.Item[]} Linear model data
  */
 ve.dm.InternalList.prototype.convertToData = function ( converter, doc ) {
-	const itemHtmlQueue = this.getItemHtmlQueue();
+	const itemHtmlQueue = this.itemHtmlQueue;
 
 	const list = [];
 	list.push( { type: 'internalList' } );
-	for ( let i = 0, length = itemHtmlQueue.length; i < length; i++ ) {
-		if ( itemHtmlQueue[ i ] !== '' ) {
+	itemHtmlQueue.forEach( ( html ) => {
+		if ( html !== '' ) {
 			const div = doc.createElement( 'div' );
-			div.innerHTML = itemHtmlQueue[ i ];
-			const itemData = [].concat(
+			div.innerHTML = html;
+			const itemData = [
 				{ type: 'internalItem' },
-				converter.getDataFromDomSubtree( div ),
+				...converter.getDataFromDomSubtree( div ),
 				{ type: '/internalItem' }
-			);
+			];
 			if ( !converter.isFromClipboard() ) {
-				itemData[ 0 ].attributes = { originalHtml: itemHtmlQueue[ i ] };
+				itemData[ 0 ].attributes = { originalHtml: html };
 			}
 			ve.batchPush( list, itemData );
 		} else {
 			list.push( { type: 'internalItem' }, { type: '/internalItem' } );
 		}
-	}
+	} );
 	list.push( { type: '/internalList' } );
 	// After conversion we no longer need the HTML
 	this.itemHtmlQueue = [];
@@ -236,48 +221,35 @@ ve.dm.InternalList.prototype.convertToData = function ( converter, doc ) {
  *
  * @param {string} groupName Item group
  * @param {string} key Item key
- * @param {Array} data Linear model data
- * @return {Object} Object containing the transaction (or null if none required)
- * and the new item's index within the list
+ * @param {ve.dm.LinearData.Item[]} data Linear model data
+ * @return {{transaction: ve.dm.Transaction|null, index: number}} Object containing the transaction
+ *  (or null if none required) and the new item's index within the list
  */
 ve.dm.InternalList.prototype.getItemInsertion = function ( groupName, key, data ) {
 	let index = this.getKeyIndex( groupName, key );
-
-	let tx;
-	if ( index === undefined ) {
-		index = this.getItemNodeCount();
-		this.keyIndexes[ groupName + '/' + key ] = index;
-
-		const itemData = [].concat( { type: 'internalItem' }, data, { type: '/internalItem' } );
-		tx = ve.dm.TransactionBuilder.static.newFromInsertion(
-			this.getDocument(),
-			this.getListNode().getRange().end,
-			itemData
-		);
-	} else {
-		tx = null;
+	if ( index !== undefined ) {
+		return {
+			transaction: null,
+			index
+		};
 	}
 
+	index = this.getItemNodeCount();
+	this.keyIndexes[ groupName + '/' + key ] = index;
 	return {
-		transaction: tx,
-		index: index
+		transaction: ve.dm.TransactionBuilder.static.newFromInsertion(
+			this.getDocument(),
+			this.getListNode().getRange().end,
+			[ { type: 'internalItem' }, ...data, { type: '/internalItem' } ]
+		),
+		index
 	};
-};
-
-/**
- * Get position of a key within a group
- *
- * @param {string} groupName Name of the group
- * @param {string} key Name of the key
- * @return {number} Position within the key ordering for that group
- */
-ve.dm.InternalList.prototype.getIndexPosition = function ( groupName, key ) {
-	return this.nodes[ groupName ].indexOrder.indexOf( key );
 };
 
 /**
  * Get the internal item index of a group key if it already exists
  *
+ * @private
  * @param {string} groupName Item group
  * @param {string} key Item name
  * @return {number|undefined} The index of the group key, or undefined if it doesn't exist yet
@@ -291,52 +263,23 @@ ve.dm.InternalList.prototype.getKeyIndex = function ( groupName, key ) {
  *
  * @param {string} groupName Item group
  * @param {string} key Item name
- * @param {number} index Item index
- * @param {ve.dm.Node} node Item node
+ * @param {number} index New item index, or an existing one to replace an item
+ * @param {ve.dm.Node} node Reference node to add
  */
 ve.dm.InternalList.prototype.addNode = function ( groupName, key, index, node ) {
 	let group = this.nodes[ groupName ];
 	// The group may not exist yet
-	if ( group === undefined ) {
-		group = this.nodes[ groupName ] = {
-			keyedNodes: {},
-			firstNodes: [],
-			indexOrder: [],
-			uniqueListKeys: {},
-			uniqueListKeysInUse: {}
-		};
+	if ( !group ) {
+		group = this.nodes[ groupName ] = new ve.dm.InternalListNodeGroup();
 	}
-	let keyedNodes = group.keyedNodes[ key ];
-	this.keys[ index ] = key;
-	// The key may not exist yet
-	if ( keyedNodes === undefined ) {
-		keyedNodes = group.keyedNodes[ key ] = [];
-	}
+
 	if ( node.getDocument().buildingNodeTree ) {
 		// If the document is building the original node tree
 		// then every item is being added in order, so we don't
 		// need to worry about sorting.
-		keyedNodes.push( node );
-		if ( keyedNodes.length === 1 ) {
-			group.firstNodes[ index ] = node;
-		}
+		group.appendNodeWithKnownIndex( key, node, index );
 	} else {
-		// TODO: We could use binary search insertion sort
-		const start = node.getRange().start;
-		let i, len;
-		for ( i = 0, len = keyedNodes.length; i < len; i++ ) {
-			if ( start < keyedNodes[ i ].getRange().start ) {
-				break;
-			}
-		}
-		// 'i' is now the insertion point, so add the node here
-		keyedNodes.splice( i, 0, node );
-		if ( i === 0 ) {
-			group.firstNodes[ index ] = node;
-		}
-	}
-	if ( group.indexOrder.indexOf( index ) === -1 ) {
-		group.indexOrder.push( index );
+		group.insertNodeInDocumentOrder( key, node, index );
 	}
 	this.markGroupAsChanged( groupName );
 };
@@ -344,10 +287,11 @@ ve.dm.InternalList.prototype.addNode = function ( groupName, key, index, node ) 
 /**
  * Mark a node group as having been changed since the last transaction.
  *
+ * @private
  * @param {string} groupName Name of group which has changed
  */
 ve.dm.InternalList.prototype.markGroupAsChanged = function ( groupName ) {
-	if ( this.groupsChanged.indexOf( groupName ) === -1 ) {
+	if ( !this.groupsChanged.includes( groupName ) ) {
 		this.groupsChanged.push( groupName );
 	}
 };
@@ -355,17 +299,19 @@ ve.dm.InternalList.prototype.markGroupAsChanged = function ( groupName ) {
 /**
  * Handle document transaction events
  *
+ * @private
  * @fires ve.dm.InternalList#update
  */
 ve.dm.InternalList.prototype.onTransact = function () {
-	if ( this.groupsChanged.length > 0 ) {
-		// length will almost always be 1, so probably better to not cache it
-		for ( let i = 0; i < this.groupsChanged.length; i++ ) {
-			this.sortGroupIndexes( this.nodes[ this.groupsChanged[ i ] ] );
-		}
-		this.emit( 'update', this.groupsChanged );
-		this.groupsChanged = [];
+	if ( !this.groupsChanged.length ) {
+		return;
 	}
+
+	this.groupsChanged
+		.map( ( groupName ) => this.getNodeGroup( groupName ) )
+		.forEach( ( nodeGroup ) => nodeGroup.sortGroupIndexes() );
+	this.emit( 'update', this.groupsChanged );
+	this.groupsChanged = [];
 };
 
 /**
@@ -374,60 +320,18 @@ ve.dm.InternalList.prototype.onTransact = function () {
  * @param {string} groupName Item group
  * @param {string} key Item name
  * @param {number} index Item index
- * @param {ve.dm.Node} node Item node
+ * @param {ve.dm.Node} node Reference node to remove
  */
 ve.dm.InternalList.prototype.removeNode = function ( groupName, key, index, node ) {
-	const group = this.nodes[ groupName ];
-	const keyedNodes = group.keyedNodes[ key ];
-	for ( let i = 0, len = keyedNodes.length; i < len; i++ ) {
-		if ( keyedNodes[ i ] === node ) {
-			keyedNodes.splice( i, 1 );
-			if ( i === 0 ) {
-				group.firstNodes[ index ] = keyedNodes[ 0 ];
-			}
-			break;
-		}
-	}
-	// If the all the items in this key have been removed
-	// then remove this index from indexOrder and firstNodes
-	if ( keyedNodes.length === 0 ) {
-		delete group.keyedNodes[ key ];
-		delete group.firstNodes[ index ];
-		const j = group.indexOrder.indexOf( index );
-		group.indexOrder.splice( j, 1 );
-	}
+	this.getNodeGroup( groupName ).unsetNode( key, node );
 	this.markGroupAsChanged( groupName );
-};
-
-/**
- * Sort the indexOrder array within a group object.
- *
- * Items are sorted by the start offset of their firstNode, unless that node
- * has the 'placeholder' attribute, in which case it moved to the end of the
- * list, where it should be ignored.
- *
- * @param {Object} group
- */
-ve.dm.InternalList.prototype.sortGroupIndexes = function ( group ) {
-	// Sort indexOrder
-	group.indexOrder.sort( ( index1, index2 ) => {
-		// Sometimes there is no node at the time of sorting (T350902) so move these to the end to be ignored
-		if ( !group.firstNodes[ index1 ] ) {
-			return !group.firstNodes[ index2 ] ? 0 : 1;
-		}
-		// Sort placeholder nodes to the end, so they don't interfere with numbering
-		if ( group.firstNodes[ index1 ].getAttribute( 'placeholder' ) ) {
-			return group.firstNodes[ index2 ].getAttribute( 'placeholder' ) ? 0 : 1;
-		}
-		return group.firstNodes[ index1 ].getRange().start - group.firstNodes[ index2 ].getRange().start;
-	} );
 };
 
 /**
  * Clone this internal list.
  *
  * @param {ve.dm.Document} [doc] The new list's document. Defaults to this list's document.
- * @return {ve.dm.InternalList} Clone of this internal
+ * @return {ve.dm.InternalList}
  */
 ve.dm.InternalList.prototype.clone = function ( doc ) {
 	const clone = new this.constructor( doc || this.getDocument() );
@@ -446,14 +350,20 @@ ve.dm.InternalList.prototype.clone = function ( doc ) {
  *
  * @param {ve.dm.InternalList} list Internal list to merge into this list
  * @param {number} commonLength The number of elements, counted from the beginning, that the lists have in common
- * @return {Object} 'mapping' is an object mapping indexes in list to indexes in this; newItemRanges is an array
- *  of ranges of internal nodes in list's document that should be copied into our document
+ * @return {{mapping: Object.<number,number>, newItemRanges: ve.Range[]}} mapping is an object
+ *  mapping indexes in list to indexes in this; newItemRanges is an array of ranges of internal
+ *  nodes in list's document that should be copied into our document
  */
 ve.dm.InternalList.prototype.merge = function ( list, commonLength ) {
 	const listLen = list.getItemNodeCount(),
 		newItemRanges = [],
 		mapping = {};
 	let nextIndex = this.getItemNodeCount();
+
+	if ( list.keyIndexes && list.keyIndexes.length ) {
+		// Looking for potentinally dead code here T416558
+		ve.error( 'T416558 ve.dm.InternalList.merge() list.keyIndexes not empty' );
+	}
 
 	for ( let i = 0; i < commonLength; i++ ) {
 		mapping[ i ] = i;
@@ -484,8 +394,5 @@ ve.dm.InternalList.prototype.merge = function ( list, commonLength ) {
 			newItemRanges.push( list.getItemNode( i ).getOuterRange() );
 		}
 	}
-	return {
-		mapping: mapping,
-		newItemRanges: newItemRanges
-	};
+	return { mapping, newItemRanges };
 };

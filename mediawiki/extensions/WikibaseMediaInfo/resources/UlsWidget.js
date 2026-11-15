@@ -1,7 +1,5 @@
 'use strict';
 
-var UlsWidget;
-
 /**
  * @constructor
  * @param {Object} [config]
@@ -9,7 +7,7 @@ var UlsWidget;
  * @param {Object} [config.language] Language code for default language
  * @param {Object} [config.label] Label for dropdown
  */
-UlsWidget = function ( config ) {
+const UlsWidget = function ( config ) {
 	this.languageValue = '';
 	this.label = config.label || '';
 
@@ -43,14 +41,14 @@ OO.inheritClass( UlsWidget, OO.ui.Widget );
  * @param {Object} [languages] Keys are 2-letter language codes, values are language autonyms
  */
 UlsWidget.prototype.initialiseUls = function ( languages ) {
-	var ulsWidget = this;
+	const ulsWidget = this;
 
 	this.languages = languages;
 
 	this.uls = this.dropdown.$handle.uls( {
 		onSelect: function ( language ) {
 			ulsWidget.setValue( language );
-			ulsWidget.dropdown.$handle.focus();
+			ulsWidget.dropdown.$handle.trigger( 'focus' );
 		},
 		onReady: function () {
 			// ULS throws away languages for which it doesn't have any data,
@@ -66,7 +64,7 @@ UlsWidget.prototype.initialiseUls = function ( languages ) {
 		onVisible: function () {
 			// Re-position the ULS *after* the widget has been rendered, so that we can be
 			// sure it's in the right place
-			var offset = ulsWidget.$element.offset();
+			const offset = ulsWidget.$element.offset();
 			if ( this.$menu.css( 'direction' ) === 'rtl' ) {
 				offset.left = offset.left - parseInt( this.$menu.css( 'width' ) ) + ulsWidget.$element.width();
 			}
@@ -87,7 +85,7 @@ UlsWidget.prototype.updateLanguages = function ( languages ) {
  * @param {string} value 2-letter language code
  */
 UlsWidget.prototype.setValue = function ( value ) {
-	var current = this.languageValue;
+	const current = this.languageValue;
 	this.languageValue = value;
 
 	// T209380: We want this to be the language autonym for the display value

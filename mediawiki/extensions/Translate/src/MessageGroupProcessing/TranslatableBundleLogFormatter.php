@@ -3,8 +3,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
-use LogFormatter;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
+use MediaWiki\Logging\LogFormatter;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
 use MediaWiki\Title\Title;
@@ -38,8 +38,7 @@ class TranslatableBundleLogFormatter extends LogFormatter {
 			case 'pagetranslation/deletelnok':
 			case 'messagebundle/moveok':
 			case 'messagebundle/movenok':
-				$target = $legacy['target'];
-
+				$target = $legacy['target'] ?? 'Special:Badtitle';
 				$moveTarget = $this->makePageLink( Title::newFromText( $target ) );
 				$params[3] = Message::rawParam( $moveTarget );
 				break;

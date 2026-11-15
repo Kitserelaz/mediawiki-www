@@ -10,7 +10,7 @@
 	"license-name": "GPL-3.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"MessagesDirs": {
 		"GlobalUserPage": [
@@ -30,9 +30,18 @@
 		"GetDoubleUnderscoreIDs": "main",
 		"WikiPageFactory": "main"
 	},
+	"callback": "\\MediaWiki\\GlobalUserPage\\Hooks::onRegistration",
 	"HookHandlers": {
 		"main": {
-			"class": "MediaWiki\\GlobalUserPage\\Hooks"
+			"class": "MediaWiki\\GlobalUserPage\\Hooks",
+			"services": [
+				"GlobalUserPage.GlobalUserPageManager",
+				"ConfigFactory",
+				"MainWANObjectCache",
+				"HttpRequestFactory",
+				"UrlUtils",
+				"NamespaceInfo"
+			]
 		}
 	},
 	"config": {
@@ -49,7 +58,7 @@
 			"value": "globaluserpage-footer"
 		},
 		"GlobalUserPageDBname": {
-			"value": "examplewiki"
+			"value": null
 		}
 	},
 	"ResourceModules": {
@@ -62,14 +71,32 @@
 		"remoteExtPath": "GlobalUserPage/modules"
 	},
 	"JobClasses": {
-		"GlobalUserPageLocalJobSubmitJob": "MediaWiki\\GlobalUserPage\\LocalJobSubmitJob",
-		"LocalGlobalUserPageCacheUpdateJob": "MediaWiki\\GlobalUserPage\\LocalCacheUpdateJob"
+		"GlobalUserPageLocalJobSubmitJob": {
+			"class": "MediaWiki\\GlobalUserPage\\LocalJobSubmitJob",
+			"services": [
+				"CentralIdLookup",
+				"JobQueueGroupFactory",
+				"UserFactory",
+				"GlobalUserPage.GlobalUserPageManager"
+			],
+			"needsPage": false
+		},
+		"LocalGlobalUserPageCacheUpdateJob": {
+			"class": "MediaWiki\\GlobalUserPage\\LocalCacheUpdateJob",
+			"services": [
+				"HTMLCacheUpdater"
+			],
+			"needsPage": false
+		}
 	},
 	"AutoloadNamespaces": {
 		"MediaWiki\\GlobalUserPage\\": "includes/"
 	},
 	"ConfigRegistry": {
-		"globaluserpage": "GlobalVarConfig::newInstance"
+		"globaluserpage": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
+	"ServiceWiringFiles": [
+		"includes/ServiceWiring.php"
+	],
 	"manifest_version": 2
 }

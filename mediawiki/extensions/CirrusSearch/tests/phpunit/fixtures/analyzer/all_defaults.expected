@@ -32,6 +32,7 @@
                 "arabic_extended_norm"
             ],
             "filter": [
+                "decimal_digit",
                 "icu_normalizer"
             ],
             "tokenizer": "standard",
@@ -47,6 +48,7 @@
                 "arabic_extended_norm"
             ],
             "filter": [
+                "decimal_digit",
                 "icu_normalizer"
             ],
             "tokenizer": "standard",
@@ -84,6 +86,7 @@
                 "arabic_extended_norm"
             ],
             "filter": [
+                "decimal_digit",
                 "icu_normalizer"
             ],
             "tokenizer": "standard",
@@ -99,6 +102,7 @@
                 "arabic_extended_norm"
             ],
             "filter": [
+                "decimal_digit",
                 "icu_normalizer"
             ],
             "tokenizer": "standard",
@@ -136,6 +140,7 @@
                 "arabic_extended_norm"
             ],
             "filter": [
+                "decimal_digit",
                 "icu_normalizer"
             ],
             "tokenizer": "standard",
@@ -151,6 +156,7 @@
                 "arabic_extended_norm"
             ],
             "filter": [
+                "decimal_digit",
                 "icu_normalizer"
             ],
             "tokenizer": "standard",
@@ -188,6 +194,7 @@
                 "arabic_extended_norm"
             ],
             "filter": [
+                "decimal_digit",
                 "icu_normalizer"
             ],
             "tokenizer": "standard",
@@ -203,6 +210,7 @@
                 "arabic_extended_norm"
             ],
             "filter": [
+                "decimal_digit",
                 "icu_normalizer"
             ],
             "tokenizer": "standard",
@@ -240,6 +248,7 @@
                 "arabic_extended_norm"
             ],
             "filter": [
+                "decimal_digit",
                 "icu_normalizer"
             ],
             "tokenizer": "standard",
@@ -255,6 +264,7 @@
                 "arabic_extended_norm"
             ],
             "filter": [
+                "decimal_digit",
                 "icu_normalizer"
             ],
             "tokenizer": "standard",
@@ -343,7 +353,14 @@
                 "\\u05F1=>\\u05D5\\u05D9",
                 "\\u05F2=>\\u05D9\\u05D9",
                 "\\uFB1F=>\\u05D9\\u05D9\\u05B7",
-                "\\u05D9\\u05B7\\u05D9=>\\u05D9\\u05D9\\u05B7"
+                "\\u05D9\\u05B7\\u05D9=>\\u05D9\\u05D9\\u05B7",
+                "\u0d23\u0d4d\\u200D=>\u0d7a",
+                "\u0d28\u0d4d\\u200D=>\u0d7b",
+                "\u0d30\u0d4d\\u200D=>\u0d7c",
+                "\u0d32\u0d4d\\u200D=>\u0d7d",
+                "\u0d33\u0d4d\\u200D=>\u0d7e",
+                "\u09a4\u09cd\\u200D=>\u09ce",
+                "\\u061C=>"
             ],
             "type": "mapping"
         },

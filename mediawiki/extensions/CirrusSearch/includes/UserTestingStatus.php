@@ -11,24 +11,11 @@ use Wikimedia\Assert\Assert;
  *
  * See UserTestingEngine for initialization.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class UserTestingStatus {
-	/** @var ?UserTestingStatus Bucketing decision for the main request context */
-	private static $instance;
+	/** Bucketing decision for the main request context */
+	private static ?self $instance = null;
 
 	/** @var ?string The name of the active test, or null if none */
 	private $testName;
@@ -51,10 +38,8 @@ class UserTestingStatus {
 	 * to make a bucketing decision and activate that decision. This must be
 	 * called as early in the request as is sensible to ensure the test configuration
 	 * is applied.
-	 *
-	 * @return UserTestingStatus
 	 */
-	public static function getInstance(): UserTestingStatus {
+	public static function getInstance(): self {
 		if ( self::$instance === null ) {
 			$context = RequestContext::getMain();
 			$trigger = $context->getRequest()->getVal( 'cirrusUserTesting' );
@@ -82,16 +67,16 @@ class UserTestingStatus {
 	/**
 	 * @param string $testName
 	 * @param string $bucket
-	 * @return UserTestingStatus status representing a test bucket active for this request
+	 * @return self status representing a test bucket active for this request
 	 */
-	public static function active( string $testName, string $bucket ): UserTestingStatus {
+	public static function active( string $testName, string $bucket ): self {
 		return new self( $testName, $bucket );
 	}
 
 	/**
-	 * @return UserTestingStatus status representing user testing as inactive
+	 * @return self status representing user testing as inactive
 	 */
-	public static function inactive(): UserTestingStatus {
+	public static function inactive(): self {
 		return new self( null, null );
 	}
 
@@ -134,6 +119,7 @@ class UserTestingStatus {
 	/**
 	 * @return string When active returns a string that will enable the same
 	 *  test configuration when provided to UserTestingEngine.
+	 * @throws NoActiveTestException
 	 */
 	public function getTrigger(): string {
 		if ( $this->testName === null || $this->bucket == null ) {

@@ -2,8 +2,6 @@
 
 namespace MediaWiki\Extension\TemplateSandbox;
 
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiExpandTemplates;
 use MediaWiki\Api\ApiParse;
@@ -11,6 +9,7 @@ use MediaWiki\Api\Hook\APIGetAllowedParamsHook;
 use MediaWiki\Api\Hook\ApiMakeParserOptionsHook;
 use MediaWiki\Config\Config;
 use MediaWiki\Content\Content;
+use MediaWiki\Content\ContentSerializationException;
 use MediaWiki\Content\IContentHandlerFactory;
 use MediaWiki\Content\Renderer\ContentRenderer;
 use MediaWiki\Content\Transform\ContentTransformer;
@@ -22,20 +21,20 @@ use MediaWiki\Hook\EditPage__importFormDataHook;
 use MediaWiki\Hook\EditPage__showStandardInputs_optionsHook;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Html\Html;
+use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Parser\ParserOutputLinkTypes;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\ResourceLoader as RL;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleValue;
 use MediaWiki\User\Options\UserOptionsLookup;
-use MediaWiki\Widget\TitleInputWidget;
-use MediaWiki\Xml\Xml;
-use MWContentSerializationException;
 use OOUI\ActionFieldLayout;
 use OOUI\ButtonInputWidget;
 use OOUI\FieldsetLayout;
@@ -51,30 +50,15 @@ class Hooks implements
 	APIGetAllowedParamsHook,
 	ApiMakeParserOptionsHook
 {
-	/** @var int */
-	private static $counter = 0;
-
-	private IContentHandlerFactory $contentHandlerFactory;
-	private ContentRenderer $contentRenderer;
-	private ContentTransformer $contentTransformer;
-	private HookContainer $hookContainer;
-	private UserOptionsLookup $userOptionsLookup;
-	private WikiPageFactory $wikiPageFactory;
-
 	public function __construct(
-		IContentHandlerFactory $contentHandlerFactory,
-		ContentRenderer $contentRenderer,
-		ContentTransformer $contentTransformer,
-		HookContainer $hookContainer,
-		UserOptionsLookup $userOptionsLookup,
-		WikiPageFactory $wikiPageFactory
+		private readonly IContentHandlerFactory $contentHandlerFactory,
+		private readonly ContentRenderer $contentRenderer,
+		private readonly ContentTransformer $contentTransformer,
+		private readonly HookContainer $hookContainer,
+		private readonly LinkRenderer $linkRenderer,
+		private readonly UserOptionsLookup $userOptionsLookup,
+		private readonly WikiPageFactory $wikiPageFactory,
 	) {
-		$this->contentHandlerFactory = $contentHandlerFactory;
-		$this->contentRenderer = $contentRenderer;
-		$this->contentTransformer = $contentTransformer;
-		$this->hookContainer = $hookContainer;
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->wikiPageFactory = $wikiPageFactory;
 	}
 
 	/**
@@ -109,9 +93,16 @@ class Hooks implements
 	 * @return string
 	 */
 	private static function wrapErrorMsg( IContextSource $context, $msg ) {
-		return "<div id='mw-$msg'>\n"
-			. $context->msg( $msg )->parseAsBlock()
-			. "\n</div>";
+		return Html::errorBox( $context->msg( $msg )->parseAsBlock() );
+	}
+
+	private static function hasTemplate( ParserOutput $parserOutput, Title $title ): bool {
+		foreach ( $parserOutput->getLinkList( ParserOutputLinkTypes::TEMPLATE ) as $link ) {
+			if ( $title->isSameLinkAs( $link['link'] ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -155,6 +146,10 @@ class Hooks implements
 			$out = self::wrapErrorMsg( $context, 'templatesandbox-editform-invalid-title' );
 			return false;
 		}
+		if ( !$context->getAuthority()->authorizeRead( 'read', $title ) ) {
+			$out = self::wrapErrorMsg( $context, 'templatesandbox-editform-cannot-view-title' );
+			return false;
+		}
 
 		// If we're previewing the same page we're editing, we don't need to check whether
 		// we exist, since we fake that we exist later. This is useful to, for example,
@@ -164,13 +159,15 @@ class Hooks implements
 			return false;
 		}
 
-		$note = '';
 		$dtitle = false;
 		$parserOutput = null;
 
 		$user = $context->getUser();
 		$output = $context->getOutput();
 		$lang = $context->getLanguage();
+
+		$noteHtml = '';
+		$previewIssuesHtml = '';
 
 		try {
 			if ( $editpage->sectiontitle !== '' ) {
@@ -207,9 +204,18 @@ class Hooks implements
 				$popts
 			);
 
-			$note = $context->msg( 'templatesandbox-previewnote', $title->getPrefixedText() )->plain() .
-				' [[#' . EditPage::EDITFORM_ID . '|' . $lang->getArrow() . ' ' .
-				$context->msg( 'continue-editing' )->text() . ']]';
+			$continueEditingHtml = Html::rawElement(
+				'span',
+				[ 'class' => 'mw-continue-editing' ],
+				$this->linkRenderer->makePreloadedLink(
+					new TitleValue( NS_MAIN, '', EditPage::EDITFORM_ID ),
+					$lang->getArrow() . ' ' . $context->msg( 'continue-editing' )->text()
+				)
+			);
+			$noteHtml .= Html::noticeBox(
+				$context->msg( 'templatesandbox-previewnote', $title->getPrefixedText() )->parse() .
+					$continueEditingHtml
+			);
 
 			$page = $this->wikiPageFactory->newFromTitle( $title );
 			$popts = $page->makeParserOptions( $context );
@@ -218,10 +224,7 @@ class Hooks implements
 			$logic = new Logic( [], $templatetitle, $content );
 			$reset = $logic->setupForParse( $popts );
 
-			$revRecord = call_user_func_array(
-				$popts->getCurrentRevisionRecordCallback(),
-				[ $title ]
-			);
+			$revRecord = $popts->getCurrentRevisionRecordCallback()( $title );
 
 			$pageContent = $revRecord->getContent(
 				SlotRecord::MAIN,
@@ -229,6 +232,11 @@ class Hooks implements
 				$user
 			);
 			$parserOutput = $this->contentRenderer->getParserOutput( $pageContent, $title, $revRecord, $popts );
+
+			if ( !self::hasTemplate( $parserOutput, $templatetitle ) ) {
+				$out = self::wrapErrorMsg( $context, 'templatesandbox-template-not-used' );
+				return false;
+			}
 
 			$output->addParserOutputMetadata( $parserOutput );
 			if ( $output->userCanPreview() ) {
@@ -238,20 +246,26 @@ class Hooks implements
 			$dtitle = $parserOutput->getDisplayTitle();
 			$parserOutput->setTitleText( '' );
 			$skinOptions = $output->getSkin()->getOptions();
-			$out = $parserOutput->getText( [
+			$out = $parserOutput->runOutputPipeline( $popts, [
 				'injectTOC' => $skinOptions['toc'],
 				'enableSectionEditLinks' => false,
 				'includeDebugInfo' => true,
-			] );
+			] )->getContentHolderText();
 
-			if ( count( $parserOutput->getWarnings() ) ) {
-				$note .= "\n\n" . implode( "\n\n", $parserOutput->getWarnings() );
+			$parserWarnings = $parserOutput->getWarningMsgs();
+			if ( $parserWarnings ) {
+				$warningsHtml = '';
+				foreach ( $parserWarnings as $mv ) {
+					$warningsHtml .= $context->msg( $mv )->parse() . "<br>";
+				}
+				$previewIssuesHtml .= Html::warningBox( $warningsHtml );
 			}
-		} catch ( MWContentSerializationException $ex ) {
+		} catch ( ContentSerializationException $ex ) {
 			$m = $context->msg( 'content-failed-to-parse',
+				// @phan-suppress-next-line PhanTypeMismatchArgumentNullable
 				$editpage->contentModel, $editpage->contentFormat, $ex->getMessage()
 			);
-			$note .= "\n\n" . $m->parse();
+			$previewIssuesHtml .= Html::errorBox( $m->parse() );
 			$out = '';
 		}
 
@@ -261,10 +275,7 @@ class Hooks implements
 			Html::rawElement(
 				'h2', [ 'id' => 'mw-previewheader' ],
 				$context->msg( 'templatesandbox-preview', $title->getPrefixedText(), $dtitle )->parse()
-			) .
-			Html::warningBox(
-				$output->parseAsInterface( $note )
-			)
+			) . $previewIssuesHtml . $noteHtml
 		);
 
 		$out = $previewhead . $out . $editpage->previewTextAfterContent;
@@ -299,7 +310,7 @@ class Hooks implements
 			// output the values in hidden fields so that a user
 			// using a gadget doesn't have to re-enter them every time
 
-			$html = Xml::openElement( 'span', [ 'id' => 'templatesandbox-editform' ] );
+			$html = Html::openElement( 'span', [ 'id' => 'templatesandbox-editform' ] );
 
 			$html .= Html::hidden( 'wpTemplateSandboxTemplate',
 				$editpage->templatesandbox_template, [ 'id' => 'wpTemplateSandboxTemplate' ]
@@ -309,15 +320,16 @@ class Hooks implements
 				$editpage->templatesandbox_page, [ 'id' => 'wpTemplateSandboxPage' ]
 			);
 
-			$html .= Xml::closeElement( 'span' );
+			$html .= Html::closeElement( 'span' );
 
 			$output->addHTML( $html . "\n" );
 
 			return;
 		}
 
-		$output->addModuleStyles( 'ext.TemplateSandbox.top' );
+		$output->enableOOUI();
 		$output->addModules( 'ext.TemplateSandbox' );
+		$output->addModuleStyles( 'ext.TemplateSandbox.styles' );
 
 		$context = $editpage->getContext();
 
@@ -327,7 +339,7 @@ class Hooks implements
 			$textAttrs = [
 				'class' => 'mw-templatesandbox-editform-text',
 			];
-			$textHtml = Xml::tags( 'div', $textAttrs, $text->parse() );
+			$textHtml = Html::rawElement( 'div', $textAttrs, $text->parse() );
 		}
 
 		$helptextHtml = '';
@@ -336,7 +348,7 @@ class Hooks implements
 			$helptextAttrs = [
 				'class' => 'mw-templatesandbox-editform-helptext',
 			];
-			$helptextHtml = Xml::tags( 'span', $helptextAttrs, $helptext->parse() );
+			$helptextHtml = Html::rawElement( 'span', $helptextAttrs, $helptext->parse() );
 		}
 
 		$hiddenInputsHtml =
@@ -345,10 +357,6 @@ class Hooks implements
 			) .
 			// If they submit our form, pass the parameter along for not allowed namespaces
 			Html::hidden( 'wpTemplateSandboxShow', '' );
-
-		$output->enableOOUI();
-		$output->addModules( 'oojs-ui-core' );
-		$output->addModules( 'mediawiki.widgets' );
 
 		$fieldsetLayout =
 			new FieldsetLayout( [
@@ -362,7 +370,7 @@ class Hooks implements
 						'content' => new HtmlSnippet( $textHtml . "\n" . $hiddenInputsHtml )
 					] ),
 					new ActionFieldLayout(
-						new TitleInputWidget( [
+						new TemplateSandboxTitleWidget( [
 							'id' => 'wpTemplateSandboxPage',
 							'name' => 'wpTemplateSandboxPage',
 							'value' => $editpage->templatesandbox_page,
@@ -392,7 +400,7 @@ class Hooks implements
 				] )
 			] );
 		}
-		$output->addHTML( $fieldsetLayout );
+		$output->addHTML( (string)$fieldsetLayout );
 
 		if ( $this->userOptionsLookup->getOption( $context->getUser(), 'uselivepreview' ) ) {
 			$output->addModules( 'ext.TemplateSandbox.preview' );
@@ -473,7 +481,6 @@ class Hooks implements
 			'templatesandboxcontentformat' => null,
 		];
 		$params = [
-			// @phan-suppress-next-line PhanImpossibleCondition
 			'prefix' => $params['templatesandboxprefix'] ?: [],
 			'title' => $params['templatesandboxtitle'],
 			'text' => $params['templatesandboxtext'],
@@ -506,7 +513,6 @@ class Hooks implements
 				$contentHandler = $page->getContentHandler();
 			} else {
 				$contentHandler = $this->contentHandlerFactory
-					// @phan-suppress-next-line PhanTypeMismatchArgumentNullable
 					->getContentHandler( $params['contentmodel'] );
 			}
 
@@ -517,7 +523,6 @@ class Hooks implements
 				$module->dieWithError( [ 'apierror-no-direct-editing', $model, $escName ] );
 			}
 
-			// @phan-suppress-next-line PhanImpossibleCondition
 			$format = $params['contentformat'] ?: $contentHandler->getDefaultFormat();
 			if ( !$contentHandler->isSupportedFormat( $format ) ) {
 				$module->dieWithError( [ 'apierror-badformat', $format, $model, $escName ] );
@@ -566,19 +571,6 @@ class Hooks implements
 				ScopedCallback::consume( $resetLogic );
 			} );
 		}
-	}
-
-	/**
-	 * Function that returns an array of parsed messages used in live preview
-	 * for the ResourceLoader
-	 *
-	 * @param RL\Context $context
-	 * @return array
-	 */
-	public static function getParsedMessages( $context ) {
-		return [
-			'templatesandbox-previewnote' => $context->msg( 'templatesandbox-previewnote' )->parse(),
-		];
 	}
 
 	/**

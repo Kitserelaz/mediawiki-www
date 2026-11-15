@@ -3,7 +3,10 @@
  * \brief Contains code for the ContributionScores Class (extends SpecialPage).
  */
 
+use MediaWiki\Html\Html;
+use MediaWiki\Linker\Linker;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\User\ActorMigration;
 
 /// Special page class for the Contribution Scores extension
 /**
@@ -121,7 +124,21 @@ class ContributionScores extends IncludableSpecialPage {
 
 		if ( $wgContribScoreIgnoreBlockedUsers ) {
 			$sqlWhere[] = "{$revUser} NOT IN " .
-				$dbr->buildSelectSubquery( 'ipblocks', 'ipb_user', 'ipb_user <> 0', __METHOD__ );
+				$dbr->buildSelectSubquery(
+					[
+						'block',
+						'block_target'
+					],
+					'bt_user',
+					'bt_user <> 0',
+					__METHOD__,
+					[],
+					[
+						'block_target' => [ 'JOIN', [
+							'bl_target=bt_id'
+						] ]
+					]
+				);
 		}
 
 		if ( $wgContribScoreIgnoreBots ) {
@@ -187,7 +204,6 @@ class ContributionScores extends IncludableSpecialPage {
 			__METHOD__,
 			[
 				'ORDER BY' => 'wiki_rank DESC',
-				'GROUP BY' => 'user_name',
 				'LIMIT' => $limit,
 			],
 			[
@@ -363,7 +379,7 @@ class ContributionScores extends IncludableSpecialPage {
 			$reportTitle = $this->msg( 'contributionscores-allrevisions' )->text();
 		}
 		$reportTitle .= ' ' . $this->msg( 'contributionscores-top' )->numParams( $limit )->text();
-		$title = Xml::element( 'h4',
+		$title = Html::element( 'h4',
 				[ 'class' => 'contributionscores-title' ],
 				$reportTitle
 			) . "\n";
@@ -400,7 +416,7 @@ class ContributionScores extends IncludableSpecialPage {
 				$reportTitle = $this->msg( 'contributionscores-allrevisions' )->text();
 			}
 			$reportTitle .= ' ' . $this->msg( 'contributionscores-top' )->numParams( $revs )->text();
-			$title = Xml::element( 'h2',
+			$title = Html::element( 'h2',
 					[ 'class' => 'contributionscores-title' ],
 					$reportTitle
 				) . "\n";

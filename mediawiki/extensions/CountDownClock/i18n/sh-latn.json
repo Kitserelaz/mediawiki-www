@@ -1,11 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"Winston Sung"
 		]
 	},
 	"countDownClock-desc": "Dodaje parsersku funkciju za prikaz vremena odbrojavanja",
-	"countDownClock-invalidtime": "Molimo vas da pružite korektan parametar za odbrojavanje",
+	"countDownClock-invalidtime": "Pružite korektan parametar za odbrojavanje",
 	"countDownClock-days": "$1 {{PLURAL:$1|dan|dana}}",
 	"countDownClock-hours": "$1 {{PLURAL:$1|sat|sati}}",
 	"countDownClock-minutes": "$1 {{PLURAL:$1|minut|minuta}}",

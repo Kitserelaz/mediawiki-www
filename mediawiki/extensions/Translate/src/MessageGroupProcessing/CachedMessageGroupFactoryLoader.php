@@ -7,9 +7,8 @@ use CachedMessageGroupLoader;
 use DependencyWrapper;
 use MessageGroup;
 use MessageGroupLoader;
-use WANObjectCache;
 use Wikimedia\LightweightObjectStore\ExpirationAwareness;
-use Wikimedia\Rdbms\Database;
+use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
@@ -19,21 +18,17 @@ use Wikimedia\Rdbms\IConnectionProvider;
  * @author Niklas Laxström
  */
 class CachedMessageGroupFactoryLoader implements CachedMessageGroupLoader, MessageGroupLoader {
-	private WANObjectCache $cache;
-	private IConnectionProvider $dbProvider;
+
 	private string $cacheKey;
-	private CachedMessageGroupFactory $factory;
+
 	private const CACHE_TTL = ExpirationAwareness::TTL_DAY;
 
 	public function __construct(
-		WANObjectCache $cache,
-		IConnectionProvider $dbProvider,
-		CachedMessageGroupFactory $factory
+		private readonly WANObjectCache $cache,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly CachedMessageGroupFactory $factory,
 	) {
-		$this->cache = $cache;
 		$this->cacheKey = $cache->makeKey( 'translate-mg', $factory->getCacheKey() );
-		$this->factory = $factory;
-		$this->dbProvider = $dbProvider;
 	}
 
 	/** @return MessageGroup[] */
@@ -57,7 +52,7 @@ class CachedMessageGroupFactoryLoader implements CachedMessageGroupLoader, Messa
 		return $this->cache->getWithSetCallback(
 			$this->cacheKey,
 			self::CACHE_TTL,
-			fn ( $oldValue, &$ttl, array &$setOpts ) => $this->getCacheData( $setOpts ),
+			fn () => $this->getCacheData(),
 			[
 				// avoid stampedes (mutex)
 				'lockTSE' => 30,
@@ -68,13 +63,8 @@ class CachedMessageGroupFactoryLoader implements CachedMessageGroupLoader, Messa
 		);
 	}
 
-	private function getCacheData( array &$setOpts ): DependencyWrapper {
+	private function getCacheData(): DependencyWrapper {
 		$dbr = $this->dbProvider->getReplicaDatabase();
-
-		// Some factories may not use the database, in which case this is superflous.
-		// Having it here for simplicity.
-		$setOpts += Database::getCacheSetOptions( $dbr );
-
 		$wrapper = new DependencyWrapper(
 			$this->factory->getData( $dbr ),
 			$this->factory->getDependencies()

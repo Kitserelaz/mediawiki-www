@@ -1,33 +1,20 @@
 <?php
+/**
+ * @license GPL-2.0-or-later
+ */
 
 namespace CirrusSearch\Sanity;
 
 use CirrusSearch\Job\DeletePages;
 use CirrusSearch\Job\LinksUpdate;
-use JobQueueGroup;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Title\Title;
-use WikiPage;
 
 /**
  * Remediator implementation that queues jobs to fix the index.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
  */
-
 class QueueingRemediator implements Remediator {
 	/**
 	 * @var string|null
@@ -46,7 +33,7 @@ class QueueingRemediator implements Remediator {
 	 */
 	public function __construct( $cluster, ?JobQueueGroup $jobQueueGroup = null ) {
 		$this->cluster = $cluster;
-		$this->jobQueue = $jobQueueGroup ?: MediaWikiServices::getInstance()->getJobQueueGroup();
+		$this->jobQueue = $jobQueueGroup ?? MediaWikiServices::getInstance()->getJobQueueGroup();
 	}
 
 	/**

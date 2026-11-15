@@ -2,7 +2,7 @@
 
 namespace SD;
 
-use Html;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 
 /**
@@ -12,7 +12,6 @@ use MediaWiki\MediaWikiServices;
  * @author Yaron Koren
  * @author Ankit Garg
  */
-
 class PageSchemas extends \PSExtensionHandler {
 	public static function registerClass() {
 		global $wgPageSchemasHandlerClasses;
@@ -99,13 +98,13 @@ class PageSchemas extends \PSExtensionHandler {
 		}
 
 		$html_text = '<div class="editSchemaMinorFields">' . "\n";
-		$html_text .= '<p>' . wfMessage( 'ps-optional-name' )->text() . ' ';
+		$html_text .= '<p>' . wfMessage( 'ps-optional-name' )->escaped() . ' ';
 		$html_text .= Html::input( 'sd_filter_name_num', $filterName, 'text', [ 'size' => 25 ] ) . "</p>\n";
-		$html_text .= wfMessage( 'sd-pageschemas-values' )->text() . ":\n";
+		$html_text .= wfMessage( 'sd-pageschemas-values' )->escaped() . ":\n";
 		$html_text .= Html::input( 'sd_values_source_num', 'property', 'radio', $usePropertyValuesAttr ) . ' ';
-		$html_text .= wfMessage( 'sd_createfilter_usepropertyvalues' )->text() . "\n";
+		$html_text .= wfMessage( 'sd_createfilter_usepropertyvalues' )->escaped() . "\n";
 		$html_text .= Html::input( 'sd_values_source_num', 'category', 'radio', $fromCategoryAttrs ) . "\n";
-		$html_text .= "\t" . wfMessage( 'sd_createfilter_usecategoryvalues' )->text() . "\n";
+		$html_text .= "\t" . wfMessage( 'sd_createfilter_usecategoryvalues' )->escaped() . "\n";
 		$dbr = MediaWikiServices::getInstance()
 			->getDBLoadBalancer()
 			->getMaintenanceConnectionRef( DB_REPLICA );
@@ -119,7 +118,9 @@ class PageSchemas extends \PSExtensionHandler {
 			}
 			$categoriesHTML .= "\t" . Html::element( 'option', $categoryOptionAttrs, $category ) . "\n";
 		}
-		$html_text .= "\t" . Html::rawElement( 'select', [ 'id' => 'category_dropdown', 'name' => 'sd_category_name_num' ], "\n" . $categoriesHTML ) . "\n";
+		$html_text .= "\t" . Html::rawElement(
+			'select', [ 'id' => 'category_dropdown', 'name' => 'sd_category_name_num' ], "\n" . $categoriesHTML
+		) . "\n";
 		$html_text .= "\t</p>\n";
 		$html_text .= "\t</div>\n";
 
@@ -141,7 +142,9 @@ class PageSchemas extends \PSExtensionHandler {
 				$xml .= '>';
 			} elseif ( substr( $var, 0, 17 ) == 'sd_values_source_' ) {
 				if ( $val == 'category' ) {
-					$xml .= '<ValuesFromCategory>' . $wgRequest->getText( 'sd_category_name_' . $fieldNum ) . '</ValuesFromCategory>';
+					$xml .= '<ValuesFromCategory>'
+						. $wgRequest->getText( 'sd_category_name_' . $fieldNum )
+						. '</ValuesFromCategory>';
 				}
 				$xml .= '</semanticdrilldown_Filter>';
 				$xmlPerField[$fieldNum] = $xml;

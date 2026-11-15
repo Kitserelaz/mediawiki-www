@@ -23,7 +23,7 @@ class LicenseParserTest extends \MediaWikiIntegrationTestCase {
 		$this->assertLicenseIsNotRecognized( $data );
 	}
 
-	public function provideUnrecognizedLicenses(): iterable {
+	public static function provideUnrecognizedLicenses(): iterable {
 		yield 'null license string' => [ null ];
 		yield 'empty license string' => [ '' ];
 		yield 'wrong license string' => [ 'foo' ];
@@ -113,6 +113,7 @@ class LicenseParserTest extends \MediaWikiIntegrationTestCase {
 	}
 
 	public static function provideGetLicensePriorityData() {
+		// phpcs:disable MediaWiki.WhiteSpace.SpaceBeforeSingleLineComment.NewLineComment
 		return [
 			[ // PD wins over CC
 				[ // this should have higher priority...
@@ -179,6 +180,7 @@ class LicenseParserTest extends \MediaWikiIntegrationTestCase {
 				],
 			],
 		];
+		// phpcs:enable MediaWiki.WhiteSpace.SpaceBeforeSingleLineComment.NewLineComment
 	}
 
 	public function testSortDataByLicensePriority() {
@@ -267,7 +269,6 @@ class LicenseParserTest extends \MediaWikiIntegrationTestCase {
 	protected function assertLicenseHasGreaterPriority( $greaterLicenseData, $smallerLicenseData ) {
 		$getLicensePriorityMethod = new \ReflectionMethod(
 			$this->licenseParser, 'getLicensePriority' );
-		$getLicensePriorityMethod->setAccessible( true );
 		$greaterLicensePriority = $getLicensePriorityMethod->invokeArgs(
 			$this->licenseParser, [ $greaterLicenseData ] );
 		$smallerLicensePriority = $getLicensePriorityMethod->invokeArgs(

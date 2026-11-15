@@ -59,7 +59,6 @@ class CirrusSearchResultBuilderTest extends CirrusTestCase {
 	 * @param mixed|null $expectedValue
 	 */
 	public function test( $field, $value, $expectedDefaultValue, $expectedValue = null ) {
-		$expectedValue = $expectedValue ?: $value;
 		$getter = $this->getter( $field, gettype( $value ) );
 		$setter = $this->setter( $field );
 
@@ -72,18 +71,19 @@ class CirrusSearchResultBuilderTest extends CirrusTestCase {
 
 		$setter( $value );
 		$res = $this->builder->build();
-		$this->assertEquals( $expectedValue, $getter( $res ) );
+		$this->assertEquals( $expectedValue ?? $value, $getter( $res ) );
 	}
 
 	public function setter( $field ) {
 		return function ( $v ) use ( $field ) {
-			return call_user_func( [ $this->builder, $field ], $v );
+			return $this->builder->$field( $v );
 		};
 	}
 
 	private function getter( $field, $type ) {
 		return static function ( CirrusSearchResult $result ) use ( $field, $type ) {
-			return call_user_func( [ $result, ( $type === 'boolean' ? 'is' : 'get' ) . ucfirst( $field ) ] );
+			$method = ( $type === 'boolean' ? 'is' : 'get' ) . ucfirst( $field );
+			return $result->$method();
 		};
 	}
 }

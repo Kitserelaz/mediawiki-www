@@ -1,7 +1,6 @@
 'use strict';
 
 const Merger = require( './ext.TwoColConflict.Split.Merger.js' );
-const Tracking = require( './ext.TwoColConflict.Split.tracking.js' );
 
 /**
  * @param {jQuery} $column
@@ -434,6 +433,7 @@ function initSourceCopy() {
 		if ( !wasClicked ) {
 			// only count once if the user clicks several times from the same screen
 			mw.track( 'counter.MediaWiki.TwoColConflict.copy.jsclick' );
+			mw.track( 'stats.mediawiki_TwoColConflict_copy_jsclick_total' );
 			wasClicked = true;
 		}
 
@@ -463,7 +463,6 @@ if ( !window.QUnit ) {
 			return;
 		}
 
-		const initTracking = Tracking.initTrackingListeners;
 		const initTour = require( './ext.TwoColConflict.Split.Tour.js' );
 
 		// disable all javascript from this feature when testing the nojs implementation
@@ -481,9 +480,8 @@ if ( !window.QUnit ) {
 		initPreview();
 		initSubmit();
 		initTour();
-		initTracking();
 		initSourceCopy();
 	} );
 }
 
-module.exports = { private: { Merger, RowFormatter: Tracking.private.RowFormatter } };
+module.exports = { private: { Merger } };

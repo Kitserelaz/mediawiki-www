@@ -3,7 +3,9 @@
 		"authors": [
 			"EugeneZelenko",
 			"Jim-by",
+			"Red Winged Duck",
 			"Renessaince",
+			"Ucukor",
 			"Wizardist"
 		]
 	},
@@ -17,8 +19,8 @@
 	"ps-page-desc-cat-not-exist": "Гэтая катэгорыя яшчэ не існуе. Стварыць яе са схемай старонкі:",
 	"ps-page-desc-ps-not-exist": "Гэтая катэгорыя існуе, аднак ня мае схемы старонкі. Стварыць схему:",
 	"ps-page-desc-edit-schema": "Рэдагаваць схему старонак для гэтай катэгорыі:",
-	"ps-delimiter-label": "Разьдзяляльнік для значэньняў (па змоўчваньні «,»):",
-	"ps-multiple-temp-label": "Дазволіць некалькі варыянтаў гэтага шаблёну",
+	"ps-delimiter-label": "Разьдзяляльнік для значэньняў (перадвызначана: «,»):",
+	"ps-multiple-temp-label": "Дазволіць мноства варыянтаў гэтага шаблёну",
 	"ps-field-list-label": "Гэтае поле можа зьмяшчаць набор значэньняў",
 	"ps-template": "Шаблён",
 	"ps-add-template": "Дадаць шаблён",
@@ -30,5 +32,6 @@
 	"ps-remove-field": "Выдаліць поле",
 	"ps-add-xml-label": "Дадатковы XML:",
 	"editschema": "Рэдагаваць схему",
-	"createschema": "Стварыць схему"
+	"createschema": "Стварыць схему",
+	"ps-level": "Ровень"
 }

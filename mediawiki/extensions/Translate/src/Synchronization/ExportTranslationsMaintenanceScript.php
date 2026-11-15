@@ -4,7 +4,9 @@ namespace MediaWiki\Extension\Translate\Synchronization;
 
 use FileBasedMessageGroup;
 use MediaWiki\Extension\Translate\FileFormatSupport\GettextFormat;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
+use MediaWiki\Extension\Translate\MessageLoading\MessageCollection;
 use MediaWiki\Extension\Translate\Services;
 use MediaWiki\Extension\Translate\Statistics\MessageGroupStats;
 use MediaWiki\Extension\Translate\Utilities\BaseMaintenanceScript;
@@ -69,12 +71,6 @@ class ExportTranslationsMaintenanceScript extends BaseMaintenanceScript {
 			self::HAS_ARG
 		);
 		$this->addOption(
-			'skip',
-			'(deprecated) See --never-export-languages',
-			self::OPTIONAL,
-			self::HAS_ARG
-		);
-		$this->addOption(
 			'skipgroup',
 			'(optional) Comma separated list of message group IDs (supports * wildcard) to not export',
 			self::OPTIONAL,
@@ -114,7 +110,7 @@ class ExportTranslationsMaintenanceScript extends BaseMaintenanceScript {
 	}
 
 	public function execute() {
-		$logger = LoggerFactory::getInstance( 'Translate.GroupSynchronization' );
+		$logger = LoggerFactory::getInstance( LogNames::GROUP_SYNCHRONIZATION );
 		$groupPattern = $this->getOption( 'group' ) ?? '';
 		$groupSkipPattern = $this->getOption( 'skipgroup' ) ?? '';
 		$skipGroupSyncCheck = $this->hasOption( 'skip-group-sync-check' );
@@ -138,9 +134,7 @@ class ExportTranslationsMaintenanceScript extends BaseMaintenanceScript {
 			$this->getOption( 'always-export-languages' ) ?? ''
 		);
 		$neverExportLanguages = $this->csv2array(
-			$this->getOption( 'never-export-languages' ) ??
-			$this->getOption( 'skip' ) ??
-			''
+			$this->getOption( 'never-export-languages' ) ?? ''
 		);
 		$skipSourceLanguage = $this->hasOption( 'skip-source-language' );
 
@@ -236,10 +230,8 @@ class ExportTranslationsMaintenanceScript extends BaseMaintenanceScript {
 
 			$langStartTime = microtime( true );
 			foreach ( $languageExportActions as $lang => $action ) {
-				// Do not export languages that are excluded (or not included).
-				// Also check that inclusion list is not null, which means that all
-				// languages are allowed for translation and export.
-				if ( is_array( $inclusionList ) && !isset( $inclusionList[$lang] ) ) {
+				// Check for customized list of translatable languages
+				if ( $inclusionList !== MessageGroup::DEFAULT_LANGUAGES && !isset( $inclusionList[$lang] ) ) {
 					continue;
 				}
 
@@ -266,11 +258,11 @@ class ExportTranslationsMaintenanceScript extends BaseMaintenanceScript {
 				if ( $lang !== $wgTranslateDocumentationLanguageCode
 					&& $lang !== $sourceLanguage
 				) {
-					$collection->filter( 'ignored' );
+					$collection->filter( MessageCollection::FILTER_IGNORED, MessageCollection::EXCLUDE_MATCHING );
 				}
 
 				if ( $noFuzzy ) {
-					$collection->filter( 'fuzzy' );
+					$collection->filter( MessageCollection::FILTER_FUZZY, MessageCollection::EXCLUDE_MATCHING );
 				}
 
 				$languagesExportedCount++;

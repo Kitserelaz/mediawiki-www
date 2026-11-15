@@ -13,7 +13,7 @@
  * @constructor
  * @param {Object} [config] Configuration options
  */
-ve.ui.LinkAnnotationWidget = function VeUiLinkAnnotationWidget( config ) {
+ve.ui.LinkAnnotationWidget = function VeUiLinkAnnotationWidget( config = {} ) {
 	// Properties
 	this.annotation = null;
 	this.input = this.createInputWidget( config );
@@ -62,9 +62,7 @@ ve.ui.LinkAnnotationWidget.static.getAnnotationFromText = function ( value ) {
 	} else {
 		return new ve.dm.LinkAnnotation( {
 			type: 'link',
-			attributes: {
-				href: href
-			}
+			attributes: { href }
 		} );
 	}
 };
@@ -88,7 +86,7 @@ ve.ui.LinkAnnotationWidget.static.getTextFromAnnotation = function ( annotation 
  * @param {Object} [config] Configuration options
  * @return {OO.ui.Widget} Text input widget
  */
-ve.ui.LinkAnnotationWidget.prototype.createInputWidget = function ( config ) {
+ve.ui.LinkAnnotationWidget.prototype.createInputWidget = function ( config = {} ) {
 	return new OO.ui.TextInputWidget( ve.extendObject( { validate: 'non-empty' }, config ) );
 };
 
@@ -126,13 +124,14 @@ ve.ui.LinkAnnotationWidget.prototype.onTextChange = function ( value ) {
 		this.getTextInputWidget().setDir( isExt ? 'ltr' : 'rtl' );
 	}
 
-	this.getTextInputWidget().getValidity()
-		.done( () => {
+	this.getTextInputWidget().getValidity().then(
+		() => {
 			this.setAnnotation( this.constructor.static.getAnnotationFromText( value ), true );
-		} )
-		.fail( () => {
+		},
+		() => {
 			this.setAnnotation( null, true );
-		} );
+		}
+	);
 };
 
 /**
@@ -170,7 +169,7 @@ ve.ui.LinkAnnotationWidget.prototype.setAnnotation = function ( annotation, from
 /**
  * Gets the annotation value.
  *
- * @return {ve.dm.LinkAnnotation} Link annotation
+ * @return {ve.dm.LinkAnnotation|null} Link annotation
  */
 ve.ui.LinkAnnotationWidget.prototype.getAnnotation = function () {
 	return this.annotation;

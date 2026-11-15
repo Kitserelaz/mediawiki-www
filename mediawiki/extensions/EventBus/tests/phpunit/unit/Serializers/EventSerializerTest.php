@@ -1,6 +1,5 @@
 <?php
 
-use MediaWiki\Config\HashConfig;
 use MediaWiki\Extension\EventBus\Serializers\EventSerializer;
 use Wikimedia\UUID\GlobalIdGenerator;
 
@@ -15,12 +14,12 @@ class EventSerializerTest extends MediaWikiUnitTestCase {
 	private const MOCK_URI = 'http://woohoo';
 	private const MOCK_INGESTION_TIMESTAMP = '20221021000000';
 	private const MOCK_EVENT_ATTRS = [ 'fieldA' => 'fieldB' ];
+	private const MOCK_REQUEST_ID = 'abcde';
 
 	/**
 	 * @var EventSerializer
 	 */
 	private EventSerializer $eventSerializer;
-
 	/**
 	 * We need to use setUp to have access to MediaWikiUnitTestCase methods,
 	 * but we only need to initialize things once.
@@ -32,23 +31,11 @@ class EventSerializerTest extends MediaWikiUnitTestCase {
 		if ( $this->setUpHasRun ) {
 			return;
 		}
-
-		$config = new HashConfig( [
-			'ServerName' => self::MOCK_SERVER_NAME,
-		] );
-
 		$globalIdGenerator = $this->createMock( GlobalIdGenerator::class );
 		$globalIdGenerator->method( 'newUUIDv4' )->willReturn( self::MOCK_UUID );
-
-		$telemetry = $this->createMock( \MediaWiki\Http\Telemetry::class );
-		$telemetry->method( 'getRequestId' )->willReturn( 'requestid' );
-
 		$this->eventSerializer = new EventSerializer(
-			$config,
 			$globalIdGenerator,
-			$telemetry
 		);
-
 		$this->setUpHasRun = true;
 	}
 
@@ -70,7 +57,6 @@ class EventSerializerTest extends MediaWikiUnitTestCase {
 	 */
 	public function testTimestampToDt( $mwTimestamp, $expected ) {
 		$actual = $this->eventSerializer->timestampToDt( $mwTimestamp );
-
 		if ( $mwTimestamp !== null ) {
 			$this->assertEquals( $expected, $actual );
 		} else {
@@ -86,7 +72,6 @@ class EventSerializerTest extends MediaWikiUnitTestCase {
 					'stream' => self::MOCK_STREAM_NAME,
 					'uri' => self::MOCK_URI,
 					'id' => self::MOCK_UUID,
-					'domain' => self::MOCK_SERVER_NAME
 				]
 			] + self::MOCK_EVENT_ATTRS,
 			[
@@ -96,7 +81,6 @@ class EventSerializerTest extends MediaWikiUnitTestCase {
 				self::MOCK_EVENT_ATTRS
 			]
 		];
-
 		yield 'provided metaDt' => [
 			[
 				'$schema' => self::MOCK_SCHEMA_URI,
@@ -104,7 +88,6 @@ class EventSerializerTest extends MediaWikiUnitTestCase {
 					'stream' => self::MOCK_STREAM_NAME,
 					'uri' => self::MOCK_URI,
 					'id' => self::MOCK_UUID,
-					'domain' => self::MOCK_SERVER_NAME,
 					'dt' => EventSerializer::timestampToDt( self::MOCK_INGESTION_TIMESTAMP ),
 				]
 			] + self::MOCK_EVENT_ATTRS,
@@ -113,13 +96,35 @@ class EventSerializerTest extends MediaWikiUnitTestCase {
 				self::MOCK_STREAM_NAME,
 				self::MOCK_URI,
 				self::MOCK_EVENT_ATTRS,
+				// NOTE: testing a non-null wikiId parameter is hard
+				// because WikiMap:getWiki is used, which uses global params.
 				null,
 				self::MOCK_INGESTION_TIMESTAMP
 			]
 		];
 
-		// NOTE: testing a non-null wikiId parameter is hard
-		// because WikiMap:getWiki is used, which uses global params.
+		yield 'provided requestId' => [
+			[
+				'$schema' => self::MOCK_SCHEMA_URI,
+				'meta' => [
+					'stream' => self::MOCK_STREAM_NAME,
+					'uri' => self::MOCK_URI,
+					'id' => self::MOCK_UUID,
+					'request_id' => self::MOCK_REQUEST_ID
+				]
+			] + self::MOCK_EVENT_ATTRS,
+			[
+				self::MOCK_SCHEMA_URI,
+				self::MOCK_STREAM_NAME,
+				self::MOCK_URI,
+				self::MOCK_EVENT_ATTRS,
+				// NOTE: testing a non-null wikiId parameter is hard
+				// because WikiMap:getWiki is used, which uses global params.
+				null,
+				null,
+				self::MOCK_REQUEST_ID,
+			]
+		];
 	}
 
 	/**
@@ -127,17 +132,7 @@ class EventSerializerTest extends MediaWikiUnitTestCase {
 	 * @covers ::createMeta
 	 */
 	public function testCreateEvent( $expected, $args ) {
-		$actual = call_user_func_array( [ $this->eventSerializer, 'createEvent' ], $args );
-
-		// remove meta.request_id from actual, it is not deterministic.
-		unset( $actual['meta']['request_id'] );
-
-		// meta.dt is only deterministic if $args[4] ($metaDt) is provided and not null
-		if ( !isset( $args[5] ) ) {
-			unset( $actual['meta']['dt'] );
-		}
-
+		$actual = $this->eventSerializer->createEvent( ...$args );
 		$this->assertEquals( $expected, $actual );
 	}
-
 }

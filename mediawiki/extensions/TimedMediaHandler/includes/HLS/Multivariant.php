@@ -8,6 +8,8 @@
 
 namespace MediaWiki\TimedMediaHandler\HLS;
 
+use MediaWiki\MediaWikiServices;
+use MediaWiki\TimedMediaHandler\WebVideoTranscode\TranscodePreset;
 use MediaWiki\TimedMediaHandler\WebVideoTranscode\WebVideoTranscode;
 use RuntimeException;
 
@@ -22,25 +24,18 @@ use RuntimeException;
  * informative RFC 8216.
  */
 class Multivariant {
-	private string $filename;
-	private array $tracks;
-
 	private const CODEC_JPEG = 'jpeg';
 	private const CODEC_MPEG4 = 'mp4v.20.5';
 	private const CODEC_MP3  = 'mp4a.6b';
 	private const CODEC_OPUS = 'Opus';
 	private const MIME_MP3 = 'audio/mpeg';
 
-	public static function isStreamingAudio( array $options ): bool {
-		$streaming = $options['streaming'] ?? '';
-		$novideo = $options['novideo'] ?? null;
-		return $streaming === 'hls' && $novideo;
+	public static function isStreamingAudio( TranscodePreset $options ): bool {
+		return $options->streaming === 'hls' && $options->novideo;
 	}
 
-	public static function isStreamingVideo( array $options ): bool {
-		$streaming = $options['streaming'] ?? '';
-		$noaudio = $options['noaudio'] ?? null;
-		return $streaming === 'hls' && $noaudio;
+	public static function isStreamingVideo( TranscodePreset $options ): bool {
+		return $options->streaming === 'hls' && $options->noaudio;
 	}
 
 	/**
@@ -52,8 +47,8 @@ class Multivariant {
 		'opus' => self::CODEC_OPUS,
 	];
 
-	public static function hlsCodec( array $options ): string {
-		$type = $options['type'] ?? '';
+	public static function hlsCodec( TranscodePreset $options ): string {
+		$type = $options->type;
 		$matches = [];
 		if ( preg_match( '/^\w+\/\w+;\s*codecs="(.*?)"/', $type, $matches ) ) {
 			// Warning: assumes a single track, single codec for streaming!
@@ -104,9 +99,10 @@ class Multivariant {
 		return "#$type:" . implode( ",", $items );
 	}
 
-	public function __construct( string $filename, array $tracks ) {
-		$this->filename = $filename;
-		$this->tracks = $tracks;
+	public function __construct(
+		private readonly string $filename,
+		private readonly array $tracks,
+	) {
 	}
 
 	/**
@@ -116,15 +112,16 @@ class Multivariant {
 		$out = [ '#EXTM3U' ];
 
 		$audio = [];
+		$transcodePresets = MediaWikiServices::getInstance()->getService( 'TimedMediaHandler.TranscodePresets' );
 		foreach ( $this->tracks as $key ) {
-			$options = WebVideoTranscode::$derivativeSettings[$key] ?? [];
-			if ( !self::isStreamingAudio( $options ) ) {
+			$options = $transcodePresets->findByKey( $key );
+			if ( !$options || !self::isStreamingAudio( $options ) ) {
 				continue;
 			}
 			$codec = self::hlsCodec( $options );
 			$audio[$key] = $codec;
 			// max ?
-			$channels = (string)( $options['channels'] ?? 2 );
+			$channels = (string)( $options->channels ?? 2 );
 			$audioFile = wfUrlencode( "$this->filename.$key.m3u8" );
 
 			$name = wfMessage( 'timedmedia-derivative-' . $key )->text();
@@ -141,16 +138,16 @@ class Multivariant {
 		}
 
 		foreach ( $this->tracks as $key ) {
-			$options = WebVideoTranscode::$derivativeSettings[$key] ?? [];
-			if ( !self::isStreamingVideo( $options ) ) {
+			$options = $transcodePresets->findByKey( $key );
+			if ( !$options || !self::isStreamingVideo( $options ) ) {
 				continue;
 			}
 			$codec = self::hlsCodec( $options );
-			$bandwidth = WebVideoTranscode::expandRate( $options['videoBitrate'] ?? '0' );
-			$resolution = $options['maxSize'] ?? (
-				( $options['width'] ?? '0' ) .
+			$bandwidth = WebVideoTranscode::expandRate( $options->videoBitrate ?? '0' );
+			$resolution = $options->maxSize ?? (
+				( $options->width ?? '0' ) .
 				'x' .
-				( $options['height'] ?? '0' )
+				( $options->height ?? '0' )
 			);
 			// max
 			$videoFile = wfUrlencode( "$this->filename.$key.m3u8" );

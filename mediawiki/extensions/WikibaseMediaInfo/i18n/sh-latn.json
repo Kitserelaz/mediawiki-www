@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"Winston Sung"
 		]
 	},
@@ -31,14 +32,14 @@
 	"wikibasemediainfo-filepage-caption-approaching-limit": "Preostaje $1 {{PLURAL:$1|znak|znaka|0=znakova}}",
 	"wikibasemediainfo-filepage-statement-no-value": "Nepostojeća vrijednost za ovo svojstvo",
 	"wikibasemediainfo-filepage-statement-no-data": "Nema podataka",
-	"wikibasemediainfo-filepage-statement-no-results": "Nisam ništa pronašao",
+	"wikibasemediainfo-filepage-statement-no-results": "Nema rezultata",
 	"wikibasemediainfo-filepage-statement-some-value": "Ovo svojstvo ima vrijednost, ali nije poznato",
-	"wikibasemediainfo-filepage-statement-error": "Došlo je do greške prilikom dohvata vrijednosti ovog svojstva",
+	"wikibasemediainfo-filepage-statement-error": "Došlo je do greške pri dohvatanju vrijednosti ovog svojstva",
 	"wikibasemediainfo-filepage-license-title": "Opisi i drugi doprinosi strukturiranim podacima",
 	"wikibasemediainfo-filepage-license-content": "Klikom na \"Objavi izmjene\" slažete se s [[wmf:Terms_of_Use|uvjetima uporabe]] i neopozivo pristajete na objavu doprinosa pod licencijom [https://creativecommons.org/publicdomain/zero/1.0/ Creative Commons CC0].",
-	"wikibasemediainfo-filepage-license-content-acceptance": "Prihvaćam ove uslove što će vrijediti za buduća uređivanja. Više ne pokazuj ovu poruku.",
+	"wikibasemediainfo-filepage-license-content-acceptance": "Prihvatam ove uvjete za svoje buduće izmjene. Ne prikazuj ovu poruku ponovo.",
 	"wikibasemediainfo-property-placeholder": "Svojstvo",
-	"wikibasemediainfo-filepage-license-agree": "Prihvaćam",
+	"wikibasemediainfo-filepage-license-agree": "Prihvatam",
 	"wikibasemediainfo-statements-depicts-title": "Predmeti prikazani na ovoj slici",
 	"wikibasemediainfo-statements-item-add-qualifier": "Dodaj odrednicu",
 	"wikibasemediainfo-statements-item-input-label": "s Wikipodataka",

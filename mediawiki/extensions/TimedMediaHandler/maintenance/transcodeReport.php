@@ -8,6 +8,8 @@ if ( $IP === false ) {
 }
 require_once "$IP/maintenance/Maintenance.php";
 
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\MainConfigNames;
 use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\TimedMediaHandler\TimedMediaHandler;
 use MediaWiki\TimedMediaHandler\WebVideoTranscode\WebVideoTranscode;
@@ -15,19 +17,16 @@ use MediaWiki\Title\Title;
 
 class TranscodeReport extends Maintenance {
 
-	/** @var bool */
-	private $detail = false;
-	/** @var bool */
-	private $histogram = false;
-	/** @var bool */
-	private $outliers = false;
+	private bool $detail = false;
+	private bool $histogram = false;
+	private bool $outliers = false;
 
 	/** @var int[] */
-	private $count = [];
+	private array $count = [];
 	/** @var float[] */
-	private $duration = [];
+	private array $duration = [];
 	/** @var int[] */
-	private $size = [];
+	private array $size = [];
 
 	/**
 	 * @var int Don't count files claiming longer than 12hr duration
@@ -49,10 +48,8 @@ class TranscodeReport extends Maintenance {
 		1440 => 10 * 1000 * 1000,
 		2160 => 20 * 1000 * 1000,
 	];
-	/** @var int */
-	private $buckets = 25;
-	/** @var array */
-	private $histo = [];
+	private int $buckets = 25;
+	private array $histo = [];
 
 	public function __construct() {
 		parent::__construct();
@@ -91,13 +88,23 @@ class TranscodeReport extends Maintenance {
 			// Default to all if none specified
 			$types = [ 'AUDIO', 'VIDEO' ];
 		}
-		$res = $dbr->newSelectQueryBuilder()
-			->select( 'img_name' )
-			->from( 'image' )
-			->where( [ 'img_media_type' => $types ] )
-			->orderBy( [ 'img_media_type', 'img_name' ] )
-			->caller( __METHOD__ )
-			->fetchResultSet();
+		$migrationStage = $this->getConfig()->get( MainConfigNames::FileSchemaMigrationStage );
+		if ( $migrationStage & SCHEMA_COMPAT_READ_OLD ) {
+			$queryBuilder = $dbr->newSelectQueryBuilder()
+				->select( 'img_name' )
+				->from( 'image' )
+				->where( [ 'img_media_type' => $types ] )
+				->orderBy( [ 'img_media_type', 'img_name' ] );
+		} else {
+			$queryBuilder = $dbr->newSelectQueryBuilder()
+				->field( 'file_name', 'img_name' )
+				->from( 'file' )
+				->join( 'filetypes', null, 'file_type = ft_id' )
+				->where( [ 'ft_media_type' => $types ] )
+				->orderBy( [ 'file_type', 'file_name' ] );
+		}
+		$res = $queryBuilder->caller( __METHOD__ )->fetchResultSet();
+
 		$localRepo = $this->getServiceContainer()->getRepoGroup()->getLocalRepo();
 		foreach ( $res as $row ) {
 			$title = Title::newFromText( $row->img_name, NS_FILE );
@@ -148,10 +155,7 @@ class TranscodeReport extends Maintenance {
 		}
 	}
 
-	/**
-	 * @param File $file
-	 */
-	private function processFile( File $file ) {
+	private function processFile( File $file ): void {
 		$dbw = $this->getServiceContainer()->getDBLoadBalancerFactory()->getPrimaryDatabase();
 
 		// Transcode table doesn't carry the file size, but does carry the final bitrate.
@@ -206,10 +210,8 @@ class TranscodeReport extends Maintenance {
 	/**
 	 * @param string|int $key
 	 * @param int $bitrate
-	 *
-	 * @return int
 	 */
-	private function bucket( $key, $bitrate ) {
+	private function bucket( $key, int $bitrate ): int {
 		$res = (int)$key;
 		$target = ( $bitrate / $this->max[$res] ) * $this->buckets;
 		if ( $target < 0 ) {
@@ -226,7 +228,7 @@ class TranscodeReport extends Maintenance {
 	 * @param float $duration
 	 * @param int $bitrate
 	 */
-	private function recordForHistogram( $key, $duration, $bitrate ) {
+	private function recordForHistogram( $key, float $duration, int $bitrate ): void {
 		if ( !isset( $this->histo[$key] ) ) {
 			$this->histo[$key] = [];
 		}

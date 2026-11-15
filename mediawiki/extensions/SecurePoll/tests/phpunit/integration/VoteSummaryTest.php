@@ -5,11 +5,13 @@ namespace MediaWiki\Extension\SecurePoll\Test\Integration;
 use MediaWiki\Extension\SecurePoll\Context;
 use MediaWiki\Extension\SecurePoll\Entities\Election;
 use MediaWiki\Extension\SecurePoll\SpecialSecurePoll;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\ResourceLoader\OOUIModule;
 use MediaWikiIntegrationTestCase;
 use OOUI\Theme;
 
+/**
+ * @group Database
+ */
 class VoteSummaryTest extends MediaWikiIntegrationTestCase {
 
 	use OOUIModule;
@@ -36,7 +38,9 @@ class VoteSummaryTest extends MediaWikiIntegrationTestCase {
 	 * @covers \MediaWiki\Extension\SecurePoll\Pages\VotePage::getSummaryOfVotes
 	 */
 	public function testSummaryOfVotes( $data, $langCode, $tallyType, $expected ) {
-		$this->context = Context::newFromXmlFile( dirname( __DIR__ ) . '/../../test/' . $tallyType . '-test.xml' );
+		// Give grep a chance to find these:
+		// 3way-test.xml, approval-test.xml, radio-range.xml, schulze-test.xml
+		$this->context = Context::newFromXmlFile( dirname( __DIR__ ) . '/data/' . $tallyType . '-test.xml' );
 		$store = $this->context->getStore();
 
 		$electionIds = $store->getAllElectionIds();
@@ -52,7 +56,7 @@ class VoteSummaryTest extends MediaWikiIntegrationTestCase {
 		$this->assertEquals( $expected, $summary );
 	}
 
-	public function provideVotingData() {
+	public static function provideVotingData() {
 		return [
 			'approval-data' => [
 				[
@@ -142,7 +146,7 @@ class VoteSummaryTest extends MediaWikiIntegrationTestCase {
 	}
 
 	protected function getFactory() {
-		return MediaWikiServices::getInstance()->getService( 'SecurePoll.ActionPageFactory' );
+		return $this->getServiceContainer()->getService( 'SecurePoll.ActionPageFactory' );
 	}
 
 	protected function getSpecialPage() {

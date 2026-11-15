@@ -16,9 +16,8 @@
 	 * @extends ve.init.mw.Target
 	 */
 	mw.veForAll.Target = function ( node, content ) {
-		var config = {};
+		const config = {};
 		config.toolbarConfig = {};
-		config.toolbarConfig.actions = true;
 		// disable floatable behavior.
 		config.toolbarConfig.floatable = false;
 
@@ -52,8 +51,8 @@
 	mw.veForAll.Target.static.name = 'veForAll';
 
 	mw.veForAll.Target.static.toolbarGroups = ( function () {
-		var toolbarConfig = JSON.parse( JSON.stringify( mw.config.get( 'VEForAllToolbarNormal' ) ) );
-		return toolbarConfig.map( function ( x ) {
+		const toolbarConfig = JSON.parse( JSON.stringify( mw.config.get( 'VEForAllToolbarNormal' ) ) );
+		return toolbarConfig.map( ( x ) => {
 			if ( 'header' in x ) {
 				x.header = OO.ui.deferMsg( x.header );
 			}
@@ -64,9 +63,9 @@
 		} );
 	}() );
 
-	mw.veForAll.Target.static.actionGroups = [
-		{ include: [ 've4aSwitchEditor' ] }
-	];
+	mw.veForAll.Target.static.toolbarGroups = mw.veForAll.Target.static.toolbarGroups.concat( [
+		{ name: 've4aSwitch', align: 'after', include: [ 've4aSwitchEditor' ] }
+	] );
 
 	// Allow pasting links
 	mw.veForAll.Target.static.importRules = ve.copy( mw.veForAll.Target.static.importRules );
@@ -80,15 +79,20 @@
 		// FIXME this isn't supposed to be a global state thing, it's supposed to be
 		// variable per EditorWidget instance
 
+		// Remove any existing switch-related groups from toolbarGroups
+		mw.veForAll.Target.static.toolbarGroups = mw.veForAll.Target.static.toolbarGroups.filter(
+			( group ) => group.name !== 've4aSwitch'
+		);
+
 		if ( switchable ) {
-			mw.veForAll.Target.static.actionGroups = [ {
+			mw.veForAll.Target.static.toolbarGroups = mw.veForAll.Target.static.toolbarGroups.concat( [ {
+				name: 've4aSwitch',
 				type: 'list',
+				align: 'after',
 				icon: 'edit',
 				title: mw.msg( 'visualeditor-mweditmode-tooltip' ),
 				include: [ 'editModeVisual', 'editModeSource' ]
-			} ];
-		} else {
-			mw.veForAll.Target.static.actionGroups = [];
+			} ] );
 		}
 	};
 
@@ -96,11 +100,11 @@
 	 * Add listener to show or hide toolbar if the area gets or loses focus.
 	 */
 	mw.veForAll.Target.prototype.setPulloutToolbar = function () {
-		var target = this;
-		this.getSurface().getView().on( 'blur', function () {
+		const target = this;
+		this.getSurface().getView().on( 'blur', () => {
 			target.updateToolbarVisibility();
 		} );
-		this.getSurface().getView().on( 'focus', function () {
+		this.getSurface().getView().on( 'focus', () => {
 			target.updateToolbarVisibility();
 		} );
 		this.updateToolbarVisibility();
@@ -126,14 +130,17 @@
 	 * @param {string} content text to initiate content, in html format
 	 */
 	mw.veForAll.Target.prototype.createWithHtmlContent = function ( content ) {
-		var target = this,
+		const target = this,
 			$focusedElement = $( ':focus' );
 
-		this.addSurface(
-			ve.dm.converter.getModelFromDom(
-				ve.createDocumentFromHtml( content )
-			)
-		);
+		const doc = ve.createDocumentFromHtml( content );
+		// Parsoid adds an empty legacy-ID span to headings whose ID differs
+		// in the legacy encoding (e.g. "?", "!", commas or accents). VE strips
+		// these in ve.init.mw.Target#parseDocument, which this target bypasses;
+		// left in, they show up as "Sorry, this element can only be edited in
+		// source mode for now".
+		mw.libs.ve.stripParsoidFallbackIds( doc.body );
+		this.addSurface( ve.dm.converter.getModelFromDom( doc ) );
 		// this.setSurface( surface );
 		// this.$element.insertAfter( this.$node );
 
@@ -148,12 +155,12 @@
 		// target.updateContent();
 		// } );
 
-		this.getSurface().on( 'switchEditor', function () {
+		this.getSurface().on( 'switchEditor', () => {
 			target.switchEditor();
 		} );
 
 		// show or hide toolbar when lose focus
-		this.getSurface().getView().on( 'focus', function () {
+		this.getSurface().getView().on( 'focus', () => {
 			target.updateToolbarVisibility();
 			target.$node.addClass( 've-for-all-waiting-for-update' );
 		} );
@@ -180,7 +187,7 @@
 	 * @return {Promise}
 	 */
 	mw.veForAll.Target.prototype.updateContent = function () {
-		var surface = this.getSurface();
+		const surface = this.getSurface();
 		if ( surface !== null &&
 			!$( this.$node ).is( ':visible' ) &&
 			this.$node.is( '.ve-for-all-waiting-for-update' ) ) {
@@ -198,7 +205,7 @@
 	};
 
 	mw.veForAll.Target.prototype.escapePipesInTables = function ( text ) {
-		var lines = text.split( '\n' ), i, curLine, withinTable = false;
+		let lines = text.split( '\n' ), i, curLine, withinTable = false;
 
 		// This algorithm will hopefully work for all cases except
 		// when there are template calls within the table, and those
@@ -216,11 +223,11 @@
 				lines[ i ] = curLine.replace( /\|/g, '{{!}}' );
 			}
 			// Table caption case (`|+`). See https://www.mediawiki.org/wiki/Help:Tables
-			if ( withinTable && curLine.indexOf( '|+' ) > -1 ) {
+			if ( withinTable && curLine.includes( '|+' ) ) {
 				lines[ i ] = curLine.replace( /\|\+/g, '{{!}}+' );
 			}
 			// colspan/rowspan case (`|rowspan=`/`|colspan=`). See https://www.mediawiki.org/wiki/Help:Tables
-			if ( withinTable && ( curLine.indexOf( 'colspan' ) > -1 || curLine.indexOf( 'rowspan' ) > -1 ) ) {
+			if ( withinTable && ( curLine.includes( 'colspan' ) || curLine.includes( 'rowspan' ) ) ) {
 				lines[ i ] = curLine.replace( /(colspan|rowspan)="(\d+?)"\s{0,}\|/, '$1="$2" {{!}}' ).replace( /^\s{0,}\|/, '{{!}} ' );
 			}
 			if ( curLine.indexOf( '|}' ) === 0 ) {
@@ -231,7 +238,7 @@
 	};
 
 	mw.veForAll.Target.prototype.convertToWikiText = function ( content ) {
-		var target = this,
+		let target = this,
 			oldFormat = 'html',
 			newFormat = 'wikitext',
 			apiCall,
@@ -249,7 +256,7 @@
 			to: newFormat,
 			content: content,
 			title: this.getPageName()
-		} ).then( function ( data ) {
+		} ).then( ( data ) => {
 			wikitextVal = data[ 'veforall-parsoid-utils' ].content;
 			// Template fields can't contain wikitext tables - it
 			// will confuse the parser - so if we're editing a
@@ -266,7 +273,7 @@
 
 			$( target.$element ).removeClass( 'oo-ui-texture-pending' );
 
-		} ).fail( function () {
+		} ).fail( () => {
 			// console.log( 'Error converting to wikitext' );
 		} );
 
@@ -274,7 +281,7 @@
 
 	};
 	mw.veForAll.Target.prototype.setDir = function () {
-		var view = this.surface.getView(),
+		const view = this.surface.getView(),
 			dir = $( 'body' ).is( '.rtl' ) ? 'rtl' : 'ltr';
 		if ( view ) {
 			view.getDocument().setDir( dir );
@@ -282,7 +289,7 @@
 	};
 
 	mw.veForAll.Target.prototype.convertToHtml = function ( content, callback ) {
-		var target = this,
+		const target = this,
 			oldFormat = 'wikitext',
 			newFormat = 'html';
 
@@ -296,19 +303,8 @@
 			to: newFormat,
 			content: content,
 			title: this.getPageName()
-		} ).then( function ( data ) {
-			var htmlContent = data[ 'veforall-parsoid-utils' ].content;
-			// For some reason, certain wikitext (like section names
-			// containing commas) sometimes leads to this strange
-			// <span> tag within the returned HTML, which in turn
-			// leads to the message "Sorry, this element can only be
-			// edited in source mode for now" showing up in the
-			// editor in those parts. So, just get rid of this tag.
-			// @todo - it would be better, of course, to figure out
-			// the underlying cause of this problem, and fix that.
-			var regex = /<span [^>]* typeof="mw:FallbackId" [^>]*><\/span>/g;
-			htmlContent = htmlContent.replace( regex, '' );
-			target.createWithHtmlContent( htmlContent );
+		} ).then( ( data ) => {
+			target.createWithHtmlContent( data[ 'veforall-parsoid-utils' ].content );
 			$( target.$node )
 				.prop( 'disabled', false )
 				.removeClass( 'oo-ui-texture-pending' );
@@ -317,13 +313,13 @@
 				callback( target );
 			}
 
-		} ).fail( function () {
+		} ).fail( () => {
 			// console.log( 'Error converting to html' );
 		} );
 	};
 
 	mw.veForAll.Target.prototype.switchEditor = function () {
-		var textarea = this.$node,
+		const textarea = this.$node,
 			target = this;
 
 		if ( $( textarea ).is( ':visible' ) ) {
@@ -332,7 +328,7 @@
 			this.clearSurfaces();
 			// $( textarea ).hide();
 			// $(this.getSurface().$element).show();
-			this.convertToHtml( $( textarea ).val(), function ( target ) {
+			this.convertToHtml( $( textarea ).val(), ( target ) => {
 				target.getSurface().getView().focus();
 			} );
 
@@ -352,7 +348,7 @@
 			$( textarea ).parent().find( '.oo-ui-tool-link' )
 				.attr( 'title', OO.ui.deferMsg( 'visualeditor-welcomedialog-switch-ve' ) );
 
-			this.updateContent().then( function () {
+			this.updateContent().then( () => {
 				$( target.getSurface().$element ).hide();
 				$( textarea ).show().trigger( 'focus' );
 			} );
@@ -365,7 +361,7 @@
 	 *
 	 */
 	mw.veForAll.Target.prototype.attachToolbar = function () {
-		var toolbar = this.getToolbar();
+		const toolbar = this.getToolbar();
 
 		if ( this.toolbarPosition === 'top' ) {
 			toolbar.$element.insertBefore( toolbar.getSurface().$element );
@@ -373,7 +369,6 @@
 			$( this.$node ).after( toolbar.$element );
 		}
 		toolbar.initialize();
-		this.getActions().initialize();
 	};
 
 	// Registration

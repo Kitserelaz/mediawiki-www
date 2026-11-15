@@ -4,7 +4,7 @@
  * @author Florian Schmidt
  */
 
-( function ( $, mw, OO, module ) {
+( function () {
 	'use strict';
 
 	function init() {
@@ -19,6 +19,7 @@
 
 		OO.ui.infuse( $( '#new-article-button' ) ).on( 'click', function () {
 			mw.track( 'counter.MediaWiki.wikibase.articleplaceholder.button.createArticle' );
+			mw.track( 'stats.mediawiki_wikibase_articleplaceholder_button_createarticle_total' );
 			windowManager.openWindow( dialog );
 		} );
 	}
@@ -29,4 +30,4 @@
 		$( init );
 	}
 
-}( jQuery, mediaWiki, OO, module ) );
+}() );

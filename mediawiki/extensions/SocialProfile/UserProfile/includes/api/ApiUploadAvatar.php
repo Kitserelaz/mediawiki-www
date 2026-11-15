@@ -48,6 +48,8 @@ class ApiUploadAvatar extends ApiBase {
 		// Add the uploaded file to the params array
 		$this->mParams['file'] = $request->getFileName( 'file' );
 
+		$this->requireOnlyOneParameter( $this->mParams, 'file', 'url' );
+
 		if ( isset( $this->mParams['file'] ) ) {
 			$this->mUpload = new UploadAvatar();
 			$this->mUpload->initialize(
@@ -177,8 +179,9 @@ class ApiUploadAvatar extends ApiBase {
 		}
 
 		// Global blocks
-		if ( $user->isBlockedGlobally() ) {
-			$this->dieBlocked( $user->getGlobalBlock() );
+		$block = $user->getBlock();
+		if ( $block ) {
+			$this->dieBlocked( $block );
 		}
 	}
 

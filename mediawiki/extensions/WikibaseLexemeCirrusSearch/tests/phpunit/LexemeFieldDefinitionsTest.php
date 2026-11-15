@@ -5,6 +5,11 @@ namespace Wikibase\Lexeme\Search\Elastic\Tests;
 use PHPUnit\Framework\TestCase;
 use Wikibase\DataModel\Entity\NumericPropertyId;
 use Wikibase\DataModel\Services\Lookup\EntityLookup;
+use Wikibase\DataModel\Snak\PropertyNoValueSnak;
+use Wikibase\Lexeme\Domain\DummyObjects\BlankForm;
+use Wikibase\Lexeme\Domain\DummyObjects\BlankSense;
+use Wikibase\Lexeme\Domain\Model\Lexeme;
+use Wikibase\Lexeme\Domain\Model\LexemeId;
 use Wikibase\Lexeme\Search\Elastic\LexemeFieldDefinitions;
 use Wikibase\Lib\EntityTypeDefinitions;
 use Wikibase\Lib\SettingsArray;
@@ -65,4 +70,30 @@ class LexemeFieldDefinitionsTest extends TestCase {
 		self::assertArrayHasKey( 'statement_count', $lexemeFields->getFields() );
 	}
 
+	public function testGetSearchStatements() {
+		$lexeme = new Lexeme( new LexemeId( 'L1' ) );
+		$this->assertStatementIds( [], $lexeme );
+
+		$lexeme->getStatements()->addNewStatement( new PropertyNoValueSnak( 1 ) );
+		$this->assertStatementIds( [ 'P1' ], $lexeme );
+
+		$form = new BlankForm();
+		$form->getStatements()->addNewStatement( new PropertyNoValueSnak( 42 ) );
+		$lexeme->addOrUpdateForm( $form );
+		$this->assertStatementIds( [ 'P1', 'P42' ], $lexeme );
+
+		$sense = new BlankSense();
+		$sense->getStatements()->addNewStatement( new PropertyNoValueSnak( 314 ) );
+		$lexeme->addOrUpdateSense( $sense );
+
+		$this->assertStatementIds( [ 'P1', 'P42', 'P314' ], $lexeme );
+	}
+
+	private function assertStatementIds( array $expected, Lexeme $lexeme ) {
+		$found = [];
+		foreach ( LexemeFieldDefinitions::getSearchStatements( $lexeme ) as $stmt ) {
+			$found[] = $stmt->getMainSnak()->getPropertyId()->getSerialization();
+		}
+		$this->assertEquals( $expected, $found );
+	}
 }

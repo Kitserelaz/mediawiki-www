@@ -29,7 +29,7 @@ class RottenLinksParserFunctions {
 		if ( $url === '' ) {
 			return Html::element( 'strong', [
 				'class' => 'error',
-			], $parser->msg( 'rottenlinks-rlstatus-no-url' ) );
+			], $parser->msg( 'rottenlinks-rlstatus-no-url' )->text() );
 		}
 
 		$dbr = $this->connectionProvider->getReplicaDatabase();

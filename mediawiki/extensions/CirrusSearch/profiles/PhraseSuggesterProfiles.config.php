@@ -3,25 +3,15 @@
 /**
  * CirrusSearch - List of profiles for "Did you mean" suggestions
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
 return [
 	// This is the default settings
 	'default' => [
+		// The field to perform phrase suggest queries against
+		'field' => 'suggest',
+
 		// Don't suggest anything if the query has more than total_hits_threshold (set to -1 to disable)
 		'total_hits_threshold' => 15000,
 
@@ -34,6 +24,9 @@ return [
 		// * always: Suggest any matching suggestions based on terms
 		// in the suggest text.
 		'mode' => 'always',
+
+		// The maximum corrections to be generated for scoring per suggest text token.
+		'num_candidates' => 5,
 
 		// Confidence level required to suggest new phrases.
 		// See confidence on https://www.elastic.co/guide/en/elasticsearch/reference/current/search-suggesters-phrase.html
@@ -97,9 +90,11 @@ return [
 	// The 'strict' settings will try to avoid displaying weird suggestions.
 	// (suited for small size wikis)
 	'strict' => [
+		'field' => 'suggest',
 		// Don't suggest anything if the query has more than total_hits_threshold (set to -1 to disable)
 		'total_hits_threshold' => 15000,
 		'mode' => 'always',
+		'num_candidates' => 5,
 		'confidence' => 2.0,
 		'max_errors' => 2,
 		'real_word_error_likelihood' => 0.95,
@@ -114,11 +109,33 @@ return [
 			]
 		]
 	],
-	// Alternative settings, confidence set to 1 but with laplace smoothing
-	'alternative' => [
+	// Same settings as `default` but with prefix_length => 1
+	'default_1' => [
+		'field' => 'suggest',
 		'total_hits_threshold' => 15000,
 		'mode' => 'always',
-		'confidence' => 1.0,
+		'num_candidates' => 5,
+		'confidence' => 2.0,
+		'max_errors' => 2,
+		'real_word_error_likelihood' => 0.95,
+		'max_term_freq' => 0.5,
+		'min_doc_freq' => 0.0,
+		'prefix_length' => 1,
+		'collate' => false,
+		'collate_minimum_should_match' => '3<66%',
+		'smoothing_model' => [
+			'stupid_backoff' => [
+				'discount' => 0.4
+			]
+		],
+	],
+	// Same settings as `default` but with field => suggest_variant and prefix_length => 1
+	'default_1v' => [
+		'field' => 'suggest_variant',
+		'total_hits_threshold' => 15000,
+		'mode' => 'always',
+		'num_candidates' => 5,
+		'confidence' => 2.0,
 		'max_errors' => 2,
 		'real_word_error_likelihood' => 0.95,
 		'max_term_freq' => 0.5,
@@ -127,9 +144,9 @@ return [
 		'collate' => false,
 		'collate_minimum_should_match' => '3<66%',
 		'smoothing_model' => [
-			'laplace' => [
-				'alpha' => 0.3
+			'stupid_backoff' => [
+				'discount' => 0.4
 			]
-		]
-	]
+		],
+	],
 ];

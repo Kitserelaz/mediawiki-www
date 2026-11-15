@@ -1,4 +1,4 @@
-#firstHeading {
+body.ns-2 #firstHeading {
   display: none;
 }
 
@@ -97,11 +97,12 @@
   margin: 0;
 }
 
-.profile-externalLinks a {
+.profile-externalLinks svg {
   margin-right: 8px;
 }
 
-.external-link.tooltip:hover::after {
+.external-link.tooltip:hover::after,
+.external-link.tooltip:focus-visible::after {
   content: attr(username);
   position: absolute;
   background: @userprofile-secondary;

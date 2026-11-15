@@ -3,26 +3,24 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Synchronization;
 
-use ContentHandler;
-use DifferenceEngine;
 use InvalidArgumentException;
-use Language;
 use MediaWiki\CommentStore\CommentStoreComment;
-use MediaWiki\Context\RequestContext;
+use MediaWiki\Content\ContentHandler;
+use MediaWiki\Context\IContextSource;
+use MediaWiki\Diff\DifferenceEngine;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
+use MediaWiki\Extension\Translate\MessageLoading\MessageCollection;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
-use MediaWiki\Extension\Translate\SystemUsers\FuzzyBot;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\Html\Html;
+use MediaWiki\Language\Language;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Parser\Sanitizer;
+use MediaWiki\RecentChanges\RecentChange;
+use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
-use MediaWiki\User\User;
 use MessageGroup;
-use RecentChange;
 use RuntimeException;
-use Xml;
 
 /**
  * Class which encapsulates message importing. It scans for changes (new, changed, deleted),
@@ -35,23 +33,28 @@ use Xml;
  */
 class MessageWebImporter {
 	private Title $title;
-	private User $user;
 	private MessageGroup $group;
 	private string $code;
 	/** @var int|null */
 	private $time;
+
 	/** Maximum processing time in seconds. */
 	private const MAX_PROCESSING_TIME = 43;
 
 	/**
-	 * @param Title $title
-	 * @param User $user
+	 * @param Title $title The title to send the user to when they submit the form; this may or may not
+	 *  be the title of `$context` (e.g. the special page subpage may be removed from it)
+	 * @param IContextSource $context
 	 * @param MessageGroup|string|null $group
 	 * @param string $code
 	 */
-	public function __construct( Title $title, User $user, $group = null, string $code = 'en' ) {
+	public function __construct(
+		Title $title,
+		private readonly IContextSource $context,
+		$group = null,
+		string $code = 'en'
+	) {
 		$this->setTitle( $title );
-		$this->setUser( $user );
 		$this->setGroup( $group );
 		$this->setCode( $code );
 	}
@@ -65,25 +68,19 @@ class MessageWebImporter {
 		$this->title = $title;
 	}
 
-	public function getUser(): User {
-		return $this->user;
-	}
-
-	public function setUser( User $user ): void {
-		$this->user = $user;
-	}
-
 	public function getGroup(): MessageGroup {
 		return $this->group;
 	}
 
 	/** @param MessageGroup|string $group MessageGroup object or group ID */
 	public function setGroup( $group ): void {
-		if ( $group instanceof MessageGroup ) {
-			$this->group = $group;
-		} else {
-			$this->group = MessageGroups::getGroup( $group );
+		if ( is_string( $group ) ) {
+			$group = MessageGroups::getGroup( $group );
+			if ( !$group ) {
+				throw new InvalidArgumentException( __METHOD__ . ' called with invalid group ID ' . $group );
+			}
 		}
+		$this->group = $group;
 	}
 
 	public function getCode(): string {
@@ -105,8 +102,8 @@ class MessageWebImporter {
 			'class' => 'mw-translate-manage'
 		];
 
-		$csrfTokenSet = RequestContext::getMain()->getCsrfTokenSet();
-		return Xml::openElement( 'form', $formParams ) .
+		$csrfTokenSet = $this->context->getCsrfTokenSet();
+		return Html::openElement( 'form', $formParams ) .
 			Html::hidden( 'title', $this->getTitle()->getPrefixedText() ) .
 			Html::hidden( 'token', $csrfTokenSet->getToken() ) .
 			Html::hidden( 'process', 1 );
@@ -117,9 +114,8 @@ class MessageWebImporter {
 	}
 
 	protected function allowProcess(): bool {
-		$context = RequestContext::getMain();
-		$request = $context->getRequest();
-		$csrfTokenSet = $context->getCsrfTokenSet();
+		$request = $this->context->getRequest();
+		$csrfTokenSet = $this->context->getCsrfTokenSet();
 
 		return $request->wasPosted()
 			&& $request->getBool( 'process' )
@@ -135,11 +131,11 @@ class MessageWebImporter {
 	}
 
 	public function execute( array $messages ): bool {
-		$context = RequestContext::getMain();
+		$context = $this->context;
 		$output = $context->getOutput();
 
 		// Set up diff engine
-		$diff = new DifferenceEngine();
+		$diff = new DifferenceEngine( $context );
 		$diff->showDiffStyle();
 		$diff->setReducedLineNumbers();
 
@@ -207,9 +203,17 @@ class MessageWebImporter {
 					$oldTextForDiff = MessageHandle::makeFuzzyString( $old );
 				}
 
-				$oldContent = ContentHandler::makeContent( $oldTextForDiff, $diff->getTitle() );
-				$newContent = ContentHandler::makeContent( $value, $diff->getTitle() );
-				$diff->setContent( $oldContent, $newContent );
+				// MutableRevisionRecord expects a page that can exist, so use a dummy non-special page.
+				$dummyMainPage = Title::makeTitle( NS_MAIN, 'Some title just for diff' );
+				$oldContent = ContentHandler::makeContent( $oldTextForDiff, $dummyMainPage );
+				$oldRevision = new MutableRevisionRecord( $dummyMainPage );
+				$oldRevision->setContent( SlotRecord::MAIN, $oldContent );
+
+				$newContent = ContentHandler::makeContent( $value, $dummyMainPage );
+				$newRevision = new MutableRevisionRecord( $dummyMainPage );
+				$newRevision->setContent( SlotRecord::MAIN, $newContent );
+
+				$diff->setRevisions( $oldRevision, $newRevision );
 				$text = $diff->getDiff( '', '' );
 
 				// This is a changed translation. Note it for the next steps.
@@ -239,7 +243,7 @@ class MessageWebImporter {
 						$process = false;
 					} else {
 						// Check processing time
-						if ( !isset( $this->time ) ) {
+						if ( $this->time === null ) {
 							$this->time = (int)wfTimestamp();
 						}
 
@@ -285,10 +289,18 @@ class MessageWebImporter {
 				// translate-manage-action-import, translate-manage-action-conflict,
 				// translate-manage-action-ignore, translate-manage-action-fuzzy
 				foreach ( $actions as $action ) {
-					$label = $context->msg( "translate-manage-action-$action" )->text();
-					$name = self::escapeNameForPHP( "action-$type-$key" );
-					$id = Sanitizer::escapeIdForAttribute( "action-$key-$action" );
-					$act[] = Xml::radioLabel( $label, $name, $action, $id, $action === $defaultAction );
+					$label = $context->msg( "translate-manage-action-$action" )->escaped();
+					$act[] = Html::rawElement(
+						'label',
+						[],
+						Html::radio(
+							self::escapeNameForPHP( "action-$type-$key" ),
+							$action === $defaultAction,
+							[ 'value' => $action ]
+						) .
+						"\u{00A0}" .
+						$label
+					);
 				}
 
 				$param = '<code class="mw-tmi-diff">' . htmlspecialchars( $key ) . '</code>';
@@ -301,7 +313,7 @@ class MessageWebImporter {
 		}
 
 		if ( !$process ) {
-			$collection->filter( 'hastranslation', false );
+			$collection->filter( MessageCollection::FILTER_HAS_TRANSLATION, MessageCollection::INCLUDE_MATCHING );
 			$keys = $collection->getMessageKeys();
 
 			$diff = array_diff( $keys, array_keys( $messages ) );
@@ -385,7 +397,7 @@ class MessageWebImporter {
 				$message = MessageHandle::makeFuzzyString( $message );
 			}
 
-			return self::doImport( $title, $message, $comment, $this->getUser() );
+			return $this->doImport( $title, $message, $comment );
 		} elseif ( $action === 'ignore' ) {
 			return [ 'translate-manage-import-ignore', $key ];
 		} elseif ( $action === 'fuzzy' && $code !== 'en' &&
@@ -393,28 +405,25 @@ class MessageWebImporter {
 		) {
 			$message = MessageHandle::makeFuzzyString( $message );
 
-			return self::doImport( $title, $message, $comment, $this->getUser() );
+			return $this->doImport( $title, $message, $comment );
 		} elseif ( $action === 'fuzzy' && $code === 'en' ) {
-			return self::doFuzzy( $title, $message, $comment, $this->getUser() );
+			return $this->doFuzzy( $title, $message, $comment );
 		} else {
 			throw new InvalidArgumentException( "Unhandled action $action" );
 		}
 	}
 
-	protected function checkProcessTime() {
+	protected function checkProcessTime(): bool {
 		return (int)wfTimestamp() - $this->time >= self::MAX_PROCESSING_TIME;
 	}
 
 	/** @return string[] */
-	private static function doImport(
-		Title $title,
-		string $message,
-		string $summary,
-		User $user
-	): array {
-		$wikiPage = MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
+	private function doImport( Title $title, string $message, string $summary ): array {
+		$mwServices = MediaWikiServices::getInstance();
+		$wikiPage = $mwServices->getWikiPageFactory()->newFromTitle( $title );
 		$content = ContentHandler::makeContent( $message, $title );
 
+		$user = $this->context->getUser();
 		$updater = $wikiPage->newPageUpdater( $user )->setContent( SlotRecord::MAIN, $content );
 		if ( $user->authorizeWrite( 'autopatrol', $title ) ) {
 			$updater->setRcPatrolStatus( RecentChange::PRC_AUTOPATROLLED );
@@ -429,28 +438,20 @@ class MessageWebImporter {
 			];
 		}
 
+		$statusFormatter = $mwServices
+			->getFormatterFactory()
+			->getStatusFormatter( $this->context );
 		$text = "Failed to import new version of page {$title->getPrefixedText()}\n";
-		$text .= $status->getWikiText();
+		$text .= $statusFormatter->getWikiText( $status );
 		throw new RuntimeException( $text );
 	}
 
 	/** @return string[] */
-	public static function doFuzzy(
-		Title $title,
-		string $message,
-		string $comment,
-		?User $user
-	): array {
-		$context = RequestContext::getMain();
+	private function doFuzzy( Title $title, string $message, string $comment ): array {
 		$services = MediaWikiServices::getInstance();
 
-		if ( !$context->getUser()->isAllowed( 'translate-manage' ) ) {
+		if ( !$this->context->getUser()->isAllowed( 'translate-manage' ) ) {
 			return [ 'badaccess-group0' ];
-		}
-
-		// Edit with fuzzybot if there is no user.
-		if ( !$user ) {
-			$user = FuzzyBot::getUser();
 		}
 
 		// Work on all subpages of base title.
@@ -458,7 +459,7 @@ class MessageWebImporter {
 		$titleText = $handle->getKey();
 
 		$revStore = $services->getRevisionStore();
-		$dbw = $services->getDBLoadBalancer()->getConnection( DB_PRIMARY );
+		$dbw = $services->getConnectionProvider()->getPrimaryDatabase();
 		$rows = $revStore->newSelectQueryBuilder( $dbw )
 			->joinPage()
 			->where( [
@@ -495,19 +496,14 @@ class MessageWebImporter {
 			}
 
 			// Do actual import
-			$changed[] = self::doImport(
-				$translationTitle,
-				$text,
-				$comment,
-				$user
-			);
+			$changed[] = $this->doImport( $translationTitle, $text, $comment );
 		}
 
 		// Format return text
 		$text = '';
 		foreach ( $changed as $c ) {
 			$key = array_shift( $c );
-			$text .= '* ' . $context->msg( $key, $c )->plain() . "\n";
+			$text .= '* ' . $this->context->msg( $key, $c )->plain() . "\n";
 		}
 
 		return [ 'translate-manage-import-fuzzy', "\n" . $text ];
@@ -535,15 +531,20 @@ class MessageWebImporter {
 	 * @param string $type Contents of type class.
 	 * @param string $content Contents as raw html.
 	 * @param Language|null $lang The language in which the text is written.
+	 * @param string[] $extraContainerClasses Additional classes to add to the section container
 	 * @return string Section element as html.
 	 */
 	public static function makeSectionElement(
 		string $legend,
 		string $type,
 		string $content,
-		?Language $lang = null
+		?Language $lang = null,
+		array $extraContainerClasses = []
 	): string {
 		$containerParams = [ 'class' => "mw-tpt-sp-section mw-tpt-sp-section-type-{$type}" ];
+		if ( $extraContainerClasses ) {
+			$containerParams[ 'class' ] .= ' ' . implode( ' ', $extraContainerClasses );
+		}
 		$legendParams = [ 'class' => 'mw-tpt-sp-legend' ];
 		$contentParams = [ 'class' => 'mw-tpt-sp-content' ];
 		if ( $lang ) {

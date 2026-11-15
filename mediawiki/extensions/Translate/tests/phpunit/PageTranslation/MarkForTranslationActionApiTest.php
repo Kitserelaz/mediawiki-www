@@ -3,13 +3,12 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
-use ApiMain;
-use ApiQueryTokens;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Api\ApiQueryTokens;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\Translate\MessageProcessing\MessageGroupMetadata;
 use MediaWiki\Page\PageStoreRecord;
 use MediaWiki\Request\FauxRequest;
-use MediaWiki\Session\SessionManager;
 use MediaWiki\Status\Status;
 use MediaWiki\Tests\Unit\Permissions\MockAuthorityTrait;
 use MediaWiki\Title\Title;
@@ -279,7 +278,7 @@ class MarkForTranslationActionApiTest extends MediaWikiIntegrationTestCase {
 		$title->method( 'toPageRecord' )
 			->willReturn( $pageRecord );
 
-		$page = $this->getMockBuilder( 'TranslatablePage' )
+		$page = $this->getMockBuilder( TranslatablePage::class )
 			->disableOriginalConstructor()
 			->onlyMethods( [ 'hasPageDisplayTitle', 'getMessageGroupId', 'supportsTransclusion' ] )
 			->getMock();
@@ -300,13 +299,16 @@ class MarkForTranslationActionApiTest extends MediaWikiIntegrationTestCase {
 			);
 		}
 
+		$expectedTranslateTitle = $expectedSettings['translateTitle'] ?? true;
 		$operation = new TranslatablePageMarkOperation(
 			$page,
 			new ParserOutput( '', [], [] ),
 			$unitObjects,
 			[],
 			$firstMark,
-			$unitValidationStatus
+			$unitValidationStatus,
+			$expectedTranslateTitle ? TranslateTitleEnum::DEFAULT_CHECKED : TranslateTitleEnum::DEFAULT_UNCHECKED,
+			null
 		);
 
 		$settings = new TranslatablePageSettings(
@@ -314,12 +316,12 @@ class MarkForTranslationActionApiTest extends MediaWikiIntegrationTestCase {
 			$expectedSettings['forcePriority'] ?? false,
 			$expectedSettings['priorityReason'] ?? '',
 			$expectedSettings['noFuzzyUnits'] ?? [],
-			$expectedSettings['translateTitle'] ?? true,
+			$expectedTranslateTitle,
 			$expectedSettings['forceLatestSyntaxVersion'] ?? false,
 			$expectedSettings['enableTransclusion'] ?? true
 		);
 
-		$sessionObj = SessionManager::singleton()->getEmptySession();
+		$sessionObj = $this->getServiceContainer()->getSessionManager()->getEmptySession();
 		$params['token'] = ApiQueryTokens::getToken(
 			$user,
 			$sessionObj,
@@ -344,6 +346,7 @@ class MarkForTranslationActionApiTest extends MediaWikiIntegrationTestCase {
 			->with(
 				$this->identicalTo( $operation ),
 				$settings,
+				RequestContext::getMain(),
 				$this->isInstanceOf( User::class )
 			)
 			->willReturn( 42 );
@@ -366,17 +369,14 @@ class MarkForTranslationActionApiTest extends MediaWikiIntegrationTestCase {
 			$messageGroupMetadata,
 			$title
 		) extends MarkForTranslationActionApi {
-			private $title;
-
 			public function __construct(
 				ApiMain $mainModule,
-						$moduleName,
+				string $moduleName,
 				TranslatablePageMarker $translatablePageMarker,
 				MessageGroupMetadata $messageGroupMetadata,
-				Title $title
+				private readonly Title $title,
 			) {
 				parent::__construct( $mainModule, $moduleName, $translatablePageMarker, $messageGroupMetadata );
-				$this->title = $title;
 			}
 
 			public function getTitleFromTitleOrPageId( $params ) {

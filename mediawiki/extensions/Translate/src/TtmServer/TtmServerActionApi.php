@@ -3,8 +3,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TtmServer;
 
-use ApiBase;
-use ApiMain;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
 use MediaWiki\Config\Config;
 use MediaWiki\Config\ServiceOptions;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -17,8 +17,7 @@ use Wikimedia\ParamValidator\ParamValidator;
  * @since 2012-01-26
  */
 class TtmServerActionApi extends ApiBase {
-	/** @var TtmServerFactory */
-	private $ttmServerFactory;
+
 	/** @var ServiceOptions */
 	private $options;
 
@@ -31,11 +30,10 @@ class TtmServerActionApi extends ApiBase {
 	public function __construct(
 		ApiMain $mainModule,
 		string $moduleName,
-		TtmServerFactory $ttmServerFactory,
+		private readonly TtmServerFactory $ttmServerFactory,
 		Config $config
 	) {
 		parent::__construct( $mainModule, $moduleName );
-		$this->ttmServerFactory = $ttmServerFactory;
 		$this->options = new ServiceOptions( self::CONSTRUCTOR_OPTIONS, $config );
 	}
 

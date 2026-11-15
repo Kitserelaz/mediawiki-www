@@ -35,6 +35,5 @@
 	"wikibase-entity-summary-wbsetlabel-set": "Skridennad [$2] kemmet",
 	"wikibase-entity-summary-wbsetaliases-add-remove": "Ouzhpennet ha dilamet {{PLURAL:$1|un alias|aliasoù}} [$2]",
 	"wikibase-entity-summary-wbsetaliases-remove": "Dilamet {{PLURAL:$1|un alias|aliasoù}} [$2]",
-	"wikibase-entity-summary-wbsetlabeldescriptionaliases": "Cheñchet skridennad, deskrivadur hag alias [$2]",
-	"version-wikibase": "Wikibase"
+	"wikibase-entity-summary-wbsetlabeldescriptionaliases": "Cheñchet skridennad, deskrivadur hag alias [$2]"
 }

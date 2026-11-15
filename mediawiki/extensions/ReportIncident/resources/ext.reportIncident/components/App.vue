@@ -1,54 +1,67 @@
 <template>
 	<email-alert-dialog v-model:open="emailAlertOpen">
 	</email-alert-dialog>
-	<report-incident-dialog v-model:open="open">
+	<report-incident-dialog v-model:open="reportIncidentOpen">
 		<template #dialog_step_1>
-			<report-incident-dialog-step-1></report-incident-dialog-step-1>
+			<report-incident-dialog-step1></report-incident-dialog-step1>
 		</template>
-		<template #dialog_step_2>
-			<report-incident-dialog-step-2></report-incident-dialog-step-2>
+		<template #dialog_step_report_unacceptable_behavior>
+			<report-incident-dialog-types-of-behavior></report-incident-dialog-types-of-behavior>
+		</template>
+		<template #dialog_step_report_immediate_harm>
+			<report-immediate-harm-step></report-immediate-harm-step>
+		</template>
+		<template #dialog_step_emergency_submit_success>
+			<emergency-submit-success-step></emergency-submit-success-step>
+		</template>
+		<template #dialog_step_nonemergency_submit_success>
+			<non-emergency-submit-success-step>
+			</non-emergency-submit-success-step>
 		</template>
 	</report-incident-dialog>
 </template>
 
 <script>
-const { ref, onMounted } = require( 'vue' );
 const EmailAlertDialog = require( './EmailAlertDialog.vue' );
 const ReportIncidentDialog = require( './ReportIncidentDialog.vue' );
 const ReportIncidentDialogStep1 = require( './ReportIncidentDialogStep1.vue' );
-const ReportIncidentDialogStep2 = require( './ReportIncidentDialogStep2.vue' );
+const ReportIncidentDialogTypesOfBehavior = require( './ReportIncidentDialogTypesOfBehavior.vue' );
+const ReportImmediateHarmStep = require( './ReportImmediateHarmStep.vue' );
+const EmergencySubmitSuccessStep = require( './EmergencySubmitSuccessStep.vue' );
+const NonEmergencySubmitSuccessStep = require( './NonEmergencySubmitSuccessStep.vue' );
 const useFormStore = require( '../stores/Form.js' );
+const useInstrument = require( '../composables/useInstrument.js' );
+const { ref } = require( 'vue' );
 
 // @vue/component
 module.exports = exports = {
 	name: 'App',
-	compatConfig: {
-		MODE: 3
-	},
 	compilerOptions: {
 		whitespace: 'condense'
 	},
 	components: {
-		'email-alert-dialog': EmailAlertDialog,
-		'report-incident-dialog': ReportIncidentDialog,
-		'report-incident-dialog-step-1': ReportIncidentDialogStep1,
-		'report-incident-dialog-step-2': ReportIncidentDialogStep2
+		EmailAlertDialog,
+		ReportIncidentDialog,
+		ReportIncidentDialogStep1,
+		ReportImmediateHarmStep,
+		ReportIncidentDialogTypesOfBehavior,
+		EmergencySubmitSuccessStep,
+		NonEmergencySubmitSuccessStep
 	},
 	setup() {
-
 		const emailAlertOpen = ref( false );
-		const open = ref( false );
+		const reportIncidentOpen = ref( false );
 
 		const store = useFormStore();
+		const logEvent = useInstrument();
 
 		/**
 		 * Open the main dialog if user has confirmed email, otherwise show email alert dialog.
 		 */
 		function showDialogDependingOnEmailConfirmationStatus() {
-			// Clear the successful submission banner, as a new report is being made now.
-			store.formSuccessfullySubmitted = false;
 			if ( mw.config.get( 'wgReportIncidentUserHasConfirmedEmail' ) ) {
-				open.value = true;
+				reportIncidentOpen.value = true;
+				logEvent( 'view', { source: 'form' } );
 			} else {
 				emailAlertOpen.value = true;
 			}
@@ -58,11 +71,8 @@ module.exports = exports = {
 		 * Handles clicks on the Report links in the Tools menu.
 		 * This opens the dialog and clears any data set by a
 		 * click on a DiscussionTools report link.
-		 *
-		 * @param {Event} event
 		 */
-		function reportLinkInToolsMenuHandler( event ) {
-			event.preventDefault();
+		function reportLinkInToolsMenuHandler() {
 			// If DiscussionTools data was set, then reset the
 			// form state as the user probably is intending
 			// to report something else.
@@ -71,10 +81,6 @@ module.exports = exports = {
 			}
 			showDialogDependingOnEmailConfirmationStatus();
 		}
-
-		// Open the dialog if the link is clicked on.
-		// eslint-disable-next-line no-jquery/no-global-selector
-		$( '.ext-reportincident-link' ).on( 'click', reportLinkInToolsMenuHandler );
 
 		/**
 		 * Calls the allusers API to check if a user
@@ -140,7 +146,6 @@ module.exports = exports = {
 					store.inputReportedUser = threadItem.author;
 				} else {
 					store.inputReportedUser = '';
-					store.displayReportedUserRequiredError = false;
 				}
 				store.overflowMenuData = menuItem.getData();
 				showDialogDependingOnEmailConfirmationStatus();
@@ -162,19 +167,20 @@ module.exports = exports = {
 			}
 		}
 
-		onMounted( () => {
-			mw.hook( 'discussionToolsOverflowMenuOnChoose' ).add( discussionToolsOverflowMenuOnChooseHandler );
-		} );
 		return {
-			open,
 			emailAlertOpen,
-			// Used in tests, so needs to be passed out here.
-			/* eslint-disable vue/no-unused-properties */
+			reportIncidentOpen,
 			checkUsernameExists,
 			discussionToolsOverflowMenuOnChooseHandler,
 			reportLinkInToolsMenuHandler
-			/* eslint-enable vue/no-unused-properties */
 		};
-	}
+	},
+	expose: [
+		// Expose internal functions called from tests in order
+		// to prevent linter errors about unused properties
+		'checkUsernameExists',
+		'discussionToolsOverflowMenuOnChooseHandler',
+		'reportLinkInToolsMenuHandler'
+	]
 };
 </script>

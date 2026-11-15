@@ -5,17 +5,15 @@ declare( strict_types=1 );
 namespace MediaWiki\Extension\EmbedVideo\Tests;
 
 use Exception;
-use HashBagOStuff;
 use LocalFile;
+use LocalRepo;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\EmbedVideo\EmbedService\EmbedServiceFactory;
 use MediaWiki\Extension\EmbedVideo\EmbedVideoHooks;
 use MediaWiki\Extension\EmbedVideo\Media\AudioHandler;
-use MediaWiki\Title\Title;
+use MediaWiki\Output\OutputPage;
 use MediaWikiIntegrationTestCase;
-use OutputPage;
 use RepoGroup;
-use RequestContext;
-use WANObjectCache;
 
 /**
  * @group EmbedVideo
@@ -29,8 +27,7 @@ class EmbedVideoHooksTest extends MediaWikiIntegrationTestCase {
 	public function testConstructor() {
 		$hooks = new EmbedVideoHooks(
 			$this->getServiceContainer()->getConfigFactory(),
-			$this->getServiceContainer()->getRepoGroup(),
-			$this->getServiceContainer()->getMainWANObjectCache()
+			$this->getServiceContainer()->getRepoGroup()
 		);
 
 		$this->assertInstanceOf( EmbedVideoHooks::class, $hooks );
@@ -48,8 +45,7 @@ class EmbedVideoHooksTest extends MediaWikiIntegrationTestCase {
 
 		$hooks = new EmbedVideoHooks(
 			$this->getServiceContainer()->getConfigFactory(),
-			$this->getServiceContainer()->getRepoGroup(),
-			$this->getServiceContainer()->getMainWANObjectCache()
+			$this->getServiceContainer()->getRepoGroup()
 		);
 
 		$page = new OutputPage( RequestContext::getMain() );
@@ -72,8 +68,7 @@ class EmbedVideoHooksTest extends MediaWikiIntegrationTestCase {
 
 		$hooks = new EmbedVideoHooks(
 			$this->getServiceContainer()->getConfigFactory(),
-			$this->getServiceContainer()->getRepoGroup(),
-			$this->getServiceContainer()->getMainWANObjectCache()
+			$this->getServiceContainer()->getRepoGroup()
 		);
 
 		$page = new OutputPage( RequestContext::getMain() );
@@ -130,8 +125,7 @@ class EmbedVideoHooksTest extends MediaWikiIntegrationTestCase {
 	public function testAddFunctionHooks() {
 		$hooks = new EmbedVideoHooks(
 			$this->getServiceContainer()->getConfigFactory(),
-			$this->getServiceContainer()->getRepoGroup(),
-			$this->getServiceContainer()->getMainWANObjectCache()
+			$this->getServiceContainer()->getRepoGroup()
 		);
 
 		$parser = $this->getServiceContainer()->getParser();
@@ -161,8 +155,7 @@ class EmbedVideoHooksTest extends MediaWikiIntegrationTestCase {
 
 		$hooks = new EmbedVideoHooks(
 			$this->getServiceContainer()->getConfigFactory(),
-			$this->getServiceContainer()->getRepoGroup(),
-			$this->getServiceContainer()->getMainWANObjectCache()
+			$this->getServiceContainer()->getRepoGroup()
 		);
 
 		$parser = $this->getServiceContainer()->getParser();
@@ -182,60 +175,72 @@ class EmbedVideoHooksTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
-	 * @covers \MediaWiki\Extension\EmbedVideo\EmbedVideoHooks::onArticlePurge
-	 * @return void
-	 * @throws Exception
+	 * @covers \MediaWiki\Extension\EmbedVideo\EmbedVideoHooks::onSkinTemplateNavigation__Universal
 	 */
-	public function testOnArticlePurgeHooksNotAFile() {
-		$repo = $this->getMockBuilder( RepoGroup::class )->disableOriginalConstructor()->getMock();
+	public function testAddsRefreshMetadataActionForLocalFile(): void {
+		$title = $this->getServiceContainer()->getTitleFactory()->newFromText( 'Test.ogg', NS_FILE );
+		$user = new class {
+			public function isAllowed( string $permission ): bool {
+				return $permission === 'embedvideo-refreshmetadata';
+			}
+		};
 
-		$repo->expects( $this->never() )->method( 'findFile' );
+		$file = $this->createMock( LocalFile::class );
+		$file->method( 'exists' )->willReturn( true );
+		$file->method( 'isLocal' )->willReturn( true );
+		$file->method( 'getRedirected' )->willReturn( null );
+		$file->method( 'getHandler' )->willReturn( new AudioHandler() );
+
+		$localRepo = $this->createMock( LocalRepo::class );
+		$localRepo->method( 'newFile' )->with( $title )->willReturn( $file );
+
+		$repoGroup = $this->createMock( RepoGroup::class );
+		$repoGroup->method( 'getLocalRepo' )->willReturn( $localRepo );
+
+		$message = new class {
+			public function text(): string {
+				return 'Refresh metadata';
+			}
+		};
+
+		$skin = new class( $title, $user, $message ) {
+			public function __construct(
+				private $title,
+				private $user,
+				private $message
+			) {
+			}
+
+			public function getTitle() {
+				return $this->title;
+			}
+
+			public function getUser() {
+				return $this->user;
+			}
+
+			public function msg( string $key ) {
+				if ( $key !== 'embedvideo-refreshmetadata-tab' ) {
+					throw new \InvalidArgumentException( "Unexpected message key: $key" );
+				}
+
+				return $this->message;
+			}
+		};
 
 		$hooks = new EmbedVideoHooks(
 			$this->getServiceContainer()->getConfigFactory(),
-			$repo,
-			$this->getServiceContainer()->getMainWANObjectCache()
+			$repoGroup
 		);
 
-		$title = Title::newFromText( 'OnArticlePurge' );
-		$page = $this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $title );
+		$links = [ 'actions' => [] ];
+		$hooks->onSkinTemplateNavigation__Universal( $skin, $links );
 
-		$hooks->onArticlePurge( $page );
-	}
-
-	/**
-	 * @covers \MediaWiki\Extension\EmbedVideo\EmbedVideoHooks::onArticlePurge
-	 * @return void
-	 * @throws Exception
-	 */
-	public function testOnArticlePurgeHooksFile() {
-		$file = $this->getMockBuilder( LocalFile::class )->disableOriginalConstructor()->getMock();
-		$file->expects( $this->exactly( 2 ) )
-			->method( 'getSha1' )
-			->willReturn( sha1( 'foo' ) );
-
-		$repo = $this->getMockBuilder( RepoGroup::class )->disableOriginalConstructor()->getMock();
-		$repo->expects( $this->once() )
-			->method( 'findFile' )
-			->willReturn( $file );
-
-		$cache = $this->getMockBuilder( WANObjectCache::class )
-			->setConstructorArgs( [
-				[ 'cache' => new HashBagOStuff() ],
-			] )->getMock();
-		$cache->expects( $this->exactly( 2 ) )
-			->method( 'makeGlobalKey' )
-			->willReturn( 'foo' );
-
-		$hooks = new EmbedVideoHooks(
-			$this->getServiceContainer()->getConfigFactory(),
-			$repo,
-			$cache
+		$this->assertArrayHasKey( 'embedvideo-refreshmetadata', $links['actions'] );
+		$this->assertStringContainsString(
+			'Special:RefreshEmbedVideoMetadata/Test.ogg',
+			$links['actions']['embedvideo-refreshmetadata']['href']
 		);
-
-		$title = Title::newFromText( 'OnArticlePurge.jpg', NS_FILE );
-		$page = $this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $title );
-
-		$hooks->onArticlePurge( $page );
 	}
+
 }

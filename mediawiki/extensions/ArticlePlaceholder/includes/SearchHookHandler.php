@@ -2,73 +2,53 @@
 
 namespace ArticlePlaceholder;
 
-use Liuggio\StatsdClient\Factory\StatsdDataFactoryInterface;
 use MediaWiki\Config\Config;
-use MediaWiki\Hook\SpecialSearchResultsAppendHook;
+use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Specials\Hook\SpecialSearchResultsAppendHook;
 use MediaWiki\Specials\SpecialSearch;
 use Wikibase\Client\WikibaseClient;
 use Wikibase\Lib\Interactors\TermSearchInteractor;
 use Wikibase\Lib\Interactors\TermSearchResult;
 use Wikibase\Lib\TermIndexEntry;
-use Wikimedia\Rdbms\SessionConsistentConnectionManager;
+use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Stats\Metrics\CounterMetric;
+use Wikimedia\Stats\StatsFactory;
 
 /**
- * Adding results from ArticlePlaceholder to search
+ * Add results from ArticlePlaceholder to search
  *
  * @license GPL-2.0-or-later
  * @author Lucie-Aimée Kaffee
  */
 class SearchHookHandler implements SpecialSearchResultsAppendHook {
 
-	/**
-	 * @var TermSearchInteractor
-	 */
-	private $termSearchInteractor;
-
-	/**
-	 * @var string
-	 */
-	private $languageCode;
-
-	/**
-	 * @var ItemNotabilityFilter
-	 */
-	private $itemNotabilityFilter;
-
-	/**
-	 * @var StatsdDataFactoryInterface
-	 */
-	private $statsdDataFactory;
-
-	/**
-	 * @param Config $config
-	 *
-	 * @return self
-	 */
-	public static function newFromGlobalState( Config $config ) {
+	public static function newFromGlobalState(
+		Config $config,
+		IConnectionProvider $connectionProvider,
+		HttpRequestFactory $httpRequestFactory,
+		StatsFactory $statsFactory,
+	): self {
 		// TODO inject services into hook handler instance
 		$mwServices = MediaWikiServices::getInstance();
+
 		$repoDB = WikibaseClient::getItemAndPropertySource()->getDatabaseName();
-		$lbFactory = $mwServices->getDBLoadBalancerFactory();
 		$clientSettings = WikibaseClient::getSettings( $mwServices );
 
 		$itemNotabilityFilter = new ItemNotabilityFilter(
-			new SessionConsistentConnectionManager( $lbFactory->getMainLB( $repoDB ), $repoDB ),
+			$connectionProvider->getReplicaDatabase( $repoDB ),
 			WikibaseClient::getEntityNamespaceLookup( $mwServices ),
 			WikibaseClient::getStore()->getSiteLinkLookup(),
 			$clientSettings->getSetting( 'siteGlobalID' )
 		);
 
-		$statsdDataFactory = $mwServices->getStatsdDataFactory();
-
 		$termSearchInteractor = new TermSearchApiInteractor(
 			new RepoApiInteractor(
 				$config->get( 'ArticlePlaceholderRepoApiUrl' ),
-				$statsdDataFactory,
-				$mwServices->getHttpRequestFactory()
+				$statsFactory,
+				$httpRequestFactory
 			),
 			WikibaseClient::getEntityIdParser()
 		);
@@ -77,26 +57,16 @@ class SearchHookHandler implements SpecialSearchResultsAppendHook {
 			$termSearchInteractor,
 			$config->get( MainConfigNames::LanguageCode ),
 			$itemNotabilityFilter,
-			$statsdDataFactory
+			$statsFactory->getCounter( 'ArticlePlaceholder_search_total' )
 		);
 	}
 
-	/**
-	 * @param TermSearchInteractor $termSearchInteractor
-	 * @param string $languageCode content language
-	 * @param ItemNotabilityFilter $itemNotabilityFilter
-	 * @param StatsdDataFactoryInterface $statsdDataFactory
-	 */
 	public function __construct(
-		TermSearchInteractor $termSearchInteractor,
-		$languageCode,
-		ItemNotabilityFilter $itemNotabilityFilter,
-		StatsdDataFactoryInterface $statsdDataFactory
+		private readonly TermSearchInteractor $termSearchInteractor,
+		private readonly string $languageCode,
+		private readonly ItemNotabilityFilter $itemNotabilityFilter,
+		private readonly CounterMetric $searchesMetric,
 	) {
-		$this->termSearchInteractor = $termSearchInteractor;
-		$this->languageCode = $languageCode;
-		$this->itemNotabilityFilter = $itemNotabilityFilter;
-		$this->statsdDataFactory = $statsdDataFactory;
 	}
 
 	/**
@@ -121,11 +91,7 @@ class SearchHookHandler implements SpecialSearchResultsAppendHook {
 		$this->addToSearch( $output, $term );
 	}
 
-	/**
-	 * @param OutputPage $output
-	 * @param string $term
-	 */
-	private function addToSearch( OutputPage $output, $term ): void {
+	private function addToSearch( OutputPage $output, string $term ): void {
 		$termSearchResults = $this->getTermSearchResults( $term );
 
 		if ( $termSearchResults ) {
@@ -140,31 +106,28 @@ class SearchHookHandler implements SpecialSearchResultsAppendHook {
 
 				$output->addWikiTextAsInterface( $renderedTermSearchResults );
 
-				$this->statsdDataFactory->increment(
-					'wikibase.articleplaceholder.search.has_results'
-				);
+				$this->searchesMetric
+					->setLabel( 'results', 'yes' )
+					->copyToStatsdAt( 'wikibase.articleplaceholder.search.has_results' )
+					->increment();
 
 				return;
 			}
 		}
-
-		$this->statsdDataFactory->increment(
-			'wikibase.articleplaceholder.search.no_results'
-		);
+		$this->searchesMetric
+			->setLabel( 'results', 'no' )
+			->copyToStatsdAt( 'wikibase.articleplaceholder.search.no_results' )
+			->increment();
 	}
 
 	/**
-	 * @param string $term
-	 *
 	 * @return TermSearchResult[]
 	 */
-	private function getTermSearchResults( $term ) {
+	private function getTermSearchResults( string $term ): array {
 		$termSearchResults = [];
 
 		foreach ( $this->searchEntities( $term ) as $searchResult ) {
-			$entityId = $searchResult->getEntityId()->getSerialization();
-
-			$termSearchResults[ $entityId ] = $searchResult;
+			$termSearchResults[ $searchResult->getEntityIdSerialization() ] = $searchResult;
 		}
 
 		return $termSearchResults;
@@ -174,10 +137,9 @@ class SearchHookHandler implements SpecialSearchResultsAppendHook {
 	 * Render search results, filtered for notability.
 	 *
 	 * @param TermSearchResult[] $termSearchResults
-	 *
 	 * @return string Wikitext
 	 */
-	private function renderTermSearchResults( array $termSearchResults ) {
+	private function renderTermSearchResults( array $termSearchResults ): string {
 		$wikitext = '';
 
 		$itemIds = [];
@@ -199,20 +161,18 @@ class SearchHookHandler implements SpecialSearchResultsAppendHook {
 	}
 
 	/**
-	 * @param TermSearchResult $searchResult
-	 *
 	 * @return string Wikitext
 	 */
-	private function renderTermSearchResult( TermSearchResult $searchResult ) {
-		$entityId = $searchResult->getEntityId();
+	private function renderTermSearchResult( TermSearchResult $searchResult ): string {
+		$entityIdString = $searchResult->getEntityIdSerialization();
 
 		$displayLabel = $searchResult->getDisplayLabel();
 		$displayDescription = $searchResult->getDisplayDescription();
 
-		$label = $displayLabel ? $displayLabel->getText() : $entityId->getSerialization();
+		$label = $displayLabel ? $displayLabel->getText() : $entityIdString;
 
 		// TODO: Properly construct the page name of the special page.
-		$wikitext = '[[Special:AboutTopic/' . wfEscapeWikiText( $entityId ) . '|'
+		$wikitext = '[[Special:AboutTopic/' . wfEscapeWikiText( $entityIdString ) . '|'
 			. wfEscapeWikiText( $label ) . ']]';
 
 		if ( $displayDescription ) {
@@ -223,11 +183,9 @@ class SearchHookHandler implements SpecialSearchResultsAppendHook {
 	}
 
 	/**
-	 * @param string $term
-	 *
 	 * @return TermSearchResult[]
 	 */
-	private function searchEntities( $term ) {
+	private function searchEntities( string $term ): array {
 		return $this->termSearchInteractor->searchForEntities(
 			$term,
 			$this->languageCode,

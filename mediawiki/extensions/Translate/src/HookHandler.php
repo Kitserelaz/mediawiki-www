@@ -3,18 +3,17 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\Translate;
 
+use AggregateMessageGroup;
 use ALItem;
 use ALTree;
-use ApiRawMessage;
-use Content;
-use ExtensionRegistry;
-use Language;
-use LogFormatter;
+use MediaWiki\Api\ApiRawMessage;
 use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
 use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
 use MediaWiki\Config\Config;
 use MediaWiki\Config\ConfigException;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Content\Content;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
 use MediaWiki\Extension\Translate\LogFormatter as TranslateLogFormatter;
@@ -27,8 +26,8 @@ use MediaWiki\Extension\Translate\MessageGroupProcessing\RevTagStore;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundleLogFormatter;
 use MediaWiki\Extension\Translate\MessageLoading\FatMessage;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
-use MediaWiki\Extension\Translate\MessageLoading\RebuildMessageIndexJob;
 use MediaWiki\Extension\Translate\PageTranslation\DeleteTranslatableBundleSpecialPage;
+use MediaWiki\Extension\Translate\PageTranslation\DiscourageActionApi;
 use MediaWiki\Extension\Translate\PageTranslation\Hooks;
 use MediaWiki\Extension\Translate\PageTranslation\MarkForTranslationActionApi;
 use MediaWiki\Extension\Translate\PageTranslation\MigrateTranslatablePageSpecialPage;
@@ -46,29 +45,33 @@ use MediaWiki\Extension\Translate\TranslatorSandbox\TranslationStashSpecialPage;
 use MediaWiki\Extension\Translate\TranslatorSandbox\TranslatorSandboxActionApi;
 use MediaWiki\Extension\Translate\TtmServer\SearchableTtmServer;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
-use MediaWiki\Hook\ParserFirstCallInitHook;
 use MediaWiki\Html\Html;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\Language;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\Logging\LogFormatter;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Parser\Hook\ParserFirstCallInitHook;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\ResourceLoader\Context;
+use MediaWiki\ResourceLoader\Hook\ResourceLoaderRegisterModulesHook;
+use MediaWiki\ResourceLoader\ResourceLoader;
 use MediaWiki\Revision\Hook\RevisionRecordInsertedHook;
 use MediaWiki\Revision\RevisionLookup;
+use MediaWiki\Search\SearchEngine;
 use MediaWiki\Settings\SettingsBuilder;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Specials\SpecialSearch;
-use MediaWiki\Status\Status;
 use MediaWiki\StubObject\StubUserLang;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleValue;
 use MediaWiki\User\Hook\UserGetReservedNamesHook;
 use MediaWiki\User\User;
-use RecentChange;
-use SearchEngine;
-use TextContent;
-use Wikimedia\Rdbms\ILoadBalancer;
-use XmlSelect;
+use MediaWiki\Xml\XmlSelect;
+use StatusValue;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * Hooks for Translate extension.
@@ -85,31 +88,20 @@ class HookHandler implements
 	ListDefinedTagsHook,
 	ParserFirstCallInitHook,
 	RevisionRecordInsertedHook,
-	UserGetReservedNamesHook
+	UserGetReservedNamesHook,
+	ResourceLoaderRegisterModulesHook
 {
-	/**
-	 * Any user of this list should make sure that the tables
-	 * actually exist, since they may be optional
-	 */
 	private const USER_MERGE_TABLES = [
 		'translate_stash' => 'ts_user',
 		'translate_reviews' => 'trr_user',
 	];
-	private RevisionLookup $revisionLookup;
-	private ILoadBalancer $loadBalancer;
-	private Config $config;
-	private LanguageNameUtils $languageNameUtils;
 
 	public function __construct(
-		RevisionLookup $revisionLookup,
-		ILoadBalancer $loadBalancer,
-		Config $config,
-		LanguageNameUtils $languageNameUtils
+		private readonly RevisionLookup $revisionLookup,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly Config $config,
+		private readonly LanguageNameUtils $languageNameUtils,
 	) {
-		$this->revisionLookup = $revisionLookup;
-		$this->loadBalancer = $loadBalancer;
-		$this->config = $config;
-		$this->languageNameUtils = $languageNameUtils;
 	}
 
 	/** Do late setup that depends on configuration. */
@@ -128,10 +120,6 @@ class HookHandler implements
 		$wgTranslateYamlLibrary ??= function_exists( 'yaml_parse' ) ? 'phpyaml' : 'spyc';
 
 		$hooks['PageSaveComplete'][] = [ TranslateEditAddons::class, 'onSaveComplete' ];
-		global $wgJobClasses;
-
-		$wgJobClasses['MessageIndexRebuildJob'] = RebuildMessageIndexJob::class;
-		$wgJobClasses['RebuildMessageIndexJob'] = RebuildMessageIndexJob::class;
 
 		// Page translation setup check and init if enabled.
 		global $wgEnablePageTranslation;
@@ -149,7 +137,8 @@ class HookHandler implements
 					'Translate:TranslatablePageParser',
 					'Translate:MessageGroupMetadata',
 					'Translate:TranslatablePageView',
-					'Translate:TranslatablePageStateStore'
+					'Translate:TranslatablePageStateStore',
+					'FormatterFactory'
 				]
 			];
 			$wgSpecialPages['PageTranslationDeletePage'] = [
@@ -217,6 +206,7 @@ class HookHandler implements
 
 			$wgLogActionsHandlers['import/translatable-bundle'] = TranslatableBundleLogFormatter::class;
 
+			global $wgJobClasses;
 			$wgJobClasses['RenderTranslationPageJob'] = RenderTranslationPageJob::class;
 			$wgJobClasses['NonPrioritizedRenderTranslationPageJob'] = RenderTranslationPageJob::class;
 			$wgJobClasses['MoveTranslatableBundleJob'] = MoveTranslatableBundleJob::class;
@@ -230,6 +220,12 @@ class HookHandler implements
 				'services' => [
 					'Translate:TranslatablePageMarker',
 					'Translate:MessageGroupMetadata',
+				]
+			];
+			$wgAPIModules['discouragetranslation'] = [
+				'class' => DiscourageActionApi::class,
+				'services' => [
+					'JobQueueGroup'
 				]
 			];
 
@@ -275,8 +271,6 @@ class HookHandler implements
 			$hooks['ParserBeforeInternalParse'][] = [ Hooks::class, 'renderTagPage' ];
 			// Strip \<translate> tags etc. from source pages when preprocessing
 			$hooks['ParserBeforePreprocess'][] = [ Hooks::class, 'preprocessTagPage' ];
-			$hooks['ParserOutputPostCacheTransform'][] =
-				[ Hooks::class, 'onParserOutputPostCacheTransform' ];
 
 			$hooks['BeforeParserFetchTemplateRevisionRecord'][] =
 				[ Hooks::class, 'fetchTranslatableTemplateAndTitle' ];
@@ -290,6 +284,8 @@ class HookHandler implements
 			// Prevent editing of translation pages directly
 			$hooks['getUserPermissionsErrorsExpensive'][] =
 				[ Hooks::class, 'preventDirectEditing' ];
+			// Prevent moving of translatable pages directly
+			$hooks['MovePageIsValidMove'][] = [ Hooks::class, 'preventMoves' ];
 
 			// Our custom header for translation pages
 			$hooks['ArticleViewHeader'][] = [ Hooks::class, 'translatablePageHeader' ];
@@ -308,8 +304,9 @@ class HookHandler implements
 			// Replace subpage logic behavior
 			$hooks['SkinSubPageSubtitle'][] = [ Hooks::class, 'replaceSubtitle' ];
 
-			// Replaced edit tab with translation tab for translation pages
-			$hooks['SkinTemplateNavigation::Universal'][] = [ Hooks::class, 'translateTab' ];
+			// Replace edit tab with translation tab for translation pages, and add
+			// "mark for translation" tab/link on source translatable pages
+			$hooks['SkinTemplateNavigation::Universal'][] = [ Hooks::class, 'onSkinTemplateNavigation__Universal' ];
 
 			// Update translated page when translation unit is moved
 			$hooks['PageMoveComplete'][] = [ Hooks::class, 'onMovePageTranslationUnits' ];
@@ -322,6 +319,9 @@ class HookHandler implements
 			// Prevent renaming of translatable pages and their translation and translation units
 			$hooks['ReplaceTextFilterPageTitlesForRename'][] =
 				[ Hooks::class, 'onReplaceTextFilterPageTitlesForRename' ];
+
+			// Auto-create translated categories when not empty
+			$hooks['LinksUpdateComplete'][] = [ Hooks::class, 'onLinksUpdateComplete' ];
 		}
 
 		global $wgTranslateUseSandbox;
@@ -398,6 +398,7 @@ class HookHandler implements
 					'WikiPageFactory',
 					'UserOptionsLookup',
 					'Translate:TranslateSandbox',
+					'ObjectCacheFactory',
 				],
 				'args' => [
 					static function () {
@@ -638,7 +639,7 @@ class HookHandler implements
 				$search->msg( 'translate-searchprofile-note', $href )->parse(),
 				'plainlinks'
 			);
-
+			$search->getOutput()->addModuleStyles( 'mediawiki.codex.messagebox.styles' );
 			return;
 		}
 
@@ -703,9 +704,6 @@ class HookHandler implements
 			return;
 		}
 		$pageReference = $parser->getPage();
-		if ( !$pageReference ) {
-			return;
-		}
 
 		$linkTarget = TitleValue::newFromPage( $pageReference );
 		$handle = new MessageHandle( $linkTarget );
@@ -745,7 +743,7 @@ class HookHandler implements
 			$title->isSpecial( 'SearchTranslations' )
 		) {
 			$user = $out->getUser();
-			$vars['TranslateRight'] = $user->isAllowed( 'translate' );
+			$vars['TranslateRight'] = $user->isAllowedAll( 'translate', 'edit' );
 			$vars['TranslateMessageReviewRight'] = $user->isAllowed( 'translate-messagereview' );
 			$vars['DeleteRight'] = $user->isAllowed( 'delete' );
 			$vars['TranslateManageRight'] = $user->isAllowed( 'translate-manage' );
@@ -770,21 +768,19 @@ class HookHandler implements
 	 * Hook: MergeAccountFromTo
 	 * For UserMerge extension.
 	 */
-	public static function onMergeAccountFromTo( User $oldUser, User $newUser ): void {
-		$dbw = MediaWikiServices::getInstance()->getDBLoadBalancer()->getMaintenanceConnectionRef( DB_PRIMARY );
+	public function onMergeAccountFromTo( User $oldUser, User $newUser ): void {
+		$dbw = $this->dbProvider->getPrimaryDatabase();
 
 		// Update the non-duplicate rows, we'll just delete
 		// the duplicate ones later
 		foreach ( self::USER_MERGE_TABLES as $table => $field ) {
-			if ( $dbw->tableExists( $table, __METHOD__ ) ) {
-				$dbw->newUpdateQueryBuilder()
-					->update( $table )
-					->ignore()
-					->set( [ $field => $newUser->getId() ] )
-					->where( [ $field => $oldUser->getId() ] )
-					->caller( __METHOD__ )
-					->execute();
-			}
+			$dbw->newUpdateQueryBuilder()
+				->update( $table )
+				->ignore()
+				->set( [ $field => $newUser->getId() ] )
+				->where( [ $field => $oldUser->getId() ] )
+				->caller( __METHOD__ )
+				->execute();
 		}
 	}
 
@@ -792,28 +788,17 @@ class HookHandler implements
 	 * Hook: DeleteAccount
 	 * For UserMerge extension.
 	 */
-	public static function onDeleteAccount( User $oldUser ): void {
-		$dbw = MediaWikiServices::getInstance()->getDBLoadBalancer()->getMaintenanceConnectionRef( DB_PRIMARY );
+	public function onDeleteAccount( User $oldUser ): void {
+		$dbw = $this->dbProvider->getPrimaryDatabase();
 
 		// Delete any remaining rows that didn't get merged
 		foreach ( self::USER_MERGE_TABLES as $table => $field ) {
-			if ( $dbw->tableExists( $table, __METHOD__ ) ) {
-				$dbw->newDeleteQueryBuilder()
-					->deleteFrom( $table )
-					->where( [ $field => $oldUser->getId() ] )
-					->caller( __METHOD__ )
-					->execute();
-			}
+			$dbw->newDeleteQueryBuilder()
+				->deleteFrom( $table )
+				->where( [ $field => $oldUser->getId() ] )
+				->caller( __METHOD__ )
+				->execute();
 		}
-	}
-
-	/** Hook: AbortEmailNotification */
-	public static function onAbortEmailNotificationReview(
-		User $editor,
-		Title $title,
-		RecentChange $rc
-	): bool {
-		return $rc->getAttribute( 'rc_log_type' ) !== 'translationreview';
 	}
 
 	/**
@@ -831,7 +816,7 @@ class HookHandler implements
 
 		[ $name, $subpage ] = MediaWikiServices::getInstance()
 			->getSpecialPageFactory()->resolveAlias( $target->getDBkey() );
-		if ( $name !== 'MyLanguage' || (string)$subpage === '' ) {
+		if ( $name !== 'MyLanguage' || $subpage === null || $subpage === '' ) {
 			return true;
 		}
 
@@ -845,6 +830,7 @@ class HookHandler implements
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function onParserFirstCallInit( $parser ) {
 		$parser->setFunctionHook( 'translation', [ $this, 'translateRenderParserFunction' ] );
 	}
@@ -854,9 +840,6 @@ class HookHandler implements
 			return '';
 		}
 		$pageReference = $parser->getPage();
-		if ( !$pageReference ) {
-			return '';
-		}
 		$linkTarget = TitleValue::newFromPage( $pageReference );
 		$handle = new MessageHandle( $linkTarget );
 		$code = $handle->getCode();
@@ -874,7 +857,7 @@ class HookHandler implements
 	public static function validateMessage(
 		IContextSource $context,
 		Content $content,
-		Status $status,
+		StatusValue $status,
 		string $summary,
 		User $user
 	): bool {
@@ -917,12 +900,18 @@ class HookHandler implements
 
 			$validationResponse = $messageValidator->validateMessage( $message, $handle->getCode() );
 			if ( $validationResponse->hasErrors() ) {
+				$errors = $validationResponse->getDescriptiveErrors( $context );
+				$formattedErrors = '';
+				foreach ( $errors as $error ) {
+					$formattedErrors .= Html::rawElement( 'li', [], $error );
+				}
+				$formattedErrors = Html::rawElement( 'ul', [], $formattedErrors );
 				$status->fatal( new ApiRawMessage(
-					$context->msg( 'translate-syntax-error' )->parse(),
+					$context->msg( 'translate-syntax-errors' )->rawParams( $formattedErrors )->parse(),
 					'translate-validation-failed',
 					[
 						'validation' => [
-							'errors' => $validationResponse->getDescriptiveErrors( $context ),
+							'errors' => $errors,
 							'warnings' => $validationResponse->getDescriptiveWarnings( $context )
 						]
 					]
@@ -952,7 +941,7 @@ class HookHandler implements
 		// tp:tag and tp:mark handling is in Hooks::updateTranstagOnNullRevisions.
 		$tagsToCopy = [ RevTagStore::FUZZY_TAG, RevTagStore::TRANSVER_PROP ];
 
-		$db = $this->loadBalancer->getConnection( DB_PRIMARY );
+		$db = $this->dbProvider->getPrimaryDatabase();
 		$db->insertSelect(
 			'revtag',
 			'revtag',
@@ -982,4 +971,46 @@ class HookHandler implements
 			$tags[] = 'translate-translation-pages';
 		}
 	}
+
+	public static function getLanguageJson( Context $context ): array {
+		return [
+			'supportedLanguages' => Utilities::getLanguageNames( $context->getLanguage() ),
+			'undeterminedLanguageCode' => AggregateMessageGroup::UNDETERMINED_LANGUAGE_CODE
+		];
+	}
+
+	/* @inheritDoc */
+	public function onResourceLoaderRegisterModules( ResourceLoader $resourceLoader ): void {
+		$dir = dirname( __DIR__ );
+
+		$modules = [];
+
+		if ( ExtensionRegistry::getInstance()->isLoaded( 'VisualEditor' ) ) {
+			$modules[ 'ext.translate.ve' ] = [
+				'localBasePath' => $dir,
+				'remoteExtPath' => 'Translate',
+				'scripts' => [
+					'resources/src/ve-translate/ve.ce.MWTranslateAnnotationNode.js',
+					'resources/src/ve-translate/ve.dm.MWTranslateAnnotationNode.js',
+					'resources/src/ve-translate/ve.ui.MWTranslateAnnotationContextItem.js',
+				],
+				'dependencies' => [
+					'ext.visualEditor.mwcore',
+				],
+				'messages' => [
+					'visualeditor-annotations-translate-start',
+					'visualeditor-annotations-translate-end',
+					'visualeditor-annotations-translate-description',
+					'visualeditor-annotations-tvar-start',
+					'visualeditor-annotations-tvar-end',
+					'visualeditor-annotations-tvar-description',
+				],
+			];
+		}
+
+		if ( $modules ) {
+			$resourceLoader->register( $modules );
+		}
+	}
+
 }

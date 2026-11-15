@@ -2,11 +2,11 @@
 
 namespace MediaWiki\Extension\SecurePoll\Jobs;
 
-use Job;
 use MediaWiki\Extension\SecurePoll\Context;
 use MediaWiki\Extension\SecurePoll\Entities\Election;
 use MediaWiki\Extension\SecurePoll\Exceptions\InvalidDataException;
 use MediaWiki\Extension\SecurePoll\Talliers\ElectionTallier;
+use MediaWiki\JobQueue\Job;
 use Throwable;
 use Wikimedia\Rdbms\IDatabase;
 
@@ -14,6 +14,9 @@ use Wikimedia\Rdbms\IDatabase;
  * Job for tallying an encrypted election.
  */
 class TallyElectionJob extends Job {
+
+	/** @var Context */
+	private $context;
 
 	/** @var int */
 	private $electionId;
@@ -42,10 +45,10 @@ class TallyElectionJob extends Job {
 	 * @inheritDoc
 	 */
 	public function run(): bool {
-		$context = new Context();
+		$this->context = new Context();
 
 		$this->electionId = (int)$this->params['electionId'];
-		$this->election = $context->getElection( $this->electionId );
+		$this->election = $this->context->getElection( $this->electionId );
 
 		if ( !$this->election ) {
 			$this->setLastError( "Could not get election '$this->electionId'" );
@@ -53,7 +56,7 @@ class TallyElectionJob extends Job {
 			return false;
 		}
 
-		$this->dbw = $context->getDB( DB_PRIMARY );
+		$this->dbw = $this->context->getDB( DB_PRIMARY );
 
 		try {
 			$this->preRun();
@@ -78,31 +81,14 @@ class TallyElectionJob extends Job {
 		$status = $this->election->tally();
 
 		if ( !$status->isOK() ) {
-			$this->markAsFailed( $status->getMessage(), __METHOD__ );
+			$this->markAsFailed( $status->getMessage()->text(), __METHOD__ );
 
 			return false;
 		}
 
 		$tallier = $status->value;
 		'@phan-var ElectionTallier $tallier'; /** @var ElectionTallier $tallier */
-		$result = json_encode( $tallier->getJSONResult() );
-		$time = time();
-
-		$this->dbw->newReplaceQueryBuilder()
-			->replaceInto( 'securepoll_properties' )
-			->uniqueIndexFields( [ 'pr_entity', 'pr_key' ] )
-			->row( [
-				'pr_entity' => $this->electionId,
-				'pr_key' => 'tally-result',
-				'pr_value' => $result,
-			] )
-			->row( [
-				'pr_entity' => $this->electionId,
-				'pr_key' => 'tally-result-time',
-				'pr_value' => $time,
-			] )
-			->caller( __METHOD__ )
-			->execute();
+		$this->election->saveTallyResult( $this->dbw, $tallier->getJSONResult() );
 
 		return true;
 	}
@@ -139,7 +125,7 @@ class TallyElectionJob extends Job {
 			if ( $crypt ) {
 				$crypt->cleanupDbForTallyJob( $this->electionId, $this->dbw );
 			}
-		} catch ( InvalidDataException $e ) {
+		} catch ( InvalidDataException ) {
 			// Election::getCrypt() throws InvalidDataException if an election has the "encrypt-type"
 			// property set but the corresponding class cannot be instantiated.
 			//

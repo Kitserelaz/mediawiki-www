@@ -2,12 +2,12 @@
 	"@metadata": {
 		"authors": [
 			"!Silent",
+			"EGobi",
 			"Eduardo Addad de Oliveira",
 			"Eduardoaddad",
 			"Jhonnatanricardo",
 			"TheEduGobi",
-			"Tks4Fish",
-			"EGobi"
+			"Tks4Fish"
 		]
 	},
 	"action-mediainfo-term": "alterar termos de informação de mídia (legendas, resumos)",

@@ -30,6 +30,9 @@
 					"type": "global",
 					"roles": [ "editor" ]
 				}
+			},
+			"ConfigDefinitionRegistry": {
+				"SimpleBlogPageShowInMainLinks": "\\MediaWiki\\Extension\\SimpleBlogPage\\Integration\\ConfigDefinition\\MainLinksBlog::getInstance"
 			}
 		}
 	},
@@ -47,7 +50,9 @@
 	],
 	"callback": "MediaWiki\\Extension\\SimpleBlogPage\\Setup::callback",
 	"AutoloadNamespaces": {
-		"MediaWiki\\Extension\\SimpleBlogPage\\": "src/",
+		"MediaWiki\\Extension\\SimpleBlogPage\\": "src/"
+	},
+	"TestAutoloadNamespaces": {
 		"MediaWiki\\Extension\\SimpleBlogPage\\tests\\": "tests/phpunit/"
 	},
 	"namespaces": [
@@ -199,6 +204,10 @@
 		"remoteExtPath": "SimpleBlogPage/resources"
 	},
 	"config": {
+		"SimpleBlogPageShowInMainLinks": {
+			"value": true,
+			"public": true
+		}
 	},
 	"Hooks": {
 		"ContentHandlerDefaultModelFor": "setDefaultModel",
@@ -209,7 +218,8 @@
 		"getUserPermissionsErrors": "handleEditPermissions",
 		"LoadExtensionSchemaUpdates": "runDatabaseUpdates",
 		"PageSaveComplete": "createBlogRootPage",
-		"UserLoginComplete": "createBlogRootPage"
+		"UserLoginComplete": "createBlogRootPage",
+		"BSUsageTrackerRegisterCollectors": "registerUsageTracker"
 	},
 	"HookHandlers": {
 		"setDefaultModel": {
@@ -221,7 +231,7 @@
 		},
 		"addBlogLinks": {
 			"class": "MediaWiki\\Extension\\SimpleBlogPage\\Hook\\AddBlogLinks",
-			"services": [ "SpecialPageFactory", "PermissionManager" ]
+			"services": [ "SpecialPageFactory", "MainConfig", "TitleFactory", "SimpleBlogPage.PermissionChecker" ]
 		},
 		"addBlogLinksBlueSpiceDiscovery": {
 			"class": "MediaWiki\\Extension\\SimpleBlogPage\\Hook\\AddBlogLinksBlueSpiceDiscovery"
@@ -235,6 +245,9 @@
 		"createBlogRootPage": {
 			"class": "MediaWiki\\Extension\\SimpleBlogPage\\Hook\\CreateBlogRootPage",
 			"services": [ "SimpleBlogPage.BlogFactory", "WikiPageFactory", "TitleFactory" ]
+		},
+		"registerUsageTracker": {
+			"class": "MediaWiki\\Extension\\SimpleBlogPage\\Hook\\RegisterUsageTracker"
 		}
 	},
 	"ServiceWiringFiles": [
@@ -255,7 +268,7 @@
 			"path": "/simpleblogpage/v1/list",
 			"method": "GET",
 			"class": "MediaWiki\\Extension\\SimpleBlogPage\\Rest\\ListHandler",
-			"services": [ "HookContainer", "DBLoadBalancer", "WatchedItemStore", "TitleFactory" ]
+			"services": [ "HookContainer", "DBLoadBalancer", "WatchedItemStore", "TitleFactory", "SimpleBlogPage.PermissionChecker" ]
 		}, {
 			"path": "/simpleblogpage/v1/entry",
 			"method": "GET",

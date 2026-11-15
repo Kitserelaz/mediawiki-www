@@ -1,8 +1,7 @@
 /** extensions/TemplateSandbox/modules/ext.TemplateSandbox.preview.js */
-/* eslint-disable no-implicit-globals */
+
 /* eslint-disable no-jquery/no-global-selector */
-var preview = require( 'mediawiki.page.preview' ),
-	parsedMessages = require( './parsedMessages.json' );
+const preview = require( 'mediawiki.page.preview' );
 
 /**
  * Modify the config and response objects based on the response.
@@ -12,7 +11,13 @@ var preview = require( 'mediawiki.page.preview' ),
  * @param {Object} response Parse API response
  */
 function responseHandler( config, response ) {
-	var displayTitle = response.parse.displaytitle;
+	// If the template was not used, generate an error response
+	if ( !response.parse.templates.some( ( tpl ) => tpl.title === config.title ) ) {
+		config.responseValidationError = mw.msg( 'templatesandbox-template-not-used' );
+		return;
+	}
+
+	const displayTitle = response.parse.displaytitle;
 
 	// Prevent the live preview API from overwriting the heading,
 	// which should stay saying "Editing Template:Foo" etc.
@@ -22,22 +27,7 @@ function responseHandler( config, response ) {
 	// to be consistent with the server side.
 	config.previewHeader = mw.msg( 'templatesandbox-preview', response.parse.title, displayTitle );
 
-	var $previewNote = $( $.parseHTML( parsedMessages[ 'templatesandbox-previewnote' ] ) );
-
-	// Fix the parsed "[[:$1]]".
-	$previewNote.filter( 'a' ).add( $previewNote.find( 'a' ) ).filter( function () {
-		// Make sure this is the link we're looking for.
-		// href and title cannot be relied upon because they vary by whether
-		// the page "$1" exists.
-		return this.textContent === '$1';
-	} ).attr( {
-		href: mw.util.getUrl( response.parse.title ),
-		class: null,
-		title: response.parse.title
-	} ).text( response.parse.title );
-
-	// eslint-disable-next-line no-jquery/variable-pattern
-	config.previewNote = $previewNote;
+	config.previewNote = mw.message( 'templatesandbox-previewnote', response.parse.title ).parseDom();
 }
 
 /**
@@ -45,12 +35,10 @@ function responseHandler( config, response ) {
  * @param {jQuery.Event} e
  */
 function doTemplateSandboxPreview( e ) {
-	var $editform = $( '#editform' );
+	const $editform = $( '#editform' );
 
-	var promise = preview.doPreview( {
+	const promise = preview.doPreview( {
 		isLivePreview: true,
-		previewHeader: mw.msg( 'preview' ),
-		previewNote: parsedMessages.previewnote,
 		// This is hidden and identical to wgPageName by default, but that
 		// may change in the future, and there already exist user scripts
 		// that allow customizing it.
@@ -72,6 +60,6 @@ function doTemplateSandboxPreview( e ) {
 	e.preventDefault();
 }
 
-$( function () {
+$( () => {
 	$( '#wpTemplateSandboxPreview' ).on( 'click', doTemplateSandboxPreview );
 } );

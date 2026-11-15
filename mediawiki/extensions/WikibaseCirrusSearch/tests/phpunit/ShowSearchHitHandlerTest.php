@@ -2,25 +2,27 @@
 
 namespace Wikibase\Search\Elastic\Tests;
 
-use HtmlArmor;
 use MediaWiki\Context\ContextSource;
 use MediaWiki\Language\RawMessage;
+use MediaWiki\Search\SearchResult;
 use MediaWiki\Specials\SpecialSearch;
 use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
-use SearchResult;
 use Wikibase\DataModel\Entity\Item;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\SiteLink;
 use Wikibase\DataModel\Snak\PropertyNoValueSnak;
+use Wikibase\Lib\LanguageNameLookup;
+use Wikibase\Lib\LanguageNameLookupFactory;
 use Wikibase\Lib\Store\EntityIdLookup;
 use Wikibase\Repo\WikibaseRepo;
-use Wikibase\Search\Elastic\CirrusShowSearchHitHandler;
 use Wikibase\Search\Elastic\EntityResult;
+use Wikibase\Search\Elastic\Hooks\CirrusShowSearchHitHooksHandler;
+use Wikimedia\HtmlArmor\HtmlArmor;
 use Wikimedia\TestingAccessWrapper;
 
 /**
- * @covers \Wikibase\Search\Elastic\CirrusShowSearchHitHandler
+ * @covers \Wikibase\Search\Elastic\Hooks\CirrusShowSearchHitHooksHandler
  *
  * @group Wikibase
  *
@@ -28,7 +30,7 @@ use Wikimedia\TestingAccessWrapper;
  */
 class ShowSearchHitHandlerTest extends MediaWikiIntegrationTestCase {
 
-	/**
+	/*
 	 * Test cases that should be covered:
 	 * - non-Entity result
 	 * - name+description
@@ -40,7 +42,32 @@ class ShowSearchHitHandlerTest extends MediaWikiIntegrationTestCase {
 	 * - name + description + extra data in different language
 	 */
 
-	public static function showSearchHitProvider() {
+	protected function setUp(): void {
+		parent::setUp();
+
+		$languageNames = [
+			'ar' => 'Arabic',
+			'de' => 'German',
+			'es' => 'Spanish',
+			'fa' => 'Persian',
+			'he' => 'Hebrew',
+			'ru' => 'Russian',
+		];
+
+		$languageNameLookup = $this->createMock( LanguageNameLookup::class );
+		$languageNameLookup->method( 'getNameForTerms' )
+			->willReturnCallback(
+				static fn ( string $languageCode ) => $languageNames[$languageCode] ?? $languageCode
+			);
+
+		$languageNameLookupFactory = $this->createMock( LanguageNameLookupFactory::class );
+		$languageNameLookupFactory->method( 'getForLanguageCode' )
+			->willReturn( $languageNameLookup );
+
+		$this->setService( 'WikibaseRepo.LanguageNameLookupFactory', $languageNameLookupFactory );
+	}
+
+	public static function showSearchHitProvider(): array {
 		return [
 			'label hit' => [
 				// label
@@ -258,8 +285,8 @@ class ShowSearchHitHandlerTest extends MediaWikiIntegrationTestCase {
 		$searchPage = $this->createMock( SpecialSearch::class );
 		$searchPage->method( 'msg' )
 			->willReturnCallback(
-				static function () {
-					return new RawMessage( implode( ",", func_get_args() ) );
+				static function ( ...$args ) {
+					return new RawMessage( implode( ",", $args ) );
 				}
 			);
 		$lang = $this->getServiceContainer()->getLanguageFactory()->getLanguage( $language );
@@ -282,7 +309,7 @@ class ShowSearchHitHandlerTest extends MediaWikiIntegrationTestCase {
 		$redirect = $section = $score = $size = $date = $related = $html = '';
 		$searchResult = $this->createMock( SearchResult::class );
 		$searchResult->method( 'getTitle' )->willReturn( Title::newFromText( 'Test', NS_TALK ) );
-		CirrusShowSearchHitHandler::onShowSearchHit(
+		$this->getShowSearchHitHandler( [], [] )->onShowSearchHit(
 			$searchPage,
 			$searchResult,
 			[],
@@ -341,6 +368,7 @@ class ShowSearchHitHandlerTest extends MediaWikiIntegrationTestCase {
 
 		$handler->__call(
 			'getEntityLink', [
+				$searchPage->getContext(),
 				$searchResult,
 				Title::newFromText( 'Q1' ),
 				&$title,
@@ -349,19 +377,21 @@ class ShowSearchHitHandlerTest extends MediaWikiIntegrationTestCase {
 			]
 		);
 
-		CirrusShowSearchHitHandler::onShowSearchHit(
-			$searchPage,
-			$searchResult,
-			[],
-			$link,
-			$redirect,
-			$section,
-			$extract,
-			$score,
-			$size,
-			$date,
-			$related,
-			$html
+		$handler->__call(
+			'onShowSearchHit', [
+				$searchPage,
+				$searchResult,
+				[],
+				&$link,
+				&$redirect,
+				&$section,
+				&$extract,
+				&$score,
+				&$size,
+				&$date,
+				&$related,
+				&$html
+			]
 		);
 		$output = HtmlArmor::getHtml( $title ) . "\n" .
 				json_encode( $attributes, JSON_PRETTY_PRINT ) . "\n" .
@@ -393,13 +423,12 @@ class ShowSearchHitHandlerTest extends MediaWikiIntegrationTestCase {
 	/**
 	 * @param string[] $languages
 	 * @param Item[] $entities
-	 * @return CirrusShowSearchHitHandler
+	 * @return CirrusShowSearchHitHooksHandler
 	 */
 	private function getShowSearchHitHandler( array $languages, array $entities ) {
-		return new CirrusShowSearchHitHandler(
+		return new CirrusShowSearchHitHooksHandler(
 			$this->getEntityIdLookup(),
 			WikibaseRepo::getEntityLinkFormatterFactory()
-				->getDefaultLinkFormatter( $this->getServiceContainer()->getLanguageFactory()->getLanguage( 'en' ) )
 		);
 	}
 

@@ -9,60 +9,21 @@ use MediaWiki\Pager\ReverseChronologicalPager;
 use MediaWiki\User\UserFactory;
 
 class SecurePollLogPager extends ReverseChronologicalPager {
-	/** @var Context */
-	private $context;
 
-	/** @var UserFactory */
-	private $userFactory;
-
-	/** @var string */
-	private $type;
-
-	/** @var string */
-	private $performer;
-
-	/** @var string */
-	private $target;
-
-	/** @var string */
-	private $electionName;
-
-	/** @var int[] */
-	private $actions;
-
-	/**
-	 * @param Context $context
-	 * @param UserFactory $userFactory
-	 * @param string $type
-	 * @param string $performer
-	 * @param string $target
-	 * @param string $electionName
-	 * @param int $year
-	 * @param int $month
-	 * @param int $day
-	 * @param int[] $actions
-	 */
 	public function __construct(
-		Context $context,
-		UserFactory $userFactory,
-		string $type,
-		string $performer,
-		string $target,
-		string $electionName,
+		private readonly Context $context,
+		private readonly UserFactory $userFactory,
+		private readonly string $type,
+		private readonly string $performer,
+		private readonly string $target,
+		private readonly string $electionName,
 		int $year,
 		int $month,
 		int $day,
-		array $actions
+		/** @var int[] */
+		private readonly array $actions,
 	) {
 		parent::__construct();
-		$this->context = $context;
-		$this->userFactory = $userFactory;
-		$this->type = $type;
-		$this->performer = $performer;
-		$this->target = $target;
-		$this->electionName = $electionName;
-		$this->actions = $actions;
-
 		$this->getDateCond( $year, $month, $day );
 	}
 
@@ -93,12 +54,12 @@ class SecurePollLogPager extends ReverseChronologicalPager {
 		return $this->mDefaultQuery;
 	}
 
-	private function getFilterConds() {
+	private function getFilterConds(): array {
 		$conds = [];
 
 		switch ( $this->type ) {
 			case 'voter':
-				$type = ActionPage::LOG_TYPE_VIEWVOTES;
+				$type = [ ActionPage::LOG_TYPE_VIEWVOTES, ActionPage::LOG_TYPE_VIEWVOTEDETAILS ];
 				break;
 			case 'admin':
 				$type = $this->actions;
@@ -155,17 +116,17 @@ class SecurePollLogPager extends ReverseChronologicalPager {
 		$message = $this->msg(
 			'securepoll-log-action-type-' . $row->spl_type, $timestamp );
 
-		$message->Rawparams( $userLink );
-		$message->Rawparams( $electionTitle );
+		$message->rawParams( $userLink );
+		$message->rawParams( $electionTitle );
 
 		if ( $row->spl_target ) {
 			$target = $this->userFactory->newFromId( $row->spl_target );
 			$targetLink = Linker::userLink( $target->getId(), $target->getName() );
 
-			$message->RawParams( $targetLink );
+			$message->rawParams( $targetLink );
 		}
 
-		return Html::RawElement( 'li', [], $message->parse() );
+		return Html::rawElement( 'li', [], $message->parse() );
 	}
 
 	/**

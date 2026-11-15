@@ -2,8 +2,8 @@
 
 namespace Wikibase\MediaInfo\Rdf;
 
-use File;
-use RepoGroup;
+use MediaWiki\FileRepo\File\File;
+use MediaWiki\FileRepo\RepoGroup;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\MediaInfo\Content\MediaInfoHandler;
 use Wikibase\MediaInfo\DataModel\MediaInfo;
@@ -17,36 +17,12 @@ use Wikimedia\Purtle\RdfWriter;
  */
 class MediaInfoSpecificComponentsRdfBuilder implements EntityRdfBuilder {
 
-	/**
-	 * @var RdfVocabulary
-	 */
-	private $vocabulary;
-
-	/**
-	 * @var RdfWriter
-	 */
-	private $writer;
-
-	/**
-	 * @var MediaInfoHandler
-	 */
-	private $mediaInfoHandler;
-
-	/**
-	 * @var RepoGroup
-	 */
-	private $repoGroup;
-
 	public function __construct(
-		RdfVocabulary $vocabulary,
-		RdfWriter $writer,
-		MediaInfoHandler $mediaInfoHandler,
-		RepoGroup $repoGroup
+		private readonly RdfVocabulary $vocabulary,
+		private readonly RdfWriter $writer,
+		private readonly MediaInfoHandler $mediaInfoHandler,
+		private readonly RepoGroup $repoGroup,
 	) {
-		$this->vocabulary = $vocabulary;
-		$this->writer = $writer;
-		$this->mediaInfoHandler = $mediaInfoHandler;
-		$this->repoGroup = $repoGroup;
 	}
 
 	/**
@@ -79,7 +55,6 @@ class MediaInfoSpecificComponentsRdfBuilder implements EntityRdfBuilder {
 
 	/**
 	 * Produce MediaInfo types
-	 * @param MediaInfoId $id
 	 */
 	private function addTypes( MediaInfoId $id ) {
 		$this->aboutId( $id )
@@ -88,8 +63,6 @@ class MediaInfoSpecificComponentsRdfBuilder implements EntityRdfBuilder {
 
 	/**
 	 * Add file metadata to RDF representation
-	 *
-	 * @param MediaInfoId $id
 	 */
 	private function addFileMetadataFromEntityId( MediaInfoId $id ) {
 		$fileTitle = $this->mediaInfoHandler->getTitleForId( $id );
@@ -128,7 +101,7 @@ class MediaInfoSpecificComponentsRdfBuilder implements EntityRdfBuilder {
 		}
 	}
 
-	private function getFileSpecificType( File $file ) {
+	private function getFileSpecificType( File $file ): ?string {
 		switch ( $file->getMediaType() ) {
 			case MEDIATYPE_BITMAP:
 			case MEDIATYPE_DRAWING:
@@ -171,6 +144,11 @@ class MediaInfoSpecificComponentsRdfBuilder implements EntityRdfBuilder {
 		}
 	}
 
+	/**
+	 * @param MediaInfoId $id
+	 * @param string $schemaProperty
+	 * @param int $value
+	 */
 	private function addPositiveIntegerValue( MediaInfoId $id, $schemaProperty, $value ) {
 		if ( is_int( $value ) && $value > 0 ) {
 			$this->aboutId( $id )

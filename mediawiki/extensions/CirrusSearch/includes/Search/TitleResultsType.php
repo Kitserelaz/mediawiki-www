@@ -15,7 +15,7 @@ class TitleResultsType extends BaseResultsType {
 	private $titleHelper;
 
 	public function __construct( ?TitleHelper $titleHelper = null ) {
-		$this->titleHelper = $titleHelper ?: new TitleHelper();
+		$this->titleHelper = $titleHelper ?? new TitleHelper();
 	}
 
 	/**
@@ -52,9 +52,6 @@ class TitleResultsType extends BaseResultsType {
 		return [];
 	}
 
-	/**
-	 * @return TitleHelper
-	 */
 	public function getTitleHelper(): TitleHelper {
 		if ( $this->titleHelper === null ) {
 			$this->titleHelper = new TitleHelper();

@@ -5,6 +5,7 @@ namespace Wikibase\Search\Elastic\Tests\Fields;
 use Wikibase\Search\Elastic\Fields\AllLabelsField;
 use Wikibase\Search\Elastic\Fields\LabelsField;
 use Wikibase\Search\Elastic\Fields\LabelsProviderFieldDefinitions;
+use Wikibase\Search\Elastic\Fields\WikibaseLabelsIndexField;
 use Wikibase\Search\Elastic\Tests\WikibaseSearchTestCase;
 
 /**
@@ -31,6 +32,7 @@ class LabelsProviderFieldDefinitionsTest extends SearchFieldTestCase {
 		$this->assertInstanceOf( LabelsField::class, $fields['labels'] );
 		$this->assertArrayHasKey( 'labels_all', $fields );
 		$this->assertInstanceOf( AllLabelsField::class, $fields['labels_all'] );
+		$this->assertContainsOnlyInstancesOf( WikibaseLabelsIndexField::class, $fields );
 
 		$this->markTestSkippedIfExtensionNotLoaded( 'CirrusSearch' );
 		$searchEngine = $this->getSearchEngineMock();

@@ -5,11 +5,21 @@
 	"reportincident-report-btn-label": "Prijavi",
 	"reportincident-dialog-close-btn": "Zatvori",
 	"reportincident-dialog-back-btn": "Nazad",
+	"reportincident-dialog-submit-btn": "Pošalji",
+	"reportincident-dialog-harassment-type-label": "Vrste neprihvatljivog ponašanja",
+	"reportincident-dialog-additional-details-input-label": "Dodatne informacije",
 	"reportincident-dialog-optional-label": "neobavezno",
+	"reportincident-dialog-harassment-type-doxing": "Otkrivanje privatnih ličnih podataka (Doksing)",
 	"reportincident-dialog-harassment-type-hate-speech-or-discrimination": "Govor mržnje ili diskriminacija",
+	"reportincident-dialog-harassment-type-intimidation": "Zastrašivanje, agresija, prozivanje, vređanje iznova i iznova",
 	"reportincident-dialog-harassment-type-sexual-harassment": "Seksualno uznemiravanje",
 	"reportincident-dialog-harassment-type-something-else": "Nešto drugo",
+	"reportincident-dialog-harassment-type-spam": "Spam",
 	"reportincident-emaildialog-title": "Potrebna verifikovana imejl adresa",
 	"reportincident-emaildialog-close-button": "Otkaži",
-	"reportincident-emaildialog-primary": "Idi u podešavanja"
+	"reportincident-emaildialog-primary": "Idi u podešavanja",
+	"reportincident-submit-emergency-section-important-title": "Važno",
+	"reportincident-submit-behavior-section-support-title": "Šta dalje raditi",
+	"reportincident-submit-back-to-page": "Nazad na $1",
+	"communityconfiguration-reportincident-reportincidentenablednamespaces-label": "Omogućeni imenski prostori"
 }

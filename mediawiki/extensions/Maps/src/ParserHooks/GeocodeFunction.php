@@ -7,7 +7,7 @@ namespace Maps\ParserHooks;
 use Jeroen\SimpleGeocoder\Geocoder;
 use Maps\MapsFactory;
 use ParamProcessor\ProcessingResult;
-use Parser;
+use MediaWiki\Parser\Parser;
 use ParserHooks\HookDefinition;
 use ParserHooks\HookHandler;
 
@@ -30,7 +30,7 @@ class GeocodeFunction implements HookHandler {
 		foreach ( $result->getErrors() as $error ) {
 			if ( $error->isFatal() ) {
 				return '<div><span class="errorbox">' .
-					wfMessage( 'validator-fatal-error', $error->getMessage() )->parse() .
+					wfMessage( 'maps-validator-fatal-error', $error->getMessage() )->parse() .
 					'</span></div><br /><br />';
 			}
 		}
@@ -59,9 +59,7 @@ class GeocodeFunction implements HookHandler {
 	}
 
 	private static function getParameterInfo() {
-		global $egMapsAvailableCoordNotations;
-		global $egMapsCoordinateNotation;
-		global $egMapsCoordinateDirectional;
+		$config = MapsFactory::globalInstance()->getEffectiveSettings();
 
 		$params = [];
 
@@ -71,8 +69,8 @@ class GeocodeFunction implements HookHandler {
 		];
 
 		$params['format'] = [
-			'default' => $egMapsCoordinateNotation,
-			'values' => $egMapsAvailableCoordNotations,
+			'default' => $config->get( 'egMapsCoordinateNotation' ),
+			'values' => $config->get( 'egMapsAvailableCoordNotations' ),
 			'aliases' => 'notation',
 			'tolower' => true,
 			'message' => 'maps-geocode-par-format',
@@ -80,7 +78,7 @@ class GeocodeFunction implements HookHandler {
 
 		$params['directional'] = [
 			'type' => 'boolean',
-			'default' => $egMapsCoordinateDirectional,
+			'default' => $config->get( 'egMapsCoordinateDirectional' ),
 			'message' => 'maps-geocode-par-directional',
 		];
 

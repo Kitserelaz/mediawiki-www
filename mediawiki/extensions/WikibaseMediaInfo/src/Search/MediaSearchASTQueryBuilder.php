@@ -36,26 +36,14 @@ class MediaSearchASTQueryBuilder implements Visitor {
 	/** @var ParsedQuery */
 	private $parsedQuery;
 
-	/** @var MediaSearchASTEntitiesExtractor */
-	private $entitiesExtractor;
-
-	/** @var array[] */
-	private $stemmingSettings;
-
-	/** @var string[] */
-	private $languages;
-
-	/** @var string */
-	private $contentLanguage;
+	/** @var float[] */
+	private readonly array $boosts;
 
 	/** @var float[] */
-	private $boosts;
-
-	/** @var float[] */
-	private $decays;
+	private readonly array $decays;
 
 	/** @var array */
-	private $options;
+	private readonly array $options;
 
 	/**
 	 * @param MediaSearchASTEntitiesExtractor $entitiesExtractor
@@ -65,16 +53,12 @@ class MediaSearchASTQueryBuilder implements Visitor {
 	 * @param array[] $settings Optional weight/decay overrides, plus some options
 	 */
 	public function __construct(
-		MediaSearchASTEntitiesExtractor $entitiesExtractor,
-		array $stemmingSettings,
-		array $languages,
-		string $contentLanguage,
-		array $settings = []
+		private readonly MediaSearchASTEntitiesExtractor $entitiesExtractor,
+		private readonly array $stemmingSettings,
+		private readonly array $languages,
+		private readonly string $contentLanguage,
+		array $settings = [],
 	) {
-		$this->entitiesExtractor = $entitiesExtractor;
-		$this->stemmingSettings = $stemmingSettings;
-		$this->languages = $languages;
-		$this->contentLanguage = $contentLanguage;
 		$this->boosts = ( $settings['boost'] ?? [] ) + [
 			'statement' => 1.0,
 			'descriptions.$language' => 1.0,
@@ -326,7 +310,7 @@ class MediaSearchASTQueryBuilder implements Visitor {
 		// this is already dealt with elsewhere in the query building process
 	}
 
-	private function getWikibaseEntitiesHandler( ParsedNode $node ) {
+	private function getWikibaseEntitiesHandler( ParsedNode $node ): WikibaseEntitiesHandler {
 		return new WikibaseEntitiesHandler(
 			$node,
 			$this->parsedQuery,
@@ -391,7 +375,6 @@ class MediaSearchASTQueryBuilder implements Visitor {
 				$canonical = $this->canonicalizeTerm( $term );
 				// discard terms where a significant portion was punctuation or separators,
 				// the canonical form likely is no longer representative enough (e.g `c#` != `c`)
-				// @phan-suppress-next-line PhanPluginUseReturnValueInternalKnown
 				similar_text( strtolower( $canonical ), strtolower( $term ), $similarity );
 				return $similarity / 100 >= $threshold;
 			},
@@ -412,7 +395,6 @@ class MediaSearchASTQueryBuilder implements Visitor {
 			$differences[$term] = array_reduce(
 				$previousTerms,
 				static function ( $min, $otherTerm ) use ( $term ) {
-					// @phan-suppress-next-line PhanPluginUseReturnValueInternalKnown
 					similar_text( strtolower( $term ), strtolower( $otherTerm ), $similarity );
 					$difference = 1 - $similarity / 100;
 					return $min === null ? $difference : min( $min, $difference );

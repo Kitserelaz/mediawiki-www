@@ -21,9 +21,10 @@ namespace WikiHiero;
 
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Language\LanguageConverterFactory;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\Options\UserOptionsLookup;
+use Wikimedia\ObjectCache\WANObjectCache;
 
 class SpecialHieroglyphs extends SpecialPage {
 	/** 1 day */
@@ -52,17 +53,12 @@ class SpecialHieroglyphs extends SpecialPage {
 		'result',
 	];
 
-	/**
-	 * @var UserOptionsLookup
-	 */
-	private $userOptionsLookup;
-
-	/**
-	 * @param UserOptionsLookup $userOptionsLookup
-	 */
-	public function __construct( UserOptionsLookup $userOptionsLookup ) {
+	public function __construct(
+		private readonly LanguageConverterFactory $languageConverterFactory,
+		private readonly WANObjectCache $wanObjectCache,
+		private readonly UserOptionsLookup $userOptionsLookup,
+	) {
 		parent::__construct( 'Hieroglyphs' );
-		$this->userOptionsLookup = $userOptionsLookup;
 	}
 
 	/**
@@ -87,7 +83,7 @@ class SpecialHieroglyphs extends SpecialPage {
 
 		$text = trim( $this->getContext()->getRequest()->getVal( 'text', '' ) );
 		if ( $text !== '' ) {
-			$hiero = new WikiHiero();
+			$hiero = new WikiHiero( $this->getConfig() );
 			$out->addHTML( '<table class="wikitable">'
 				. '<tr><th>' . $this->msg( 'wikihiero-input' )->escaped() . '</th><th>'
 				. $this->msg( 'wikihiero-result' )->escaped() . '</th></tr>'
@@ -124,7 +120,7 @@ class SpecialHieroglyphs extends SpecialPage {
 			->prepareForm()
 			->displayForm( false );
 
-		$this->hiero = new WikiHiero();
+		$this->hiero = new WikiHiero( $this->getConfig() );
 
 		$out->addHTML( $this->getToc() );
 		// class="mw-hiero-form"
@@ -138,13 +134,10 @@ class SpecialHieroglyphs extends SpecialPage {
 	 * @return-taint none
 	 */
 	private function listHieroglyphs() {
-		$services = MediaWikiServices::getInstance();
-		$cache = $services->getMainWANObjectCache();
-		$langConv = $services->getLanguageConverterFactory()
-			->getLanguageConverter( $this->getContext()->getLanguage() );
+		$langConv = $this->languageConverterFactory->getLanguageConverter( $this->getLanguage() );
 
-		return $cache->getWithSetCallback(
-			$cache->makeKey( 'hiero-list',
+		return $this->wanObjectCache->getWithSetCallback(
+			$this->wanObjectCache->makeKey( 'hiero-list',
 				$langConv->getExtraHashOptions(),
 				WikiHiero::getImagePath(),
 				'1.2'
@@ -192,7 +185,7 @@ class SpecialHieroglyphs extends SpecialPage {
 		);
 	}
 
-	private function getToc() {
+	private function getToc(): string {
 		$html = '<div class="toc mw-hiero-toc">';
 
 		$syntax = $this->msg( 'wikihiero-syntax' )->text();
@@ -236,11 +229,11 @@ class SpecialHieroglyphs extends SpecialPage {
 		return $res;
 	}
 
-	private function getHeading( $message, $anchor ) {
+	private function getHeading( string $message, string $anchor ): string {
 		return "<h2 id=\"$anchor\">" . $this->msg( $message )->escaped() . "</h2>\n";
 	}
 
-	private function getSyntaxHelp( $code, $message, $example ) {
+	private function getSyntaxHelp( string $code, string $message, string $example ): string {
 		return '<tr><th>' . htmlspecialchars( $code ) . '</th><td>'
 			. $this->msg( $message )->escaped() . '</td><td dir="ltr">'
 			. '<code>' . htmlspecialchars( "<hiero>$example</hiero>" ) . '</code></td><td>'

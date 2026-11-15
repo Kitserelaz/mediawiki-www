@@ -3,10 +3,11 @@
 namespace ArticlePlaceholder\Tests\Specials;
 
 use ArticlePlaceholder\Specials\SpecialCreateTopicPage;
-use DerivativeContext;
+use MediaWiki\Context\DerivativeContext;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\MainConfigNames;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWikiIntegrationTestCase;
-use RequestContext;
 
 /**
  * @covers \ArticlePlaceholder\Specials\SpecialCreateTopicPage
@@ -21,9 +22,7 @@ class SpecialCreateTopicPageTest extends MediaWikiIntegrationTestCase {
 
 	protected function setUp(): void {
 		parent::setUp();
-		$this->setMwGlobals( [
-			'wgScript' => '/w/index.php'
-		] );
+		$this->overrideConfigValue( MainConfigNames::Script, '/w/index.php' );
 	}
 
 	/**
@@ -36,7 +35,11 @@ class SpecialCreateTopicPageTest extends MediaWikiIntegrationTestCase {
 		$context = new DerivativeContext( RequestContext::getMain() );
 		$title = SpecialPage::getTitleFor( 'CreateTopicPage', $testTitle );
 		$context->setTitle( $title );
-		$instance = new SpecialCreateTopicPage();
+		$services = $this->getServiceContainer();
+		$instance = new SpecialCreateTopicPage(
+			$services->getPermissionManager(),
+			$services->getStatsFactory()
+		);
 		$instance->setContext( $context );
 
 		$instance->execute( $testTitle );

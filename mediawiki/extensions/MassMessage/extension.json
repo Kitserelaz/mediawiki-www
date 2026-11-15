@@ -34,7 +34,7 @@
 		}
 	},
 	"requires": {
-		"MediaWiki": ">= 1.43.0"
+		"MediaWiki": ">= 1.46"
 	},
 	"ServiceWiringFiles": [
 		"includes/ServiceWiring.php"
@@ -76,7 +76,8 @@
 		"BeforePageDisplay": "main",
 		"ListDefinedTags": "main",
 		"ChangeTagsListActive": "main",
-		"RejectParserCacheValue": "main"
+		"RejectParserCacheValue": "main",
+		"CodeMirrorSpecialPage": "codemirror"
 	},
 	"HookHandlers": {
 		"main": {
@@ -84,6 +85,9 @@
 		},
 		"echo": {
 			"class": "MediaWiki\\MassMessage\\EchoHooks"
+		},
+		"codemirror": {
+			"class": "MediaWiki\\MassMessage\\CodeMirrorHooks"
 		}
 	},
 	"ContentHandlers": {
@@ -190,9 +194,9 @@
 		}
 	},
 	"LogActionsHandlers": {
-		"massmessage/*": "LogFormatter",
+		"massmessage/*": "MediaWiki\\Logging\\LogFormatter",
 		"massmessage/send": "MediaWiki\\MassMessage\\Logging\\MassMessageSendLogFormatter",
-		"massmessage/failure": "WikitextLogFormatter",
+		"massmessage/failure": "MediaWiki\\Logging\\WikitextLogFormatter",
 		"massmessage/skipoptout": "MediaWiki\\MassMessage\\Logging\\MassMessageSkipLogFormatter",
 		"massmessage/skipnouser": "MediaWiki\\MassMessage\\Logging\\MassMessageSkipLogFormatter",
 		"massmessage/skipbadns": "MediaWiki\\MassMessage\\Logging\\MassMessageSkipLogFormatter"
@@ -218,6 +222,11 @@
 	},
 	"AvailableRights": [
 		"massmessage"
+	],
+	"NotificationMiddleware": [
+		{
+			"class": "MediaWiki\\MassMessage\\Notifications\\SuppressMassMessageNotificationsMiddleware"
+		}
 	],
 	"SpecialPages": {
 		"MassMessage": {

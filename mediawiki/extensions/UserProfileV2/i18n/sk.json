@@ -1,0 +1,39 @@
+{
+	"@metadata": {
+		"authors": [
+			"Wizzard"
+		]
+	},
+	"prefs-profile": "UserProfileV2",
+	"userprofilev2-desc": "Systém používateľských profilov založený na wiki.",
+	"userprofilev2-selectavatar": "Vybrať avatar",
+	"userprofilev2-avatarchanged": "Avatar bol úspešne zmenený.",
+	"userprofilev2-avatardeleted": "Avatar bol úspešne odstránený.",
+	"userprofilev2-user-locked": "Tento používateľský účet bol globálne zablokovaný.",
+	"userprofilev2-edit-profile": "Upraviť svoj profil",
+	"userprofilev2-apierror-forbidden": "Zakázané: nemáte oprávnenie zmeniť tento avatar.",
+	"userprofilev2-apierror-invalidpermission": "Zakázané: nemáte oprávnenie upravovať profil používateľa $1",
+	"userprofilev2-apierror-nofile": "Na nahranie nebol zadaný žiadny súbor.",
+	"userprofilev2-apierror-ratelimited": "Momentálne nemôžete nahrávať obrázky.",
+	"userprofilev2-apierror-invalidusername": "Na tejto wiki nie je zaregistrovaný žiadny používateľ s menom „$1“.",
+	"userprofilev2-about-me": "O mne",
+	"userprofilev2-discord": "Používateľské meno na Discorde",
+	"userprofilev2-twitter": "Používateľské meno na Twitteri",
+	"userprofilev2-mastodon": "Používateľské meno na Mastodone",
+	"userprofilev2-about-me-placeholder": "Napíšte niečo o sebe...",
+	"userprofilev2-about-me-help": "Povedzte nám niečo o sebe. Najviac 200 znakov.",
+	"userprofilev2-mastodon-help": "Vaše používateľské meno na Mastodone, so znakom @",
+	"userprofilev2-twitter-help": "Vaše používateľské meno na Twitteri, so znakom @",
+	"userprofilev2-discord-help": "Vaše používateľské meno na Discorde, bez znaku #",
+	"userprofilev2-showglobalgroups": "Zobraziť moje globálne skupiny?",
+	"userprofilev2-showglobaleditcount": "Zobraziť môj globálny počet úprav?",
+	"userprofilev2-showglobalgroupshelp": "Zobraziť globálne skupiny používateľov, do ktorých patrím (uvidí to každý)",
+	"userprofilev2-showglobaleditcounthelp": "Zobraziť môj globálny počet úprav z CentralAuth (uvidí to každý)",
+	"userprofilev2-edit": "Upraviť",
+	"userprofilev2-edit-count": "Úpravy: $1",
+	"userprofilev2-globaledit-count": "Globálne úpravy: $1",
+	"userprofilev2-editavatar": "Upraviť avatar",
+	"userprofilev2-edit-back": "Späť",
+	"userprofilev2-deleteavatar": "Odstrániť avatar",
+	"userprofilev2-helptext": "V tomto dialógu môžete zmeniť obsah svojho používateľského profilu."
+}

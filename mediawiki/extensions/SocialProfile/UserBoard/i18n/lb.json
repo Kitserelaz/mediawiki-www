@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Jack Phoenix",
 			"Robby",
 			"Volvox"
 		]
@@ -8,7 +9,6 @@
 	"messagesenttitle": "Geschéckte Messagen",
 	"boardblasttitle": "Messagen a grousser Zuel op d'Panneaue schécken",
 	"boardblaststep1": "1. Schrëtt: Schreiwt äre Message",
-	"boardblastprivatenote": "All Message ginn als privat Message verschéckt",
 	"boardblaststep2": "2. Schrëtt: Wielt aus wien Dir äre Message schöcke wellt",
 	"boardlinkselectall": "Alles uwielen",
 	"boardlinkunselectall": "Näischt ukräizen",
@@ -19,6 +19,7 @@
 	"boardsendbutton": "Messagen a grousser Zuel op d'Panneaue schécken",
 	"boardnofriends": "Dir hutt keng Frënn deenen dir ee Message schécke kënnt!",
 	"messagesentsuccess": "Äre Noriicht gouf geschéckt",
+	"boardblast-error-missing-message": "Gitt wgl. e Message an",
 	"userboard": "Benotzerpanneau",
 	"userboard_board-to-board": "Vu Panneau-zu-Panneau",
 	"userboard_noexist": "De Benotzer, deen Dir wëllt gesi, gëtt et net.",
@@ -26,8 +27,8 @@
 	"userboard_owner": "Dem $1 säi Panneau",
 	"userboard_yourboardwith": "Är Diskussioun vu Panneau-zu-Panneau mam $1",
 	"userboard_otherboardwith": "D'Diskusioun vu Panneau-zu-Panneau tëschent dem $1 an dem $2",
-	"userboard_backprofile": "Zréck op dem $1 säi Profil",
-	"userboard_backyourprofile": "Zréck op äre Profil",
+	"userboard_backprofile": "Zeréck op dem $1 säi Profil",
+	"userboard_backyourprofile": "Zeréck op Äre Profil",
 	"userboard_boardtoboard": "Vu Panneau-zu-Panneau",
 	"userboard_confirmdelete": "Sidd Dir sécher, datt Dir dëse Message läsche wëllt?",
 	"userboard_sendmessage": "Dem $1 ee Message schécken",
@@ -48,5 +49,6 @@
 	"userboard-time-seconds": "{{PLURAL:$1|eng Sekonn|$1 Sekonnen}}",
 	"message_received_subject": "De(n) $1 huet op äre Panneau op {{SITENAME}} geschriwwen",
 	"message_received_body": "Salut $1.\n\n$2 huet elo grad op Äre Panneau op {{SITENAME}} geschriwwen!\n\nKlickt hei ënnendrënenr fir Ären Tableau ze kucken!\n\n$3\n\n---\n\nWëllt Dir keng Maile méi vun eis kréien?\n\nKlickt $4\nan ännert Är Astellunge fir E-Mail-Noriichten auszeschalten.",
+	"apierror-socialprofile-send-message-nosend": "Dir kënnt keng Messagë schécken.",
 	"apihelp-socialprofile-send-message-param-username": "De Benotzernumm vum Destinataire."
 }

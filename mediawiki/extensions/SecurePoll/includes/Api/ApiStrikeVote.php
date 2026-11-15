@@ -38,21 +38,13 @@ use Wikimedia\ParamValidator\ParamValidator;
  * @ingroup API
  */
 class ApiStrikeVote extends ApiBase {
-	/** @var ActionPageFactory */
-	private $actionPageFactory;
 
-	/**
-	 * @param ApiMain $apiMain
-	 * @param string $moduleName
-	 * @param ActionPageFactory $actionPageFactory
-	 */
 	public function __construct(
 		ApiMain $apiMain,
-		$moduleName,
-		ActionPageFactory $actionPageFactory
+		string $moduleName,
+		private readonly ActionPageFactory $actionPageFactory
 	) {
 		parent::__construct( $apiMain, $moduleName );
-		$this->actionPageFactory = $actionPageFactory;
 	}
 
 	/**
@@ -113,18 +105,22 @@ class ApiStrikeVote extends ApiBase {
 		$this->getResult()->addValue( null, $this->getModuleName(), $result );
 	}
 
+	/** @inheritDoc */
 	public function mustBePosted() {
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function isWriteMode() {
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function needsToken() {
 		return 'csrf';
 	}
 
+	/** @inheritDoc */
 	protected function getAllowedParams() {
 		return [
 			'option' => [
@@ -146,6 +142,7 @@ class ApiStrikeVote extends ApiBase {
 		];
 	}
 
+	/** @inheritDoc */
 	protected function getExamplesMessages() {
 		return [
 			'action=strikevote&option=strike&reason=duplication&voteid=1&token=123ABC' =>

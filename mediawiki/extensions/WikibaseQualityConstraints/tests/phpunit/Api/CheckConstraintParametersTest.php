@@ -13,7 +13,7 @@ use WikibaseQuality\ConstraintReport\ConstraintCheck\Helper\ConstraintParameterE
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Message\ViolationMessage;
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Message\ViolationMessageRenderer;
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Message\ViolationMessageRendererFactory;
-use Wikimedia\Stats\NullStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @covers WikibaseQuality\ConstraintReport\Api\CheckConstraintParameters
@@ -106,7 +106,7 @@ class CheckConstraintParametersTest extends ApiTestCase {
 				$delegatingConstraintChecker,
 				$violationMessageRendererFactory,
 				$statementGuidParser,
-				new NullStatsdDataFactory()
+				StatsFactory::newNull()
 			);
 		};
 
@@ -126,6 +126,7 @@ class CheckConstraintParametersTest extends ApiTestCase {
 	 * @return array wbcheckconstraintparameters response, slightly normalized
 	 */
 	private function doRequest( array $params ): array {
+		$this->setGroupPermissions( '*', 'wbqc-check-constraints', true );
 		$params['action'] = 'wbcheckconstraintparameters';
 
 		$result = $this->doApiRequest( $params, [], false, null )[0];

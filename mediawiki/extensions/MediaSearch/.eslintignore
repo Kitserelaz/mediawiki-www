@@ -1,2 +1,11 @@
-# node_modules/
-# jest.config.js
+/coverage/**
+/node_modules/**
+/tests/jest/fixtures/**
+/vendor/**
+/jest.config.js
+/jest.setup.js
+
+# Language files written automatically by TranslateWiki
+/**/i18n/**/*.json
+!/**/i18n/**/en.json
+!/**/i18n/**/qqq.json

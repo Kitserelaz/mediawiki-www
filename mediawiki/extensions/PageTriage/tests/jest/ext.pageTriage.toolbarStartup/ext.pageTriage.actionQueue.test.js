@@ -66,7 +66,8 @@ describe( 'ext.pageTriage.actionQueue', () => {
 					[
 						{ action: 'action1', text: 'synchronous', data: [ 'testparam1', 'testparam2' ] },
 						{ action: 'action1', text: 'quick asynchronous failure', data: [ 'testparam1', 'testparam2' ] },
-						// Making sure that the slow success ran even thought there's a rejected promise before it
+						// Making sure that the slow success ran even thought there's a rejected
+						// promise before it
 						{ action: 'action1', text: 'slow asynchronous success', data: [ 'testparam1', 'testparam2' ] }
 					],
 					'Methods in "action1" ran successfully.'
@@ -161,7 +162,7 @@ describe( 'ext.pageTriage.actionQueue', () => {
 					],
 					'Methods from both queues ran successfully.'
 				);
-				return Promise.resolve();
+				return;
 			} );
 	} );
 
@@ -250,7 +251,7 @@ describe( 'ext.pageTriage.actionQueue', () => {
 					],
 					'Methods from both queues ran successfully.'
 				);
-				return Promise.resolve();
+				return;
 			} );
 	} );
 } );

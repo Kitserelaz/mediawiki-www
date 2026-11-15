@@ -3,8 +3,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
-use Collation;
 use InvalidArgumentException;
+use MediaWiki\Collation\Collation;
 use MediaWiki\Extension\Translate\MessageBundleTranslation\MessageBundle;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePage;
 use MediaWiki\Title\Title;
@@ -19,19 +19,14 @@ use Wikimedia\Rdbms\IMaintainableDatabase;
  */
 class TranslatableBundleStatusStore {
 	private const TABLE_NAME = 'translate_translatable_bundles';
-	private IDatabase $database;
-	private Collation $collation;
-	private IMaintainableDatabase $dbMaintenance;
+
 	private ?bool $tableExists = null;
 
 	public function __construct(
-		IDatabase $database,
-		Collation $collation,
-		IMaintainableDatabase $dbMaintenance
+		private readonly IDatabase $database,
+		private readonly Collation $collation,
+		private readonly IMaintainableDatabase $dbMaintenance,
 	) {
-		$this->database = $database;
-		$this->collation = $collation;
-		$this->dbMaintenance = $dbMaintenance;
 	}
 
 	public function setStatus( Title $title, TranslatableBundleStatus $status, string $bundleType ): void {
@@ -45,7 +40,7 @@ class TranslatableBundleStatusStore {
 			->replaceInto( self::TABLE_NAME )
 			->uniqueIndexFields( [ 'ttb_page_id' ] )
 			->row( [
-				'ttb_page_id' => $title->getArticleID(),
+				'ttb_page_id' => $title->getId(),
 				'ttb_type' => $bundleTypeId,
 				'ttb_status' => $status->getId(),
 				'ttb_sortkey' => $sortKey

@@ -2,7 +2,6 @@
 
 namespace CirrusSearch;
 
-use CirrusSearch\Extra\MultiList\MultiListBuilder;
 use CirrusSearch\Parser\NamespacePrefixParser;
 use CirrusSearch\Parser\QueryStringRegex\SearchQueryParseException;
 use CirrusSearch\Profile\ContextualProfileOverride;
@@ -16,20 +15,21 @@ use CirrusSearch\Search\SearchQuery;
 use CirrusSearch\Search\SearchQueryBuilder;
 use CirrusSearch\Search\TitleHelper;
 use CirrusSearch\Search\TitleResultsType;
-use ISearchResultSet;
+use CirrusSearch\SecondTry\SecondTryRunnerFactory;
+use CirrusSearch\SecondTry\SecondTrySearchFactory;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Request\WebRequest;
+use MediaWiki\Search\ISearchResultSet;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchIndexField;
+use MediaWiki\Search\SearchSuggestionSet;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\WikiMap\WikiMap;
-use SearchEngine;
-use SearchIndexField;
-use SearchSuggestionSet;
-use Wikimedia\Assert\Assert;
+use Wikimedia\UUID\GlobalIdGenerator;
 
 /**
  * SearchEngine implementation for CirrusSearch.  Delegates to
@@ -37,20 +37,7 @@ use Wikimedia\Assert\Assert;
  * that lots of search behavior is hooked in CirrusSearchHooks rather than
  * overridden here.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class CirrusSearch extends SearchEngine {
 
@@ -152,6 +139,8 @@ class CirrusSearch extends SearchEngine {
 	 */
 	private $cirrusSearchHookRunner;
 
+	private SecondTryRunnerFactory $secondTryRunnerFactory;
+
 	/**
 	 * @param SearchConfig|null $config
 	 * @param CirrusDebugOptions|null $debugOptions
@@ -162,11 +151,15 @@ class CirrusSearch extends SearchEngine {
 	public function __construct( ?SearchConfig $config = null,
 		?CirrusDebugOptions $debugOptions = null,
 		?NamespacePrefixParser $namespacePrefixParser = null,
-		?InterwikiResolver $interwikiResolver = null, ?TitleHelper $titleHelper = null
+		?InterwikiResolver $interwikiResolver = null,
+		?TitleHelper $titleHelper = null,
+		?SecondTryRunnerFactory $secondTryRunnerFactory = null,
+		?GlobalIdGenerator $globalIdGenerator = null
 	) {
 		// Initialize UserTesting before we create a Connection
 		// This is useful to do tests across multiple clusters
 		UserTestingStatus::getInstance();
+		$this->setFeatureData( SearchEngine::SEARCH_ID, Util::getRequestSetToken( $globalIdGenerator ) );
 		$this->config = $config ?? MediaWikiServices::getInstance()
 			->getConfigFactory()
 			->makeConfig( 'CirrusSearch' );
@@ -174,21 +167,28 @@ class CirrusSearch extends SearchEngine {
 		$this->requestContext = RequestContext::getMain();
 		$this->request = $this->requestContext->getRequest();
 		$this->searchIndexFieldFactory = new CirrusSearchIndexFieldFactory( $this->config );
-		$this->namespacePrefixParser = $namespacePrefixParser ?: new class() implements NamespacePrefixParser {
+		if ( $secondTryRunnerFactory === null ) {
+			$this->secondTryRunnerFactory = new SecondTryRunnerFactory(
+				MediaWikiServices::getInstance()->getService( SecondTrySearchFactory::SERVICE ),
+				$this->config
+			);
+		} else {
+			$this->secondTryRunnerFactory = $secondTryRunnerFactory;
+		}
+		$this->namespacePrefixParser = $namespacePrefixParser ?? new class() implements NamespacePrefixParser {
+			/** @inheritDoc */
 			public function parse( $query ) {
 				return CirrusSearch::parseNamespacePrefixes( $query, true, true );
 			}
 		};
-		$this->interwikiResolver = $interwikiResolver ?: MediaWikiServices::getInstance()->getService( InterwikiResolver::SERVICE );
+		$this->interwikiResolver = $interwikiResolver ?? MediaWikiServices::getInstance()->getService( InterwikiResolver::SERVICE );
 
 		// enable interwiki by default
 		$this->features['interwiki'] = true;
 		$this->features['show-multimedia-search-results'] = $this->config->get( 'CirrusSearchCrossProjectShowMultimedia' ) == true;
 		$this->debugOptions = $debugOptions ?? CirrusDebugOptions::fromRequest( $this->request );
-		$this->titleHelper = $titleHelper ?: new TitleHelper( WikiMap::getCurrentWikiId(), $interwikiResolver,
-			static function ( $v ) {
-				return Sanitizer::escapeIdForLink( $v );
-			}
+		$this->titleHelper = $titleHelper ?? new TitleHelper( WikiMap::getCurrentWikiId(), $interwikiResolver,
+			Sanitizer::escapeIdForLink( ... )
 		);
 		$extraFieldsInSearchResults = $this->config->get( 'CirrusSearchExtraFieldsInSearchResults' );
 		if ( $extraFieldsInSearchResults ) {
@@ -268,9 +268,13 @@ class CirrusSearch extends SearchEngine {
 				\CirrusSearch\Query\PrefixFeature::asContextualFilter( $this->prefix ) );
 		}
 
-		$profile = $this->extractProfileFromFeatureData( SearchEngine::FT_QUERY_INDEP_PROFILE_TYPE );
-		if ( $profile !== null ) {
-			$builder->addForcedProfile( SearchProfileService::RESCORE, $profile );
+		$ftProfile = $this->extractProfileFromFeatureData( SearchEngine::FT_QUERY_DEP_PROFILE_TYPE );
+		if ( $ftProfile !== null ) {
+			$builder->addForcedProfile( SearchProfileService::FT_QUERY_BUILDER, $ftProfile );
+		}
+		$rescoreProfile = $this->extractProfileFromFeatureData( SearchEngine::FT_QUERY_INDEP_PROFILE_TYPE );
+		if ( $rescoreProfile !== null ) {
+			$builder->addForcedProfile( SearchProfileService::RESCORE, $rescoreProfile );
 		}
 
 		$query = $builder->build();
@@ -347,11 +351,10 @@ class CirrusSearch extends SearchEngine {
 	/**
 	 * Look for suggestions using ES completion suggester.
 	 * @param string $search Search string
-	 * @param string[]|null $variants Search term variants
 	 * @param SearchConfig $config search configuration
 	 * @return SearchSuggestionSet Set of suggested names
 	 */
-	protected function getSuggestions( $search, $variants, SearchConfig $config ) {
+	protected function getSuggestions( $search, SearchConfig $config ) {
 		// Inspect features to check if the user selected a specific profile
 		$profile = $this->extractProfileFromFeatureData( SearchEngine::COMPLETION_PROFILE_TYPE );
 
@@ -365,7 +368,7 @@ class CirrusSearch extends SearchEngine {
 				$this->offset, $config, $this->namespaces, null,
 				false, $profile, $this->debugOptions );
 
-		$response = $suggester->suggest( $search, $variants );
+		$response = $suggester->suggest( $search );
 
 		if ( !$response->isOK() ) {
 			return SearchSuggestionSet::emptySuggestionSet();
@@ -427,40 +430,26 @@ class CirrusSearch extends SearchEngine {
 			return parent::completionSearchBackend( $search );
 		}
 
-		// Not really useful, mostly for testing purpose
-		$variants = $this->debugOptions->getCirrusCompletionVariant();
-		if ( !$variants ) {
-			$converter = MediaWikiServices::getInstance()->getLanguageConverterFactory()->getLanguageConverter();
-			$variants = $converter->autoConvertToAllVariants( $search );
-		} elseif ( count( $variants ) > 3 ) {
-			// We should not allow too many variants
-			$variants = array_slice( $variants, 0, 3 );
+		// fallback to classic prefix search if the completion suggester is not enabled or if NS_MAIN
+		// is not requested
+		if ( !$this->config->isCompletionSuggesterEnabled() || !in_array( NS_MAIN, $this->namespaces ) ) {
+			$profile = self::COMPLETION_PREFIX_FALLBACK_PROFILE;
+		} else {
+			$profile = $this->extractProfileFromFeatureData( SearchEngine::COMPLETION_PROFILE_TYPE );
+			if ( $profile === null ) {
+				// Need to fetch the name to fallback to prefix (not ideal)
+				// We should probably refactor this to have a single code path for prefix and completion suggester.
+				$profile = $this->config->getProfileService()
+					->getProfileName( SearchProfileService::COMPLETION, SearchProfileService::CONTEXT_COMPLETION );
+			}
 		}
 
-		if ( !$this->config->isCompletionSuggesterEnabled() ) {
-			// Completion suggester is not enabled, fallback to
-			// default implementation
-			return $this->prefixSearch( $search, $variants );
-		}
-
-		// the completion suggester is only worth a try if NS_MAIN is requested
-		if ( !in_array( NS_MAIN, $this->namespaces ) ) {
-			return $this->prefixSearch( $search, $variants );
-		}
-
-		$profile = $this->extractProfileFromFeatureData( SearchEngine::COMPLETION_PROFILE_TYPE );
-		if ( $profile === null ) {
-			// Need to fetch the name to fallback to prefix (not ideal)
-			// We should probably refactor this to have a single code path for prefix and completion suggester.
-			$profile = $this->config->getProfileService()
-				->getProfileName( SearchProfileService::COMPLETION, SearchProfileService::CONTEXT_DEFAULT );
-		}
 		if ( $profile === self::COMPLETION_PREFIX_FALLBACK_PROFILE ) {
 			// Fallback to prefixsearch if the classic profile was selected.
-			return $this->prefixSearch( $search, $variants );
+			return $this->prefixSearch( $search );
 		}
 
-		return $this->getSuggestions( $search, $variants, $this->config );
+		return $this->getSuggestions( $search, $this->config );
 	}
 
 	/**
@@ -477,11 +466,11 @@ class CirrusSearch extends SearchEngine {
 	/**
 	 * Older prefix search.
 	 * @param string $search search text
-	 * @param string[] $variants
 	 * @return SearchSuggestionSet
 	 */
-	protected function prefixSearch( $search, $variants ) {
+	protected function prefixSearch( $search ) {
 		$searcher = $this->makeSearcher();
+		$secondTryRunner = $this->secondTryRunnerFactory->create( SearchProfileService::CONTEXT_COMPLETION );
 
 		if ( $search ) {
 			$searcher->setResultsType( new FancyTitleResultsType( 'prefix' ) );
@@ -490,7 +479,7 @@ class CirrusSearch extends SearchEngine {
 			$searcher->setResultsType( new TitleResultsType() );
 		}
 
-		$status = $searcher->prefixSearch( $search, $variants );
+		$status = $searcher->prefixSearch( $search, $secondTryRunner );
 
 		// There is no way to send errors or warnings back to the caller here so we have to make do with
 		// only sending results back if there are results and relying on the logging done at the status
@@ -530,6 +519,9 @@ class CirrusSearch extends SearchEngine {
 				break;
 			case SearchEngine::FT_QUERY_INDEP_PROFILE_TYPE:
 				$serviceProfileType = SearchProfileService::RESCORE;
+				break;
+			case SearchEngine::FT_QUERY_DEP_PROFILE_TYPE:
+				$serviceProfileType = SearchProfileService::FT_QUERY_BUILDER;
 				break;
 		}
 
@@ -612,27 +604,6 @@ class CirrusSearch extends SearchEngine {
 				$searcher->processRawReturn( $status->getValue(), $this->request ) );
 		}
 		return $status;
-	}
-
-	/**
-	 * @deprecated update via {@link WeightedTagsUpdater} service
-	 */
-	public function updateWeightedTags( ProperPageIdentity $page, string $tagPrefix, $tagNames = null, $tagWeights = null ): void {
-		Assert::precondition( strpos( $tagPrefix, '/' ) === false,
-			"invalid tag prefix $tagPrefix: must not contain /" );
-
-		$this->getUpdater()->updateWeightedTags(
-			$page,
-			$tagPrefix,
-			MultiListBuilder::buildTagWeightsFromLegacyParameters( $tagNames, $tagWeights )
-		);
-	}
-
-	/**
-	 * @deprecated update via {@link WeightedTagsUpdater} service
-	 */
-	public function resetWeightedTags( ProperPageIdentity $page, string $tagPrefix ): void {
-		$this->getUpdater()->resetWeightedTags( $page, [ $tagPrefix ] );
 	}
 
 	/**

@@ -8,9 +8,9 @@ use MediaWiki\Extension\PageTriage\ArticleMetadata;
 use MediaWiki\Extension\PageTriage\PageTriage;
 use MediaWiki\Extension\PageTriage\PageTriageUtil;
 use MediaWiki\Extension\PageTriage\QueueRecord;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
-use RecentChange;
 
 /**
  * Tests the Hooks class.
@@ -68,7 +68,7 @@ class HooksTest extends PageTriageTestCase {
 					 ->getDeletePageFactory()
 					 ->newDeletePage( $page, $this->getTestSysop()->getUser() );
 		$delStatus = $deletePage->deleteIfAllowed( 'reason' );
-		$this->assertTrue( $delStatus->isGood() );
+		$this->assertStatusGood( $delStatus );
 
 		$afterDeleteCount = $this->getDb()->newSelectQueryBuilder()
 			->select( '*' )
@@ -105,7 +105,7 @@ class HooksTest extends PageTriageTestCase {
 			->getDeletePageFactory()
 			->newDeletePage( $page, $sysOp );
 		$delStatus = $deletePage->deleteIfAllowed( 'reason' );
-		$this->assertTrue( $delStatus->isGood() );
+		$this->assertStatusGood( $delStatus );
 
 		$afterDeleteCount = $this->getDb()->newSelectQueryBuilder()
 			->select( '*' )
@@ -119,7 +119,7 @@ class HooksTest extends PageTriageTestCase {
 			->getUndeletePageFactory()
 			->newUndeletePage( $page, $sysOp );
 		$undelStatus = $undeletePage->undeleteIfAllowed( 'reason' );
-		$this->assertTrue( $undelStatus->isGood() );
+		$this->assertStatusGood( $undelStatus );
 
 		$afterUndeleteCount = $this->getDb()->newSelectQueryBuilder()
 			->select( '*' )
@@ -136,6 +136,7 @@ class HooksTest extends PageTriageTestCase {
 		$title = Title::newFromText( 'Move me' );
 		$page = $this->getServiceContainer()->getWikiPageFactory()->newFromTitle( $title );
 		$user = $this->getTestUser()->getUser();
+		$this->overrideUserPermissions( $user, [ 'edit', 'createpage', 'move' ] );
 		$content = ContentHandler::makeContent( 'Move this article', $title );
 		$comment = CommentStoreComment::newUnsavedComment( 'Comment' );
 		$updater = $page->newPageUpdater( $user );
@@ -151,7 +152,7 @@ class HooksTest extends PageTriageTestCase {
 			->getMovePageFactory()
 			->newMovePage( $title, Title::newFromText( 'Move me to here' ) );
 		$moveStatus = $movePage->moveIfAllowed( $user, 'move to a new title' );
-		$this->assertTrue( $moveStatus->isGood() );
+		$this->assertStatusGood( $moveStatus );
 
 		$status = PageTriageUtil::getStatus( $page );
 

@@ -1,12 +1,12 @@
 /*!
- * OOUI v0.51.1
+ * OOUI v0.53.2
  * https://www.mediawiki.org/wiki/OOUI
  *
- * Copyright 2011–2024 OOUI Team and other contributors.
+ * Copyright 2011–2026 OOUI Team and other contributors.
  * Released under the MIT license
  * http://oojs.mit-license.org
  *
- * Date: 2024-09-19T17:13:43Z
+ * Date: 2026-04-21T12:46:08Z
  */
 ( function ( OO ) {
 
@@ -69,7 +69,7 @@ OO.mixinClass( OO.ui.ActionWidget, OO.ui.mixin.PendingElement );
  * @return {boolean} The action is configured with the mode
  */
 OO.ui.ActionWidget.prototype.hasMode = function ( mode ) {
-	return this.modes.indexOf( mode ) !== -1;
+	return this.modes.includes( mode );
 };
 
 /**
@@ -1703,6 +1703,13 @@ OO.ui.WindowManager.prototype.updateWindowSize = function ( win ) {
 	this.$element.toggleClass( 'oo-ui-windowManager-fullscreen', isFullscreen );
 	this.$element.toggleClass( 'oo-ui-windowManager-floating', !isFullscreen );
 
+	const $body = $( this.getElementDocument().body );
+	const stack = $body.data( 'windowManagerGlobalEvents' ) || [];
+	$body.add( $body.parent() ).toggleClass(
+		'oo-ui-windowManager-modal-active-fullscreen',
+		stack.some( ( w ) => w.getSize() === 'full' )
+	);
+
 	win.setDimensions( win.getSizeProperties() );
 
 	this.emit( 'resize', win );
@@ -1791,11 +1798,9 @@ OO.ui.WindowManager.prototype.toggleGlobalEvents = function ( on, win ) {
 		this.globalEvents = false;
 	}
 
-	if ( stack.length > 0 ) {
-		$bodyAndParent.addClass( 'oo-ui-windowManager-modal-active' );
-		$bodyAndParent.toggleClass( 'oo-ui-windowManager-modal-active-fullscreen', stack.some( ( w ) => w.getSize() === 'full' ) );
-	} else {
-		$bodyAndParent.removeClass( 'oo-ui-windowManager-modal-active oo-ui-windowManager-modal-active-fullscreen' );
+	$bodyAndParent.toggleClass( 'oo-ui-windowManager-modal-active', stack.length > 0 );
+	if ( stack.length === 0 ) {
+		$bodyAndParent.removeClass( 'oo-ui-windowManager-modal-active-fullscreen' );
 	}
 	$body.data( 'windowManagerGlobalEvents', stack );
 
@@ -2701,16 +2706,19 @@ OO.ui.Dialog.static.title = '';
  */
 OO.ui.Dialog.static.actions = [];
 
-/**
- * Close the dialog when the Escape key is pressed.
- *
- * @static
- * @abstract
- * @property {boolean}
- */
-OO.ui.Dialog.static.escapable = true;
-
 /* Methods */
+
+/**
+ * The current action to perform if the Escape key is pressed.
+ *
+ * The empty string action closes the dialog (see #getActionProcess).
+ * The make the escape key do nothing, return `null` here.
+ *
+ * @return {string|null} Action name, or null if unescapable
+ */
+OO.ui.Dialog.prototype.getEscapeAction = function () {
+	return '';
+};
 
 /**
  * Handle frame document key down events.
@@ -2719,10 +2727,13 @@ OO.ui.Dialog.static.escapable = true;
  * @param {jQuery.Event} e Key down event
  */
 OO.ui.Dialog.prototype.onDialogKeyDown = function ( e ) {
-	if ( e.which === OO.ui.Keys.ESCAPE && this.constructor.static.escapable ) {
-		this.executeAction( '' );
-		e.preventDefault();
-		e.stopPropagation();
+	if ( e.which === OO.ui.Keys.ESCAPE ) {
+		const action = this.getEscapeAction();
+		if ( action !== null ) {
+			this.executeAction( action );
+			e.preventDefault();
+			e.stopPropagation();
+		}
 	} else if ( e.which === OO.ui.Keys.ENTER && ( e.ctrlKey || e.metaKey ) ) {
 		const actions = this.actions.get( { flags: 'primary', visible: true, disabled: false } );
 		if ( actions.length > 0 ) {
@@ -2923,7 +2934,9 @@ OO.ui.Dialog.prototype.executeAction = function ( action ) {
 	const actionWidgets = this.actions.get( { actions: [ action ], visible: true } );
 	// If the action is shown as an ActionWidget, but is disabled, then do nothing.
 	if ( actionWidgets.length && actionWidgets.every( ( widget ) => widget.isDisabled() ) ) {
-		return $.Deferred().reject().promise();
+		// Return a resolved promise to do nothing. A rejected promise would
+		// trigger an error message (T411186).
+		return $.Deferred().resolve().promise();
 	}
 	this.pushPending();
 	this.currentAction = action;
@@ -3105,7 +3118,7 @@ OO.ui.MessageDialog.prototype.getReadyProcess = function ( data ) {
 		.next( () => {
 			// Focus the primary action button
 			let actions = this.actions.get();
-			actions = actions.filter( ( action ) => action.getFlags().indexOf( 'primary' ) > -1 );
+			actions = actions.filter( ( action ) => action.getFlags().includes( 'primary' ) );
 			if ( actions.length > 0 ) {
 				actions[ 0 ].focus();
 			}
@@ -3372,7 +3385,7 @@ OO.ui.ProcessDialog.prototype.initialize = function () {
 	this.$primaryActions = $( '<div>' );
 	this.$otherActions = $( '<div>' );
 	this.dismissButton = new OO.ui.ButtonWidget( {
-		label: OO.ui.msg( 'ooui-dialog-process-dismiss' )
+		label: OO.ui.msg( 'ooui-dialog-process-back' )
 	} );
 	this.retryButton = new OO.ui.ButtonWidget();
 	this.$errors = $( '<div>' );
@@ -3428,7 +3441,7 @@ OO.ui.ProcessDialog.prototype.initialize = function () {
 OO.ui.ProcessDialog.prototype.getActionWidgetConfig = function ( config ) {
 	function checkFlag( flag ) {
 		return config.flags === flag ||
-			( Array.isArray( config.flags ) && config.flags.indexOf( flag ) !== -1 );
+			( Array.isArray( config.flags ) && config.flags.includes( flag ) );
 	}
 
 	config = Object.assign( { framed: true }, config );
@@ -3579,7 +3592,7 @@ OO.ui.ProcessDialog.prototype.showErrors = function ( errors ) {
 			warning = true;
 		}
 		items.push( new OO.ui.MessageWidget( {
-			type: 'error',
+			type: errors[ i ].isWarning() ? 'warning' : 'error',
 			label: errors[ i ].getMessage()
 		} ).$element[ 0 ] );
 	}

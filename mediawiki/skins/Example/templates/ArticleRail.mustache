@@ -1,0 +1,14 @@
+<aside class="page__right-rail example-article-rail">
+	<a class="example-rail-jump page-side-tool" href="{{all-pages-url}}" aria-label="{{msg-example-explore}}"><svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-grid-small"/></svg></a>
+	<div class="right-rail-wrapper">
+		<section class="rail-module page-tools-module">
+			<h2 class="rail-module__header">{{msg-example-page-tools}}</h2>
+			<ul class="rail-module__list">{{#page-tools}}{{{html-item}}}{{/page-tools}}</ul>
+		</section>
+		<section class="rail-module recent-wiki-activity">
+			<h2 class="rail-module__header"><svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-activity-small"/></svg>{{msg-example-recent-activity}}</h2>
+			<ul class="rail-module__list example-recent-activity"></ul>
+			<a href="{{recent-changes-url}}">{{msg-recentchanges}}</a>
+		</section>
+	</div>
+</aside>

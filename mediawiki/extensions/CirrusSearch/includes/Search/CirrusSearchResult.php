@@ -4,12 +4,12 @@ namespace CirrusSearch\Search;
 
 use CirrusSearch\Searcher;
 use CirrusSearch\Util;
-use File;
 use LogicException;
+use MediaWiki\FileRepo\File\File;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Search\SearchResult;
+use MediaWiki\Search\SearchResultTrait;
 use MediaWiki\Title\Title;
-use SearchResult;
-use SearchResultTrait;
 
 /**
  * Base class for SearchResult
@@ -37,9 +37,6 @@ abstract class CirrusSearchResult extends SearchResult {
 	 */
 	private $checkedForFile = false;
 
-	/**
-	 * @param Title $title
-	 */
 	public function __construct( Title $title ) {
 		$this->title = $title;
 	}

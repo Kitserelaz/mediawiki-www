@@ -6,6 +6,7 @@ namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\Page\PageIdentity;
 use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Rdbms\RawSQLExpression;
 use Wikimedia\Rdbms\SelectQueryBuilder;
 
 /**
@@ -27,11 +28,11 @@ class RevTagStore {
 	/** Indicates a revision of a page that is a valid message bundle. */
 	public const MB_VALID_TAG = 'mb:valid';
 
-	private IConnectionProvider $dbProvider;
 	private array $tagCache = [];
 
-	public function __construct( IConnectionProvider $dbProvider ) {
-		$this->dbProvider = $dbProvider;
+	public function __construct(
+		private readonly IConnectionProvider $dbProvider,
+	) {
 	}
 
 	/** Add tag for the given revisionId, while deleting it from others */
@@ -163,27 +164,31 @@ class RevTagStore {
 	 * translation the translation is). Used to determine whether the
 	 * translation is outdated and to show a diff of the original message
 	 * if it is.
+	 *
+	 * If a revision ID argument is specified, then ignore all versions after
+	 * that revision ID in the above calculation.
+	 *
 	 * @return int|null The revision ID, or `null` if none is found
 	 */
-	public function getTransver( PageIdentity $identity ): ?int {
+	public function getTransver( PageIdentity $identity, ?int $revid = null ): ?int {
 		$db = Utilities::getSafeReadDB();
-		$result = $db->newSelectQueryBuilder()
+		$query = $db->newSelectQueryBuilder()
 			->select( 'rt_value' )
 			->from( 'revtag' )
 			->where( [
 				'rt_page' => $identity->getId(),
 				'rt_type' => self::TRANSVER_PROP,
-			] )
+			] );
+		if ( $revid !== null ) {
+			$query->where( $db->expr( 'rt_revision', '<=', $revid ) );
+		}
+		$result = $query
 			->orderBy( 'rt_revision', SelectQueryBuilder::SORT_DESC )
 			->caller( __METHOD__ )
 			->fetchField();
-		if ( $result === false ) {
-			return null;
-		} else {
-			// The revtag database is defined to store a string in rt_value,
-			// but tp:transver is always an integer
-			return (int)$result;
-		}
+		// The revtag database is defined to store a string in rt_value,
+		// but tp:transver is always an integer
+		return $result ? (int)$result : null;
 	}
 
 	/**
@@ -192,9 +197,8 @@ class RevTagStore {
 	 * (presumably the version whose translation the translation is).
 	 * and is used to determine whether the translation is outdated
 	 * and to show a diff of the original message if it is.
-	 * @return int|null The revision ID, or `null` if none is found
 	 */
-	public function setTransver( PageIdentity $identity, int $translationRevision, int $transver ) {
+	public function setTransver( PageIdentity $identity, int $translationRevision, int $transver ): void {
 		$dbw = $this->dbProvider->getPrimaryDatabase();
 
 		$conds = [
@@ -211,25 +215,37 @@ class RevTagStore {
 			->execute();
 	}
 
-	/** Get a list of page ids where the latest revision is either tagged or marked */
-	public static function getTranslatableBundleIds( string ...$revTags ): array {
+	/**
+	 * Get a list of page ids where the latest revision has one of the tags in revTagsLatest,
+	 * or any revision has one of the given revtags in revTagsAny
+	 *
+	 * @param string[] $revTagsLatest
+	 * @param string[] $revTagsAny
+	 * @return int[]
+	 */
+	public static function getTranslatableBundleIds( array $revTagsLatest, array $revTagsAny = [] ): array {
 		$dbr = Utilities::getSafeReadDB();
-		$res = $dbr->newSelectQueryBuilder()
+		$expr = $dbr->andExpr( [
+			new RawSQLExpression( 'rt_revision = page_latest' ),
+			'rt_type' => $revTagsLatest
+		] );
+		if ( $revTagsAny ) {
+			$expr = $dbr->orExpr( [ $expr, 'rt_type' => $revTagsAny ] );
+		}
+		$pageIds = $dbr->newSelectQueryBuilder()
 			->select( 'rt_page' )
 			->from( 'revtag' )
 			->join(
 				'page',
 				null,
-				[ 'rt_page = page_id', 'rt_revision = page_latest', 'rt_type' => $revTags ]
+				[
+					'rt_page = page_id',
+					$expr
+				]
 			)
 			->groupBy( 'rt_page' )
 			->caller( __METHOD__ )
-			->fetchResultSet();
-		$results = [];
-		foreach ( $res as $row ) {
-			$results[] = (int)$row->rt_page;
-		}
-
-		return $results;
+			->fetchFieldValues();
+		return array_map( intval( ... ), $pageIds );
 	}
 }

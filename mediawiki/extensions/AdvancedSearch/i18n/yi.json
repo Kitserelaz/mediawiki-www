@@ -23,13 +23,13 @@
 	"advancedsearch-field-filew": "טעקע־ברייט אין פיקסעלן",
 	"advancedsearch-field-fileh": "טעקע־הייך אין פיקסעלן",
 	"advancedsearch-field-sort": "סארטירן סדר",
-	"advancedsearch-field-preview-sort": "סאָרטירן לויט",
+	"advancedsearch-field-preview-sort": "סאָרטירן לויט $1",
 	"advancedsearch-placeholder-exact-text": "\"קאץ האט ליב ציג\"",
 	"advancedsearch-inlanguage-default": "אויסקלײַבן שפראַך",
 	"advancedsearch-filetype-section-types": "אלגעמיינע טעקע־טיפן",
 	"advancedsearch-filetype-section-image": "בילדער פֿארמאטן",
-	"advancedsearch-filetype-section-video": "ווידעא פֿארמאטן",
 	"advancedsearch-filetype-section-audio": "אוידיא פֿארמאטן",
+	"advancedsearch-filetype-section-video": "ווידעא פֿארמאטן",
 	"advancedsearch-filetype-section-document": "דאקומענט פֿארמאטן",
 	"advancedsearch-filetype-section-other": "אנדערע פֿארמאטן",
 	"advancedsearch-filetype-default": "אויסקלייבן טעקע־טיפ",
@@ -53,5 +53,5 @@
 	"advancedsearch-namespaces-preset-discussion": "דיסקוסיע",
 	"advancedsearch-namespaces-placeholder": "צולייגן נאמענטיילן…",
 	"prefs-advancedsearch": "פֿארגעשריטענע זוך",
-	"advancedsearch-preference-disable": "נישט ווייזן דעם פֿארגעשריטענעם זוך־אייבערפֿלאך"
+	"advancedsearch-preference-disable": "נישט ווייזן דעם פֿארגעשריטענעם זוך־אייבערפֿלאך ביים ניצן {{#Special:Search}}"
 }

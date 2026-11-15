@@ -3,6 +3,7 @@
 namespace WikibaseQuality\ConstraintReport\Tests\Checker\FormatChecker;
 
 use DataValues\StringValue;
+use GuzzleHttp\Exception\TransferException;
 use MediaWiki\Config\Config;
 use MediaWiki\Config\HashConfig;
 use MediaWiki\Config\MultiConfig;
@@ -10,6 +11,7 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Shell\ShellboxClientFactory;
 use Shellbox\Client;
 use Shellbox\ShellboxError;
+use TestLogger;
 use Wikibase\DataModel\Entity\EntityIdValue;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\DataModel\Entity\NumericPropertyId;
@@ -89,6 +91,31 @@ class FormatCheckerTest extends \MediaWikiIntegrationTestCase {
 		$this->assertCompliance( $result );
 	}
 
+	/** @dataProvider provideFormatConstraintCompliance */
+	public function testFormatConstraintComplianceKnownGoodRegex( string $pattern, string $text ) {
+		$config = $this->getMultiConfig( [
+			'WBQualityConstraintsFormatCheckerShellboxRatio' => 1,
+			'WBQualityConstraintsFormatCheckerKnownGoodRegexPatterns' => [ $pattern ],
+		] );
+		$value = new StringValue( $text );
+		$snak = new PropertyValueSnak( new NumericPropertyId( 'P345' ), $value );
+
+		// Verify that there is no attempt to use shellbox
+		$shellboxClientFactory = $this->createNoOpMock( ShellboxClientFactory::class );
+
+		$formatChecker = new FormatChecker(
+			$this->getConstraintParameterParser(),
+			$config,
+			new DummySparqlHelper(),
+			$shellboxClientFactory
+		);
+		$result = $formatChecker->checkConstraint(
+			new FakeSnakContext( $snak ),
+			$this->getConstraintMock( $this->formatParameter( $pattern ) )
+		);
+		$this->assertCompliance( $result );
+	}
+
 	public static function provideFormatConstraintViolation() {
 		$imdbRegex = '(tt|nm|ch|co|ev)\d{7}';
 		$taxonRegex = '(|somevalue|novalue|.*virus.*|.*viroid.*|.*phage.*|((×)?[A-Z]([a-z]+-)?[a-z]+('
@@ -140,6 +167,69 @@ class FormatCheckerTest extends \MediaWikiIntegrationTestCase {
 			$this->getConstraintMock( $this->formatParameter( $pattern ) )
 		);
 		$this->assertViolation( $result, 'wbqc-violation-message-format-clarification' );
+	}
+
+	/** @dataProvider provideFormatConstraintViolation */
+	public function testFormatConstraintViolationKnownGoodRegex( string $pattern, string $text ) {
+		$config = $this->getMultiConfig( [
+			'WBQualityConstraintsFormatCheckerShellboxRatio' => 1,
+			'WBQualityConstraintsFormatCheckerKnownGoodRegexPatterns' => [ $pattern ],
+		] );
+		$value = new StringValue( $text );
+		$snak = new PropertyValueSnak( new NumericPropertyId( 'P345' ), $value );
+
+		// Verify that there is no attempt to use shellbox
+		$shellboxClientFactory = $this->createNoOpMock( ShellboxClientFactory::class );
+
+		$formatChecker = new FormatChecker(
+			$this->getConstraintParameterParser(),
+			$config,
+			new DummySparqlHelper(),
+			$shellboxClientFactory
+		);
+
+		$result = $formatChecker->checkConstraint(
+			new FakeSnakContext( $snak ),
+			$this->getConstraintMock( $this->formatParameter( $pattern ) )
+		);
+		$this->assertViolation( $result, 'wbqc-violation-message-format-clarification' );
+	}
+
+	public function testFormatConstraintParameterExceptionShellbox() {
+		$snak = new PropertyValueSnak( new NumericPropertyId( 'P1' ), new StringValue( '' ) );
+		$sparqlHelper = $this->createMock( SparqlHelper::class );
+		$shellboxClient = $this->getMockBuilder( Client::class )
+			->disableOriginalConstructor()
+			->onlyMethods( [ 'call' ] )
+			->getMock();
+		$shellboxClient->method( 'call' )
+			->willReturn( false );
+		$shellboxClientFactory = $this->getMockBuilder( ShellboxClientFactory::class )
+			->disableOriginalConstructor()
+			->onlyMethods( [ 'getClient', 'isEnabled' ] )
+			->getMock();
+		$shellboxClientFactory->method( 'isEnabled' )
+			->willReturn( true );
+		$shellboxClientFactory->method( 'getClient' )
+			->willReturn( $shellboxClient );
+		$constraint = $this->getConstraintMock( $this->formatParameter( '.' ) );
+		$checker = new FormatChecker(
+			$this->getConstraintParameterParser(),
+			$this->getMultiConfig( [
+				'WBQualityConstraintsFormatCheckerShellboxRatio' => 1,
+				'WBQualityConstraintsSparqlMaxMillis' => 100,
+				'WBQualityConstraintsCheckFormatConstraint' => true,
+			] ),
+			$sparqlHelper,
+			$shellboxClientFactory
+		);
+
+		$this->expectException( ConstraintParameterException::class );
+
+		$checker->checkConstraint(
+			new FakeSnakContext( $snak ),
+			$constraint
+		);
 	}
 
 	public function testFormatConstraintWithSyntaxClarification() {
@@ -216,7 +306,7 @@ class FormatCheckerTest extends \MediaWikiIntegrationTestCase {
 		$sparqlHelper->expects( $this->never() )->method( 'matchesRegularExpression' );
 		$checker = new FormatChecker(
 			$this->getConstraintParameterParser(),
-			new HashConfig( [ 'WBQualityConstraintsCheckFormatConstraint' => false ] ),
+			$this->getMultiConfig( [ 'WBQualityConstraintsCheckFormatConstraint' => false ] ),
 			$sparqlHelper,
 			MediaWikiServices::getInstance()->getShellboxClientFactory()
 		);
@@ -241,7 +331,7 @@ class FormatCheckerTest extends \MediaWikiIntegrationTestCase {
 			->willReturn( false );
 		$checker = new FormatChecker(
 			$this->getConstraintParameterParser(),
-			new HashConfig( [
+			$this->getMultiConfig( [
 				'WBQualityConstraintsFormatCheckerShellboxRatio' => 1,
 				'WBQualityConstraintsCheckFormatConstraint' => true,
 			] ),
@@ -257,15 +347,8 @@ class FormatCheckerTest extends \MediaWikiIntegrationTestCase {
 		$this->assertTodo( $result );
 	}
 
-	public function testFormatConstraintShellboxError() {
-		$snak = new PropertyValueSnak( new NumericPropertyId( 'P1' ), new StringValue( '' ) );
+	private function setupFormatCheckedMockUsingShellboxClient( Client $shellboxClient, TestLogger $logger ) {
 		$sparqlHelper = $this->createMock( SparqlHelper::class );
-		$shellboxClient = $this->getMockBuilder( Client::class )
-			->disableOriginalConstructor()
-			->onlyMethods( [ 'call' ] )
-			->getMock();
-		$shellboxClient->method( 'call' )
-			->willThrowException( new ShellboxError() );
 		$shellboxClientFactory = $this->getMockBuilder( ShellboxClientFactory::class )
 			->disableOriginalConstructor()
 			->onlyMethods( [ 'getClient', 'isEnabled' ] )
@@ -274,24 +357,66 @@ class FormatCheckerTest extends \MediaWikiIntegrationTestCase {
 			->willReturn( true );
 		$shellboxClientFactory->method( 'getClient' )
 			->willReturn( $shellboxClient );
-		$constraint = $this->getConstraintMock( $this->formatParameter( '.' ) );
 		$checker = new FormatChecker(
 			$this->getConstraintParameterParser(),
-			new HashConfig( [
+			$this->getMultiConfig( [
 				'WBQualityConstraintsFormatCheckerShellboxRatio' => 1,
 				'WBQualityConstraintsSparqlMaxMillis' => 100,
 				'WBQualityConstraintsCheckFormatConstraint' => true,
 			] ),
 			$sparqlHelper,
-			$shellboxClientFactory
+			$shellboxClientFactory,
+			$logger
 		);
+		return $checker;
+	}
 
-		$this->expectException( ConstraintParameterException::class );
-
-		$checker->checkConstraint(
+	private function runConstraintCheck( Client $shellboxClient, TestLogger $logger ) {
+		$snak = new PropertyValueSnak( new NumericPropertyId( 'P1' ), new StringValue( '' ) );
+		$constraint = $this->getConstraintMock( $this->formatParameter( '.' ) );
+		$checker = $this->setupFormatCheckedMockUsingShellboxClient( $shellboxClient, $logger );
+		$result = $checker->checkConstraint(
 			new FakeSnakContext( $snak ),
 			$constraint
 		);
+
+		$this->assertTodo( $result );
+	}
+
+	/**
+	 * A ShellboxError is an unexpected outcome of checking regex with shellbox. Meaning should
+	 * not be inferred.
+	 */
+	public function testFormatConstraintShellboxError() {
+		$shellboxClient = $this->getMockBuilder( Client::class )
+			->disableOriginalConstructor()
+			->onlyMethods( [ 'call' ] )
+			->getMock();
+		$shellboxClient->method( 'call' )
+			->willThrowException( new ShellboxError() );
+
+		$logger = new TestLogger( true );
+		$this->runConstraintCheck( $shellboxClient, $logger );
+
+		$this->assertTrue( array_any( $logger->getBuffer(),
+			static fn ( $buffer ) => str_contains( $buffer[1], 'Shellbox error' )
+		) );
+	}
+
+	public function testFormatConstraintNetworkError() {
+		$shellboxClient = $this->getMockBuilder( Client::class )
+			->disableOriginalConstructor()
+			->onlyMethods( [ 'call' ] )
+			->getMock();
+		$shellboxClient->method( 'call' )
+			->willThrowException( new TransferException() );
+
+		$logger = new TestLogger( true );
+		$this->runConstraintCheck( $shellboxClient, $logger );
+
+		$this->assertTrue( array_any( $logger->getBuffer(),
+			static fn ( $buffer ) => str_contains( $buffer[1], 'Network error' )
+		) );
 	}
 
 	public function testFormatConstraintDeprecatedStatement() {
@@ -356,7 +481,7 @@ class FormatCheckerTest extends \MediaWikiIntegrationTestCase {
 		$shellboxClient->method( 'call' )
 			->willReturnCallback(
 				function ( $route, $func_name, $args ) {
-					return call_user_func_array( $func_name, $args );
+					return $func_name( ...$args );
 				}
 			);
 		$shellboxClientFactory = $this->getMockBuilder( ShellboxClientFactory::class )

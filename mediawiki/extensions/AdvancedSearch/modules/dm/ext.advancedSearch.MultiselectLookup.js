@@ -14,35 +14,26 @@ const markNonExistent = function ( item ) {
  * @param {TitleCache} queryCache
  */
 const markPageExistence = function ( item, queryCache ) {
-	if ( queryCache.get( item.getLabel() ) === 'NO' ) {
+	if ( queryCache.exists( item.getLabel() ) === false ) {
 		markNonExistent( item );
 	}
 };
 
 /**
  * @param {Object} res API response
- * @param {MultiselectLookup} self
+ * @param {TitleCache} queryCache
  * @return {string[]} Subset of titles that are known to exist, otherwise empty
  */
-const populateCache = function ( res, self ) {
+const populateCache = function ( res, queryCache ) {
 	const pages = [];
 	for ( const i in res.query.pages ) {
 		const page = res.query.pages[ i ];
 		if ( !page.missing ) {
 			pages.push( page.title );
 		}
-		self.queryCache.set( page.title, page.missing ? 'NO' : 'YES' );
+		queryCache.set( page.title, !page.missing );
 	}
 	return pages;
-};
-
-/**
- * @param {string} name
- * @param {string} namespace Lowercase namespace name, e.g. "category" or "template"
- * @return {mw.Title|null}
- */
-const getTitle = function ( name, namespace ) {
-	return mw.Title.newFromText( name, mw.config.get( 'wgNamespaceIds' )[ namespace ] );
 };
 
 /**
@@ -52,8 +43,8 @@ const getTitle = function ( name, namespace ) {
  * @constructor
  * @param {SearchModel} store
  * @param {Object} config
- * @param {string} config.fieldId Field name
- * @param {string} config.lookupId Lowercase namespace name, e.g. "category" or "template"
+ * @param {string} config.fieldId Name of the form field, e.g. "deepcategory" or "hastemplate"
+ * @param {number} config.namespaceId
  * @param {mw.Api} [config.api]
  */
 const MultiselectLookup = function ( store, config ) {
@@ -65,19 +56,19 @@ const MultiselectLookup = function ( store, config ) {
 	} );
 	this.store = store;
 	this.fieldId = config.fieldId;
-	this.lookupId = config.lookupId;
+	this.namespaceId = config.namespaceId;
 	this.api = config.api || new mw.Api();
 	this.queryCache = new TitleCache();
 
 	this.store.connect( this, { update: 'onStoreUpdate' } );
 
+	// Parent constructor
 	MultiselectLookup.super.call( this, config );
 
+	// Mixin constructors
 	this.$input = this.input.$input;
-
-	this.input.connect( this, { change: 'onLookupInputChange' } );
-
 	OO.ui.mixin.LookupElement.call( this, config );
+	this.input.connect( this, { change: 'onLookupInputChange' } );
 
 	this.populateFromStore();
 	this.connect( this, { change: 'onValueUpdate' } );
@@ -101,9 +92,9 @@ MultiselectLookup.prototype.populateFromStore = function () {
  */
 MultiselectLookup.prototype.setValue = function ( valueObject ) {
 	const names = Array.isArray( valueObject ) ? valueObject : [ valueObject ];
-	// Initialize with "PENDING" value to avoid new request in createTagItemWidget
-	names.forEach( ( value ) => {
-		this.queryCache.set( value, 'PENDING' );
+	// Initialize cache to avoid new request in createTagItemWidget
+	names.forEach( ( name ) => {
+		this.queryCache.set( name );
 	} );
 	MultiselectLookup.super.prototype.setValue.call( this, valueObject );
 
@@ -115,20 +106,21 @@ MultiselectLookup.prototype.setValue = function ( valueObject ) {
 };
 
 /**
+ * @private
  * @param {string} name
  * @return {jQuery.Promise}
  */
 MultiselectLookup.prototype.searchForPageInNamespace = function ( name ) {
-	const deferred = $.Deferred(),
-		self = this;
+	const deferred = $.Deferred();
 
-	const title = getTitle( name, this.lookupId );
+	const title = this.getPrefixedTitle( name );
 	if ( !title ) {
-		this.queryCache[ name ] = 'NO';
+		// An invalid title cannot exist
+		this.queryCache.set( name, false );
 		return deferred.resolve( [] ).promise();
 	}
 
-	this.queryCache[ name ] = 'PENDING';
+	this.queryCache.set( name );
 
 	this.api.get( {
 		formatversion: 2,
@@ -136,7 +128,7 @@ MultiselectLookup.prototype.searchForPageInNamespace = function ( name ) {
 		prop: 'info',
 		titles: title.getPrefixedText()
 	} ).done( ( res ) => {
-		const pages = populateCache( res, self );
+		const pages = populateCache( res, this.queryCache );
 		deferred.resolve( pages );
 	} ).fail( () => {
 		deferred.reject.bind( deferred );
@@ -146,22 +138,23 @@ MultiselectLookup.prototype.searchForPageInNamespace = function ( name ) {
 };
 
 /**
+ * @private
  * @param {string[]} names
  * @return {jQuery.Promise}
  */
 MultiselectLookup.prototype.searchForPagesInNamespace = function ( names ) {
-	const deferred = $.Deferred(),
-		self = this;
+	const deferred = $.Deferred();
 
-	names = names.map( function ( name ) {
-		const title = getTitle( name, self.lookupId );
+	names = names.map( ( name ) => {
+		const title = this.getPrefixedTitle( name );
 		if ( !title ) {
-			this.queryCache[ name ] = 'NO';
+			// An invalid title cannot exist
+			this.queryCache.set( name, false );
 			return null;
 		}
 		return title.getPrefixedText();
 	} ).filter( ( name ) => name );
-	if ( names.length === 0 ) {
+	if ( !names.length ) {
 		return deferred.resolve().promise();
 	}
 
@@ -171,7 +164,7 @@ MultiselectLookup.prototype.searchForPagesInNamespace = function ( names ) {
 		prop: 'info',
 		titles: names.join( '|' )
 	} ).done( ( res ) => {
-		populateCache( res, self );
+		populateCache( res, this.queryCache );
 		deferred.resolve();
 	} ).fail( () => {
 		deferred.reject.bind( deferred );
@@ -187,7 +180,7 @@ MultiselectLookup.prototype.searchForPagesInNamespace = function ( names ) {
  */
 MultiselectLookup.prototype.createTagItemWidget = function ( data, label ) {
 	label = label || data;
-	const title = getTitle( label, this.lookupId ),
+	const title = this.getPrefixedTitle( label ),
 		$tagItemLabel = $( '<a>' );
 
 	if ( title ) {
@@ -207,7 +200,7 @@ MultiselectLookup.prototype.createTagItemWidget = function ( data, label ) {
 	if ( !this.queryCache.has( tagItem.getLabel() ) ) {
 		this.searchForPageInNamespace( tagItem.getLabel() )
 			.then( ( response ) => {
-				if ( response.length === 0 ) {
+				if ( !response.length ) {
 					markNonExistent( tagItem );
 				}
 			} );
@@ -230,6 +223,7 @@ MultiselectLookup.prototype.onValueUpdate = function () {
 };
 
 /**
+ * @protected
  * @inheritdoc OO.ui.mixin.LookupElement
  */
 MultiselectLookup.prototype.getLookupRequest = function () {
@@ -242,52 +236,51 @@ MultiselectLookup.prototype.getLookupRequest = function () {
 	return this.api.get( {
 		action: 'opensearch',
 		search: value,
-		namespace: mw.config.get( 'wgNamespaceIds' )[ this.lookupId ]
+		namespace: this.namespaceId
 	} );
 };
 
 /**
+ * @protected
  * @inheritdoc OO.ui.mixin.LookupElement
  */
-MultiselectLookup.prototype.getLookupCacheDataFromResponse = function ( response ) {
-	return response || [];
+MultiselectLookup.prototype.getLookupCacheDataFromResponse = function ( openSearchResponse ) {
+	return openSearchResponse && openSearchResponse[ 1 ];
 };
 
 /**
+ * @protected
  * @inheritdoc OO.ui.mixin.LookupElement
  */
-MultiselectLookup.prototype.getLookupMenuOptionsFromData = function ( data ) {
+MultiselectLookup.prototype.getLookupMenuOptionsFromData = function ( titles ) {
 	const items = [];
 	const currentValues = this.getValue();
-	for ( let i = 0; i < data[ 1 ].length; i++ ) {
-		const pageNameWithoutNamespace = this.removeNamespace( data[ 1 ][ i ] );
-
+	for ( const title of titles || [] ) {
+		const pageNameWithoutNamespace = this.getPrefixedTitle( title ).getMainText();
 		// do not show suggestions for items already selected
-		if ( currentValues.indexOf( pageNameWithoutNamespace ) !== -1 ) {
-			continue;
+		if ( !currentValues.includes( pageNameWithoutNamespace ) ) {
+			items.push( new OO.ui.MenuOptionWidget( {
+				data: pageNameWithoutNamespace,
+				label: pageNameWithoutNamespace
+			} ) );
 		}
-
-		items.push( new OO.ui.MenuOptionWidget( {
-			data: pageNameWithoutNamespace,
-			label: pageNameWithoutNamespace
-		} ) );
 	}
 	return items;
 };
 
 /**
- * Get the name part of a page title containing a namespace
- *
- * @param {string} pageTitle
- * @return {string}
+ * @private
+ * @param {string} pageName
+ * @return {mw.Title|null}
  */
-MultiselectLookup.prototype.removeNamespace = function ( pageTitle ) {
-	return mw.Title.newFromText( pageTitle ).getMainText();
+MultiselectLookup.prototype.getPrefixedTitle = function ( pageName ) {
+	return mw.Title.newFromText( pageName, this.namespaceId );
 };
 
 /**
  * Override behavior from OO.ui.mixin.LookupElement
  *
+ * @protected
  * @param {OO.ui.TagItemWidget} item
  */
 MultiselectLookup.prototype.onLookupMenuChoose = function ( item ) {
@@ -298,6 +291,7 @@ MultiselectLookup.prototype.onLookupMenuChoose = function ( item ) {
 /**
  * Override to make sure query caching is based on the correct (input) value
  *
+ * @protected
  * @inheritdoc
  */
 MultiselectLookup.prototype.getRequestQuery = function () {

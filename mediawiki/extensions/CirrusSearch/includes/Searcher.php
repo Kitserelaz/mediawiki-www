@@ -4,8 +4,6 @@ namespace CirrusSearch;
 
 use CirrusSearch\Fallbacks\FallbackRunner;
 use CirrusSearch\Fallbacks\SearcherFactory;
-use CirrusSearch\Maintenance\NullPrinter;
-use CirrusSearch\MetaStore\MetaStoreIndex;
 use CirrusSearch\Parser\BasicQueryClassifier;
 use CirrusSearch\Parser\FullTextKeywordRegistry;
 use CirrusSearch\Parser\NamespacePrefixParser;
@@ -23,10 +21,11 @@ use CirrusSearch\Search\ResultsType;
 use CirrusSearch\Search\SearchContext;
 use CirrusSearch\Search\SearchQuery;
 use CirrusSearch\Search\SearchRequestBuilder;
+use CirrusSearch\Search\SemanticResultsType;
 use CirrusSearch\Search\TeamDraftInterleaver;
 use CirrusSearch\Search\TitleHelper;
 use CirrusSearch\Search\TitleResultsType;
-use Elastica\Exception\ResponseException;
+use CirrusSearch\SecondTry\SecondTryRunner;
 use Elastica\Exception\RuntimeException;
 use Elastica\Multi\Search as MultiSearch;
 use Elastica\Query;
@@ -34,6 +33,7 @@ use Elastica\Query\BoolQuery;
 use Elastica\Query\MultiMatch;
 use Elastica\Search;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Exception\MWException;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Request\WebRequest;
@@ -49,20 +49,7 @@ use Wikimedia\Stats\StatsFactory;
  * Performs searches using Elasticsearch.  Note that each instance of this class
  * is single use only.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 	public const SUGGESTION_HIGHLIGHT_PRE = '<em>';
@@ -78,6 +65,19 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 	 * deep. This should be <= index.max_result_window in elasticsearch.
 	 */
 	private const MAX_OFFSET_LIMIT = 10000;
+
+	/**
+	 * Queries with offset + limit greater than this value are considered
+	 * potentially automated and may, after considering other related signals,
+	 * be placed into the automated pool counter bucket.
+	 */
+	private const AUTOMATED_RESULT_DEPTH_THRESHOLD_SMALL = 100;
+
+	/**
+	 * Queries with offset + limit greater than this value are considered
+	 * expensive and will use the expensive pool counter
+	 */
+	private const AUTOMATED_RESULT_DEPTH_THRESHOLD_LARGE = 1000;
 
 	/**
 	 * Identifies the main search in MSearchRequests/MSearchResponses
@@ -142,6 +142,8 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 	 */
 	protected $cirrusSearchHookRunner;
 
+	private NamespaceMatcher $namespaceMatcher;
+
 	/**
 	 * @param Connection $conn
 	 * @param int $offset Offset the results by this much
@@ -155,6 +157,7 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 	 * @param InterwikiResolver|null $interwikiResolver
 	 * @param TitleHelper|null $titleHelper
 	 * @param CirrusSearchHookRunner|null $cirrusSearchHookRunner
+	 * @param NamespaceMatcher|null $namespaceMatcher
 	 * @see CirrusDebugOptions::defaultOptions()
 	 */
 	public function __construct(
@@ -168,7 +171,8 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 		?NamespacePrefixParser $namespacePrefixParser = null,
 		?InterwikiResolver $interwikiResolver = null,
 		?TitleHelper $titleHelper = null,
-		?CirrusSearchHookRunner $cirrusSearchHookRunner = null
+		?CirrusSearchHookRunner $cirrusSearchHookRunner = null,
+		?NamespaceMatcher $namespaceMatcher = null,
 	) {
 		parent::__construct(
 			$conn,
@@ -181,10 +185,11 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 		$this->indexBaseName = $index ?: $config->get( SearchConfig::INDEX_BASE_NAME );
 		// TODO: Make these params mandatory once WBCS stops extending this class
 		$this->namespacePrefixParser = $namespacePrefixParser;
-		$this->interwikiResolver = $interwikiResolver ?: MediaWikiServices::getInstance()->getService( InterwikiResolver::SERVICE );
-		$this->titleHelper = $titleHelper ?: new TitleHelper( WikiMap::getCurrentWikiId(), $this->interwikiResolver );
-		$this->cirrusSearchHookRunner = $cirrusSearchHookRunner ?: new CirrusSearchHookRunner(
+		$this->interwikiResolver = $interwikiResolver ?? MediaWikiServices::getInstance()->getService( InterwikiResolver::SERVICE );
+		$this->titleHelper = $titleHelper ?? new TitleHelper( WikiMap::getCurrentWikiId(), $this->interwikiResolver );
+		$this->cirrusSearchHookRunner = $cirrusSearchHookRunner ?? new CirrusSearchHookRunner(
 			MediaWikiServices::getInstance()->getHookContainer() );
+		$this->namespaceMatcher = $namespaceMatcher ?? MediaWikiServices::getInstance()->getService( NamespaceMatcher::SERVICE );
 		$this->searchContext = new SearchContext( $this->config, $namespaces, $options, null, null, $this->cirrusSearchHookRunner );
 	}
 
@@ -207,15 +212,30 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 		$this->sort = $query->getSort();
 
 		if ( $query->getSearchEngineEntryPoint() === SearchQuery::SEARCH_TEXT ) {
-			$this->searchContext->setResultsType(
-				new FullTextResultsType(
-					$this->searchContext->getFetchPhaseBuilder(),
-					$query->getParsedQuery()->isQueryOfClass( BasicQueryClassifier::COMPLEX_QUERY ),
-					$this->titleHelper,
-					$query->getExtraFieldsToExtract(),
-					$this->searchContext->getConfig()->getElement( 'CirrusSearchDeduplicateInMemory' ) === true
-				)
-			);
+			switch ( $this->searchContext->getProfileContext() ) {
+				case SearchProfileService::CONTEXT_SEMANTIC:
+					$profileSettings = $this->config->getProfileService()
+						->loadProfileByName( SearchProfileService::FT_QUERY_BUILDER,
+							$this->searchContext->getFulltextQueryBuilderProfile() );
+					$this->searchContext->setResultsType(
+						new SemanticResultsType(
+							$this->titleHelper,
+							$query->getExtraFieldsToExtract(),
+							$profileSettings,
+						)
+					);
+					break;
+				default:
+					$this->searchContext->setResultsType(
+						new FullTextResultsType(
+							$this->searchContext->getFetchPhaseBuilder(),
+							$query->getParsedQuery()->isQueryOfClass( BasicQueryClassifier::COMPLEX_QUERY ),
+							$this->titleHelper,
+							$query->getExtraFieldsToExtract(),
+							$this->searchContext->getConfig()->getElement( 'CirrusSearchDeduplicateInMemory' ) === true
+						)
+					);
+			}
 			return $this->searchTextInternal( $query->getParsedQuery()->getQueryWithoutNsHeader() );
 		} else {
 			throw new \RuntimeException( 'Only ' . SearchQuery::SEARCH_TEXT . ' is supported for now' );
@@ -276,11 +296,10 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 	/**
 	 * Perform a prefix search.
 	 * @param string $term text by which to search
-	 * @param string[] $variants variants to search for
 	 * @return Status status containing results defined by resultsType on success
 	 */
-	public function prefixSearch( $term, $variants = [] ) {
-		( new PrefixSearchQueryBuilder() )->build( $this->searchContext, $term, $variants );
+	public function prefixSearch( string $term, SecondTryRunner $secondTryRunner ): Status {
+		( new PrefixSearchQueryBuilder( $secondTryRunner ) )->build( $this->searchContext, $term );
 		return $this->searchOne();
 	}
 
@@ -439,52 +458,19 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 		) );
 		$size *= count( $docIds );
 
-		$work = function () use ( $docIds, $sourceFiltering, $indexSuffix, $size, $connection ) {
-			try {
-				$this->startNewLog( 'get of {indexSuffix}.{docIds}', 'get', [
-					'indexSuffix' => $indexSuffix,
-					'docIds' => $docIds,
-				] );
-				// Shard timeout not supported on get requests so we just use the client side timeout
-				$connection->setTimeout( $this->getClientTimeout( 'get' ) );
-				// We use a search query instead of _get/_mget, these methods are
-				// theorically well suited for this kind of job but they are not
-				// supported on aliases with multiple indices (content/general)
-				$index = $connection->getIndex( $this->indexBaseName, $indexSuffix );
-				$query = new \Elastica\Query( new \Elastica\Query\Ids( $docIds ) );
-				if ( is_array( $sourceFiltering ) ) {
-					// The title is a required field in the ApiTrait
-					if ( !in_array( "title", $sourceFiltering ) ) {
-						array_push( $sourceFiltering, "title" );
-					}
-					$query->setParam( '_source', $sourceFiltering );
-				}
-				$query->addParam( 'stats', 'get' );
-				// We ignore limits provided to the searcher
-				// otherwize we could return fewer results than
-				// the ids requested.
-				$query->setFrom( 0 );
-				$query->setSize( $size );
-				$resultSet = $index->search( $query, [ 'search_type' => 'query_then_fetch' ] );
-				if ( !$resultSet->getResponse()->isOK() ) {
-					$request = $connection->getClient()->getLastRequest();
-					if ( $request == null ) {
-						// I can't imagine how this would happen, but the type signature allows
-						// for a null last request so we provide a minimal workaround.
-						throw new \Elastica\Exception\RuntimeException(
-							"Response reports failure, but no last request available" );
-					}
-					throw new ResponseException( $request, $resultSet->getResponse() );
-				}
-				return $this->success( $resultSet->getResults(), $connection );
-			} catch ( \Elastica\Exception\NotFoundException $e ) {
-				// NotFoundException just means the field didn't exist.
-				// It is up to the caller to decide if that is an error.
-				return $this->success( [], $connection );
-			} catch ( \Elastica\Exception\ExceptionInterface $e ) {
-				return $this->failure( $e, $connection );
+		$query = new \Elastica\Query( new \Elastica\Query\Ids( $docIds ) );
+		if ( is_array( $sourceFiltering ) ) {
+			// The title is a required field in the ApiTrait. Maybe the API should be injecting
+			// that requirement?
+			if ( !in_array( "title", $sourceFiltering ) ) {
+				array_push( $sourceFiltering, "title" );
 			}
-		};
+			$query->setParam( '_source', $sourceFiltering );
+		}
+
+		$logMeta = [ 'docIds' => $docIds ];
+
+		$work = $this->buildPoolWorkForGet( $query, $logMeta, $indexSuffix, $size, $connection );
 
 		if ( $usePoolCounter ) {
 			return Util::doPoolCounterWork( $this->getPoolCounterType(), $this->user, $work );
@@ -494,35 +480,59 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 	}
 
 	/**
-	 * @param string $name
-	 * @return Status
+	 * Get the completion documents associated with $docIds.
+	 * @param int[] $docIds
+	 * @return Status containing pages found, containing an empty array if not found,
+	 *    or an error if there was an error
 	 */
-	private function findNamespace( $name ) {
-		return Util::doPoolCounterWork(
-			'CirrusSearch-NamespaceLookup',
-			$this->user,
-			function () use ( $name ) {
-				try {
-					$this->startNewLog( 'lookup namespace for {namespaceName}', 'namespace', [
-						'namespaceName' => $name,
-						'query' => $name,
-					] );
-					$connection = $this->getOverriddenConnection();
-					$connection->setTimeout( $this->getClientTimeout( 'namespace' ) );
+	public function getSuggest( array $docIds ) {
+		$connection = $this->getOverriddenConnection();
+		$query = new \Elastica\Query( new \Elastica\Query\Terms( 'source_doc_id', $docIds ) );
+		$indexSuffix = Connection::TITLE_SUGGEST_INDEX_SUFFIX;
+		$logMeta = [ 'docIds' => $docIds ];
 
-					// A bit awkward, but accepted as this is the backup
-					// implementation of namespace lookup. Deployments should
-					// prefer to install php-intl and use utr30.
-					$store = ( new MetaStoreIndex( $connection, new NullPrinter(), $this->config ) )
-						->namespaceStore();
-					$resultSet = $store->find( $name, [
-						'timeout' => $this->getTimeout( 'namespace' ),
-					] );
-					return $this->success( $resultSet->getResults(), $connection );
-				} catch ( \Elastica\Exception\ExceptionInterface $e ) {
-					return $this->failure( $e, $connection );
-				}
-			} );
+		// Should be two docs per source doc id
+		$size = count( $docIds ) * 3;
+
+		$work = $this->buildPoolWorkForGet( $query, $logMeta, $indexSuffix, $size, $connection );
+		return Util::doPoolCounterWork( $this->getPoolCounterType(), $this->user, $work );
+	}
+
+	private function buildPoolWorkForGet(
+		\Elastica\Query $query,
+		array $logMeta,
+		string $indexSuffix,
+		int $size,
+		Connection $connection
+	): \Closure {
+		return function () use ( $query, $logMeta, $indexSuffix, $size, $connection ) {
+			try {
+				$this->startNewLog( 'get of {indexSuffix}.{docIds}', 'get', [
+					'indexSuffix' => $indexSuffix,
+				] + $logMeta );
+				// Shard timeout not supported on get requests so we just use the client side timeout
+				$connection->setTimeout( $this->getClientTimeout( 'get' ) );
+				// We use a search query instead of _get/_mget, these methods are
+				// theorically well suited for this kind of job but they are not
+				// supported on aliases with multiple indices (content/general)
+				$index = $connection->getIndex( $this->indexBaseName, $indexSuffix );
+				$query->addParam( 'stats', 'get' );
+				// We ignore limits provided to the searcher
+				// otherwize we could return fewer results than
+				// the ids requested.
+				$query->setFrom( 0 );
+				$query->setSize( $size );
+				$resultSet = $index->search( $query, [ 'search_type' => 'query_then_fetch' ] );
+				self::throwIfNotOk( $connection, $resultSet->getResponse() );
+				return $this->success( $resultSet->getResults(), $connection );
+			} catch ( \Elastica\Exception\NotFoundException ) {
+				// NotFoundException just means the field didn't exist.
+				// It is up to the caller to decide if that is an error.
+				return $this->success( [], $connection );
+			} catch ( \Elastica\Exception\ExceptionInterface $e ) {
+				return $this->failure( $e, $connection );
+			}
+		};
 	}
 
 	/**
@@ -595,7 +605,7 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 				// Used syntax
 				'syntax' => $this->searchContext->getSyntaxUsed(),
 			],
-			$this->searchContext->getNamespaces() ?: []
+			$this->searchContext->getNamespaces() ?? []
 		);
 
 		// Similar to indexing support only the bulk code path, rather than
@@ -632,7 +642,7 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 		if ( $this->searchContext->getCacheTtl() > 0 && !$skipCache ) {
 			$work = function () use ( $work, $searches, $log, $contextResultsType ) {
 				$services = MediaWikiServices::getInstance();
-				$requestStats = $services->getStatsFactory();
+				$requestStats = Util::getStatsFactory();
 				$cache = $services->getMainWANObjectCache();
 				$keyParts = [];
 				foreach ( $searches as $key => $search ) {
@@ -652,9 +662,7 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 					$this->successViaCache( $log );
 
 					if ( $multiResultSet->isOK() ) {
-						/**
-						 * @var $cachedMResultSet \Elastica\Multi\ResultSet
-						 */
+						/** @var \Elastica\Multi\ResultSet $cachedMResultSet */
 						$cachedMResultSet = $multiResultSet->getValue();
 						if ( count( $cachedMResultSet->getResultSets() ) !== count( $searches ) ) {
 							LoggerFactory::getInstance( 'CirrusSearch' )
@@ -708,10 +716,8 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 			return $msearches->failure( $status );
 		}
 
+		/** @var \Elastica\Multi\ResultSet $response */
 		$response = $status->getValue();
-		/**
-		 * @var $response \Elastica\Multi\ResultSet
-		 */
 		if ( count( $response->getResultSets() ) !== count( $msearches->getRequests() ) ) {
 			// Temp hack to investigate T231023 (use php serialize just in case it has some invalid
 			// UTF8 sequences that would prevent this message from being sent to logstash
@@ -747,18 +753,12 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 			return;
 		}
 		$namespaceName = substr( $query, 0, $colon );
-		$status = $this->findNamespace( $namespaceName );
-		// Failure case is already logged so just handle success case
-		if ( !$status->isOK() ) {
+		$namespaceId = $this->namespaceMatcher->identifyNamespace( $namespaceName );
+		if ( $namespaceId === null ) {
 			return;
 		}
-		$foundNamespace = $status->getValue();
-		if ( !$foundNamespace ) {
-			return;
-		}
-		$foundNamespace = $foundNamespace[ 0 ];
 		$query = substr( $query, $colon + 1 );
-		$this->searchContext->setNamespaces( [ $foundNamespace->namespace_id ] );
+		$this->searchContext->setNamespaces( [ $namespaceId ] );
 	}
 
 	/**
@@ -777,11 +777,13 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 		// separate expensive or high-volume traffic into dedicated
 		// pools with specific limits. Prefix is only high volume
 		// when completion is disabled.
+		// TODO: Should this be configuration?
 		$poolCounterTypes = [
 			'deepcat' => 'CirrusSearch-ExpensiveFullText',
 			'regex' => 'CirrusSearch-ExpensiveFullText',
 			'prefix' => 'CirrusSearch-Prefix',
 			'more_like' => 'CirrusSearch-MoreLike',
+			'semantic' => 'CirrusSearch-Semantic',
 		];
 		foreach ( $poolCounterTypes as $type => $counter ) {
 			if ( $this->searchContext->isSyntaxUsed( $type ) ) {
@@ -799,15 +801,26 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 		// significantly more load than expected.
 		if ( $pool !== 'CirrusSearch-ExpensiveFullText' && $this->isAutomatedRequest() ) {
 			$pool = 'CirrusSearch-Automated';
+		} elseif ( $this->offset + $this->limit >= self::AUTOMATED_RESULT_DEPTH_THRESHOLD_LARGE ) {
+			// Deep pagination is always expensive, but if the request was
+			// already flagged as automated leave it in the automated bucket.
+			// We don't want to accidently split a bot's requests into both
+			// buckets, allowing them to use all the capacity of both.
+			$pool = 'CirrusSearch-ExpensiveFullText';
 		}
 		return $pool;
 	}
 
 	private function isAutomatedRequest(): bool {
 		$req = RequestContext::getMain()->getRequest();
+
+		if ( $this->isDeepWebScrapingRequest( $req ) ) {
+			return true;
+		}
+
 		try {
 			$ip = $req->getIP();
-		} catch ( \MWException $e ) {
+		} catch ( MWException ) {
 			// No IP, typically this means a CLI invocation. We are attempting
 			// to segregate external automation, internal automation has its
 			// own ability to control configuration and shouldn't be flagged
@@ -821,6 +834,21 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 		}
 		return Util::looksLikeAutomation(
 			$this->config, $ip, $req->getAllHeaders() );
+	}
+
+	/**
+	 * Flags requests that look potentially automated
+	 *
+	 * See https://phabricator.wikimedia.org/T405482
+	 */
+	private function isDeepWebScrapingRequest( WebRequest $req ): bool {
+		// Request issued via index.php (web). We could consider api requests,
+		// but the no cookie signal is only useful in the web context.
+		return MW_ENTRY_POINT === 'index'
+			// Request has no cookies (signal for simple bots).
+			&& !$req->getHeader( 'Cookie' )
+			// Asks for results well beyond the typical
+			&& $this->offset + $this->limit >= self::AUTOMATED_RESULT_DEPTH_THRESHOLD_SMALL;
 	}
 
 	/**
@@ -844,7 +872,6 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 		$requestStats->getCounter( "query_cache_total" )
 			->setLabel( "type", $type )
 			->setLabel( "status", $cacheStatus )
-			->copyToStatsdAt( "CirrusSearch.query_cache.$type.$cacheStatus" )
 			->increment();
 	}
 
@@ -866,9 +893,11 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 	/**
 	 * If we're supposed to create raw result, create and return it,
 	 * or output it and finish.
-	 * @param mixed $result Search result data
+	 *
+	 * @template T the type of the result passed and the return value of this function
+	 * @param T $result Search result data
 	 * @param WebRequest $request Request context
-	 * @return string The new raw result.
+	 * @return T
 	 */
 	public function processRawReturn( $result, WebRequest $request ) {
 		return Util::processSearchRawReturn( $result, $request,
@@ -964,7 +993,7 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 		return $aArray === $bArray;
 	}
 
-	private function buildInterleaveSearcher() {
+	private function buildInterleaveSearcher(): ?self {
 		// If we aren't on the first page, or the user has specified
 		// some custom magic query options (override rescore profile,
 		// etc) then don't interleave.
@@ -1015,11 +1044,7 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 		return $this->searchContext->getDebugOptions()->applyDebugOptions( $query );
 	}
 
-	/**
-	 * @param SearchQuery $query
-	 * @return Searcher
-	 */
-	public function makeSearcher( SearchQuery $query ) {
+	public function makeSearcher( SearchQuery $query ): self {
 		return new self( $this->connection, $query->getOffset(), $query->getLimit(),
 			$query->getSearchConfig(), $query->getNamespaces(), $this->user,
 			false, $query->getDebugOptions(), $this->namespacePrefixParser, $this->interwikiResolver,
@@ -1099,7 +1124,6 @@ class Searcher extends ElasticsearchIntermediary implements SearcherFactory {
 		}
 
 		/** @var FullTextQueryBuilder $qb */
-		// @phan-suppress-next-line PhanTypeInvalidCallableArraySize
 		$qb = ObjectFactory::getObjectFromSpec( $objectFactorySpecs );
 		if ( !( $qb instanceof FullTextQueryBuilder ) ) {
 			throw new RuntimeException( 'Bad builder class configured.' );

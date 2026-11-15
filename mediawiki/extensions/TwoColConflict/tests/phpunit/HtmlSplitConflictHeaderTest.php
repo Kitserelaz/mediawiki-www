@@ -4,6 +4,7 @@ namespace TwoColConflict\Tests;
 
 use MediaWiki\CommentStore\CommentStoreComment;
 use MediaWiki\Language\Language;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Message\Message;
 use MediaWiki\Output\OutputPage;
@@ -14,7 +15,6 @@ use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWikiIntegrationTestCase;
-use MessageLocalizer;
 use TwoColConflict\Html\HtmlSplitConflictHeader;
 
 /**
@@ -127,24 +127,21 @@ class HtmlSplitConflictHeaderTest extends MediaWikiIntegrationTestCase {
 		$user = $this->createNoOpMock( Authority::class, [ 'getUser' ] );
 
 		$language = $this->createMock( Language::class );
-		$language->method( 'userTimeAndDate' )->willReturnCallback( static function ( ?string $ts ) {
-			return $ts ?? '(just-now)';
-		} );
+		$language->method( 'userTimeAndDate' )->willReturnCallback(
+			static fn ( ?string $ts ) => $ts ?? '(just-now)'
+		);
 
 		$localizer = $this->createMock( MessageLocalizer::class );
 		$localizer->method( 'msg' )->willReturnCallback( function ( $key, ...$params ) {
 			$msg = $this->createMock( Message::class );
-			$text = "($key" . ( $params ? ': ' . implode( '|', $params ) : '' ) . ')';
-			$msg->method( $this->logicalOr( 'escaped', 'parse', 'text' ) )->willReturn( $text );
-			$msg->method( 'rawParams' )->willReturnCallback( function ( ...$params ) use ( $key ) {
-				// fallback for the copy links
-				if ( str_contains( $params[0], 'twocolconflict-copy-tab-action' ) ) {
-					return $params[0];
-				}
-				$msg = $this->createMock( Message::class );
-				$msg->method( 'escaped' )->willReturn( "($key: " . implode( '|', $params ) . ')' );
-				return $msg;
-			} );
+			$msg->method( $this->logicalOr(
+				$this->identicalTo( 'escaped' ),
+				$this->identicalTo( 'parse' ),
+				$this->identicalTo( 'text' )
+			) )->willReturn( '(' . implode( ': ', [ $key, ...$params ] ) . ')' );
+			$msg->method( 'rawParams' )->willReturnCallback(
+				fn ( ...$p ) => $this->getMockMessage( "($key: " . implode( '|', $p ) . ')' )
+			);
 			return $msg;
 		} );
 
@@ -171,7 +168,7 @@ class HtmlSplitConflictHeaderTest extends MediaWikiIntegrationTestCase {
 		$user->method( 'getName' )->willReturn( __CLASS__ );
 
 		$revision = new MutableRevisionRecord(
-			new PageIdentityValue( 0, NS_MAIN, __CLASS__, PageIdentityValue::LOCAL )
+			PageIdentityValue::localIdentity( 0, NS_MAIN, __CLASS__ )
 		);
 		$revision->setUser( $user )
 			->setTimestamp( $timestamp )

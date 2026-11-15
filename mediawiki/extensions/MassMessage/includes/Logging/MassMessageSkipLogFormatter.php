@@ -2,14 +2,13 @@
 
 namespace MediaWiki\MassMessage\Logging;
 
-use LogFormatter;
+use MediaWiki\Logging\LogFormatter;
 use MediaWiki\Message\Message;
 
 /**
  * Log formatter for 'skip*' entries on Special:Log/massmessage.
  * Parses the message summary so wikilinks work.
  */
-
 class MassMessageSkipLogFormatter extends LogFormatter {
 
 	/**

@@ -11,7 +11,6 @@ use Wikimedia\ObjectCache\WANObjectCache;
 /**
  * Functions related to target processing
  */
-
 abstract class SpamlistLookup {
 
 	/**
@@ -42,7 +41,7 @@ abstract class SpamlistLookup {
 		}
 
 		$lookup = self::factory( $spamlist );
-		$callback = function ( $old = null, &$ttl = null ) use ( $lookup, $spamlist, $normalize ) {
+		$callback = function ( $old = null, &$ttl = null ) use ( $lookup, $normalize ) {
 			$targets = $lookup->fetchTargets();
 			if ( $targets && $normalize ) {
 				$value = self::normalizeTargets( $targets );
@@ -119,6 +118,7 @@ abstract class SpamlistLookup {
 						$conversionNamespaces[$title->getNamespace()],
 						$title->getText() );
 				}
+				$target['originalTitle'] = $title->getPrefixedText();
 				$title = UrlHelper::followRedirect( $title );
 				if ( $title === null ) {
 					// Interwiki redirect

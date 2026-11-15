@@ -22,18 +22,15 @@ class SubmittedTextCacheTest extends \MediaWikiUnitTestCase {
 	 * @dataProvider provideMakeCacheKey
 	 */
 	public function testMakeCacheKey(
-		string $prefixedDbKey,
+		string $title,
 		UserIdentity $user,
 		?SessionId $sessionId,
 		?string $expected
 	) {
 		$backend = $this->createMock( BagOStuff::class );
-		$backend->method( 'makeKey' )
-			->willReturnCallback(
-				static function ( ...$components ) {
-					return implode( ':', $components );
-				}
-			);
+		$backend->method( 'makeKey' )->willReturnCallback(
+			static fn ( ...$components ) => implode( ':', $components )
+		);
 		/** @var SubmittedTextCache $cache */
 		$cache = TestingAccessWrapper::newFromObject( new SubmittedTextCache( $backend ) );
 
@@ -43,7 +40,7 @@ class SubmittedTextCacheTest extends \MediaWikiUnitTestCase {
 
 		$this->assertSame(
 			$expected,
-			$cache->makeCacheKey( $prefixedDbKey, $user, $sessionId )
+			$cache->makeCacheKey( $title, $user, $sessionId )
 		);
 	}
 

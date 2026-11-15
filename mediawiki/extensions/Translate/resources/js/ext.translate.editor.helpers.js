@@ -4,6 +4,8 @@
 ( function () {
 	'use strict';
 
+	var logger = require( 'ext.translate.eventlogginghelpers' );
+
 	function getEditSummaryTimeWithDiff( pageTitle, comment ) {
 		var diffLink = mw.util.getUrl( pageTitle, {
 			oldid: comment.revisionId,
@@ -259,7 +261,7 @@
 							.text( $.uls.data.getAutonym( translation.language ) )
 					);
 
-				this.suggestionAdder( $element, translation.value );
+				this.suggestionAdder( $element, translation.value, 'assistant_language' );
 
 				return $element;
 			}.bind( this ) );
@@ -351,7 +353,7 @@
 				suggestion.sources = [];
 				suggestion.sources.push( translation );
 
-				this.suggestionAdder( suggestion.$element, translation.target );
+				this.suggestionAdder( suggestion.$element, translation.target, 'translation_memory' );
 
 				suggestions[ translation.target ] = suggestion;
 			}, this );
@@ -387,7 +389,11 @@
 			$heading.removeClass( 'hide' );
 		},
 
-		/** @internal */
+		/**
+		 * @param e
+		 * @param suggestion
+		 * @internal
+		 */
 		onShowTranslationMemorySources: function ( e, suggestion ) {
 			e.stopPropagation();
 
@@ -469,7 +475,7 @@
 							.text( translation.service )
 					);
 
-				translateEditor.suggestionAdder( $translation, translation.target );
+				translateEditor.suggestionAdder( $translation, translation.target, translation.service );
 
 				$mtSuggestions.append( $translation );
 			} );
@@ -482,8 +488,9 @@
 		 * @internal
 		 * @param {jQuery} $source
 		 * @param {string} suggestion Text to add
+		 * @param {string} service TTM service
 		 */
-		suggestionAdder: function ( $source, suggestion ) {
+		suggestionAdder: function ( $source, suggestion, service ) {
 			var $target = this.$editor.find( '.tux-textarea-translation' );
 			if ( $target.get( 0 ).readOnly ) {
 				// If the textarea is disabled, then disable the translation aid.
@@ -491,7 +498,7 @@
 				$source.addClass( 'tux-translation-aid-disabled' );
 				return;
 			}
-			var inserter = function () {
+			const inserter = () => {
 				var selection;
 				if ( window.getSelection ) {
 					selection = window.getSelection().toString();
@@ -502,6 +509,12 @@
 				if ( !selection ) {
 					$target.val( suggestion ).trigger( 'focus' ).trigger( 'input' );
 				}
+				logger.logClickEvent( 'accept_suggestion', service );
+
+				// Remove all 'tux-suggestion-aid-used' classes on the page, we only need the one
+				// that was most recently clicked.
+				this.$editor.find( '.tux-suggestion-aid-used' ).removeClass( 'tux-suggestion-aid-used' );
+				$source.addClass( 'tux-suggestion-aid-used' );
 			};
 
 			$source.on( 'click', inserter )
@@ -608,9 +621,8 @@
 							)
 						);
 						// Remove the timestamp link if there is more than one empty summary.
-						$lastSummaryItem.find( '.edit-summary-time' ).remove();
 						// Remove the spacer since we no longer have a timestamp
-						$lastSummaryItem.find( '.edit-summary-spacer' ).remove();
+						$lastSummaryItem.find( '.edit-summary-time, .edit-summary-spacer' ).remove();
 					} else {
 						// Add a new empty summary list item
 						$summaryItem.append(
@@ -689,6 +701,24 @@
 		},
 
 		/**
+		 * Log translation suggestions
+		 *
+		 * @param {string} sourceTitle
+		 */
+		logTranslationSuggestion: function ( sourceTitle ) {
+			var translation = this.translationSuggestion[ sourceTitle ];
+			if ( translation ) {
+				logger.logEvent(
+					'suggestion',
+					'',
+					translation.suggestions,
+					translation.actionContext
+				);
+				delete this.translationSuggestion[ sourceTitle ];
+			}
+		},
+
+		/**
 		 * Loads and shows the translation helpers.
 		 *
 		 * @internal
@@ -710,11 +740,45 @@
 					return false;
 				}
 
+				var suggestionsProvided = [];
+				var mtSuggestions = result.helpers.mt;
+				if ( Array.isArray( mtSuggestions ) ) {
+					suggestionsProvided = mtSuggestions.map( function ( suggestion ) {
+						return suggestion.service;
+					} );
+				}
+
+				var ttmSuggestions = result.helpers.ttmserver;
+				if ( Array.isArray( ttmSuggestions ) && ttmSuggestions.length ) {
+					suggestionsProvided.push( 'translation_memory' );
+				}
+
+				const sourceTitle = `${ this.message.group }|${ this.message.title }`;
+
+				this.translationSuggestion[ sourceTitle ] = {
+					suggestions: suggestionsProvided.join( '; ' ),
+					actionContext: {
+						// eslint-disable-next-line camelcase
+						source_title: sourceTitle,
+						// eslint-disable-next-line camelcase
+						target_title: this.message.title,
+						// eslint-disable-next-line camelcase
+						source_language: result.helpers.definition.language,
+						// eslint-disable-next-line camelcase
+						target_language: this.message.targetLanguage
+					}
+				};
+
+				// Log suggestions immediately if editor is visible
+				if ( suggestionsProvided.length && !this.$editor.hasClass( 'hide' ) ) {
+					this.logTranslationSuggestion( sourceTitle );
+				}
+
 				this.showMessageDocumentation( result.helpers.documentation );
 				this.showUneditableDocumentation( result.helpers.gettext );
 				this.showAssistantLanguages( result.helpers.inotherlanguages );
-				this.showTranslationMemory( result.helpers.ttmserver );
-				this.showMachineTranslations( result.helpers.mt );
+				this.showTranslationMemory( ttmSuggestions );
+				this.showMachineTranslations( mtSuggestions );
 				this.showSupportOptions( result.helpers.support );
 				this.addDefinitionDiff( result.helpers.definitiondiff );
 				this.addInsertables( result.helpers.insertables );

@@ -2,7 +2,7 @@
 
 namespace MediaWiki\MassMessage\Logging;
 
-use LogFormatter;
+use MediaWiki\Logging\LogFormatter;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
@@ -11,7 +11,6 @@ use MediaWiki\Title\Title;
  * Log formatter for 'send' entries on Special:Log/massmessage.
  * This lets us link to the specific revid used to send the message.
  */
-
 class MassMessageSendLogFormatter extends LogFormatter {
 
 	/** @inheritDoc */

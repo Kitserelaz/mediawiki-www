@@ -9,8 +9,8 @@
 
 namespace MediaWiki\Extension\NewUserMessage;
 
-use GenericParameterJob;
-use Job;
+use MediaWiki\JobQueue\GenericParameterJob;
+use MediaWiki\JobQueue\Job;
 use MediaWiki\User\User;
 use Wikimedia\Rdbms\IDBAccessObject;
 
@@ -28,6 +28,7 @@ class NewUserMessageJob extends Job implements GenericParameterJob {
 		parent::__construct( 'newUserMessageJob', $params );
 	}
 
+	/** @inheritDoc */
 	public function run() {
 		$user = User::newFromId( $this->params['userId'] );
 		$user->load( IDBAccessObject::READ_LATEST );

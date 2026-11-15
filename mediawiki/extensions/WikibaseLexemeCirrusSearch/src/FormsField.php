@@ -3,8 +3,8 @@ namespace Wikibase\Lexeme\Search\Elastic;
 
 use CirrusSearch\CirrusSearch;
 use CirrusSearch\Search\KeywordIndexField;
-use SearchEngine;
-use SearchIndexField;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchIndexField;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\ItemId;
 use Wikibase\Lexeme\Domain\Model\Lexeme;
@@ -18,7 +18,7 @@ class FormsField extends TermIndexField {
 	public const NAME = 'lexeme_forms';
 
 	public function __construct() {
-		parent::__construct( static::NAME, \SearchIndexField::INDEX_TYPE_TEXT );
+		parent::__construct( static::NAME, SearchIndexField::INDEX_TYPE_TEXT );
 	}
 
 	/**

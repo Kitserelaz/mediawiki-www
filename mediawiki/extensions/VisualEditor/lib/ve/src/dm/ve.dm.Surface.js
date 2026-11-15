@@ -18,15 +18,13 @@
  * @param {Object} [config] Configuration options
  * @param {boolean} [config.sourceMode=false] Source editing mode
  */
-ve.dm.Surface = function VeDmSurface( doc, attachedRoot, config ) {
+ve.dm.Surface = function VeDmSurface( doc, attachedRoot, config = {} ) {
 	// Support old (doc, config) argument order
 	// TODO: Remove this once all callers are updated
-	if ( !config && ve.isPlainObject( attachedRoot ) ) {
+	if ( ve.isPlainObject( attachedRoot ) ) {
 		config = attachedRoot;
 		attachedRoot = undefined;
 	}
-
-	config = config || {};
 
 	attachedRoot = attachedRoot || doc.getDocumentNode();
 	if ( !( attachedRoot instanceof ve.dm.BranchNode ) ) {
@@ -227,7 +225,7 @@ ve.dm.Surface.prototype.isMultiUser = function () {
  * @param {string} documentId Document ID
  * @param {Object} [config] Configuration options
  */
-ve.dm.Surface.prototype.createSynchronizer = function ( documentId, config ) {
+ve.dm.Surface.prototype.createSynchronizer = function ( documentId, config = {} ) {
 	if ( this.synchronizer ) {
 		throw new Error( 'Synchronizer already set' );
 	}
@@ -272,8 +270,7 @@ ve.dm.Surface.prototype.resetHistoryTrackingInterval = function () {
 };
 
 /**
- * @typedef {Object} UndoStackItem
- * @memberof ve.dm.Surface
+ * @typedef {Object} ve.dm.Surface.UndoStackItem
  * @property {number} start
  * @property {ve.dm.Transaction[]} transactions
  * @property {ve.dm.Selection} selection
@@ -286,7 +283,7 @@ ve.dm.Surface.prototype.resetHistoryTrackingInterval = function () {
  * @return {ve.dm.Surface.UndoStackItem[]} List of applied transaction stacks
  */
 ve.dm.Surface.prototype.getHistory = function () {
-	const appliedUndoStack = this.undoStack.slice( 0, this.undoStack.length - this.undoIndex );
+	const appliedUndoStack = this.undoIndex ? this.undoStack.slice( 0, -this.undoIndex ) : this.undoStack.slice();
 	if ( this.newTransactions.length > 0 ) {
 		appliedUndoStack.push( { transactions: this.newTransactions.slice( 0 ) } );
 	}
@@ -303,8 +300,7 @@ ve.dm.Surface.prototype.isStaging = function () {
 };
 
 /**
- * @typedef {Object} StagingState
- * @memberof ve.dm.Surface
+ * @typedef {Object} ve.dm.Surface.StagingState
  * @property {ve.dm.Transaction[]} transactions Staging transactions
  * @property {ve.dm.Selection} selectionBefore Selection before transactions were applied
  * @property {boolean} allowUndo Allow undo while staging
@@ -640,7 +636,7 @@ ve.dm.Surface.prototype.getLinearFragment = function ( range, noAutoSelect, excl
  */
 ve.dm.Surface.prototype.truncateUndoStack = function () {
 	if ( this.undoIndex ) {
-		this.undoStack = this.undoStack.slice( 0, this.undoStack.length - this.undoIndex );
+		this.undoStack = this.undoStack.slice( 0, -this.undoIndex );
 		this.undoIndex = 0;
 		this.emit( 'undoStackChange' );
 	}
@@ -713,53 +709,6 @@ ve.dm.Surface.prototype.setLinearSelection = function ( range ) {
  */
 ve.dm.Surface.prototype.setNullSelection = function () {
 	this.setSelection( new ve.dm.NullSelection() );
-};
-
-/**
- * Grows a range so that any partially selected links are totally selected
- *
- * @param {ve.Range} range The range to regularize
- * @return {ve.Range} Regularized range, possibly object-identical to the original
- */
-ve.dm.Surface.prototype.fixupRangeForLinks = function ( range ) {
-	if ( range.isCollapsed() ) {
-		return range;
-	}
-
-	const linearData = this.getDocument().data;
-
-	function getLinks( offset ) {
-		return linearData.getAnnotationsFromOffset( offset ).filter( ( ann ) => ann.name === 'link' );
-	}
-
-	// Search for links at start/end that don't cover the whole range.
-	// Assume at most one such link at each end.
-	let start = range.start;
-	let end = range.end;
-	const rangeAnnotations = linearData.getAnnotationsFromRange( range );
-	const startLink = getLinks( start ).diffWith( rangeAnnotations ).getHash( 0 );
-	const endLink = getLinks( end ).diffWith( rangeAnnotations ).getHash( 0 );
-
-	if ( startLink === undefined && endLink === undefined ) {
-		return range;
-	}
-
-	if ( startLink !== undefined ) {
-		while ( start > 0 && getLinks( start - 1 ).containsHash( startLink ) ) {
-			start--;
-		}
-	}
-	if ( endLink !== undefined ) {
-		while ( end < linearData.getLength() && getLinks( end ).containsHash( endLink ) ) {
-			end++;
-		}
-	}
-
-	if ( range.isBackwards() ) {
-		return new ve.Range( end, start );
-	} else {
-		return new ve.Range( start, end );
-	}
 };
 
 /**
@@ -962,7 +911,7 @@ ve.dm.Surface.prototype.changeInternal = function ( transactions, selection, ski
 			transactions = [ transactions ];
 		}
 		this.transacting = true;
-		for ( let i = 0, len = transactions.length; i < len; i++ ) {
+		for ( let i = 0; i < transactions.length; i++ ) {
 			if ( !transactions[ i ].isNoOp() ) {
 				let committed;
 				// The .commit() call below indirectly invokes setSelection()
@@ -1170,6 +1119,9 @@ ve.dm.Surface.prototype.getSelectedNode = function () {
 /**
  * Get the selected node covering a specific selection, or null
  *
+ * Will return a node if it is wrapped (e.g. not a TextNode or DocumentNode)
+ * and fully selected.
+ *
  * @param {ve.dm.Selection} [selection] Selection, defaults to the current selection
  * @return {ve.dm.Node|null} Selected node
  */
@@ -1184,7 +1136,7 @@ ve.dm.Surface.prototype.getSelectedNodeFromSelection = function ( selection ) {
 	const range = selection.getRange();
 	if ( !range.isCollapsed() ) {
 		const startNode = this.getDocument().documentNode.getNodeFromOffset( range.start + 1 );
-		if ( startNode && startNode.getOuterRange().equalsSelection( range ) ) {
+		if ( startNode && startNode.isWrapped() && startNode.getOuterRange().equalsSelection( range ) ) {
 			selectedNode = startNode;
 		}
 	}
@@ -1213,11 +1165,9 @@ ve.dm.Surface.prototype.onDocumentPreCommit = function ( tx ) {
  * @param {boolean} [options.excludeAttributes] Exclude attribute changes
  * @return {ve.Range[]} Modified ranges
  */
-ve.dm.Surface.prototype.getModifiedRanges = function ( options ) {
+ve.dm.Surface.prototype.getModifiedRanges = function ( options = {} ) {
 	const doc = this.getDocument();
 	const ranges = [];
-
-	options = options || {};
 
 	this.getHistory().forEach( ( stackItem ) => {
 		stackItem.transactions.forEach( ( tx ) => {
@@ -1411,7 +1361,7 @@ ve.dm.Surface.prototype.setStorage = function ( storage, storageExpiry ) {
 	let isLocalStorage = false;
 	try {
 		// Accessing window.localStorage can throw an exception when it is disabled
-		// eslint-disable-next-line no-undef
+		// eslint-disable-next-line mediawiki/no-storage, no-undef
 		isLocalStorage = this.storage.store === window.localStorage;
 	} catch ( e ) {}
 
@@ -1544,15 +1494,14 @@ ve.dm.Surface.prototype.updateDocState = function ( state ) {
 /**
  * Update the expiry value of keys in use
  *
- * @param {string[]} [skipKeys] Keys to skip (because they have just been updated)
+ * @param {string[]} [skipKeys=[]] Keys to skip (because they have just been updated)
  */
-ve.dm.Surface.prototype.updateExpiry = function ( skipKeys ) {
+ve.dm.Surface.prototype.updateExpiry = function ( skipKeys = [] ) {
 	if ( !this.storageExpiry ) {
 		return;
 	}
-	skipKeys = skipKeys || [];
 	[ 've-docstate', 've-dochtml', 've-selection', 've-changes' ].forEach( ( key ) => {
-		if ( skipKeys.indexOf( key ) === -1 ) {
+		if ( !skipKeys.includes( key ) ) {
 			this.storage.setExpires( this.autosavePrefix + key, this.storageExpiry );
 		}
 	} );

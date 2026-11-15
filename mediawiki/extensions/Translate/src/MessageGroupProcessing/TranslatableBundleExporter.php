@@ -4,10 +4,10 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
 use Closure;
-use DumpStringOutput;
+use MediaWiki\Export\DumpStringOutput;
+use MediaWiki\Export\WikiExporter;
 use MediaWiki\Export\WikiExporterFactory;
 use MediaWiki\Title\Title;
-use WikiExporter;
 use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
@@ -18,15 +18,14 @@ use Wikimedia\Rdbms\IConnectionProvider;
  */
 class TranslatableBundleExporter {
 	private WikiExporter $wikiExporter;
-	private SubpageListBuilder $subpageListBuilder;
+	/** @var null|callable(Title[],string):void */
 	private ?Closure $exportPageCallback;
 
 	public function __construct(
-		SubpageListBuilder $subpageListBuilder,
+		private readonly SubpageListBuilder $subpageListBuilder,
 		WikiExporterFactory $wikiExporterFactory,
 		IConnectionProvider $dbProvider
 	) {
-		$this->subpageListBuilder = $subpageListBuilder;
 		$this->wikiExporter = $wikiExporterFactory->getWikiExporter(
 			$dbProvider->getReplicaDatabase(),
 			WikiExporter::FULL
@@ -66,6 +65,7 @@ class TranslatableBundleExporter {
 		return (string)$sink;
 	}
 
+	/** @param callable(Title[],string):void $callable */
 	public function setExportPageCallback( callable $callable ) {
 		$this->exportPageCallback = Closure::fromCallable( $callable );
 	}
@@ -76,7 +76,7 @@ class TranslatableBundleExporter {
 	 */
 	private function exportPages( array $pagesForExport, string $pageType ): void {
 		if ( $this->exportPageCallback ) {
-			call_user_func( $this->exportPageCallback, $pagesForExport, $pageType );
+			( $this->exportPageCallback )( $pagesForExport, $pageType );
 		}
 
 		foreach ( $pagesForExport as $page ) {

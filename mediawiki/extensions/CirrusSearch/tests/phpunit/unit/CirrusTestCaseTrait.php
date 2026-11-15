@@ -9,17 +9,22 @@ use CirrusSearch\Profile\SearchProfileServiceFactory;
 use CirrusSearch\Profile\SearchProfileServiceFactoryFactory;
 use CirrusSearch\Search\SearchQueryBuilder;
 use CirrusSearch\Search\TitleHelper;
+use CirrusSearch\SecondTry\SecondTryRunnerFactory;
+use CirrusSearch\SecondTry\SecondTrySearchFactory;
 use MediaWiki\Config\Config;
 use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Interwiki\InterwikiLookup;
+use MediaWiki\Language\LanguageConverterFactory;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Options\StaticUserOptionsLookup;
 use MediaWiki\User\Options\UserOptionsLookup;
+use PHPUnit\Framework\MockObject\MockObject;
 use Wikimedia\Http\MultiHttpClient;
 use Wikimedia\ObjectCache\BagOStuff;
 use Wikimedia\ObjectCache\HashBagOStuff;
 use Wikimedia\ObjectCache\WANObjectCache;
+use Wikimedia\UUID\GlobalIdGenerator;
 
 trait CirrusTestCaseTrait {
 	/** @var string */
@@ -72,6 +77,10 @@ trait CirrusTestCaseTrait {
 		return self::$MAX_TESTED_FIXTURES_PER_TEST;
 	}
 
+	/**
+	 * @param string $path
+	 * @return string[]
+	 */
 	public static function findFixtures( $path ) {
 		$prefixLen = strlen( self::$FIXTURE_DIR );
 		$results = [];
@@ -81,6 +90,10 @@ trait CirrusTestCaseTrait {
 		return $results;
 	}
 
+	/**
+	 * @param string $testFile
+	 * @param mixed $fixture
+	 */
 	public static function saveFixture( $testFile, $fixture ) {
 		file_put_contents(
 			self::$FIXTURE_DIR . $testFile,
@@ -88,6 +101,10 @@ trait CirrusTestCaseTrait {
 		);
 	}
 
+	/**
+	 * @param string $testFile
+	 * @param mixed $fixture
+	 */
 	public static function saveAnalysisFixture( $testFile, $fixture ) {
 		// sort top level and second level of analysis fixtures
 		// and third level for "analyzer"
@@ -107,6 +124,10 @@ trait CirrusTestCaseTrait {
 		self::saveFixture( $testFile, $fixture );
 	}
 
+	/**
+	 * @param mixed $fixture
+	 * @return string
+	 */
 	public static function encodeFixture( $fixture ) {
 		$old = ini_set( 'serialize_precision', 14 );
 		try {
@@ -116,30 +137,42 @@ trait CirrusTestCaseTrait {
 		}
 	}
 
-	/**
-	 * @param array $cases
-	 * @return array
-	 */
-	public static function randomizeFixtures( array $cases ): array {
+	public static function randomizeFixtures( array $cases, string $prefix ): array {
 		if ( self::canRebuildFixture() ) {
 			return $cases;
 		}
-		ksort( $cases );
+
+		$casesToRandomize = [];
+		$mandatoryCases = [];
+		foreach ( $cases as $c => $d ) {
+			if ( str_starts_with( $c, $prefix ) ) {
+				$casesToRandomize[$c] = $d;
+			} else {
+				$mandatoryCases[$c] = $d;
+			}
+		}
+
+		ksort( $casesToRandomize );
 		srand( self::getSeed() );
-		$randomizedKeys = array_rand( $cases, min( count( $cases ), self::getMaxTestedFixturesPerTest() ) );
-		$randomizedCases = array_intersect_key( $cases, array_flip( $randomizedKeys ) );
-		return $randomizedCases;
+		$maxRandomizedCases = self::getMaxTestedFixturesPerTest() - count( $mandatoryCases );
+		if ( $maxRandomizedCases <= 0 ) {
+			throw new \AssertionError( 'Too many mandatory cases to keep random ones, ' .
+									   'consider increasing \CirrusSearch\CirrusTestCaseTrait::$MAX_TESTED_FIXTURES_PER_TEST' );
+		}
+		$randomizedKeys = array_rand( $casesToRandomize, min( count( $casesToRandomize ), $maxRandomizedCases ) );
+		$randomizedCases = array_intersect_key( $casesToRandomize, array_flip( $randomizedKeys ) );
+		return $mandatoryCases + $randomizedCases;
 	}
 
-	public static function hasFixture( $testFile ) {
+	public static function hasFixture( string $testFile ): bool {
 		return is_file( self::$FIXTURE_DIR . $testFile );
 	}
 
-	public static function loadTextFixture( $testFile, $errorMessage = "fixture config" ) {
+	public static function loadTextFixture( string $testFile, string $errorMessage = "fixture config" ): string {
 		return file_get_contents( self::$FIXTURE_DIR . $testFile );
 	}
 
-	public static function loadFixture( $testFile, $errorMessage = "fixture config" ) {
+	public static function loadFixture( string $testFile, string $errorMessage = "fixture config" ): array {
 		$decoded = json_decode( self::loadTextFixture( $testFile ), true );
 		if ( json_last_error() !== JSON_ERROR_NONE ) {
 			throw new \RuntimeException( "Failed decoding {$errorMessage}: $testFile" );
@@ -147,7 +180,7 @@ trait CirrusTestCaseTrait {
 		return $decoded;
 	}
 
-	public static function fixturePath( $testFile ) {
+	public static function fixturePath( string $testFile ): string {
 		return self::$FIXTURE_DIR . $testFile;
 	}
 
@@ -220,6 +253,11 @@ trait CirrusTestCaseTrait {
 			/** @var UserOptionsLookup */
 			private $userOptionsLookup;
 
+			/**
+			 * @param CirrusTestCaseTrait $testCase
+			 * @param CirrusSearchHookRunner $cirrusHookRunner
+			 * @param UserOptionsLookup $userOptionsLookup
+			 */
 			public function __construct( $testCase, $cirrusHookRunner, $userOptionsLookup ) {
 				$this->testCase = $testCase;
 				$this->cirrusHookRunner = $cirrusHookRunner;
@@ -241,6 +279,7 @@ trait CirrusTestCaseTrait {
 
 	public function namespacePrefixParser(): NamespacePrefixParser {
 		return new class() implements NamespacePrefixParser {
+			/** @inheritDoc */
 			public function parse( $query ) {
 				$pieces = explode( ':', $query, 2 );
 				if ( count( $pieces ) === 2 ) {
@@ -271,32 +310,46 @@ trait CirrusTestCaseTrait {
 		};
 	}
 
-	/**
-	 * @return CirrusSearch
-	 */
 	public function newEngine(): CirrusSearch {
-		return new CirrusSearch( $this->newHashSearchConfig( [ 'CirrusSearchServers' => [] ] ),
-			CirrusDebugOptions::defaultOptions(), $this->namespacePrefixParser(), new EmptyInterwikiResolver() );
+		$config = $this->newHashSearchConfig( [ 'CirrusSearchServers' => [] ] );
+		$secondTryFactory = new SecondTrySearchFactory( $this->createMock( LanguageConverterFactory::class ) );
+
+		$generator = $this->createMock( GlobalIdGenerator::class );
+		$generator->method( 'newUUIDv4' )->willReturn( '00000000-0000-0000-0000-000000000000' );
+		return new CirrusSearch(
+			$config,
+			CirrusDebugOptions::defaultOptions(),
+			$this->namespacePrefixParser(),
+			new EmptyInterwikiResolver(),
+			null,
+			new SecondTryRunnerFactory( $secondTryFactory, $config ),
+			$generator
+		);
 	}
 
 	public static function sanitizeLinkFragment( string $id ): string {
 		return str_replace( ' ', '_', $id );
 	}
 
-	public function newTitleHelper( $hostWikiID = null, ?InterwikiResolver $iwResolver = null ): TitleHelper {
+	/**
+	 * @param string|null $hostWikiID
+	 * @param InterwikiResolver|null $iwResolver
+	 * @return TitleHelper
+	 */
+	public static function newTitleHelper( $hostWikiID = null, ?InterwikiResolver $iwResolver = null ): TitleHelper {
 		return new class(
 			$hostWikiID,
 			$iwResolver ?: new EmptyInterwikiResolver(),
-			static function ( $v ) {
-				return self::sanitizeLinkFragment( $v );
-			}
+			self::sanitizeLinkFragment( ... )
 		) extends TitleHelper {
+			/** @inheritDoc */
 			public function __construct( $hostWikiId,
 				?InterwikiResolver $interwikiResolver = null, ?callable $linkSanitizer = null
 			) {
 				parent::__construct( $hostWikiId, $interwikiResolver, $linkSanitizer );
 			}
 
+			/** @inheritDoc */
 			public function getNamespaceText( Title $title ) {
 				// We only use common namespaces in tests, if this fails or you need
 				// more please adjust.
@@ -358,11 +411,11 @@ trait CirrusTestCaseTrait {
 			$this->namespacePrefixParser(), $this->createCirrusSearchHookRunner() );
 	}
 
-	public function createCirrusSearchHookRunner( $hooks = [] ): CirrusSearchHookRunner {
+	public function createCirrusSearchHookRunner( array $hooks = [] ): CirrusSearchHookRunner {
 		return new CirrusSearchHookRunner( $this->createHookContainer( $hooks ) );
 	}
 
-	public function createStaticUserOptionsLookup( array $userMap = [], array $defaults = [] ) {
+	public function createStaticUserOptionsLookup( array $userMap = [], array $defaults = [] ): StaticUserOptionsLookup {
 		return new StaticUserOptionsLookup( $userMap, $defaults );
 	}
 
@@ -371,4 +424,6 @@ trait CirrusTestCaseTrait {
 	 * @return HookContainer
 	 */
 	abstract protected function createHookContainer( $hooks = [] );
+
+	abstract protected function createMock( string $originalClassName ): MockObject;
 }

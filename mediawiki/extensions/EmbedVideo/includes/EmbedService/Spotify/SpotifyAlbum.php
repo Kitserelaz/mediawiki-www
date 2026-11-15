@@ -9,6 +9,7 @@ use MediaWiki\Extension\EmbedVideo\EmbedService\AbstractEmbedService;
 class SpotifyAlbum extends AbstractEmbedService {
 	protected $additionalIframeAttributes = [
 		'allow' => 'encrypted-media',
+		'style' => 'border-radius:0.75rem;',
 	];
 
 	/**
@@ -68,7 +69,7 @@ class SpotifyAlbum extends AbstractEmbedService {
 	 * @inheritDoc
 	 */
 	public function getPrivacyPolicyUrl(): ?string {
-		return 'https://www.spotify.com/us/legal/privacy-policy/';
+		return 'https://www.spotify.com/legal/privacy-policy/';
 	}
 
 	/**
@@ -76,7 +77,9 @@ class SpotifyAlbum extends AbstractEmbedService {
 	 */
 	public function getCSPUrls(): array {
 		return [
-			'https://open.spotify.com'
+			'https://i.scdn.co',
+			'https://open.spotify.com',
+			'https://image-cdn-ak.spotifycdn.com'
 		];
 	}
 }

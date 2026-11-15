@@ -34,7 +34,7 @@ class ByPropertyIdArrayTest extends \PHPUnit\Framework\TestCase {
 	public function testGivenNull_constructorAssumesEmptyArray() {
 		$indexedArray = new ByPropertyIdArray( null );
 
-		$this->assertSame( 0, $indexedArray->count() );
+		self::assertSame( 0, $indexedArray->count() );
 	}
 
 	public function testGivenNonTraversableObject_constructorDoesNotCastObjectToArray() {
@@ -59,7 +59,7 @@ class ByPropertyIdArrayTest extends \PHPUnit\Framework\TestCase {
 		// constructed from an object." This test makes sure it was not constructed from an object.
 		$byPropertyIdArray->append( $statement2 );
 
-		$this->assertCount( 2, $byPropertyIdArray );
+		self::assertCount( 2, $byPropertyIdArray );
 	}
 
 	/**
@@ -71,7 +71,6 @@ class ByPropertyIdArrayTest extends \PHPUnit\Framework\TestCase {
 	protected static function getMethod( $methodName ) {
 		$class = new ReflectionClass( ByPropertyIdArray::class );
 		$method = $class->getMethod( $methodName );
-		$method->setAccessible( true );
 		return $method;
 	}
 
@@ -142,7 +141,7 @@ class ByPropertyIdArrayTest extends \PHPUnit\Framework\TestCase {
 
 		$indexedArray->buildIndex();
 
-		$this->assertEquals(
+		self::assertEquals(
 			array_values( $expected ),
 			array_values( $indexedArray->getPropertyIds() )
 		);
@@ -170,11 +169,11 @@ class ByPropertyIdArrayTest extends \PHPUnit\Framework\TestCase {
 		foreach ( $ids as $id ) {
 			foreach ( $indexedArray->getByPropertyId( $id ) as $obtainedObject ) {
 				$allObtainedObjects[] = $obtainedObject;
-				$this->assertEquals( $id, $obtainedObject->getPropertyId() );
+				self::assertEquals( $id, $obtainedObject->getPropertyId() );
 			}
 		}
 
-		$this->assertEquals(
+		self::assertEquals(
 			array_values( $objects ),
 			array_values( $allObtainedObjects )
 		);
@@ -194,15 +193,15 @@ class ByPropertyIdArrayTest extends \PHPUnit\Framework\TestCase {
 		$removeObject->invokeArgs( $indexedArray, [ $objects[0] ] );
 		$removeObject->invokeArgs( $indexedArray, [ $objects[$lastIndex] ] );
 
-		$this->assertNotContains(
+		self::assertNotContains(
 			$objects[0], $indexedArray->getByPropertyId( $objects[0]->getPropertyId() )
 		);
 
-		$this->assertNotContains( $objects[$lastIndex],
+		self::assertNotContains( $objects[$lastIndex],
 			$indexedArray->getByPropertyId( $objects[1]->getPropertyId() ) );
 
-		$this->assertNotContains( $objects[0], $indexedArray->toFlatArray() );
-		$this->assertNotContains( $objects[$lastIndex], $indexedArray->toFlatArray() );
+		self::assertNotContains( $objects[0], $indexedArray->toFlatArray() );
+		self::assertNotContains( $objects[$lastIndex], $indexedArray->toFlatArray() );
 	}
 
 	public function testGetByNotSetIdThrowsException() {
@@ -244,7 +243,7 @@ class ByPropertyIdArrayTest extends \PHPUnit\Framework\TestCase {
 			$indicesDestination[$indexedArray->getFlatArrayIndexOfObject( $object )] = $object;
 		}
 
-		$this->assertEquals( $indicesSource, $indicesDestination );
+		self::assertEquals( $indicesSource, $indicesDestination );
 	}
 
 	/**
@@ -254,62 +253,59 @@ class ByPropertyIdArrayTest extends \PHPUnit\Framework\TestCase {
 		$indexedArray = new ByPropertyIdArray( $objects );
 		$indexedArray->buildIndex();
 
-		$this->assertEquals( $objects, $indexedArray->toFlatArray() );
+		self::assertEquals( $objects, $indexedArray->toFlatArray() );
 	}
 
-	public function moveProvider() {
-		$c = $this->statementsProvider();
-		$argLists = [];
+	public static function moveProvider(): iterable {
+		$c = self::statementsProvider();
 
-		$argLists[] = [ $c, $c[0], 0, $c ];
-		$argLists[] = [ $c, $c[0], 1, [ $c[1], $c[0], $c[2], $c[3], $c[4], $c[5] ] ];
-		$argLists[] = [ $c, $c[0], 2, [ $c[1], $c[0], $c[2], $c[3], $c[4], $c[5] ] ];
-		$argLists[] = [ $c, $c[0], 3, [ $c[2], $c[3], $c[4], $c[1], $c[0], $c[5] ] ];
-		$argLists[] = [ $c, $c[0], 4, [ $c[2], $c[3], $c[4], $c[1], $c[0], $c[5] ] ];
-		$argLists[] = [ $c, $c[0], 5, [ $c[2], $c[3], $c[4], $c[1], $c[0], $c[5] ] ];
-		$argLists[] = [ $c, $c[0], 6, [ $c[2], $c[3], $c[4], $c[5], $c[1], $c[0] ] ];
+		yield [ $c, $c[0], 0, $c ];
+		yield [ $c, $c[0], 1, [ $c[1], $c[0], $c[2], $c[3], $c[4], $c[5] ] ];
+		yield [ $c, $c[0], 2, [ $c[1], $c[0], $c[2], $c[3], $c[4], $c[5] ] ];
+		yield [ $c, $c[0], 3, [ $c[2], $c[3], $c[4], $c[1], $c[0], $c[5] ] ];
+		yield [ $c, $c[0], 4, [ $c[2], $c[3], $c[4], $c[1], $c[0], $c[5] ] ];
+		yield [ $c, $c[0], 5, [ $c[2], $c[3], $c[4], $c[1], $c[0], $c[5] ] ];
+		yield [ $c, $c[0], 6, [ $c[2], $c[3], $c[4], $c[5], $c[1], $c[0] ] ];
 
-		$argLists[] = [ $c, $c[1], 0, [ $c[1], $c[0], $c[2], $c[3], $c[4], $c[5] ] ];
-		$argLists[] = [ $c, $c[1], 1, $c ];
-		$argLists[] = [ $c, $c[1], 2, $c ];
-		$argLists[] = [ $c, $c[1], 3, [ $c[2], $c[3], $c[4], $c[0], $c[1], $c[5] ] ];
-		$argLists[] = [ $c, $c[1], 4, [ $c[2], $c[3], $c[4], $c[0], $c[1], $c[5] ] ];
-		$argLists[] = [ $c, $c[1], 5, [ $c[2], $c[3], $c[4], $c[0], $c[1], $c[5] ] ];
-		$argLists[] = [ $c, $c[1], 6, [ $c[2], $c[3], $c[4], $c[5], $c[0], $c[1] ] ];
+		yield [ $c, $c[1], 0, [ $c[1], $c[0], $c[2], $c[3], $c[4], $c[5] ] ];
+		yield [ $c, $c[1], 1, $c ];
+		yield [ $c, $c[1], 2, $c ];
+		yield [ $c, $c[1], 3, [ $c[2], $c[3], $c[4], $c[0], $c[1], $c[5] ] ];
+		yield [ $c, $c[1], 4, [ $c[2], $c[3], $c[4], $c[0], $c[1], $c[5] ] ];
+		yield [ $c, $c[1], 5, [ $c[2], $c[3], $c[4], $c[0], $c[1], $c[5] ] ];
+		yield [ $c, $c[1], 6, [ $c[2], $c[3], $c[4], $c[5], $c[0], $c[1] ] ];
 
-		$argLists[] = [ $c, $c[2], 0, [ $c[2], $c[3], $c[4], $c[0], $c[1], $c[5] ] ];
-		$argLists[] = [ $c, $c[2], 1, $c ];
-		$argLists[] = [ $c, $c[2], 2, $c ];
-		$argLists[] = [ $c, $c[2], 3, [ $c[0], $c[1], $c[3], $c[2], $c[4], $c[5] ] ];
-		$argLists[] = [ $c, $c[2], 4, [ $c[0], $c[1], $c[3], $c[4], $c[2], $c[5] ] ];
-		$argLists[] = [ $c, $c[2], 5, [ $c[0], $c[1], $c[3], $c[4], $c[2], $c[5] ] ];
-		$argLists[] = [ $c, $c[2], 6, [ $c[0], $c[1], $c[5], $c[3], $c[4], $c[2] ] ];
+		yield [ $c, $c[2], 0, [ $c[2], $c[3], $c[4], $c[0], $c[1], $c[5] ] ];
+		yield [ $c, $c[2], 1, $c ];
+		yield [ $c, $c[2], 2, $c ];
+		yield [ $c, $c[2], 3, [ $c[0], $c[1], $c[3], $c[2], $c[4], $c[5] ] ];
+		yield [ $c, $c[2], 4, [ $c[0], $c[1], $c[3], $c[4], $c[2], $c[5] ] ];
+		yield [ $c, $c[2], 5, [ $c[0], $c[1], $c[3], $c[4], $c[2], $c[5] ] ];
+		yield [ $c, $c[2], 6, [ $c[0], $c[1], $c[5], $c[3], $c[4], $c[2] ] ];
 
-		$argLists[] = [ $c, $c[3], 0, [ $c[3], $c[2], $c[4], $c[0], $c[1], $c[5] ] ];
-		$argLists[] = [ $c, $c[3], 1, [ $c[0], $c[1], $c[3], $c[2], $c[4], $c[5] ] ];
-		$argLists[] = [ $c, $c[3], 2, [ $c[0], $c[1], $c[3], $c[2], $c[4], $c[5] ] ];
-		$argLists[] = [ $c, $c[3], 3, $c ];
-		$argLists[] = [ $c, $c[3], 4, [ $c[0], $c[1], $c[2], $c[4], $c[3], $c[5] ] ];
-		$argLists[] = [ $c, $c[3], 5, [ $c[0], $c[1], $c[2], $c[4], $c[3], $c[5] ] ];
-		$argLists[] = [ $c, $c[3], 6, [ $c[0], $c[1], $c[5], $c[2], $c[4], $c[3] ] ];
+		yield [ $c, $c[3], 0, [ $c[3], $c[2], $c[4], $c[0], $c[1], $c[5] ] ];
+		yield [ $c, $c[3], 1, [ $c[0], $c[1], $c[3], $c[2], $c[4], $c[5] ] ];
+		yield [ $c, $c[3], 2, [ $c[0], $c[1], $c[3], $c[2], $c[4], $c[5] ] ];
+		yield [ $c, $c[3], 3, $c ];
+		yield [ $c, $c[3], 4, [ $c[0], $c[1], $c[2], $c[4], $c[3], $c[5] ] ];
+		yield [ $c, $c[3], 5, [ $c[0], $c[1], $c[2], $c[4], $c[3], $c[5] ] ];
+		yield [ $c, $c[3], 6, [ $c[0], $c[1], $c[5], $c[2], $c[4], $c[3] ] ];
 
-		$argLists[] = [ $c, $c[4], 0, [ $c[4], $c[2], $c[3], $c[0], $c[1], $c[5] ] ];
-		$argLists[] = [ $c, $c[4], 1, [ $c[0], $c[1], $c[4], $c[2], $c[3], $c[5] ] ];
-		$argLists[] = [ $c, $c[4], 2, [ $c[0], $c[1], $c[4], $c[2], $c[3], $c[5] ] ];
-		$argLists[] = [ $c, $c[4], 3, [ $c[0], $c[1], $c[2], $c[4], $c[3], $c[5] ] ];
-		$argLists[] = [ $c, $c[4], 4, $c ];
-		$argLists[] = [ $c, $c[4], 5, $c ];
-		$argLists[] = [ $c, $c[4], 6, [ $c[0], $c[1], $c[5], $c[2], $c[3], $c[4] ] ];
+		yield [ $c, $c[4], 0, [ $c[4], $c[2], $c[3], $c[0], $c[1], $c[5] ] ];
+		yield [ $c, $c[4], 1, [ $c[0], $c[1], $c[4], $c[2], $c[3], $c[5] ] ];
+		yield [ $c, $c[4], 2, [ $c[0], $c[1], $c[4], $c[2], $c[3], $c[5] ] ];
+		yield [ $c, $c[4], 3, [ $c[0], $c[1], $c[2], $c[4], $c[3], $c[5] ] ];
+		yield [ $c, $c[4], 4, $c ];
+		yield [ $c, $c[4], 5, $c ];
+		yield [ $c, $c[4], 6, [ $c[0], $c[1], $c[5], $c[2], $c[3], $c[4] ] ];
 
-		$argLists[] = [ $c, $c[5], 0, [ $c[5], $c[0], $c[1], $c[2], $c[3], $c[4] ] ];
-		$argLists[] = [ $c, $c[5], 1, [ $c[0], $c[1], $c[5], $c[2], $c[3], $c[4] ] ];
-		$argLists[] = [ $c, $c[5], 2, [ $c[0], $c[1], $c[5], $c[2], $c[3], $c[4] ] ];
-		$argLists[] = [ $c, $c[5], 3, $c ];
-		$argLists[] = [ $c, $c[5], 4, $c ];
-		$argLists[] = [ $c, $c[5], 5, $c ];
-		$argLists[] = [ $c, $c[5], 6, $c ];
-
-		return $argLists;
+		yield [ $c, $c[5], 0, [ $c[5], $c[0], $c[1], $c[2], $c[3], $c[4] ] ];
+		yield [ $c, $c[5], 1, [ $c[0], $c[1], $c[5], $c[2], $c[3], $c[4] ] ];
+		yield [ $c, $c[5], 2, [ $c[0], $c[1], $c[5], $c[2], $c[3], $c[4] ] ];
+		yield [ $c, $c[5], 3, $c ];
+		yield [ $c, $c[5], 4, $c ];
+		yield [ $c, $c[5], 5, $c ];
+		yield [ $c, $c[5], 6, $c ];
 	}
 
 	/**
@@ -333,11 +329,11 @@ class ByPropertyIdArrayTest extends \PHPUnit\Framework\TestCase {
 			$reindexedArray[] = $o;
 		}
 
-		$this->assertEquals( $objectsDestination, $reindexedArray );
+		self::assertEquals( $objectsDestination, $reindexedArray );
 	}
 
 	public function testMoveThrowingOutOfBoundsExceptionIfObjectNotPresent() {
-		$statements = $this->statementsProvider();
+		$statements = self::statementsProvider();
 		$indexedArray = new ByPropertyIdArray( $statements );
 		$indexedArray->buildIndex();
 
@@ -350,7 +346,7 @@ class ByPropertyIdArrayTest extends \PHPUnit\Framework\TestCase {
 	}
 
 	public function testMoveThrowingOutOfBoundsExceptionOnInvalidIndex() {
-		$statements = $this->statementsProvider();
+		$statements = self::statementsProvider();
 		$indexedArray = new ByPropertyIdArray( $statements );
 		$indexedArray->buildIndex();
 
@@ -359,35 +355,31 @@ class ByPropertyIdArrayTest extends \PHPUnit\Framework\TestCase {
 		$indexedArray->moveObjectToIndex( $statements[0], 9999 );
 	}
 
-	public function addProvider() {
-		$c = $this->statementsProvider();
+	public static function addProvider(): iterable {
+		$c = self::statementsProvider();
 
-		$argLists = [];
-
-		$argLists[] = [ [], $c[0], null, [ $c[0] ] ];
-		$argLists[] = [ [], $c[0], 1, [ $c[0] ] ];
-		$argLists[] = [ [ $c[0] ], $c[2], 0, [ $c[2], $c[0] ] ];
-		$argLists[] = [ [ $c[2], $c[1] ], $c[0], 0, [ $c[0], $c[1], $c[2] ] ];
-		$argLists[] = [
+		yield [ [], $c[0], null, [ $c[0] ] ];
+		yield [ [], $c[0], 1, [ $c[0] ] ];
+		yield [ [ $c[0] ], $c[2], 0, [ $c[2], $c[0] ] ];
+		yield [ [ $c[2], $c[1] ], $c[0], 0, [ $c[0], $c[1], $c[2] ] ];
+		yield [
 			[ $c[0], $c[1], $c[3] ],
 			$c[5],
 			1,
 			[ $c[0], $c[1], $c[5], $c[3] ],
 		];
-		$argLists[] = [
+		yield [
 			[ $c[0], $c[1], $c[5], $c[3] ],
 			$c[2],
 			2,
 			[ $c[0], $c[1], $c[2], $c[3], $c[5] ],
 		];
-		$argLists[] = [
+		yield [
 			[ $c[0], $c[1], $c[2], $c[3], $c[5] ],
 			$c[4],
 			null,
 			[ $c[0], $c[1], $c[2], $c[3], $c[4], $c[5] ],
 		];
-
-		return $argLists;
 	}
 
 	/**
@@ -404,7 +396,7 @@ class ByPropertyIdArrayTest extends \PHPUnit\Framework\TestCase {
 
 		$indexedArray->addObjectAtIndex( $object, $index );
 
-		$this->assertEquals( $objectsDestination, $indexedArray->toFlatArray() );
+		self::assertEquals( $objectsDestination, $indexedArray->toFlatArray() );
 	}
 
 }

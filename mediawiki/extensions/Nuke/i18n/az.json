@@ -64,6 +64,5 @@
 	"nuke-daterange-helper-text-max-age-different": "İstifadəçi adı və ya IP ünvanı qeyd edilərsə, {{PLURAL:$1|$1 günə}} qədər köhnə səhifələr əldə edilə bilər. Əks halda, performans səbəbi ilə {{PLURAL:$2|$2 günə}} qədər köhnə səhifələr əldə edilə bilər.",
 	"nuke-daterange-helper-text-max-age-same": "Performans səbəblərinə görə, {{PLURAL:$1|$1 günə}} qədər köhnə səhifələr əldə edilə bilər.",
 	"tag-nuke": "Kütləvi silmə",
-	"tag-nuke-description": "Nuke uzantısını ilə həyata keçirilən silinmələr",
-	"nuke-list-tempaccount": "Aşağıdakı səhifələr bu yaxınlarda $1 IP ünvanından istifadə edilən müvəqqəti hesablar tərəfindən yaradılmışdır. Zəhmət olmasa, silinəcək səhifələri seçin, redaktə izahını yazın və səhifənin silinməsinə başlamaq üçün \"Seçilmişləri sil\" düyməsinə klikləyin. '''Məxfilik səbəbi ilə redaktə xülasəsində IP ünvanını yazmayın.'''\n\nYönləndirmələr kursivlə göstərilir."
+	"tag-nuke-description": "Nuke uzantısını ilə həyata keçirilən silinmələr"
 }

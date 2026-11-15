@@ -55,6 +55,7 @@
 	"globalwatchlist-option-grouppage": "Grupuj wyniki według stron",
 	"globalwatchlist-option-live": "Odświeżaj na bieżąco",
 	"globalwatchlist-otheroptions": "Inne ustawienia",
+	"globalwatchlist-permalink": "link trwały",
 	"globalwatchlist-prefs-settings": "Odwiedź stronę [[Special:GlobalWatchlistSettings|Specjalna:GlobalWatchlistSettings]], aby ustawić preferencje globalnej listy obserwowanych.",
 	"globalwatchlist-refresh": "Odśwież",
 	"globalwatchlist-remove": "Usuń",
@@ -73,7 +74,7 @@
 	"globalwatchlist-show-logentries": "Pokaż wpisy w rejestrze",
 	"globalwatchlist-show-newpages": "Pokaż edycje tworzące nowe strony",
 	"globalwatchlist-sitelist": "Lista stron podana przez użytkownika",
-	"globalwatchlist-tags": "{{PLURAL:$1|Znacznik|Znaczniki}}: $2",
+	"globalwatchlist-tags": "<bdi>{{PLURAL:$1|Znacznik|Znaczniki}}</bdi>: $2",
 	"globalwatchlist-tour-addsite": "Dodaj witrynę",
 	"globalwatchlist-tour-addsite-description": "Kliknij powyżej, aby dodać kolejny wiersz dla witryny.",
 	"globalwatchlist-tour-fastmode": "Tryb szybki",
@@ -88,7 +89,7 @@
 	"globalwatchlist-tour-sitelist-description": "To jest lista witryn, które zostaną uwzględnione na globalnej liście obserwowanych. Użyj podstawowego adresu URL witryny, np. <code>en.wikipedia.org</code>.",
 	"globalwatchlist-tour-types": "Zmień typy",
 	"globalwatchlist-tour-types-description": "Użytkownicy mogą kontrolować, jakie typy zmian mają być wyświetlane.",
-	"globalwatchlist-unwatch": "Nie obserwuj",
+	"globalwatchlist-unwatch": "nie obserwuj",
 	"globalwatchlist-markpageseen": "oznacz jako przeczytane",
 	"prefs-globalwatchlist": "Globalna lista obserwowanych"
 }

@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"شاه زمان پټان"
+		]
+	},
+	"reportincident-report-btn-label": "راپور",
+	"reportincident-dialog-close-btn": "تړل",
+	"reportincident-dialog-back-btn": "پر شا کېدل",
+	"reportincident-dialog-submit-btn": "راپور سپارل",
+	"reportincident-dialog-harassment-type-label": "د نه‌منلووړ چلند ډول",
+	"reportincident-dialog-additional-details-input-label": "زياتي مالومات",
+	"reportincident-dialog-optional-label": "(اختياري)",
+	"reportincident-dialog-harassment-type-sexual-harassment": "جنسي ځورونه",
+	"reportincident-dialog-harassment-type-something-else": "بل څه",
+	"reportincident-dialog-harassment-type-spam": "چټل‌ليک يا تبليغاتي منځپانگه",
+	"reportincident-emaildialog-close-button": "ناگارل",
+	"reportincident-emaildialog-primary": "اوڼنو ته ورتلل",
+	"reportincident-radio-header-emergency": "راپور:",
+	"reportincident-choose-option": "يو خوښنه ټاکل",
+	"reportincident-dialog-cancel": "ناگارل",
+	"reportincident-dialog-continue": "دوام ورکول",
+	"reportincident-submit-emergency-section-important-title": "ارزښتمن",
+	"reportincident-submit-behavior-section-support-title": "بل څه وکړي"
+}

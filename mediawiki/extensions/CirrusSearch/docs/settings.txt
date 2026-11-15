@@ -65,6 +65,15 @@ Example:
         ]
     ];
 
+; $wgCirrusSearchManagedClusters
+
+Default:
+  $wgCirrusSearchManagedClusters = null
+
+List of clusters, from $wgCirrusSearchClusters, where CirrusSearch is responsible
+for managing indices. CirrusSearch will refuse to perform maintenance operations
+on unlisted clusters. When null all known clusters are used.
+
 ; $wgCirrusSearchWriteClusters
 
 Default:
@@ -73,41 +82,6 @@ Default:
 List of clusters that can be used for writing. Must be a subset of
 cluster groups from $wgCirrusSearchClusters.  By default or when set
 to null, all configured cluster groups are available for writing.
-
-; $wgCirrusSearchWriteIsolateClusters
-
-List of clusters, by name, that will have their writes isolated from the other
-clusters. If not set all clusters will be isolated from each other. Limiting
-isolation to only clusters that may have issues will result in reduced job
-queue load.
-
-Write Isolation also requires configuration of the chosen job queue to
-partition the created ElasticaWrite jobs by their `jobqueue_partition` job
-parameter. If the job queue is not configured for this purpose no write
-isolation will occur. Each unique value of `jobqueue_partition` should go
-into it's own partition. See CirrusSearchElasticaWritePartitionCounts for
-more information on expected values of `jobqueue_partition`.
-
-Default:
-	$wgCirrusSearchWriteIsolateClusters = null;
-
-; CirrusSearchElasticaWritePartitionCounts
-
-Defines the number of partitions to use when generating a partitioning key for
-the ElasticaWrite jobs that implement write isolation. This allows for
-increased throughput in cases where a single partition is not able to process
-all the jobs that are inserted into it.
-
-The array key must be set to the cluster name with the value as an integer
-specifying the number of partitions. If a cluster is not named it receives a
-value of 1. The resulting `jobqueue_partition` value will be formatted as
-`<cluster_name>-<partition_number>`. For example in a cluster named `aslan`
-configured with a partition count of 2 the possible values will be `aslan-0`
-and `aslan-1`. If the `aslan` cluster is not configured here it receives the
-default value of 1 which results in a `jobqueue_partition` of `aslan-0`.
-
-Default:
-    $wgCirrusSearchElasticaWritePartitionCounts = [];
 
 ; $wgCirrusSearchPrivateClusters
 
@@ -195,10 +169,10 @@ Set this to 1 to prevent two shards from the same high traffic index from being 
 onto the same node.
 
 You can also set this setting for each cluster:
-	$wgCirrusSearchMaxShardsPerNode = [
-		'cluster1' => [ 'content' => 1 ],
-		'cluster2' => [ 'content' => 'unlimited' ],
-	];
+    $wgCirrusSearchMaxShardsPerNode = [
+        'cluster1' => [ 'content' => 1 ],
+        'cluster2' => [ 'content' => 'unlimited' ],
+    ];
 
 Example:
     $wgCirrusSearchMaxShardsPerNode[ 'content' ] = 1;
@@ -618,9 +592,19 @@ Maximum number of redirects per target page to index.
 ; $wgCirrusSearchIndexFieldsToCleanup
 
 Default:
-	$wgCirrusSearchIndexFieldsToCleanup = []
+    $wgCirrusSearchIndexFieldsToCleanup = []
 
 List of strings identifying the fields to remove from the index when the next in-place re-index is run.
+
+; $wgCirrusSearchIndexWeightedTagsPrefixMap
+
+Default:
+    $wgCirrusSearchIndexWeightedTagsPrefixMap = [];
+
+Map of weighted tag prefix replacements, mapping old (key) to new (value) prefixes.
+
+Example:
+    $wgCirrusSearchIndexWeightedTagsPrefixMap = [ "old.prefix" => "new.prefix" ];
 
 ; $wgCirrusSearchLinkedArticlesToUpdate
 
@@ -1276,7 +1260,7 @@ supported.
 ; wgCirrusSearchNumCrossProjectSearchResults
 
 Default:
-	$wgCirrusSearchNumCrossProjectSearchResults = 1
+    $wgCirrusSearchNumCrossProjectSearchResults = 1
 
 Controls the number of search results returned for cross project search
 
@@ -1396,11 +1380,11 @@ query doesn't use insource: and there is no escape character,
 remove ? from the end of the query, before a word boundary, or
 everywhere; also de-escape all escaped question marks.
 
-Valid values, all unknown values map to 'no':
+Valid values, all unknown values map to 'none':
 * final - only strip trailing question marks and white space
 * break - strip non-final question marks followed by a word boundary
 * all   - strip all question marks (and replace them with spaces)
-* no    - don't strip question marks
+* none  - don't strip question marks
 
 ; $wgCirrusSearchFullTextQueryBuilderProfile
 
@@ -1521,7 +1505,7 @@ Workarounds:
 ; $wgCirrusSearchExtraIndexSettings
 
 Default:
-	$wgCirrusSearchExtraIndexSettings = [];
+    $wgCirrusSearchExtraIndexSettings = [];
 
 Custom settings to be provided with index creation. Used for setting
 slow logs threhsolds and such. Alternatively index templates could
@@ -1552,7 +1536,7 @@ for archived pages can be done by manually indexing them too.
 ; $wgCirrusSearchInterleaveConfig
 
 Default:
-	$wgCirrusSearchInterleaveConfig = [];
+    $wgCirrusSearchInterleaveConfig = [];
 
 Map of configuration variable name to value used to override cirrus config
 during interleaved full text search. Generally tis should *not* be set
@@ -1563,7 +1547,7 @@ performance of two different search configurations.
 ; $wgCirrusSearchMaxPhraseTokens
 
 Default:
-	$wgCirrusSearchMaxPhraseTokens = null;
+    $wgCirrusSearchMaxPhraseTokens = null;
 
 Maximum number of tokens in a phrase rescore query. Only activated
 when token_count_router is enabled in $wgCirrusSearchWikimediaExtraPlugin.
@@ -1586,19 +1570,28 @@ Maximum tree depth to descend when using deep category queries.
 ; $wgCirrusSearchCategoryMax
 
 Default:
-    $wgCirrusSearchCategoryMax = 1000
+    $wgCirrusSearchCategoryMax = 5000
 
-Maximum overall category count for deep category query. Note that ElasticSearch
-has limit of 1024 clauses in a single boolean query by default, this limit
-must be under the Elastic limits.
+Maximum overall category count for deep category query. Note that OpenSearch
+has limit of 65,536 terms in a single terms query by default, this limit
+must be under the Opensearch limits.
+
+; $wgCirrusSearchCategoriesClientCacheTTL
+
+Default:
+  $wgCirrusSearchCategoriesClientCacheTTL = 900;
+
+How long, in seconds, to cache responses from the categories sparql client.
+This primarily applies to the deepcat search keyword. The supporting service is
+typically updated on a daily basis, this cache mostly helps users avoid errors
+when repeating a query as the backend service can be flakey.
 
 ; $wgCirrusSearchNamespaceResolutionMethod
 
 Default:
-  $wgCirrusSearchNamespaceResolutionMethod = 'elastic';
+  $wgCirrusSearchNamespaceResolutionMethod = 'utr30';
 
 Method to use for namespace name resolution, can be:
-- 'elastic': by using the metastore
 - 'naive': using ICU naive case/accent folding
 - 'utr30': using a more aggressive folding technique
    based on the UTR30 specs (specs used but lucene but withdrawn by Unicode)
@@ -1700,16 +1693,13 @@ Default:
   ];
 
 Enables the usage of the title_natural_asc and title_natural_desc sort orders.
-Requires definining both the language and country sort should be specialized
-to. This requires the analysis-icu elasticsearch plugin to be installed.
+This requires the analysis-icu elasticsearch plugin to be installed.
 
 Example english configuration:
 
   $wgCirrusSearchNaturalTitleSort = [
       'build' => true,
-      'use' => true,
-      'language' => 'en',
-      'country' => 'US',
+      'use' => true
   ];
 
 Set build to true and reindex before setting use to true.
@@ -1717,7 +1707,115 @@ Set build to true and reindex before setting use to true.
 ; $wgCirrusSearchEnableEventBusWeightedTags
 
 Default:
-  $CirrusSearchEnableEventBusWeightedTags = false;
+  $wgCirrusSearchEnableEventBusWeightedTags = false;
 
  Enables external processing of weighted tag changes.
  Changes are offloaded via EventBus and processed by the search update pipeline.
+
+; $wgCirrusSearchMustTrackTotalHits
+
+Default:
+  $wgCirrusSearchMustTrackTotalHits = [ 'default' => true ];
+
+Tracking total hits may prevent the search backend from performing interesting optimizations.
+
+This setting can be fine-tuned on a set of query classes:
+ - simple_bag_of_words
+ - simple_phrase_query
+ - bag_of_words_with_phrase_query
+ - complex_query
+ - bogus_query
+ - more_like_only
+
+Custom classifiers can be added by implementing the CirrusSearchRegisterFullTextQueryClassifiersHook.
+
+Order matters, if a query matches multiple classes the first to match in the entry is taken.
+
+; $wgCirrusSearchLanguageKeywordExtraFields
+
+Default:
+  $wgCirrusSearchLanguageKeywordExtraFields = [];
+
+Set the list of extra fields to query when using the inlanguage keyword. Useful to use alongside
+extensions that might populate language information in different fields.  WikibaseLexemeCirrusSearch
+is one of them where using:
+  $wgCirrusSearchLanguageKeywordExtraFields = [ 'lexeme_language.code', 'lexeme_language.entity' ];
+might allow searching for lexemes based on their language code or language entity ID.
+
+; $wgCirrusSearchPhraseSuggestBuildVariant
+
+Default:
+  $wgCirrusSearchPhraseSuggestBuildVariant = false;
+
+When enabled, adds a secondary phrase suggester field to page documents. This is generally used to
+facilitate AB testing and should not be enabled in most circumstances. By default nothing is copied
+into this field. Custom code is typically needed to support individual AB tests.
+
+; $wgCirrusSearchAlternateIndices
+
+Default:
+  $wgCirrusSearchAlternateIndices = [
+    "completion" []
+  ];
+
+Allows to set alternative indices to be built and used. Only completion suggester are supported for now.
+Useful to A/B test different setups of the completion suggester.
+
+Examples:
+  $wgCirrusSearchAlternateIndices = [
+    "completion" [
+      [
+        # the ID of the alternative index
+        "index_id" => 0,
+
+        # instructs the system that this index is ready to be used, useful for a two step deployment:
+        # 1/ "use" => false and build the index with UpdateSuggesterIndex
+        # 2/ "use" => true to start using it thanks to wgCirrusSearchCompletionSuggesterUseAltIndexId
+        "use" => true,
+
+        # set of config overrides useful at build & query time
+        "config_overrides" => [
+          'CirrusSearchSomeConfigOption' => 'some config value'
+        ]
+      ]
+    ]
+  ];
+
+; $wgCirrusSearchCompletionSuggesterUseAltIndexId
+
+Default:
+  $wgCirrusSearchCompletionSuggesterUseAltIndexId = null;
+
+Tell CirrusSearch to use this particular alternative index. Is ignored if the id is not existing or
+if "use" is false.
+Particularly useful to be set in an A/B bucket via wgCirrusSearchUserTesting.
+
+; $wgCirrusSearchStreamingUpdaterUsername
+
+Default:
+  $wgCirrusSearchStreamingUpdaterUsername = null;
+
+Name of the internal Cirrus Streaming Updater user allowed to bypass poolcounter protections on the cirrusbuilddoc API prop.
+Only useful in setup where the updates are managed by the CirrusSearch Streaming Updater.
+
+; $wgCirrusSearchSecondTryProfiles
+
+Default:
+  $wgCirrusSearchSecondTryProfiles = [];
+
+List of custom profiles for SecondTry searches, see profiles/SecondTryProfiles.config.php.
+
+; $wgCirrusSearchCompletionUseSecondTryProfile
+
+Default:
+  $wgCirrusSearchCompletionUseSecondTryProfile = null;
+
+Force the use of this second-try search profile instead of the 'default' one.
+
+; $wgCirrusSearchDefaultSemanticProfile
+
+Default
+  $wgCirrusSearchDefaultSemanticProfile = null;
+
+EXPERIMENTAL. Selects the profile to use when CirrusDebugOptions requests the use
+of semantic search.

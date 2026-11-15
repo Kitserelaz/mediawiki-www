@@ -41,10 +41,11 @@ class SearchProfileServiceFactoryTest extends CirrusTestCase {
 			'rescore prefix' => [ SearchProfileService::RESCORE, SearchProfileService::CONTEXT_PREFIXSEARCH ],
 			'similarity prefix' => [ SearchProfileService::SIMILARITY, SearchProfileService::CONTEXT_DEFAULT ],
 			'crossproject block order' => [ SearchProfileService::CROSS_PROJECT_BLOCK_SCORER, SearchProfileService::CONTEXT_DEFAULT ],
-			'completion' => [ SearchProfileService::COMPLETION, SearchProfileService::CONTEXT_DEFAULT ],
+			'completion' => [ SearchProfileService::COMPLETION, SearchProfileService::CONTEXT_COMPLETION ],
 			'fallback' => [ SearchProfileService::FALLBACKS, SearchProfileService::CONTEXT_DEFAULT ],
 			'fulltext query builder' => [ SearchProfileService::FT_QUERY_BUILDER, SearchProfileService::CONTEXT_DEFAULT ],
 			'document size limiter' => [ SearchProfileService::DOCUMENT_SIZE_LIMITER, SearchProfileService::CONTEXT_DEFAULT ],
+			'namespace matcher' => [ SearchProfileService::NAMESPACE_MATCHER, SearchProfileService::CONTEXT_DEFAULT ],
 		];
 	}
 
@@ -117,11 +118,11 @@ class SearchProfileServiceFactoryTest extends CirrusTestCase {
 				'config', 'CirrusSearchCrossProjectOrder', [ 'unittest' => [] ]
 			],
 			'completion by user pref' => [
-				SearchProfileService::COMPLETION, SearchProfileService::CONTEXT_DEFAULT,
+				SearchProfileService::COMPLETION, SearchProfileService::CONTEXT_COMPLETION,
 				'pref', 'cirrussearch-pref-completion-profile', [ 'unittest' => [] ]
 			],
 			'completion by config' => [
-				SearchProfileService::COMPLETION, SearchProfileService::CONTEXT_DEFAULT,
+				SearchProfileService::COMPLETION, SearchProfileService::CONTEXT_COMPLETION,
 				'config', 'CirrusSearchCompletionSettings', [ 'unittest' => [] ],
 			],
 			'fallbacks by config' => [
@@ -139,6 +140,22 @@ class SearchProfileServiceFactoryTest extends CirrusTestCase {
 			'fulltext query builder by config' => [
 				SearchProfileService::FT_QUERY_BUILDER, SearchProfileService::CONTEXT_DEFAULT,
 				'config', 'CirrusSearchFullTextQueryBuilderProfile', [ 'unittest' => [] ],
+			],
+			'second try prefix search by config' => [
+				SearchProfileService::SECOND_TRY, SearchProfileService::CONTEXT_COMPLETION,
+				'config', 'CirrusSearchCompletionUseSecondTryProfile', [ 'unittest' => [] ],
+			],
+			'second try prefix search by uri' => [
+				SearchProfileService::SECOND_TRY, SearchProfileService::CONTEXT_COMPLETION,
+				'uri', 'cirrusUseSecondTryProfile', [ 'unittest' => [] ],
+			],
+			'namespace matcher by config' => [
+				SearchProfileService::NAMESPACE_MATCHER, SearchProfileService::CONTEXT_DEFAULT,
+				'config', 'CirrusSearchNamespaceResolutionMethod', [ 'unittest' => [] ],
+			],
+			'namespace matcher by uri' => [
+				SearchProfileService::NAMESPACE_MATCHER, SearchProfileService::CONTEXT_DEFAULT,
+				'uri', 'cirrusUseNamespaceMatcherProfile', [ 'unittest' => [] ],
 			],
 		];
 	}
@@ -200,6 +217,48 @@ class SearchProfileServiceFactoryTest extends CirrusTestCase {
 		$this->assertEquals( $overridden,
 			$service->getProfileName( $profileType, SearchProfileService::CONTEXT_DEFAULT ) );
 		$this->assertEquals( [ 'INTERWIKI' ], $service->loadProfile( $profileType ) );
+	}
+
+	public function testSemanticSearchNotLoadedWhenConfigAbsent() {
+		$factory = $this->getFactory( [], null, [] );
+		$service = $factory->loadService( new HashSearchConfig( [] ) );
+		$this->expectException( SearchProfileException::class );
+		$service->getProfileName( SearchProfileService::FT_QUERY_BUILDER, SearchProfileService::CONTEXT_SEMANTIC );
+	}
+
+	public function testSemanticSearchDefaults() {
+		$cirrusSearchHookRunner = $this->createCirrusSearchHookRunner( [
+			'CirrusSearchProfileService' => static function ( SearchProfileService $service ) {
+				$service->registerArrayRepository( SearchProfileService::FT_QUERY_BUILDER,
+					'unit_test', [ 'default_semantic' => [] ] );
+			}
+		] );
+		$factory = $this->getFactory( [], $cirrusSearchHookRunner, [] );
+		$config = new HashSearchConfig( [ 'CirrusSearchDefaultSemanticProfile' => 'default_semantic' ] );
+		$service = $factory->loadService( $config, null, null, true );
+		$this->assertEquals( 'default_semantic',
+			$service->getProfileName( SearchProfileService::FT_QUERY_BUILDER, SearchProfileService::CONTEXT_SEMANTIC ) );
+		$this->assertEquals( 'empty',
+			$service->getProfileName( SearchProfileService::RESCORE, SearchProfileService::CONTEXT_SEMANTIC ) );
+	}
+
+	public function testSemanticSearchRouteRegistered() {
+		$cirrusSearchHookRunner = $this->createCirrusSearchHookRunner( [
+			'CirrusSearchProfileService' => static function ( SearchProfileService $service ) {
+				$service->registerArrayRepository( SearchProfileService::FT_QUERY_BUILDER,
+					'unit_test', [ 'default_semantic' => [] ] );
+			}
+		] );
+		$factory = $this->getFactory( [], $cirrusSearchHookRunner, [] );
+		$config = new HashSearchConfig( [ 'CirrusSearchDefaultSemanticProfile' => 'default_semantic' ] );
+		$request = new FauxRequest( [ 'cirrusSemanticSearch' => '1' ] );
+		$service = $factory->loadService( $config, $request, null, true );
+
+		$dispatch = $service->getDispatchService();
+		$query = $this->getNewFTSearchQueryBuilder( $config, 'foo' )
+			->setInitialNamespaces( [ NS_MAIN ] )
+			->build();
+		$this->assertEquals( SearchProfileService::CONTEXT_SEMANTIC, $dispatch->bestRoute( $query )->getProfileContext() );
 	}
 
 	private function getFactory( array $hostWikiConfig = [],

@@ -11,6 +11,7 @@ namespace MediaWiki\Extension\Translate\MessageLoading;
 abstract class MessageIndexStore {
 	abstract public function retrieve( bool $readLatest = false ): array;
 
+	/** @return mixed|null */
 	public function get( string $key ) {
 		// Default implementation
 		$mi = $this->retrieve();
@@ -35,6 +36,10 @@ abstract class MessageIndexStore {
 		return is_array( $data ) ? implode( '|', $data ) : $data;
 	}
 
+	/**
+	 * @param string $data
+	 * @return string|string[]
+	 */
 	protected function unserialize( $data ) {
 		$array = explode( '|', $data );
 		return count( $array ) > 1 ? $array : $data;

@@ -13,16 +13,18 @@
 			"Waihorace",
 			"Xiplus",
 			"Zhxy 519",
-			"捍粵者"
+			"捍粵者",
+			"LowensteinYang",
+			"臺灣象象"
 		]
 	},
-	"cirrussearch-desc": "以 Elasticsearch 為基礎的 MediaWiki 搜尋工具",
+	"cirrussearch-desc": "以 OpenSearch 提供支援的 MediaWiki 搜尋工具",
 	"cirrussearch-backend-error": "因發生暫時性的問題，我們無法完成您的搜尋。請稍後再試。",
 	"cirrussearch-parse-error": "無法理解查詢條件，請簡化查詢條件。該查詢會被記錄以改進搜尋系統。",
 	"cirrussearch-too-busy-error": "搜尋引擎目前過於忙碌，請稍候再試。",
 	"cirrussearch-regex-empty-expression": "$1 需要一個非空的正規表達式。",
 	"cirrussearch-regex-syntax-error": "正規表示法語法錯誤於 $2：$1",
-	"cirrussearch-regex-too-busy-error": "搜尋中的規律表示式太多，請稍後再試。",
+	"cirrussearch-regex-too-busy-error": "搜尋中的正規表達式太多，請稍後再試。",
 	"cirrussearch-regex-too-complex-error": "正規表達式過於複雜。請前往[https://www.mediawiki.org/wiki/Special:MyLanguage/Help:CirrusSearch/RegexTooComplex 此處]來瞭解如何簡化正規表達式。",
 	"cirrussearch-now-using": "此 Wiki 使用了新的搜尋引擎。 （[https://www.mediawiki.org/wiki/Special:MyLanguage/Help:CirrusSearch 瞭解更多]）",
 	"cirrussearch-boost-templates": " #<!-- 請保留此行為原樣 --> <pre>\n# 若頁面使用了下列模板，則該頁面的搜尋分數會乘上設定的百分比。\n# 更改此處以立即生效。\n# 語法格式如下：\n#   * 任何以 \"#\" 字元開頭的行到結尾做為註解。\n#   * 任何非空白行用來表示加分的模板名稱，包含命名空間、大小寫與所有東西，後面接著 \"|\" 字元與一組數字，再接著 \"%\" 字元。\n# 良好的範例：\n# Template:Good|150%\n# Template:Very Very Good|300%\n# Template:Bad|50%\n# 不良的範例：\n# Template:Foo|150.234234% # 不允許使用小數！\n# Foo|150% # 技術上可以運作，但會連結至主要命名空間的 Foo 頁面\n# 您可以在字首加上 boost-templates:\"XX\" 執行查詢，測試您的設定，XX 是所有您要加分的模板，以空白來代表換行符號。\n# 使用 boost-templates:\"XX\" 的查詢時會忽略此區域的設定內容。\n #</pre> <!-- 請保留此行為原樣 -->",
@@ -71,9 +73,10 @@
 	"cirrussearch-feature-deepcat-endpoint": "$wgCirrusSearchCategoryEndpoint 應被設定成有效的 SPARQL 端點以使用深層分類搜尋。",
 	"cirrussearch-feature-deepcat-exception": "深層分類搜尋 SPARQL 查詢失敗",
 	"cirrussearch-feature-deepcat-timeout": "深層分類搜尋逾時。該分類可能有太多子分類",
-	"cirrussearch-feature-deepcat-toomany": "深層分類查詢回傳太多的分類",
+	"cirrussearch-feature-deepcat-toomany": "深層分類查詢回傳太多的分類。僅應用到部分的分類。",
 	"cirrussearch-feature-deepcat-invalid-title": "提供的分類無效。",
 	"cirrussearch-feature-pageid-invalid-id": "無效頁面 {{PLURAL:$2|ID}}：$1",
+	"cirrussearch-feature-invalid-date-range": "提供的日期格式無效。請使用公認的年（<code>YYYY</code>）、月（<code>YYYY-MM</code>）、日（<code>YYYY-MM-DD</code>）格式，或是使用相對時間表達式，例如 <code>now-2d</code> 或 <code>today-1y</code>。",
 	"cirrussearch-incategory-feature-no-valid-categories": "沒有提供給「$1」可用分類。",
 	"cirrussearch-mlt-feature-no-valid-titles": "沒有提供給「$1」可用標題。",
 	"cirrussearch-mlt-not-configured": "「$1」功能未被設置，請向管理員請求修正 $wgCirrusSearchMoreLikeThisFields",
@@ -83,6 +86,10 @@
 	"cirrussearch-autoselect-profile": "讓搜尋引擎決定來使用最好的個人設置。",
 	"cirrussearch-offset-too-large": "結果無法取得。可支援截止至 $1 的結果，但請求為起始自 $2 的結果。",
 	"cirrussearch-offset-not-allowed-with-random-sort": "忽略對隨機排序結果分頁的請求",
-	"cirrussearch-articletopic-invalid-topic": "用於 <kbd>articletopic:</kbd> 關鍵字的無法識別主題{{PLURAL:$2|名稱}}：$1",
-	"cirrussearch-inlanguage-deprecate-comma": "使用逗號作為 inlanguage 關鍵字的分隔字元已棄用。請改用 |（豎線）來分隔語言。"
+	"cirrussearch-articleprediction-invalid-keyword": "無法辨識 <kbd>$3：</kbd> 關鍵字的{{PLURAL:$2|值}}：$1",
+	"cirrussearch-inlanguage-deprecate-comma": "使用逗號作為 inlanguage 關鍵字的分隔字元已棄用。請改用 |（豎線）來分隔語言。",
+	"cirrussearch-invalid-keyword-boost": "提供的增值「$1」無效。應為正十進制數。",
+	"cirrussearch-invalid-keyword-threshold": "提供的閾值「$1」無效。應為介於 0 和 1 之間的十進制數。",
+	"cirrussearch-semantic-empty-query": "語義搜尋需要一個非空的搜尋詞。",
+	"cirrussearch-semantic-too-many-results": "語義搜尋的結果過多。僅前 $1 項會被正確排序。"
 }

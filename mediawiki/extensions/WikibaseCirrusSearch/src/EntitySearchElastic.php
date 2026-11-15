@@ -5,10 +5,7 @@ namespace Wikibase\Search\Elastic;
 use CirrusSearch\CirrusDebugOptions;
 use CirrusSearch\Search\SearchContext;
 use Elastica\Query\AbstractQuery;
-use Elastica\Query\BoolQuery;
-use Elastica\Query\DisMax;
-use Elastica\Query\MatchQuery;
-use Elastica\Query\Term;
+use Elastica\Query\MatchNone;
 use MediaWiki\Language\Language;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Request\WebRequest;
@@ -16,6 +13,7 @@ use Wikibase\DataModel\Entity\EntityIdParser;
 use Wikibase\Lib\LanguageFallbackChainFactory;
 use Wikibase\Repo\Api\EntitySearchException;
 use Wikibase\Repo\Api\EntitySearchHelper;
+use Wikibase\Search\Elastic\Query\LabelsCompletionQuery;
 
 /**
  * Entity search implementation using ElasticSearch.
@@ -41,9 +39,19 @@ class EntitySearchElastic implements EntitySearchHelper {
 	public const CONTEXT_WIKIBASE_FULLTEXT = 'wikibase_fulltext_search';
 
 	/**
+	 * Name of the context for profile name resolution
+	 */
+	public const CONTEXT_WIKIBASE_IN_LABEL = 'wikibase_in_label_search';
+
+	/**
 	 * Name of the profile type used to build the elastic query
 	 */
 	public const WIKIBASE_PREFIX_QUERY_BUILDER = 'wikibase_prefix_querybuilder';
+
+	/**
+	 * Name of the profile type used to build the elastic query
+	 */
+	public const WIKIBASE_IN_LABEL_QUERY_BUILDER = 'wikibase_in_label_querybuilder';
 
 	/**
 	 * Default query builder profile for prefix searches
@@ -64,37 +72,11 @@ class EntitySearchElastic implements EntitySearchHelper {
 	public const STMT_BOOST_PROFILE_REPL = 'functions.*[type=term_boost].params[statement_keywords=_statementBoost_].statement_keywords';
 
 	/**
-	 * @var LanguageFallbackChainFactory
-	 */
-	private $languageChainFactory;
-
-	/**
-	 * @var EntityIdParser
-	 */
-	private $idParser;
-
-	/**
-	 * @var string[]
-	 */
-	private $contentModelMap;
-
-	/**
 	 * Web request context.
 	 * Used for implementing debug features such as cirrusDumpQuery.
 	 * @var WebRequest
 	 */
 	private $request;
-
-	/**
-	 * List of fallback codes for search language
-	 * @var string[]
-	 */
-	private $searchLanguageCodes = [];
-
-	/**
-	 * @var Language User language for display.
-	 */
-	private $userLang;
 
 	/**
 	 * @var CirrusDebugOptions
@@ -104,72 +86,21 @@ class EntitySearchElastic implements EntitySearchHelper {
 	/**
 	 * @param LanguageFallbackChainFactory $languageChainFactory
 	 * @param EntityIdParser $idParser
-	 * @param Language $userLang
-	 * @param array $contentModelMap Maps entity type => content model name
+	 * @param Language $userLang User language for display
+	 * @param array<string,string> $contentModelMap Maps entity type => content model name
 	 * @param WebRequest|null $request Web request context
 	 * @param CirrusDebugOptions|null $options
 	 */
 	public function __construct(
-		LanguageFallbackChainFactory $languageChainFactory,
-		EntityIdParser $idParser,
-		Language $userLang,
-		array $contentModelMap,
+		private readonly LanguageFallbackChainFactory $languageChainFactory,
+		private readonly EntityIdParser $idParser,
+		private readonly Language $userLang,
+		private readonly array $contentModelMap,
 		?WebRequest $request = null,
 		?CirrusDebugOptions $options = null
 	) {
-		$this->languageChainFactory = $languageChainFactory;
-		$this->idParser = $idParser;
-		$this->userLang = $userLang;
-		$this->contentModelMap = $contentModelMap;
-		$this->request = $request ?: new FauxRequest();
-		$this->debugOptions = $options ?: CirrusDebugOptions::fromRequest( $this->request );
-	}
-
-	private function expandGenericProfile( $languageCode, array $profile ) {
-		$res = [
-			'language-chain' => $this->languageChainFactory
-				->newFromLanguageCode( $languageCode )
-				->getFetchLanguageCodes(),
-			'any' => $profile['any'],
-			'tie-breaker' => $profile['tie-breaker'],
-			'space-discount' => $profile['space-discount'] ?? null,
-			"{$languageCode}-exact" => $profile['lang-exact'],
-			"{$languageCode}-folded" => $profile['lang-folded'],
-			"{$languageCode}-prefix" => $profile['lang-prefix'],
-		];
-
-		$discount = $profile['fallback-discount'];
-		foreach ( $res['language-chain'] as $fallback ) {
-			if ( $fallback === $languageCode ) {
-				continue;
-			}
-			$res["{$fallback}-exact"] = $profile['fallback-exact'] * $discount;
-			$res["{$fallback}-folded"] = $profile['fallback-folded'] * $discount;
-			$res["{$fallback}-prefix"] = $profile['fallback-prefix'] * $discount;
-			$discount *= $profile['fallback-discount'];
-		}
-
-		return $res;
-	}
-
-	private function loadProfile( SearchContext $context, $languageCode ) {
-		$profile = $context->getConfig()
-			->getProfileService()
-			->loadProfile( self::WIKIBASE_PREFIX_QUERY_BUILDER, $context->getProfileContext(), null,
-				$context->getProfileContextParams() );
-
-		// Set some bc defaults for properties that didn't always exist.
-		$profile['tie-breaker'] ??= 0;
-
-		// There are two flavors of profiles: fully specified, and generic
-		// fallback. When language-chain is provided we assume a fully
-		// specified profile. Otherwise we expand the language agnostic
-		// profile into a language specific profile.
-		if ( !isset( $profile['language-chain'] ) ) {
-			$profile = $this->expandGenericProfile( $languageCode, $profile );
-		}
-
-		return $profile;
+		$this->request = $request ?? new FauxRequest();
+		$this->debugOptions = $options ?? CirrusDebugOptions::fromRequest( $this->request );
 	}
 
 	/**
@@ -190,96 +121,28 @@ class EntitySearchElastic implements EntitySearchHelper {
 		$strictLanguage,
 		SearchContext $context
 	) {
-		$query = new BoolQuery();
-
 		$context->setOriginalSearchTerm( $text );
-		// Drop only leading spaces for exact matches, and all spaces for the rest
-		$textExact = ltrim( $text );
-		$text = trim( $text );
 		if ( empty( $this->contentModelMap[$entityType] ) ) {
 			$context->setResultsPossible( false );
 			$context->addWarning( 'wikibasecirrus-search-bad-entity-type', $entityType );
-			return $query;
+			return new MatchNone();
 		}
-
-		$labelsFilter = new MatchQuery( 'labels_all.prefix', $text );
-
-		$profile = $this->loadProfile( $context, $languageCode );
-		$this->searchLanguageCodes = $profile['language-chain'];
-		if ( $languageCode !== $this->searchLanguageCodes[0] ) {
-			// Log a warning? Are there valid reasons for the primary language
-			// in the profile to not match the profile request?
-			$languageCode = $this->searchLanguageCodes[0];
-		}
-
-		$fields = [
-			[ "labels.{$languageCode}.near_match", $profile["{$languageCode}-exact"] ],
-			[ "labels.{$languageCode}.near_match_folded", $profile["{$languageCode}-folded"] ],
-		];
-		// Fields to which query applies exactly as stated, without trailing space trimming
-		$fieldsExact = [];
-		$weight = $profile["{$languageCode}-prefix"];
-		if ( $textExact !== $text && isset( $profile['space-discount'] ) ) {
-			$fields[] =
-				[
-					"labels.{$languageCode}.prefix",
-					$weight * $profile['space-discount'],
-				];
-			$fieldsExact[] = [ "labels.{$languageCode}.prefix", $weight ];
-		} else {
-			$fields[] = [ "labels.{$languageCode}.prefix", $weight ];
-		}
-
-		if ( !$strictLanguage ) {
-			$fields[] = [ "labels_all.near_match_folded", $profile['any'] ];
-			foreach ( $this->searchLanguageCodes as $fallbackCode ) {
-				if ( $fallbackCode === $languageCode ) {
-					continue;
-				}
-				$fields[] = [
-					"labels.{$fallbackCode}.near_match",
-					$profile["{$fallbackCode}-exact"] ];
-				$fields[] = [
-					"labels.{$fallbackCode}.near_match_folded",
-					$profile["{$fallbackCode}-folded"] ];
-
-				$weight = $profile["{$fallbackCode}-prefix"];
-				if ( $textExact !== $text && isset( $profile['space-discount'] ) ) {
-					$fields[] = [
-						"labels.{$fallbackCode}.prefix",
-						$weight * $profile['space-discount']
-					];
-					$fieldsExact[] = [ "labels.{$fallbackCode}.prefix", $weight ];
-				} else {
-					$fields[] = [ "labels.{$fallbackCode}.prefix", $weight ];
-				}
-			}
-		}
-
-		$dismax = new DisMax();
-		$dismax->setTieBreaker( $profile['tie-breaker'] );
-		foreach ( $fields as $field ) {
-			$dismax->addQuery( EntitySearchUtils::makeConstScoreQuery( $field[0], $field[1], $text ) );
-		}
-
-		foreach ( $fieldsExact as $field ) {
-			$dismax->addQuery( EntitySearchUtils::makeConstScoreQuery( $field[0], $field[1], $textExact ) );
-		}
-
-		$labelsQuery = new BoolQuery();
-		$labelsQuery->addFilter( $labelsFilter );
-		$labelsQuery->addShould( $dismax );
-		$titleMatch = new Term( [ 'title.keyword' => EntitySearchUtils::normalizeId( $text, $this->idParser ) ] );
-
-		// Match either labels or exact match to title
-		$query->addShould( $labelsQuery );
-		$query->addShould( $titleMatch );
-		$query->setMinimumShouldMatch( 1 );
-
-		// Filter to fetch only given entity type
-		$query->addFilter( new Term( [ 'content_model' => $this->contentModelMap[$entityType] ] ) );
-
-		return $query;
+		$profile = LabelsCompletionQuery::loadProfile(
+			$context->getConfig()->getProfileService(),
+			$this->languageChainFactory,
+			self::WIKIBASE_PREFIX_QUERY_BUILDER,
+			$context->getProfileContext(),
+			$context->getProfileContextParams(),
+			$languageCode
+		);
+		return LabelsCompletionQuery::build(
+			$text,
+			$profile,
+			$this->contentModelMap[$entityType],
+			$languageCode,
+			$strictLanguage,
+			EntitySearchUtils::entityIdParserNormalizer( $this->idParser )
+		);
 	}
 
 	/**
@@ -293,17 +156,17 @@ class EntitySearchElastic implements EntitySearchHelper {
 		$strictLanguage,
 		?string $profileContext = null
 	) {
-		$profileContext ??= self::CONTEXT_WIKIBASE_PREFIX;
-		$searcher = new WikibasePrefixSearcher( 0, $limit, $this->debugOptions );
+		$searcher = new WikibaseEntitySearcher( 0, $limit, 'wikibase_prefix', 'wikibase-prefix', $this->debugOptions );
 		$searcher->getSearchContext()->setProfileContext(
-			$profileContext,
+			$profileContext ?? self::CONTEXT_WIKIBASE_PREFIX,
 			[ 'language' => $languageCode ] );
 		$query = $this->getElasticSearchQuery( $text, $languageCode, $entityType, $strictLanguage,
 				$searcher->getSearchContext() );
 
-		$searcher->setResultsType( new ElasticTermResult(
+		$searcher->setResultsType( new EntityElasticTermResult(
 			$this->idParser,
-			$this->searchLanguageCodes,
+			$query instanceof LabelsCompletionQuery ? $query->getSearchLanguageCodes() : [],
+			'prefix',
 			$this->languageChainFactory->newFromLanguage( $this->userLang )
 		) );
 

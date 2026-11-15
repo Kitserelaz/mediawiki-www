@@ -8,38 +8,43 @@
  * @license GPL-2.0-or-later
  */
 
+use MediaWiki\Content\TextContent;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\Translate\PageTranslation\Hooks;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePageInsertablesSuggester;
 use MediaWiki\Extension\Translate\PageTranslation\TranslationUnit;
+use MediaWiki\Extension\Translate\TranslatorInterface\Insertable\InsertablesSuggester;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\Extension\Translate\Validation\ValidationRunner;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
+use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
  * Wraps the translatable page sections into a message group.
  * @ingroup PageTranslation MessageGroup
  */
 class WikiPageMessageGroup extends MessageGroupOld {
-	/** @var Title|string */
-	protected $title;
 	/** @var int */
 	protected $namespace = NS_TRANSLATIONS;
 
 	/**
 	 * @param string $id
 	 * @param Title|string $title
+	 * @param ?string $sourceLanguage
 	 */
-	public function __construct( $id, $title ) {
-		$this->id = $id;
-		$this->title = $title;
+	public function __construct(
+		protected $id,
+		protected $title,
+		private readonly ?string $sourceLanguage = null
+	) {
 	}
 
-	public function getSourceLanguage() {
-		return $this->getTitle()->getPageLanguage()->getCode();
+	/** @inheritDoc */
+	public function getSourceLanguage(): string {
+		return $this->sourceLanguage ?? $this->getTitle()->getPageLanguage()->getCode();
 	}
 
 	public function getTitle(): Title {
@@ -53,9 +58,9 @@ class WikiPageMessageGroup extends MessageGroupOld {
 	/**
 	 * Only used for caching to avoid repeating database queries
 	 * for example during message index rebuild.
-	 * @var array
+	 * @var array|null
 	 */
-	protected $definitions;
+	protected $definitions = null;
 
 	/** @return string[] */
 	public function getDefinitions() {
@@ -125,6 +130,7 @@ class WikiPageMessageGroup extends MessageGroupOld {
 		$this->definitions = null;
 	}
 
+	/** @inheritDoc */
 	public function load( $code ) {
 		if ( $this->isSourceLanguage( $code ) ) {
 			return $this->getDefinitions();
@@ -185,31 +191,23 @@ class WikiPageMessageGroup extends MessageGroupOld {
 		return $validator;
 	}
 
-	public function getInsertablesSuggester() {
+	public function getInsertablesSuggester(): InsertablesSuggester {
 		return new TranslatablePageInsertablesSuggester();
 	}
 
+	/** @inheritDoc */
 	public function getDescription( ?IContextSource $context = null ) {
 		$title = $this->getTitle()->getPrefixedText();
 		$target = ":$title";
 		$pageLanguageCode = $this->getSourceLanguage();
-		$inLanguageCode = $context ? $context->getLanguage()->getCode() : null;
+		$inLanguageCode = $context?->getLanguage()->getCode();
 		$languageName = MediaWikiServices::getInstance()->getLanguageNameUtils()
 			->getLanguageName( $pageLanguageCode, $inLanguageCode );
-
-		// Allow for adding a custom group description by using
-		// "MediaWiki:Tp-custom-<group ID>".
-		$customText = '';
-		$msg = wfMessage( 'tp-custom-' . $this->id );
-		self::addContext( $msg, $context );
-		if ( $msg->exists() ) {
-			$customText = $msg->plain();
-		}
 
 		$msg = wfMessage( 'translate-tag-page-desc', $title, $target, $languageName, $pageLanguageCode );
 		self::addContext( $msg, $context );
 
-		return $msg->plain() . $customText;
+		return $msg->plain();
 	}
 
 	/** @inheritDoc */

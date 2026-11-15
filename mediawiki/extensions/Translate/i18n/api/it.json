@@ -12,7 +12,6 @@
 	},
 	"apihelp-aggregategroups-param-do": "Cosa fare il gruppo messaggi aggregato.",
 	"apihelp-aggregategroups-param-aggregategroup": "ID gruppo messaggi aggregato.",
-	"apihelp-aggregategroups-param-group": "ID gruppo messaggi. Vedi <kbd>[[Special:ApiHelp/query+messagegroups|action=query&meta=messagegroups]]</kbd>.",
 	"apihelp-aggregategroups-param-groupname": "Nome gruppo messaggi aggregato.",
 	"apihelp-aggregategroups-param-groupdescription": "Descrizione gruppo messaggi aggregato.",
 	"apihelp-aggregategroups-example-1": "Associa un gruppo",
@@ -48,11 +47,8 @@
 	"apihelp-searchtranslations-summary": "Cerca traduzioni.",
 	"apihelp-searchtranslations-param-limit": "Dimensione del risultato.",
 	"apihelp-searchtranslations-example-1": "Mostra le traduzioni per la lingua.",
-	"apierror-translate-duplicateaggregategroup": "Il gruppo messaggi esiste già",
 	"apierror-translate-fuzzymessage": "Non puoi revisionare traduzioni da aggiornare",
 	"apierror-translate-groupreviewdisabled": "Revisione gruppo messaggi non in uso.",
-	"apierror-translate-messagegroup-aggregategrouplanguagemismatch": "{{PLURAL:$3|Il gruppo|I gruppi}}: $1, non {{PLURAL:$3|ha|hanno}} la stessa lingua di origine ($2) del gruppo aggregato.",
-	"apierror-translate-invalidaggregategroup": "Gruppo messaggi aggregati non valido",
 	"apierror-translate-invalidaggregategroupname": "Nome del gruppo messaggi aggregati non valido",
 	"apierror-translate-invalidgroup": "Gruppo non esistente o non valido",
 	"apierror-translate-invalidstate": "Lo stato richiesto non è valido.",
@@ -66,5 +62,8 @@
 	"apierror-translate-sandbox-user-add": "Si è verificato un errore durante l'aggiunta di un nuovo utente",
 	"apierror-translate-unknownmessage": "Messaggio sconosciuto",
 	"apiwarn-translate-alreadyreviewedbyyou": "Già contrassegnata come revisionata da te",
-	"apihelp-translationentitysearch-param-limit": "Numero massimo di risultati della ricerca"
+	"apihelp-translationentitysearch-param-limit": "Numero massimo di risultati della ricerca",
+	"apihelp-discouragetranslation-param-do": "L'azione desiderata da eseguire sulla pagina.",
+	"apihelp-discouragetranslation-paramvalue-do-discourage": "Contrassegna la pagina come scoraggiata, in modo che venga nascosta dagli elenchi delle pagine da tradurre.",
+	"apihelp-discouragetranslation-paramvalue-do-encourage": "Contrassegna la pagina come non più scoraggiata, in modo che venga mostrata negli elenchi di pagine da tradurre."
 }

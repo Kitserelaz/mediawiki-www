@@ -21,6 +21,7 @@
 namespace UniversalLanguageSelector\Api;
 
 use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiFormatBase;
 use MediaWiki\Api\ApiFormatRaw;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Languages\LanguageNameUtils;
@@ -31,21 +32,18 @@ use Wikimedia\ParamValidator\ParamValidator;
  * @ingroup API
  */
 class ApiULSLocalization extends ApiBase {
-	private LanguageNameUtils $languageNameUtils;
-
 	public function __construct(
 		ApiMain $main,
 		string $action,
-		LanguageNameUtils $languageNameUtils
+		private readonly LanguageNameUtils $languageNameUtils,
 	) {
 		parent::__construct( $main, $action );
-		$this->languageNameUtils = $languageNameUtils;
 	}
 
 	/**
 	 * @inheritDoc
 	 */
-	public function execute() {
+	public function execute(): void {
 		$this->getMain()->setCacheMode( 'public' );
 		$this->getMain()->setCacheMaxAge( 2419200 );
 
@@ -63,7 +61,7 @@ class ApiULSLocalization extends ApiBase {
 	/**
 	 * @inheritDoc
 	 */
-	public function getCustomPrinter() {
+	public function getCustomPrinter(): ?ApiFormatBase {
 		return new ApiFormatRaw(
 			$this->getMain(),
 			$this->getMain()->createPrinterByName( 'json' )
@@ -73,7 +71,7 @@ class ApiULSLocalization extends ApiBase {
 	/**
 	 * @inheritDoc
 	 */
-	public function getAllowedParams() {
+	public function getAllowedParams(): array {
 		return [
 			'language' => [
 				ParamValidator::PARAM_REQUIRED => true,
@@ -85,7 +83,7 @@ class ApiULSLocalization extends ApiBase {
 	/**
 	 * @inheritDoc
 	 */
-	protected function getExamplesMessages() {
+	protected function getExamplesMessages(): array {
 		return [
 			'action=ulslocalization&language=ta'
 				=> 'apihelp-ulslocalization-example-1',
@@ -97,7 +95,7 @@ class ApiULSLocalization extends ApiBase {
 	/**
 	 * @inheritDoc
 	 */
-	public function isInternal() {
+	public function isInternal(): bool {
 		// Try to scare people away from using this externally
 		return true;
 	}

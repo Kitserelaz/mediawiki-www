@@ -19,9 +19,6 @@ use Wikimedia\ScopedCallback;
  * Business logic class for TemplateSandbox
  */
 class Logic {
-	/** @var int */
-	private static $counter = 0;
-
 	/** @var string[] Prefixes to search for sandbox templates */
 	private $prefixes = [];
 
@@ -100,7 +97,7 @@ class Logic {
 						break;
 					}
 				}
-				return call_user_func( $oldCurrentRevisionRecordCallback, $title, $parser );
+				return $oldCurrentRevisionRecordCallback( $title, $parser );
 			}
 		);
 

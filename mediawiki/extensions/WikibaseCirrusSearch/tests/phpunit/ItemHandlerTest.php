@@ -3,6 +3,7 @@
 namespace Wikibase\Search\Elastic\Tests;
 
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Search\SearchEngine;
 use MediaWiki\Title\Title;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Entity\EntityId;
@@ -47,14 +48,17 @@ class ItemHandlerTest extends EntityHandlerTestCase {
 	/**
 	 * @see EntityHandlerTestCase::contentProvider
 	 */
-	public function contentProvider() {
-		return [];
+	public static function contentProvider(): array {
+		// providers can't return empty arrays, return something empty to make testSerialization happy
+		// This whole TestCase class should probably be refactored with some re-usable traits instead
+		// of inheritance.
+		return [ [ self::newEntityContent() ] ];
 	}
 
 	/**
 	 * @return ItemContent
 	 */
-	protected function newEmptyContent() {
+	protected static function newEmptyContent() {
 		return new ItemContent();
 	}
 
@@ -63,7 +67,7 @@ class ItemHandlerTest extends EntityHandlerTestCase {
 	 *
 	 * @return EntityContent
 	 */
-	protected function newEntityContent( ?EntityDocument $entity = null ): EntityContent {
+	protected static function newEntityContent( ?EntityDocument $entity = null ): EntityContent {
 		if ( !$entity ) {
 			$entity = new Item( new ItemId( 'Q42' ) );
 		}
@@ -71,7 +75,7 @@ class ItemHandlerTest extends EntityHandlerTestCase {
 		return new ItemContent( new EntityInstanceHolder( $entity ) );
 	}
 
-	protected function newRedirectContent( EntityId $id, EntityId $target ): EntityContent {
+	protected static function newRedirectContent( EntityId $id, EntityId $target ): EntityContent {
 		$redirect = new EntityRedirect( $id, $target );
 
 		$title = Title::makeTitle( 100, $target->getSerialization() );
@@ -82,13 +86,13 @@ class ItemHandlerTest extends EntityHandlerTestCase {
 		return new ItemContent( null, $redirect, $title );
 	}
 
-	public function entityIdProvider() {
+	public static function entityIdProvider() {
 		return [
 			[ 'Q7' ],
 		];
 	}
 
-	protected function newEntity( ?EntityId $id = null ) {
+	protected static function newEntity( ?EntityId $id = null ) {
 		if ( !$id ) {
 			$id = new ItemId( 'Q7' );
 		}
@@ -100,7 +104,7 @@ class ItemHandlerTest extends EntityHandlerTestCase {
 		$this->assertTrue( $this->getHandler()->supportsRedirects() );
 	}
 
-	protected function getEntityTypeDefinitionsConfiguration(): array {
+	protected static function getEntityTypeDefinitionsConfiguration(): array {
 		return wfArrayPlus2d(
 			require __DIR__ . '/../../WikibaseSearch.entitytypes.php',
 			parent::getEntityTypeDefinitionsConfiguration()
@@ -134,7 +138,7 @@ class ItemHandlerTest extends EntityHandlerTestCase {
 
 	public function testDataForSearchIndex() {
 		$handler = $this->getHandler();
-		$engine = $this->createMock( \SearchEngine::class );
+		$engine = $this->createMock( SearchEngine::class );
 
 		$page = $this->getMockWikiPage( $handler );
 

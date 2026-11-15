@@ -12,6 +12,7 @@ use Elastica\Query\MatchNone;
 use Elastica\Query\MatchQuery;
 use Elastica\Query\MultiMatch;
 use Elastica\Query\Term;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\MediaWikiServices;
 use Wikibase\DataModel\Entity\EntityIdParser;
 use Wikibase\Lib\LanguageFallbackChainFactory;
@@ -24,28 +25,6 @@ class EntityFullTextQueryBuilder implements FullTextQueryBuilder {
 	public const ENTITY_FULL_TEXT_MARKER = 'entity_full_text';
 
 	/**
-	 * @var array
-	 */
-	private $settings;
-	/**
-	 * Repository 'entitySearch' settings
-	 * @var array
-	 */
-	private $stemmingSettings;
-	/**
-	 * @var LanguageFallbackChainFactory
-	 */
-	private $languageFallbackChainFactory;
-	/**
-	 * @var EntityIdParser
-	 */
-	private $entityIdParser;
-	/**
-	 * @var string User language code
-	 */
-	private $userLanguage;
-
-	/**
 	 * @param array $stemmingSettings Stemming settings from UseStemming config entry
 	 * @param array $settings Settings from EntitySearchProfiles.php
 	 * @param LanguageFallbackChainFactory $languageFallbackChainFactory
@@ -53,17 +32,12 @@ class EntityFullTextQueryBuilder implements FullTextQueryBuilder {
 	 * @param string $userLanguage User's language code
 	 */
 	public function __construct(
-		array $stemmingSettings,
-		array $settings,
-		LanguageFallbackChainFactory $languageFallbackChainFactory,
-		EntityIdParser $entityIdParser,
-		$userLanguage
+		private readonly array $stemmingSettings,
+		private readonly array $settings,
+		private readonly LanguageFallbackChainFactory $languageFallbackChainFactory,
+		private readonly EntityIdParser $entityIdParser,
+		private readonly string $userLanguage,
 	) {
-		$this->stemmingSettings = $stemmingSettings;
-		$this->settings = $settings;
-		$this->languageFallbackChainFactory = $languageFallbackChainFactory;
-		$this->entityIdParser = $entityIdParser;
-		$this->userLanguage = $userLanguage;
 	}
 
 	/**
@@ -79,7 +53,7 @@ class EntityFullTextQueryBuilder implements FullTextQueryBuilder {
 			$settings,
 			WikibaseRepo::getLanguageFallbackChainFactory( $services ),
 			WikibaseRepo::getEntityIdParser( $services ),
-			WikibaseRepo::getUserLanguage( $services )->getCode()
+			RequestContext::getMain()->getLanguage()->getCode()
 		);
 	}
 

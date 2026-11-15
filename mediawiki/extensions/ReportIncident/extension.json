@@ -11,7 +11,44 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46",
+		"extensions": {
+			"EventLogging": "*"
+		}
+	},
+	"attributes": {
+		"CommunityConfiguration": {
+			"Validators": {
+				"reportincident": {
+					"class": "MediaWiki\\Extension\\ReportIncident\\Config\\ReportIncidentConfigValidator",
+					"factory": "MediaWiki\\Extension\\ReportIncident\\Config\\ReportIncidentConfigValidator::factory",
+					"services": [
+						"TitleParser",
+						"PageStore",
+						"ArchivedRevisionLookup",
+						"UserFactory",
+						"CommunityConfiguration.ValidatorFactory"
+					],
+					"args": [
+						"MediaWiki\\Extension\\ReportIncident\\Config\\ReportIncidentSchema"
+					]
+				}
+			},
+			"Providers": {
+				"ReportIncident": {
+					"store": {
+						"type": "wikipage",
+						"args": [
+							"MediaWiki:IncidentReportingConfig.json"
+						]
+					},
+					"validator": {
+						"type": "reportincident"
+					},
+					"type": "mw-config"
+				}
+			}
+		}
 	},
 	"AutoloadNamespaces": {
 		"MediaWiki\\Extension\\ReportIncident\\": "src/"
@@ -40,23 +77,41 @@
 				13,
 				15
 			],
-			"description": "Determines what namespaces the Incident Reporting tool will render within. The default is 3 which defaults to the NS_USER_TALK namespace"
-		},
-		"ReportIncidentAdministratorsPage": {
-			"value": "Main_Page",
-			"description": "The page the report incident form links to when specifying who will review an incident report. This value will be passed to mw.util.getUrl(); a DB prefix is allowed, e.g. Wikipedia:Administrators"
-		},
-		"ReportIncidentRecipientEmails": {
-			"value": [],
-			"description": "An array of email addresses that should receive reports sent via the incident report system. An empty array means that ReportIncident will not attempt to send any emails when a user files an incident report."
-		},
-		"ReportIncidentEmailFromAddress": {
-			"value": "",
-			"description": "Email to use as the 'from' address for emails that ReportIncident sends. If not set, ReportIncident cannot send emails when users file an incident report."
+			"description": "Determines what namespaces the Incident Reporting tool will render within.",
+			"merge_strategy": "provide_default"
 		},
 		"ReportIncidentMinimumAccountAgeInSeconds": {
 			"value": 10800,
 			"description": "User accounts must be older than this value in order to submit a report. The default is 3 hours."
+		},
+		"ReportIncidentEnableInstrumentation": {
+			"value": false,
+			"description": "Controls whether instrumentation via EventLogging is enabled."
+		},
+		"ReportIncidentZendeskUrl": {
+			"value": "",
+			"description": "Full URL (without a trailing slash) of the Zendesk instance to send emergency reports to."
+		},
+		"ReportIncidentZendeskHTTPProxy": {
+			"value": "",
+			"description": "The HTTP proxy to use for connecting to the Zendesk instance defined in ReportIncidentZendeskUrl"
+		},
+		"ReportIncidentZendeskSubjectLine": {
+			"value": "Incident Reporting System emergency report",
+			"description": "Custom subject line to use in Zendesk requests created for emergency reports."
+		},
+		"ReportIncidentEnabledNonEmergencyCategories": {
+			"value": [
+				"INTIMIDATION",
+				"SEXUAL_HARASSMENT",
+				"DOXING",
+				"TROLLING",
+				"HATE_SPEECH",
+				"SPAM",
+				"SOMETHING_ELSE"
+			],
+			"description": "Defines what non-emergency categories are seen and in what order. See Constants.harassmentTypes for a list of available categories.",
+			"merge_strategy": "provide_default"
 		}
 	},
 	"AvailableRights": [
@@ -110,6 +165,18 @@
 		"remoteExtPath": "ReportIncident/resources/ext.reportIncident"
 	},
 	"ResourceModules": {
+		"ext.reportIncidentCommunityConfigurationMessages": {
+			"messages": [
+				"communityconfiguration-reportincident-reportincident_nonemergency_helpmethod-label",
+				"communityconfiguration-reportincident-reportincident_nonemergency_helpmethod-description",
+				"communityconfiguration-reportincident-reportincident_nonemergency_helpmethod-contactadmin-label",
+				"communityconfiguration-reportincident-reportincident_nonemergency_helpmethod-contactadmin-description",
+				"communityconfiguration-reportincident-reportincident_nonemergency_helpmethod-email-label",
+				"communityconfiguration-reportincident-reportincident_nonemergency_helpmethod-email-description",
+				"communityconfiguration-reportincident-reportincident_nonemergency_helpmethod-contactcommunity-label",
+				"communityconfiguration-reportincident-reportincident_nonemergency_helpmethod-contactcommunity-description"
+			]
+		},
 		"ext.reportIncident": {
 			"styles": [
 				"ext.reportincident.less"
@@ -122,62 +189,149 @@
 				"init.js",
 				"Constants.js",
 				"components/App.vue",
+				"components/CharacterLimitedTextArea.vue",
 				"components/EmailAlertDialog.vue",
+				"components/ParsedMessage.vue",
 				"components/ReportIncidentDialog.vue",
 				"components/ReportIncidentDialogStep1.vue",
-				"components/ReportIncidentDialogStep2.vue",
-				"components/SuccessConfirmationBanner.vue",
-				"stores/Form.js"
+				"components/ReportIncidentDialogTypesOfBehavior.vue",
+				"components/ReportImmediateHarmStep.vue",
+				"components/EmergencySubmitSuccessStep.vue",
+				"components/NonEmergencySubmitSuccessStep.vue",
+				"composables/useInstrument.js",
+				"stores/Form.js",
+				{
+					"name": "components/icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconLock",
+						"cdxIconUserGroup"
+					]
+				}
 			],
 			"messages": [
 				"reportincident-desc",
 				"reportincident-report-btn-label",
 				"reportincident-dialog-close-btn",
-				"reportincident-dialog-proceed-btn",
 				"reportincident-dialog-back-btn",
 				"reportincident-dialog-submit-btn",
-				"reportincident-dialog-title",
-				"reportincident-dialog-first-step-cancel-btn",
 				"reportincident-dialog-harassment-type-label",
 				"reportincident-dialog-additional-details-input-label",
 				"reportincident-dialog-optional-label",
 				"reportincident-dialog-violator-label",
 				"reportincident-dialog-harassment-type-hate-speech-or-discrimination",
 				"reportincident-dialog-harassment-type-sexual-harassment",
-				"reportincident-dialog-harassment-type-threats-of-violence",
+				"reportincident-dialog-harassment-type-trolling",
+				"reportincident-dialog-harassment-type-spam",
+				"reportincident-dialog-harassment-type-doxing",
 				"reportincident-dialog-harassment-type-intimidation",
 				"reportincident-dialog-harassment-type-something-else",
 				"reportincident-dialog-something-else-input-placeholder",
-				"reportincident-dialog-harassment-intro-text",
-				"reportincident-dialog-harassment-lead-in-to-harassment-examples",
-				"reportincident-dialog-harassment-example-insults",
-				"reportincident-dialog-harassment-example-sexual-harassment",
-				"reportincident-dialog-harassment-example-threats",
-				"reportincident-dialog-harassment-example-encouraging-harm",
-				"reportincident-dialog-harassment-example-doxing",
-				"reportincident-dialog-harassment-example-hounding",
-				"reportincident-dialog-harassment-example-trolling",
-				"reportincident-dialog-engage-header",
-				"reportincident-dialog-engage-text",
+				"reportincident-dialog-unacceptable-behavior-community-managed",
 				"reportincident-dialog-additional-details-input-placeholder",
 				"reportincident-dialog-violator-placeholder-text",
-				"reportincident-dialog-admin-review",
-				"reportincident-dialog-violator-empty",
-				"reportincident-dialog-violator-nonexistent",
+				"reportincident-dialog-violator-disclaimer",
 				"reportincident-dialog-something-else-empty",
 				"reportincident-dialog-harassment-empty",
 				"reportincident-dialog-generic-error",
 				"reportincident-dialog-server-error",
 				"reportincident-dialog-internet-disconnected-error",
+				"reportincident-dialog-report-immediate-harm-title",
+				"reportincident-dialog-get-support-title",
 				"reportincident-emaildialog-title",
 				"reportincident-emaildialog-close-button",
 				"reportincident-emaildialog-content",
 				"reportincident-emaildialog-primary",
-				"reportincident-success-message",
-				"reportincident-success-message-close"
+				"reportincident-dialog-main-title",
+				"reportincident-dialog-describe-the-incident-title",
+				"reportincident-type-nonemergency",
+				"reportincident-nonemergency-help",
+				"reportincident-type-emergency",
+				"reportincident-type-emergency-help",
+				"reportincident-radio-header-nonemergency",
+				"reportincident-radio-header-emergency",
+				"reportincident-choose-option",
+				"reportincident-dialog-cancel",
+				"reportincident-dialog-continue",
+				"reportincident-unacceptable-behavior-footer",
+				"reportincident-physical-harm-footer",
+				"reportincident-physical-harm-infotext",
+				"reportincident-threats-physical-harm",
+				"reportincident-threats-self-harm",
+				"reportincident-threats-public-harm",
+				"reportincident-type-incident-required",
+				"reportincident-threat-harm-required",
+				"reportincident-behavior-required",
+				"reportincident-submit-emergency-dialog-title",
+				"reportincident-submit-emergency-success",
+				"reportincident-submit-emergency-section-important-title",
+				"reportincident-submit-emergency-section-important-item-services",
+				"reportincident-submit-emergency-section-important-item-resources",
+				"reportincident-submit-emergency-section-next-title",
+				"reportincident-submit-emergency-section-next-item-team",
+				"reportincident-submit-emergency-section-next-item-review",
+				"reportincident-submit-emergency-section-next-item-email",
+				"reportincident-submit-behavior-notice",
+				"reportincident-submit-behavior-section-support-title",
+				"reportincident-submit-behavior-section-support-item-behavior",
+				"reportincident-submit-behavior-section-support-item-guidelines",
+				"reportincident-submit-behavior-section-support-item-dispute-resolution",
+				"reportincident-submit-behavior-section-support-item-admins",
+				"reportincident-submit-behavior-section-support-item-mentors",
+				"reportincident-submit-behavior-section-support-item-info-is-public",
+				"reportincident-submit-behavior-section-other-options-title",
+				"reportincident-submit-behavior-section-other-options-item-ask",
+				"reportincident-submit-behavior-section-other-options-item-contact-host",
+				"reportincident-submit-back-to-page",
+				"reportincident-nonemergency-submitsuccess-title",
+				"reportincident-nonemergency-nextsteps-header",
+				"reportincident-nonemergency-requesthelp-header",
+				"reportincident-nonemergency-other-header",
+				"reportincident-nonemergency-generic-description",
+				"reportincident-nonemergency-intimidation-header",
+				"reportincident-nonemergency-intimidation-nextstep-default",
+				"reportincident-nonemergency-intimidation-nextstep-configured",
+				"reportincident-nonemergency-intimidation-nextstep-common",
+				"reportincident-nonemergency-helpmethod-default",
+				"reportincident-nonemergency-helpmethod-contactadmin",
+				"reportincident-nonemergency-helpmethod-email",
+				"reportincident-nonemergency-helpmethod-contactcommunity",
+				"reportincident-nonemergency-generic-nextstep-otheraction",
+				"reportincident-nonemergency-doxing-header",
+				"reportincident-nonemergency-doxing-notice",
+				"reportincident-nonemergency-doxing-nextstep-default",
+				"reportincident-nonemergency-doxing-nextsteps-configured",
+				"reportincident-nonemergency-helpmethod-wikiemailurl",
+				"reportincident-nonemergency-helpmethod-email",
+				"reportincident-nonemergency-helpmethod-otherurl",
+				"reportincident-nonemergency-helpmethod-emailstewards",
+				"reportincident-nonemergency-sexualharassment-header",
+				"reportincident-nonemergency-sexualharassment-nextstep",
+				"reportincident-nonemergency-trolling-header",
+				"reportincident-nonemergency-trolling-nextstep",
+				"reportincident-nonemergency-hatespeech-header",
+				"reportincident-nonemergency-hatespeech-nextstep",
+				"reportincident-nonemergency-spam-header",
+				"reportincident-nonemergency-spam-nextstep-default",
+				"reportincident-nonemergency-spam-nextsteps-configured",
+				"reportincident-nonemergency-spam-nextstep-common",
+				"reportincident-nonemergency-somethingelse-nextstep-default",
+				"reportincident-nonemergency-somethingelse-nextstep-configured",
+				"reportincident-nonemergency-somethingelse-nextstep-common",
+				"reportincident-e2e-tester-notice",
+				"reportincident-dialog-harassment-type-sockpuppetry",
+				"reportincident-nonemergency-sockpuppetry-nextstep-default",
+				"reportincident-dialog-harassment-type-vandalism",
+				"reportincident-nonemergency-vandalism-nextstep-default",
+				"reportincident-dialog-harassment-type-userdispute",
+				"reportincident-nonemergency-userdispute-nextstep-default",
+				"reportincident-dialog-harassment-type-disruptiveediting",
+				"reportincident-nonemergency-disruptiveediting-nextstep-default",
+				"reportincident-dialog-harassment-type-other",
+				"reportincident-nonemergency-other-notice",
+				"reportincident-nonemergency-other-nextstep-default"
 			],
 			"dependencies": [
-				"mediawiki.Uri",
 				"mediawiki.jqueryMsg",
 				"mediawiki.api",
 				"mediawiki.language",
@@ -208,7 +362,7 @@
 				"UserIdentityLookup",
 				"ReportIncidentManager",
 				"UserFactory",
-				"ContentLanguage"
+				"TitleParser"
 			]
 		}
 	],

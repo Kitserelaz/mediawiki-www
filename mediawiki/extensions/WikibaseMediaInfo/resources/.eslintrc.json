@@ -1,0 +1,27 @@
+{
+	"root": true,
+	"extends": [
+		"wikimedia/client",
+		".eslintshared.json"
+	],
+	"env": {
+		"commonjs": true
+	},
+	"rules": {
+		"max-len": "off",
+		"no-jquery/no-done-fail": "warn",
+		"mediawiki/no-unlabeled-buttonwidget": "warn"
+	},
+	"settings": {
+		"jsdoc": {
+			"preferredTypes": {
+				"CaptionData": "CaptionData",
+				"CaptionsPanel": "CaptionsPanel",
+				"datamodel": "datamodel",
+				"EntityInputWidget": "EntityInputWidget",
+				"MediaInfo": "MediaInfo",
+				"StatementPanel": "StatementPanel"
+			}
+		}
+	}
+}

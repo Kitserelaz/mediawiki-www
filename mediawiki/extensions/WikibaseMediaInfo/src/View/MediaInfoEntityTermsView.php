@@ -23,50 +23,21 @@ use Wikibase\View\LocalizedTextProvider;
  */
 class MediaInfoEntityTermsView {
 
-	/**
-	 * @var LanguageNameLookup
-	 */
-	private $languageNameLookup;
-
-	/**
-	 * @var LanguageDirectionalityLookup
-	 */
-	private $languageDirectionalityLookup;
-
-	/**
-	 * @var LocalizedTextProvider
-	 */
-	private $textProvider;
-
-	/**
-	 * @var TermLanguageFallbackChain
-	 */
-	private $termFallbackChain;
-
 	public const CAPTIONS_CUSTOM_TAG = 'mediaInfoViewCaptions';
 	public const CAPTION_EMPTY_CLASS = 'wbmi-entityview-emptyCaption';
 	public const HIDEABLE_CAPTION_CLASS = 'wbmi-entityview-hideable';
 	private const CAPTIONS_CONTAINER = 'wbmi-entityview-captionsPanel';
 
 	/**
-	 * @param LanguageNameLookup $languageNameLookup
-	 * @param LanguageDirectionalityLookup $languageDirectionalityLookup
-	 * @param LocalizedTextProvider $textProvider
-	 * @param TermLanguageFallbackChain $termFallbackChain
 	 * @codeCoverageIgnore
 	 */
 	public function __construct(
-		LanguageNameLookup $languageNameLookup,
-		LanguageDirectionalityLookup $languageDirectionalityLookup,
-		LocalizedTextProvider $textProvider,
-		TermLanguageFallbackChain $termFallbackChain
+		private readonly LanguageNameLookup $languageNameLookup,
+		private readonly LanguageDirectionalityLookup $languageDirectionalityLookup,
+		private readonly LocalizedTextProvider $textProvider,
+		private readonly TermLanguageFallbackChain $termFallbackChain,
 	) {
 		OutputPage::setupOOUI();
-
-		$this->languageNameLookup = $languageNameLookup;
-		$this->languageDirectionalityLookup = $languageDirectionalityLookup;
-		$this->textProvider = $textProvider;
-		$this->termFallbackChain = $termFallbackChain;
 	}
 
 	/**
@@ -102,7 +73,7 @@ class MediaInfoEntityTermsView {
 		);
 	}
 
-	private function getCaptionsHeader() {
+	private function getCaptionsHeader(): Tag {
 		$header = new Tag( 'h3' );
 		$header->addClasses( [ 'wbmi-entityview-captions-header' ] );
 		$header->appendContent(
@@ -236,11 +207,11 @@ class MediaInfoEntityTermsView {
 		return $layout;
 	}
 
-	private function getCaptionElementForLanguage( TermList $termList, $languageCode ) {
+	private function getCaptionElementForLanguage( TermList $termList, string $languageCode ): Element {
 		$classes = [ 'wbmi-caption-value' ];
 		try {
 			$captionText = $termList->getByLanguage( $languageCode )->getText();
-		} catch ( \OutOfBoundsException $e ) {
+		} catch ( \OutOfBoundsException ) {
 			$captionText = htmlspecialchars(
 				$this->textProvider->get( 'wikibasemediainfo-filepage-caption-empty' )
 			);

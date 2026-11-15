@@ -2,10 +2,10 @@
 
 namespace MediaWiki\Extension\WikimediaIncubator;
 
-use MediaWiki\Context\RequestContext;
+use MediaWiki\Context\IContextSource;
 use MediaWiki\Html\Html;
 use MediaWiki\Language\Language;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Linker\Linker;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\SpecialPage\SpecialPage;
@@ -30,11 +30,9 @@ use MediaWiki\User\UserIdentity;
  *    'beforeincubator': This project was created before Wikimedia Incubator started and is
  *       available at xyz.wikiproject.org.
  *
- * @file
  * @ingroup Extensions
  * @author Robin Pepermans (SPQRobin)
  */
-
 class InfoPage {
 
 	/** @var Title */
@@ -82,20 +80,26 @@ class InfoPage {
 	/**
 	 * @param Title $title
 	 * @param array $prefixdata
-	 * @param UserIdentity $user
+	 * @param IContextSource $context
 	 */
-	public function __construct( $title, $prefixdata, UserIdentity $user ) {
-		global $wmincProjects;
+	public function __construct(
+		$title,
+		$prefixdata,
+		private readonly IContextSource $context,
+	) {
+		global $wgWmincProjects;
+		$this->user = $this->context->getUser();
 		$this->mTitle = $title;
 		$this->mPrefix = $prefixdata['prefix'];
 		$this->mLangCode = $prefixdata['lang'];
 		$this->mProjectCode = $prefixdata['project'];
-		$this->mProjectName = $wmincProjects[$this->mProjectCode]['name'] ?? '';
-		$this->mPortal = WikimediaIncubator::getSubdomain( $user, 'www', $this->mProjectCode );
-		$this->mIsSister = $wmincProjects[$this->mProjectCode]['sister'];
+		$this->mProjectName = $wgWmincProjects[$this->mProjectCode]['name'] ?? '';
+		$this->mPortal = WikimediaIncubator::getSubdomain( $this->user, 'www', $this->mProjectCode );
+		$this->mIsSister = $wgWmincProjects[$this->mProjectCode]['sister'];
 		$this->mSubStatus = '';
-		$this->mThisLangData = [ 'type' => 'valid' ]; # For later code check feature
-		$this->userLang = RequestContext::getMain()->getLanguage();
+		# For later code check feature
+		$this->mThisLangData = [ 'type' => 'valid' ];
+		$this->userLang = $this->context->getLanguage();
 		$languageNameUtils = MediaWikiServices::getInstance()->getLanguageNameUtils();
 		$name = $languageNameUtils->getLanguageName(
 			$this->mLangCode,
@@ -105,18 +109,17 @@ class InfoPage {
 		$this->mLangName = $name ?:
 			$languageNameUtils->getLanguageName( $this->mLangCode, 'en', LanguageNameUtils::ALL );
 		$titleParam = $this->mLangName ?:
-			wfMessage( 'quotation-marks', $this->mLangCode )->text(); # Name, else code
+			$this->context->msg( 'quotation-marks', $this->mLangCode )->text();
 		# Give grep a chance to find the usages:
 		# wminc-infopage-title-p, wminc-infopage-title-b, wminc-infopage-title-t,
 		# wminc-infopage-title-q, wminc-infopage-title-n, wminc-infopage-title-s,
 		# wminc-infopage-title-v, wminc-infopage-title-y
-		$this->mFormatTitle = wfMessage( 'wminc-infopage-title-' . $this->mProjectCode,
+		$this->mFormatTitle = $this->context->msg( 'wminc-infopage-title-' . $this->mProjectCode,
 			$titleParam )->text();
 		if ( !$this->mLangName ) {
 			# Unknown language, add short note to title
-			$this->mFormatTitle .= ' ' . wfMessage( 'wminc-unknownlang', $this->mLangCode )->text();
+			$this->mFormatTitle .= ' ' . $this->context->msg( 'wminc-unknownlang', $this->mLangCode )->text();
 		}
-		$this->user = $user;
 	}
 
 	/**
@@ -133,7 +136,8 @@ class InfoPage {
 		$url = null, $lang = null, $mul = false
 	) {
 		$lang = $lang ?: $this->mLangCode;
-		if ( !$mul ) { // for non-multilingual wikis
+		if ( !$mul ) {
+			// for non-multilingual wikis
 			$getDbStatus = WikimediaIncubator::getDBState(
 				[ 'error' => null, 'lang' => $lang, 'project' => $project ]
 			);
@@ -168,8 +172,8 @@ class InfoPage {
 	 * 					(Wikipedia, Wiktionary, ...)
 	 */
 	public function listOtherProjects() {
-		global $wmincProjects;
-		$otherProjects = $wmincProjects;
+		global $wgWmincProjects;
+		$otherProjects = $wgWmincProjects;
 		'@phan-var array $otherProjects';
 		unset( $otherProjects[$this->mProjectCode] );
 		$listOtherProjects = [];
@@ -190,14 +194,14 @@ class InfoPage {
 	 * 					(Meta, Commons, ...)
 	 */
 	public function listMultilingualProjects() {
-		global $wmincMultilingualProjects, $wmincProjects;
-		if ( !is_array( $wmincMultilingualProjects ) ) {
+		global $wgWmincMultilingualProjects, $wgWmincProjects;
+		if ( !is_array( $wgWmincMultilingualProjects ) ) {
 			return '';
 		}
 		$list = [];
-		foreach ( $wmincMultilingualProjects as $key => $name ) {
+		foreach ( $wgWmincMultilingualProjects as $key => $name ) {
 			# multilingual projects are listed under wikipedia
-			$fakeProject = key( $wmincProjects );
+			$fakeProject = key( $wgWmincProjects );
 			$url = WikimediaIncubator::getSubdomain( $this->user, $key, $fakeProject );
 			$list[$url] = '<li>' . $this->makeLogo( $fakeProject, true,
 				[ 'width' => 75 ], $url, $key, true ) . '</li>';
@@ -211,7 +215,7 @@ class InfoPage {
 	 */
 	public function showWelcome() {
 		return Html::rawElement( 'div', [ 'class' => 'wminc-infopage-welcome' ],
-			wfMessage( 'wminc-infopage-welcome' )->parseAsBlock() );
+			$this->context->msg( 'wminc-infopage-welcome' )->parseAsBlock() );
 	}
 
 	/**
@@ -220,7 +224,7 @@ class InfoPage {
 	 * @param string $content
 	 * @return string the core HTML for the info page
 	 */
-	public function StandardInfoPage( $beforetitle, $aftertitle, $content ) {
+	public function standardInfoPage( $beforetitle, $aftertitle, $content ) {
 		return Html::rawElement( 'div', [ 'class' => 'wminc-infopage plainlinks',
 			'lang' => $this->userLang->getCode(), 'dir' => $this->userLang->getDir() ],
 			$beforetitle .
@@ -236,33 +240,32 @@ class InfoPage {
 	 * @return string
 	 */
 	public function showMissingWiki() {
-		global $wgRequest;
 		$link = SpecialPage::getTitleFor( 'IncubatorFirstSteps' );
 		$query = [ 'testwiki' => $this->mPrefix,
-			'uselang' => $wgRequest->getVal( 'uselang' ) ];
+			'uselang' => $this->context->getRequest()->getVal( 'uselang' ) ];
 		$steps = $link->getFullUrl( $query );
 
 		$content = Html::rawElement( 'div',
 			[ 'class' => 'wminc-infopage-status' ],
-			wfMessage( 'wminc-infopage-missingwiki-text',
+			$this->context->msg( 'wminc-infopage-missingwiki-text',
 			$this->mProjectName, $this->mLangName )->parseAsBlock()
 		) .
 		Html::rawElement( 'ul', [ 'class' => 'wminc-infopage-options' ],
 			Html::rawElement( 'li', [],
-				wfMessage( $this->mIsSister
+				$this->context->msg( $this->mIsSister
 					? 'wminc-infopage-option-startsister' : 'wminc-infopage-option-startwiki',
 					$this->mProjectName, $this->mPortal, $steps )->parse() ) .
 			Html::rawElement( 'li', [],
-				wfMessage( 'wminc-infopage-option-languages-existing',
+				$this->context->msg( 'wminc-infopage-option-languages-existing',
 					$this->mProjectName )->parse() ) .
 			Html::rawElement( 'li', [],
-				wfMessage( 'wminc-infopage-option-sisterprojects-existing' )->parse() .
+				$this->context->msg( 'wminc-infopage-option-sisterprojects-existing' )->parse() .
 				$this->listOtherProjects() ) .
 			Html::rawElement( 'li', [],
-				wfMessage( 'wminc-infopage-option-multilingual' )->parse() .
+				$this->context->msg( 'wminc-infopage-option-multilingual' )->parse() .
 				$this->listMultilingualProjects() )
 		);
-		return $this->StandardInfoPage( $this->showWelcome(), '', $content );
+		return $this->standardInfoPage( $this->showWelcome(), '', $content );
 	}
 
 	/**
@@ -281,7 +284,7 @@ class InfoPage {
 			$linkRenderer = MediaWikiServices::getInstance()->getLinkRenderer();
 			$gotoLink = $linkRenderer->makeLink(
 				$mainpage,
-				wfMessage( 'wminc-infopage-enter' )->text() );
+				$this->context->msg( 'wminc-infopage-enter' )->text() );
 			$gotoMainPage = Html::rawElement( 'span',
 				[ 'class' => 'wminc-infopage-entertest' ],
 				$this->userLang->getArrow() . ' ' . ( $this->mIsSister ? $portalLink : $gotoLink ) );
@@ -299,26 +302,26 @@ class InfoPage {
 		# wminc-infopage-status-closedsister, wminc-infopage-status-approved,
 		# wminc-infopage-status-created, wminc-infopage-status-beforeincubator
 		$content = Html::rawElement( 'div', [ 'class' => 'wminc-infopage-status' ],
-			wfMessage( 'wminc-infopage-status-' . $substatus )
+			$this->context->msg( 'wminc-infopage-status-' . $substatus )
 				->rawParams( $subdomainLink, $portalLink )->parseAsBlock()
 		);
 		if ( $this->mSubStatus != 'approved' && $this->mThisLangData['type'] != 'invalid' ) {
 			$content .= Html::element( 'div',
 				[ 'class' => 'wminc-infopage-contribute' ],
-				wfMessage( 'wminc-infopage-contribute' )->plain() );
+				$this->context->msg( 'wminc-infopage-contribute' )->text() );
 		}
 		$content .= Html::rawElement( 'div', [ 'class' => 'wminc-infopage-links' ],
 			# custom links and other stuff
-			wfMessage( 'wminc-infopage-links',
+			$this->context->msg( 'wminc-infopage-links',
 				$this->mSubStatus, $this->mPrefix,
 				$this->mProjectCode, $this->mProjectName,
 				$this->mLangCode, $this->mLangName
 			)->inContentLanguage()->parse()
 		);
 		$content .= Html::rawElement( 'ul', [ 'class' => 'wminc-infopage-options' ],
-			Html::rawElement( 'li', [], wfMessage( 'wminc-infopage-option-sisterprojects-other' )
+			Html::rawElement( 'li', [], $this->context->msg( 'wminc-infopage-option-sisterprojects-other' )
 				->parseAsBlock() . $this->listOtherProjects() ) );
-		return $this->StandardInfoPage( '', $gotoMainPage, $content );
+		return $this->standardInfoPage( '', $gotoMainPage, $content );
 	}
 
 	/**
@@ -350,15 +353,15 @@ class InfoPage {
 		}
 		$content = Html::rawElement( 'div',
 			[ 'class' => 'wminc-infopage-status' ],
-			wfMessage( $msgname )->rawParams( $subdomainLink )->parseAsBlock()
+			$this->context->msg( $msgname )->rawParams( $subdomainLink )->parseAsBlock()
 		) . Html::rawElement( 'ul', [ 'class' => 'wminc-infopage-options' ],
 			Html::rawElement( 'li', [],
-				wfMessage( 'wminc-infopage-option-sisterprojects-other' )->parseAsBlock() .
+				$this->context->msg( 'wminc-infopage-option-sisterprojects-other' )->parseAsBlock() .
 				$this->listOtherProjects() ) .
 			Html::rawElement( 'li', [],
-				wfMessage( 'wminc-infopage-option-multilingual' )->parseAsBlock() .
+				$this->context->msg( 'wminc-infopage-option-multilingual' )->parseAsBlock() .
 				$this->listMultilingualProjects() )
 		);
-		return $this->StandardInfoPage( $this->showWelcome(), $gotoSubdomain, $content );
+		return $this->standardInfoPage( $this->showWelcome(), $gotoSubdomain, $content );
 	}
 }

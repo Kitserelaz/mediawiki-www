@@ -16,8 +16,8 @@ use CirrusSearch\Parser\AST\PhraseQueryNode;
 use CirrusSearch\Parser\AST\PrefixNode;
 use CirrusSearch\Parser\AST\WildcardNode;
 use CirrusSearch\Parser\AST\WordsQueryNode;
-use HtmlArmor;
 use Wikimedia\Assert\Assert;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * Inspect a query and determine what parts of it can be sent to a typo correction mechanism and
@@ -64,16 +64,13 @@ class QueryFixer implements Visitor {
 	 */
 	private $isComplex = false;
 
-	/**
-	 * @param ParsedQuery $query
-	 */
 	public function __construct( ParsedQuery $query ) {
 		$this->parsedQuery = $query;
 	}
 
 	/**
 	 * @param ParsedQuery $query
-	 * @return QueryFixer
+	 * @return self
 	 */
 	public static function build( ParsedQuery $query ) {
 		if ( self::$cache === null || count( self::$cache ) > 100 ) {
@@ -115,7 +112,6 @@ class QueryFixer implements Visitor {
 			$this->node = null;
 		}
 
-		// @phan-suppress-next-line PhanSuspiciousValueComparison
 		if ( $this->node === null ) {
 			return null;
 		}
@@ -175,9 +171,6 @@ class QueryFixer implements Visitor {
 		return $prefix . $replacement . $suffix;
 	}
 
-	/**
-	 * @param WordsQueryNode $node
-	 */
 	public function visitWordsQueryNode( WordsQueryNode $node ) {
 		if ( $this->inNegation ) {
 			return;
@@ -204,37 +197,22 @@ class QueryFixer implements Visitor {
 		return preg_match( '/[*?"\\\\]/', $str ) !== 1;
 	}
 
-	/**
-	 * @param PhraseQueryNode $node
-	 */
 	public function visitPhraseQueryNode( PhraseQueryNode $node ) {
 		$this->isComplex = true;
 	}
 
-	/**
-	 * @param PhrasePrefixNode $node
-	 */
 	public function visitPhrasePrefixNode( PhrasePrefixNode $node ) {
 		$this->isComplex = true;
 	}
 
-	/**
-	 * @param FuzzyNode $node
-	 */
 	public function visitFuzzyNode( FuzzyNode $node ) {
 		$this->isComplex = true;
 	}
 
-	/**
-	 * @param PrefixNode $node
-	 */
 	public function visitPrefixNode( PrefixNode $node ) {
 		$this->isComplex = true;
 	}
 
-	/**
-	 * @param WildcardNode $node
-	 */
 	public function visitWildcardNode( WildcardNode $node ) {
 		if ( str_contains( $node->getWildcardQuery(), '?' ) ) {
 			$this->hasQMarkInWildcard = true;
@@ -242,15 +220,9 @@ class QueryFixer implements Visitor {
 		$this->isComplex = true;
 	}
 
-	/**
-	 * @param EmptyQueryNode $node
-	 */
 	public function visitEmptyQueryNode( EmptyQueryNode $node ) {
 	}
 
-	/**
-	 * @param KeywordFeatureNode $node
-	 */
 	public function visitKeywordFeatureNode( KeywordFeatureNode $node ) {
 		// FIXME: fixing intitle is perhaps a side effect of the original cirrus query parser
 		if ( !$this->inNegation && $node->getKey() === 'intitle' && $node->getDelimiter() === '' ) {
@@ -262,18 +234,12 @@ class QueryFixer implements Visitor {
 		}
 	}
 
-	/**
-	 * @param ParsedBooleanNode $node
-	 */
 	public function visitParsedBooleanNode( ParsedBooleanNode $node ) {
 		foreach ( $node->getClauses() as $clause ) {
 			$this->visitBooleanClause( $clause );
 		}
 	}
 
-	/**
-	 * @param BooleanClause $clause
-	 */
 	public function visitBooleanClause( BooleanClause $clause ) {
 		if ( $clause->isExplicit() ) {
 			$this->isComplex = true;
@@ -296,17 +262,11 @@ class QueryFixer implements Visitor {
 		$this->inNegation = $oldNegated;
 	}
 
-	/**
-	 * @param NegatedNode $node
-	 */
 	final public function visitNegatedNode( NegatedNode $node ) {
 		/** @phan-suppress-next-line PhanImpossibleCondition I agree, this is impossible. */
 		Assert::invariant( false, 'NegatedNode should be optimized at parse time' );
 	}
 
-	/**
-	 * @param NamespaceHeaderNode $node
-	 */
 	final public function visitNamespaceHeader( NamespaceHeaderNode $node ) {
 		/** @phan-suppress-next-line PhanImpossibleCondition I agree, this is impossible. */
 		Assert::invariant( false, 'Not yet part of the AST, should not be visited.' );

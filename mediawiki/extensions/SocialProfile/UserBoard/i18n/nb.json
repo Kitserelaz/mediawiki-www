@@ -11,7 +11,7 @@
 	"messagesenttitle": "Sendte beskjeder",
 	"boardblasttitle": "Send melding",
 	"boardblaststep1": "Steg 1 &ndash; skriv beskjeden din",
-	"boardblastprivatenote": "Alle meldinger vil være private",
+	"boardblast-message-type-note": "Alle meldinger som sendes er offentlige, siden private meldinger er deaktivert.",
 	"boardblaststep2": "Steg 2 &ndash; velg hvem du vil sende meldingen til",
 	"boardlinkselectall": "Merk alle",
 	"boardlinkunselectall": "Fjern all merking",
@@ -59,10 +59,13 @@
 	"echo-pref-tooltip-social-msg": "Varsle meg når noen skriver en melding på brukertavla mi.",
 	"notification-social-msg-send": "$1 skrev en beskjed på brukertavla di.<br /><br />''$2''",
 	"notification-social-msg-send-bundle": "{{PLURAL:$1|Én melding|$1 meldinger|100=99+ meldinger}} har blitt skrevet på brukertavla di.",
+	"apierror-socialprofile-send-message-nosend": "Du kan ikke sende meldinger.",
 	"apihelp-socialprofile-send-message-summary": "Send en melding til en brukertavle.",
 	"apihelp-socialprofile-send-message-param-username": "Mottakerens brukernavn.",
 	"apihelp-socialprofile-send-message-param-message": "En URL-kodet versjon av meldingen som skal sendes.",
 	"apihelp-socialprofile-send-message-param-type": "Meldingstype: 0 for offentlig melding, 1 for privat melding.",
 	"apihelp-socialprofile-delete-message-summary": "Slett en brukertavlemelding.",
-	"apihelp-socialprofile-delete-message-param-id": "Unik identifikator for tavlemeldingen som skal slettes."
+	"apihelp-socialprofile-delete-message-param-id": "Unik identifikator for tavlemeldingen som skal slettes.",
+	"userboard-private-messages-disabled": "Private meldinger er deaktivert på denne wikien.",
+	"userboard-private-messages-disabled-title": "Funksjonen er deaktivert"
 }

@@ -93,14 +93,16 @@ abstract class MessageGroupOld implements MessageGroup {
 	 */
 	protected $description = null;
 
+	/** @inheritDoc */
 	public function getDescription( ?IContextSource $context = null ) {
 		return $this->description;
 	}
 
-	public function setDescription( $value ) {
+	public function setDescription( string $value ) {
 		$this->description = $value;
 	}
 
+	/** @inheritDoc */
 	public function getIcon() {
 		return null;
 	}
@@ -112,10 +114,12 @@ abstract class MessageGroupOld implements MessageGroup {
 	 */
 	protected $meta = false;
 
+	/** @inheritDoc */
 	public function isMeta() {
 		return $this->meta;
 	}
 
+	/** @inheritDoc */
 	public function getSourceLanguage() {
 		return 'en';
 	}
@@ -129,13 +133,14 @@ abstract class MessageGroupOld implements MessageGroup {
 
 	/** @return StringMatcher */
 	public function getMangler() {
-		if ( !isset( $this->mangler ) ) {
+		if ( $this->mangler === null ) {
 			$this->mangler = new StringMatcher();
 		}
 
 		return $this->mangler;
 	}
 
+	/** @inheritDoc */
 	public function load( $code ) {
 		return [];
 	}
@@ -187,7 +192,8 @@ abstract class MessageGroupOld implements MessageGroup {
 		return $this->messages[$code][$key] ?? null;
 	}
 
-	public static function normaliseKeys( $array ) {
+	/** @param mixed $array */
+	public static function normaliseKeys( $array ): ?array {
 		if ( !is_array( $array ) ) {
 			return null;
 		}
@@ -240,10 +246,12 @@ abstract class MessageGroupOld implements MessageGroup {
 		return true;
 	}
 
+	/** @inheritDoc */
 	public function getValidator() {
 		return null;
 	}
 
+	/** @inheritDoc */
 	public function getTags( $type = null ) {
 		return [];
 	}
@@ -272,10 +280,10 @@ abstract class MessageGroupOld implements MessageGroup {
 
 	/** @inheritDoc */
 	public function getTranslatableLanguages() {
-		return null;
+		return self::DEFAULT_LANGUAGES;
 	}
 
-	protected static function addContext( Message $message, ?IContextSource $context = null ) {
+	protected static function addContext( Message $message, ?IContextSource $context = null ): Message {
 		if ( $context ) {
 			$message->inLanguage( $context->getLanguage() );
 		} else {

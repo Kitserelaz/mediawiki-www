@@ -65,7 +65,7 @@ class MetaSaneitizeJobStore implements MetaStore {
 	public function get( $jobName ) {
 		try {
 			return $this->index->getDocument( self::docId( $jobName ) );
-		} catch ( \Elastica\Exception\NotFoundException $e ) {
+		} catch ( \Elastica\Exception\NotFoundException ) {
 			return null;
 		}
 	}
@@ -74,8 +74,6 @@ class MetaSaneitizeJobStore implements MetaStore {
 	 * TODO: Might be more comfortable with something that
 	 * wraps the document and guarantees something sane
 	 * is provided here.
-	 *
-	 * @param \Elastica\Document $jobInfo
 	 */
 	public function update( \Elastica\Document $jobInfo ) {
 		if ( $jobInfo->get( 'type' ) != self::METASTORE_TYPE ) {

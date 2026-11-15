@@ -1,6 +1,5 @@
 <?php
 
-use MediaWiki\Auth\AbstractPreAuthenticationProvider;
 use MediaWiki\Auth\AuthManager;
 use MediaWiki\Extension\AntiSpoof\AntiSpoofAuthenticationRequest;
 use MediaWiki\Extension\AntiSpoof\AntiSpoofPreAuthenticationProvider;
@@ -58,14 +57,13 @@ class AntiSpoofPreAuthenticationProviderTest extends MediaWikiIntegrationTestCas
 			->onlyMethods( [ 'getSpoofUser' ] )->getMock();
 		$spoofUser = $this->getMockBuilder( SpoofUser::class )
 			->disableOriginalConstructor()->getMock();
-		$provider->expects( $this->any() )->method( 'getSpoofUser' )->willReturn( $spoofUser );
-		/** @var $provider AbstractPreAuthenticationProvider */
+		$provider->method( 'getSpoofUser' )->willReturn( $spoofUser );
 		$this->initProvider( $provider, null, null, $this->getServiceContainer()->getAuthManager() );
 
-		$spoofUser->expects( $this->any() )->method( 'isLegal' )->willReturn( $isLegal );
-		$spoofUser->expects( $this->any() )->method( 'getErrorStatus' )
+		$spoofUser->method( 'isLegal' )->willReturn( $isLegal );
+		$spoofUser->method( 'getErrorStatus' )
 			->willReturn( Status::newFatal( 'unittest' ) );
-		$spoofUser->expects( $this->any() )->method( 'getConflicts' )->willReturn( $conflicts );
+		$spoofUser->method( 'getConflicts' )->willReturn( $conflicts );
 
 		$creator = $creatorIsSysop ? $this->getTestSysop()->getUser() : new User();
 		/** @var StatusValue $status */

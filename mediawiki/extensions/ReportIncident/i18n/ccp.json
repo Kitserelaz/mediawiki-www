@@ -1,8 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
-			"Joychangma",
-			"BivutiChakma"
+			"BivutiChakma",
+			"Joychangma"
 		]
-	}
+	},
+	"reportincident-dialog-get-support-title": "𑄊𑄧𑄚𑄴𑄘𑄧𑄌𑄧𑄇𑄴𑄳𑄢𑄧𑄢𑄧𑄢𑄴 𑄝𑄳𑄃𑄧𑄣𑄝𑄧𑄣𑄴 𑄣𑄳𑄃𑄧",
+	"reportincident-behavior-required": "𑄘𑄳𑄅𑄧𑄠𑄬𑄉𑄪𑄢𑄨 𑄟𑄚𑄨𑄚𑄳𑄃𑄧𑄛𑄌𑄴𑄨 𑄝𑄧𑄎𑄧𑄋𑄴 𑄇𑄌𑄴𑄬𑄉𑄳𑄃𑄧𑄢𑄴 𑄙𑄧𑄇𑄴 𑄝𑄳𑄦 𑄊𑄌𑄴𑄌𑄢𑄚𑄨 𑄝𑄎𑄨𑄣𑄳𑄃𑄧",
+	"reportincident-submit-emergency-success": "𑄝𑄨𑄎𑄬𑄢𑄚𑄴 𑄚𑄳𑄤𑄉𑄪𑄢𑄨 𑄌𑄉𑄨-𑄝𑄎𑄨 𑄌𑄬𑄝𑄖𑄴𑄬 𑄘𑄬 𑄦𑄮𑄠𑄬𑅁 𑄖𑄧 𑄇𑄮𑄇𑄎𑄮𑅄𑄨𑄠𑄚𑄴 𑄹 𑄉𑄧𑄚𑄴𑄘 𑄞𑄨𑄘𑄨𑄢𑄬 𑄌𑅅 𑄦𑄧𑄝𑄧𑅁",
+	"reportincident-submit-emergency-section-next-item-email": "𑄖𑄧𑄢𑄴 𑄡𑄪𑄚𑄨 𑄃𑄢𑄧 𑄃𑄣𑄴𑄝𑄨𑄘𑄬𑄚𑄨 𑄘𑄨𑄝𑄢𑄴 𑄗𑄬𑄣𑄬, 𑄥𑄣𑄬𑄚𑄴 𑄘𑄮𑄠𑄬𑄉𑄪𑄢𑄨 𑄖𑄧𑄣𑄬𑄘𑄨 𑄃𑄨𑄟𑄬𑄣𑄴𑄅𑄚𑄮𑄖𑄴 𑄃𑄨𑄟𑄬𑄣𑄴 𑄉𑄧𑄢𑄴 [mailto\n:emergency@wikimedia.org emergency@wikimedia.org]"
 }

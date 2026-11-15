@@ -8,10 +8,11 @@ use Elastica\Exception\ResponseException;
 use Elastica\Exception\RuntimeException;
 use Elastica\Multi\ResultSet as MultiResultSet;
 use Elastica\Multi\Search;
-use ISearchResultSet;
+use Elastica\Response;
 use MediaWiki\Config\ConfigException;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\Search\ISearchResultSet;
 use MediaWiki\Status\Status;
 use MediaWiki\User\UserIdentity;
 use Wikimedia\Assert\Assert;
@@ -19,20 +20,7 @@ use Wikimedia\Assert\Assert;
 /**
  * Base class with useful functions for communicating with Elasticsearch.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 abstract class ElasticsearchIntermediary {
 	/**
@@ -152,8 +140,6 @@ abstract class ElasticsearchIntermediary {
 	/**
 	 * Mark the start of a request to Elasticsearch.  Public so it can be
 	 * called from pool counter methods.
-	 *
-	 * @param RequestLog $log
 	 */
 	public function start( RequestLog $log ) {
 		$this->currentRequestLog = $log;
@@ -183,8 +169,6 @@ abstract class ElasticsearchIntermediary {
 	/**
 	 * Log a successful request when the response comes from a cache outside
 	 * elasticsearch. This is a combination of self::start() and self::success().
-	 *
-	 * @param RequestLog $log
 	 */
 	public function successViaCache( RequestLog $log ) {
 		if ( $this->extraBackendLatency ) {
@@ -232,7 +216,6 @@ abstract class ElasticsearchIntermediary {
 		$stats->getCounter( "backend_failures_total" )
 			->setLabel( "search_cluster", $clusterName )
 			->setLabel( "type", $type )
-			->copyToStatsdAt( "CirrusSearch.$clusterName.backend_failure.$type" )
 			->increment();
 
 		LoggerFactory::getInstance( 'CirrusSearch' )->warning(
@@ -277,10 +260,6 @@ abstract class ElasticsearchIntermediary {
 		$stats->getTiming( "request_time_seconds" )
 			->setLabel( "search_cluster", $clusterName )
 			->setLabel( "type", $type )
-			->copyToStatsdAt( [
-				"CirrusSearch.$clusterName.requestTimeMs.$type",
-				"CirrusSearch.$clusterName.requestTime"
-			] )
 			->observe( $tookMs );
 		if ( $log->getElasticTookMs() ) {
 			$this->searchMetrics['wgCirrusElasticTime'] = $log->getElasticTookMs();
@@ -359,9 +338,6 @@ abstract class ElasticsearchIntermediary {
 		throw new ConfigException( "wgCirrusSearchClientSideSearchTimeout should have at least a 'default' entry configured" );
 	}
 
-	/**
-	 * @param SearchMetricsProvider $provider
-	 */
 	protected function appendMetrics( SearchMetricsProvider $provider ) {
 		$this->searchMetrics += $provider->getMetrics();
 	}
@@ -420,4 +396,19 @@ abstract class ElasticsearchIntermediary {
 			return $this->failure( $e, $connection );
 		}
 	}
+
+	protected static function throwIfNotOk( Connection $connection, Response $response ) {
+		if ( $response->isOK() ) {
+			return;
+		}
+		$request = $connection->getClient()->getLastRequest();
+		if ( $request == null ) {
+			// I can't imagine how this would happen, but the type signature allows
+			// for a null last request so we provide a minimal workaround.
+			throw new \Elastica\Exception\RuntimeException(
+				"Response reports failure, but no last request available" );
+		}
+		throw new ResponseException( $request, $response );
+	}
+
 }

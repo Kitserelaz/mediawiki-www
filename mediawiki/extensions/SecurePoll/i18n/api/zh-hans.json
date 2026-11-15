@@ -1,9 +1,9 @@
 {
 	"@metadata": {
 		"authors": [
+			"Anterdc99",
 			"Liuxinyu970226",
-			"Stang",
-			"Anterdc99"
+			"Stang"
 		]
 	},
 	"apihelp-strikevote-summary": "允许管理员作废或取消作废投票。",

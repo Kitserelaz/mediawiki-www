@@ -3,14 +3,15 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\TtmServer;
 
-use FormatJson;
-use Language;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageLoading\Message;
+use MediaWiki\Extension\Translate\MessageLoading\MessageCollection;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Extension\Translate\Statistics\MessageGroupStats;
 use MediaWiki\Extension\Translate\Utilities\BaseMaintenanceScript;
 use MediaWiki\Extension\Translate\Utilities\ParallelExecutor;
+use MediaWiki\Json\FormatJson;
+use MediaWiki\Language\Language;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\WikiMap\WikiMap;
 use MessageGroup;
@@ -153,7 +154,7 @@ class ExportTtmServerDumpMaintenanceScript extends BaseMaintenanceScript {
 		$groupId = $group->getId();
 		$sourceLanguage = $group->getSourceLanguage();
 
-		$stats = MessageGroupStats::forGroup( $groupId );
+		$stats = MessageGroupStats::forGroup( $group );
 		$collection = $group->initCollection( $sourceLanguage );
 		foreach ( $stats as $language => $numbers ) {
 			if ( $numbers[MessageGroupStats::TRANSLATED] === 0 ) {
@@ -161,8 +162,8 @@ class ExportTtmServerDumpMaintenanceScript extends BaseMaintenanceScript {
 			}
 
 			$collection->resetForNewLanguage( $language );
-			$collection->filter( 'ignored' );
-			$collection->filter( 'translated', false );
+			$collection->filter( MessageCollection::FILTER_IGNORED, MessageCollection::EXCLUDE_MATCHING );
+			$collection->filter( MessageCollection::FILTER_TRANSLATED, MessageCollection::INCLUDE_MATCHING );
 			$collection->loadTranslations();
 
 			foreach ( $collection->keys() as $mkey => $titleValue ) {

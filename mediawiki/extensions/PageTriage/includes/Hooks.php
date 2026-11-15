@@ -2,8 +2,6 @@
 
 namespace MediaWiki\Extension\PageTriage;
 
-use Article;
-use ManualLogEntry;
 use MediaWiki\Api\ApiDisabled;
 use MediaWiki\Api\Hook\ApiMain__moduleManagerHook;
 use MediaWiki\Auth\Hook\LocalUserCreatedHook;
@@ -12,29 +10,31 @@ use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
 use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
 use MediaWiki\Config\Config;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Deferred\Hook\LinksUpdateCompleteHook;
 use MediaWiki\Extension\Notifications\Model\Event;
 use MediaWiki\Extension\PageTriage\ArticleCompile\ArticleCompileProcessor;
 use MediaWiki\Extension\PageTriage\Notifications\PageTriageAddDeletionTagPresentationModel;
 use MediaWiki\Extension\PageTriage\Notifications\PageTriageAddMaintenanceTagPresentationModel;
 use MediaWiki\Extension\PageTriage\Notifications\PageTriageMarkAsReviewedPresentationModel;
-use MediaWiki\Hook\BlockIpCompleteHook;
-use MediaWiki\Hook\LinksUpdateCompleteHook;
-use MediaWiki\Hook\MarkPatrolledCompleteHook;
 use MediaWiki\Hook\PageMoveCompleteHook;
-use MediaWiki\Hook\UnblockUserCompleteHook;
 use MediaWiki\Html\Html;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
 use MediaWiki\Page\Hook\ArticleViewFooterHook;
 use MediaWiki\Page\Hook\PageDeleteCompleteHook;
 use MediaWiki\Page\Hook\PageUndeleteCompleteHook;
 use MediaWiki\Page\Hook\RevisionFromEditCompleteHook;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\ProperPageIdentity;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\RecentChanges\Hook\MarkPatrolledCompleteHook;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\ResourceLoader\Context;
 use MediaWiki\ResourceLoader\Hook\ResourceLoaderGetConfigVarsHook;
@@ -42,6 +42,8 @@ use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Specials\Hook\BlockIpCompleteHook;
+use MediaWiki\Specials\Hook\UnblockUserCompleteHook;
 use MediaWiki\Storage\Hook\PageSaveCompleteHook;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
@@ -50,10 +52,8 @@ use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\Utils\MWTimestamp;
 use MediaWiki\WikiMap\WikiMap;
-use RecentChange;
 use Wikimedia\Rdbms\Database;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
-use WikiPage;
+use Wikimedia\Stats\StatsFactory;
 
 class Hooks implements
 	ApiMain__moduleManagerHook,
@@ -76,63 +76,20 @@ class Hooks implements
 
 	private const TAG_NAME = 'pagetriage';
 
-	/** @var Config */
-	private Config $config;
-	/** @var QueueManager */
-	private QueueManager $queueManager;
+	private readonly StatsFactory $statsFactory;
 
-	/** @var RevisionLookup */
-	private RevisionLookup $revisionLookup;
-
-	/** @var IBufferingStatsdDataFactory */
-	private IBufferingStatsdDataFactory $statsdDataFactory;
-
-	/** @var PermissionManager */
-	private PermissionManager $permissionManager;
-
-	/** @var RevisionStore */
-	private RevisionStore $revisionStore;
-
-	/** @var TitleFactory */
-	private TitleFactory $titleFactory;
-
-	/** @var UserOptionsManager */
-	private UserOptionsManager $userOptionsManager;
-
-	/** @var WikiPageFactory */
-	private WikiPageFactory $wikiPageFactory;
-
-	/**
-	 * @param Config $config
-	 * @param RevisionLookup $revisionLookup
-	 * @param IBufferingStatsdDataFactory $statsdDataFactory
-	 * @param PermissionManager $permissionManager
-	 * @param RevisionStore $revisionStore
-	 * @param TitleFactory $titleFactory
-	 * @param UserOptionsManager $userOptionsManager
-	 * @param QueueManager $queueManager
-	 * @param WikiPageFactory $wikiPageFactory
-	 */
 	public function __construct(
-		Config $config,
-		RevisionLookup $revisionLookup,
-		IBufferingStatsdDataFactory $statsdDataFactory,
-		PermissionManager $permissionManager,
-		RevisionStore $revisionStore,
-		TitleFactory $titleFactory,
-		UserOptionsManager $userOptionsManager,
-		QueueManager $queueManager,
-		WikiPageFactory $wikiPageFactory
+		private readonly Config $config,
+		private readonly RevisionLookup $revisionLookup,
+		StatsFactory $statsFactory,
+		private readonly PermissionManager $permissionManager,
+		private readonly RevisionStore $revisionStore,
+		private readonly TitleFactory $titleFactory,
+		private readonly UserOptionsManager $userOptionsManager,
+		private readonly QueueManager $queueManager,
+		private readonly WikiPageFactory $wikiPageFactory,
 	) {
-		$this->config = $config;
-		$this->revisionLookup = $revisionLookup;
-		$this->statsdDataFactory = $statsdDataFactory;
-		$this->permissionManager = $permissionManager;
-		$this->revisionStore = $revisionStore;
-		$this->titleFactory = $titleFactory;
-		$this->userOptionsManager = $userOptionsManager;
-		$this->queueManager = $queueManager;
-		$this->wikiPageFactory = $wikiPageFactory;
+		$this->statsFactory = $statsFactory->withComponent( 'PageTriage' );
 	}
 
 	/** @inheritDoc */
@@ -197,7 +154,7 @@ class Hooks implements
 			return;
 		}
 
-		DeferredUpdates::addCallableUpdate( static function () use ( $oldid, $newAdditionToFeed ) {
+		DeferredUpdates::addCallableUpdate( static function () use ( $oldid ) {
 			$acp = ArticleCompileProcessor::newFromPageId(
 				[ $oldid ],
 				false
@@ -504,9 +461,10 @@ class Hooks implements
 		// Overwrite the noindex rule defined in Article::view(), this also affects main namespace
 		if ( self::shouldShowNoIndex( $article ) ) {
 			$outputPage->setRobotPolicy( 'noindex,nofollow' );
-			$this->statsdDataFactory->increment(
-				'extension.PageTriage.by_wiki.' . WikiMap::getCurrentWikiId() . '.noindex'
-			);
+			$this->statsFactory->getCounter( 'noindex_total' )
+				->setLabel( 'wiki', WikiMap::getCurrentWikiId() )
+				->copyToStatsdAt( 'extension.PageTriage.by_wiki.' . WikiMap::getCurrentWikiId() . '.noindex' )
+				->increment();
 		}
 
 		// onArticleViewFooter() is run every time any article is not viewed from cache, so exit
@@ -646,6 +604,17 @@ class Hooks implements
 				$user,
 				'pagetriage-mark-as-reviewed'
 			);
+
+			$logEntry = new ManualLogEntry(
+				'pagetriage-curation',
+				'reviewed-' . ( $title->isRedirect() ? 'redirect' : 'article' )
+			);
+
+			$logEntry->setPerformer( $user );
+			$logEntry->setTarget( $title );
+			// Explicitly not including the #PageTriage tag
+			// since the action came from a non-PageTriage component
+			$logEntry->publish( $logEntry->insert() );
 		}
 	}
 
@@ -819,7 +788,7 @@ class Hooks implements
 	 * @param array &$models Models names to score
 	 */
 	public static function onORESCheckModels( RecentChange $rc, &$models ) {
-		if ( !in_array( $rc->getAttribute( 'rc_type' ), [ RC_NEW, RC_EDIT ] ) ) {
+		if ( !in_array( $rc->getAttribute( 'rc_source' ), [ RecentChange::SRC_NEW, RecentChange::SRC_EDIT ] ) ) {
 			return;
 		}
 
@@ -853,11 +822,8 @@ class Hooks implements
 		$tags[] = self::TAG_NAME;
 	}
 
-	// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-
 	/** @inheritDoc */
 	public function onApiMain__moduleManager( $moduleManager ) {
-		// phpcs:enable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
 		if ( !$this->config->get( 'PageTriageEnableExtendedFeatures' ) ) {
 			$moduleManager->addModule(
 				'pagetriagetagging',

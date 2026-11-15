@@ -12,7 +12,7 @@ config.global.mocks = {
 };
 config.global.directives = {
 	'i18n-html': ( el, binding ) => {
-		el.innerHTML = `${ binding.arg } (${ binding.value })`;
+		el.innerHTML = binding.value ? `${ binding.arg } (${ binding.value })` : binding.arg;
 	}
 };
 // Assign things to "global" here if you want them to be globally available during tests

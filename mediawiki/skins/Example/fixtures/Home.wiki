@@ -1,0 +1,26 @@
+<div class="main-page-tag-lcs main-page-tag-lcs-exploded"><div class="lcs-container">
+{| class="mw-collapsible fandom-table"
+|-
+|
+Welcome to the Earferana Wiki,
+
+the free encyclopedia about Earferana that anyone can edit.
+
+<div id="articlecount">
+* [[Special:Statistics|1]] active editors
+* [[Special:Statistics|252]] articles in English
+</div>
+
+'''Disclaimer:'''
+
+This wiki is written in-universe, as if it were the equivalent of a Wikipedia-style encyclopedia within the world it describes. Articles are presented from the perspective of someone living in that universe and aim to maintain a neutral, factual tone based on the knowledge, events, and viewpoints available in that setting.
+
+While the style mimics real-world encyclopedias, the information reflects what characters, factions, or institutions in the lore might know or believe—sometimes including bias, gaps, or disputes where relevant.
+
+[[Equivalents|For information on the inspirations, see the Equivalents page.]]
+
+The historical events depicted within this wiki, however grim, reflect the complexities of this fictional world and do not represent an endorsement of such acts by the creators of the Earferana Project. Our goal is to present a realistic portrayal of this history.
+|}
+
+== Featured articles ==
+</div></div>

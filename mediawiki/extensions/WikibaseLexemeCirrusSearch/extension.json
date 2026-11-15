@@ -14,7 +14,7 @@
 			"WikibaseCirrusSearch": "*",
 			"WikibaseLexeme": "*"
 		},
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"AutoloadNamespaces": {
 		"Wikibase\\Lexeme\\Search\\Elastic\\": "src/"
@@ -43,19 +43,31 @@
 		}
 	},
 	"Hooks": {
-		"CirrusSearchProfileService": [
-			"Wikibase\\Lexeme\\Search\\Elastic\\Hooks::onCirrusSearchProfileService"
-		],
-		"ShowSearchHit": "main",
-		"WikibaseRepoEntityTypes": [
-			"Wikibase\\Lexeme\\Search\\Elastic\\Hooks::onWikibaseRepoEntityTypes"
-		]
+		"CirrusSearchProfileService": "CirrusSearchProfileService",
+		"CirrusSearchAddQueryFeatures": "CirrusSearchAddQueryFeatures",
+		"ShowSearchHit": "ShowSearchHit",
+		"WikibaseRepoEntityTypes": "WikibaseRepoEntityTypes"
 	},
 	"HookHandlers": {
-		"main": {
-			"class": "Wikibase\\Lexeme\\Search\\Elastic\\Hooks"
+		"CirrusSearchProfileService": {
+			"class": "Wikibase\\Lexeme\\Search\\Elastic\\Hooks\\CirrusSearchProfileServiceHookHandler",
+			"services": [
+				"MainConfig"
+			]
+		},
+		"CirrusSearchAddQueryFeatures": {
+			"class": "Wikibase\\Lexeme\\Search\\Elastic\\Hooks\\CirrusSearchAddQueryFeaturesHookHandler"
+		},
+		"ShowSearchHit": {
+			"class": "Wikibase\\Lexeme\\Search\\Elastic\\Hooks\\ShowSearchHitHookHandler"
+		},
+		"WikibaseRepoEntityTypes": {
+			"class": "Wikibase\\Lexeme\\Search\\Elastic\\Hooks\\WikibaseRepoEntityTypesHookHandler"
 		}
 	},
+	"ServiceWiringFiles": [
+		"WikibaseLexemeCirrusSearch.ServiceWiring.php"
+	],
 	"MessagesDirs": {
 		"WikibaseCirrusSearch": [
 			"i18n"

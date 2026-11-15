@@ -3,9 +3,9 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
-use ApiBase;
-use ApiMain;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Language\LanguageNameUtils;
 use Wikimedia\ParamValidator\ParamValidator;
 
 /**
@@ -17,18 +17,14 @@ use Wikimedia\ParamValidator\ParamValidator;
 class GroupReviewActionApi extends ApiBase {
 	/** @var string */
 	protected static $right = 'translate-groupreview';
-	private LanguageNameUtils $languageNameUtils;
-	private MessageGroupReviewStore $messageGroupReviewStore;
 
 	public function __construct(
 		ApiMain $main,
 		string $action,
-		LanguageNameUtils $languageNameUtils,
-		MessageGroupReviewStore $messageGroupReviewStore
+		private readonly LanguageNameUtils $languageNameUtils,
+		private readonly MessageGroupReviewStore $messageGroupReviewStore,
 	) {
 		parent::__construct( $main, $action );
-		$this->languageNameUtils = $languageNameUtils;
-		$this->messageGroupReviewStore = $messageGroupReviewStore;
 	}
 
 	public function execute() {
@@ -99,10 +95,6 @@ class GroupReviewActionApi extends ApiBase {
 				ParamValidator::PARAM_DEFAULT => 'en',
 			],
 			'state' => [
-				ParamValidator::PARAM_TYPE => 'string',
-				ParamValidator::PARAM_REQUIRED => true,
-			],
-			'token' => [
 				ParamValidator::PARAM_TYPE => 'string',
 				ParamValidator::PARAM_REQUIRED => true,
 			],

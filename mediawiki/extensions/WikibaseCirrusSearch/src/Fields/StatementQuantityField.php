@@ -4,12 +4,13 @@ namespace Wikibase\Search\Elastic\Fields;
 
 use CirrusSearch\CirrusSearch;
 use DataValues\UnboundedQuantityValue;
+use MediaWiki\Search\SearchEngine;
 use Psr\Log\LoggerInterface;
-use SearchEngine;
 use Wikibase\DataModel\Entity\EntityDocument;
 use Wikibase\DataModel\Services\Lookup\PropertyDataTypeLookup;
 use Wikibase\DataModel\Statement\Statement;
 use Wikibase\DataModel\Statement\StatementListProvider;
+use Wikibase\Lib\DataTypeFactory;
 use Wikibase\Repo\Search\Fields\WikibaseIndexField;
 
 /**
@@ -26,11 +27,7 @@ class StatementQuantityField extends StatementsField implements WikibaseIndexFie
 	public const NAME = 'statement_quantity';
 
 	/**
-	 * @var array
-	 */
-	private $allowedQualifierPropertyIds;
-
-	/**
+	 * @param DataTypeFactory $dataTypeFactory
 	 * @param PropertyDataTypeLookup $propertyDataTypeLookup
 	 * @param string[] $propertyIds List of property IDs to index
 	 * @param string[] $indexedTypes List of property types to index. Property of this type will be
@@ -41,15 +38,17 @@ class StatementQuantityField extends StatementsField implements WikibaseIndexFie
 	 * 	qualifier is in this list
 	 */
 	public function __construct(
+		DataTypeFactory $dataTypeFactory,
 		PropertyDataTypeLookup $propertyDataTypeLookup,
 		array $propertyIds,
 		array $indexedTypes,
 		array $excludedIds,
 		array $searchIndexDataFormatters,
-		array $allowedQualifierPropertyIds,
+		private readonly array $allowedQualifierPropertyIds,
 		?LoggerInterface $logger = null
 	) {
 		parent::__construct(
+			$dataTypeFactory,
 			$propertyDataTypeLookup,
 			$propertyIds,
 			$indexedTypes,
@@ -57,7 +56,6 @@ class StatementQuantityField extends StatementsField implements WikibaseIndexFie
 			$searchIndexDataFormatters,
 			$logger
 		);
-		$this->allowedQualifierPropertyIds = $allowedQualifierPropertyIds;
 	}
 
 	/**

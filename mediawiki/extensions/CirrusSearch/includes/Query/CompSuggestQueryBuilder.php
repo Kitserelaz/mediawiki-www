@@ -6,10 +6,11 @@ use CirrusSearch\BuildDocument\Completion\SuggestBuilder;
 use CirrusSearch\Search\CompletionResultsCollector;
 use CirrusSearch\Search\SearchContext;
 use CirrusSearch\SearchConfig;
+use CirrusSearch\SecondTry\SecondTryRunner;
 use Elastica\ResultSet;
 use Elastica\Suggest;
 use Elastica\Suggest\Completion;
-use SearchSuggestion;
+use MediaWiki\Search\SearchSuggestion;
 use Wikimedia\Assert\Assert;
 
 /**
@@ -17,7 +18,6 @@ use Wikimedia\Assert\Assert;
  * Unlike classic query builders it will :
  * - handle limit differently as offsets are not accepted during suggest queries
  * - store a mutable state in mergedProfiles
- *
  */
 class CompSuggestQueryBuilder {
 	use QueryBuilderTraits;
@@ -41,17 +41,20 @@ class CompSuggestQueryBuilder {
 
 	/** @var array (mutable) state built after calling self::build */
 	private $mergedProfiles;
+	private SecondTryRunner $secondTryRunner;
 
 	/**
 	 * @param SearchContext $context
 	 * @param array $profile settings as definied in profiles/SuggestProfiles.config.php
+	 * @param SecondTryRunner $secondTryRunner
 	 * @param int $limit the number of results to display
 	 * @param int $offset
 	 */
-	public function __construct( SearchContext $context, array $profile, $limit, $offset = 0 ) {
+	public function __construct( SearchContext $context, array $profile, SecondTryRunner $secondTryRunner, $limit, $offset = 0 ) {
 		$this->searchContext = $context;
 		$this->profile = $profile['fst'];
 		Assert::parameter( count( $this->profile ) > 0, '$profile', 'Profile must not be empty' );
+		$this->secondTryRunner = $secondTryRunner;
 		$this->hardLimit = self::computeHardLimit( $limit, $offset, $context->getConfig() );
 		if ( $limit > $this->hardLimit - $offset ) {
 			$limit = $this->hardLimit - $offset;
@@ -80,10 +83,10 @@ class CompSuggestQueryBuilder {
 	/**
 	 * Build the suggest query
 	 * @param string $term
-	 * @param string[]|null $variants
+	 * @param array<string, string[]> $secondTryCandidates
 	 * @return Suggest
 	 */
-	public function build( $term, $variants = null ) {
+	public function build( string $term, array $secondTryCandidates = [] ): Suggest {
 		$this->checkTitleSearchRequestLength( $term, $this->searchContext );
 		$origTerm = $term;
 		if ( mb_strlen( $term ) > SuggestBuilder::MAX_INPUT_LENGTH ) {
@@ -97,8 +100,8 @@ class CompSuggestQueryBuilder {
 		$suggest = $this->buildSuggestQueries( $this->profile, $term, $queryLen );
 
 		// Handle variants, update the set of profiles and suggest queries
-		if ( $variants ) {
-			$this->handleVariants( $suggest, $variants, $queryLen, $origTerm );
+		if ( $secondTryCandidates ) {
+			$this->handleVariants( $suggest, $secondTryCandidates, $queryLen, $origTerm );
 		}
 		return $suggest;
 	}
@@ -123,6 +126,28 @@ class CompSuggestQueryBuilder {
 	}
 
 	/**
+	 * Resolves AUTO fuzziness into a constant value
+	 * @param array $fuzzy FST Fuzziness configuration
+	 * @param int $queryLen The number of codepoints in the query
+	 * @return array Resolve FST Fuzziness configuration
+	 */
+	private function resolveFuzzy( array $fuzzy, $queryLen ): array {
+		// TODO: We could support `AUTO:2,8` syntax as well, but didnt seem necessary
+		if ( ( $fuzzy['fuzziness'] ?? null ) === 'AUTO' ) {
+			$low = 3;
+			$high = 6;
+			if ( $queryLen < $low ) {
+				$fuzzy['fuzziness'] = 0;
+			} elseif ( $queryLen < $high ) {
+				$fuzzy['fuzziness'] = 1;
+			} else {
+				$fuzzy['fuzziness'] = 2;
+			}
+		}
+		return $fuzzy;
+	}
+
+	/**
 	 * Builds a suggest query from a profile
 	 * @param string $name name of the suggestion
 	 * @param array $config Profile
@@ -144,7 +169,7 @@ class CompSuggestQueryBuilder {
 		$sug->setPrefix( $query );
 		$sug->setSize( $this->hardLimit * $config['fetch_limit_factor'] );
 		if ( isset( $config['fuzzy'] ) ) {
-			$sug->setFuzzy( $config['fuzzy'] );
+			$sug->setFuzzy( $this->resolveFuzzy( $config['fuzzy'], $queryLen ) );
 		}
 		return $sug;
 	}
@@ -153,32 +178,35 @@ class CompSuggestQueryBuilder {
 	 * Update the suggest queries and return additional profiles flagged the 'fallback' key
 	 * with a discount factor = originalDiscount * 0.0001/(variantIndex+1).
 	 * @param Suggest $suggests
-	 * @param array $variants
+	 * @param array<string, string[]> $secondTryCandidates candidates as returned by {@link SecondTryRunner::candidate}
 	 * @param int $queryLen the original query length
 	 * @param string $term original term (used to dedup)
 	 * @internal param array $profiles the default profiles
 	 */
-	private function handleVariants( Suggest $suggests, array $variants, $queryLen, $term ) {
-		$variantIndex = 0;
+	private function handleVariants( Suggest $suggests, array $secondTryCandidates, int $queryLen, string $term ): void {
 		$done = [ $term ];
-		foreach ( $variants as $variant ) {
-			if ( in_array( $variant, $done, true ) ) {
-				continue;
-			}
-			$done[] = $variant;
-			$variantIndex++;
-			foreach ( $this->profile as $name => $profile ) {
-				$variantProfName = $name . '-variant-' . $variantIndex;
-				$profile = $this->buildVariantProfile(
-					$profile, self::VARIANT_EXTRA_DISCOUNT / $variantIndex
-				);
-				$suggest = $this->buildSuggestQuery(
-					$variantProfName, $profile, $variant, $queryLen
-				);
-				if ( $suggest !== null ) {
-					$suggests->addSuggestion( $suggest );
-					$this->mergedProfiles[$variantProfName] = $profile;
+		$variantIndex = 0;
+		foreach ( $secondTryCandidates as $strategy => $candidates ) {
+			foreach ( $candidates as $candidate ) {
+				if ( in_array( $candidate, $done, true ) ) {
+					continue;
 				}
+				$done[] = $candidate;
+				$variantIndex++;
+				foreach ( $this->profile as $name => $profile ) {
+					$variantProfName = $name . '-second-try-' . $strategy . '-' . $variantIndex;
+					$profile = $this->buildVariantProfile(
+						$profile, ( self::VARIANT_EXTRA_DISCOUNT * $this->secondTryRunner->weight( $strategy ) ) / $variantIndex
+					);
+					$suggest = $this->buildSuggestQuery(
+						$variantProfName, $profile, $candidate, $queryLen
+					);
+					if ( $suggest !== null ) {
+						$suggests->addSuggestion( $suggest );
+						$this->mergedProfiles[$variantProfName] = $profile;
+					}
+				}
+
 			}
 		}
 	}

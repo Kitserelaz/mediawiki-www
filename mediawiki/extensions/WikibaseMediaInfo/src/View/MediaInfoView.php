@@ -16,37 +16,13 @@ use Wikibase\View\ViewContent;
  */
 class MediaInfoView implements EntityDocumentView {
 
-	/**
-	 * @var MediaInfoEntityTermsView
-	 */
-	private $captionsView;
-
-	/**
-	 * @var string
-	 */
-	protected $languageCode;
-
-	/**
-	 * @var MediaInfoEntityStatementsView
-	 */
-	private $statementsView;
-
 	public const MEDIAINFOVIEW_CUSTOM_TAG = 'mediaInfoView';
 
-	/**
-	 * @param MediaInfoEntityTermsView $captionsView
-	 * @param string $languageCode
-	 * @param MediaInfoEntityStatementsView $statementsView
-	 * @codeCoverageIgnore
-	 */
 	public function __construct(
-		MediaInfoEntityTermsView $captionsView,
-		$languageCode,
-		MediaInfoEntityStatementsView $statementsView
+		private readonly MediaInfoEntityTermsView $captionsView,
+		private readonly string $languageCode,
+		private readonly MediaInfoEntityStatementsView $statementsView,
 	) {
-		$this->captionsView = $captionsView;
-		$this->languageCode = $languageCode;
-		$this->statementsView = $statementsView;
 	}
 
 	/**
@@ -58,6 +34,11 @@ class MediaInfoView implements EntityDocumentView {
 		return '';
 	}
 
+	public function getParserOutputOptions(): array {
+		return [];
+	}
+
+	/** @inheritDoc */
 	public function getContent( EntityDocument $entity, $revision = null ): ViewContent {
 		if ( !( $entity instanceof MediaInfo ) ) {
 			throw new InvalidArgumentException( '$entity must be a MediaInfo entity.' );
@@ -81,12 +62,18 @@ class MediaInfoView implements EntityDocumentView {
 		);
 	}
 
+	/**
+	 * @return string
+	 */
 	public function getCaptionsHtml( MediaInfo $entity ) {
 		return $this->captionsView->getHtml(
 			$entity
 		);
 	}
 
+	/**
+	 * @return string
+	 */
 	public function getStatementsHtml( MediaInfo $entity ) {
 		return $this->statementsView->getHtml(
 			$entity

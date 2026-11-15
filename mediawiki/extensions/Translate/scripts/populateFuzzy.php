@@ -1,4 +1,6 @@
 <?php
+declare( strict_types = 1 );
+
 /**
  * A script to populate fuzzy tags to revtag table.
  *
@@ -8,13 +10,17 @@
  * @file
  */
 
-// Standard boilerplate to define $IP
-
+use MediaWiki\Extension\Translate\ConfigNames;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\RevTagStore;
+use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
+use MediaWiki\Extension\Translate\Services;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
+use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Title\TitleValue;
 
+// Standard boilerplate to define $IP
 if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
 	$IP = getenv( 'MW_INSTALL_PATH' );
 } else {
@@ -29,52 +35,65 @@ require_once "$IP/maintenance/Maintenance.php";
 class PopulateFuzzy extends Maintenance {
 	public function __construct() {
 		parent::__construct();
-		$this->addDescription( 'A script to populate fuzzy tags to revtag table.' );
+		$this->addDescription(
+			sprintf(
+				'Populate missing fuzzy tags to revtag table for pages containing %s.',
+				TRANSLATE_FUZZY
+			)
+		);
 		$this->addOption(
-			'namespace',
-			'(optional) Namepace name or id',
-			/*required*/false,
-			/*has arg*/true
+			'dry-run',
+			"Don't write anything to the database; just report what would be done",
 		);
 		$this->setBatchSize( 500 );
 		$this->requireExtension( 'Translate' );
 	}
 
-	public function execute() {
-		global $wgTranslateMessageNamespaces;
+	/** @inheritDoc */
+	public function execute(): void {
+		$services = MediaWikiServices::getInstance();
+		$connectionProvider = $services->getConnectionProvider();
+		$revStore = $services->getRevisionStore();
+		$pageStore = $services->getPageStore();
+		$revTagStore = Services::getInstance()->getRevTagStore();
+		$titleFormatter = $services->getTitleFormatter();
+		$config = $services->getMainConfig();
 
-		$namespace = $this->getOption( 'namespace', $wgTranslateMessageNamespaces );
-		$nsInfo = MediaWikiServices::getInstance()->getNamespaceInfo();
-		if ( is_string( $namespace ) && ( !is_numeric( $namespace ) || !$nsInfo->exists( (int)$namespace ) ) ) {
-			$namespace = $nsInfo->getCanonicalIndex( $namespace );
-			if ( $namespace === null ) {
-				$this->fatalError( 'Bad namespace' );
-			}
-		}
-
-		$dbw = MediaWikiServices::getInstance()->getDBLoadBalancer()
-			->getMaintenanceConnectionRef( DB_PRIMARY );
-		$revStore = MediaWikiServices::getInstance()->getRevisionStore();
-
+		$namespaces = $config->get( ConfigNames::MessageNamespaces );
 		$limit = $this->getBatchSize();
-		$offset = 0;
+		$dryRun = $this->hasOption( 'dry-run' );
+		$totalWouldInsert = 0;
+		$dbr = $connectionProvider->getReplicaDatabase();
+		$dbw = $connectionProvider->getPrimaryDatabase();
+
+		$this->output( "\nPages to update:", 'loop' );
+		$offset = [ 'page_namespace' => 0, 'page_title' => '' ];
 		while ( true ) {
-			$this->output( '.', 0 );
-			$res = $revStore->newSelectQueryBuilder( $dbw )
-				->joinPage()
-				->joinComment()
+			$pages = $pageStore->newSelectQueryBuilder()
+				->select( [ 'page_latest', 'page_namespace', 'page_title' ] )
 				->where( [
-					'page_latest = rev_id',
-					'page_namespace' => $namespace,
+					'page_namespace' => $namespaces,
+					$dbr->buildComparison( '>', $offset ),
 				] )
+				->orderByTitle()
 				->limit( $limit )
-				->offset( $offset )
 				->caller( __METHOD__ )
 				->fetchResultSet();
-
-			if ( !$res->numRows() ) {
+			$pages = iterator_to_array( $pages );
+			if ( !$pages ) {
 				break;
 			}
+
+			$revIds = array_column( $pages, 'page_latest' );
+			// Update cursor to current row. TODO array_last in PHP 8.5
+			$offset = (array)end( $pages );
+			unset( $offset['page_latest'] );
+
+			$res = $revStore->newSelectQueryBuilder( $dbr )
+				->joinPage()
+				->where( [ 'rev_id' => $revIds ] )
+				->caller( __METHOD__ )
+				->fetchResultSet();
 
 			$inserts = [];
 			$slots = $revStore->getContentBlobsForBatch( $res, [ SlotRecord::MAIN ] )->getValue();
@@ -82,28 +101,47 @@ class PopulateFuzzy extends Maintenance {
 				if ( isset( $slots[$r->rev_id] ) ) {
 					$text = $slots[$r->rev_id][SlotRecord::MAIN]->blob_data;
 				} else {
-					$content = $revStore->newRevisionFromRow( $r )
-						->getContent( SlotRecord::MAIN );
+					$content = $revStore->newRevisionFromRow( $r )->getContent( SlotRecord::MAIN );
 					$text = Utilities::getTextFromTextContent( $content );
 				}
-				if ( str_contains( $text, TRANSLATE_FUZZY ) ) {
-					$inserts[] = [
-						'rt_page' => $r->page_id,
-						'rt_revision' => $r->rev_id,
-						'rt_type' => RevTagStore::FUZZY_TAG,
-					];
+
+				$needsUpdate = str_contains( $text, TRANSLATE_FUZZY ) &&
+					!$revTagStore->isRevIdFuzzy( (int)$r->rev_page, (int)$r->rev_id );
+
+				if ( $needsUpdate ) {
+					$handle = new MessageHandle( new TitleValue( (int)$r->page_namespace, $r->page_title ) );
+					// Skip orphaned messages to avoid unnecessary database pollution
+					if ( $handle->getGroupIds() ) {
+						$inserts[] = [
+							'rt_page' => (int)$r->page_id,
+							'rt_revision' => (int)$r->rev_id,
+							'rt_type' => RevTagStore::FUZZY_TAG,
+						];
+
+						$prefixedText = $titleFormatter->formatTitle( (int)$r->page_namespace, $r->page_title );
+						$this->output( "\n - $prefixedText", 'loop' );
+					}
 				}
 			}
 
-			$offset += $limit;
-
 			if ( $inserts ) {
-				$dbw->newInsertQueryBuilder()
-					->insertInto( 'revtag' )
-					->rows( $inserts )
-					->caller( __METHOD__ )
-					->execute();
+				if ( $dryRun ) {
+					$totalWouldInsert += count( $inserts );
+				} else {
+					$dbw->newInsertQueryBuilder()
+						->insertInto( 'revtag' )
+						->rows( $inserts )
+						->caller( __METHOD__ )
+						->execute();
+				}
 			}
+		}
+
+		// Ensure a new line before the end of a page list (if any)
+		$this->output( '' );
+
+		if ( $dryRun ) {
+			$this->output( "\n[dry-run] Total fuzzy tags that would be inserted: $totalWouldInsert\n" );
 		}
 	}
 }

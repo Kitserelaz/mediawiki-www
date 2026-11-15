@@ -76,9 +76,7 @@ class CheckResult {
 	 * * update PARAM_STATUS type in CheckConstraints::getAllowedParams
 	 */
 
-	/** @var Constraint */
 	private Constraint $constraint;
-
 	private ContextCursor $contextCursor;
 
 	/**

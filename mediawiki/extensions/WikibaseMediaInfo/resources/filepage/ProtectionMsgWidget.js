@@ -3,7 +3,7 @@
 /**
  * Page protection message to indicate user's ability to edit media info.
  */
-var ProtectionMsgWidget = function () {
+const ProtectionMsgWidget = function () {
 	this.message = mw.config.get( 'wbmiProtectionMsg' );
 	this.widget = new OO.ui.Widget( $.extend( {
 		$content: this.message,
@@ -14,15 +14,12 @@ var ProtectionMsgWidget = function () {
 };
 
 ProtectionMsgWidget.prototype.render = function () {
-	var data,
-		template;
-
-	data = {
+	const data = {
 		shouldDisplay: this.shouldDisplay(),
 		widget: this.widget
 	};
 
-	template = mw.template.get(
+	const template = mw.template.get(
 		'wikibase.mediainfo.filePageDisplay',
 		'templates/filepage/ProtectionMsgWidget.mustache+dom'
 	);

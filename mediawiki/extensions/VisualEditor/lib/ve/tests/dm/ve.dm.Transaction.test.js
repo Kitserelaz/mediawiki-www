@@ -23,11 +23,11 @@ QUnit.test( 'translateOffset', ( assert ) => {
 		{ type: 'retain', length: 2 },
 		{ type: 'replace', remove: [], insert: [ ...'nop' ] },
 		{ type: 'retain', length: 2 },
-		{ type: 'replace', remove: [ ...'ok' ], insert: [ [ 'o', b ], [ 'k', b ] ] },
+		{ type: 'replace', remove: [ ...'ok' ], insert: [ ...ve.dm.example.annotateText( 'ok', b ) ] },
 		{ type: 'retain', length: 2 },
-		{ type: 'replace', remove: [ ...'non' ], insert: [ [ 'n', b ], [ 'o', b ] ] },
+		{ type: 'replace', remove: [ ...'non' ], insert: [ ...ve.dm.example.annotateText( 'no', b ) ] },
 		{ type: 'retain', length: 2 },
-		{ type: 'replace', remove: [ ...'hi' ], insert: [ [ 'l', b ], [ 'o', b ] ] }
+		{ type: 'replace', remove: [ ...'hi' ], insert: [ ...ve.dm.example.annotateText( 'lo', b ) ] }
 	] );
 
 	const mapping = {
@@ -216,7 +216,7 @@ QUnit.test( 'getModifiedRange', ( assert ) => {
 	cases.forEach( ( caseItem ) => {
 		const txBuilder = new ve.dm.TransactionBuilder();
 		for ( let j = 0; j < caseItem.calls.length; j++ ) {
-			txBuilder[ caseItem.calls[ j ][ 0 ] ].apply( txBuilder, caseItem.calls[ j ].slice( 1 ) );
+			txBuilder[ caseItem.calls[ j ][ 0 ] ]( ...caseItem.calls[ j ].slice( 1 ) );
 		}
 		assert.equalRange( txBuilder.getTransaction().getModifiedRange( doc ), caseItem.range, caseItem.msg );
 	} );
@@ -247,10 +247,10 @@ QUnit.test( 'Metadata transactions', ( assert ) => {
 	const surface = new ve.dm.Surface( doc );
 	const fragment = surface.getFragment();
 	metaList.connect( null, {
-		insert: function ( item ) {
+		insert: ( item ) => {
 			events.push( [ 'insert', item.element ] );
 		},
-		remove: function ( item ) {
+		remove: ( item ) => {
 			events.push( [ 'remove', item.element ] );
 		}
 	} );

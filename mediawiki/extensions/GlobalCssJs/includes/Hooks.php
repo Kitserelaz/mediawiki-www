@@ -32,13 +32,12 @@ use MediaWiki\Output\OutputPage;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
 use MediaWiki\ResourceLoader\Hook\ResourceLoaderRegisterModulesHook;
 use MediaWiki\ResourceLoader\ResourceLoader;
+use MediaWiki\Skin\Skin;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\WikiMap\WikiMap;
-use Skin;
 
-//phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
 class Hooks implements
 	BeforePageDisplayHook,
 	ResourceLoaderRegisterModulesHook,
@@ -225,7 +224,8 @@ class Hooks implements
 		} else {
 			return WikiMap::makeForeignLink(
 				$config['wiki'],
-				'User:' . $title->getText(), // bug 66873, don't use localized namespace
+				// bug 66873, don't use localized namespace
+				'User:' . $title->getText(),
 				$message->escaped()
 			);
 		}

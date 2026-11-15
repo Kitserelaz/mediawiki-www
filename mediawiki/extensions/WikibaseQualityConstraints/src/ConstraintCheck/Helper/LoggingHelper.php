@@ -3,13 +3,13 @@
 namespace WikibaseQuality\ConstraintReport\ConstraintCheck\Helper;
 
 use MediaWiki\Config\Config;
-use MWHttpRequest;
+use MediaWiki\Http\MWHttpRequest;
 use Psr\Log\LoggerInterface;
 use Wikibase\DataModel\Entity\EntityId;
 use WikibaseQuality\ConstraintReport\Constraint;
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Context\Context;
 use WikibaseQuality\ConstraintReport\ConstraintCheck\Result\CheckResult;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
@@ -21,9 +21,9 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
 class LoggingHelper {
 
 	/**
-	 * @var IBufferingStatsdDataFactory
+	 * @var StatsFactory
 	 */
-	private $dataFactory;
+	private $statsFactory;
 
 	/**
 	 * @var LoggerInterface
@@ -41,16 +41,16 @@ class LoggingHelper {
 	private $constraintCheckOnEntityDurationLimits;
 
 	/**
-	 * @param IBufferingStatsdDataFactory $dataFactory,
+	 * @param StatsFactory $statsFactory
 	 * @param LoggerInterface $logger
 	 * @param Config $config
 	 */
 	public function __construct(
-		IBufferingStatsdDataFactory $dataFactory,
+		StatsFactory $statsFactory,
 		LoggerInterface $logger,
 		Config $config
 	) {
-		$this->dataFactory = $dataFactory;
+		$this->statsFactory = $statsFactory;
 		$this->logger = $logger;
 		$this->constraintCheckDurationLimits = [
 			'info' => $config->get( 'WBQualityConstraintsCheckDurationInfoSeconds' ),
@@ -66,6 +66,7 @@ class LoggingHelper {
 	 * Find the longest limit in $limits which the $durationSeconds exceeds,
 	 * and return it along with the associated log level.
 	 *
+	 * @param float[] $limits
 	 * @param float $durationSeconds
 	 * @return array [ $limitSeconds, $logLevel ]
 	 */
@@ -90,7 +91,7 @@ class LoggingHelper {
 
 	/**
 	 * Log a single constraint check.
-	 * The constraint check is tracked on the statsd data factory,
+	 * The constraint check is tracked on the StatsFactory data factory,
 	 * and also logged with the logger interface if it took longer than a certain time.
 	 * Multiple limits corresponding to different log levels can be specified in the configuration;
 	 * checks that exceed a higher limit are logged at a more severe level.
@@ -113,12 +114,8 @@ class LoggingHelper {
 		$constraintCheckerClassShortName = substr( strrchr( $constraintCheckerClass, '\\' ), 1 );
 		$constraintTypeItemId = $constraint->getConstraintTypeItemId();
 
-		$this->dataFactory->timing(
-			'wikibase.quality.constraints.check.timing.' .
-				$constraintTypeItemId . '-' .
-				$constraintCheckerClassShortName,
-			$durationSeconds * 1000
-		);
+		$this->statsFactory->getTiming( 'check_constraint_duration_seconds' )
+			->observe( $durationSeconds * 1000 );
 
 		// find the longest limit (and associated log level) that the duration exceeds
 		[ $limitSeconds, $logLevel ] = $this->findLimit(
@@ -166,7 +163,7 @@ class LoggingHelper {
 
 	/**
 	 * Log a full constraint check on an entity.
-	 * The constraint check is tracked on the statsd data factory,
+	 * The constraint check is tracked on the StatsFactory data factory,
 	 * and also logged with the logger interface if it took longer than a certain time.
 	 * Multiple limits corresponding to different log levels can be specified in the configuration;
 	 * checks that exceed a higher limit are logged at a more severe level.
@@ -175,6 +172,7 @@ class LoggingHelper {
 	 * @param EntityId $entityId
 	 * @param CheckResult[] $checkResults
 	 * @param float $durationSeconds
+	 * @param string $method
 	 */
 	public function logConstraintCheckOnEntity(
 		EntityId $entityId,
@@ -182,10 +180,8 @@ class LoggingHelper {
 		$durationSeconds,
 		$method
 	) {
-		$this->dataFactory->timing(
-			'wikibase.quality.constraints.check.entity.timing',
-			$durationSeconds * 1000
-		);
+		$this->statsFactory->getTiming( 'check_entity_constraint_duration_seconds' )
+			->observe( $durationSeconds * 1000 );
 
 		// find the longest limit (and associated log level) that the duration exceeds
 		[ $limitSeconds, $logLevel ] = $this->findLimit(
@@ -214,13 +210,10 @@ class LoggingHelper {
 
 	/**
 	 * Log a cache hit for a complete constraint check result for the given entity ID.
-	 *
-	 * @param EntityId $entityId
 	 */
 	public function logCheckConstraintsCacheHit( EntityId $entityId ) {
-		$this->dataFactory->increment(
-			'wikibase.quality.constraints.cache.entity.hit'
-		);
+		$this->statsFactory->getCounter( 'cache_entity_hit_total' )
+			->increment();
 	}
 
 	/**
@@ -229,10 +222,8 @@ class LoggingHelper {
 	 * @param EntityId[] $entityIds
 	 */
 	public function logCheckConstraintsCacheMisses( array $entityIds ) {
-		$this->dataFactory->updateCount(
-			'wikibase.quality.constraints.cache.entity.miss',
-			count( $entityIds )
-		);
+		$this->statsFactory->getCounter( 'cache_entity_miss_total' )
+			->incrementBy( count( $entityIds ) );
 	}
 
 	/**

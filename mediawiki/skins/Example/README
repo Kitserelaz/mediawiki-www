@@ -12,3 +12,40 @@ do not intend to provide your changes on the same terms.
 See <http://creativecommons.org/publicdomain/zero/1.0/> for full licensing
 details.
 
+
+Fandom Desktop reference
+------------------------
+
+The skin templates follow the Earferana Wiki browser capture in the workspace
+fandom_reference directory. fandom-desktop.css contains rules extracted from
+the capture's load_002_QID9.css, plus its inline edit-font and collapsible rules.
+fandom-theme.css contains the captured Earferana theme declarations and the
+light navigation palette from the saved light desktop stylesheet. The
+ResourceLoader module loads them in this skin only. Integration overrides are
+in skin.css. The original Fandom styles and icon artwork are third-party
+reference material. The CC0 notice above applies to the Example scaffold and
+does not grant a license to Fandom's material or Earferana's artwork.
+
+The bundled light and dark maps come from the Earferana Wiki. The community
+header uses the wiki's configured icon. The four Latin Rubik
+WOFF2 files come from the original stylesheet's public Fandom CDN URLs.
+See resources/fonts/OFL.txt for Rubik's license.
+
+For a screenshot fixture on the local development Test Wiki, create the Home
+page with fixtures/Home.wiki. From the workspace root:
+
+  docker compose exec -T php php maintenance/run.php edit --wiki=testwiki --createonly Home < mediawiki/skins/Example/fixtures/Home.wiki
+
+The fixture supplies the article body. For a visual comparison, use the saved
+capture's site title, community logo, page count, and three menu headings as
+fixture data. The live skin continues to use the local wiki's values.
+
+Signed-in Acepogland preview
+---------------------------
+
+The signed-in article layout uses the saved Acepogland browser capture. On
+Test Wiki, the existing imported article needs PortableInfobox, the three
+images in fixtures/acepogland-images, and the local compatibility versions of
+Template:Rewrite, Template:Main, and Template:Country About in fixtures.
+Upload the images under their existing filenames. The article text and
+category membership are supplied by the imported page.

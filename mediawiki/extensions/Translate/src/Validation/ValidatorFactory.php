@@ -6,6 +6,7 @@ namespace MediaWiki\Extension\Translate\Validation;
 use InvalidArgumentException;
 use MediaWiki\Extension\Translate\Validation\Validators\BraceBalanceValidator;
 use MediaWiki\Extension\Translate\Validation\Validators\EscapeCharacterValidator;
+use MediaWiki\Extension\Translate\Validation\Validators\FluentVariableValidator;
 use MediaWiki\Extension\Translate\Validation\Validators\GettextNewlineValidator;
 use MediaWiki\Extension\Translate\Validation\Validators\GettextPluralValidator;
 use MediaWiki\Extension\Translate\Validation\Validators\InsertableRegexValidator;
@@ -19,6 +20,7 @@ use MediaWiki\Extension\Translate\Validation\Validators\MediaWikiPluralValidator
 use MediaWiki\Extension\Translate\Validation\Validators\MediaWikiTimeListValidator;
 use MediaWiki\Extension\Translate\Validation\Validators\NewlineValidator;
 use MediaWiki\Extension\Translate\Validation\Validators\NotEmptyValidator;
+use MediaWiki\Extension\Translate\Validation\Validators\NotSupportedValidator;
 use MediaWiki\Extension\Translate\Validation\Validators\NumericalParameterValidator;
 use MediaWiki\Extension\Translate\Validation\Validators\PrintfValidator;
 use MediaWiki\Extension\Translate\Validation\Validators\PythonInterpolationValidator;
@@ -39,6 +41,7 @@ class ValidatorFactory {
 	private static $validators = [
 		'BraceBalance' => BraceBalanceValidator::class,
 		'EscapeCharacter' => EscapeCharacterValidator::class,
+		'FluentVariable' => FluentVariableValidator::class,
 		'GettextNewline' => GettextNewlineValidator::class,
 		'GettextPlural' => GettextPluralValidator::class,
 		'InsertableRegex' => InsertableRegexValidator::class,
@@ -59,6 +62,7 @@ class ValidatorFactory {
 		'MediaWikiTimeList' => MediaWikiTimeListValidator::class,
 		'Newline' => NewlineValidator::class,
 		'NotEmpty' => NotEmptyValidator::class,
+		'NotSupported' => NotSupportedValidator::class,
 		'NumericalParameter' => NumericalParameterValidator::class,
 		'Printf' => PrintfValidator::class,
 		'PythonInterpolation' => PythonInterpolationValidator::class,
@@ -90,8 +94,6 @@ class ValidatorFactory {
 			$spec['args'] = [ $params ];
 		}
 
-		// Phan seems to misunderstand the param type as callable instead of an array
-		// @phan-suppress-next-line PhanTypeInvalidCallableArraySize
 		return MediaWikiServices::getInstance()->getObjectFactory()->createObject( $spec );
 	}
 

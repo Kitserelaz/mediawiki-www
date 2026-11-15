@@ -1,29 +1,32 @@
-$( function () {
+$( () => {
 	'use strict';
 
-	var listShown = false,
-		formLayout = OO.ui.infuse( $( '#mw-massmessage-addform' ) ),
+	let listShown = false;
+	const formLayout = OO.ui.infuse( $( '#mw-massmessage-addform' ) ),
 		titleWidget = OO.ui.infuse( $( '#mw-massmessage-addtitle' ) ),
 		titleField = titleWidget.getField(),
-		$site = $( '#mw-massmessage-addsite' ),
-		appendAdded, getApiParam, removeHandler, confirmableParams,
-		siteWidget, siteField;
+		$site = $( '#mw-massmessage-addsite' );
+
+	let confirmableParams = null;
+
+	let siteWidget, siteField;
 	if ( $site.length ) {
 		siteWidget = OO.ui.infuse( $site );
 		siteField = siteWidget.getField();
 	}
 
 	// Append an added page to the displayed list.
-	appendAdded = function ( title, site, missing ) {
-		var targetAttribs, targetLink, removeLink, $list = $( '#mw-massmessage-addedlist ul' );
+	const appendAdded = function ( title, site, missing ) {
+		const $list = $( '#mw-massmessage-addedlist ul' );
 
 		if ( !listShown ) {
 			$( '#mw-massmessage-addedlist' ).show();
 			listShown = true;
 		}
 
+		let targetLink;
 		if ( site === '' ) {
-			targetAttribs = {
+			const targetAttribs = {
 				href: mw.util.getUrl( title ),
 				title: title
 			};
@@ -32,7 +35,7 @@ $( function () {
 			}
 			targetLink = mw.html.element( 'a', targetAttribs, title );
 		} else {
-			targetAttribs = {
+			const targetAttribs = {
 				href: '//' + site + mw.config.get( 'wgScript' ) + '?title=' +
 					encodeURIComponent( title ),
 				class: 'external'
@@ -40,12 +43,12 @@ $( function () {
 			// Use a message so we have something like "<title> on <site>".
 			targetLink = mw.message(
 				'massmessage-content-addeditem',
-				mw.html.element( 'a', targetAttribs, title ),
+				$( $.parseHTML( mw.html.element( 'a', targetAttribs, title ) ) ),
 				site
-			).text();
+			).parse();
 		}
 
-		removeLink = mw.html.element( 'a', {
+		const removeLink = mw.html.element( 'a', {
 			'data-title': title,
 			'data-site': ( site === '' ) ? 'local' : site,
 			href: '#'
@@ -72,10 +75,10 @@ $( function () {
 	};
 
 	// Return a target page in title or title@site (if site is not empty) form.
-	getApiParam = function ( title, site ) {
-		var server, param;
+	const getApiParam = function ( title, site ) {
+		let server, param;
 		if ( site === '' ) {
-			if ( title.indexOf( '@' ) >= 0 ) { // Handle titles containing '@'
+			if ( title.includes( '@' ) ) { // Handle titles containing '@'
 				server = mw.config.get( 'wgServer' );
 				param = title + '@' + server.slice( server.indexOf( '//' ) + 2 );
 			} else {
@@ -88,12 +91,12 @@ $( function () {
 	};
 
 	// Handle remove links next to targets.
-	removeHandler = function ( e ) {
-		var param, $link = $( this );
+	const removeHandler = function ( e ) {
+		const $link = $( this );
 
 		e.preventDefault();
 
-		param = getApiParam(
+		const param = getApiParam(
 			$link.attr( 'data-title' ),
 			$link.attr( 'data-site' ) === 'local' ? '' : $link.attr( 'data-site' )
 		);
@@ -102,11 +105,11 @@ $( function () {
 			action: 'editmassmessagelist',
 			spamlist: mw.config.get( 'wgPageName' ),
 			remove: param
-		} ).done( function () {
+		} ).done( () => {
 			// FIXME: Use CSS transition
 			// eslint-disable-next-line no-jquery/no-fade
-			$link.closest( 'li' ).fadeOut( 400, function () { // 400 is the default duration.
-				var $list = $link.closest( 'ul' );
+			$link.closest( 'li' ).fadeOut( 400, () => { // 400 is the default duration.
+				const $list = $link.closest( 'ul' );
 
 				// Replace empty lists with a message indicating the list is empty.
 				// eslint-disable-next-line no-jquery/no-sizzle
@@ -118,7 +121,7 @@ $( function () {
 					);
 				}
 			} );
-		} ).fail( function ( errorCode ) {
+		} ).fail( ( errorCode ) => {
 			OO.ui.alert( mw.message( 'massmessage-content-removeerror', errorCode ).text() );
 		} );
 	};
@@ -137,10 +140,9 @@ $( function () {
 	$( '.mw-massmessage-removelink a' ).confirmable( confirmableParams );
 
 	// Handle add pages form.
-	formLayout.on( 'submit', function () {
-		var title, site, apiResult, page;
-
-		title = titleField.getValue().trim();
+	formLayout.on( 'submit', () => {
+		const title = titleField.getValue().trim();
+		let site;
 		if ( siteField ) {
 			site = siteField.getValue().trim();
 		} else {
@@ -160,12 +162,12 @@ $( function () {
 			action: 'editmassmessagelist',
 			spamlist: mw.config.get( 'wgPageName' ),
 			add: getApiParam( title, site )
-		} ).done( function ( data ) {
-			apiResult = data.editmassmessagelist;
+		} ).done( ( data ) => {
+			const apiResult = data.editmassmessagelist;
 
 			if ( apiResult.result === 'Success' ) {
 				if ( apiResult.added.length > 0 ) {
-					page = apiResult.added[ 0 ];
+					const page = apiResult.added[ 0 ];
 					appendAdded(
 						page.title,
 						( 'site' in page ) ? page.site : '',
@@ -180,7 +182,7 @@ $( function () {
 					titleWidget.setErrors( [ mw.msg( 'massmessage-content-alreadyinlist' ) ] );
 				}
 			} else { // The input was invalid.
-				page = apiResult.invalidadd[ 0 ];
+				const page = apiResult.invalidadd[ 0 ];
 				if ( 'invalidtitle' in page ) {
 					titleWidget.setErrors( [ mw.msg( 'massmessage-content-invalidtitle' ) ] );
 				}
@@ -188,7 +190,7 @@ $( function () {
 					siteWidget.setErrors( [ mw.msg( 'massmessage-content-invalidsite' ) ] );
 				}
 			}
-		} ).fail( function ( errorCode ) {
+		} ).fail( ( errorCode ) => {
 			titleWidget.setErrors( [ mw.msg( 'massmessage-content-adderror', errorCode ) ] );
 		} );
 	} );

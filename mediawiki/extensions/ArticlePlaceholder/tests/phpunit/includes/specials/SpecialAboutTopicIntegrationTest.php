@@ -6,11 +6,11 @@ namespace ArticlePlaceholder\Tests\Specials;
 
 use ArticlePlaceholder\AboutTopicRenderer;
 use ArticlePlaceholder\Specials\SpecialAboutTopic;
-use HashSiteStore;
+use MediaWiki\Site\HashSiteStore;
+use MediaWiki\Site\Site;
+use MediaWiki\Site\SiteLookup;
 use MediaWiki\SpecialPage\SpecialPage;
-use Site;
-use SiteLookup;
-use SpecialPageTestBase;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use Wikibase\Client\Hooks\OtherProjectsSidebarGeneratorFactory;
 use Wikibase\Client\Tests\Mocks\MockClientStore;
 use Wikibase\Client\WikibaseClient;
@@ -31,20 +31,9 @@ use Wikibase\Lib\SettingsArray;
  */
 class SpecialAboutTopicIntegrationTest extends SpecialPageTestBase {
 
-	/**
-	 * @var SpecialPage
-	 */
-	private $page;
-
-	/**
-	 * @var MockClientStore
-	 */
-	private $store;
-
-	/**
-	 * @var InMemoryEntityLookup
-	 */
-	private $inMemoryLookup;
+	private SpecialPage $page;
+	private MockClientStore $store;
+	private InMemoryEntityLookup $inMemoryLookup;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -68,9 +57,6 @@ class SpecialAboutTopicIntegrationTest extends SpecialPageTestBase {
 		return new SettingsArray( $defaults );
 	}
 
-	/**
-	 * @return SiteLookup
-	 */
 	private function getSiteLookupMock(): SiteLookup {
 		$sites = [];
 
@@ -100,13 +86,14 @@ class SpecialAboutTopicIntegrationTest extends SpecialPageTestBase {
 			$siteLookup,
 			$this->inMemoryLookup,
 			WikibaseClient::getSidebarLinkBadgeDisplay( $services ),
-			$services->getHookContainer(),
+			WikibaseClient::getHookRunner( $services ),
 			WikibaseClient::getLogger( $services )
 		);
 
 		$this->page = new SpecialAboutTopic(
 			new AboutTopicRenderer(
 				WikibaseClient::getFallbackLabelDescriptionLookupFactory( $services ),
+				$services->getLanguageNameUtils(),
 				$this->store->getSiteLinkLookup(),
 				$siteLookup,
 				WikibaseClient::getLangLinkSiteGroup( $services ),

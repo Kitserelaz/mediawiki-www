@@ -5,6 +5,7 @@ namespace CirrusSearch\Search\Rescore;
 use CirrusSearch\SearchConfig;
 use Elastica\Query\FunctionScore;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\MainConfigNames;
 
 /**
  * Boosts documents in user language and in wiki language if different
@@ -42,27 +43,26 @@ class LangWeightFunctionScoreBuilder extends FunctionScoreBuilder {
 		$this->userLang = $userLang;
 		$this->userWeight =
 			$config->getElement( 'CirrusSearchLanguageWeight', 'user' );
-		$this->wikiLang = $config->get( 'LanguageCode' );
+		$this->wikiLang = $config->get( MainConfigNames::LanguageCode );
 		$this->wikiWeight =
 			$config->getElement( 'CirrusSearchLanguageWeight', 'wiki' );
 	}
 
 	public function append( FunctionScore $functionScore ) {
 		// Boost pages in a user's language
-		$userLang = $this->getUserLang();
 		if ( $this->userWeight ) {
 			$functionScore->addWeightFunction( $this->userWeight * $this->weight,
-				new \Elastica\Query\Term( [ 'language' => $userLang ] ) );
+				new \Elastica\Query\Term( [ 'language' => $this->getUserLang() ] ) );
 		}
 
 		// And a wiki's language, if it's different
-		if ( $this->wikiWeight && $this->userLang != $this->wikiLang ) {
+		if ( $this->wikiWeight && $this->getUserLang() != $this->wikiLang ) {
 			$functionScore->addWeightFunction( $this->wikiWeight * $this->weight,
 				new \Elastica\Query\Term( [ 'language' => $this->wikiLang ] ) );
 		}
 	}
 
-	private function getUserLang() {
+	private function getUserLang(): string {
 		if ( $this->userLang === null ) {
 			$this->userLang = RequestContext::getMain()->getLanguage()->getCode();
 		}

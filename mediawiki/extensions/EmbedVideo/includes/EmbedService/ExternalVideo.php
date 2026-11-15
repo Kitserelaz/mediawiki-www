@@ -4,11 +4,11 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\EmbedVideo\EmbedService;
 
-use InvalidArgumentException;
+use MediaWiki\Extension\EmbedVideo\EmbedVideoException;
 use MediaWiki\Extension\EmbedVideo\Media\TransformOutput\VideoTransformOutput;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
-use Message;
+use MediaWiki\Message\Message;
 use UnregisteredLocalFile;
 
 final class ExternalVideo extends AbstractEmbedService {
@@ -19,8 +19,8 @@ final class ExternalVideo extends AbstractEmbedService {
 	public function parseVideoID( $id ): string {
 		try {
 			return parent::parseVideoID( $id );
-		} catch ( InvalidArgumentException $e ) {
-			throw new InvalidArgumentException( ( new Message( 'embedvideo-error-url-not-whitelisted' ) )->text() );
+		} catch ( EmbedVideoException $e ) {
+			throw new EmbedVideoException( ( new Message( 'embedvideo-error-url-not-whitelisted' ) )->text() );
 		}
 	}
 

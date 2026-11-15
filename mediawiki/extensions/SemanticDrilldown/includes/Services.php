@@ -3,9 +3,10 @@
 namespace SD;
 
 use Closure;
+use MediaWiki\Config\GlobalVarConfig;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\WikiPageFactory;
-use PageProps;
+use MediaWiki\Title\Title;
 use SD\Parameters\LoadParameters;
 use SD\ParserFunctions\DrilldownInfo;
 use SD\ParserFunctions\DrilldownLink;
@@ -14,7 +15,6 @@ use SD\Specials\BrowseData\QueryPage;
 use SD\Specials\BrowseData\SpecialBrowseData;
 use SD\Specials\BrowseData\UrlService;
 use SpecialPage;
-use Title;
 use WebRequest;
 use Wikimedia\Rdbms\DBConnRef;
 
@@ -31,13 +31,14 @@ class Services {
 			self::$instance = new Services();
 		}
 
-		return new Services();
+		return self::$instance;
 	}
 
-	private MediaWikiServices $services;
-
 	private function __construct() {
-		$this->services = MediaWikiServices::getInstance();
+	}
+
+	protected function mwServices(): MediaWikiServices {
+		return MediaWikiServices::getInstance();
 	}
 
 	private const PARSER_FUNCTIONS = [
@@ -48,7 +49,7 @@ class Services {
 	public static function onParserFirstCallInit( $parser ) {
 		foreach ( self::PARSER_FUNCTIONS as $name => $class ) {
 			$parser->setFunctionHook( $name,
-				fn ( $parser, ...$params ) => ( new $class( $parser ) )( $params ) );
+				static fn ( $parser, ...$params ) => ( new $class( $parser ) )( $params ) );
 		}
 	}
 
@@ -70,7 +71,7 @@ class Services {
 	}
 
 	private function getGetPageSchema(): Closure {
-		return fn ( $category ) => class_exists( 'PSSchema' ) ? new \PSSchema( $category ) : null;
+		return static fn ( $category ) => class_exists( 'PSSchema' ) ? new \PSSchema( $category ) : null;
 	}
 
 	private function getNewQuery(): Closure {
@@ -80,22 +81,18 @@ class Services {
 	}
 
 	private function getNewQueryPage(): Closure {
-		// Using a prefix different from wg, the ServiceOptions approach does not work anymore;
-		// use the global variable instead:
-		global $sdgResultFormatTypes;
-
-		$resultFormatTypes = $sdgResultFormatTypes ?? [];
+		$resultFormatTypes = ( new GlobalVarConfig( 'sdg' ) )->get( 'ResultFormatTypes' );
 		return fn ( $context, $parameters, $query, $offset, $limit ) =>
 			new QueryPage(
 				$resultFormatTypes,
-				$this->getDbService(), $this->getPageProps(), $this->getNewUrlService(),
+				$this->getDbService(), $this->mwServices()->getPageProps(), $this->getNewUrlService(),
 				$this->getGetPageFromTitleText(),
 				$context, $parameters, $query, $offset, $limit );
 	}
 
 	private function getNewUrlService(): Closure {
         // phpcs:ignore MediaWiki.Usage.AssignmentInReturn.AssignmentInReturn
-		return fn ( WebRequest $request, ?DrilldownQuery $query = null ) =>
+		return static fn ( WebRequest $request, ?DrilldownQuery $query = null ) =>
 			new UrlService(
 				SpecialPage::getTitleFor( 'BrowseData' )->getLocalURL(), $request, $query );
 	}
@@ -109,13 +106,7 @@ class Services {
 	}
 
 	private function getLoadParameters(): LoadParameters {
-		return new LoadParameters( $this->getPageProps() );
-	}
-
-	private function getPageProps(): PageProps {
-		return method_exists( $this->services, 'getPageProps' )
-			? $this->services->getPageProps()
-			: PageProps::getInstance();
+		return new LoadParameters( $this->mwServices()->getPageProps() );
 	}
 
 	private function getGetPageFromTitleText(): Closure {
@@ -128,11 +119,11 @@ class Services {
 	}
 
 	private function getPrimaryDbConnectionRef(): DBConnRef {
-		return $this->services->getDBLoadBalancer()->getConnectionRef( DB_PRIMARY );
+		return $this->mwServices()->getDBLoadBalancer()->getConnection( DB_PRIMARY );
 	}
 
 	private function getReplicaDbConnectionRef(): DBConnRef {
-		return $this->services->getDBLoadBalancer()->getConnectionRef( DB_REPLICA );
+		return $this->mwServices()->getDBLoadBalancer()->getConnection( DB_REPLICA );
 	}
 
 }

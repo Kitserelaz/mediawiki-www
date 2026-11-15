@@ -1,9 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
+			"Stefan2255",
 			"WikiPhoenix"
 		]
 	},
+	"countDownClock-desc": "Lägger till en parserfunktion för att visa en nedräkningstid",
+	"countDownClock-invalidtime": "Ange en giltig endTime-parameter",
 	"countDownClock-days": "$1 {{PLURAL:$1|dag|dagar}}",
 	"countDownClock-hours": "$1 {{PLURAL:$1|timme|timmar}}",
 	"countDownClock-minutes": "$1 {{PLURAL:$1|minut|minuter}}",

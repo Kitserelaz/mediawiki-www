@@ -44,19 +44,14 @@ class BulkUpdateRequestLog extends BaseRequestLog {
 		$this->lastResponse = null;
 	}
 
+	/** @inheritDoc */
 	public function isCachedResponse() {
 		return false;
 	}
 
+	/** @inheritDoc */
 	public function getElasticTookMs() {
-		if ( $this->response ) {
-			$data = $this->response->getData();
-			if ( isset( $data['took'] ) ) {
-				return $data['took'];
-			}
-		}
-
-		return -1;
+		return $this->response?->getData()['took'] ?? -1;
 	}
 
 	/**

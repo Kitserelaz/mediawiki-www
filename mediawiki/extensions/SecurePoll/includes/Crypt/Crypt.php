@@ -5,7 +5,6 @@ namespace MediaWiki\Extension\SecurePoll\Crypt;
 use InvalidArgumentException;
 use MediaWiki\Extension\SecurePoll\Context;
 use MediaWiki\Extension\SecurePoll\Entities\Election;
-use MediaWiki\Shell\Shell;
 use MediaWiki\Status\Status;
 use Wikimedia\Rdbms\IDatabase;
 
@@ -46,16 +45,12 @@ abstract class Crypt {
 	/**
 	 * Returns a list of supported Crypt subclasses for encrypting votes.
 	 *
-	 * @return (class-string|false)[]
+	 * @return array<string,class-string<Crypt>|false>
 	 */
 	public static function getCryptTypes() {
 		$cryptTypes = [
 			'none' => false
 		];
-
-		if ( !Shell::isDisabled() ) {
-			$cryptTypes['gpg'] = GpgCrypt::class;
-		}
 
 		if ( extension_loaded( 'openssl' ) ) {
 			$cryptTypes['openssl'] = OpenSslCrypt::class;
@@ -109,17 +104,6 @@ abstract class Crypt {
 	 * @return array
 	 */
 	abstract public function getTallyDescriptors(): array;
-
-	/**
-	 * Update the given context with any information needed for tallying.
-	 *
-	 * This allows some information, e.g. private keys, to be used for a
-	 * single request and not added to the database.
-	 *
-	 * @param Context $context
-	 * @param array $data
-	 */
-	abstract public function updateTallyContext( Context $context, array $data ): void;
 
 	/**
 	 * Update the database with any information needed for tallying via a job.

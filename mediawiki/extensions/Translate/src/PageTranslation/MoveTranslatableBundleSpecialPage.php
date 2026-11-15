@@ -3,9 +3,10 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
-use ErrorPageError;
 use InvalidArgumentException;
 use MediaWiki\CommentStore\CommentStore;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Exception\ThrottledError;
 use MediaWiki\Extension\Translate\MessageBundleTranslation\MessageBundle;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundle;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatableBundleFactory;
@@ -14,14 +15,10 @@ use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Language\FormatterFactory;
 use MediaWiki\Message\Message;
 use MediaWiki\Output\OutputPage;
-use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Permissions\PermissionStatus;
 use MediaWiki\SpecialPage\UnlistedSpecialPage;
 use MediaWiki\Title\Title;
-use PermissionsError;
-use ReadOnlyError;
 use SplObjectStorage;
-use ThrottledError;
 use Wikimedia\ObjectFactory\ObjectFactory;
 
 /**
@@ -39,33 +36,19 @@ class MoveTranslatableBundleSpecialPage extends UnlistedSpecialPage {
 	private bool $moveTalkpages = true;
 	private bool $moveSubpages = true;
 	private bool $leaveRedirect = true;
-	private ObjectFactory $objectFactory;
-	private TranslatableBundleMover $bundleMover;
-	private PermissionManager $permissionManager;
-	private TranslatableBundleFactory $bundleFactory;
-	private FormatterFactory $formatterFactory;
-	/** @var array */
-	private $movePageSpec;
-	// Other
 	private ?Title $oldTitle;
 
 	public function __construct(
-		ObjectFactory $objectFactory,
-		PermissionManager $permissionManager,
-		TranslatableBundleMover $bundleMover,
-		TranslatableBundleFactory $bundleFactory,
-		FormatterFactory $formatterFactory,
-		$movePageSpec
+		private readonly ObjectFactory $objectFactory,
+		private readonly TranslatableBundleMover $bundleMover,
+		private readonly TranslatableBundleFactory $bundleFactory,
+		private readonly FormatterFactory $formatterFactory,
+		private readonly mixed $movePageSpec,
 	) {
 		parent::__construct( 'Movepage' );
-		$this->objectFactory = $objectFactory;
-		$this->permissionManager = $permissionManager;
-		$this->bundleMover = $bundleMover;
-		$this->bundleFactory = $bundleFactory;
-		$this->formatterFactory = $formatterFactory;
-		$this->movePageSpec = $movePageSpec;
 	}
 
+	/** @inheritDoc */
 	public function doesWrites(): bool {
 		return true;
 	}
@@ -77,18 +60,38 @@ class MoveTranslatableBundleSpecialPage extends UnlistedSpecialPage {
 	/** @inheritDoc */
 	public function execute( $par ) {
 		$request = $this->getRequest();
-		$user = $this->getUser();
-		$this->addHelpLink( 'Help:Extension:Translate/Move_translatable_page' );
-		$out = $this->getOutput();
-		$out->addModuleStyles( 'ext.translate.special.movetranslatablebundles.styles' );
 
 		$this->oldText = $request->getText(
 			'wpOldTitle',
 			$request->getText( 'target', $par ?? '' )
 		);
-		$newText = $request->getText( 'wpNewTitle' );
 
 		$this->oldTitle = Title::newFromText( $this->oldText );
+
+		if ( $this->oldTitle == null ) {
+			// Not a valid title at all. Let core MovePage display the validation error to ensure consistency
+			$movePage = $this->objectFactory->createObject( $this->movePageSpec );
+			$movePage->setContext( $this->getContext() );
+			$movePage->execute( $par );
+			return;
+		}
+		$bundle = $this->bundleFactory->getBundle( $this->oldTitle );
+		if ( !$bundle || !$bundle->isMoveable() ) {
+			// Not a translatable page. Let core MovePage handle it
+			$movePage = $this->objectFactory->createObject( $this->movePageSpec );
+			$movePage->setContext( $this->getContext() );
+			$movePage->execute( $par );
+			return;
+		}
+		// Now we know we're actually moving a translatable page
+		$newText = $request->getText( 'wpNewTitle' );
+		$user = $this->getUser();
+		$out = $this->getOutput();
+		$out->addModuleStyles( [
+				'ext.translate.special.movetranslatablebundles.styles',
+				'mediawiki.codex.messagebox.styles',
+		] );
+
 		$newTitle = Title::newFromText( $newText );
 		// Normalize input
 		if ( $this->oldTitle ) {
@@ -97,85 +100,7 @@ class MoveTranslatableBundleSpecialPage extends UnlistedSpecialPage {
 
 		$this->reason = $request->getText( 'reason' );
 
-		// This will throw exceptions if there is an error.
-		$this->doBasicChecks();
-
-		// Real stuff starts here
-		$bundle = $this->bundleFactory->getBundle( $this->oldTitle );
-		if ( $bundle && $bundle->isMoveable() ) {
-			$this->getOutput()->setPageTitleMsg( $this->getSpecialPageTitle( $bundle ) );
-
-			if ( !$user->isAllowed( 'pagetranslation' ) ) {
-				throw new PermissionsError( 'pagetranslation' );
-			}
-
-			$subaction = $this->getSubactionFromRequest( $request->getText( 'subaction' ) );
-
-			$isValidPostRequest = $this->checkToken() && $request->wasPosted();
-			if ( $isValidPostRequest && $subaction === 'check' ) {
-				try {
-					$pageCollection = $this->bundleMover->getPageMoveCollection(
-						$this->oldTitle,
-						$newTitle,
-						$user,
-						$this->reason,
-						$this->moveSubpages,
-						$this->moveTalkpages,
-						$this->leaveRedirect
-					);
-				} catch ( ImpossiblePageMove $e ) {
-					$this->showErrors( $e->getBlockers() );
-					$this->showForm( $bundle );
-					return;
-				}
-
-				$this->showConfirmation( $pageCollection, $bundle );
-			} elseif ( $isValidPostRequest && $subaction === 'perform' ) {
-				$this->moveSubpages = $request->getBool( 'subpages' );
-				$this->moveTalkpages = $request->getBool( 'talkpages' );
-				$this->leaveRedirect = $request->getBool( 'redirect' );
-
-				// This will throw exceptions if there is an error.
-				$this->authorizeMove();
-
-				$this->bundleMover->moveAsynchronously(
-					$this->oldTitle,
-					$newTitle,
-					$this->moveSubpages,
-					$this->getUser(),
-					$this->reason,
-					$this->moveTalkpages,
-					$this->leaveRedirect
-				);
-				$this->getOutput()->addWikiMsg(
-					'pt-movepage-started',
-					$this->getLogPageWikiLink( $this->bundleFactory->getValidBundle( $this->oldTitle ) )
-				);
-			} else {
-				$this->showForm( $bundle );
-			}
-		} else {
-			// Delegate... don't want to reimplement this
-			$sp = $this->objectFactory->createObject( $this->movePageSpec );
-			$sp->execute( $par );
-		}
-	}
-
-	/**
-	 * Do the basic checks whether moving is possible and whether
-	 * the input looks anywhere near sane.
-	 * @throws PermissionsError|ErrorPageError|ReadOnlyError|ThrottledError
-	 */
-	protected function doBasicChecks(): void {
-		$this->checkReadOnly();
-
-		if ( $this->oldTitle === null ) {
-			throw new ErrorPageError( 'notargettitle', 'notargettext' );
-		}
-
-		if ( !$this->oldTitle->exists() ) {
-			throw new ErrorPageError( 'nopagetitle', 'nopagetext' );
-		}
+		$this->addHelpLink( 'Help:Extension:Translate/Move_translatable_page' );
 
 		// Since MW 1.36, Authority should be used to check permissions
 		$status = PermissionStatus::newEmpty();
@@ -183,6 +108,59 @@ class MoveTranslatableBundleSpecialPage extends UnlistedSpecialPage {
 			->definitelyCan( 'move', $this->oldTitle, $status )
 		) {
 			throw new PermissionsError( 'move', $status );
+		}
+
+		$this->getOutput()->setPageTitleMsg( $this->getSpecialPageTitle( $bundle ) );
+
+		if ( !$user->isAllowed( 'pagetranslation' ) ) {
+			throw new PermissionsError( 'pagetranslation' );
+		}
+
+		$subaction = $this->getSubactionFromRequest( $request->getText( 'subaction' ) );
+
+		$isValidPostRequest = $this->checkToken() && $request->wasPosted();
+		if ( $isValidPostRequest && $subaction === 'check' ) {
+			try {
+				$pageCollection = $this->bundleMover->getPageMoveCollection(
+					$this->oldTitle,
+					$newTitle,
+					$user,
+					$this->reason,
+					$this->moveSubpages,
+					$this->moveTalkpages,
+					$this->leaveRedirect
+				);
+			} catch ( ImpossiblePageMove $e ) {
+				$this->showErrors( $e->getBlockers() );
+				$this->showForm( $bundle );
+				return;
+			}
+
+			$this->showConfirmation( $pageCollection, $bundle );
+		} elseif ( $isValidPostRequest && $subaction === 'perform' ) {
+			$this->moveSubpages = $request->getBool( 'subpages' );
+			$this->moveTalkpages = $request->getBool( 'talkpages' );
+			$this->leaveRedirect = $request->getBool( 'redirect' );
+
+			// This will throw exceptions if there is an error.
+			$this->authorizeMove();
+
+			$this->bundleMover->moveAsynchronously(
+				$this->oldTitle,
+				$newTitle,
+				$this->moveSubpages,
+				$this->getUser(),
+				$this->reason,
+				$this->moveTalkpages,
+				$this->leaveRedirect,
+				$this->getContext()->exportSession()
+			);
+			$this->getOutput()->addWikiMsg(
+				'pt-movepage-started',
+				$this->getLogPageWikiLink( $this->bundleFactory->getValidBundle( $this->oldTitle ) )
+			);
+		} else {
+			$this->showForm( $bundle );
 		}
 	}
 

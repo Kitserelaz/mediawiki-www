@@ -1,8 +1,10 @@
 {
 	"@metadata": {
 		"authors": [
+			"Asteralee",
 			"Beta16",
 			"Luca.favorido",
+			"Neonsn0w",
 			"Sakretsu",
 			"Valepert"
 		]
@@ -23,5 +25,9 @@
 	"parsermigration-use-parsoid-toolbox-label": "Passa al nuovo parser (Parsoid)",
 	"parsermigration-notice-title": "Funzionalità sperimentale",
 	"parsermigration-notice-body": "Stai utilizzando il nuovo parser wikitesto Parsoid per visualizzare questa pagina. [https://www.mediawiki.org/wiki/Special:MyLanguage/Parsoid/Parser_Unification/Migration Scopri di più su questa funzionalità].",
-	"parsermigration-parsoid-chip-label": "Renderizzato con Parsoid"
+	"parsermigration-parsoid-chip-label": "Renderizzato con Parsoid",
+	"parsermigration-reportbug-dialog-cancel-button-label": "Annulla",
+	"parsermigration-survey-question-2-answer-6": "Altro",
+	"parsermigration-survey-question-4-answer-1": "Sì",
+	"parsermigration-survey-question-4-answer-2": "No"
 }

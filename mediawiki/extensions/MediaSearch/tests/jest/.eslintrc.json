@@ -2,7 +2,7 @@
 	"root": true,
 	"extends": [
 		"wikimedia/language/es2020",
-		"wikimedia/client-common",
+		"wikimedia/client/common",
 		"wikimedia/mediawiki",
 		"wikimedia/jquery"
 	],
@@ -15,8 +15,6 @@
 	},
 	"rules": {
 		"no-implicit-globals": "off",
-		"no-var": "off",
-		"prefer-const": "off",
 		"max-len": [
 			"warn",
 			{

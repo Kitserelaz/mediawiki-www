@@ -14,7 +14,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"AutoloadNamespaces": {
 		"AdvancedSearch\\": "includes/"
@@ -55,6 +55,16 @@
 				}
 			},
 			"merge_strategy": "array_plus_2d"
+		},
+		"AdvancedSearchEnabledSortMethods": {
+			"description": "Sort options to offer to the user (when they are available).",
+			"value": [
+				"relevance",
+				"last_edit_desc",
+				"create_timestamp_desc",
+				"title_natural_asc"
+			],
+			"merge_strategy": "provide_default"
 		}
 	},
 	"HookHandlers": {
@@ -64,6 +74,7 @@
 				"UserOptionsLookup",
 				"LanguageNameUtils",
 				"SearchEngineConfig",
+				"SearchEngineFactory",
 				"MimeAnalyzer"
 			]
 		}
@@ -140,6 +151,11 @@
 				"advancedsearch-sort-last-edit-desc",
 				"advancedsearch-sort-create-timestamp-asc",
 				"advancedsearch-sort-create-timestamp-desc",
+				"advancedsearch-sort-title-natural-asc",
+				"advancedsearch-sort-title-natural-desc",
+				"advancedsearch-sort-incoming-links-asc",
+				"advancedsearch-sort-incoming-links-desc",
+				"advancedsearch-sort-random",
 				"advancedsearch-optgroup-text",
 				"advancedsearch-optgroup-structure",
 				"advancedsearch-optgroup-files",
@@ -156,6 +172,7 @@
 				"advancedsearch-field-subpageof",
 				"advancedsearch-field-inlanguage",
 				"advancedsearch-field-intitle",
+				"advancedsearch-field-incategory",
 				"advancedsearch-field-deepcategory",
 				"advancedsearch-field-hastemplate",
 				"advancedsearch-field-filetype",
@@ -168,6 +185,11 @@
 				"advancedsearch-sort-preview-last-edit-desc",
 				"advancedsearch-sort-preview-create-timestamp-asc",
 				"advancedsearch-sort-preview-create-timestamp-desc",
+				"advancedsearch-sort-preview-title-natural-asc",
+				"advancedsearch-sort-preview-title-natural-desc",
+				"advancedsearch-sort-preview-incoming-links-asc",
+				"advancedsearch-sort-preview-incoming-links-desc",
+				"advancedsearch-sort-preview-random",
 				"colon-separator",
 				"comma-separator",
 				"word-separator"
@@ -175,7 +197,6 @@
 			"dependencies": [
 				"mediawiki.user",
 				"mediawiki.jqueryMsg",
-				"mediawiki.Uri",
 				"mediawiki.util",
 				"oojs",
 				"oojs-ui-widgets",
@@ -191,7 +212,8 @@
 			],
 			"dependencies": [
 				"ext.advancedSearch.searchtoken",
-				"ext.advancedSearch.elements"
+				"ext.advancedSearch.elements",
+				"mediawiki.Uri"
 			]
 		},
 		"ext.advancedSearch.SearchFieldUI": {
@@ -200,13 +222,10 @@
 				"modules/dm/ext.advancedSearch.TitleCache.js",
 				"modules/dm/ext.advancedSearch.MultiselectLookup.js",
 				"modules/ui/ext.advancedSearch.ArbitraryWordInput.js",
-				"modules/ui/ext.advancedSearch.DeepCategoryFilter.js",
-				"modules/ui/ext.advancedSearch.TemplateSearch.js",
 				"modules/ui/ext.advancedSearch.StoreListener.js",
 				"modules/ui/mixins/ext.advancedSearch.ClassesForDropdownOptions.js",
 				"modules/ui/ext.advancedSearch.FileTypeSelection.js",
 				"modules/ui/ext.advancedSearch.SortPreference.js",
-				"modules/dm/ext.advancedSearch.getSortMethods.js",
 				"modules/ui/ext.advancedSearch.LanguageSelection.js",
 				"modules/ui/ext.advancedSearch.ImageDimensionInput.js",
 				"modules/ui/ext.advancedSearch.ImageDimensionLayout.js",
@@ -221,6 +240,7 @@
 				"advancedsearch-field-filetype",
 				"advancedsearch-field-filew",
 				"advancedsearch-field-hastemplate",
+				"advancedsearch-field-incategory",
 				"advancedsearch-field-inlanguage",
 				"advancedsearch-field-intitle",
 				"advancedsearch-field-not",
@@ -231,8 +251,8 @@
 				"advancedsearch-field-sort",
 				"advancedsearch-filetype-section-types",
 				"advancedsearch-filetype-section-image",
-				"advancedsearch-filetype-section-video",
 				"advancedsearch-filetype-section-audio",
+				"advancedsearch-filetype-section-video",
 				"advancedsearch-filetype-section-document",
 				"advancedsearch-filetype-section-other",
 				"advancedsearch-filetype-default",
@@ -245,9 +265,7 @@
 				"advancedsearch-filesize-equals",
 				"advancedsearch-filesize-greater-than",
 				"advancedsearch-filesize-smaller-than",
-				"advancedsearch-sort-relevance",
-				"advancedsearch-sort-last-edit-desc",
-				"advancedsearch-sort-create-timestamp-desc"
+				"advancedsearch-unit-pixel"
 			],
 			"dependencies": [
 				"oojs",

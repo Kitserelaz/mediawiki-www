@@ -3,8 +3,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
+use MessageGroup;
 use Wikimedia\Rdbms\IConnectionProvider;
-use Wikimedia\Rdbms\IResultWrapper;
 
 /**
  * Store service for looking up and storing user subscriptions to message group
@@ -17,10 +17,10 @@ class MessageGroupSubscriptionStore {
 	private const TABLE_NAME = 'translate_message_group_subscriptions';
 	/** @var int Match field tmgs_group byte length */
 	private const MAX_GROUP_LENGTH = 200;
-	private IConnectionProvider $dbProvider;
 
-	public function __construct( IConnectionProvider $dbProvider ) {
-		$this->dbProvider = $dbProvider;
+	public function __construct(
+		private readonly IConnectionProvider $dbProvider,
+	) {
 	}
 
 	public function addSubscription( string $groupId, int $userId ): void {
@@ -36,7 +36,12 @@ class MessageGroupSubscriptionStore {
 			->execute();
 	}
 
-	public function getSubscriptions( ?array $groupIds, ?int $userId ): IResultWrapper {
+	/**
+	 * @param string[]|null $groupIds
+	 * @param int|null $userId
+	 * @return array<string,int[]>
+	 */
+	public function getSubscriptions( ?array $groupIds, ?int $userId ): array {
 		$queryBuilder = $this->dbProvider
 			->getReplicaDatabase( self::VIRTUAL_DOMAIN )
 			->newSelectQueryBuilder()
@@ -44,32 +49,43 @@ class MessageGroupSubscriptionStore {
 			->from( self::TABLE_NAME )
 			->caller( __METHOD__ );
 
-		if ( $groupIds !== null ) {
-			$dbGroupIds = [];
-			foreach ( $groupIds as $groupId ) {
-				$dbGroupIds[] = self::getGroupIdForDatabase( $groupId );
-			}
+		if ( $groupIds ) {
+			$dbGroupIds = array_map( self::getGroupIdForDatabase( ... ), $groupIds );
+			$dbGroupIdMap = array_combine( $dbGroupIds, $groupIds );
 			$queryBuilder->where( [ 'tmgs_group' => $dbGroupIds ] );
+		} else {
+			$groupIds = array_keys( MessageGroups::getAllGroups() );
+			$dbGroupIds = array_map( self::getGroupIdForDatabase( ... ), $groupIds );
+			$dbGroupIdMap = array_combine( $dbGroupIds, $groupIds );
 		}
 
-		if ( $userId !== null ) {
+		if ( $userId ) {
 			$queryBuilder->andWhere( [ 'tmgs_user_id' => $userId ] );
 		}
 
-		return $queryBuilder->fetchResultSet();
+		$subscriptions = [];
+		foreach ( $queryBuilder->fetchResultSet() as $row ) {
+			// Handle unknown groups gracefully so that they can be removed
+			$subscriptions[$dbGroupIdMap[$row->tmgs_group] ?? $row->tmgs_group][] = (int)$row->tmgs_user_id;
+		}
+		return $subscriptions;
 	}
 
+	/**
+	 * @param string[] $groupIds
+	 * @return int[]
+	 */
 	public function getSubscriptionByGroupUnion( array $groupIds ): array {
-		$queryBuilder = $this->dbProvider
+		$userIds = $this->dbProvider
 			->getReplicaDatabase( self::VIRTUAL_DOMAIN )
 			->newSelectQueryBuilder()
-			->select( [ 'tmgs_user_id' ] )
+			->select( 'tmgs_user_id' )
 			->from( self::TABLE_NAME )
 			->where( [ 'tmgs_group' => $groupIds ] )
 			->having( 'COUNT(tmgs_group) = ' . count( $groupIds ) )
-			->caller( __METHOD__ );
-
-		return $queryBuilder->fetchFieldValues();
+			->caller( __METHOD__ )
+			->fetchFieldValues();
+		return array_map( intval( ... ), $userIds );
 	}
 
 	public function removeSubscriptions( string $groupId, int $userId ): void {
@@ -84,14 +100,14 @@ class MessageGroupSubscriptionStore {
 			->execute();
 	}
 
-	private static function getGroupIdForDatabase( string $groupId ): string {
-		// Check if length is more than 200 bytes
-		if ( strlen( $groupId ) <= self::MAX_GROUP_LENGTH ) {
-			return $groupId;
+	public static function getGroupIdForDatabase( MessageGroup|string $groupId ): string {
+		if ( $groupId instanceof MessageGroup ) {
+			$groupId = $groupId->getId();
 		}
 
-		$hash = hash( 'md5', $groupId );
-		// We take 160 bytes of the original string and append the md5 hash (32 bytes)
-		return mb_strcut( $groupId, 0, 160 ) . '||' . $hash;
+		return strlen( $groupId ) > self::MAX_GROUP_LENGTH ?
+			// Note: mb_strcut operates on bytes but leaves multi-byte characters intact
+			mb_strcut( $groupId, 0, 160 ) . '||' . md5( $groupId ) :
+			$groupId;
 	}
 }

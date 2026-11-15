@@ -106,7 +106,7 @@ ve.ce.Document.prototype.getSlugAtOffset = function ( offset ) {
 ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
 	const countedNodes = [];
 
-	// 1. Step with ve.adjacentDomPosition( …, { stop: function () { return true; } } )
+	// 1. Step with ve.adjacentDomPosition( …, { stop: () => true } )
 	// until we hit a position at the correct offset (which is guaranteed to be the first
 	// such position in document order).
 	// 2. Use ve.adjacentDomPosition( …, { stop: … } ) once to return all
@@ -151,7 +151,7 @@ ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
 				}
 				node = ceChild.$element[ 0 ];
 				if ( node ) {
-					return { node: node, offset: 0 };
+					return { node, offset: 0 };
 				}
 				// Else ceChild has no DOM representation; step forwards
 				break;
@@ -166,10 +166,10 @@ ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
 		}
 		if ( !ceChild || !ceChild.$element[ 0 ] ) {
 			// Offset lies just at the end of branchNode
-			return { node: node, offset: node.childNodes.length };
+			return { node, offset: node.childNodes.length };
 		}
 		return {
-			node: node,
+			node,
 			offset: Array.prototype.indexOf.call(
 				node.childNodes,
 				ceChild.$element[ 0 ]
@@ -194,10 +194,8 @@ ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
 			position,
 			1,
 			{
-				noDescend: noDescend,
-				stop: function () {
-					return true;
-				}
+				noDescend,
+				stop: () => true
 			}
 		);
 		const step = position.steps[ 0 ];
@@ -213,12 +211,12 @@ ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
 			// TODO: what about zero-length text nodes?
 			if ( offset <= count + node.data.length ) {
 				// Match the appropriate offset in the text node
-				position = { node: node, offset: offset - count };
+				position = { node, offset: offset - count };
 				break;
 			} else {
 				// Skip over the text node
 				count += node.data.length;
-				position = { node: node, offset: node.data.length };
+				position = { node, offset: node.data.length };
 				continue;
 			}
 		} // else it is an element node (TODO: handle comment etc)
@@ -242,7 +240,7 @@ ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
 
 		const model = $.data( node, 'view' ).model;
 
-		if ( countedNodes.indexOf( model ) !== -1 ) {
+		if ( countedNodes.includes( model ) ) {
 			// This DM node is rendered as multiple DOM elements, and we have already
 			// counted it as part of an earlier element. Skip past without incrementing
 			position = { node: node.parentNode, offset: ve.parentIndex( node ) + 1 };
@@ -257,7 +255,7 @@ ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
 		} else if ( step.type === 'cross' ) {
 			if ( offset === count + 1 ) {
 				// The offset lies inside the crossed node
-				position = { node: node, offset: 0 };
+				position = { node, offset: 0 };
 				break;
 			}
 			count += 2;
@@ -295,7 +293,7 @@ ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
 			s.node.classList.contains( 've-ce-leafNode' )
 		) {
 			m = $.data( s.node, 'view' ).model;
-			if ( countedNodes.indexOf( m ) !== -1 ) {
+			if ( countedNodes.includes( m ) ) {
 				return false;
 			}
 			countedNodes.push( m );
@@ -303,22 +301,25 @@ ve.ce.Document.prototype.getNodeAndOffset = function ( offset ) {
 		}
 		return false;
 	}
-	const steps = ve.adjacentDomPosition( position, 1, { stop: stop, noDescend: noDescend } ).steps;
-	steps.slice( 0, -1 ).forEach( ( s ) => {
-		// Step type cannot be "internal", else the offset would have incremented
-		const hasClass = function ( className ) {
-			return s.node.nodeType === Node.ELEMENT_NODE &&
-				s.node.classList.contains( className );
-		};
-		found.preUnicorn = found.preUnicorn || ( hasClass( 've-ce-pre-unicorn' ) && s );
-		found.postUnicorn = found.postUnicorn || ( hasClass( 've-ce-post-unicorn' ) && s );
-		found.preOpenNail = found.preOpenNail || ( hasClass( 've-ce-nail-pre-open' ) && s );
-		found.postOpenNail = found.postOpenNail || ( hasClass( 've-ce-nail-post-open' ) && s );
-		found.preCloseNail = found.preCloseNail || ( hasClass( 've-ce-nail-pre-close' ) && s );
-		found.postCloseNail = found.postCloseNail || ( hasClass( 've-ce-nail-post-close' ) && s );
-		found.focusableNode = found.focusableNode || ( hasClass( 've-ce-focusableNode' ) && s );
-		found.text = found.text || ( s.node.nodeType === Node.TEXT_NODE && s );
-	} );
+	ve.adjacentDomPosition( position, 1, { stop, noDescend } ).steps
+		.slice( 0, -1 )
+		.forEach( ( s ) => {
+			if ( s.node.nodeType === Node.TEXT_NODE ) {
+				found.text = found.text || s;
+				return;
+			} else if ( s.node.nodeType !== Node.ELEMENT_NODE ) {
+				return;
+			}
+
+			const hasClass = ( className ) => s.node.classList.contains( className ) && s;
+			found.preUnicorn = found.preUnicorn || hasClass( 've-ce-pre-unicorn' );
+			found.postUnicorn = found.postUnicorn || hasClass( 've-ce-post-unicorn' );
+			found.preOpenNail = found.preOpenNail || hasClass( 've-ce-nail-pre-open' );
+			found.postOpenNail = found.postOpenNail || hasClass( 've-ce-nail-post-open' );
+			found.preCloseNail = found.preCloseNail || hasClass( 've-ce-nail-pre-close' );
+			found.postCloseNail = found.postCloseNail || hasClass( 've-ce-nail-post-close' );
+			found.focusableNode = found.focusableNode || hasClass( 've-ce-focusableNode' );
+		} );
 
 	// If there is a unicorn, it should be a unique pre/post-Unicorn pair containing text or
 	// nothing return the position just inside.

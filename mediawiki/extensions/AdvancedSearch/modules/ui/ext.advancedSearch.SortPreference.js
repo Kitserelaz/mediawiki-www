@@ -1,31 +1,38 @@
 'use strict';
 
 const ClassesForDropdownOptions = require( './mixins/ext.advancedSearch.ClassesForDropdownOptions.js' );
-const getSortMethods = require( '../dm/ext.advancedSearch.getSortMethods.js' );
 
 /**
  * @param {string} selected
  * @return {Object[]}
  */
 const getOptions = function ( selected ) {
-	const options = getSortMethods().map( ( name ) => {
+	const sortMethods = mw.config.get( 'advancedSearch.sortMethods' ) || [ 'relevance' ];
+	const options = sortMethods.map( ( name ) => {
 		// The currently active sort method already appears in the list, don't add it again
 		if ( name === selected ) {
 			selected = undefined;
 		}
 		// The following messages are used here:
+		// * advancedsearch-sort-create-timestamp-asc
+		// * advancedsearch-sort-create-timestamp-desc
+		// * advancedsearch-sort-incoming-links-asc
+		// * advancedsearch-sort-incoming-links-desc
+		// * advancedsearch-sort-last-edit-asc
+		// * advancedsearch-sort-last-edit-desc
 		// * advancedsearch-sort-relevance
-		// * advancedsearch-sort-*
+		// * advancedsearch-sort-title-natural-asc
+		// * advancedsearch-sort-title-natural-desc
 		const msg = mw.message( 'advancedsearch-sort-' + name.replace( /_/g, '-' ) );
 		return { data: name, label: msg.exists() ? msg.text() : name };
 	} );
+
+	// In case the user-provided &sort=… parameter is not in $wgAdvancedSearchEnabledSortMethods
 	if ( selected ) {
-		// The following messages are used here:
-		// * advancedsearch-sort-relevance
-		// * advancedsearch-sort-*
 		const selectedMsg = mw.message( 'advancedsearch-sort-' + selected.replace( /_/g, '-' ) );
 		options.push( { data: selected, label: selectedMsg.exists() ? selectedMsg.text() : selected } );
 	}
+
 	return options;
 };
 

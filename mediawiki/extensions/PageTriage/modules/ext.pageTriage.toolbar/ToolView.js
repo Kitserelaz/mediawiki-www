@@ -10,7 +10,8 @@ module.exports = Backbone.View.extend( {
 	title: 'Abstract tool view', // the title for the flyout window
 	scrollable: false, // should the output of render be in a scrollable div?
 
-	// should the content be re-rendered every time the tool is opened, or just rendered the first time?
+	// should the content be re-rendered every time the tool is opened, or just rendered the
+	// first time?
 	reRender: false,
 
 	// These things will likely be overridden with functions.
@@ -120,14 +121,13 @@ module.exports = Backbone.View.extend( {
 		this.eventBus.unbind( 'showTool', null, this );
 
 		// re-add the hover action
-		const that = this;
 		// eslint-disable-next-line no-jquery/no-event-shorthand
 		this.$icon.hover(
 			() => {
-				that.setIcon( 'hover' );
+				this.setIcon( 'hover' );
 			},
 			() => {
-				that.setIcon( 'normal' );
+				this.setIcon( 'normal' );
 			}
 		);
 	},
@@ -155,18 +155,17 @@ module.exports = Backbone.View.extend( {
 		this.$icon = this.$el.find( '.mwe-pt-tool-icon' );
 
 		// bind a click handler to open it.
-		const that = this;
 		this.$icon.on( 'click', () => {
-			that.click();
+			this.click();
 		} );
 
 		// and a hover action.
 		this.$icon.on( {
-			mouseenter: function () {
-				that.setIcon( 'hover' );
+			mouseenter: () => {
+				this.setIcon( 'hover' );
 			},
-			mouseleave: function () {
-				that.setIcon( 'normal' );
+			mouseleave: () => {
+				this.setIcon( 'normal' );
 			}
 		} );
 
@@ -185,7 +184,7 @@ module.exports = Backbone.View.extend( {
 
 		// set up an event for the close button
 		this.$el.find( '.mwe-pt-tool-close' ).on( 'click', () => {
-			that.hide();
+			this.hide();
 		} );
 
 		// $tel is the "tool element".  put stuff that goes in the tool there.
@@ -236,9 +235,8 @@ module.exports = Backbone.View.extend( {
 	 * @return {number}
 	 */
 	objectPropCount: function ( obj ) {
-		let key,
-			count = 0;
-		for ( key in obj ) {
+		let count = 0;
+		for ( const key in obj ) {
 			if ( Object.prototype.hasOwnProperty.call( obj, key ) ) {
 				count++;
 			}
@@ -313,7 +311,7 @@ module.exports = Backbone.View.extend( {
 			tagRows = document.getElementsByClassName( event.data );
 		for ( let i = 0; i < tagRows.length; i++ ) {
 			tagRows[ i ].classList.remove( 'mwe-pt-tag-row-hide' );
-			if ( tagRows[ i ].outerHTML.toLowerCase().indexOf( searchText.toLowerCase() ) === -1 ) {
+			if ( !tagRows[ i ].outerHTML.toLowerCase().includes( searchText.toLowerCase() ) ) {
 				tagRows[ i ].classList.add( 'mwe-pt-tag-row-hide' );
 			}
 		}

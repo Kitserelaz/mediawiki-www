@@ -5,35 +5,28 @@ namespace CirrusSearch\Maintenance;
 use CirrusSearch\Connection;
 use CirrusSearch\ElasticaErrorHandler;
 use CirrusSearch\Maintenance\Validators\MappingValidator;
+use CirrusSearch\Maintenance\Validators\MaxShardsPerNodeValidator;
+use CirrusSearch\Maintenance\Validators\NumberOfShardsValidator;
+use CirrusSearch\Maintenance\Validators\ReplicaRangeValidator;
 use CirrusSearch\SearchConfig;
 use CirrusSearch\Util;
 use MediaWiki\Config\ConfigException;
+use MediaWiki\User\User;
 
 /**
  * Update the search configuration on the search backend.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
 require_once __DIR__ . '/../includes/Maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
 
 /**
  * Update the elasticsearch configuration for this index.
@@ -192,11 +185,14 @@ class UpdateOneSearchIndexConfig extends Maintenance {
 			'changes at an inopportune time.' );
 		$maintenance->addOption( 'fieldsToDelete', 'List of of comma separated field names to delete ' .
 			'while reindexing documents (defaults to empty)', false, true );
+		$maintenance->addOption( 'weightedTagsPrefixMap', 'List of comma separated pairs. ' .
+			'Each pair consists of an existing prefix and its replacement, separated by a colon.', false, true );
 		$maintenance->addOption( 'justMapping', 'Just try to update the mapping.' );
 		$maintenance->addOption( 'ignoreIndexChanged', 'Skip checking if the new index is different ' .
 			'from the old index.', false, false );
 	}
 
+	/** @inheritDoc */
 	public function execute() {
 		$this->disablePoolCountersAndLogging();
 
@@ -232,8 +228,6 @@ class UpdateOneSearchIndexConfig extends Maintenance {
 			}
 		}
 
-		$this->initMappingConfigBuilder();
-
 		try {
 			$indexSuffixes = $this->getConnection()->getAllIndexSuffixes( null );
 			if ( !in_array( $this->indexSuffix, $indexSuffixes ) ) {
@@ -242,7 +236,19 @@ class UpdateOneSearchIndexConfig extends Maintenance {
 			}
 
 			$this->unwrap( $utils->checkElasticsearchVersion() );
+
+			$streamingUsername = $this->getSearchConfig()->get( 'CirrusSearchStreamingUpdaterUsername' );
+			if ( $streamingUsername !== null ) {
+				// Explicitly steal the system user to make sure it's marked correctly
+				User::newSystemUser(
+					$streamingUsername,
+					[ 'steal' => true ]
+				);
+			}
+
 			$this->availablePlugins = $this->unwrap( $utils->scanAvailablePlugins( $this->bannedPlugins ) );
+
+			$this->initMappingConfigBuilder();
 
 			if ( $this->getOption( 'justAllocation', false ) ) {
 				$this->validateShardAllocation();
@@ -303,13 +309,13 @@ class UpdateOneSearchIndexConfig extends Maintenance {
 	}
 
 	/**
-	 * @suppress PhanUndeclaredMethod runChild technically returns a
+	 * @suppress PhanUndeclaredMethod createChild technically returns a
 	 *  \Maintenance instance but only \CirrusSearch\Maintenance\Maintenance
 	 *  classes have the done method. Just allow it since we know what type of
 	 *  maint class is being created
 	 */
 	private function updateVersions() {
-		$child = $this->runChild( Metastore::class );
+		$child = $this->createChild( Metastore::class );
 		$child->done();
 		$child->loadParamsAndArgs(
 			null,
@@ -367,15 +373,12 @@ class UpdateOneSearchIndexConfig extends Maintenance {
 	 * @return \CirrusSearch\Maintenance\Validators\Validator[]
 	 */
 	private function getIndexSettingsValidators() {
-		$validators = [];
-		$validators[] = new \CirrusSearch\Maintenance\Validators\NumberOfShardsValidator(
-			$this->getIndex(), $this->getShardCount(), $this );
-		$validators[] = new \CirrusSearch\Maintenance\Validators\ReplicaRangeValidator(
-			$this->getIndex(), $this->getReplicaCount(), $this );
-		$validators[] = $this->getShardAllocationValidator();
-		$validators[] = new \CirrusSearch\Maintenance\Validators\MaxShardsPerNodeValidator(
-			$this->getIndex(), $this->getMaxShardsPerNode(), $this );
-		return $validators;
+		return [
+			new NumberOfShardsValidator( $this->getIndex(), $this->getShardCount(), $this ),
+			new ReplicaRangeValidator( $this->getIndex(), $this->getReplicaCount(), $this ),
+			$this->getShardAllocationValidator(),
+			new MaxShardsPerNodeValidator( $this->getIndex(), $this->getMaxShardsPerNode(), $this ),
+		];
 	}
 
 	private function validateIndexSettings() {
@@ -428,6 +431,11 @@ class UpdateOneSearchIndexConfig extends Maintenance {
 
 		$fieldsToCleanup = array_filter( explode( ',', $this->getOption( 'fieldsToDelete', '' ) ) );
 		$fieldsToCleanup = array_merge( $fieldsToCleanup, $this->getSearchConfig()->get( "CirrusSearchIndexFieldsToCleanup" ) );
+		$weightedTagsPrefixMap = $this->parsePrefixMap( $this->getOption( 'weightedTagsPrefixMap', '' ) );
+		$weightedTagsPrefixMap = array_merge(
+			$weightedTagsPrefixMap,
+			$this->getSearchConfig()->get( "CirrusSearchIndexWeightedTagsPrefixMap" )
+		);
 		$reindexer = new Reindexer(
 			$this->getSearchConfig(),
 			$connection,
@@ -435,7 +443,8 @@ class UpdateOneSearchIndexConfig extends Maintenance {
 			$this->getIndex(),
 			$this->getOldIndex(),
 			$this,
-			$fieldsToCleanup
+			$fieldsToCleanup,
+			$weightedTagsPrefixMap
 		);
 
 		$validator = new \CirrusSearch\Maintenance\Validators\SpecificAliasValidator(
@@ -520,10 +529,12 @@ class UpdateOneSearchIndexConfig extends Maintenance {
 		}
 		switch ( $this->indexSuffix ) {
 			case Connection::ARCHIVE_DOC_TYPE:
-				$mappingConfigBuilder = new ArchiveMappingConfigBuilder( $this->optimizeIndexForExperimentalHighlighter, $configFlags );
+				$mappingConfigBuilder = new ArchiveMappingConfigBuilder( $this->optimizeIndexForExperimentalHighlighter,
+					$this->availablePlugins, $configFlags );
 				break;
 			default:
-				$mappingConfigBuilder = new MappingConfigBuilder( $this->optimizeIndexForExperimentalHighlighter, $configFlags );
+				$mappingConfigBuilder = new MappingConfigBuilder( $this->optimizeIndexForExperimentalHighlighter,
+					$this->availablePlugins, $configFlags );
 		}
 		$this->mapping = $mappingConfigBuilder->buildConfig();
 		$this->safeToOptimizeAnalysisConfig = $mappingConfigBuilder->canOptimizeAnalysisConfig();
@@ -584,7 +595,7 @@ class UpdateOneSearchIndexConfig extends Maintenance {
 	/**
 	 * @return int Number of shards this index should have
 	 */
-	private function getShardCount() {
+	private function getShardCount(): int {
 		return $this->getConnection()->getSettings()->getShardCount( $this->indexSuffix );
 	}
 
@@ -619,7 +630,7 @@ class UpdateOneSearchIndexConfig extends Maintenance {
 		$this->similarityConfig = $analysisConfigBuilder->buildSimilarityConfig();
 	}
 
-	private function cleanupCreatedIndex( $msg ) {
+	private function cleanupCreatedIndex( string $msg ) {
 		if ( $this->canCleanupCreatedIndex && $this->getIndex()->exists() ) {
 			$utils = new ConfigUtils( $this->getConnection()->getClient(), $this );
 			$indexName = $this->getSpecificIndexName();
@@ -649,7 +660,26 @@ class UpdateOneSearchIndexConfig extends Maintenance {
 			parent::fatalError( $msg, $exitCode );
 		}
 	}
+
+	private function parsePrefixMap( string $prefixMapString ): array {
+		$prefixMap = [];
+		$encodedMappings = explode( ',', $prefixMapString );
+		foreach ( $encodedMappings as $encodedMapping ) {
+			if ( $encodedMapping === '' ) {
+				continue;
+			}
+			/* @phan-suppress-next-line PhanSuspiciousBinaryAddLists */
+			[ $oldPrefix, $newPrefix ] = explode( ':', $encodedMapping ) + [ '', '' ];
+			if ( $oldPrefix === '' || $newPrefix === '' ) {
+				$this->fatalError( "Invalid weighted tag prefix map pair: '$encodedMapping'" );
+			}
+			$prefixMap[trim( $oldPrefix )] = trim( $newPrefix );
+		}
+		return $prefixMap;
+	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = UpdateOneSearchIndexConfig::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

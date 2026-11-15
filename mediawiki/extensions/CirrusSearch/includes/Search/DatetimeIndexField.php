@@ -2,7 +2,7 @@
 
 namespace CirrusSearch\Search;
 
-use SearchEngine;
+use MediaWiki\Search\SearchEngine;
 
 /**
  * Index field representing datetime field.
@@ -13,6 +13,7 @@ class DatetimeIndexField extends CirrusIndexField {
 	/** @inheritDoc */
 	protected $typeName = 'date';
 
+	/** @inheritDoc */
 	public function getMapping( SearchEngine $engine ) {
 		$config = parent::getMapping( $engine );
 		$config['format'] = 'dateOptionalTime';

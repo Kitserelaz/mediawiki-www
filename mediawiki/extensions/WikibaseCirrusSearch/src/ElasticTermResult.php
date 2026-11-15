@@ -3,52 +3,39 @@
 namespace Wikibase\Search\Elastic;
 
 use CirrusSearch\Search\BaseResultsType;
-use Wikibase\DataModel\Entity\EntityIdParser;
-use Wikibase\DataModel\Entity\EntityIdParsingException;
 use Wikibase\DataModel\Term\Term;
 use Wikibase\Lib\Interactors\TermSearchResult;
 use Wikibase\Lib\TermLanguageFallbackChain;
+use Wikibase\Search\Elastic\Fields\DescriptionsField;
+use Wikibase\Search\Elastic\Fields\LabelsField;
 
 /**
  * This result type implements the result for searching
- * a Wikibase entity by its label or alias.
+ * an entity by its {@link LabelsField label or alias}
+ * (also showing {@link DescriptionsField descriptions}).
+ *
+ * Fully implemented by {@link EntityElasticTermResult} for Wikibase entities.
+ * May also be used by other extensions,
+ * provided they use those same fields
+ * (via {@link \Wikibase\Search\Elastic\Fields\LabelsProviderFieldDefinitions LabelsProviderFieldDefinitions}
+ * and {@link \Wikibase\Search\Elastic\Fields\DescriptionsProviderFieldDefinitions DescriptionsProviderFieldDefinitions}).
  *
  * @license GPL-2.0-or-later
  * @author Stas Malyshev
  */
-class ElasticTermResult extends BaseResultsType {
+abstract class ElasticTermResult extends BaseResultsType {
 
 	/**
-	 * @var EntityIdParser
-	 */
-	private $idParser;
-
-	/**
-	 * List of language codes in the search fallback chain, the first
-	 * is the preferred language.
-	 * @var string[]
-	 */
-	private $searchLanguageCodes;
-
-	/**
-	 * Display fallback chain.
-	 * @var TermLanguageFallbackChain
-	 */
-	private $termFallbackChain;
-
-	/**
-	 * @param EntityIdParser $idParser
-	 * @param string[] $searchLanguageCodes Language fallback chain for search
-	 * @param TermLanguageFallbackChain $displayFallbackChain Fallback chain for display
+	 * @param string[] $searchLanguageCodes List of language codes in the search fallback chain, the
+	 *  first is the preferred language.
+	 * @param TermLanguageFallbackChain $termFallbackChain Fallback chain for display
+	 * @param string $highlightSubField 'prefix' or 'plain'
 	 */
 	public function __construct(
-		EntityIdParser $idParser,
-		array $searchLanguageCodes,
-		TermLanguageFallbackChain $displayFallbackChain
+		private readonly array $searchLanguageCodes,
+		private readonly TermLanguageFallbackChain $termFallbackChain,
+		private readonly string $highlightSubField = 'prefix',
 	) {
-		$this->idParser = $idParser;
-		$this->searchLanguageCodes = $searchLanguageCodes;
-		$this->termFallbackChain = $displayFallbackChain;
 	}
 
 	/**
@@ -59,8 +46,8 @@ class ElasticTermResult extends BaseResultsType {
 	public function getSourceFiltering() {
 		$fields = parent::getSourceFiltering();
 		foreach ( $this->termFallbackChain->getFetchLanguageCodes() as $code ) {
-			$fields[] = "labels.$code";
-			$fields[] = "descriptions.$code";
+			$fields[] = LabelsField::NAME . '.' . $code;
+			$fields[] = DescriptionsField::NAME . '.' . $code;
 		}
 		return $fields;
 	}
@@ -94,10 +81,13 @@ class ElasticTermResult extends BaseResultsType {
 			'number_of_fragments' => 0,
 			'matched_fields' => [ 'title.keyword' ]
 		];
+		$labelsName = LabelsField::NAME;
+		$order = $this->highlightSubField === 'plain' ? 'score' : 'none';
 		foreach ( $this->searchLanguageCodes as $code ) {
-			$config['fields']["labels.$code.prefix"] = [
+			$config['fields']["$labelsName.$code.{$this->highlightSubField}"] = [
 				'type' => 'experimental',
 				'fragmenter' => "none",
+				'order' => $order,
 				'number_of_fragments' => 0,
 				'options' => [
 					'skip_if_last_matched' => true,
@@ -105,9 +95,10 @@ class ElasticTermResult extends BaseResultsType {
 				],
 			];
 		}
-		$config['fields']['labels.*.prefix'] = [
+		$config['fields']["$labelsName.*.{$this->highlightSubField}"] = [
 			'type' => 'experimental',
 			'fragmenter' => "none",
+			'order' => $order,
 			'number_of_fragments' => 0,
 			'options' => [
 				'skip_if_last_matched' => true,
@@ -127,17 +118,11 @@ class ElasticTermResult extends BaseResultsType {
 		$results = [];
 		foreach ( $result->getResults() as $r ) {
 			$sourceData = $r->getSource();
-			try {
-				$entityId = $this->idParser->parse( $sourceData['title'] );
-			} catch ( EntityIdParsingException $e ) {
-				// Can not parse entity ID - skip it
-				continue;
-			}
 
 			// Highlight part contains information about what has actually been matched.
 			$highlight = $r->getHighlights();
-			$displayLabel = EntitySearchUtils::findTermForDisplay( $sourceData, 'labels', $this->termFallbackChain );
-			$displayDescription = EntitySearchUtils::findTermForDisplay( $sourceData, 'descriptions', $this->termFallbackChain );
+			$displayLabel = EntitySearchUtils::findTermForDisplay( $sourceData, LabelsField::NAME, $this->termFallbackChain );
+			$displayDescription = EntitySearchUtils::findTermForDisplay( $sourceData, DescriptionsField::NAME, $this->termFallbackChain );
 
 			if ( !empty( $highlight['title'] ) ) {
 				// If we matched title, this means it's a match by ID
@@ -157,14 +142,28 @@ class ElasticTermResult extends BaseResultsType {
 				$displayLabel = $matchedTerm;
 			}
 
-			$results[$entityId->getSerialization()] = new TermSearchResult(
-				$matchedTerm, $matchedTermType, $entityId, $displayLabel,
-				$displayDescription
+			$termSearchResult = $this->getTermSearchResult(
+				$sourceData, $matchedTerm, $matchedTermType, $displayLabel, $displayDescription
 			);
+			if ( $termSearchResult !== null ) {
+				$results[$termSearchResult->getEntityIdSerialization()] = $termSearchResult;
+			}
 		}
 
 		return $results;
 	}
+
+	/**
+	 * Turn the given result data into a {@link TermSearchResult}
+	 * (or skip this result if null is returned).
+	 */
+	abstract protected function getTermSearchResult(
+		array $sourceData,
+		Term $matchedTerm,
+		string $matchedTermType,
+		?Term $displayLabel,
+		?Term $displayDescription
+	): ?TermSearchResult;
 
 	/**
 	 * New highlighter pattern.
@@ -175,7 +174,7 @@ class ElasticTermResult extends BaseResultsType {
 
 	/**
 	 * Extract term, language and type from highlighter results.
-	 * @param array $highlight Data from highlighter
+	 * @param array<string,string[]> $highlight Data from highlighter
 	 * @param array[] $sourceData Data from _source
 	 * @return array Array of: [string $termType, string $languageCode, string $term]
 	 */
@@ -189,10 +188,9 @@ class ElasticTermResult extends BaseResultsType {
 		 * }
 		 */
 		$matchedTermType = 'label';
-		$term = reset( $highlight ); // Take the first one
-		$term = $term[0]; // Highlighter returns array
-		$field = key( $highlight );
-		if ( preg_match( '/^labels\.([^.]+)\.prefix$/', $field, $match ) ) {
+		$field = array_key_first( $highlight );
+		$term = $highlight[$field][0];
+		if ( preg_match( '/^' . preg_quote( LabelsField::NAME ) . "\.([^.]+)\.{$this->highlightSubField}$/", $field, $match ) ) {
 			$langCode = $match[1];
 			if ( preg_match( self::HIGHLIGHT_PATTERN, $term, $termMatch ) ) {
 				$isFirst = ( $term[0] === '0' );
@@ -200,11 +198,11 @@ class ElasticTermResult extends BaseResultsType {
 			} else {
 				$isFirst = true;
 			}
-			if ( !empty( $sourceData['labels'][$langCode] ) ) {
+			if ( !empty( $sourceData[LabelsField::NAME][$langCode] ) ) {
 				// Here we have match in one of the languages we asked for.
 				// Primary label always comes first, so if it's not the first one,
 				// it's an alias.
-				if ( $sourceData['labels'][$langCode][0] !== $term ) {
+				if ( $sourceData[LabelsField::NAME][$langCode][0] !== $term ) {
 					$matchedTermType = 'alias';
 				}
 			} else {

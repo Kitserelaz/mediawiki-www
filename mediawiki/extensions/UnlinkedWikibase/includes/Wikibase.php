@@ -3,45 +3,37 @@
 namespace MediaWiki\Extension\UnlinkedWikibase;
 
 use DateTime;
-use JobQueueGroup;
-use JobSpecification;
-use Language;
 use MediaWiki\Config\Config;
 use MediaWiki\Http\HttpRequestFactory;
-use MediaWiki\MediaWikiServices;
-use Parser;
-use WANObjectCache;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\JobQueue\JobSpecification;
+use MediaWiki\Language\Language;
+use MediaWiki\Languages\LanguageFallback;
+use MediaWiki\Parser\Parser;
+use MediaWiki\WikiMap\WikiMap;
+use Wikimedia\ObjectCache\WANObjectCache;
 
 class Wikibase {
 
-	/** @var Config */
-	private $config;
-
-	/** @var HttpRequestFactory */
-	private $requestFactory;
-
-	/** @var WANObjectCache */
-	private $cache;
-
-	/** @var Language */
-	private $contentLang;
-
-	/** @var string[] */
-	private $entityIds = [];
+	/** @var bool[][] Record used entity IDs, grouped by page. */
+	private array $entityIds = [];
 
 	/** @var string[] */
 	private $propIds;
 
-	/** @var JobQueueGroup */
-	private JobQueueGroup $jobQueueGroup;
+	public function __construct(
+		private readonly Config $config,
+		private readonly HttpRequestFactory $requestFactory,
+		private readonly WANObjectCache $cache,
+		private readonly Language $contentLang,
+		private readonly LanguageFallback $langFallback,
+		private readonly JobQueueGroup $jobQueueGroup,
+		private readonly bool $cacheIsDurable,
+	) {
+	}
 
-	public function __construct() {
-		$services = MediaWikiServices::getInstance();
-		$this->config = $services->getMainConfig();
-		$this->requestFactory = $services->getHttpRequestFactory();
-		$this->cache = $services->getMainWANObjectCache();
-		$this->contentLang = $services->getContentLanguage();
-		$this->jobQueueGroup = $services->getJobQueueGroupFactory()->makeJobQueueGroup();
+	public function getCache(): WANObjectCache {
+		return $this->cache;
 	}
 
 	/**
@@ -68,9 +60,26 @@ class Wikibase {
 	}
 
 	/**
-	 * Get data about a single Wikibase entity.
+	 * Get data about a single Wikibase entity and add a tracking page property.
 	 */
 	public function getEntity( Parser $parser, string $id ): ?array {
+		$entity = $this->getEntityData( $id );
+		// Add this ID to the list of in-use entities.
+		if ( !isset( $this->entityIds[ $parser->getPage()->getDBkey() ] ) ) {
+			$this->entityIds[ $parser->getPage()->getDBkey() ] = [];
+		}
+		$this->entityIds[ $parser->getPage()->getDBkey() ][ $id ] = true;
+		$parser->getOutput()->setPageProperty(
+			Hooks::PAGE_PROP_ENTITIES_USED_PREFIX . count( $this->entityIds[ $parser->getPage()->getDBkey() ] ),
+			$id
+		);
+		return $entity;
+	}
+
+	/**
+	 * Get data about a single Wikibase entity.
+	 */
+	public function getEntityData( string $id ): ?array {
 		$url = $this->getEntityUrl( $id );
 		$ttl = $this->config->get( 'UnlinkedWikibaseEntityTTL' );
 		if ( $ttl === null ) {
@@ -82,10 +91,165 @@ class Wikibase {
 		if ( $entity ) {
 			$id = $entity['id'];
 		}
-		// Add this ID to the list of in-use entities.
-		$this->entityIds[ $id ] = $id;
-		$parser->getOutput()->setPageProperty( Hooks::PAGE_PROP_ENTITIES_USED_PREFIX . count( $this->entityIds ), $id );
 		return $entity;
+	}
+
+	/**
+	 * Return [ label|null, lang|null ] for an entity ID, using the page's target language
+	 * and fallback(s).
+	 *
+	 * @param Parser $parser
+	 * @param string $id
+	 * @return array{0:?string,1:?string}
+	 */
+	public function getLabel( Parser $parser, string $id ): array {
+		$entity = $this->getEntity( $parser, $id );
+		if ( !$entity || !isset( $entity['labels'] ) ) {
+			return [ null, null ];
+		}
+
+		$targetLang = $parser->getTargetLanguage()->getCode();
+		$langs = array_unique( [
+			$targetLang,
+			...$this->langFallback->getAll( $targetLang ),
+			'mul',
+		] );
+		foreach ( $langs as $lang ) {
+			if ( isset( $entity['labels'][$lang]['value'] ) ) {
+				return [ $entity['labels'][$lang]['value'], $lang ];
+			}
+		}
+
+		return [ null, null ];
+	}
+
+	/**
+	 * Return the label string for a specific language, or null if absent/invalid.
+	 *
+	 * @param Parser $parser
+	 * @param string $id
+	 * @param string $languageCode
+	 * @return ?string
+	 */
+	public function getLabelByLanguage( Parser $parser, string $id, string $languageCode ): ?string {
+		$entity = $this->getEntity( $parser, $id );
+		if ( !$entity ) {
+			return null;
+		}
+
+		$labels = $entity['labels'] ?? [];
+		if ( !$labels ) {
+			return null;
+		}
+
+		if ( isset( $labels[$languageCode]['value'] ) && is_string( $labels[$languageCode]['value'] ) ) {
+			return $labels[$languageCode]['value'];
+		}
+
+		return null;
+	}
+
+	/**
+	 * Return [ description|null, lang|null ] for an entity ID, using the page
+	 * target language (then site content language, then configured fallbacks, then any).
+	 *
+	 * @param Parser $parser
+	 * @param string $id
+	 * @return array{0:?string,1:?string}
+	 */
+	public function getDescription( Parser $parser, string $id ): array {
+		$entity = $this->getEntity( $parser, $id );
+		if ( !$entity || !isset( $entity['descriptions'] ) ) {
+			return [ null, null ];
+		}
+
+		$targetLang = $parser->getTargetLanguage()->getCode();
+		$langs = array_unique( [
+			$targetLang,
+			...$this->langFallback->getAll( $targetLang ),
+			'mul',
+		] );
+		foreach ( $langs as $lang ) {
+			if ( isset( $entity['descriptions'][$lang]['value'] ) ) {
+				return [ $entity['descriptions'][$lang]['value'], $lang ];
+			}
+		}
+
+		return [ null, null ];
+	}
+
+	/**
+	 * Return the description string for a specific language, or null if absent/invalid.
+	 *
+	 * @param Parser $parser
+	 * @param string $id
+	 * @param string $languageCode
+	 * @return ?string
+	 */
+	public function getDescriptionByLanguage( Parser $parser, string $id, string $languageCode ): ?string {
+		$entity = $this->getEntity( $parser, $id );
+		if ( !$entity ) {
+			return null;
+		}
+
+		$descriptions = $entity['descriptions'] ?? [];
+		if ( !$descriptions ) {
+			return null;
+		}
+
+		if ( isset( $descriptions[$languageCode]['value'] ) && is_string( $descriptions[$languageCode]['value'] ) ) {
+			return $descriptions[$languageCode]['value'];
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the title of the corresponding page on the local wiki or nil if it doesn't exist.
+	 * When globalSiteId is given, the page title on the specified wiki is returned, rather
+	 * than the one on the local wiki.
+	 *
+	 * @param Parser $parser
+	 * @param string $itemId
+	 * @param string|null $globalSiteId Uses current site ID if null.
+	 * @return ?string The sitelink title, or null if not present/invalid
+	 */
+	public function getSiteLinkPageName( Parser $parser, string $itemId, ?string $globalSiteId ): ?string {
+		$entity = $this->getEntity( $parser, $itemId );
+		if ( !$entity ) {
+			return null;
+		}
+		$siteId = $globalSiteId ?: WikiMap::getCurrentWikiId();
+		$sitelinks = $entity['sitelinks'] ?? [];
+		if ( !$sitelinks ) {
+			return null;
+		}
+
+		if ( isset( $sitelinks[$siteId]['title'] ) && is_string( $sitelinks[$siteId]['title'] ) ) {
+			return $sitelinks[$siteId]['title'];
+		}
+
+		return $sitelinks[strtolower( $siteId )]['title'] ?? null;
+	}
+
+	/**
+	 * Returns a list of all badges assigned to a site link.
+	 * When globalSiteId is given, the badges for the site link to the specified
+	 * wiki are returned. This defaults to the local wiki.
+	 *
+	 * @param Parser $parser
+	 * @param string $itemId
+	 * @param string|null $globalSiteId Uses current site ID if null.
+	 * @return string[] List of badge item IDs, empty if none
+	 */
+	public function getBadges( Parser $parser, string $itemId, ?string $globalSiteId ): array {
+		$entity = $this->getEntity( $parser, $itemId );
+		if ( !$entity ) {
+			return [];
+		}
+
+		$siteId = $globalSiteId ?: WikiMap::getCurrentWikiId();
+		return $entity['sitelinks'][$siteId]['badges'] ?? [];
 	}
 
 	/**
@@ -115,23 +279,59 @@ class Wikibase {
 	}
 
 	/**
+	 * @param string|int ...$components Additional, ordered, key components for entity IDs
+	 *
+	 * @return string
+	 */
+	public function makeCacheKey( ...$components ): string {
+		return $this->cache->makeKey( 'ext-UnlinkedWikibase', ...$components );
+	}
+
+	/**
 	 * Fetch data from a JSON URL.
+	 * @param string $url The URL to fetch.
+	 * @param int $ttl Cache TTL in seconds, one of the ExpirationAwareness::TTL_* constants.
 	 */
 	public function fetch( string $url, int $ttl ): array {
-		$cacheKey = $this->cache->makeKey( 'ext-UnlinkedWikibase', $url );
+		// Get cache info.
+		$cacheKey = $this->makeCacheKey( $url );
+		$cacheRefreshedKey = $this->makeCacheKey( $url, 'refreshed' );
 		$data = $this->cache->get( $cacheKey );
-		if ( $data ) {
-			return $data;
-		}
+		$dataRefreshed = $this->cache->get( $cacheRefreshedKey );
+
 		// If the cache doesn't support having the fetch happen in the job queue, fetch the data immediately.
-		if ( $this->cache->getQoS( $this->cache::ATTR_DURABILITY ) < $this->cache::QOS_DURABILITY_SERVICE ) {
-			$newData = $this->fetchWithoutCache( $url );
-			$this->cache->set( $cacheKey, $newData, $ttl );
-			return $newData;
+		if ( !$this->canCache() ) {
+			$data = $this->fetchWithoutCache( $url );
+			// It may still be able to be cached for the current session, to avoid duplicate fetches.
+			$this->cache->set( $cacheKey, $data, $this->cache::TTL_INDEFINITE );
+			$this->cache->set( $cacheRefreshedKey, wfTimestamp(), $this->cache::TTL_INDEFINITE );
 		}
-		// If it's not cached, create a job that will cache it.
-		$this->jobQueueGroup->lazyPush( new JobSpecification( FetchJob::JOB_NAME, [ 'url' => $url, 'ttl' => $ttl ] ) );
-		return [];
+
+		// If the data has never been cached, or hasn't been refreshed within the TTL, queue a refresh.
+		if ( $data === false || ( $dataRefreshed !== false && (int)$dataRefreshed < (int)wfTimestamp() - $ttl ) ) {
+			$job = new JobSpecification(
+				FetchJob::JOB_NAME,
+				[ 'url' => $url, 'ttl' => $ttl ],
+				[ 'removeDuplicates' => true ]
+			);
+			$this->jobQueueGroup->lazyPush( $job );
+		}
+
+		return $data === false ? [] : $data;
+	}
+
+	/**
+	 * Get the current UnlinkedWikibase job queue size.
+	 */
+	public function getJobQueueSize(): int {
+		return $this->jobQueueGroup->getQueueSizes()[ FetchJob::JOB_NAME ] ?? 0;
+	}
+
+	/**
+	 * Is the cache able to store data from the job queue?
+	 */
+	public function canCache(): bool {
+		return $this->cacheIsDurable;
 	}
 
 	public function fetchWithoutCache( string $url ): array {
@@ -152,46 +352,54 @@ class Wikibase {
 	 * https://www.wikidata.org/wiki/Wikidata:How_to_use_data_on_Wikimedia_projects#Parser_function
 	 * @return ?string
 	 */
-	public function formatClaimAsWikitext( Parser $parser, array $claim ): ?string {
+	public function renderSnak( Parser $parser, array $snak ): ?string {
 		// Commons image
-		if ( $claim['mainsnak']['datatype'] === 'commonsMedia' ) {
-			return '[[File:' . $claim['mainsnak']['datavalue']['value'] . '|thumb]]';
+		if ( $snak['datatype'] === 'commonsMedia' ) {
+			return '[[File:' . $snak['datavalue']['value'] . '|thumb]]';
 		}
 
 		// Coordinates
-		if ( $claim['mainsnak']['datatype'] === 'globe-coordinate' ) {
-			$lat = $claim['mainsnak']['datavalue']['value']['latitude'];
-			$lon = $claim['mainsnak']['datavalue']['value']['longitude'];
+		if ( $snak['datatype'] === 'globe-coordinate' ) {
+			$lat = $snak['datavalue']['value']['latitude'];
+			$lon = $snak['datavalue']['value']['longitude'];
 			// @todo Link to map.
 			return "📍 $lat, $lon";
 		}
 
 		// Monolingual text
-		if ( $claim['mainsnak']['datatype'] === 'monolingualtext' ) {
-			return $claim['mainsnak']['datavalue']['value']['text'];
+		if ( $snak['datatype'] === 'monolingualtext' ) {
+			return $snak['datavalue']['value']['text'];
 		}
 
 		// Date
-		if ( $claim['mainsnak']['datatype'] === 'time' ) {
-			$datetime = new DateTime( $claim['mainsnak']['datavalue']['value']['time'] );
+		if ( $snak['datatype'] === 'time' ) {
+			$datetime = new DateTime( $snak['datavalue']['value']['time'] );
 			// @todo Handle precision.
 			return $datetime->format( 'j M Y' );
 		}
 
 		// Link
-		if ( $claim['mainsnak']['datatype'] === 'url' ) {
-			return $claim['mainsnak']['datavalue']['value'];
+		if ( $snak['datatype'] === 'url' ) {
+			return $snak['datavalue']['value'];
 		}
 
 		// External ID
-		if ( $claim['mainsnak']['datatype'] === 'external-id' ) {
-			// @todo Handle formatter URL.
-			return $claim['mainsnak']['datavalue']['value'];
+		if ( $snak['datatype'] === 'external-id' ) {
+			$propId = $snak['property'];
+			$propData = $this->getEntity( $parser, $propId );
+			$formatterUrlProp = $this->config->get( 'UnlinkedWikibaseFormatterUrlProp' );
+			if ( isset( $propData['claims'][$formatterUrlProp][0]['mainsnak']['datavalue']['value'] ) ) {
+				$urlFormat = $propData['claims'][$formatterUrlProp][0]['mainsnak']['datavalue']['value'];
+				$url = str_replace( '$1', $snak['datavalue']['value'], $urlFormat );
+				return '[' . $url . ' ' . $snak['datavalue']['value'] . ']';
+			} else {
+				return $snak['datavalue']['value'];
+			}
 		}
 
 		// Item
-		if ( $claim['mainsnak']['datatype'] === 'wikibase-item' ) {
-			$id = $claim['mainsnak']['datavalue']['value']['id'];
+		if ( $snak['datatype'] === 'wikibase-item' ) {
+			$id = $snak['datavalue']['value']['id'];
 			$entity = $this->getEntity( $parser, $id );
 			return $entity['labels'][$this->contentLang->getCode()]['value']
 				?? $entity['labels']['en']['value']
@@ -199,9 +407,9 @@ class Wikibase {
 		}
 
 		// Quantity
-		if ( $claim['mainsnak']['datatype'] === 'quantity' ) {
+		if ( $snak['datatype'] === 'quantity' ) {
 			$unitId = substr(
-				$claim['mainsnak']['datavalue']['value']['unit'],
+				$snak['datavalue']['value']['unit'],
 				strlen( 'http://www.wikidata.org/entity/' )
 			);
 			$unit = $this->getEntity( $parser, $unitId );
@@ -211,7 +419,7 @@ class Wikibase {
 					?? $unit['labels']['en']['value']
 					?? '';
 			}
-			$amount = (float)$claim['mainsnak']['datavalue']['value']['amount'];
+			$amount = (float)$snak['datavalue']['value']['amount'];
 			return trim( $amount . ' ' . $unitLabel );
 		}
 

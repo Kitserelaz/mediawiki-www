@@ -7,7 +7,7 @@
 			"Jeluang Terluang"
 		]
 	},
-	"visualeditor-mwlanguagevariant-disabled": "Penukaran kelainan dimatikan",
+	"visualeditor-mwlanguagevariant-disabled": "Penukaran kelainan bahasa dimatikan",
 	"visualeditor-mwlanguagevariant-filter": "Kelainan-kelainan ditapis kepada $1",
 	"visualeditor-mwlanguagevariant-name": "Nama bahasa: $1",
 	"visualeditor-mwlanguagevariant-oneway": "Penukaran sehala: $1",
@@ -36,7 +36,7 @@
 	"visualeditor-mwlanguagevariantinspector-oneway-add-button": "Tambah kes baharu",
 	"visualeditor-mwlanguagevariantinspector-oneway-clear-button": "Gugurkan kes",
 	"visualeditor-mwlanguagevariantinspector-oneway-from-text-placeholder": "Teks sumber",
-	"visualeditor-mwlanguagevariantinspector-oneway-to-text-placeholder": "Teks kelainan",
+	"visualeditor-mwlanguagevariantinspector-oneway-to-text-placeholder": "Teks kelainan bahasa",
 	"visualeditor-mwlanguagevariantinspector-title-disabled": "Penukaran kelainan bahasa dimatikan",
 	"visualeditor-mwlanguagevariantinspector-title-filter": "Penapis kelainan",
 	"visualeditor-mwlanguagevariantinspector-title-name": "Nama bahasa",

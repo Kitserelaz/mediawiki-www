@@ -14,7 +14,9 @@
 			"Schniggendiller",
 			"The Evil IP address",
 			"Umherirrender",
-			"XenonX3"
+			"Wikifan",
+			"XenonX3",
+			"Brettchenweber"
 		]
 	},
 	"timedmediahandler-extensionname": "TimedMediaHandler",
@@ -64,7 +66,7 @@
 	"timedmedia-error-on": "Fehler um $1",
 	"timedmedia-started-transcode": "Gestartet $1. $2",
 	"timedmedia-percent-done": "Ungefähr $1 % sind erledigt",
-	"timedmedia-in-job-queue": "Vor $1 der Auftragswarteschlange hinzugefügt",
+	"timedmedia-in-job-queue": "$1 der Auftragswarteschlange hinzugefügt",
 	"timedmedia-unknown-target-size": "Unbekannte Zielgröße, $1 codiert",
 	"timedmedia-reset": "Umschlüsselung zurücksetzen",
 	"timedmedia-reset-areyousure": "Möchtest du wirklich fortfahren?",
@@ -166,7 +168,7 @@
 	"timedmedia-duration-ms": "{{PLURAL:$1|$1 Minute|$1 Minuten}} und {{PLURAL:$2|$2 Sekunde|$2 Sekunden}}",
 	"timedmedia-duration-s": "{{PLURAL:$1|$1 Sekunde|$1 Sekunden}}",
 	"right-transcode-reset": "Fehlgeschlagene oder erfolgreiche Umschlüsselungen von Video-Dateien zurücksetzen, um sie erneut in die Auftragswarteschlange einzureihen",
-	"right-transcode-status": "[[Special:TimedMediaHandler|Informationen über aktuelle Umschlüsselungen]] betrachten",
+	"right-transcode-status": "[[Special:TimedMediaHandler|Informationen über aktuelle Medienumwandlungen]] betrachten",
 	"action-transcode-reset": "Transkodierungen zurückzusetzen",
 	"action-transcode-status": "den aktuellen Transkodierungstatus anzusehen",
 	"log-name-timedmediahandler": "Zeitgesteuerte-Medien-Logbuch",
@@ -184,5 +186,13 @@
 	"timedmedia-timedtext-title-create-subtitles": "Keine Untertitel auf $1 für den Videoclip gefunden: $2",
 	"m3u8-error-create-temp": "Die temporäre Datei für $1 konnte nicht erstellt werden",
 	"m3u8-error-write-temp": "Die temporäre Datei für $1 konnte nicht geschrieben werden",
-	"m3u8-error-save-playlist": "Fehler beim Speichern der HLS-Playlist $1"
+	"m3u8-error-save-playlist": "Fehler beim Speichern der HLS-Playlist $1",
+	"videojs-endcard-share-title": "Link zu diesem Medium",
+	"videojs-endcard-copy-link": "Link kopieren",
+	"videojs-endcard-share": "Teilen",
+	"videojs-endcard-share-not-possible": "Teilen nicht möglich",
+	"videojs-endcard-embed-title": "{{#FORMAL:Binde|Binden Sie}} diese Medien in {{#FORMAL:deine|Ihre}} Website ein.",
+	"videojs-endcard-embed-copy": "Kopieren",
+	"videojs-endcard-copied": "In die Zwischenablage kopiert!",
+	"videojs-endcard-copy-failed": "Kopieren in die Zwischenablage nicht möglich"
 }

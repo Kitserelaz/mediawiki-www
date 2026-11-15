@@ -6,7 +6,7 @@
 	$( function () {
 		resultGroups = $( '.facet.groups' ).data( 'facets' );
 
-		$( '.tux-searchpage .mw-ui-button' ).on( 'click', function () {
+		$( '.tux-searchpage .cdx-button' ).on( 'click', function () {
 			var query = $( '.tux-searchpage .searchinputbox' ).val(),
 				result = lexOperators( query ),
 				$form = $( '.tux-searchpage form[name=searchform]' );
@@ -39,20 +39,6 @@
 		} );
 	} );
 
-	// ES5-compatible Chrome, IE 9+, FF 4+, or Safari 5+ has Object.keys.
-	// Make other old browsers happy
-	if ( !Object.keys ) {
-		Object.keys = function ( obj ) {
-			var keys = [];
-			for ( var k in obj ) {
-				if ( Object.prototype.hasOwnProperty.call( obj, k ) ) {
-					keys.push( k );
-				}
-			}
-			return keys;
-		};
-	}
-
 	function showLanguages() {
 		var ulslanguages = [],
 			selectedClasss = '',
@@ -67,9 +53,10 @@
 		}
 
 		if ( currentLanguage !== '' ) {
-			var uri = new mw.Uri( location.href );
-			uri.extend( { language: '', filter: '' } );
-			addToSelectedBox( getLanguageLabel( currentLanguage ), uri.toString() );
+			var url = new URL( location.href );
+			url.searchParams.set( 'language', '' );
+			url.searchParams.set( 'filter', '' );
+			addToSelectedBox( getLanguageLabel( currentLanguage ), url.toString() );
 		}
 
 		var resultCount = Object.keys( languages ).length;
@@ -78,14 +65,14 @@
 
 		// Remove duplicates from the language list
 		quickLanguageList.forEach( function ( lang ) {
-			if ( languages[ lang ] && unique.indexOf( lang ) === -1 ) {
+			if ( languages[ lang ] && !unique.includes( lang ) ) {
 				unique.push( lang );
 			}
 		} );
 
-		if ( currentLanguage && quickLanguageList.indexOf( currentLanguage ) >= 0 ) {
+		if ( currentLanguage && quickLanguageList.includes( currentLanguage ) ) {
 			quickLanguageList = unique.splice( 0, 5 );
-			if ( quickLanguageList.indexOf( currentLanguage ) === -1 ) {
+			if ( !quickLanguageList.includes( currentLanguage ) ) {
 				quickLanguageList = quickLanguageList.concat( currentLanguage );
 			}
 		} else {
@@ -141,16 +128,45 @@
 				.text( mw.msg( 'translate-search-more-languages-info', resultCount - quickLanguageList.length ) );
 			$languages.append( $ulsTrigger, $count );
 
-			$ulsTrigger.uls( {
-				onSelect: function ( language ) {
-					window.location = languages[ language ].url;
-				},
-				compact: true,
-				languages: ulslanguages,
-				ulsPurpose: 'translate-special-searchtranslations',
-				top: $languages.offset().top,
-				showRegions: [ 'SP' ].concat( $.fn.lcd.defaults.showRegions )
-			} );
+			if ( mw.config.get( 'wgULSLanguageSelectorV2Enabled' ) ) {
+				mw.loader.using( [ 'ext.uls.rewrite' ] ).then( function () {
+					const { createUniversalLanguageSelector } = require( 'ext.uls.rewrite' );
+					var mountPoint = document.createElement( 'div' );
+					document.body.appendChild( mountPoint );
+
+					var app = createUniversalLanguageSelector( {
+						visible: false,
+						triggerElement: $ulsTrigger[ 0 ],
+						selectableLanguages: ulslanguages,
+						displayLanguageCode: mw.config.get( 'wgUserLanguage' ),
+						mode: 'interface',
+						onSelect: function ( language ) {
+							window.location = languages[ language.code ].url;
+						},
+						floatingOptions: {
+							placement: 'bottom-start'
+						}
+					} );
+
+					var mountedVm = app.mount( mountPoint );
+					$ulsTrigger.on( 'click', function ( event ) {
+						event.preventDefault();
+						event.stopPropagation();
+						mountedVm.toggle();
+					} );
+				} );
+			} else {
+				$ulsTrigger.uls( {
+					onSelect: function ( language ) {
+						window.location = languages[ language ].url;
+					},
+					compact: true,
+					languages: ulslanguages,
+					ulsPurpose: 'translate-special-searchtranslations',
+					top: $languages.offset().top,
+					showRegions: [ 'SP' ].concat( $.fn.lcd.defaults.showRegions )
+				} );
+			}
 		}
 	}
 
@@ -179,7 +195,7 @@
 		}
 		var grouppath = getParameterByName( 'grouppath' ).split( '|' )[ 0 ];
 		if ( currentGroup && resultGroups[ grouppath ] &&
-			groupList.indexOf( grouppath ) < 0 &&
+			!groupList.includes( grouppath ) &&
 			level === 0
 		) {
 			// Make sure current selected group is displayed always.
@@ -193,21 +209,22 @@
 				continue;
 			}
 
-			var uri = new mw.Uri( location.href );
 			if ( parentGrouppath !== undefined ) {
 				grouppath = parentGrouppath + '|' + groupId;
 			} else {
 				grouppath = groupId;
 			}
-			uri.extend( { group: groupId, grouppath: grouppath } );
 
+			var url = new URL( location.href );
 			if ( currentGroup === groupId ) {
 				selectedClass = 'selected';
-				uri.extend( { group: '', grouppath: '' } );
-				addToSelectedBox( group.label, uri.toString() );
+				url.searchParams.set( 'group', '' );
+				url.searchParams.set( 'grouppath', '' );
+				addToSelectedBox( group.label, url.toString() );
 			} else {
 				selectedClass = '';
-				uri.extend( { group: groupId, grouppath: grouppath } );
+				url.searchParams.set( 'group', groupId );
+				url.searchParams.set( 'grouppath', grouppath );
 			}
 
 			var $groupRow = $( '<div>' )
@@ -222,7 +239,7 @@
 						// Class name documented above
 						.addClass( 'facet-name ' + selectedClass )
 						.append( $( '<a>' )
-							.attr( 'href', uri.toString() )
+							.attr( 'href', url.toString() )
 							.text( group.label )
 						),
 					$( '<span>' )
@@ -267,9 +284,10 @@
 				language: mw.config.get( 'wgUserLanguage' ),
 				position: position,
 				onSelect: function ( selectedGroup ) {
-					var currentUri = new mw.Uri( location.href );
-					currentUri.extend( { group: selectedGroup.id, grouppath: selectedGroup.id } );
-					location.href = currentUri.toString();
+					var currentURL = new URL( location.href );
+					currentURL.searchParams.set( 'group', selectedGroup.id );
+					currentURL.searchParams.set( 'grouppath', selectedGroup.id );
+					location.href = currentURL.toString();
 				},
 				preventSelector: true
 			};
@@ -364,8 +382,7 @@
 	}
 
 	function getParameterByName( name ) {
-		var uri = new mw.Uri();
-		return uri.query[ name ] || '';
+		return mw.util.getParamValue( name ) || '';
 	}
 
 	function getLanguageLabel( languageCode ) {

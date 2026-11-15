@@ -11,32 +11,24 @@
 
 namespace MediaWiki\TimedMediaHandler;
 
-use Article;
 use Exception;
 use MediaWiki\Actions\ActionEntryPoint;
 use MediaWiki\Config\Config;
+use MediaWiki\FileRepo\RepoGroup;
 use MediaWiki\Hook\MediaWikiPerformActionHook;
 use MediaWiki\Html\Html;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
-use RepoGroup;
 
 class TimedMediaIframeOutput implements MediaWikiPerformActionHook {
 
-	/** @var Config */
-	private $config;
-
-	/** @var RepoGroup */
-	private $repoGroup;
-
 	public function __construct(
-		Config $config,
-		RepoGroup $repoGroup
+		private readonly Config $config,
+		private readonly RepoGroup $repoGroup,
 	) {
-		$this->config = $config;
-		$this->repoGroup = $repoGroup;
 	}
 
 	/**
@@ -71,9 +63,6 @@ class TimedMediaIframeOutput implements MediaWikiPerformActionHook {
 
 	/**
 	 * Output an iframe
-	 * @param Title $title
-	 * @param OutputPage $out
-	 * @return bool
 	 * @throws Exception
 	 */
 	private function outputIframe( Title $title, OutputPage $out ): bool {
@@ -95,7 +84,7 @@ class TimedMediaIframeOutput implements MediaWikiPerformActionHook {
 
 		// Definitely do not want to break frames
 		$wgBreakFrames = false;
-		$out->setPreventClickjacking( false );
+		$out->getMetadata()->setPreventClickjacking( false );
 		$out->disallowUserJs();
 
 		$out->addModules( [ 'ext.tmh.player', 'ext.tmh.player.inline' ] );
@@ -113,7 +102,7 @@ class TimedMediaIframeOutput implements MediaWikiPerformActionHook {
 
 			Html::element( 'meta', [ 'charset' => 'UTF-8' ] ),
 			Html::element( 'title', [], $title->getText() ),
-			$out->getRlClient()->getHeadHtml(),
+			$rlClient->getHeadHtml(),
 			implode( "\n", $out->getHeadLinksArray() ),
 
 			Html::closeElement( 'head' ),

@@ -1,9 +1,8 @@
 'use strict';
 
-var ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget,
+const ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget,
 	EntityAutocompleteInputWidget = require( './EntityAutocompleteInputWidget.js' ),
-	AbstractInputWidget = require( './AbstractInputWidget.js' ),
-	EntityInputWidget;
+	AbstractInputWidget = require( './AbstractInputWidget.js' );
 
 /**
  * @param {Object} [config] Configuration options
@@ -16,7 +15,7 @@ var ComponentWidget = require( 'wikibase.mediainfo.base' ).ComponentWidget,
  *      equal to 'property' will be returned.
  *      Suffixing the value of 'field' with the character ! inverts the filter
  */
-EntityInputWidget = function MediaInfoStatementsEntityInputWidget( config ) {
+const EntityInputWidget = function MediaInfoStatementsEntityInputWidget( config ) {
 	config = config || {};
 
 	this.input = new EntityAutocompleteInputWidget( Object.assign( {}, {
@@ -75,10 +74,10 @@ EntityInputWidget.prototype.getData = function () {
  * @inheritdoc
  */
 EntityInputWidget.prototype.setData = function ( data ) {
-	var self = this;
+	const self = this;
 
 	if ( data && data.toJSON().id !== this.input.getData() ) {
-		return this.input.setData( data.toJSON().id ).then( function () {
+		return this.input.setData( data.toJSON().id ).then( () => {
 			self.emit( 'change' );
 			return self.$element;
 		} );
@@ -91,10 +90,8 @@ EntityInputWidget.prototype.setData = function ( data ) {
  * @inheritdoc
  */
 EntityInputWidget.prototype.clear = function () {
-	var self = this;
-	return this.input.setData( undefined ).then( function () {
-		return self.$element;
-	} );
+	const self = this;
+	return this.input.setData( undefined ).then( () => self.$element );
 };
 
 /**

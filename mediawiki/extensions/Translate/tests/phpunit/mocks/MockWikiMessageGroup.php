@@ -12,17 +12,22 @@ use MediaWiki\Extension\Translate\Validation\ValidationRunner;
  * @license GPL-2.0-or-later
  */
 
+/**
+ * Message group for testing
+ */
 class MockWikiMessageGroup extends WikiMessageGroup {
-	public function __construct( $id, array $messages ) {
+	public function __construct( string $id, array $messages ) {
 		parent::__construct( $id, 'unused' );
 		$this->id = $id;
 		$this->messages = $messages;
 	}
 
+	/** @inheritDoc */
 	public function getDefinitions() {
 		return $this->messages;
 	}
 
+	/** @inheritDoc */
 	public function getMessage( $key, $code ) {
 		if ( $code === $this->getSourceLanguage() ) {
 			return $this->messages[strtolower( $key )] ?? null;
@@ -35,7 +40,7 @@ class MockWikiMessageGroup extends WikiMessageGroup {
  * Has validators that always return a validation error and warning.
  */
 class MockWikiValidationMessageGroup extends MockWikiMessageGroup {
-	public function getValidator() {
+	public function getValidator(): ValidationRunner {
 		$validator = new ValidationRunner( $this->getId() );
 		$validator->setValidators( [
 			[ 'class' => AnotherMockTranslateValidator::class ],

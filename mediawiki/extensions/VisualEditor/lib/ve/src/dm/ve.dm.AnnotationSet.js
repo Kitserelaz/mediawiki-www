@@ -9,14 +9,14 @@
  *
  * @constructor
  * @param {ve.dm.HashValueStore} store
- * @param {string[]} [storeHashes]
+ * @param {string[]} [storeHashes=[]]
  */
-ve.dm.AnnotationSet = function VeDmAnnotationSet( store, storeHashes ) {
+ve.dm.AnnotationSet = function VeDmAnnotationSet( store, storeHashes = [] ) {
 	// Parent constructor
 	this.store = store;
-	this.storeHashes = storeHashes || [];
+	this.storeHashes = storeHashes;
 
-	if ( this.get().indexOf( undefined ) !== -1 ) {
+	if ( this.get().includes( undefined ) ) {
 		throw new Error( 'Annotation with hash ' +
 			this.storeHashes[ this.get().indexOf( undefined ) ] +
 			' not found in store'
@@ -163,7 +163,7 @@ ve.dm.AnnotationSet.prototype.contains = function ( annotation ) {
  * @return {boolean} There is an annotation in the set with this store hash
  */
 ve.dm.AnnotationSet.prototype.containsHash = function ( storeHash ) {
-	return this.getHashes().indexOf( storeHash ) !== -1;
+	return this.getHashes().includes( storeHash );
 };
 
 /**
@@ -175,12 +175,7 @@ ve.dm.AnnotationSet.prototype.containsHash = function ( storeHash ) {
 ve.dm.AnnotationSet.prototype.containsAnyOf = function ( set ) {
 	const setHashes = set.getHashes(),
 		thisHashes = this.getHashes();
-	for ( let i = 0, length = setHashes.length; i < length; i++ ) {
-		if ( thisHashes.indexOf( setHashes[ i ] ) !== -1 ) {
-			return true;
-		}
-	}
-	return false;
+	return setHashes.some( ( hash ) => thisHashes.includes( hash ) );
 };
 
 /**
@@ -192,12 +187,7 @@ ve.dm.AnnotationSet.prototype.containsAnyOf = function ( set ) {
 ve.dm.AnnotationSet.prototype.containsAllOf = function ( set ) {
 	const setHashes = set.getHashes(),
 		thisHashes = this.getHashes();
-	for ( let i = 0, length = setHashes.length; i < length; i++ ) {
-		if ( thisHashes.indexOf( setHashes[ i ] ) === -1 ) {
-			return false;
-		}
-	}
-	return true;
+	return setHashes.every( ( hash ) => thisHashes.includes( hash ) );
 };
 
 /**
@@ -226,7 +216,7 @@ ve.dm.AnnotationSet.prototype.offsetOfHash = function ( storeHash ) {
  * This returns a new set with all annotations in the set for which the callback returned true for.
  *
  * @param {Function} callback Function that takes an annotation and returns boolean true to include
- * @param {boolean} [returnBool] For internal use only
+ * @param {boolean} [returnBool=false] For internal use only
  * @return {ve.dm.AnnotationSet|boolean} New set containing only the matching annotations
  */
 ve.dm.AnnotationSet.prototype.filter = function ( callback, returnBool ) {
@@ -358,15 +348,9 @@ ve.dm.AnnotationSet.prototype.withoutComparableSet = function ( set ) {
 ve.dm.AnnotationSet.prototype.equalsInOrder = function ( set ) {
 	const ourHashes = this.getHashes(),
 		theirHashes = set.getHashes();
-	if ( ourHashes.length !== theirHashes.length ) {
-		return false;
-	}
-	for ( let i = 0, len = ourHashes.length; i < len; i++ ) {
-		if ( ourHashes[ i ] !== theirHashes[ i ] ) {
-			return false;
-		}
-	}
-	return true;
+
+	return ourHashes.length === theirHashes.length &&
+		ourHashes.every( ( ourHash, i ) => ourHash === theirHashes[ i ] );
 };
 
 /**

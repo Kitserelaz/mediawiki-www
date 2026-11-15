@@ -5,11 +5,11 @@
 			"Tofeiku"
 		]
 	},
-	"codemirror-desc": "Menyediakan penyerlahan sintaks dalam editor teks wiki",
+	"codemirror-desc": "Menyediakan penyerlahan sintaks dalam alat sunting teks wiki",
 	"codemirror-toggle-label": "Penyerlahan sintaks",
 	"codemirror-toggle-label-short": "Sintaks",
 	"codemirror-prefs-summary": "Anda boleh mengetahui lebih lanjut tentang ciri ini dengan membaca [https://www.mediawiki.org/wiki/Special:MyLanguage/Help:Extension:CodeMirror laman bantuan ini].",
-	"codemirror-prefs-enable": "Dayakan penyerlahan sintaks untuk teks wiki",
+	"codemirror-prefs-enable": "Dayakan penyerlahan sintaks untuk wikiteks",
 	"codemirror-prefs-enable-help": "Diterapkan semasa menyunting laman kandungan dan templat.",
 	"codemirror-prefs-enable-code": "Dayakan penyerlahan sintaks untuk kod",
 	"codemirror-prefs-enable-code-help": "Diterapkan semasa menyunting kod seperti JavaScript, CSS atau modul Lua.",
@@ -215,6 +215,5 @@
 	"codemirror-potentially-slow": "berpotensi perlahan",
 	"codemirror-validate-js-syntaxerror": "Ralat sintaks pada lajur $1 pada baris $2: $3",
 	"codemirror-ve-limit-exceeded": "Dokumen terlalu besar untuk penyerlahan sintaks dan telah dilumpuhkan.",
-	"codemirror-ve-limit-exceeded-info": "Maklumat lanjut",
-	"codemirror-v6-prefs-colorblind": "Gunakan skema mesra buta warna"
+	"codemirror-ve-limit-exceeded-info": "Maklumat lanjut"
 }

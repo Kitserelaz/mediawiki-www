@@ -30,7 +30,6 @@ module.exports = ToolView.extend( {
 
 	click: function () {
 		let page;
-		const that = this;
 
 		// find the next page.
 		this.eventBus.trigger( 'showTool', this );
@@ -44,28 +43,31 @@ module.exports = ToolView.extend( {
 				let url;
 				// If API returns the content for next page 'result.pagetriagelist.pages[ 0 ]'
 				// then user should be able to advance to next page
-				if ( result.pagetriagelist && result.pagetriagelist.pages && result.pagetriagelist.pages[ 0 ] ) {
+				if (
+					result.pagetriagelist &&
+					result.pagetriagelist.pages &&
+					result.pagetriagelist.pages[ 0 ]
+				) {
 					page = result.pagetriagelist.pages[ 0 ];
 					if ( page.title ) {
-						url = new mw.Uri( mw.config.get( 'wgArticlePath' ).replace(
+						url = new URL( mw.config.get( 'wgArticlePath' ).replace(
 							'$1', mw.util.wikiUrlencode( page.title )
-						) );
+						), location.href );
 						if ( page.is_redirect === '1' ) {
-							url.query.redirect = 'no';
+							url.searchParams.set( 'redirect', 'no' );
 						}
-						if ( that.pageTriageUi ) {
-							// eslint-disable-next-line camelcase
-							url.query.pagetriage_ui = that.pageTriageUi;
+						if ( this.pageTriageUi ) {
+							url.searchParams.set( 'pagetriage_ui', this.pageTriageUi );
 						}
 						window.location.href = url.toString();
 					} else {
-						that.disable();
+						this.disable();
 					}
 				} else {
-					that.disable();
+					this.disable();
 				}
 			}, () => {
-				that.disable();
+				this.disable();
 			} );
 	}
 } );

@@ -25,10 +25,8 @@ use MediaWiki\Extension\PageProperties\Aliases\Html as HtmlClass;
 use MediaWiki\Extension\PageProperties\Aliases\Title as TitleClass;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
-
-if ( is_readable( __DIR__ . '/../vendor/autoload.php' ) ) {
-	include_once __DIR__ . '/../vendor/autoload.php';
-}
+use MediaWiki\User\UserGroupManager;
+use Psr\Log\LoggerInterface;
 
 class PageProperties {
 
@@ -41,7 +39,7 @@ class PageProperties {
 	/** @var UserGroupManager */
 	private static $userGroupManager;
 
-	/** @var Logger */
+	/** @var LoggerInterface */
 	private static $Logger;
 
 	/** @var int */
@@ -68,8 +66,10 @@ class PageProperties {
 
 		// @TODO use directly the function makeExportDataForSubject
 		// SemanticMediawiki/includes/export/SMW_Exporter.php
-		$export_rdf = SpecialPage::getTitleFor( 'ExportRDF' );
-		if ( $export_rdf->isKnown() ) {
+		$export_rdf = MediaWikiServices::getInstance()
+			->getSpecialPageFactory()
+			->getTitleForAlias( 'ExportRDF' );
+		if ( $export_rdf ) {
 			$export_url = $export_rdf->getFullURL( [ 'page' => $title->getFullText(), 'recursive' => '1', 'backlinks' => 0 ] );
 
 			try {
@@ -351,11 +351,7 @@ class PageProperties {
 		if ( !$title || !$title->canExist() ) {
 			return null;
 		}
-		// MW 1.36+
-		if ( method_exists( MediaWikiServices::class, 'getWikiPageFactory' ) ) {
-			return MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
-		}
-		return WikiPage::factory( $title );
+		return MediaWikiServices::getInstance()->getWikiPageFactory()->newFromTitle( $title );
 	}
 
 	/**

@@ -28,7 +28,6 @@ class DiscussionToolsHandlerTest extends MediaWikiIntegrationTestCase {
 		$resourceLoaderModules = [];
 
 		$contextSource = $this->createMock( IContextSource::class );
-		$contextSource->method( 'msg' )->willReturn( 'Report' );
 
 		$mockReportIncidentController = $this->createMock( ReportIncidentController::class );
 		// Mock the return value of ::shouldAddMenuItem to be $shouldAddMenuItemMockResult

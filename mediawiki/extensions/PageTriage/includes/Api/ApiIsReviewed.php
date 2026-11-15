@@ -13,16 +13,12 @@ use MediaWiki\Page\WikiPageFactory;
  */
 class ApiIsReviewed extends ApiQueryBase {
 
-	private WikiPageFactory $wikiPageFactory;
-
-	/**
-	 * @param ApiQuery $queryModule
-	 * @param string $moduleName
-	 * @param WikiPageFactory $wikiPageFactory
-	 */
-	public function __construct( ApiQuery $queryModule, $moduleName, WikiPageFactory $wikiPageFactory ) {
+	public function __construct(
+		ApiQuery $queryModule,
+		string $moduleName,
+		private readonly WikiPageFactory $wikiPageFactory,
+	) {
 		parent::__construct( $queryModule, $moduleName );
-		$this->wikiPageFactory = $wikiPageFactory;
 	}
 
 	public function execute() {

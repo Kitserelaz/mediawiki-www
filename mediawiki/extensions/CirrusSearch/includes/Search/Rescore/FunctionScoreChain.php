@@ -1,4 +1,7 @@
 <?php
+/**
+ * @license GPL-2.0-or-later
+ */
 
 namespace CirrusSearch\Search\Rescore;
 
@@ -7,23 +10,6 @@ use CirrusSearch\Profile\ArrayPathSetter;
 use CirrusSearch\Profile\SearchProfileService;
 use CirrusSearch\Search\SearchContext;
 use Elastica\Query\FunctionScore;
-
-/**
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
- */
 
 class FunctionScoreChain {
 	/**
@@ -91,7 +77,7 @@ class FunctionScoreChain {
 		$this->cirrusSearchHookRunner = $cirrusSearchHookRunner;
 	}
 
-	private function applyOverrides( array $chain, array $overrides ) {
+	private function applyOverrides( array $chain, array $overrides ): array {
 		$transformer = new ArrayPathSetter( $overrides );
 		return $transformer->transform( $chain );
 	}
@@ -187,9 +173,6 @@ class FunctionScoreChain {
 					throw new InvalidRescoreProfileException( "Invalid function score type {$func['type']}: expected " .
 						BoostFunctionBuilder::class . " but was " . get_class( $builder ) );
 				}
-				/**
-				 * @var $builder BoostFunctionBuilder
-				 */
 				return $builder;
 		}
 	}

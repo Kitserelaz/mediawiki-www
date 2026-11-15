@@ -1,14 +1,15 @@
 {
 	"@metadata": {
 		"authors": [
+			"Escargot bleu",
 			"Florian COLLIN",
 			"Gomoko",
+			"Mahabarata",
 			"Pamputt",
 			"Pols12",
 			"Thibaut120094",
 			"Verdy p",
-			"Wladek92",
-			"Mahabarata"
+			"Wladek92"
 		]
 	},
 	"globalwatchlist": "Liste de suivi globale",
@@ -59,6 +60,7 @@
 	"globalwatchlist-option-grouppage": "Grouper les résultats par page",
 	"globalwatchlist-option-live": "Mises à jour en direct",
 	"globalwatchlist-otheroptions": "Autres paramètres",
+	"globalwatchlist-permalink": "lien permanent",
 	"globalwatchlist-prefs-settings": "Pour définir les préférences pour la liste de suivi globale, veuillez vous rendre sur [[Special:GlobalWatchlistSettings]].",
 	"globalwatchlist-refresh": "Actualiser",
 	"globalwatchlist-remove": "Retirer",
@@ -77,7 +79,7 @@
 	"globalwatchlist-show-logentries": "Afficher les entrées de journal",
 	"globalwatchlist-show-newpages": "Afficher les créations de nouvelles pages",
 	"globalwatchlist-sitelist": "Liste de sites définis par l’utilisateur",
-	"globalwatchlist-tags": "Balise{{PLURAL:$1||s}} : $2",
+	"globalwatchlist-tags": "<bdi>{{PLURAL:$1|Balise|Balises}}</bdi> : $2",
 	"globalwatchlist-tour-addsite": "Ajouter un site",
 	"globalwatchlist-tour-addsite-description": "Cliquer ci-dessus pour ajouter une autre ligne pour un site.",
 	"globalwatchlist-tour-fastmode": "Mode rapide",

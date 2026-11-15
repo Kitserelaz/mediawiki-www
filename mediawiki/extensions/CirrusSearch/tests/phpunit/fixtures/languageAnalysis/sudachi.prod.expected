@@ -1,0 +1,801 @@
+{
+    "analyzer": {
+        "keyword": {
+            "filter": [
+                "truncate_keyword"
+            ],
+            "tokenizer": "no_splitting",
+            "type": "custom"
+        },
+        "lowercase_keyword": {
+            "filter": [
+                "truncate_keyword",
+                "icu_normalizer",
+                "icu_folding",
+                "remove_empty"
+            ],
+            "tokenizer": "no_splitting",
+            "type": "custom"
+        },
+        "near_match": {
+            "char_filter": [
+                "near_space_flattener"
+            ],
+            "filter": [
+                "truncate_keyword",
+                "icu_normalizer"
+            ],
+            "tokenizer": "no_splitting",
+            "type": "custom"
+        },
+        "near_match_asciifolding": {
+            "char_filter": [
+                "near_space_flattener"
+            ],
+            "filter": [
+                "truncate_keyword",
+                "icu_normalizer",
+                "icu_folding",
+                "remove_empty"
+            ],
+            "tokenizer": "no_splitting",
+            "type": "custom"
+        },
+        "plain": {
+            "char_filter": [
+                "nnbsp_norm",
+                "word_break_helper"
+            ],
+            "filter": [
+                "icutokrep_no_camel_split",
+                "icu_normalizer",
+                "preserve_original_recorder",
+                "icu_folding",
+                "preserve_original",
+                "remove_empty"
+            ],
+            "tokenizer": "textify_icu_tokenizer",
+            "type": "custom"
+        },
+        "plain_search": {
+            "char_filter": [
+                "nnbsp_norm",
+                "word_break_helper"
+            ],
+            "filter": [
+                "icutokrep_no_camel_split",
+                "icu_normalizer"
+            ],
+            "tokenizer": "textify_icu_tokenizer",
+            "type": "custom"
+        },
+        "prefix": {
+            "char_filter": [
+                "near_space_flattener"
+            ],
+            "filter": [
+                "icu_normalizer"
+            ],
+            "tokenizer": "prefix",
+            "type": "custom"
+        },
+        "prefix_asciifolding": {
+            "char_filter": [
+                "near_space_flattener"
+            ],
+            "filter": [
+                "icu_normalizer",
+                "icu_folding",
+                "remove_empty"
+            ],
+            "tokenizer": "prefix",
+            "type": "custom"
+        },
+        "short_text": {
+            "filter": [
+                "icu_normalizer",
+                "aggressive_splitting",
+                "preserve_original_recorder",
+                "icu_folding",
+                "preserve_original",
+                "remove_empty"
+            ],
+            "tokenizer": "whitespace",
+            "type": "custom"
+        },
+        "short_text_search": {
+            "filter": [
+                "icu_normalizer",
+                "aggressive_splitting"
+            ],
+            "tokenizer": "whitespace",
+            "type": "custom"
+        },
+        "source_text_plain": {
+            "char_filter": [
+                "word_break_helper_source_text"
+            ],
+            "filter": [
+                "icutokrep_no_camel_split",
+                "icu_normalizer"
+            ],
+            "tokenizer": "textify_icu_tokenizer",
+            "type": "custom"
+        },
+        "source_text_plain_search": {
+            "char_filter": [
+                "word_break_helper_source_text"
+            ],
+            "filter": [
+                "icutokrep_no_camel_split",
+                "icu_normalizer"
+            ],
+            "tokenizer": "textify_icu_tokenizer",
+            "type": "custom"
+        },
+        "suggest": {
+            "filter": [
+                "icutokrep_no_camel_split",
+                "icu_normalizer",
+                "suggest_shingle"
+            ],
+            "tokenizer": "textify_icu_tokenizer",
+            "type": "custom"
+        },
+        "suggest_reverse": {
+            "filter": [
+                "icutokrep_no_camel_split",
+                "icu_normalizer",
+                "suggest_shingle",
+                "reverse"
+            ],
+            "tokenizer": "textify_icu_tokenizer",
+            "type": "custom"
+        },
+        "text": {
+            "char_filter": [
+                "globo_norm",
+                "acronym_fixer",
+                "camelCase_splitter",
+                "word_break_helper",
+                "arabic_extended_norm",
+                "invis_cleanup",
+                "sudachi_combo_filter",
+                "sudachi_char_map",
+                "sudachi_tok_break"
+            ],
+            "filter": [
+                "sudachi_split",
+                "sudachi_baseform",
+                "sudachi_posfilter",
+                "sudachi_ja_stop",
+                "icu_normalizer",
+                "icu_folding",
+                "remove_empty",
+                "sudachi_word_delim",
+                "flatten_graph"
+            ],
+            "tokenizer": "sudachi_tok",
+            "type": "custom"
+        },
+        "text_search": {
+            "char_filter": [
+                "globo_norm",
+                "acronym_fixer",
+                "camelCase_splitter",
+                "word_break_helper",
+                "arabic_extended_norm",
+                "invis_cleanup",
+                "sudachi_combo_filter",
+                "sudachi_char_map",
+                "sudachi_tok_break"
+            ],
+            "filter": [
+                "sudachi_split",
+                "sudachi_baseform",
+                "sudachi_posfilter",
+                "sudachi_ja_stop",
+                "icu_normalizer",
+                "icu_folding",
+                "remove_empty",
+                "sudachi_word_delim",
+                "flatten_graph"
+            ],
+            "tokenizer": "sudachi_tok",
+            "type": "custom"
+        },
+        "token_reverse": {
+            "filter": [
+                "reverse"
+            ],
+            "tokenizer": "no_splitting",
+            "type": "custom"
+        },
+        "trigram": {
+            "filter": [
+                "icu_normalizer"
+            ],
+            "tokenizer": "trigram",
+            "type": "custom"
+        },
+        "trigram_anchored": {
+            "char_filter": [
+                "add_regex_start_end_anchors"
+            ],
+            "filter": [
+                "icu_normalizer"
+            ],
+            "tokenizer": "trigram",
+            "type": "custom"
+        },
+        "word_prefix": {
+            "filter": [
+                "icutokrep_no_camel_split",
+                "icu_normalizer",
+                "prefix_ngram_filter"
+            ],
+            "tokenizer": "textify_icu_tokenizer",
+            "type": "custom"
+        }
+    },
+    "char_filter": {
+        "arabic_extended_norm": {
+            "type": "limited_mapping",
+            "mappings": [
+                "\\uFB8E=>\\u0643",
+                "\\uFB8F=>\\u0643",
+                "\\uFB90=>\\u0643",
+                "\\uFB91=>\\u0643",
+                "\\u06A9=>\\u0643",
+                "\\u06AA=>\\u0643",
+                "\\uFEDB=>\\u0643",
+                "\\uFEDC=>\\u0643",
+                "\\uFED9=>\\u0643",
+                "\\uFEDA=>\\u0643",
+                "\\uFBFC=>\\u064A",
+                "\\uFBFD=>\\u064A",
+                "\\uFBFE=>\\u064A",
+                "\\uFBFF=>\\u064A",
+                "\\u06CC=>\\u064A",
+                "\\uFBE8=>\\u064A",
+                "\\uFBE9=>\\u064A",
+                "\\uFEEF=>\\u064A",
+                "\\uFEF0=>\\u064A",
+                "\\u0649=>\\u064A",
+                "\\u06CD=>\\u064A",
+                "\\uFBE4=>\\u064A",
+                "\\uFBE5=>\\u064A",
+                "\\uFBE6=>\\u064A",
+                "\\uFBE7=>\\u064A",
+                "\\u06D0=>\\u064A",
+                "\\uFBA6=>\\u0647",
+                "\\uFBA7=>\\u0647",
+                "\\uFBA8=>\\u0647",
+                "\\uFBA9=>\\u0647",
+                "\\u06C1=>\\u0647",
+                "\\u06C0=>\\u0647",
+                "\\uFBA4=>\\u0647",
+                "\\uFBA5=>\\u0647",
+                "\\u06D5=>\\u0647"
+            ]
+        },
+        "dotted_I_fix": {
+            "type": "limited_mapping",
+            "mappings": [
+                "\u0130=>I"
+            ]
+        },
+        "globo_norm": {
+            "type": "mapping",
+            "mappings": [
+                "`=>'",
+                "\u00b4=>'",
+                "\u02b9=>'",
+                "\u02bb=>'",
+                "\u02bc=>'",
+                "\u02bd=>'",
+                "\u02be=>'",
+                "\u02bf=>'",
+                "\u02cb=>'",
+                "\u055a=>'",
+                "\\u05F3=>'",
+                "\u2018=>'",
+                "\u2019=>'",
+                "\u201b=>'",
+                "\u2032=>'",
+                "\u2035=>'",
+                "\ua78c=>'",
+                "\uff07=>'",
+                "\uff40=>'",
+                "\\u202F=>\\u0020",
+                "\u02c8=>",
+                "\u02cc=>",
+                "\\u0640=>",
+                "\u066c=>,",
+                "\u060c=>,",
+                "\u055b=>",
+                "\u055c=>",
+                "\u055e=>",
+                "\u00b5=>\u03bc",
+                "\\u05F0=>\\u05D5\\u05D5",
+                "\\u05F1=>\\u05D5\\u05D9",
+                "\\u05F2=>\\u05D9\\u05D9",
+                "\\uFB1F=>\\u05D9\\u05D9\\u05B7",
+                "\\u05D9\\u05B7\\u05D9=>\\u05D9\\u05D9\\u05B7",
+                "\u0d23\u0d4d\\u200D=>\u0d7a",
+                "\u0d28\u0d4d\\u200D=>\u0d7b",
+                "\u0d30\u0d4d\\u200D=>\u0d7c",
+                "\u0d32\u0d4d\\u200D=>\u0d7d",
+                "\u0d33\u0d4d\\u200D=>\u0d7e",
+                "\u09a4\u09cd\\u200D=>\u09ce",
+                "\\u061C=>"
+            ]
+        },
+        "icu_normalizer": {
+            "type": "icu_normalizer",
+            "name": "nfkc_cf"
+        },
+        "invis_cleanup": {
+            "type": "mapping",
+            "mappings": [
+                "\\u200B=>\\u0020",
+                "\\u00AD=>",
+                "\\u200C=>",
+                "\\u200D=>",
+                "\\u2060=>",
+                "\\uFEFF=>",
+                "\\u200E=>",
+                "\\u200F=>",
+                "\\u202A=>",
+                "\\u202B=>",
+                "\\u202C=>",
+                "\\u202D=>",
+                "\\u202E=>",
+                "\\u2066=>",
+                "\\u2067=>",
+                "\\u2068=>",
+                "\\u2069=>",
+                "\\u2061=>",
+                "\\u2062=>",
+                "\\u2063=>",
+                "\\u2064=>",
+                "\ufe00=>",
+                "\ufe01=>",
+                "\ufe02=>",
+                "\ufe03=>",
+                "\ufe04=>",
+                "\ufe05=>",
+                "\ufe06=>",
+                "\ufe07=>",
+                "\ufe08=>",
+                "\ufe09=>",
+                "\ufe0a=>",
+                "\ufe0b=>",
+                "\ufe0c=>",
+                "\ufe0d=>",
+                "\ufe0e=>",
+                "\ufe0f=>",
+                "\udb40\udd00=>",
+                "\udb40\udd01=>",
+                "\udb40\udd02=>",
+                "\udb40\udd03=>",
+                "\udb40\udd04=>",
+                "\udb40\udd05=>",
+                "\udb40\udd06=>",
+                "\udb40\udd07=>",
+                "\udb40\udd08=>",
+                "\udb40\udd09=>",
+                "\udb40\udd0a=>",
+                "\udb40\udd0b=>",
+                "\udb40\udd0c=>",
+                "\udb40\udd0d=>",
+                "\udb40\udd0e=>",
+                "\udb40\udd0f=>",
+                "\udb40\udd10=>",
+                "\udb40\udd11=>",
+                "\udb40\udd12=>",
+                "\udb40\udd13=>",
+                "\udb40\udd14=>",
+                "\udb40\udd15=>",
+                "\udb40\udd16=>",
+                "\udb40\udd17=>",
+                "\udb40\udd18=>",
+                "\udb40\udd19=>",
+                "\udb40\udd1a=>",
+                "\udb40\udd1b=>",
+                "\udb40\udd1c=>",
+                "\udb40\udd1d=>",
+                "\udb40\udd1e=>",
+                "\udb40\udd1f=>",
+                "\udb40\udd20=>",
+                "\udb40\udd21=>",
+                "\udb40\udd22=>",
+                "\udb40\udd23=>",
+                "\udb40\udd24=>",
+                "\udb40\udd25=>",
+                "\udb40\udd26=>",
+                "\udb40\udd27=>",
+                "\udb40\udd28=>",
+                "\udb40\udd29=>",
+                "\udb40\udd2a=>",
+                "\udb40\udd2b=>",
+                "\udb40\udd2c=>",
+                "\udb40\udd2d=>",
+                "\udb40\udd2e=>",
+                "\udb40\udd2f=>",
+                "\udb40\udd30=>",
+                "\udb40\udd31=>",
+                "\udb40\udd32=>",
+                "\udb40\udd33=>",
+                "\udb40\udd34=>",
+                "\udb40\udd35=>",
+                "\udb40\udd36=>",
+                "\udb40\udd37=>",
+                "\udb40\udd38=>",
+                "\udb40\udd39=>",
+                "\udb40\udd3a=>",
+                "\udb40\udd3b=>",
+                "\udb40\udd3c=>",
+                "\udb40\udd3d=>",
+                "\udb40\udd3e=>",
+                "\udb40\udd3f=>",
+                "\udb40\udd40=>",
+                "\udb40\udd41=>",
+                "\udb40\udd42=>",
+                "\udb40\udd43=>",
+                "\udb40\udd44=>",
+                "\udb40\udd45=>",
+                "\udb40\udd46=>",
+                "\udb40\udd47=>",
+                "\udb40\udd48=>",
+                "\udb40\udd49=>",
+                "\udb40\udd4a=>",
+                "\udb40\udd4b=>",
+                "\udb40\udd4c=>",
+                "\udb40\udd4d=>",
+                "\udb40\udd4e=>",
+                "\udb40\udd4f=>",
+                "\udb40\udd50=>",
+                "\udb40\udd51=>",
+                "\udb40\udd52=>",
+                "\udb40\udd53=>",
+                "\udb40\udd54=>",
+                "\udb40\udd55=>",
+                "\udb40\udd56=>",
+                "\udb40\udd57=>",
+                "\udb40\udd58=>",
+                "\udb40\udd59=>",
+                "\udb40\udd5a=>",
+                "\udb40\udd5b=>",
+                "\udb40\udd5c=>",
+                "\udb40\udd5d=>",
+                "\udb40\udd5e=>",
+                "\udb40\udd5f=>",
+                "\udb40\udd60=>",
+                "\udb40\udd61=>",
+                "\udb40\udd62=>",
+                "\udb40\udd63=>",
+                "\udb40\udd64=>",
+                "\udb40\udd65=>",
+                "\udb40\udd66=>",
+                "\udb40\udd67=>",
+                "\udb40\udd68=>",
+                "\udb40\udd69=>",
+                "\udb40\udd6a=>",
+                "\udb40\udd6b=>",
+                "\udb40\udd6c=>",
+                "\udb40\udd6d=>",
+                "\udb40\udd6e=>",
+                "\udb40\udd6f=>",
+                "\udb40\udd70=>",
+                "\udb40\udd71=>",
+                "\udb40\udd72=>",
+                "\udb40\udd73=>",
+                "\udb40\udd74=>",
+                "\udb40\udd75=>",
+                "\udb40\udd76=>",
+                "\udb40\udd77=>",
+                "\udb40\udd78=>",
+                "\udb40\udd79=>",
+                "\udb40\udd7a=>",
+                "\udb40\udd7b=>",
+                "\udb40\udd7c=>",
+                "\udb40\udd7d=>",
+                "\udb40\udd7e=>",
+                "\udb40\udd7f=>",
+                "\udb40\udd80=>",
+                "\udb40\udd81=>",
+                "\udb40\udd82=>",
+                "\udb40\udd83=>",
+                "\udb40\udd84=>",
+                "\udb40\udd85=>",
+                "\udb40\udd86=>",
+                "\udb40\udd87=>",
+                "\udb40\udd88=>",
+                "\udb40\udd89=>",
+                "\udb40\udd8a=>",
+                "\udb40\udd8b=>",
+                "\udb40\udd8c=>",
+                "\udb40\udd8d=>",
+                "\udb40\udd8e=>",
+                "\udb40\udd8f=>",
+                "\udb40\udd90=>",
+                "\udb40\udd91=>",
+                "\udb40\udd92=>",
+                "\udb40\udd93=>",
+                "\udb40\udd94=>",
+                "\udb40\udd95=>",
+                "\udb40\udd96=>",
+                "\udb40\udd97=>",
+                "\udb40\udd98=>",
+                "\udb40\udd99=>",
+                "\udb40\udd9a=>",
+                "\udb40\udd9b=>",
+                "\udb40\udd9c=>",
+                "\udb40\udd9d=>",
+                "\udb40\udd9e=>",
+                "\udb40\udd9f=>",
+                "\udb40\udda0=>",
+                "\udb40\udda1=>",
+                "\udb40\udda2=>",
+                "\udb40\udda3=>",
+                "\udb40\udda4=>",
+                "\udb40\udda5=>",
+                "\udb40\udda6=>",
+                "\udb40\udda7=>",
+                "\udb40\udda8=>",
+                "\udb40\udda9=>",
+                "\udb40\uddaa=>",
+                "\udb40\uddab=>",
+                "\udb40\uddac=>",
+                "\udb40\uddad=>",
+                "\udb40\uddae=>",
+                "\udb40\uddaf=>",
+                "\udb40\uddb0=>",
+                "\udb40\uddb1=>",
+                "\udb40\uddb2=>",
+                "\udb40\uddb3=>",
+                "\udb40\uddb4=>",
+                "\udb40\uddb5=>",
+                "\udb40\uddb6=>",
+                "\udb40\uddb7=>",
+                "\udb40\uddb8=>",
+                "\udb40\uddb9=>",
+                "\udb40\uddba=>",
+                "\udb40\uddbb=>",
+                "\udb40\uddbc=>",
+                "\udb40\uddbd=>",
+                "\udb40\uddbe=>",
+                "\udb40\uddbf=>",
+                "\udb40\uddc0=>",
+                "\udb40\uddc1=>",
+                "\udb40\uddc2=>",
+                "\udb40\uddc3=>",
+                "\udb40\uddc4=>",
+                "\udb40\uddc5=>",
+                "\udb40\uddc6=>",
+                "\udb40\uddc7=>",
+                "\udb40\uddc8=>",
+                "\udb40\uddc9=>",
+                "\udb40\uddca=>",
+                "\udb40\uddcb=>",
+                "\udb40\uddcc=>",
+                "\udb40\uddcd=>",
+                "\udb40\uddce=>",
+                "\udb40\uddcf=>",
+                "\udb40\uddd0=>",
+                "\udb40\uddd1=>",
+                "\udb40\uddd2=>",
+                "\udb40\uddd3=>",
+                "\udb40\uddd4=>",
+                "\udb40\uddd5=>",
+                "\udb40\uddd6=>",
+                "\udb40\uddd7=>",
+                "\udb40\uddd8=>",
+                "\udb40\uddd9=>",
+                "\udb40\uddda=>",
+                "\udb40\udddb=>",
+                "\udb40\udddc=>",
+                "\udb40\udddd=>",
+                "\udb40\uddde=>",
+                "\udb40\udddf=>",
+                "\udb40\udde0=>",
+                "\udb40\udde1=>",
+                "\udb40\udde2=>",
+                "\udb40\udde3=>",
+                "\udb40\udde4=>",
+                "\udb40\udde5=>",
+                "\udb40\udde6=>",
+                "\udb40\udde7=>",
+                "\udb40\udde8=>",
+                "\udb40\udde9=>",
+                "\udb40\uddea=>",
+                "\udb40\uddeb=>",
+                "\udb40\uddec=>",
+                "\udb40\udded=>",
+                "\udb40\uddee=>",
+                "\udb40\uddef=>"
+            ]
+        },
+        "near_space_flattener": {
+            "type": "limited_mapping",
+            "mappings": [
+                "'=>\\u0020",
+                "\\u2019=>\\u0020",
+                "\\u02BC=>\\u0020",
+                "_=>\\u0020",
+                "-=>\\u0020"
+            ]
+        },
+        "nnbsp_norm": {
+            "type": "limited_mapping",
+            "mappings": [
+                "\\u202F=>\\u0020"
+            ]
+        },
+        "regex_acronym_fixer": {
+            "type": "pattern_replace",
+            "pattern": "(?<=(?:^|\\P{L})\\p{L})[.\uff0e](\\p{L})(?=\\P{L}|$)",
+            "replacement": "$1"
+        },
+        "regex_camelCase": {
+            "type": "pattern_replace",
+            "pattern": "(\\p{Ll}[\\p{M}\\p{Cf}]*)([\\p{Lu}\\p{Lt}])",
+            "replacement": "$1 $2"
+        },
+        "sudachi_char_map": {
+            "type": "limited_mapping",
+            "mappings": [
+                "\uff08=>\\u0020",
+                "\uff09=>\\u0020",
+                "\u301c=>\uff5e"
+            ]
+        },
+        "sudachi_combo_filter": {
+            "type": "pattern_replace",
+            "pattern": "[\\u0300-\\u0362]",
+            "replacement": ""
+        },
+        "sudachi_tok_break": {
+            "type": "pattern_replace",
+            "pattern": "([^\u3001\u3002\\s\u300c\u300d\u30fb]{8000})",
+            "replacement": "$1 "
+        },
+        "word_break_helper": {
+            "type": "limited_mapping",
+            "mappings": [
+                "_=>\\u0020",
+                ":=>\\u0020",
+                ".=>\\u0020",
+                "(=>\\u0020",
+                ")=>\\u0020",
+                "\uff0e=>\\u0020",
+                "\uff3f=>\\u0020",
+                "\uff1a=>\\u0020",
+                "\u00b7=>\\u0020"
+            ]
+        },
+        "word_break_helper_source_text": {
+            "type": "limited_mapping",
+            "mappings": [
+                "_=>\\u0020",
+                ".=>\\u0020",
+                "(=>\\u0020",
+                ")=>\\u0020",
+                ":=>\\u0020"
+            ]
+        }
+    },
+    "filter": {
+        "aggressive_splitting": {
+            "type": "word_delimiter_graph",
+            "stem_english_possessive": false,
+            "preserve_original": false
+        },
+        "asciifolding": {
+            "type": "asciifolding",
+            "preserve_original": false
+        },
+        "asciifolding_preserve": {
+            "type": "asciifolding",
+            "preserve_original": true
+        },
+        "icu_folding": {
+            "type": "icu_folding",
+            "unicodeSetFilter": "[^\u304c-\u30fe]"
+        },
+        "icu_nfkc_normalization": {
+            "type": "icu_normalizer",
+            "name": "nfkc"
+        },
+        "icu_normalizer": {
+            "type": "icu_normalizer",
+            "name": "nfkc_cf"
+        },
+        "icutokrep_no_camel_split": {
+            "type": "icu_token_repair",
+            "keep_camel_split": false
+        },
+        "lowercase": {
+            "type": "lowercase"
+        },
+        "prefix_ngram_filter": {
+            "type": "edge_ngram",
+            "max_gram": 255
+        },
+        "remove_empty": {
+            "type": "length",
+            "min": 1
+        },
+        "sudachi_posfilter": {
+            "type": "sudachi_part_of_speech",
+            "stoptags": [
+                "\u63a5\u7d9a\u8a5e",
+                "\u52a9\u52d5\u8a5e",
+                "\u52a9\u8a5e",
+                "\u52a9\u8a5e,\u683c\u52a9\u8a5e",
+                "\u52a9\u8a5e,\u526f\u52a9\u8a5e",
+                "\u52a9\u8a5e,\u4fc2\u52a9\u8a5e",
+                "\u52a9\u8a5e,\u63a5\u7d9a\u52a9\u8a5e",
+                "\u52a9\u8a5e,\u7d42\u52a9\u8a5e",
+                "\u52a9\u8a5e,\u6e96\u4f53\u52a9\u8a5e",
+                "\u88dc\u52a9\u8a18\u53f7,\u53e5\u70b9",
+                "\u88dc\u52a9\u8a18\u53f7,\u8aad\u70b9",
+                "\u88dc\u52a9\u8a18\u53f7,\u62ec\u5f27\u958b",
+                "\u88dc\u52a9\u8a18\u53f7,\u62ec\u5f27\u9589",
+                "\u88dc\u52a9\u8a18\u53f7,\uff21\uff21",
+                "\u88dc\u52a9\u8a18\u53f7,\uff21\uff21,\u4e00\u822c",
+                "\u88dc\u52a9\u8a18\u53f7,\uff21\uff21,\u9854\u6587\u5b57",
+                "\u7a7a\u767d"
+            ]
+        },
+        "sudachi_word_delim": {
+            "type": "word_delimiter_graph",
+            "split_on_case_change": false,
+            "stem_english_possessive": true
+        },
+        "suggest_shingle": {
+            "type": "shingle",
+            "min_shingle_size": 2,
+            "max_shingle_size": 3,
+            "output_unigrams": true
+        },
+        "truncate_keyword": {
+            "type": "truncate_norm",
+            "length": 5000
+        }
+    },
+    "normalizer": {
+        "keyword": {
+            "type": "custom",
+            "filter": [
+                "truncate_keyword"
+            ]
+        },
+        "lowercase_keyword": {
+            "type": "custom",
+            "filter": [
+                "truncate_keyword",
+                "icu_normalizer"
+            ]
+        }
+    },
+    "tokenizer": {
+        "no_splitting": {
+            "type": "keyword"
+        },
+        "prefix": {
+            "type": "edge_ngram",
+            "max_gram": 255
+        },
+        "sudachi_tok": {
+            "type": "sudachi_tokenizer",
+            "split_mode": "B"
+        },
+        "trigram": {
+            "type": "nGram",
+            "min_gram": 3,
+            "max_gram": 3
+        }
+    }
+}

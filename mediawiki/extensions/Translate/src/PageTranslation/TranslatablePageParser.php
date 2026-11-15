@@ -4,6 +4,7 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
 use MediaWiki\Extension\Translate\Utilities\ParsingPlaceholderFactory;
+use Wikimedia\Message\MessageValue;
 
 /**
  * Generates ParserOutput from text or removes all tags from a text.
@@ -75,7 +76,7 @@ class TranslatablePageParser {
 			if ( preg_match( '~<translate( nowrap)?>~', $contentWithoutTags ) !== 0 ) {
 				throw new ParsingFailure(
 					'Nested tags',
-					[ 'pt-parse-nested', $contentWithoutTags ]
+					new MessageValue( 'pt-parse-nested', [ wfEscapeWikiText( $contentWithoutTags ) ] )
 				);
 			}
 
@@ -99,12 +100,15 @@ class TranslatablePageParser {
 		if ( preg_match( '~<translate( nowrap)?>~', $text ) !== 0 ) {
 			throw new ParsingFailure(
 				'Unmatched opening tag',
-				[ 'pt-parse-open', $prettyTemplate ]
+				// TODO this and the below one should use ->plaintextParams() instead of wfEscapeWikiText,
+				// but MediaWiki\EditPage\Constraint\EditFilterMergedContentHookConstraint::formatStatusErrors()
+				// calls ->plain() instead of ->parse(), at which point the meaning of plain text params gets lost
+				new MessageValue( 'pt-parse-open', [ wfEscapeWikiText( $prettyTemplate ) ] )
 			);
 		} elseif ( str_contains( $text, '</translate>' ) ) {
 			throw new ParsingFailure(
 				"Unmatched closing tag",
-				[ 'pt-parse-close', $prettyTemplate ]
+				new MessageValue( 'pt-parse-close', [ wfEscapeWikiText( $prettyTemplate ) ] )
 			);
 		}
 
@@ -161,7 +165,7 @@ class TranslatablePageParser {
 		if ( $count > 1 ) {
 			throw new ParsingFailure(
 				'Multiple translation unit markers',
-				[ 'pt-shake-multiple', $content ]
+				new MessageValue( 'pt-shake-multiple', [ wfEscapeWikiText( $content ) ] )
 			);
 		}
 
@@ -170,6 +174,20 @@ class TranslatablePageParser {
 		if ( $count === 1 ) {
 			foreach ( $matches as $match ) {
 				[ /*full*/, $id ] = $match;
+
+				if ( trim( $id ) === '' ) {
+					throw new ParsingFailure(
+						'Translation unit marker has no name',
+						new MessageValue( 'pt-shake-empty-marker' )
+					);
+				}
+
+				if ( trim( $id ) !== $id ) {
+					throw new ParsingFailure(
+						'Translation unit marker has leading or trailing whitespace',
+						new MessageValue( 'pt-shake-whitespace', [ wfEscapeWikiText( $id ) ] )
+					);
+				}
 
 				// Currently handle only these two standard places.
 				// Is this too strict?
@@ -181,12 +199,12 @@ class TranslatablePageParser {
 				if ( preg_match( $re, $content ) === 1 ) {
 					throw new ParsingFailure(
 						'Translation unit marker is in unsupported position',
-						[ 'pt-shake-position', $content ]
+						new MessageValue( 'pt-shake-position', [ wfEscapeWikiText( $content ) ] )
 					);
 				} elseif ( trim( $content ) === '' ) {
 					throw new ParsingFailure(
 						'Translation unit has no content besides marker',
-						[ 'pt-shake-empty', $id ]
+						new MessageValue( 'pt-shake-empty', [ wfEscapeWikiText( $id ) ] )
 					);
 				}
 			}

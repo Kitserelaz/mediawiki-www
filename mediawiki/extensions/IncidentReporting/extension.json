@@ -10,7 +10,7 @@
 	"license-name": "GPL-3.0-or-later",
 	"type": "specialpage",
 	"requires": {
-		"MediaWiki": ">= 1.43.0"
+		"MediaWiki": ">= 1.46.0"
 	},
 	"AvailableRights": [
 		"viewincidents",
@@ -20,7 +20,7 @@
 		"IncidentReports": "Miraheze\\IncidentReporting\\Specials\\SpecialIncidentReports"
 	},
 	"LogActionsHandlers": {
-		"incidentreporting/modify": "LogFormatter"
+		"incidentreporting/modify": "MediaWiki\\Logging\\LogFormatter"
 	},
 	"LogTypes": [
 		"incidentreporting"

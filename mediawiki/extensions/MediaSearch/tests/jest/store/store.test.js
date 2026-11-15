@@ -5,8 +5,6 @@
  * @license MIT
  */
 
-'use strict';
-
 const when = require( 'jest-when' ).when;
 const activeType = 'audio';
 const ensureArrayMock = jest.fn();
@@ -47,6 +45,26 @@ describe( 'Vuex root state', () => {
 				sdmsDidYouMean: 'didYouMean'
 			} );
 			expect( state.didYouMean ).toBe( 'didYouMean' );
+		} );
+	} );
+
+	describe( 'warnings', () => {
+		it( 'initializes from initial warning', () => {
+			initializeMocks( {
+				sdmsInitialFilters: '{}',
+				sdmsInitialSearchResults: {
+					searchWarnings: 'bad thing'
+				}
+			} );
+			expect( state.searchWarnings ).toBe( 'bad thing' );
+		} );
+
+		it( 'is otherwise empty', () => {
+			initializeMocks( {
+				sdmsInitialFilters: '{}',
+				sdmsInitialSearchResults: {}
+			} );
+			expect( state.searchWarnings ).toBe( null );
 		} );
 	} );
 

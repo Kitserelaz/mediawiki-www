@@ -10,6 +10,7 @@
 use MediaWiki\Extension\Translate\Services;
 use MediaWiki\Extension\Translate\TranslatorSandbox\StashedTranslation;
 use MediaWiki\Extension\Translate\TranslatorSandbox\TranslationStashStorage;
+use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\Title\Title;
 
 // Standard boilerplate to define $IP
@@ -68,7 +69,7 @@ class TranslateGenerateRandomSandboxData extends Maintenance {
  * https://stackoverflow.com/questions/5188900/bell-curve-algorithm-with-php
  */
 
-function wfGauss() {
+function wfGauss(): float {
 	static $useExists = false;
 	static $useValue;
 
@@ -94,19 +95,19 @@ function wfGauss() {
 	}
 }
 
-function wfGaussMs( $mean, $stddev ) {
+function wfGaussMs( int $mean, int $stddev ): int {
 	// Adjust our gaussian random to fit the mean and standard deviation.
 	// The division by 4 is an arbitrary value to help fit the distribution
 	// within our required range, and gives a best fit for $stddev = 1.0.
 	return wfGauss() * ( $stddev / 4 ) + $mean;
 }
 
-function wfRandom01() {
+function wfRandom01(): float {
 	// Returns random number using mt_rand() with a flat distribution from 0 to 1 inclusive
 	return (float)mt_rand() / (float)mt_getrandmax();
 }
 
-function wfRandomPn() {
+function wfRandomPn(): float {
 	// Returns random number using mt_rand() with a flat distribution from -1 to 1 inclusive
 	return ( 2.0 * wfRandom01() ) - 1.0;
 }

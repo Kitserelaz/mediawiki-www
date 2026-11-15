@@ -34,6 +34,8 @@ const defaultSettings = Object.freeze( {
 	afcFilter: 'all',
 	afcFilterUser: '',
 	nppFilterUser: '',
+	afcFilterKeyword: '',
+	nppFilterKeyword: '',
 	nppPredictedRating: {
 		stub: false,
 		start: false,
@@ -84,20 +86,21 @@ const filtersToParams = {
 	blocked: 'blocked_users',
 	'bot-edits': 'showbots',
 	'autopatrolled-edits': 'showautopatrolled',
-	username: 'username'
+	username: 'username',
+	keyword: 'keyword'
 };
 
 const initState = () => {
 	// Named users store params ( user-centric ) in a user option, other users store params
 	// in localStorage ( client-centric )
-	const stored = mw.user.options.get( 'userjs-NewPagesFeedFilterOptions', localStorage.getItem( 'userjs-NewPagesFeedFilterOptions' ) );
+	const paramsJson = mw.user.options.get( 'userjs-NewPagesFeedFilterOptions', mw.storage.get( 'userjs-NewPagesFeedFilterOptions' ) );
 	return {
 		immediate: JSON.parse( JSON.stringify( defaultImmediate ) ),
 		controlMenuOpen: false,
 		applied: JSON.parse( JSON.stringify( defaultSettings ) ),
 		unsaved: JSON.parse( JSON.stringify( defaultSettings ) ),
 		// Load stored API parameters if possible, else defaults
-		params: JSON.parse( stored ) || defaultParams,
+		params: JSON.parse( paramsJson ) || defaultParams,
 		currentFilteredCount: -1
 	};
 };
@@ -172,7 +175,8 @@ module.exports = {
 					/* eslint-enable camelcase */
 					showbots: 'bot-edits',
 					showautopatrolled: 'autopatrolled-edits',
-					username: 'username'
+					username: 'username',
+					keyword: 'keyword'
 				};
 				for ( const param in settings ) {
 					if ( params[ param ] ) {
@@ -183,11 +187,13 @@ module.exports = {
 			// Map NPP API parameters to form values
 			nppParamsToFilters: function () {
 				this.unsaved.nppFilterUser = this.params.username || '';
+				this.unsaved.nppFilterKeyword = this.params.keyword || '';
 				this.unsaved.nppFilter = this.paramsToFilter( this.params ) || 'all';
 			},
 			// Map AFC API parameters to form values
 			afcParamsToFilters: function () {
 				this.unsaved.afcFilterUser = this.params.username || '';
+				this.unsaved.afcFilterKeyword = this.params.keyword || '';
 				this.unsaved.afcFilter = this.paramsToFilter( this.params ) || 'all';
 			},
 			/* Map date API parameters to form values
@@ -304,31 +310,63 @@ module.exports = {
 			},
 			// Map NPP form values to API parameters and unset user form value if needed
 			addNppFilter: function () {
-				// username requires text input
+				// username and keyword filters require text input
 				if ( this.applied.nppFilter === 'username' && this.applied.nppFilterUser ) {
 					this.params.username = this.applied.nppFilterUser;
+				} else if ( this.applied.nppFilter === 'keyword' && this.applied.nppFilterKeyword ) {
+					this.params.keyword = this.applied.nppFilterKeyword;
 				} else {
-					// unset username when another filter is selected
+					// unset username and keyword when another filter is selected
 					this.unsaved.nppFilterUser = '';
+					this.unsaved.nppFilterKeyword = '';
 					// everything else is logically boolean and should set a numeric API
 					// parameter if defined
 					if ( filtersToParams[ this.applied.nppFilter ] !== undefined ) {
 						this.params[ filtersToParams[ this.applied.nppFilter ] ] = 1;
 					}
 				}
+				// Bug fix T380822: Keyword radio button is selected, but the textbox is empty
+				if ( this.params.keyword === 1 && !this.applied.nppFilterKeyword ) {
+					this.params.keyword = undefined;
+					this.unsaved.nppFilterKeyword = '';
+					this.unsaved.nppFilter = 'all';
+				}
+
+				// Bug fix T394100
+				if ( this.params.username === 1 && !this.applied.nppFilterUser ) {
+					this.params.username = undefined;
+					this.unsaved.nppFilterUser = '';
+					this.unsaved.nppFilter = 'all';
+				}
 			},
 			addAfcFilter: function () {
 				// username requires text input
 				if ( this.applied.afcFilter === 'username' && this.applied.afcFilterUser ) {
 					this.params.username = this.applied.afcFilterUser;
+				} else if ( this.applied.afcFilter === 'keyword' && this.applied.afcFilterKeyword ) {
+					this.params.keyword = this.applied.afcFilterKeyword;
 				} else {
 					// unset username when another filter is selected
 					this.unsaved.afcFilterUser = '';
+					this.unsaved.afcFilterKeyword = '';
 					// everything else is logically boolean and should set a numeric API
 					// parameter if defined
 					if ( filtersToParams[ this.applied.afcFilter ] !== undefined ) {
 						this.params[ filtersToParams[ this.applied.afcFilter ] ] = 1;
 					}
+				}
+				// Bug fix T380822: Keyword radio button is selected, but the textbox is empty
+				if ( this.params.keyword === 1 && !this.applied.afcFilterKeyword ) {
+					this.params.keyword = undefined;
+					this.unsaved.afcFilterKeyword = '';
+					this.unsaved.afcFilter = 'all';
+				}
+
+				// Bug fix T394100
+				if ( this.params.username === 1 && !this.applied.afcFilterUser ) {
+					this.params.username = undefined;
+					this.unsaved.afcFilterUser = '';
+					this.unsaved.afcFilter = 'all';
 				}
 			},
 			// Set API parameters from form values
@@ -362,14 +400,15 @@ module.exports = {
 					this.afcStateFilterToParam( this.applied.afcSubmissionState );
 					this.addDateFilters( this.applied.afcDate.from, this.applied.afcDate.to );
 				}
+				const paramsJson = JSON.stringify( this.params );
 				// Set the filter parameters to a users option
-				mw.user.options.set( 'userjs-NewPagesFeedFilterOptions', JSON.stringify( this.params ) );
+				mw.user.options.set( 'userjs-NewPagesFeedFilterOptions', paramsJson );
 				// Store the option to a user preference if possible
 				if ( mw.user.isNamed() ) {
-					new mw.Api().saveOption( 'userjs-NewPagesFeedFilterOptions', JSON.stringify( this.params ) );
+					new mw.Api().saveOption( 'userjs-NewPagesFeedFilterOptions', paramsJson );
 				// Otherwise use local storage
 				} else {
-					localStorage.setItem( 'userjs-NewPagesFeedFilterOptions', JSON.stringify( this.params ) );
+					mw.storage.set( 'userjs-NewPagesFeedFilterOptions', paramsJson );
 				}
 			}
 		}

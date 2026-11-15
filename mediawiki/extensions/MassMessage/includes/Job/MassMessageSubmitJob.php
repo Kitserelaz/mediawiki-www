@@ -2,7 +2,7 @@
 
 namespace MediaWiki\MassMessage\Job;
 
-use Job;
+use MediaWiki\JobQueue\Job;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
 use MediaWiki\Utils\MWTimestamp;
@@ -10,17 +10,12 @@ use MediaWiki\Utils\MWTimestamp;
 /**
  * JobQueue class to queue other jobs.
  *
- * @file
  * @ingroup JobQueue
  * @author Kunal Mehta
  * @license GPL-2.0-or-later
  */
-
 class MassMessageSubmitJob extends Job {
-	/**
-	 * @param Title $title
-	 * @param array $params
-	 */
+
 	public function __construct( Title $title, array $params ) {
 		if ( !isset( $params['timestamp'] ) ) {
 			$params['timestamp'] = MWTimestamp::now();
@@ -45,7 +40,7 @@ class MassMessageSubmitJob extends Job {
 	}
 
 	/**
-	 * @return \Job[][]
+	 * @return Job[][]
 	 */
 	public function getJobs() {
 		$data = $this->params['data'];
@@ -63,6 +58,8 @@ class MassMessageSubmitJob extends Job {
 			// Store the title as plain text to avoid namespace/interwiki prefix
 			// collisions, see tasks T59464 and T60524
 			$data['title'] = $page['title'];
+			$data['originalTitle'] = $page['originalTitle'] ?? null;
+			// @phan-suppress-next-line PhanTypeExpectedObjectOrClassName
 			$jobsByTarget[$page['wiki']][] = new $class( $title, $data );
 		}
 

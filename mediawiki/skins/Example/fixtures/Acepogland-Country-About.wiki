@@ -1,0 +1,229 @@
+<infobox>
+  <title source="title1">
+    <default>{{PAGENAME}}</default>
+  </title>
+
+  <group layout="horizontal">
+    <data source="flag">
+      <format>{{#if:{{{flag|}}}|[[File:{{{flag}}}|116px|alt=Flag]]}}</format>
+    </data>
+    <data source="coat_of_arms">
+      <format>{{#if:{{{coat_of_arms|}}}|[[File:{{{coat_of_arms}}}|116px|alt=Coat of arms]]}}</format>
+    </data>
+  </group>
+
+  <image source="map">
+    <default>{{{map|}}}</default>
+    <caption>Map</caption>
+  </image>
+
+  <data source="status"><label>Status</label></data>
+  <data source="motto"><label>Motto</label></data>
+  <data source="anthem"><label>Anthem</label></data>
+  <data source="capital"><label>Capital</label></data>
+  <data source="date_established"><label>Date established</label></data>
+  <data source="official_language"><label>Official language</label></data>
+  <data source="recognized_languages"><label>Recognized national languages</label></data>
+  <data source="vernacular_language"><label>Vernacular language</label></data>
+  <data source="regional_languages"><label>Regional languages</label></data>
+  <data source="minority_languages"><label>Minority languages</label></data>
+  <data source="population"><label>Population</label></data>
+  <data source="ethnic_groups"><label>Ethnic groups</label></data>
+  <data source="religion"><label>Religion</label></data>
+  <data source="demonyms"><label>Demonym(s)</label></data>
+  <data source="government"><label>Government</label></data>
+  <data source="legislature"><label>Legislature</label></data>
+  <data source="history"><label>History</label></data>
+  <data source="gdp_ppp"><label>GDP (PPP)</label></data>
+  <data source="gdp_nominal"><label>GDP (nominal)</label></data>
+  <data source="currency"><label>Currency</label></data>
+  <data source="controlled_by"><label>Controlled by</label></data>
+  <data source="color"><label>Color</label></data>
+  <data source="area"><label>Area</label></data>
+  <data source="preceded_by"><label>Preceded by</label></data>
+  <data source="succeeded_by"><label>Succeeded by</label></data>
+</infobox>
+
+<noinclude>
+<templatedata>
+{
+	"description": "Infobox for countries",
+	"params": {
+		"title1": {
+			"label": "Title",
+			"description": "Name or official title of the country",
+			"type": "string",
+			"required": false
+		},
+		"flag": {
+			"label": "Flag",
+			"description": "Image file for the flag (e.g., Flag.png)",
+			"type": "wiki-file-name",
+			"required": false
+		},
+		"coat_of_arms": {
+			"label": "Coat of arms",
+			"description": "Image file for the coat of arms (e.g., CoA.png)",
+			"type": "wiki-file-name",
+			"required": false
+		},
+		"map": {
+			"label": "Map",
+			"description": "Image file for the location map",
+			"type": "wiki-file-name",
+			"required": false
+		},
+		"status": {
+			"label": "Status",
+			"description": "Current political status",
+			"type": "string",
+			"required": false
+		},
+		"motto": {
+			"label": "Motto",
+			"description": "National motto",
+			"type": "string",
+			"required": false
+		},
+		"anthem": {
+			"label": "Anthem",
+			"description": "National anthem title",
+			"type": "string",
+			"required": false
+		},
+		"capital": {
+			"label": "Capital",
+			"description": "Capital city",
+			"type": "string",
+			"required": false
+		},
+		"date_established": {
+			"label": "Date established",
+			"description": "Date when the country was founded or declared independence",
+			"type": "string",
+			"required": false
+		},
+		"official_language": {
+			"label": "Official language",
+			"description": "Primary official language",
+			"type": "string",
+			"required": false
+		},			
+		"recognized_languages": {
+			"label": "Recognized national languages",
+			"description": "Languages recognized alongside the official one",
+			"type": "string",
+			"required": false
+		},			
+		"vernacular_language": {
+			"label": "Vernacular language",
+			"description": "Vernacular language",
+			"type": "string",
+			"required": false			
+		},
+		"regional_languages": {
+			"label": "Regional languages",
+			"description": "Languages with regional recognition",
+			"type": "string",
+			"required": false
+		},
+		"minority_languages": {
+			"label": "Minority languages",
+			"description": "Recognized minority or indigenous languages",
+			"type": "string",
+			"required": false
+		},
+		"population": {
+			"label": "Population",
+			"description": "Current estimated population",
+			"type": "number",
+			"required": false
+		},
+		"ethnic_groups": {
+			"label": "Ethnic groups",
+			"description": "Major ethnic groups",
+			"type": "string",
+			"required": false
+		},
+		"religion": {
+			"label": "Religion",
+			"description": "Major religions practiced",
+			"type": "string",
+			"required": false
+		},
+		"demonyms": {
+			"label": "Demonym(s)",
+			"description": "Term(s) used for citizens",
+			"type": "string",
+			"required": false
+		},
+		"government": {
+			"label": "Government",
+			"description": "Form of government",
+			"type": "string",
+			"required": false
+		},
+		"legislature": {
+			"label": "Legislature",
+			"description": "Name of national legislative body",
+			"type": "string",
+			"required": false
+		},
+		"history": {
+			"label": "History",
+			"description": "Brief historical background",
+			"type": "string",
+			"required": false
+		},
+		"gdp_ppp": {
+			"label": "GDP (PPP)",
+			"description": "Gross Domestic Product at Purchasing Power Parity",
+			"type": "string",
+			"required": false
+		},
+		"gdp_nominal": {
+			"label": "GDP (nominal)",
+			"description": "Gross Domestic Product (nominal)",
+			"type": "string",
+			"required": false
+		},
+		"currency": {
+			"label": "Currency",
+			"description": "National currency",
+			"type": "string",
+			"required": false
+		},
+		"controlled_by": {
+			"label": "Controlled by",
+			"description": "The person that owns the country",
+			"type": "string",
+			"required": false
+		},
+		"color": {
+			"label": "Color",
+			"description": "Associated symbolic color",
+			"type": "string",
+			"required": false
+		},
+		"area": {
+			"label": "Area",
+			"description": "Total land area",
+			"type": "string",
+			"required": false
+		},
+		"preceded_by": {
+			"label": "Preceded by",
+			"description": "Entity or state that existed before",
+			"type": "string",
+			"required": false
+		},
+		"succeeded_by": {
+			"label": "Succeeded by",
+			"description": "Entity or state that followed",
+			"type": "string",
+			"required": false
+		}
+	}
+}
+</templatedata>
+</noinclude>

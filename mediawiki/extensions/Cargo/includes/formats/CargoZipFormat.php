@@ -19,7 +19,7 @@ class CargoZipFormat extends CargoDisplayFormat {
 	}
 
 	protected function getFiles( $valuesTable, $fieldDescriptions ) {
-		$fileField = null;
+		$fileField = '';
 		foreach ( $fieldDescriptions as $field => $fieldDesc ) {
 			if ( $fieldDesc->mType == 'File' || $fieldDesc->mType == 'Page' ) {
 				$fileField = $field;
@@ -36,7 +36,8 @@ class CargoZipFormat extends CargoDisplayFormat {
 		}
 		$files = [];
 		foreach ( $fileNames as $f ) {
-			$title = Title::makeTitleSafe( NS_FILE, $f['title'] );
+			$fileName = htmlspecialchars_decode( $f['title'], ENT_QUOTES );
+			$title = Title::makeTitleSafe( NS_FILE, $fileName );
 			if ( $title == null ) {
 				continue;
 			}

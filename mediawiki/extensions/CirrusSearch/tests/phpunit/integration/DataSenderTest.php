@@ -16,20 +16,7 @@ use Wikimedia\Rdbms\SelectQueryBuilder;
 /**
  * Test Updater methods
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  *
  * @group CirrusSearch
  * @covers \CirrusSearch\DataSender
@@ -187,7 +174,6 @@ class DataSenderTest extends CirrusIntegrationTestCase {
 		$serde = new ElasticaDocumentsJsonSerde();
 		$documents = $serde->deserialize( $documents );
 		$mockClient = $this->getMockBuilder( Client::class )
-			->disableOriginalConstructor()
 			->setProxyTarget( new Client( [ 'connections' => [] ] ) )
 			->onlyMethods( [ 'request' ] )
 			->getMock();
@@ -259,7 +245,6 @@ class DataSenderTest extends CirrusIntegrationTestCase {
 		];
 		$searchConfig = new HashSearchConfig( $config + $minimalSetup );
 		$mockClient = $this->getMockBuilder( Client::class )
-			->disableOriginalConstructor()
 			->setProxyTarget( new Client( [ 'connections' => [] ] ) )
 			->onlyMethods( [ 'request' ] )
 			->getMock();
@@ -353,9 +338,7 @@ class DataSenderTest extends CirrusIntegrationTestCase {
 				$fixture['config'],
 				$fixture['indexSuffix'],
 				$fixture['batchSize'],
-				$fixture['docIds'],
 				$fixture['tagPrefix'],
-				$fixture['tagNames'],
 				$fixture['tagWeights'],
 				$expectedFile,
 				$fixture['expectedRequestCount'] ?? null,
@@ -369,20 +352,16 @@ class DataSenderTest extends CirrusIntegrationTestCase {
 	 * @param array $config
 	 * @param string $indexSuffix
 	 * @param int $batchSize
-	 * @param array $docIds
 	 * @param string $tagPrefix
-	 * @param string|array|null $tagNames
 	 * @param array|null $tagWeights
 	 * @param string $expectedFile
 	 * @param int|null $expectedRequestCount
 	 */
-	public function testUpdateWeightedTags(
+	public function testSendWeightedTagsUpdate(
 		array $config,
 		string $indexSuffix,
 		int $batchSize,
-		array $docIds,
 		string $tagPrefix,
-		$tagNames,
 		?array $tagWeights,
 		string $expectedFile,
 		?int $expectedRequestCount = null
@@ -394,66 +373,11 @@ class DataSenderTest extends CirrusIntegrationTestCase {
 			'CirrusSearchReplicaGroup' => 'default',
 		];
 		$searchConfig = new HashSearchConfig( $config + $minimalSetup );
-		$count = count( array_chunk( $docIds, $batchSize ) );
+		$count = count( array_chunk( $tagWeights, $batchSize ) );
 		$mockClient = $this->prepareClientMock( $expectedRequestCount ?? $count );
 
 		$sender = $this->prepareDataSender( $searchConfig, $mockClient );
-		$sender->sendUpdateWeightedTags( $indexSuffix, $docIds, 'ignored', $tagPrefix,
-			$tagNames, $tagWeights, $batchSize );
-
-		$this->assertFileContains(
-			CirrusIntegrationTestCase::fixturePath( $expectedFile ),
-			CirrusIntegrationTestCase::encodeFixture( $this->mergeCalls( $this->actualCalls ) ) . "\n",
-			self::canRebuildFixture()
-		);
-	}
-
-	public static function provideResetWeightedTagsRequest() {
-		foreach ( CirrusIntegrationTestCase::findFixtures( 'dataSender/sendWeightedTagsReset-request-*.config' ) as $testFile ) {
-			$testName = substr( basename( $testFile ), 0, -strlen( '.config' ) );
-			$fixture = CirrusIntegrationTestCase::loadFixture( $testFile );
-			$expectedFile = dirname( $testFile ) . "/$testName.expected";
-			yield $testName => [
-				$fixture['config'],
-				$fixture['indexSuffix'],
-				$fixture['batchSize'],
-				$fixture['docIds'],
-				$fixture['tagPrefix'],
-				$expectedFile,
-			];
-		}
-	}
-
-	/**
-	 * @dataProvider provideResetWeightedTagsRequest
-	 *
-	 * @param array $config
-	 * @param string $indexSuffix
-	 * @param int $batchSize
-	 * @param array $docIds
-	 * @param string $tagPrefix
-	 * @param string $expectedFile
-	 */
-	public function testResetWeightedTags(
-		array $config,
-		string $indexSuffix,
-		int $batchSize,
-		array $docIds,
-		string $tagPrefix,
-		string $expectedFile
-	): void {
-		$minimalSetup = [
-			'CirrusSearchClusters' => [
-				'default' => [ 'localhost' ]
-			],
-			'CirrusSearchReplicaGroup' => 'default',
-		];
-		$searchConfig = new HashSearchConfig( $config + $minimalSetup );
-		$count = count( array_chunk( $docIds, $batchSize ) );
-		$mockClient = $this->prepareClientMock( $count );
-
-		$sender = $this->prepareDataSender( $searchConfig, $mockClient );
-		$sender->sendResetWeightedTags( $indexSuffix, $docIds, 'ignored', $tagPrefix, $batchSize );
+		$sender->sendWeightedTagsUpdate( $indexSuffix, $tagPrefix, $tagWeights, $batchSize );
 
 		$this->assertFileContains(
 			CirrusIntegrationTestCase::fixturePath( $expectedFile ),
@@ -509,7 +433,6 @@ class DataSenderTest extends CirrusIntegrationTestCase {
 	private function prepareClientMock( int $count ): Client {
 		$mockClient =
 			$this->getMockBuilder( Client::class )
-				->disableOriginalConstructor()
 				->setProxyTarget( new Client( [ 'connections' => [] ] ) )
 				->onlyMethods( [ 'request' ] )
 				->getMock();

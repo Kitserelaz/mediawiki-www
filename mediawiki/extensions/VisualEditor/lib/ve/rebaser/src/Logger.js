@@ -5,13 +5,16 @@ function Logger( logger ) {
 	this.startTimestamp = null;
 }
 
+/**
+ * @return {number}
+ */
 Logger.prototype.getRelativeTimestamp = function () {
 	return Date.now() - this.startTimestamp;
 };
 
 /**
  * @param {Object} event The event to log
- * @param {string} [level] Log level
+ * @param {string} [level="trace"] Log level
  */
 Logger.prototype.logEvent = function ( event, level ) {
 	this.logger.log( level || 'trace', event );
@@ -21,7 +24,7 @@ Logger.prototype.logEvent = function ( event, level ) {
  * Log a server event
  *
  * @param {Object} event The server event to log
- * @param {string} [level] Log level
+ * @param {string} [level="trace"] Log level
  */
 Logger.prototype.logServerEvent = function ( event, level ) {
 	this.logEvent( Object.assign( { clientId: 'server' }, event ), level );

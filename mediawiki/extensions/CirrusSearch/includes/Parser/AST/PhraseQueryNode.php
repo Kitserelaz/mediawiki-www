@@ -47,9 +47,9 @@ class PhraseQueryNode extends ParsedNode {
 	 * @param int $start
 	 * @param int $end
 	 * @param string $phrase
-	 * @return PhraseQueryNode
+	 * @return self
 	 */
-	public static function unbalanced( $start, $end, $phrase ) {
+	public static function unbalanced( $start, $end, $phrase ): self {
 		$node = new self( $start, $end, $phrase, -1, false );
 		$node->unbalanced = true;
 		return $node;
@@ -102,9 +102,6 @@ class PhraseQueryNode extends ParsedNode {
 		return $this->unbalanced;
 	}
 
-	/**
-	 * @param Visitor $visitor
-	 */
 	public function accept( Visitor $visitor ) {
 		$visitor->visitPhraseQueryNode( $this );
 	}

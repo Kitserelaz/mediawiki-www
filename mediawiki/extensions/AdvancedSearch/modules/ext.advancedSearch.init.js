@@ -89,7 +89,7 @@ const updateSearchResultLinks = function ( currentState ) {
 		extraParams += '&sort=' + sort;
 	}
 	if ( json ) {
-		extraParams += '&advancedSearch-current=' + json;
+		extraParams += '&advancedSearch-current=' + encodeURIComponent( json );
 	}
 
 	if ( extraParams ) {
@@ -131,9 +131,7 @@ const buildPaneElement = function ( state, fields, advancedOptionsBuilder ) {
 	} );
 
 	const pane = new ExpandablePane( {
-		dependentPaneContentBuilder: function () {
-			return advancedOptionsBuilder.buildAllFieldsElement( fields );
-		},
+		dependentPaneContentBuilder: () => advancedOptionsBuilder.buildAllFieldsElement( fields ),
 		label: mw.msg( 'advancedsearch-options-pane-head' ),
 		$buttonContent: searchPreview.$element,
 		tabIndex: 0,
@@ -159,7 +157,7 @@ const buildPaneElement = function ( state, fields, advancedOptionsBuilder ) {
  * @param {jQuery} header
  * @param {NamespacePresets} presets
  * @param {NamespaceFilters} selection
- * @param {Object.<int,string>} searchableNamespaces Mapping namespace ids to localized names
+ * @param {Object.<number,string>} searchableNamespaces Mapping namespace ids to localized names
  * @return {jQuery}
  */
 const buildNamespacesPaneElement = function ( state, header, presets, selection, searchableNamespaces ) {
@@ -168,9 +166,7 @@ const buildNamespacesPaneElement = function ( state, header, presets, selection,
 	} );
 	const $container = $( '<div>' ).addClass( 'mw-advancedSearch-namespace-selection' );
 	const pane = new ExpandablePane( {
-		dependentPaneContentBuilder: function () {
-			return $container.append( header ).append( presets.$element ).append( selection.$element );
-		},
+		dependentPaneContentBuilder: () => $container.append( header, presets.$element, selection.$element ),
 		label: mw.msg( 'advancedsearch-namespaces-search-in' ),
 		$buttonContent: nsPreview.$element,
 		tabIndex: 0,
@@ -184,7 +180,7 @@ const buildNamespacesPaneElement = function ( state, header, presets, selection,
 };
 
 /**
- * @param {Object.<int,string>} searchableNamespaces Mapping namespace ids to localized names
+ * @param {Object.<number,string>} searchableNamespaces Mapping namespace ids to localized names
  * @return {string[]}
  */
 const getNamespacesFromUrl = function ( searchableNamespaces ) {
@@ -211,7 +207,7 @@ const getDefaultsFromConfig = function ( fields ) {
 };
 
 /**
- * @param {Object.<int,string>} searchableNamespaces Mapping namespace ids to localized names
+ * @param {Object.<number,string>} searchableNamespaces Mapping namespace ids to localized names
  * @param {FieldCollection} fieldCollection
  * @return {SearchModel}
  */
@@ -311,6 +307,16 @@ $( () => {
 		namespaceSelection,
 		searchableNamespaces
 	) );
+
+	// if using default namespaces, update the visible URL to include the namespaces that were used (T217445)
+	const defaultNamespaces = mw.config.get( 'advancedSearch.defaultNamespaces' );
+	if ( defaultNamespaces ) {
+		const queryParams = {};
+		defaultNamespaces.forEach( ( ns ) => {
+			queryParams[ 'ns' + ns ] = '1';
+		} );
+		history.pushState( null, '', ( new mw.Uri() ).extend( queryParams ) );
+	}
 
 	// remove old namespace selection item to avoid double ns parameters
 	$( '.mw-search-spinner, #mw-searchoptions' ).remove();

@@ -14,6 +14,7 @@ use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Extension\Translate\Services;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Title\Title;
 use Wikimedia\Rdbms\SelectQueryBuilder;
 
@@ -38,14 +39,16 @@ class RecentMessageGroup extends WikiMessageGroup {
 	public function __construct() {
 	}
 
-	public function setLanguage( $code ) {
+	public function setLanguage( string $code ) {
 		$this->language = $code;
 	}
 
+	/** @inheritDoc */
 	public function getId() {
 		return '!recent';
 	}
 
+	/** @inheritDoc */
 	public function getLabel( ?IContextSource $context = null ) {
 		$msg = wfMessage( 'translate-dynagroup-recent-label' );
 		$msg = self::addContext( $msg, $context );
@@ -53,6 +56,7 @@ class RecentMessageGroup extends WikiMessageGroup {
 		return $msg->plain();
 	}
 
+	/** @inheritDoc */
 	public function getDescription( ?IContextSource $context = null ) {
 		$msg = wfMessage( 'translate-dynagroup-recent-desc' );
 		$msg = self::addContext( $msg, $context );
@@ -60,8 +64,8 @@ class RecentMessageGroup extends WikiMessageGroup {
 		return $msg->plain();
 	}
 
-	protected function getRCCutoff() {
-		$db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
+	protected function getRCCutoff(): int {
+		$db = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 		$max = $db->newSelectQueryBuilder()
 			->select( 'MAX(rc_id)' )
 			->from( 'recentchanges' )
@@ -77,11 +81,11 @@ class RecentMessageGroup extends WikiMessageGroup {
 	 */
 	protected function getQueryConditions() {
 		global $wgTranslateMessageNamespaces;
-		$db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
+		$db = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 		$conds = [
 			'rc_title ' . $db->buildLike( $db->anyString(), '/' . $this->language ),
 			'rc_namespace' => $wgTranslateMessageNamespaces,
-			'rc_type != ' . RC_LOG,
+			$db->expr( 'rc_source', '!=', RecentChange::SRC_LOG ),
 			'rc_id > ' . $this->getRCCutoff(),
 		];
 
@@ -99,12 +103,13 @@ class RecentMessageGroup extends WikiMessageGroup {
 		return MessageGroups::isTranslatableMessage( $handle, $this->language );
 	}
 
+	/** @inheritDoc */
 	public function getDefinitions() {
 		if ( !$this->language ) {
 				throw new BadMethodCallException( 'Language not set' );
 		}
 
-		$db = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
+		$db = MediaWikiServices::getInstance()->getConnectionProvider()->getReplicaDatabase();
 
 		$rcQuery = RecentChange::getQueryInfo();
 		$res = $db->newSelectQueryBuilder()
@@ -145,6 +150,7 @@ class RecentMessageGroup extends WikiMessageGroup {
 		return $defs;
 	}
 
+	/** @inheritDoc */
 	public function getValidator() {
 		return null;
 	}

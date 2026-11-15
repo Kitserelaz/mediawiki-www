@@ -10,6 +10,8 @@ describe( 'Report Incident email alert dialog', () => {
 		// Tests may replace the window.location, but this should
 		// always be restored afterwards.
 		window.location = realLocation;
+
+		jest.restoreAllMocks();
 	} );
 
 	it( 'Dialog should be open when wrappedOpen is true', () => {
@@ -24,7 +26,7 @@ describe( 'Report Incident email alert dialog', () => {
 		expect( wrapper.find( '.ext-reportincident-emaildialog' ).exists() ).toBe( false );
 	} );
 
-	it( 'Call to onPrimaryAction', () => {
+	it( 'Call to onPrimaryAction with an e-mail set', () => {
 		const wrapper = utils.mount( EmailAlertDialog, { props: { open: true } } );
 		// Mock window.location.assign.
 		delete window.location;
@@ -33,9 +35,11 @@ describe( 'Report Incident email alert dialog', () => {
 			writable: true,
 			value: { assign: assignMock }
 		} );
+		// Mock the call done to fetch wgReportIncidentUserHasEmail
+		jest.spyOn( mw.config, 'get' ).mockReturnValue( true );
 		// Mock mw.Title.newFromText
 		mw.Title.newFromText = jest.fn().mockImplementation( ( title ) => {
-			expect( title ).toStrictEqual( 'Special:ChangeEmail' );
+			expect( title ).toStrictEqual( 'Special:ConfirmEmail' );
 			return {
 				getUrl: () => 'testing url'
 			};
@@ -45,5 +49,33 @@ describe( 'Report Incident email alert dialog', () => {
 		// Method should have attempted to redirect the user to the email confirmation page
 		// using window.location.assign.
 		expect( assignMock ).toHaveBeenCalledWith( 'testing url' );
+	} );
+
+	it( 'Call to onPrimaryAction with an e-mail not set', () => {
+		const wrapper = utils.mount( EmailAlertDialog, { props: { open: true } } );
+
+		// Mock window.location.assign.
+		delete window.location;
+		const assignMock = jest.fn();
+		Object.defineProperty( window, 'location', {
+			writable: true,
+			value: { assign: assignMock }
+		} );
+
+		// Mock the call done to fetch wgReportIncidentUserHasEmail
+		jest.spyOn( mw.config, 'get' ).mockReturnValue( false );
+
+		// Mock mw.Title.newFromText
+		mw.Title.newFromText = jest.fn().mockImplementation( ( title ) => {
+			expect( title ).toStrictEqual( 'Special:Preferences' );
+			return {
+				getUrl: () => 'testing url'
+			};
+		} );
+		// Call onPrimaryAction
+		wrapper.vm.onPrimaryAction();
+		// Method should have attempted to redirect the user to the preferences
+		// section to set the e-mail using window.location.assign.
+		expect( assignMock ).toHaveBeenCalledWith( 'testing url#mw-prefsection-personal-email' );
 	} );
 } );

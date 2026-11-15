@@ -2,11 +2,10 @@
 	"@metadata": {
 		"authors": [
 			"Guilhelma",
-			"Unuaiga",
-			"Lhanars"
+			"Lhanars",
+			"Unuaiga"
 		]
 	},
-	"templatewizard-close-dialog-body": "Quitar l'assistent causarà la pèrda de las donadas qu'avètz ajustadas al modèle",
 	"templatewizard-dialog-title": "Inserir un modèl",
 	"templatewizard-invalid-values-insert": "Inserir un modèl",
 	"templatewizard-placeholder-default": "Per defauta: $1",

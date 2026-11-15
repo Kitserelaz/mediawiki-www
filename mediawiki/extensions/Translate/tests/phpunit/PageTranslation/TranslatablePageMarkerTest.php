@@ -3,14 +3,16 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
-use IDBAccessObject;
-use JobQueueGroup;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Extension\Translate\HookRunner;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroupSubscription;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\TranslatablePageStore;
 use MediaWiki\Extension\Translate\MessageLoading\MessageIndex;
 use MediaWiki\Extension\Translate\MessageProcessing\MessageGroupMetadata;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Language\FormatterFactory;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Page\PageRecord;
 use MediaWiki\Page\WikiPageFactory;
@@ -19,6 +21,7 @@ use MediaWiki\Title\TitleFormatter;
 use MediaWiki\Title\TitleParser;
 use MediaWikiIntegrationTestCase;
 use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
  * @covers \MediaWiki\Extension\Translate\PageTranslation\TranslatablePageMarker
@@ -48,7 +51,9 @@ class TranslatablePageMarkerTest extends MediaWikiIntegrationTestCase {
 			$getServiceOrMock( MessageGroupMetadata::class ),
 			$getServiceOrMock( WikiPageFactory::class ),
 			$getServiceOrMock( TranslatablePageView::class ),
-			$getServiceOrMock( MessageGroupSubscription::class )
+			$getServiceOrMock( MessageGroupSubscription::class ),
+			$getServiceOrMock( FormatterFactory::class ),
+			$getServiceOrMock( HookRunner::class )
 		);
 	}
 
@@ -85,6 +90,7 @@ class TranslatablePageMarkerTest extends MediaWikiIntegrationTestCase {
 				TranslationUnitStoreFactory::class => $services->get( 'Translate:TranslationUnitStoreFactory' ),
 				TitleParser::class => $services->getTitleParser(),
 				MessageGroupMetadata::class => $services->get( 'Translate:MessageGroupMetadata' ),
+				HookRunner::class => $services->get( 'Translate:HookRunner' )
 			]
 		);
 
@@ -129,6 +135,8 @@ class TranslatablePageMarkerTest extends MediaWikiIntegrationTestCase {
 				MessageGroupMetadata::class => $services->get( 'Translate:MessageGroupMetadata' ),
 				TranslatablePageView::class => $services->get( 'Translate:TranslatablePageView' ),
 				MessageGroupSubscription::class => $services->get( 'Translate:MessageGroupSubscription' ),
+				FormatterFactory::class => $services->getFormatterFactory(),
+				HookRunner::class => $services->get( 'Translate:HookRunner' )
 			]
 		);
 
@@ -159,6 +167,7 @@ class TranslatablePageMarkerTest extends MediaWikiIntegrationTestCase {
 				$forceLatestSyntaxVersion,
 				$enableTransclusion
 			),
+			RequestContext::getMain(),
 			$this->getTestSysop()->getUser()
 		);
 		$this->assertEquals(
@@ -239,11 +248,33 @@ class TranslatablePageMarkerTest extends MediaWikiIntegrationTestCase {
 		$markPage->unmarkPage(
 			TranslatablePage::newFromTitle( $page ),
 			$this->getTestUser()->getUser(),
+			RequestContext::getMain(),
 			true
 		);
 		$currentText = $services->getRevisionLookup()->getRevisionByTitle( $page )
 			->getContent( SlotRecord::MAIN )
 			->getText();
 		$this->assertEquals( 'FooBar', $currentText );
+	}
+
+	public static function provideValidatePriorityLanguages(): array {
+		return [
+			'empty list is valid' => [ [], true ],
+			'known codes are valid' => [ [ 'en', 'de', 'fr' ], true ],
+			'unknown code is invalid' => [ [ 'en', 'not-a-language' ], false ],
+			'all unknown codes are invalid' => [ [ 'xx', 'yy' ], false ],
+		];
+	}
+
+	/** @dataProvider provideValidatePriorityLanguages */
+	public function testValidatePriorityLanguages( array $codes, bool $expectValid ): void {
+		$marker = $this->createTranslatableMarkPage();
+		$language = $this->getServiceContainer()->getLanguageFactory()->getLanguage( 'en' );
+		$status = $marker->validatePriorityLanguages( $codes, $language );
+		if ( $expectValid ) {
+			$this->assertStatusGood( $status );
+		} else {
+			$this->assertStatusNotGood( $status );
+		}
 	}
 }

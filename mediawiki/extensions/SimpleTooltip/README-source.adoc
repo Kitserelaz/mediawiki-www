@@ -1,4 +1,4 @@
-:project_name: SimpleTooltip
+include::docs/attributes.adoc[]
 = {project_name}
 
 image:https://github.com/gesinn-it-pub/SimpleTooltip/actions/workflows/ci.yml/badge.svg[CI,link=https://github.com/gesinn-it-pub/SimpleTooltip/actions/workflows/ci.yml]
@@ -9,12 +9,14 @@ image:https://codecov.io/github/gesinn-it-pub/SimpleTooltip/graph/badge.svg?toke
 == Documentation
 For documentation see: https://www.mediawiki.org/wiki/Extension:SimpleTooltip
 
-include::docs/gesinn-it-docs-master-pub/general/semver.adoc[]
+include::docs/gesinn-it-docs-master-pub/sections/universal/semver-policy.adoc[]
 
-include::docs/gesinn-it-docs-master-pub/contributing/contributing.adoc[]
+== Contributing
+
+See link:docs/CONTRIBUTING.adoc[Contributing Guidelines].
 
 == Attribution
-Uses the http://iamceege.github.io/tooltipster/[Tooltipster Library] and https://github.com/yusukekamiyamane/fugue-icons[Fugue Icons]
+Uses the https://github.com/calebjacob/tooltipster[Tooltipster Library] (3.3.0, bundled in `lib/`, see `lib/README.md`) and https://github.com/yusukekamiyamane/fugue-icons[Fugue Icons]
 
 ---
 This extension is part of https://semantic.wiki/core[*semantic::core*] - Enterprise Class MediaWiki distribution.

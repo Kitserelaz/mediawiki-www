@@ -3,7 +3,7 @@
 namespace Telepedia\UserProfileV2\Api;
 
 use ApiMain;
-use MediaWiki\Extension\CentralAuth\User\CentralAuthUser;
+use ManualLogEntry;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\User\User;
@@ -36,7 +36,7 @@ class DeleteUserProfileV2Avatar extends \ApiBase {
 
 		$user = $this->getUser();
 
-		if ( !$user->isRegistered() ) {
+		if ( !$user->isNamed() ) {
 			$this->dieWithError( [ 'userprofilev2-apierror-notregistered' ] );
 		}
 
@@ -58,7 +58,7 @@ class DeleteUserProfileV2Avatar extends \ApiBase {
 			$lookup = MediaWikiServices::getInstance()->getCentralIdLookup();
 			$userId = $lookup->centralIdFromLocalUser( $targetUser );
 		} else {
-			$userId = $user->getId();
+			$userId = $targetUser->getId();
 		}
 
 		foreach ( $extensions as $ext ) {
@@ -82,6 +82,16 @@ class DeleteUserProfileV2Avatar extends \ApiBase {
 		}
 
 		$cache->delete( $key );
+
+		// if the editor is a profile manager deleting someone elses avatar, log it
+		// see SetUserProfileV2Preferences::class also
+		if ( $user->getId() !== $targetUser->getId() ) {
+			$logEntry = new ManualLogEntry( 'userprofile', 'avatardelete' );
+			$logEntry->setPerformer( $user );
+			$logEntry->setTarget( $targetUser->getUserPage() );
+			$logId = $logEntry->insert();
+			$logEntry->publish( $logId );
+		}
 
 		$this->getResult()->addValue( null, $this->getModuleName(), [ 'status' => 'OK' ] );
 	}
@@ -128,7 +138,11 @@ class DeleteUserProfileV2Avatar extends \ApiBase {
 	private function getTargetUser( string $username ): User {
 		$user = $this->userFactory->newFromName( $username );
 
-		if ( !$user->isRegistered() ) {
+		if (
+			!$user ||
+			!$user->isRegistered() ||
+			( $user->isHidden() && !$this->getAuthority()->isAllowed( 'hideuser' ) )
+		) {
 			$this->dieWithError( [ 'userprofilev2-apierror-invalidusername', wfEscapeWikiText( $username ) ] );
 		}
 
@@ -136,12 +150,21 @@ class DeleteUserProfileV2Avatar extends \ApiBase {
 	}
 
 	/** @inheritDoc */
-	public function needsToken() {
+	public function mustBePosted(): bool {
+		return true;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function needsToken(): false|string {
 		return 'csrf';
 	}
 
-	/** @inheritDoc */
-	public function isWriteMode() {
+	/**
+	 * @inheritDoc
+	 */
+	public function isWriteMode(): bool {
 		return true;
 	}
 }

@@ -1,0 +1,43 @@
+{
+	"@metadata": {
+		"authors": [
+			"Умар"
+		]
+	},
+	"discordnotifications-desc": "Хьан MediaWiki сайташ тӀехь хуьлуш болчу хаьржинчу ардамех лаьцна Discord-йе хаамаш дӀахьажош бу.",
+	"discordnotifications-block": "блоктоха",
+	"discordnotifications-groups": "тобанаш",
+	"discordnotifications-talk": "дийцар",
+	"discordnotifications-contribs": "къинхьегам",
+	"discordnotifications-centralauth": "CentralAuth",
+	"discordnotifications-edit": "нисйан",
+	"discordnotifications-delete": "дӀайаккха",
+	"discordnotifications-history": "истори",
+	"discordnotifications-diff": "башха",
+	"discordnotifications-preview": "хьалххе хьажар",
+	"discordnotifications-bytes": "$1 {{PLURAL:$1|байт}}",
+	"discordnotifications-article-saved": "📝 $1 $2 жима хийцам бу «$3» $4",
+	"discordnotifications-article-saved-minor-edits": "кӀезиг хийцамаш бина",
+	"discordnotifications-article-saved-edit": "хийцам бина",
+	"discordnotifications-article-created": "📄 $1 йаззам кхоьллина «$2» $3",
+	"discordnotifications-file-namespace": "Файл",
+	"discordnotifications-article-deleted": "❌ $1 {{gender:$1|дӀабаьккхина}} йаззам «$2» Бахьана: $3",
+	"discordnotifications-article-undeleted": "🔄 Декъашхочо $1 меттахӀоттийна йаззам $2 Бахьана: $3",
+	"discordnotifications-article-moved": "➡ $1 цӀе хийцина $2 - $3. Бахьана: $4",
+	"discordnotifications-article-protected": "🔒 $1 ларйина $2 агӀо $3. «$3». Бахьана: $4",
+	"discordnotifications-article-protected-change": "хийцина",
+	"discordnotifications-article-protected-remove": "дӀадаьккхина ларйар",
+	"discordnotifications-new-user": "👥 Керла аккаунт $1 хӀинцца кхоьллина $2",
+	"discordnotifications-new-user-filtered": "👥 Керла декъашхочун аккаунт $1 хӀинцца кхоьллина $2\n\nНийса йогӀу фильтрца",
+	"discordnotifications-file-uploaded": "📤 $1 чуйаьккхина файл <$2|$3> (формат: $4, барам: $5 $6, комментари: $7)",
+	"discordnotifications-block-user": "🚫 $1 блоктоьхна $2 $3 Хан чекхйолу: $4. $5",
+	"discordnotifications-block-user-reason": "бахьанехь",
+	"discordnotifications-block-user-list": "Массо а блокийн могӀам",
+	"discordnotifications-summary": "Комментари: $1",
+	"discordnotifications-content": "Чулацам:",
+	"discordnotifications-view-user-rights": "Декъашхойн бакъонаш хьажа йа хӀиттайе",
+	"discordnotifications-change-user-groups": "%s {{gender:%s|хийцина}} декъашхойн тобанаш %s. Керла тобанаш: %s",
+	"discordnotifications-change-user-groups-with-old": "$1 {{gender:$1|хийцина}} декъашхойн тобанаш $2. Хьалхара тобанаш: $3. Керла тобанаш: $4",
+	"discordnotifications-import-complete": "⤵️ «$1» йаззам импорт бина.",
+	"discordnotifications-moderation-pending": "🔍 $1 хьажийна $2 [модераторан рагӀе]($3) хийца."
+}

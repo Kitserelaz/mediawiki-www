@@ -12,7 +12,7 @@ class LexemeFormsFieldTest extends LexemeFieldTestBase {
 	/**
 	 * @return array
 	 */
-	public function getTestData() {
+	public static function provideTestData() {
 		return [
 			[
 				new FormsField(),

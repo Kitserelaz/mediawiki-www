@@ -13,6 +13,7 @@
 	"wikibasecirrus-rescore-profile-prefix-boost": "ТӀечӀагӀдар чӀагӀдарца лехар чекхдаккхаран йуха мах хадоран профиль",
 	"wikibasecirrus-rescore-profile-fulltext": "Дуьззина текст лехархьама стандартан мах хадоран профиль",
 	"wikibasecirrus-rescore-profile-fulltext-phrase": "Профилан йуха мах хадор дуьззина текст лехархьама фразийн мах хадош",
+	"wikibasecirrus-rescore-profile-in-label": "Стандартан йуха мах хадоран профиль аттачу субъектийн лехамашна билгалонашца",
 	"wikibasecirrus-search-bad-entity-type": "Нийса доцу духан тайпа: $1",
 	"wikibasecirrus-search-bad-profile-name": "Лехаман профилан нийса йоцу цӀе: $1.",
 	"wikibasecirrus-haswbstatement-feature-no-valid-statements": "haswbstatement коьртачу дашехь нийса дӀахьедарш дац",

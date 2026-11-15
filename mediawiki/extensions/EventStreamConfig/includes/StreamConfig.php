@@ -3,6 +3,7 @@
 namespace MediaWiki\Extension\EventStreamConfig;
 
 use Wikimedia\Assert\Assert;
+use Wikimedia\StringUtils\StringUtils;
 
 /**
  * Configuration of single stream's settings.
@@ -125,7 +126,7 @@ class StreamConfig {
 
 				// If the regex starts with ^, save it for later.
 				$beginAnchor = '';
-				if ( substr( $streamPattern, 0, 1 ) === '^' ) {
+				if ( str_starts_with( $streamPattern, '^' ) ) {
 					$beginAnchor = '^';
 					$streamPattern = substr( $streamPattern, 1 );
 				}
@@ -233,7 +234,7 @@ class StreamConfig {
 			$actual = $lhs[$key];
 
 			if ( is_array( $expected ) && is_array( $actual ) ) {
-				if ( $this->arrayIsList( $expected ) && $this->arrayIsList( $actual ) ) {
+				if ( array_is_list( $expected ) && array_is_list( $actual ) ) {
 					return array_intersect( $expected, $actual ) === $expected;
 				}
 
@@ -257,37 +258,11 @@ class StreamConfig {
 	}
 
 	/**
-	 * Gets whether the array is a list, i.e. an integer-indexed array with indices starting at 0.
-	 *
-	 * As written, this method trades performance for elegance. This method should not be called on
-	 * large arrays.
-	 *
-	 * TODO: Replace this with array_is_list when MediaWiki supports PHP >= 8.1
-	 *
-	 * @param array $array
-	 * @return bool
-	 */
-	private function arrayIsList( $array ) {
-		$array = array_keys( $array );
-
-		return $array === array_keys( $array );
-	}
-
-	/**
 	 * Returns true if $string is a valid regex.
 	 * It must start with '/' and preg_match must not return false.
-	 *
-	 * @param string $string
-	 * @return bool
 	 */
-	private static function isValidRegex( $string ) {
-		// FIXME: This is very ugly, and not very safe.
-		// Temporarily disable errors/warnings when checking if valid regex.
-		$errorLevel = error_reporting( E_ERROR );
-		// @phan-suppress-next-line PhanParamSuspiciousOrder false positive
-		$isValid = mb_substr( $string, 0, 1 ) === '/' && preg_match( $string, '' ) !== false;
-		error_reporting( $errorLevel );
-		return $isValid;
+	private static function isValidRegex( string $string ): bool {
+		return str_starts_with( $string, '/' ) && StringUtils::isValidPCRERegex( $string );
 	}
 
 	/**
@@ -297,19 +272,19 @@ class StreamConfig {
 	 * @throws \InvalidArgumentException if stream config settings are invalid
 	 */
 	private static function validate( array $settings ) {
-		Assert::parameter(
-			isset( $settings[self::STREAM_SETTING] ),
-			self::STREAM_SETTING,
-			self::STREAM_SETTING . ' not set in stream config entry ' .
+		if ( !isset( $settings[self::STREAM_SETTING] ) ) {
+			throw new \InvalidArgumentException(
+				self::STREAM_SETTING . ' not set in stream config entry ' .
 				var_export( $settings, true )
-		);
+			);
+		}
 		$stream = $settings[self::STREAM_SETTING];
 
 		Assert::parameterType( 'string', $stream, self::STREAM_SETTING );
 		// If stream looks like a regex, make sure it is valid.
 		// (Yes, isValidRegex also checks that string starts with '/', but here we want
 		// to fail if the stream is not a valid regex.)
-		if ( substr( $stream, 0, 1 ) === '/' ) {
+		if ( str_starts_with( $stream, '/' ) ) {
 			Assert::parameter(
 				self::isValidRegex( $stream ), self::STREAM_SETTING, "Invalid regex '$stream'"
 			);

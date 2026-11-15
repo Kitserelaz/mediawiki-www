@@ -4,9 +4,8 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 
 use AggregateMessageGroup;
-use IDBAccessObject;
 use InvalidArgumentException;
-use JobQueueGroup;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Extension\Translate\MessageLoading\MessageIndex;
 use MediaWiki\Extension\Translate\MessageLoading\RebuildMessageIndexJob;
@@ -14,13 +13,14 @@ use MediaWiki\Extension\Translate\MessageProcessing\MessageGroupMetadata;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePage;
 use MediaWiki\Extension\Translate\PageTranslation\TranslatablePageParser;
 use MediaWiki\Extension\Translate\PageTranslation\UpdateTranslatablePageJob;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Page\PageIdentity;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
 use RuntimeException;
-use TextContent;
 use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
  * @author Abijeet Patro
@@ -29,30 +29,16 @@ use Wikimedia\Rdbms\IConnectionProvider;
  * @license GPL-2.0-or-later
  */
 class TranslatablePageStore implements TranslatableBundleStore {
-	private MessageIndex $messageIndex;
-	private JobQueueGroup $jobQueue;
-	private RevTagStore $revTagStore;
-	private IConnectionProvider $dbProvider;
-	private TranslatableBundleStatusStore $translatableBundleStatusStore;
-	private TranslatablePageParser $translatablePageParser;
-	private MessageGroupMetadata $messageGroupMetadata;
 
 	public function __construct(
-		MessageIndex $messageIndex,
-		JobQueueGroup $jobQueue,
-		RevTagStore $revTagStore,
-		IConnectionProvider $dbProvider,
-		TranslatableBundleStatusStore $translatableBundleStatusStore,
-		TranslatablePageParser $translatablePageParser,
-		MessageGroupMetadata $messageGroupMetadata
+		private readonly MessageIndex $messageIndex,
+		private readonly JobQueueGroup $jobQueue,
+		private readonly RevTagStore $revTagStore,
+		private readonly IConnectionProvider $dbProvider,
+		private readonly TranslatableBundleStatusStore $translatableBundleStatusStore,
+		private readonly TranslatablePageParser $translatablePageParser,
+		private readonly MessageGroupMetadata $messageGroupMetadata,
 	) {
-		$this->messageIndex = $messageIndex;
-		$this->jobQueue = $jobQueue;
-		$this->revTagStore = $revTagStore;
-		$this->dbProvider = $dbProvider;
-		$this->translatableBundleStatusStore = $translatableBundleStatusStore;
-		$this->translatablePageParser = $translatablePageParser;
-		$this->messageGroupMetadata = $messageGroupMetadata;
 	}
 
 	public function move( Title $oldName, Title $newName ): void {
@@ -92,7 +78,7 @@ class TranslatablePageStore implements TranslatableBundleStore {
 		// Check if the revision still has the <translate> tag
 		$pageText = $pageContent->getText();
 		if ( $this->translatablePageParser->containsMarkup( $pageText ) ) {
-			$this->revTagStore->replaceTag( $bundle->getTitle(), RevTagStore::TP_READY_TAG, $revision->getId() );
+			$this->revTagStore->replaceTag( $bundle->getPageIdentity(), RevTagStore::TP_READY_TAG, $revision->getId() );
 			TranslatablePage::clearSourcePageCache();
 		}
 	}
@@ -102,7 +88,7 @@ class TranslatablePageStore implements TranslatableBundleStore {
 		$dbw = $this->dbProvider->getPrimaryDatabase();
 		$dbw->newDeleteQueryBuilder()
 			->deleteFrom( 'translate_sections' )
-			->where( [ 'trs_page' => $title->getArticleID() ] )
+			->where( [ 'trs_page' => $title->getId() ] )
 			->caller( __METHOD__ )
 			->execute();
 
@@ -112,7 +98,6 @@ class TranslatablePageStore implements TranslatableBundleStore {
 	/** Unmark a translatable page */
 	public function unmark( PageIdentity $title ): void {
 		$translatablePage = TranslatablePage::newFromTitle( $title );
-		$translatablePage->getTranslationPercentages();
 		foreach ( $translatablePage->getTranslationPages() as $page ) {
 			$page->invalidateCache();
 		}
@@ -158,7 +143,9 @@ class TranslatablePageStore implements TranslatableBundleStore {
 
 		if ( $status ) {
 			$this->translatableBundleStatusStore->setStatus(
-				$title, $status, TranslatablePage::class
+				$title,
+				$status,
+				TranslatablePage::class
 			);
 		}
 
@@ -183,7 +170,7 @@ class TranslatablePageStore implements TranslatableBundleStore {
 				unset( $subgroups[$oldGroupId] );
 				$subgroups = array_flip( $subgroups );
 				$this->messageGroupMetadata->set(
-					$group->getId(),
+					$group,
 					'subgroups',
 					implode( ',', $subgroups )
 				);
@@ -203,7 +190,7 @@ class TranslatablePageStore implements TranslatableBundleStore {
 		$aggregateGroups = MessageGroups::getGroupsByType( AggregateMessageGroup::class );
 		$this->messageGroupMetadata->preloadGroups( array_keys( $aggregateGroups ), __METHOD__ );
 		foreach ( $aggregateGroups as $group ) {
-			$subgroups = $this->messageGroupMetadata->get( $group->getId(), 'subgroups' );
+			$subgroups = $this->messageGroupMetadata->get( $group, 'subgroups' );
 			if ( $subgroups !== false ) {
 				$subgroups = explode( ',', $subgroups );
 				$subgroups = array_flip( $subgroups );
@@ -211,7 +198,7 @@ class TranslatablePageStore implements TranslatableBundleStore {
 					unset( $subgroups[$groupId] );
 					$subgroups = array_flip( $subgroups );
 					$this->messageGroupMetadata->set(
-						$group->getId(),
+						$group,
 						'subgroups',
 						implode( ',', $subgroups )
 					);

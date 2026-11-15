@@ -65,6 +65,5 @@
 	"cite-ve-referenceslist-missingref-in-list": "Ова референца је дефинисана у шаблону или другом генерисаном блоку и за сада може да се прегледа само у изворном режиму.",
 	"cite-ve-referenceslist-missingreflist": "Овај списак референци је генерисао шаблон.",
 	"cite-ve-toolbar-group-label": "Референца",
-	"cite-ve-othergroup-item": "$1 извор",
-	"cite-ve-dialog-reference-useexisting-long-tool": "Употреби референцу поново"
+	"cite-ve-othergroup-item": "$1 извор"
 }

@@ -132,7 +132,7 @@
 				v-if="displayNameWithoutExtension"
 				class="sdms-quick-view__list-item sdms-quick-view__copy-name-no-extension"
 			>
-				<cdx-icon :icon="cdxIconWikiText"></cdx-icon>
+				<cdx-icon :icon="cdxIconWikitext"></cdx-icon>
 				<sd-copy-text-layout
 					:copy-text="'[[' + title + '|' + displayNameWithoutExtension + ']]'"
 					:inline="true"
@@ -172,12 +172,14 @@
 </template>
 
 <script>
-var SdPlayer = require( './base/Player.vue' ),
+const SdPlayer = require( './base/Player.vue' ),
 	SdCopyTextLayout = require( './base/CopyTextLayout.vue' ),
 	Spinner = require( './Spinner.vue' ),
 	userLangCode = mw.config.get( 'wgUserLanguage' ),
 	PREVIEW_SIZES = [ 640, 800, 1200, 1600 ], // Pre-defined set of thumbnail image width values
-	MAX_SIZE = 2000,
+	// Mapping of those sizes to thumbs being loaded. Keep in sync with $wgThumbnailSteps
+	PREVIEW_SIZE_URLS = [ 960, 960, 1280, 1920 ],
+	MAX_SIZE = 1920,
 	assessmentLabels = mw.config.get( 'sdmsAssessmentQuickviewLabels' );
 
 const { CdxIcon } = require( '@wikimedia/codex' );
@@ -196,7 +198,7 @@ const {
 	cdxIconUnLock,
 	cdxIconUserAvatar,
 	cdxIconUnStar,
-	cdxIconWikiText,
+	cdxIconWikitext,
 	cdxIconVolumeUp
 } = require( './icons.json' );
 
@@ -273,7 +275,7 @@ module.exports = exports = {
 			cdxIconPageSettings,
 			cdxIconPrevious,
 			cdxIconUserAvatar,
-			cdxIconWikiText,
+			cdxIconWikitext,
 			cdxIconUnStar,
 			thumbnailWrapperStyle: false,
 			isExtraSmall: false,
@@ -327,7 +329,7 @@ module.exports = exports = {
 		 * @return {string|boolean}
 		 */
 		srcset: function () {
-			var attributeString = '';
+			let attributeString = '';
 
 			// If the URL produced by parseImageUrl isn't a thumbnail, we won't
 			// be able to use resizeUrl and should just omit the srcset.
@@ -342,8 +344,8 @@ module.exports = exports = {
 				// URLs to attempt to accommodate most sizes and concatenate a
 				// string to use as the attribute value.
 				PREVIEW_SIZES.forEach(
-					( size ) => {
-						var url = mw.util.parseImageUrl( this.thumbnail ).resizeUrl( size );
+					( size, index ) => {
+						const url = mw.util.parseImageUrl( this.thumbnail ).resizeUrl( PREVIEW_SIZE_URLS[ index ] );
 						attributeString += url + ' ' + size + 'w,\n';
 					}
 				);
@@ -361,7 +363,7 @@ module.exports = exports = {
 				// a sidebar and will rarely be wider ~640px (would require a
 				// massive screen)
 				attributeString +=
-					mw.util.parseImageUrl( this.thumbnail ).resizeUrl( PREVIEW_SIZES[ 0 ] ) +
+					mw.util.parseImageUrl( this.thumbnail ).resizeUrl( PREVIEW_SIZE_URLS[ 0 ] ) +
 					' ' +
 					PREVIEW_SIZES[ 0 ] +
 					'w';
@@ -374,7 +376,7 @@ module.exports = exports = {
 		 * @return {string}
 		 */
 		sizes: function () {
-			var attributeString = '';
+			let attributeString = '';
 
 			if ( this.isDialog ) {
 				// For dialog mode, use an image size that matches the width of
@@ -410,7 +412,7 @@ module.exports = exports = {
 		 * @return {string|null}
 		 */
 		displayName: function () {
-			var title = mw.Title.newFromText( this.title );
+			const title = mw.Title.newFromText( this.title );
 			return title ? title.getMainText() : null;
 		},
 
@@ -418,7 +420,7 @@ module.exports = exports = {
 		 * @return {string|null}
 		 */
 		displayNameWithoutExtension: function () {
-			var title = mw.Title.newFromText( this.title );
+			const title = mw.Title.newFromText( this.title );
 			return title ? title.getName() : null;
 		},
 
@@ -480,10 +482,17 @@ module.exports = exports = {
 
 		licenseUrl: function () {
 			if ( this.metadata && this.metadata.LicenseUrl ) {
-				return this.metadata.LicenseUrl.value;
-			} else {
-				return null;
+				try {
+					const url = new URL( this.metadata.LicenseUrl.value );
+					// Filter out non-http(s) license urls
+					// https://phabricator.wikimedia.org/T435999
+					if ( [ 'http:', 'https:' ].includes( url.protocol ) ) {
+						return this.metadata.LicenseUrl.value;
+					}
+				} catch ( e ) {
+				}
 			}
+			return null;
 		},
 
 		/**
@@ -494,8 +503,7 @@ module.exports = exports = {
 		 * @return {string|null}
 		 */
 		assessmentList: function () {
-			var assessmentList = [],
-				assessmentValues;
+			const assessmentList = [];
 
 			// If assessemnt labels have been enabled and if the image contains
 			// assessment metadata
@@ -505,7 +513,7 @@ module.exports = exports = {
 				this.metadata.Assessments &&
 				this.metadata.Assessments.value
 			) {
-				assessmentValues = this.metadata.Assessments.value.split( '|' );
+				const assessmentValues = this.metadata.Assessments.value.split( '|' );
 				assessmentValues.forEach( ( assessment ) => {
 					// Messages that can be used here:
 					// * mediasearch-filter-assessment-valued-image
@@ -525,7 +533,7 @@ module.exports = exports = {
 		 * @return {string|null} String that may contain HTML
 		 */
 		creationDate: function () {
-			var dateString = this.metadata &&
+			const dateString = this.metadata &&
 					this.metadata.DateTimeOriginal &&
 					this.metadata.DateTimeOriginal.value || null,
 				// eslint-disable-next-line security/detect-unsafe-regex
@@ -583,7 +591,7 @@ module.exports = exports = {
 		 * @return {string|null}
 		 */
 		resolution: function () {
-			var width = this.imageinfo ? this.imageinfo[ 0 ].width : null,
+			const width = this.imageinfo ? this.imageinfo[ 0 ].width : null,
 				height = this.imageinfo ? this.imageinfo[ 0 ].height : null;
 
 			if ( width && height ) {
@@ -658,15 +666,14 @@ module.exports = exports = {
 		 * height of that image to avoid a layout jump when the image loads.
 		 */
 		getThumbnailWrapperStyle: function () {
-			var imgWidth, imgHeight, elWidth, height;
-
 			if ( !this.imageinfo ) {
 				return;
 			}
 
-			imgWidth = this.imageinfo[ 0 ].width;
-			imgHeight = this.imageinfo[ 0 ].height;
-			elWidth = this.$refs.header.offsetWidth;
+			const imgWidth = this.imageinfo[ 0 ].width;
+			const imgHeight = this.imageinfo[ 0 ].height;
+			const elWidth = this.$refs.header.offsetWidth;
+			let height;
 			if ( imgWidth >= imgHeight ) {
 				// For landscape-oriented images, calculate the height
 				// based on the aspect ratio and the width of the container.

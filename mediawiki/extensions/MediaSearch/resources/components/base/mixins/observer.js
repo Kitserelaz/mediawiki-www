@@ -12,10 +12,6 @@ module.exports = {
 			 */
 			observerElement: null,
 			/**
-			 * Boolean that define if the browser supports the Intersecting observer
-			 */
-			observerSupported: this.supportsObserverCheck(),
-			/**
 			 * Object used to override the default IntersectObserver values.
 			 */
 			observerOptions: null,
@@ -29,25 +25,10 @@ module.exports = {
 
 	methods: {
 		/**
-		 * Browser check for the IntersectionObserver feature
-		 *
-		 * @return {boolean}
-		 */
-		supportsObserverCheck: function () {
-			return (
-				'IntersectionObserver' in window &&
-				'IntersectionObserverEntry' in window &&
-				// eslint-disable-next-line compat/compat
-				'intersectionRatio' in window.IntersectionObserverEntry.prototype
-			);
-		},
-		/**
 		 * Helper method used to manually disconnect the Observer
 		 */
 		disconnectObserver: function () {
-			if ( this.observerSupported ) {
-				this.observer.disconnect();
-			}
+			this.observer.disconnect();
 		},
 		/**
 		 * Helper method define the element to be used in the observer
@@ -66,7 +47,7 @@ module.exports = {
 		intersectionCallback: function ( entries ) {
 			// An array of entries will be passed to the callback,
 			// but we only care about the first element
-			var entry = entries[ 0 ];
+			const entry = entries[ 0 ];
 
 			if ( entry && entry.isIntersecting ) {
 				this.$emit( 'intersect' );
@@ -86,9 +67,6 @@ module.exports = {
 	 * Create an intersection observer when the Observer component mounts
 	 */
 	mounted: function () {
-		if ( !this.observerSupported ) {
-			return;
-		}
 		// eslint-disable-next-line compat/compat
 		this.observer = new IntersectionObserver(
 			this.intersectionCallback.bind( this ), // what to do when intersection occurs
@@ -96,7 +74,7 @@ module.exports = {
 		);
 		this.$nextTick(
 			() => {
-				var intersectElement = this.defineObserverElement( this.observerElement );
+				const intersectElement = this.defineObserverElement( this.observerElement );
 				this.observer.observe( intersectElement );
 			}
 		);

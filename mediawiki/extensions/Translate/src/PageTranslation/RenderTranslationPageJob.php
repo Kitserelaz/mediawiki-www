@@ -3,20 +3,23 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
-use JobQueueGroup;
+use MediaWiki\Category\Category;
 use MediaWiki\CommentStore\CommentStoreComment;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\Translate\Jobs\GenericTranslateJob;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\DeleteTranslatableBundleJob;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
 use MediaWiki\Extension\Translate\SystemUsers\FuzzyBot;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Revision\RevisionStore;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserRigorOptions;
-use RecentChange;
+use Wikimedia\ScopedCallback;
 
 /**
  * Job for updating translation pages when translation or template changes.
@@ -26,6 +29,7 @@ use RecentChange;
  */
 class RenderTranslationPageJob extends GenericTranslateJob {
 	public const ACTION_DELETE = 'delete';
+	public const ACTION_CATEGORIZATION = 'categorization';
 
 	public static function newJob(
 		Title $target,
@@ -78,6 +82,13 @@ class RenderTranslationPageJob extends GenericTranslateJob {
 		$summary = $this->getSummary();
 		$flags = $this->getFlags();
 
+		if ( isset( $this->params['session'] ) ) {
+			$scope = RequestContext::importScopedSession( $this->params['session'] );
+			$this->addTeardownCallback( static function () use ( &$scope ) {
+				ScopedCallback::consume( $scope );
+			} );
+		}
+
 		// We should not re-create the translation page if a translation unit is being deleted
 		// because it is possible that the translation page may also be queued for deletion.
 		// Hence, set the flag to EDIT_UPDATE and remove EDIT_NEW if its added
@@ -89,19 +100,28 @@ class RenderTranslationPageJob extends GenericTranslateJob {
 		Hooks::$allowTargetEdit = true;
 
 		$commentStoreComment = CommentStoreComment::newUnsavedComment( $summary );
-		// $percentageTranslated is modified by reference
-		$content = $tpPage->getPageContent( $mwServices->getParser(), $percentageTranslated );
+		$isTranslated = false; // modified below by reference
+		$content = $tpPage->getPageContent( $mwServices->getParser(), $isTranslated );
 		$translationPageTitleExists = $translationPageTitle->exists();
-		if ( $percentageTranslated === 0 && !$translationPageTitleExists ) {
+		if ( $this->isCategoryTrigger() ) {
+			$isNonEmptyCategory = true;
+		} elseif ( $translationPageTitle->inNamespace( NS_CATEGORY ) ) {
+			$cat = Category::newFromTitle( $translationPageTitle );
+			$isNonEmptyCategory = $cat->getMemberCount() > 0;
+		} else {
+			$isNonEmptyCategory = false;
+		}
+		if ( !$isTranslated && !$translationPageTitleExists && !$isNonEmptyCategory ) {
 			Hooks::$allowTargetEdit = false;
 			$this->logInfo( 'No translations found and translation page does not exist. Nothing to do.' );
 			return true;
 		}
 
 		if (
-			$percentageTranslated === 0 &&
+			!$isTranslated &&
 			$translationPageTitleExists &&
-			$this->hasOnlyFuzzyBotAsAuthor( $mwServices->getRevisionStore(), $translationPageTitle )
+			$this->hasOnlyFuzzyBotAsAuthor( $mwServices->getRevisionStore(), $translationPageTitle ) &&
+			!$isNonEmptyCategory
 		) {
 			$this->logInfo( 'Deleting translation page having no translations and modified only by Fuzzybot' );
 			// Page is not translated at all but the translation page exists and has been only edited by FuzzyBot
@@ -165,12 +185,19 @@ class RenderTranslationPageJob extends GenericTranslateJob {
 		return $this->params['summary'];
 	}
 
-	/** @param UserIdentity|string $user */
-	public function setUser( $user ): void {
+	/**
+	 * @param UserIdentity|string $user
+	 * @param ?array $session
+	 */
+	public function setUser( $user, ?array $session = null ): void {
 		if ( $user instanceof UserIdentity ) {
 			$this->params['user'] = $user->getName();
 		} else {
 			$this->params['user'] = $user;
+		}
+
+		if ( $session ) {
+			$this->params['session'] = $session;
 		}
 	}
 
@@ -181,8 +208,11 @@ class RenderTranslationPageJob extends GenericTranslateJob {
 	}
 
 	private function isDeleteTrigger(): bool {
-		$triggerAction = $this->params['triggerAction'] ?? null;
-		return $triggerAction === self::ACTION_DELETE;
+		return ( $this->params['triggerAction'] ?? null ) === self::ACTION_DELETE;
+	}
+
+	private function isCategoryTrigger(): bool {
+		return ( $this->params['triggerAction'] ?? null ) === self::ACTION_CATEGORIZATION;
 	}
 
 	private function logJobStart(): void {
@@ -213,7 +243,8 @@ class RenderTranslationPageJob extends GenericTranslateJob {
 			TranslatablePage::class,
 			$isTranslationPage,
 			$performer,
-			wfMessage( 'pt-deletepage-lang-outdated-logreason' )->inContentLanguage()->text()
+			wfMessage( 'pt-deletepage-lang-outdated-logreason' )->inContentLanguage()->text(),
+			$this->params['session'] ?? null
 		);
 
 		$jobQueueGroup->push( $job );

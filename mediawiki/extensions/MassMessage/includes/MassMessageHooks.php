@@ -1,32 +1,30 @@
 <?php
 
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-
 namespace MediaWiki\MassMessage;
 
 use MediaWiki\Api\Hook\APIQuerySiteInfoStatisticsInfoHook;
 use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
 use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
-use MediaWiki\Hook\ParserFirstCallInitHook;
-use MediaWiki\Hook\RejectParserCacheValueHook;
-use MediaWiki\Hook\SkinTemplateNavigation__UniversalHook;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\WikiPage;
+use MediaWiki\Parser\Hook\ParserFirstCallInitHook;
+use MediaWiki\Parser\Hook\RejectParserCacheValueHook;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Skin\Hook\SkinTemplateNavigation__UniversalHook;
+use MediaWiki\Skin\Skin;
+use MediaWiki\Skin\SkinTemplate;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\Hook\UserGetReservedNamesHook;
 use MediaWiki\User\User;
-use Skin;
-use WikiPage;
 
 /**
  * Hooks!
  */
-
 class MassMessageHooks implements
 	ParserFirstCallInitHook,
 	APIQuerySiteInfoStatisticsInfoHook,
@@ -124,7 +122,7 @@ class MassMessageHooks implements
 	/**
 	 * Override the Edit tab for delivery lists.
 	 *
-	 * @param \SkinTemplate $sktemplate
+	 * @param SkinTemplate $sktemplate
 	 * @param array &$links
 	 */
 	public function onSkinTemplateNavigation__Universal( $sktemplate, &$links ): void {

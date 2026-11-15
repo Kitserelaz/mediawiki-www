@@ -4,6 +4,7 @@
 			"Amire80",
 			"Dcausse",
 			"Hakimi97",
+			"Inkowik",
 			"Kghbln",
 			"Kunal Mehta",
 			"Mar(c)",
@@ -11,10 +12,11 @@
 			"Shirayuki",
 			"Siebrand",
 			"Srolanh",
+			"Stefan2255",
 			"Umherirrender"
 		]
 	},
-	"cirrussearch-desc": "{{desc|name=Cirrus Search|url=https://www.mediawiki.org/wiki/Extension:CirrusSearch}}\n\"Elasticsearch\" is a full-text search engine. See http://www.elasticsearch.org/",
+	"cirrussearch-desc": "{{desc|name=Cirrus Search|url=https://www.mediawiki.org/wiki/Extension:CirrusSearch}}\n\"OpenSearch\" is a Free Software full-text search engine. https://opensearch.org/ . '''\"OpenSearch\" is a name, and it shouldn't be translated.'''",
 	"cirrussearch-backend-error": "Error message shown to the users when we have an issue communicating with our search backend",
 	"cirrussearch-parse-error": "Error message shown to the users when we couldn't understand the query.  For the most part we don't expect users to see this because we retry retry queries that we don't unserstand using a (hopefully) fail safe method.",
 	"cirrussearch-too-busy-error": "Error message shown to the users when there are too many concurrent searches currently running and we can't allow any more to start.",
@@ -47,7 +49,7 @@
 	"cirrussearch-qi-profile-popular-inclinks": "Incoming link count based query independent search profile (affects fulltext search ranking algorithm).",
 	"prefs-completion": "Section name for completion settings in the user preferences.",
 	"cirrussearch-pref-completion-section-desc": "Name of the subsection Completion Suggester in the user preferences.",
-	"cirrussearch-pref-completion-profile-help": "Tetapkan tindak laku untuk cadangan autolengkap (cari-sambil-taip).\n\n[https://www.mediawiki.org/wiki/Special:MyLanguage/Extension:CirrusSearch/CompletionSuggester Completion suggester] ialah algoritma untuk cadangan carian dengan pembetulan taip dan perkaitan carian yang lebih baik. Carian awalan ialah algoritma cadangan cari-sambil-taip.",
+	"cirrussearch-pref-completion-profile-help": "Help message for completion profile settings in the user preferences.",
 	"cirrussearch-completion-profile-fuzzy-pref-name": "Name of the completion profile fuzzy.",
 	"cirrussearch-completion-profile-fuzzy-pref-desc": "Description of the completion profile fuzzy.",
 	"cirrussearch-completion-profile-fuzzy-subphrases-pref-name": "Name of the completion profile fuzzy-subphrases",
@@ -72,6 +74,7 @@
 	"cirrussearch-feature-deepcat-toomany": "Warning shown when SPARQL query for deepcat search returns more categories than can be inserted in ElasticSearch query.",
 	"cirrussearch-feature-deepcat-invalid-title": "Warning shown when cateogry provided to deepcat: search keyword is not a valid mediawiki page name.",
 	"cirrussearch-feature-pageid-invalid-id": "Warning shown when parameters to pageid: search keyword are not valid IDs (integers).\n\nParameters:\n* $1 - comma-separated list of IDs.\n* $2 - Number of invalid IDs.",
+	"cirrussearch-feature-invalid-date-range": "Warning shown when the date provided to a fulltext search keyword is invalid",
 	"cirrussearch-incategory-feature-no-valid-categories": "Warning shown to users when no valid categories were found with their incategory keyword.",
 	"cirrussearch-mlt-feature-no-valid-titles": "Warning shown to users when no valid titles were found with the provided 'morelike' keyword.",
 	"cirrussearch-mlt-not-configured": "Warning shown to users when issuing a 'more like this' query and the wiki hasn't configured it.",
@@ -81,6 +84,10 @@
 	"cirrussearch-autoselect-profile": "Special profile used as a default in search APIs that lets CirrusSearch decide on the best set of profiles to use.",
 	"cirrussearch-offset-too-large": "Warning shown when search results are requested beyond the supported limit.",
 	"cirrussearch-offset-not-allowed-with-random-sort": "Warning shown when user attempts to paginate when also requesting randomly sorted results.",
-	"cirrussearch-articletopic-invalid-topic": "Warning shown when the <kbd>articletopic:</kbd> search keyword is used with an unrecognized topic name.\n\nParameters:\n* $1 - comma-separated list of topic names.\n* $2 - number of unrecognized topic names.",
-	"cirrussearch-inlanguage-deprecate-comma": "Warning shown when the <kbd>inlanguage:</kbd> search keyword is used with a comma instead of a pipe as the separator between multiple provided languages."
+	"cirrussearch-articleprediction-invalid-keyword": "Warning shown when the <kbd>articlprediction:</kbd> search keywords are used with an unrecognized term.\n\nParameters:\n* $1 - comma-separated list of terms.\n* $2 - number of unrecognized terms \n* $3 - search keyword.",
+	"cirrussearch-inlanguage-deprecate-comma": "Warning shown when the <kbd>inlanguage:</kbd> search keyword is used with a comma instead of a pipe as the separator between multiple provided languages.",
+	"cirrussearch-invalid-keyword-boost": "Warning shown when using a search keyword able to boost terms: <kbd>somekeyword:term^boost</kbd> where <kbd>boost</kbd> must be a positive float number.",
+	"cirrussearch-invalid-keyword-threshold": "Warning shown when using a search keyword able to filter by threshold terms: <kbd>somekeyword:term>threshold</kbd> where <kbd>threshold</kbd> must be a float number between 0 and 1.",
+	"cirrussearch-semantic-empty-query": "Warning shown when a semantic search is attempted with an empty search term.",
+	"cirrussearch-semantic-too-many-results": "Warning shown when a semantic search matches too many results to rank effectively. The user is asked to refine their search.\n\nParameters:\n* $1 - maximum number of search results semantic search will provide."
 }

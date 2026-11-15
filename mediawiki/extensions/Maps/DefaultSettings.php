@@ -26,6 +26,13 @@ return [
 	// Allows disabling the Semantic MediaWiki integration.
 	'egMapsDisableSmwIntegration' => false,
 
+	// Boolean. Whether Maps configuration may also be set on the MediaWiki:Maps JSON config page,
+	// which is editable only by users with the editinterface and editsitejson rights. When false,
+	// that page is never read and only LocalSettings.php applies. The wiki page exposes most Maps
+	// settings, grouped by service and topic (see the README); its values take precedence over
+	// LocalSettings.php. Secrets, script-injection primitives and setup-time switches stay PHP-only.
+	'egMapsEnableInWikiConfig' => true,
+
 
 
 
@@ -46,6 +53,15 @@ return [
 
 	'egMapsResizableByDefault' => false,
 	'egMapsRezoomForKML' => false,
+
+	// Boolean. Whether the kml and geojson parameters may name a URL. Such a file is fetched by the
+	// browser of everyone viewing the map for kml, by this wiki's server for geojson, and the host
+	// serving it can change what it contains after the edit was reviewed. When false, only KML files
+	// uploaded to this wiki and GeoJson pages are used, and the NetworkLink elements inside a KML
+	// document may only point at this wiki. Does not apply to gkml, which Google fetches and renders
+	// on its own servers. When true, the server-side fetches block private address ranges and pin
+	// DNS; stronger guarantees need a firewall or an egress proxy.
+	'egMapsAllowExternalDataFiles' => false,
 
 	// Boolean. Sets if pages with maps should be put in special category
 	'egMapsEnableCategory' => false,
@@ -168,7 +184,6 @@ return [
 	'egMapsLeafletAvailableLayers' => [
 		'OpenStreetMap' => true,
 		'OpenStreetMap.DE' => true,
-		'OpenStreetMap.BlackAndWhite' => true,
 		'OpenStreetMap.HOT' => true,
 		'OpenTopoMap' => true,
 		'Thunderforest.OpenCycleMap' => true,
@@ -178,24 +193,8 @@ return [
 		'Thunderforest.Landscape' => true,
 		'Thunderforest.Outdoors' => true,
 		'Thunderforest.Pioneer' => true,
-		'OpenMapSurfer.Roads' => true,
-		'OpenMapSurfer.Grayscale' => true,
-		'Hydda.Full' => true,
-		'Hydda.Base' => true,
 		//'MapBox' => false, // todo: implement setting api key
-		'Stamen.Toner' => true,
-		'Stamen.TonerBackground' => true,
-		'Stamen.TonerHybrid' => true,
-		'Stamen.TonerLines' => true,
-		'Stamen.TonerLabels' => true,
-		'Stamen.TonerLite' => true,
-		'Stamen.Watercolor' => true,
-		'Stamen.Terrain' => true,
-		'Stamen.TerrainBackground' => true,
-		'Stamen.TopOSMRelief' => true,
-		'Stamen.TopOSMFeatures' => true,
 		'Esri.WorldStreetMap' => true,
-		'Esri.DeLorme' => true,
 		'Esri.WorldTopoMap' => true,
 		'Esri.WorldImagery' => true,
 		'Esri.WorldTerrain' => true,
@@ -204,7 +203,6 @@ return [
 		'Esri.OceanBasemap' => true,
 		'Esri.NatGeoWorldMap' => true,
 		'Esri.WorldGrayCanvas' => true,
-		'MapQuestOpen' => true,
 		//'HERE' => false, // todo: implement setting api key
 		'FreeMapSK' => true,
 		'MtbMap' => true,
@@ -214,8 +212,6 @@ return [
 		'CartoDB.DarkMatter' => true,
 		'CartoDB.DarkMatterNoLabels' => true,
 		'CartoDB.DarkMatterOnlyLabels' => true,
-		'HikeBike.HikeBike' => true,
-		'HikeBike.HillShading' => true,
 		'BasemapAT.basemap' => true,
 		'BasemapAT.grau' => true,
 		'BasemapAT.overlay' => true,
@@ -225,14 +221,9 @@ return [
 		'NASAGIBS.ModisTerraBands367CR' => true,
 		'NASAGIBS.ViirsEarthAtNight2012' => true,
 		'NLS' => true,
-		'GeoportailFrance' => true,
-		'GeoportailFrance.parcels' => true,
-		'GeoportailFrance.ignMaps' => true,
-		'GeoportailFrance.orthos' => true
 	],
 
 	'egMapsLeafletAvailableOverlayLayers' => [
-		'OpenMapSurfer.AdminBounds' => true,
 		'OpenSeaMap' => true,
 		'OpenWeatherMap.Clouds' => true,
 		'OpenWeatherMap.CloudsClassic' => true,
@@ -245,23 +236,63 @@ return [
 		'OpenWeatherMap.Wind' => true,
 		'OpenWeatherMap.Temperature' => true,
 		'OpenWeatherMap.Snow' => true,
-		'Hydda.RoadsAndLabels' => true,
 		'NASAGIBS.ModisTerraLSTDay' => true,
 		'NASAGIBS.ModisTerraSnowCover' => true,
 		'NASAGIBS.ModisTerraAOD' => true,
 		'NASAGIBS.ModisTerraChlorophyll' => true
 	],
 
+	// Custom named tile layers that can be used as base layers or overlays, in addition to the
+	// stock leaflet-providers layers listed above. The name of each definition becomes a valid
+	// value for the layers and overlays parameters. Only the definitions actually used by a map
+	// are sent to the browser. The same layers can be defined on-wiki via the MediaWiki:Maps
+	// config page (see egMapsEnableInWikiConfig).
+	//
+	// Each definition has a required 'url' plus optional 'options' and 'wms' entries:
+	//   - 'url' must be an http(s) URL. XYZ tile templates ({z}, {x}, {y}, {s}) and, for WMS, the
+	//     service endpoint are supported. Definitions without a valid url are ignored.
+	//   - 'wms' (boolean) renders the layer with L.tileLayer.wms instead of L.tileLayer.
+	//   - 'options' is passed to Leaflet, but only a safe allowlist of keys is kept: attribution,
+	//     minZoom, maxZoom, minNativeZoom, maxNativeZoom, subdomains, errorTileUrl, zoomOffset,
+	//     zoomReverse, tms, detectRetina, bounds, opacity, zIndex and noWrap; plus, for WMS layers,
+	//     layers, styles, format, transparent, version and uppercase. Unknown options are dropped.
+	//     'errorTileUrl' must be an http(s) URL, and 'attribution' is sanitized to plain text and
+	//     http(s) links.
+	//
+	// A definition whose name matches a stock layer (e.g. 'OpenStreetMap') overrides that stock
+	// layer.
+	//
+	// Example:
+	// 'egMapsLeafletLayerDefinitions' => [
+	//     'Historic 1904' => [
+	//         'url' => 'https://tiles.example.org/historic1904/{z}/{x}/{y}.png',
+	//         'options' => [
+	//             'attribution' => 'Historic map tiles',
+	//             'minZoom' => 1,
+	//             'maxZoom' => 18,
+	//             'subdomains' => 'abc',
+	//             'bounds' => [ [ 49.5, 5.8 ], [ 53.6, 15.2 ] ],
+	//         ],
+	//     ],
+	//     'Weather WMS' => [
+	//         'wms' => true,
+	//         'url' => 'https://example.org/geoserver/wms',
+	//         'options' => [
+	//             'layers' => 'weather:precipitation',
+	//             'format' => 'image/png',
+	//             'transparent' => true,
+	//             'attribution' => 'Weather service',
+	//         ],
+	//     ],
+	// ],
+	'egMapsLeafletLayerDefinitions' => [],
+
 	'egMapsLeafletLayersApiKeys' => [
 		'MapBox' => '',
-		'MapQuestOpen' => '',
 		'Thunderforest' => '',
-		'GeoportailFrance' => ''
 	],
 
-	'egMapsLeafletLayerDependencies' => [
-		'MapQuestOpen' => 'https://open.mapquestapi.com/sdk/leaflet/v2.2/mq-map.js?key=',
-	],
+	'egMapsLeafletLayerDependencies' => [],
 
 
 

@@ -17,11 +17,6 @@ use Wikibase\MediaInfo\DataModel\MediaInfo;
 class MediaInfoPrefetchingTermLookup extends EntityTermLookupBase implements PrefetchingTermLookup {
 
 	/**
-	 * @var EntityRevisionLookup
-	 */
-	private $entityRevisionLookup;
-
-	/**
 	 * @var array
 	 */
 	private $supportedTermTypes = [ 'label', 'description' ];
@@ -31,11 +26,9 @@ class MediaInfoPrefetchingTermLookup extends EntityTermLookupBase implements Pre
 	 */
 	private $terms = [];
 
-	/**
-	 * @param EntityRevisionLookup $entityRevisionLookup
-	 */
-	public function __construct( EntityRevisionLookup $entityRevisionLookup ) {
-		$this->entityRevisionLookup = $entityRevisionLookup;
+	public function __construct(
+		private readonly EntityRevisionLookup $entityRevisionLookup,
+	) {
 	}
 
 	/**
@@ -156,6 +149,7 @@ class MediaInfoPrefetchingTermLookup extends EntityTermLookupBase implements Pre
 		return $terms;
 	}
 
+	/** @inheritDoc */
 	public function getPrefetchedAliases( EntityId $entityId, $languageCode ) {
 		return [];
 	}

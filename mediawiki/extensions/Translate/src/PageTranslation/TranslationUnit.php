@@ -3,9 +3,9 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\PageTranslation;
 
-use Language;
 use MediaWiki\Extension\Translate\MessageLoading\Message;
 use MediaWiki\Html\Html;
+use MediaWiki\Language\Language;
 use MediaWiki\Parser\Parser;
 use const PREG_SET_ORDER;
 
@@ -208,8 +208,8 @@ class TranslationUnit {
 		$attributes = [];
 		$headingText = null;
 
-		if ( $msg && $msg->translation() !== null ) {
-			$content = $msg->translation();
+		$content = $msg ? $msg->translation() : null;
+		if ( $content !== null ) {
 			$headingText = $this->getHeading( $msg->definition() );
 
 			if ( $msg->hasTag( 'fuzzy' ) ) {

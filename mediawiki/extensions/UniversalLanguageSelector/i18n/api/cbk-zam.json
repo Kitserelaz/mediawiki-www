@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Noooote"
+		]
+	},
+	"apihelp-ulslocalization-summary": "Saca el localizacion del ULS na lenguaje que ya manda.",
+	"apihelp-ulslocalization-param-language": "Codigo de lenguaje.",
+	"apihelp-ulslocalization-example-1": "Saca localizacion de Tamil",
+	"apihelp-ulslocalization-example-2": "Saca localizacion de Hindi",
+	"apihelp-ulssetlang-summary": "Hace update con el preferido lenguaje de interfez del usador.",
+	"apihelp-ulssetlang-param-languagecode": "El codigo de lenguaje preferido.",
+	"apierror-ulssetlang-anon-notallowed": "Maga users anonimo hende permitido para cambia con el lenguaje de interfaz."
+}

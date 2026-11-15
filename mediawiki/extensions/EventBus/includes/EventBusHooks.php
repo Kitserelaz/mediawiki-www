@@ -24,38 +24,37 @@
 
 namespace MediaWiki\Extension\EventBus;
 
-use ManualLogEntry;
 use MediaWiki\Block\DatabaseBlock;
 use MediaWiki\ChangeTags\Hook\ChangeTagsAfterUpdateTagsHook;
+use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Deferred\Hook\LinksUpdateCompleteHook;
 use MediaWiki\Deferred\LinksUpdate\LinksTable;
 use MediaWiki\Deferred\LinksUpdate\LinksUpdate;
-use MediaWiki\Extension\EventBus\HookHandlers\MediaWiki\PageChangeHooks;
-use MediaWiki\Hook\ArticleRevisionVisibilitySetHook;
-use MediaWiki\Hook\BlockIpCompleteHook;
-use MediaWiki\Hook\LinksUpdateCompleteHook;
 use MediaWiki\Hook\PageMoveCompleteHook;
 use MediaWiki\Linker\LinkTarget;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Page\Hook\ArticleProtectCompleteHook;
 use MediaWiki\Page\Hook\ArticlePurgeHook;
 use MediaWiki\Page\Hook\PageDeleteCompleteHook;
 use MediaWiki\Page\Hook\PageUndeleteCompleteHook;
 use MediaWiki\Page\ProperPageIdentity;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Permissions\Authority;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Revision\Hook\RevisionRecordInsertedHook;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\RevisionDelete\Hook\ArticleRevisionVisibilitySetHook;
+use MediaWiki\Specials\Hook\BlockIpCompleteHook;
 use MediaWiki\Storage\EditResult;
 use MediaWiki\Storage\Hook\PageSaveCompleteHook;
 use MediaWiki\Title\Title;
+use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
-use RecentChange;
-use Wikimedia\Assert\Assert;
 use Wikimedia\Rdbms\IDBAccessObject;
-use WikiPage;
 
 /**
  * @deprecated since EventBus 0.5.0 Use specific feature based hooks in HookHandlers/,
@@ -75,11 +74,21 @@ class EventBusHooks implements
 	RevisionRecordInsertedHook
 {
 
-	/**
-	 * @return RevisionLookup
-	 */
-	private static function getRevisionLookup(): RevisionLookup {
-		return MediaWikiServices::getInstance()->getRevisionLookup();
+	private EventBusFactory $eventBusFactory;
+	private RevisionLookup $revisionLookup;
+	private CommentFormatter $commentFormatter;
+	private TitleFactory $titleFactory;
+
+	public function __construct(
+		EventBusFactory $eventBusFactory,
+		RevisionLookup $revisionLookup,
+		CommentFormatter $commentFormatter,
+		TitleFactory $titleFactory
+	) {
+		$this->eventBusFactory = $eventBusFactory;
+		$this->revisionLookup = $revisionLookup;
+		$this->commentFormatter = $commentFormatter;
+		$this->titleFactory = $titleFactory;
 	}
 
 	/**
@@ -88,12 +97,12 @@ class EventBusHooks implements
 	 * @param LinkTarget $title article title object
 	 * @param array $tags the array of tags to use in the event
 	 */
-	private static function sendResourceChangedEvent(
+	private function sendResourceChangedEvent(
 		LinkTarget $title,
 		array $tags
 	) {
 		$stream = 'resource_change';
-		$eventbus = EventBus::getInstanceForStream( $stream );
+		$eventbus = $this->eventBusFactory->getInstanceForStream( $stream );
 		$event = $eventbus->getFactory()->createResourceChangeEvent( $stream, $title, $tags );
 
 		DeferredUpdates::addCallableUpdate( static function () use ( $eventbus, $event ) {
@@ -126,18 +135,17 @@ class EventBusHooks implements
 	) {
 		$stream = $logEntry->getType() === 'suppress' ?
 			'mediawiki.page-suppress' : 'mediawiki.page-delete';
-		$eventbus = EventBus::getInstanceForStream( $stream );
+		$eventbus = $this->eventBusFactory->getInstanceForStream( $stream );
 
 		// Don't set performer in the event if this delete suppresses the page from other admins.
 		// https://phabricator.wikimedia.org/T342487
 		$performerForEvent = $logEntry->getType() == 'suppress' ? null : $deleter->getUser();
 
-		$eventBusFactory = $eventbus->getFactory();
-		$eventBusFactory->setCommentFormatter( MediaWikiServices::getInstance()->getCommentFormatter() );
-		$title = Title::castFromPageIdentity( $page );
-		Assert::postcondition( $title !== null, '$page can be cast to a LinkTarget' );
+		$eventFactory = $eventbus->getFactory();
+		$eventFactory->setCommentFormatter( $this->commentFormatter );
+		$title = $this->titleFactory->newFromPageIdentity( $page );
 
-		$event = $eventBusFactory->createPageDeleteEvent(
+		$event = $eventFactory->createPageDeleteEvent(
 			$stream,
 			$performerForEvent,
 			$pageID,
@@ -148,11 +156,9 @@ class EventBusHooks implements
 			$reason
 		);
 
-		DeferredUpdates::addCallableUpdate(
-			static function () use ( $eventbus, $event ) {
-				$eventbus->send( [ $event ] );
-			}
-		);
+		DeferredUpdates::addCallableUpdate( static function () use ( $eventbus, $event ) {
+			$eventbus->send( [ $event ] );
+		} );
 	}
 
 	/**
@@ -182,15 +188,14 @@ class EventBusHooks implements
 		array $restoredPageIds
 	): void {
 		$stream = 'mediawiki.page-undelete';
-		$eventBus = EventBus::getInstanceForStream( $stream );
-		$eventBusFactory = $eventBus->getFactory();
-		$eventBusFactory->setCommentFormatter( MediaWikiServices::getInstance()->getCommentFormatter() );
+		$eventBus = $this->eventBusFactory->getInstanceForStream( $stream );
+		$eventFactory = $eventBus->getFactory();
+		$eventFactory->setCommentFormatter( $this->commentFormatter );
 
-		$event = $eventBusFactory->createPageUndeleteEvent(
+		$event = $eventFactory->createPageUndeleteEvent(
 			$stream,
 			$restorer->getUser(),
-			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable PageIdentity is not null
-			Title::castFromPageIdentity( $page ),
+			$this->titleFactory->newFromPageIdentity( $page ),
 			$reason,
 			$page->getId(),
 			$restoredRev,
@@ -224,23 +229,20 @@ class EventBusHooks implements
 		$newRevisionRecord
 	) {
 		$stream = 'mediawiki.page-move';
-		$eventBus = EventBus::getInstanceForStream( $stream );
-		$eventBusFactory = $eventBus->getFactory();
-		$eventBusFactory->setCommentFormatter( MediaWikiServices::getInstance()->getCommentFormatter() );
-		$event = $eventBusFactory->createPageMoveEvent(
+		$eventBus = $this->eventBusFactory->getInstanceForStream( $stream );
+		$eventFactory = $eventBus->getFactory();
+		$eventFactory->setCommentFormatter( $this->commentFormatter );
+		$event = $eventFactory->createPageMoveEvent(
 			$stream,
 			$oldTitle,
 			$newTitle,
 			$newRevisionRecord,
 			$userIdentity,
-			$reason
+			$reason,
+			$redirid
 		);
 
-		DeferredUpdates::addCallableUpdate(
-			static function () use ( $eventBus, $event ) {
-				$eventBus->send( [ $event ] );
-			}
-		);
+		DeferredUpdates::addCallableUpdate( static fn () => $eventBus->send( [ $event ] ) );
 	}
 
 	/**
@@ -263,7 +265,7 @@ class EventBusHooks implements
 	) {
 		$stream = 'mediawiki.revision-visibility-change';
 		$events = [];
-		$eventBus = EventBus::getInstanceForStream( $stream );
+		$eventBus = $this->eventBusFactory->getInstanceForStream( $stream );
 		// https://phabricator.wikimedia.org/T321411
 		$performer = RequestContext::getMain()->getUser();
 		$performer->loadFromId();
@@ -273,7 +275,7 @@ class EventBusHooks implements
 			// Read from primary since due to replication lag the updated field visibility
 			// might still not be available on a replica and we are at risk of leaking
 			// just suppressed data.
-			$revision = self::getRevisionLookup()
+			$revision = $this->revisionLookup
 				->getRevisionById( $revId, IDBAccessObject::READ_LATEST );
 
 			// If the page is deleted simultaneously (null $revision) or if
@@ -295,8 +297,8 @@ class EventBusHooks implements
 				);
 				continue;
 			} else {
-				$eventBusFactory = $eventBus->getFactory();
-				$eventBusFactory->setCommentFormatter( MediaWikiServices::getInstance()->getCommentFormatter() );
+				$eventFactory = $eventBus->getFactory();
+				$eventFactory->setCommentFormatter( $this->commentFormatter );
 
 				// If this revision is 'suppressed' AKA restricted, then the person performing
 				// 'RevisionDelete' should not be visible in public data.
@@ -311,12 +313,12 @@ class EventBusHooks implements
 				// make sure that we do not reproduce the data that has been suppressed
 				// in the event itself.  E.g. if the username of the editor of the revision has been
 				// suppressed, we should not include any information about that editor in the event.
-				$performerForEvent = PageChangeHooks::isSecretRevisionVisibilityChange(
+				$performerForEvent = self::isSecretRevisionVisibilityChange(
 					$visibilityChangeMap[$revId]['oldBits'],
 					$visibilityChangeMap[$revId]['newBits']
 				) ? null : $performer;
 
-				$events[] = $eventBusFactory->createRevisionVisibilityChangeEvent(
+				$events[] = $eventFactory->createRevisionVisibilityChangeEvent(
 					$stream,
 					$revision,
 					$performerForEvent,
@@ -347,7 +349,7 @@ class EventBusHooks implements
 	 * @param WikiPage $wikiPage
 	 */
 	public function onArticlePurge( $wikiPage ) {
-		self::sendResourceChangedEvent( $wikiPage->getTitle(), [ 'purge' ] );
+		$this->sendResourceChangedEvent( $wikiPage->getTitle(), [ 'purge' ] );
 	}
 
 	/**
@@ -373,13 +375,13 @@ class EventBusHooks implements
 		$editResult
 	) {
 		if ( $editResult->isNullEdit() ) {
-			self::sendResourceChangedEvent( $wikiPage->getTitle(), [ 'null_edit' ] );
+			$this->sendResourceChangedEvent( $wikiPage->getTitle(), [ 'null_edit' ] );
 			return;
 		}
 
 		if ( $flags & EDIT_NEW ) {
 			// Not just a new revision, but a new page
-			self::sendRevisionCreateEvent(
+			$this->sendRevisionCreateEvent(
 				'mediawiki.page-create',
 				$revisionRecord
 			);
@@ -394,7 +396,7 @@ class EventBusHooks implements
 	 * @param RevisionRecord $revisionRecord RevisionRecord that has just been inserted
 	 */
 	public function onRevisionRecordInserted( $revisionRecord ) {
-		self::sendRevisionCreateEvent(
+		$this->sendRevisionCreateEvent(
 			'mediawiki.revision-create',
 			$revisionRecord
 		);
@@ -404,25 +406,21 @@ class EventBusHooks implements
 	 * @param string $stream
 	 * @param RevisionRecord $revisionRecord
 	 */
-	private static function sendRevisionCreateEvent(
+	private function sendRevisionCreateEvent(
 		string $stream,
 		RevisionRecord $revisionRecord
 	) {
-		$eventBus = EventBus::getInstanceForStream( $stream );
-		$eventBusFactory = $eventBus->getFactory();
-		$eventBusFactory->setCommentFormatter(
-			MediaWikiServices::getInstance()->getCommentFormatter()
+		$eventBus = $this->eventBusFactory->getInstanceForStream( $stream );
+		$eventFactory = $eventBus->getFactory();
+		$eventFactory->setCommentFormatter(
+			$this->commentFormatter
 		);
-		$event = $eventBusFactory->createRevisionCreateEvent(
+		$event = $eventFactory->createRevisionCreateEvent(
 			$stream,
 			$revisionRecord
 		);
 
-		DeferredUpdates::addCallableUpdate(
-			static function () use ( $eventBus, $event ) {
-				$eventBus->send( [ $event ] );
-			}
-		);
+		DeferredUpdates::addCallableUpdate( static fn () => $eventBus->send( [ $event ] ) );
 	}
 
 	/**
@@ -441,16 +439,12 @@ class EventBusHooks implements
 		$previousBlock
 	) {
 		$stream = 'mediawiki.user-blocks-change';
-		$eventBus = EventBus::getInstanceForStream( 'mediawiki.user-blocks-change' );
+		$eventBus = $this->eventBusFactory->getInstanceForStream( $stream );
 		$eventFactory = $eventBus->getFactory();
 		$event = $eventFactory->createUserBlockChangeEvent(
 			$stream, $user, $block, $previousBlock );
 
-		DeferredUpdates::addCallableUpdate(
-			static function () use ( $eventBus, $event ) {
-				$eventBus->send( [ $event ] );
-			}
-		);
+		DeferredUpdates::addCallableUpdate( static fn () => $eventBus->send( [ $event ] ) );
 	}
 
 	/**
@@ -499,7 +493,7 @@ class EventBusHooks implements
 
 		if ( !$arePropsEmpty ) {
 			$stream = 'mediawiki.page-properties-change';
-			$eventBus = EventBus::getInstanceForStream( $stream );
+			$eventBus = $this->eventBusFactory->getInstanceForStream( $stream );
 			$eventFactory = $eventBus->getFactory();
 			$propEvent = $eventFactory->createPagePropertiesChangeEvent(
 				$stream,
@@ -520,7 +514,7 @@ class EventBusHooks implements
 
 		if ( !$areLinksEmpty ) {
 			$stream = 'mediawiki.page-properties-change';
-			$eventBus = EventBus::getInstanceForStream( $stream );
+			$eventBus = $this->eventBusFactory->getInstanceForStream( $stream );
 			$eventFactory = $eventBus->getFactory();
 			$linkEvent = $eventFactory->createPageLinksChangeEvent(
 				'mediawiki.page-links-change',
@@ -557,7 +551,7 @@ class EventBusHooks implements
 		$reason
 	) {
 		$stream = 'mediawiki.page-restrictions-change';
-		$eventBus = EventBus::getInstanceForStream( $stream );
+		$eventBus = $this->eventBusFactory->getInstanceForStream( $stream );
 		$eventFactory = $eventBus->getFactory();
 
 		$event = $eventFactory->createPageRestrictionsChangeEvent(
@@ -571,11 +565,7 @@ class EventBusHooks implements
 			$protect
 		);
 
-		DeferredUpdates::addCallableUpdate(
-			static function () use ( $eventBus, $event ) {
-				$eventBus->send( [ $event ] );
-			}
-		);
+		DeferredUpdates::addCallableUpdate( static fn () => $eventBus->send( [ $event ] ) );
 	}
 
 	/** Called after tags have been updated with the ChangeTags::updateTags function.
@@ -610,16 +600,21 @@ class EventBusHooks implements
 			return;
 		}
 
-		$revisionRecord = self::getRevisionLookup()->getRevisionById( $rev_id );
+		$revisionRecord = $this->revisionLookup->getRevisionById( $rev_id );
 		if ( $revisionRecord === null ) {
 			// Revision might already have been deleted, so we're not interested in tagging those.
 			return;
 		}
 
+		if ( !$user && $rc ) {
+			// If no user was explicitly given, fall back to the user who performed the change.
+			$user = $rc->getPerformerIdentity();
+		}
+
 		$stream = 'mediawiki.revision-tags-change';
-		$eventBus = EventBus::getInstanceForStream( $stream );
+		$eventBus = $this->eventBusFactory->getInstanceForStream( $stream );
 		$eventBusFactory = $eventBus->getFactory();
-		$eventBusFactory->setCommentFormatter( MediaWikiServices::getInstance()->getCommentFormatter() );
+		$eventBusFactory->setCommentFormatter( $this->commentFormatter );
 		$event = $eventBusFactory->createRevisionTagsChangeEvent(
 			$stream,
 			$revisionRecord,
@@ -629,11 +624,28 @@ class EventBusHooks implements
 			$user
 		);
 
-		DeferredUpdates::addCallableUpdate(
-			static function () use ( $eventBus, $event ) {
-				$eventBus->send( [ $event ] );
-			}
-		);
+		DeferredUpdates::addCallableUpdate( static fn () => $eventBus->send( [ $event ] ) );
 	}
 
+	/**
+	 * This function returns true if the visibility bits between the change require the
+	 * info about the change to be redacted.
+	 * https://phabricator.wikimedia.org/T342487
+	 *
+	 *
+	 * Info about a visibility change is secret (in the secret MW action log)
+	 * if the revision was either previously or currently is being suppressed.
+	 * The admin performing the action should be hidden in both cases.
+	 * The admin performing the action should only be shown if the change is not
+	 * affecting the revision's suppression status.
+	 * https://phabricator.wikimedia.org/T342487#9292715
+	 *
+	 * @param int $oldBits
+	 * @param int $newBits
+	 * @return bool
+	 */
+	public static function isSecretRevisionVisibilityChange( int $oldBits, int $newBits ) {
+		return $oldBits & RevisionRecord::DELETED_RESTRICTED ||
+		  $newBits & RevisionRecord::DELETED_RESTRICTED;
+	}
 }

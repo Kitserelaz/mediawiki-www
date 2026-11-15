@@ -1,0 +1,38 @@
+{
+	"@metadata": {
+		"authors": [
+			"Умар"
+		]
+	},
+	"userprofilev2-desc": "Викин бух тӀехь декъашхочун профилийн система.",
+	"userprofilev2-selectavatar": "Аватар хьажа",
+	"userprofilev2-avatarchanged": "Аватар кхиамца хийцина.",
+	"userprofilev2-avatardeleted": "Аватар кхиамца дӀайаьккхина.",
+	"userprofilev2-user-locked": "ХӀара декъашхочун глобалан аккаунт дӀайаьккхина.",
+	"userprofilev2-edit-profile": "Хьайн профиль нисйан",
+	"userprofilev2-apierror-forbidden": "Ца магийна: Хьан бакъо йац хӀара аватар хийца.",
+	"userprofilev2-apierror-invalidpermission": "Ца магийна: Хьан бакъо йац профиль хийца $1",
+	"userprofilev2-apierror-nofile": "Файл дӀа ца йелла чуйаккха.",
+	"userprofilev2-apierror-ratelimited": "Карарчу хенахь хьан аьтто бац суьрташ чудаха.",
+	"userprofilev2-apierror-invalidusername": "ХӀокху вики тӀехь '$1' цӀе йолу декъашхой дӀайазбина бац.",
+	"userprofilev2-about-me": "Соьх лаьцна",
+	"userprofilev2-discord": "Discord декъашхочун цӀе",
+	"userprofilev2-twitter": "Twitter декъашхочун цӀе",
+	"userprofilev2-mastodon": "Mastodon декъашхочун цӀе",
+	"userprofilev2-about-me-placeholder": "Хьайх лаьцна цхьаъ йазде...",
+	"userprofilev2-about-me-help": "Хьайх лаьцна дийца. Максимум 200 хьаьрк.",
+	"userprofilev2-mastodon-help": "Хьан декъашхочун цӀе Mastodon тӀехь @ -ца",
+	"userprofilev2-twitter-help": "Хьан декъашхочун цӀе X (Twitter) тӀехь @ -ца",
+	"userprofilev2-discord-help": "Хьан декъашхочун цӀе Discord тӀехь, # йоцуш",
+	"userprofilev2-showglobalgroups": "Хьайн глобалан тобанаш гайта?",
+	"userprofilev2-showglobaleditcount": "Хьан глобалан хийцамийн дукхалла гайта?",
+	"userprofilev2-showglobalgroupshelp": "Со декъашхо волу(йолу) глобалан декъашхойн тобанаш гайта (массарна а гуш хир ду)",
+	"userprofilev2-showglobaleditcounthelp": "Сан глобалан хийцамаш гайта CentralAuth тӀехь (массарна а гуш хир ду)",
+	"userprofilev2-edit": "Нисйан",
+	"userprofilev2-edit-count": "$1 {{PLURAL:$1|нисдар}}",
+	"userprofilev2-globaledit-count": "$1 {{PLURAL:$1|глобалан нисдар}}",
+	"userprofilev2-editavatar": "Аватар хийца",
+	"userprofilev2-edit-back": "Йуха",
+	"userprofilev2-deleteavatar": "Аватар дӀайаккха",
+	"userprofilev2-helptext": "ХӀара диалоган агӀо лелогш, хийца хьайн декъашхочун профилан чулацам."
+}

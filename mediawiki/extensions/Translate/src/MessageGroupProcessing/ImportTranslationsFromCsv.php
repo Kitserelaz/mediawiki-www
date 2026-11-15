@@ -6,6 +6,7 @@ namespace MediaWiki\Extension\Translate\MessageGroupProcessing;
 use MediaWiki\Extension\Translate\Services;
 use MediaWiki\Extension\Translate\Utilities\BaseMaintenanceScript;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Storage\PageUpdateStatus;
 use MediaWiki\Title\Title;
 
 /**
@@ -49,6 +50,7 @@ class ImportTranslationsFromCsv extends BaseMaintenanceScript {
 		$this->requireExtension( 'Translate' );
 	}
 
+	/** @inheritDoc */
 	public function execute() {
 		$csvFilePath = $this->getArg( 0 );
 
@@ -115,6 +117,12 @@ class ImportTranslationsFromCsv extends BaseMaintenanceScript {
 		return true;
 	}
 
+	/**
+	 * @param Title $title
+	 * @param PageUpdateStatus[] $messageImportStatuses
+	 * @param int $total
+	 * @param int $processed
+	 */
 	public function progressReporter(
 		Title $title,
 		array $messageImportStatuses,

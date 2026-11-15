@@ -2,9 +2,11 @@
 
 namespace CirrusSearch\Parser;
 
+use CirrusSearch\CachedSparqlClient;
 use CirrusSearch\CirrusSearchHookRunner;
 use CirrusSearch\Query\BoostTemplatesFeature;
 use CirrusSearch\Query\ContentModelFeature;
+use CirrusSearch\Query\DateRangeFeature;
 use CirrusSearch\Query\DeepcatFeature;
 use CirrusSearch\Query\FileTypeFeature;
 use CirrusSearch\Query\HasTemplateFeature;
@@ -27,7 +29,6 @@ use CirrusSearch\Query\TextFieldFilterFeature;
 use CirrusSearch\SearchConfig;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Sparql\SparqlClient;
 
 /**
  * Registry of keywords suited for fulltext searches
@@ -42,13 +43,13 @@ class FullTextKeywordRegistry implements KeywordRegistry {
 	 * @param SearchConfig $config
 	 * @param CirrusSearchHookRunner|null $cirrusSearchHookRunner
 	 * @param NamespacePrefixParser|null $namespacePrefixParser
-	 * @param SparqlClient|null $client
+	 * @param CachedSparqlClient|null $sparql
 	 */
 	public function __construct(
 		SearchConfig $config,
 		?CirrusSearchHookRunner $cirrusSearchHookRunner = null,
 		?NamespacePrefixParser $namespacePrefixParser = null,
-		?SparqlClient $client = null
+		?CachedSparqlClient $sparql = null
 	) {
 		$this->features = [
 			// Handle morelike keyword (greedy). Kept for BC reasons with existing clients.
@@ -74,7 +75,7 @@ class FullTextKeywordRegistry implements KeywordRegistry {
 			// Handle intitle keyword
 			new InTitleFeature( $config ),
 			// inlanguage keyword
-			new LanguageFeature(),
+			new LanguageFeature( $config ),
 			// File types
 			new FileTypeFeature( $config ),
 			// File mime types
@@ -86,11 +87,14 @@ class FullTextKeywordRegistry implements KeywordRegistry {
 			// subpageof keyword
 			new SubPageOfFeature(),
 			// deepcat feature
-			new DeepcatFeature( $config, $client ),
+			new DeepcatFeature( $config, $sparql ),
 			// morelikethis feature: a non-greedy version of the morelike keyword.
 			new MoreLikeThisFeature( $config ),
 			// ids query
-			new PageIdFeature()
+			new PageIdFeature(),
+			// date range features
+			DateRangeFeature::factory( $config, 'lasteditdate', 'timestamp' ),
+			DateRangeFeature::factory( $config, 'creationdate', 'create_timestamp' ),
 		];
 
 		$extraFeatures = [];

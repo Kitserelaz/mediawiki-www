@@ -5,9 +5,9 @@
 			"Cedric31",
 			"ChrisPtDe",
 			"Jfblanc",
+			"Lhanars",
 			"Quentí",
-			"Shirayuki",
-			"Lhanars"
+			"Shirayuki"
 		]
 	},
 	"translate": "Traduire",
@@ -76,7 +76,6 @@
 	"translate-pref-editassistlang": "Assistent de lengas :",
 	"prefs-translate": "Opcions de traduccion",
 	"translate-pref-editassistlang-help": "Una virgulas a separat una lista de còdi lenga.\nLa traduccion d’un messatge dins aquelas lengas es afichada quand sètz a traduire.\nLa lista per defaut de las lengas varia en foncion de vòstra lenga.",
-	"translate-pref-editassistlang-bad": "Còdi lenga invalid dins la lista :\n<nowiki>$1</nowiki>.",
 	"right-translate": "Modificar en utilizant l'interfàcia de traduccion",
 	"right-translate-manage": "Gerir los gropes de messatge",
 	"action-translate-manage": "gerir los gropes de messatges",
@@ -149,7 +148,6 @@
 	"translate-langstats-expandall": "Desvolopar tot",
 	"translate-langstats-collapseall": "Replegar tot",
 	"translate-language-code": "Còdi de lenga",
-	"translate-language-code-field-name": "Còdi de lenga :",
 	"translate-suppress-complete": "Suprimir los gropes de messatges traduits completament",
 	"translate-ls-noempty": "Suprimir los gropes de messatges pas traduits completament",
 	"translate-language": "Lenga :",
@@ -177,7 +175,7 @@
 	"supportedlanguages-translators": "{{PLURAL:$2|{{GENDER:$3|Traductor|Traductritz}}|Traductors}} : $1",
 	"supportedlanguages-recenttranslations": "traduccions recentas",
 	"supportedlanguages-count": "$1 {{PLURAL:$1|lenga|lengas}} al total.",
-	"supportedlanguages-activity": "$1 : $2 modificacion{{PLURAL:$2||s}} - Darrièra modificacion i a $3 jorn{{PLURAL:$3||s}}",
+	"supportedlanguages-activity": "$1: $2 modificacion{{PLURAL:$2||s}} - Darrièra modificacion fa $3 jorn{{PLURAL:$3||s}}",
 	"abusefilter-edit-builder-vars-translate-source-text": "Tèxte font de l'unitat de traduccion",
 	"translate-jssti-add": "Apondre a la lista",
 	"managemessagegroups": "Gestion del grop de messatges",

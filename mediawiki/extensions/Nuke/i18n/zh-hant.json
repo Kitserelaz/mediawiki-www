@@ -75,6 +75,5 @@
 	"nuke-daterange-helper-text-max-age-different": "如果提供使用者名稱或 IP 位址，則可以檢索最多 {{PLURAL:$1|1|$1}} 天前的頁面。否則出於效能考慮，只能檢索最多 {{PLURAL:$2|1天|$2}} 天前的頁面。",
 	"nuke-daterange-helper-text-max-age-same": "出於效能原因，最多只能檢索 {{PLURAL:$1|1|$1}} 天前的頁面。",
 	"tag-nuke": "大量刪除",
-	"tag-nuke-description": "使用Nuke擴充功能執行的刪除",
-	"nuke-list-tempaccount": "下列頁面最近由臨時帳號所建立，IP位址為$1。請選擇要刪除的頁面，提供編輯摘要，然後點擊「刪除所選」來實行頁面刪除。'''出於隱私原因，請不要在編輯摘要中寫出IP位址。'''\n\n重新導向會以斜體文字呈現。"
+	"tag-nuke-description": "使用Nuke擴充功能執行的刪除"
 }

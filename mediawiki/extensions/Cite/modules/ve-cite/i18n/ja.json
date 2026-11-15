@@ -51,7 +51,7 @@
 	"cite-ve-dialog-reference-contextitem-extends": "この脚注は、詳細を追加した上で再利用されています:",
 	"cite-ve-dialog-reference-editing-add-details": "この脚注に詳細を追加します:",
 	"cite-ve-dialog-reference-editing-edit-details": "この脚注の詳細を編集しています:",
-	"cite-ve-dialog-reference-editing-add-details-placeholder": "この脚注に追加したい情報を入力または貼り付けしてください。",
+	"cite-ve-dialog-reference-editing-add-details-placeholder": "ここに追加したい情報、例えば具体的なページ番号や引用を入力または貼り付けしてください。",
 	"cite-ve-dialog-reference-editing-reused-short": "{{PLURAL:$1|$1}} 回使用",
 	"cite-ve-dialog-reference-editing-reused": "この脚注はこのページ上で$1{{PLURAL:$1|回}}使用されています。",
 	"cite-ve-dialog-reference-editing-reused-long": "この脚注は、このページで$1回使われています。ここでの変更は、この脚注が使われているすべての場所に適用されます。",
@@ -89,9 +89,5 @@
 	"cite-ve-referenceslist-missingref-in-list": "この脚注はテンプレート内または別途生成されたブロック内で定義されているため、現時点ではソースモードでのみプレビューできます。",
 	"cite-ve-referenceslist-missingreflist": "この脚注リストはテンプレートにより生成されています。",
 	"cite-ve-toolbar-group-label": "引用",
-	"cite-ve-othergroup-item": "$1 脚注",
-	"cite-ve-dialog-reference-extend-long-tool": "この脚注を詳細を追加した上で再利用する",
-	"cite-ve-dialog-reference-title-add-details": "脚注に詳細を追加",
-	"cite-ve-dialog-reference-title-edit-details": "追加の詳細を編集",
-	"cite-ve-dialog-reference-useexisting-long-tool": "この脚注を再利用する"
+	"cite-ve-othergroup-item": "$1 脚注"
 }

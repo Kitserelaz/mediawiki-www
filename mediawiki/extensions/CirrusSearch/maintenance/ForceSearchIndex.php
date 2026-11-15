@@ -2,7 +2,6 @@
 
 namespace CirrusSearch\Maintenance;
 
-use BatchRowIterator;
 use CirrusSearch\BuildDocument\BuildDocument;
 use CirrusSearch\Iterator\CallbackIterator;
 use CirrusSearch\Job;
@@ -10,40 +9,30 @@ use CirrusSearch\SearchConfig;
 use CirrusSearch\Updater;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Title\Title;
+use MediaWiki\Utils\BatchRowIterator;
 use MediaWiki\Utils\MWTimestamp;
 use MediaWiki\WikiMap\WikiMap;
 use Throwable;
 use UnexpectedValueException;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\IDBAccessObject;
-use WikiPage;
 
 /**
  * Force reindexing change to the wiki.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation, Inc.,
- * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- * http://www.gnu.org/copyleft/gpl.html
+ * @license GPL-2.0-or-later
  */
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
 require_once __DIR__ . '/../includes/Maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
 
 class ForceSearchIndex extends Maintenance {
 	private const SECONDS_BETWEEN_JOB_QUEUE_LENGTH_CHECKS = 3;
@@ -145,7 +134,14 @@ class ForceSearchIndex extends Maintenance {
 			'Use specific index when fetching IDs from the database.', false, true, false );
 	}
 
+	/** @inheritDoc */
 	public function execute() {
+		if ( $this->getConfig()->get( 'CirrusSearchDisableUpdate' ) ) {
+			$this->fatalError(
+				'Updates are currenly disabled. ' .
+				'Set $wgCirrusSearchDisableUpdate to false to re-enable.'
+			);
+		}
 		$this->disablePoolCountersAndLogging();
 		$wiki = sprintf( "[%20s]", WikiMap::getCurrentWikiId() );
 
@@ -262,7 +258,7 @@ class ForceSearchIndex extends Maintenance {
 		return true;
 	}
 
-	private function buildPageIdBatches() {
+	private function buildPageIdBatches(): array {
 		if ( !$this->indexUpdates || $this->hasOption( 'limit' )
 			|| $this->hasOption( 'from' ) || $this->hasOption( 'to' )
 			|| $this->hasOption( 'fromId' ) || $this->hasOption( 'toId' )
@@ -286,7 +282,7 @@ class ForceSearchIndex extends Maintenance {
 		return array_unique( $pageIds, SORT_REGULAR );
 	}
 
-	private function buildUpdateFlags() {
+	private function buildUpdateFlags(): int {
 		$updateFlags = 0;
 		if ( $this->getOption( 'indexOnSkip' ) ) {
 			$updateFlags |= BuildDocument::INDEX_ON_SKIP;
@@ -304,7 +300,7 @@ class ForceSearchIndex extends Maintenance {
 		return $updateFlags;
 	}
 
-	private function waitForQueueToShrink( $wiki ) {
+	private function waitForQueueToShrink( string $wiki ) {
 		$now = microtime( true );
 		if ( $now - $this->lastJobQueueCheckTime <=
 			self::SECONDS_BETWEEN_JOB_QUEUE_LENGTH_CHECKS
@@ -327,7 +323,7 @@ class ForceSearchIndex extends Maintenance {
 		} while ( $this->pauseForJobs < $queueSize );
 	}
 
-	private function waitForQueueToDrain( $wiki ) {
+	private function waitForQueueToDrain( string $wiki ) {
 		if ( !$this->queue ) {
 			return;
 		}
@@ -520,19 +516,19 @@ class ForceSearchIndex extends Maintenance {
 	}
 
 	private function attachTimestampConditions(
-		IDatabase $dbr, BatchRowIterator $it, $columnPrefix
+		IDatabase $dbr, BatchRowIterator $it, string $columnPrefix
 	) {
 		// When initializing we guarantee that if either fromDate or toDate are provided
 		// the other has a sane default value.
 		if ( $this->fromDate !== null ) {
 			$it->addConditions( [
-				$dbr->expr( "{$columnPrefix}_timestamp", '>=', $dbr->timestamp( $this->fromDate ) ),
-				$dbr->expr( "{$columnPrefix}_timestamp", '<=', $dbr->timestamp( $this->toDate ) ),
+				$dbr->expr( "{$columnPrefix}_timestamp", '>=', $dbr->timestamp( $this->fromDate->getTimestamp( TS_MW ) ) ),
+				$dbr->expr( "{$columnPrefix}_timestamp", '<=', $dbr->timestamp( $this->toDate->getTimestamp( TS_MW ) ) ),
 			] );
 		}
 	}
 
-	private function attachPageConditions( IDatabase $dbr, BatchRowIterator $it, $columnPrefix ) {
+	private function attachPageConditions( IDatabase $dbr, BatchRowIterator $it, string $columnPrefix ) {
 		if ( $this->namespace !== null ) {
 			$it->addConditions( [
 				"{$columnPrefix}_namespace" => $this->namespace,
@@ -603,7 +599,7 @@ class ForceSearchIndex extends Maintenance {
 	private function decidePage( Updater $updater, WikiPage $page ) {
 		try {
 			$content = $page->getContent();
-		} catch ( Throwable $ex ) {
+		} catch ( Throwable ) {
 			LoggerFactory::getInstance( 'CirrusSearch' )->warning(
 				"Error deserializing content, skipping page: {pageId}",
 				[ 'pageId' => $page->getTitle()->getArticleID() ]
@@ -704,5 +700,7 @@ class ForceSearchIndex extends Maintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = ForceSearchIndex::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

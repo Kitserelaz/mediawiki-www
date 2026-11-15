@@ -16,7 +16,10 @@ module.exports = function ( grunt ) {
 			all: '.'
 		},
 		stylelint: {
-			all: 'modules/**/*.css'
+			options: {
+				cache: true
+			},
+			all: 'modules/**/*.{css,less}'
 		},
 		watch: {
 			files: [

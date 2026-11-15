@@ -36,7 +36,7 @@ class SearchConfig implements Config {
 	];
 
 	/**
-	 * @var SearchConfig Configuration of host wiki.
+	 * @var self Configuration of host wiki.
 	 */
 	private $hostConfig;
 
@@ -76,15 +76,13 @@ class SearchConfig implements Config {
 		$this->wikiId = WikiMap::getCurrentWikiId();
 		// The only ability to mutate SearchConfig is via a protected method, setSource.
 		// As long as we have an instance of SearchConfig it must then be the hostConfig.
-		$this->hostConfig = static::class === self::class ? $this : new SearchConfig();
+		$this->hostConfig = static::class === self::class ? $this : new self();
 		$this->searchProfileServiceFactoryFactory = $searchProfileServiceFactoryFactory;
 	}
 
 	/**
 	 * This must be delayed until after construction is complete. Before then
 	 * subclasses could change out the configuration we see.
-	 *
-	 * @return Assignment\ClusterAssignment
 	 */
 	private function createClusterAssignment(): Assignment\ClusterAssignment {
 		// Configuring CirrusSearchServers enables "easy mode" which assumes
@@ -114,6 +112,19 @@ class SearchConfig implements Config {
 	}
 
 	/**
+	 * Resets the internal wiki ID for the SearchConfig to be the current value returned
+	 * by {@link WikiMap::getCurrentWikiId}. This exists to allow PHPUnit tests to
+	 * properly reset the value which may have been cached as a different
+	 * fake value (T393901).
+	 *
+	 * @internal Only for use in tests
+	 * @return void
+	 */
+	public function resetWikiIdForTesting(): void {
+		$this->wikiId = WikiMap::getCurrentWikiId();
+	}
+
+	/**
 	 * @return bool true if this config was built for this wiki.
 	 */
 	public function isLocalWiki() {
@@ -124,9 +135,9 @@ class SearchConfig implements Config {
 	}
 
 	/**
-	 * @return SearchConfig Configuration of the host wiki.
+	 * @return self Configuration of the host wiki.
 	 */
-	public function getHostWikiConfig(): SearchConfig {
+	public function getHostWikiConfig(): self {
 		return $this->hostConfig;
 	}
 
@@ -155,9 +166,8 @@ class SearchConfig implements Config {
 
 	/**
 	 * Produce new configuration from globals
-	 * @return SearchConfig
 	 */
-	public static function newFromGlobals() {
+	public static function newFromGlobals(): self {
 		return new self();
 	}
 

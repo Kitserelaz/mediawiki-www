@@ -8,15 +8,17 @@ use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageLoading\RebuildMessageIndexJob;
 use MediaWiki\Extension\Translate\Statistics\MessageGroupStats;
 use MediaWiki\Extension\Translate\Synchronization\UpdateMessageJob;
+use MediaWiki\JobQueue\RunnableJob;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
-use RunnableJob;
 
 /**
  * Job for updating translation units and translation pages when
  * a translatable page is marked for translation.
  */
 class UpdateTranslatablePageJob extends GenericTranslateJob {
+	private const MAX_TRIES = 3;
+
 	/** @inheritDoc */
 	public function __construct( Title $title, array $params = [] ) {
 		parent::__construct( 'UpdateTranslatablePageJob', $title, $params );
@@ -33,9 +35,9 @@ class UpdateTranslatablePageJob extends GenericTranslateJob {
 	 */
 	public static function newFromPage( TranslatablePage $page, array $sections = [] ): self {
 		$params = [];
-		$params[ 'sections' ] = [];
+		$params['sections'] = [];
 		foreach ( $sections as $section ) {
-			$params[ 'sections' ][] = $section->serializeToArray();
+			$params['sections'][] = $section->serializeToArray();
 		}
 
 		return new self( $page->getTitle(), $params );
@@ -49,13 +51,13 @@ class UpdateTranslatablePageJob extends GenericTranslateJob {
 		// START: This section does not care about replication lag
 		$this->logInfo( 'Starting UpdateTranslatablePageJob' );
 
-		$sections = $this->params[ 'sections' ];
+		$sections = $this->params['sections'];
 		foreach ( $sections as $index => $section ) {
 			// Old jobs stored sections as objects because they were serialized and
 			// unserialized transparently. That is no longer supported, so we
 			// convert manually to primitive types first (to an PHP array).
 			if ( is_array( $section ) ) {
-				$sections[ $index ] = TranslationUnit::unserializeFromArray( $section );
+				$sections[$index] = TranslationUnit::unserializeFromArray( $section );
 			}
 		}
 
@@ -80,24 +82,40 @@ class UpdateTranslatablePageJob extends GenericTranslateJob {
 			$this->logWarning( 'Continuing despite replication lag' );
 		}
 
-		// Ensure we are using the latest group definitions. This is needed so long-running
-		// scripts detect the page which was just marked for translation. Otherwise getMessageGroup
-		// in the next line returns null. There is no need to regenerate the global cache.
-		MessageGroups::singleton()->clearProcessCache();
-		// Ensure fresh definitions for stats
-		// TODO: getMessageGroup still appears to return null sometimes. Check why.
-		$messageGroup = $page->getMessageGroup();
+		$attemptsCount = 0;
+		do {
+			// Ensure we are using the latest group definitions. This is needed so long-running
+			// scripts detect the page which was just marked for translation. Otherwise, getMessageGroup
+			// in the next line returns null. There is no need to regenerate the global cache.
+			MessageGroups::singleton()->clearProcessCache();
+			// Ensure fresh definitions for stats
 
-		if ( $messageGroup !== null ) {
+			// Message group may return null due to stale caches, attempt to fetch the group a few
+			// times before giving up.
+			$messageGroup = $page->getMessageGroup();
+			++$attemptsCount;
+			if ( $messageGroup ) {
+				break;
+			}
+
+			// The message group cache regen time on production is around 600ms
+			usleep( 500 * 1000 );
+		} while ( $attemptsCount <= self::MAX_TRIES );
+
+		if ( $messageGroup ) {
 			$messageGroup->clearCaches();
-			$this->logInfo( 'Cleared caches' );
+			$this->logInfo(
+				'Cleared caches after {attemptsCount} attempt(s)',
+				[ 'attemptsCount' => $attemptsCount ]
+			);
 		} else {
 			$this->logWarning(
-				"No message group found for page {pageTitle}", [
-					'pageTitle' => $page->getTitle()->getPrefixedText()
+				'No message group found for page {pageTitle} after {attemptsCount} attempt(s)',
+				[
+					'pageTitle' => $page->getTitle()->getPrefixedText(),
+					'attemptsCount' => self::MAX_TRIES
 				]
 			);
-
 		}
 
 		// Refresh translations statistics, we want these to be up to date for the
@@ -110,7 +128,7 @@ class UpdateTranslatablePageJob extends GenericTranslateJob {
 		$this->logInfo( 'Updated the message group stats' );
 
 		// Try to avoid stale statistics on the base page
-		$wikiPage = $mwServices->getWikiPageFactory()->newFromTitle( $page->getTitle() );
+		$wikiPage = $mwServices->getWikiPageFactory()->newFromTitle( $page->getPageIdentity() );
 		$wikiPage->doPurge();
 		$this->logInfo( 'Finished purging' );
 
@@ -193,5 +211,4 @@ class UpdateTranslatablePageJob extends GenericTranslateJob {
 
 		return $jobs;
 	}
-
 }

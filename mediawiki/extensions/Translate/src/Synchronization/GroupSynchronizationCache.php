@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use LogicException;
 use MediaWiki\Extension\Translate\Cache\PersistentCache;
 use MediaWiki\Extension\Translate\Cache\PersistentCacheEntry;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Logger\LoggerFactory;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -34,9 +35,7 @@ use RuntimeException;
  * @since 2020.06
  */
 class GroupSynchronizationCache {
-	private PersistentCache $cache;
-	private int $initialTimeoutSeconds;
-	private int $incrementalTimeoutSeconds;
+
 	/** @var string Cache tag used for groups */
 	private const GROUP_LIST_TAG = 'gsc_%group_in_sync%';
 	/** @var string Cache tag used for tracking groups that have errors */
@@ -46,17 +45,14 @@ class GroupSynchronizationCache {
 	private LoggerInterface $logger;
 
 	public function __construct(
-		PersistentCache $cache,
-		int $initialTimeoutSeconds = 2400,
-		int $incrementalTimeoutSeconds = 600
+		private readonly PersistentCache $cache,
+		private readonly int $initialTimeoutSeconds = 2400,
+		private readonly int $incrementalTimeoutSeconds = 600,
 
 	) {
-		$this->cache = $cache;
 		// The timeout is set to 40 minutes initially, and then incremented by 10 minutes
 		// each time a message is marked as processed if group is about to expire.
-		$this->initialTimeoutSeconds = $initialTimeoutSeconds;
-		$this->incrementalTimeoutSeconds = $incrementalTimeoutSeconds;
-		$this->logger = LoggerFactory::getInstance( 'Translate.GroupSynchronization' );
+		$this->logger = LoggerFactory::getInstance( LogNames::GROUP_SYNCHRONIZATION );
 	}
 
 	/**
@@ -445,6 +441,10 @@ class GroupSynchronizationCache {
 			->getTimestamp();
 	}
 
+	/**
+	 * @param mixed $value
+	 * @param string $expectedType
+	 */
 	private function invalidArgument( $value, string $expectedType ): RuntimeException {
 		$valueType = get_debug_type( $value );
 		return new RuntimeException( "Expected $expectedType, got $valueType" );

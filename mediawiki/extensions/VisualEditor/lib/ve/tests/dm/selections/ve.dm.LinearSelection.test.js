@@ -27,19 +27,19 @@ QUnit.test( 'Basic methods (collapse*, isCollased, equals, isNull)', ( assert ) 
 	assert.deepEqual( selection.collapseToEnd(), endSelection, 'collapseToEnd' );
 	assert.deepEqual( selection.collapseToFrom(), endSelection, 'collapseToFrom' );
 	assert.deepEqual( selection.collapseToTo(), startSelection, 'collapseToTo' );
-	assert.strictEqual( selection.isCollapsed(), false, '200-100 is not collapsed' );
-	assert.strictEqual( startSelection.isCollapsed(), true, '100-100 is collapsed' );
-	assert.strictEqual( selection.equals( selection ), true, 'equals' );
-	assert.strictEqual( selection.isNull(), false, 'not null' );
+	assert.false( selection.isCollapsed(), '200-100 is not collapsed' );
+	assert.true( startSelection.isCollapsed(), '100-100 is collapsed' );
+	assert.true( selection.equals( selection ), 'equals' );
+	assert.false( selection.isNull(), 'not null' );
 } );
 
 QUnit.test( 'Factory methods & serialization (newFromJSON, toJSON, getDescription)', ( assert ) => {
 	const range = new ve.Range( 200, 100 ),
 		selection = new ve.dm.LinearSelection( range );
 
-	assert.deepEqual( selection.toJSON(), { type: 'linear', range: range }, 'toJSON' );
+	assert.deepEqual( selection.toJSON(), { type: 'linear', range }, 'toJSON' );
 	assert.deepEqual(
-		ve.dm.Selection.static.newFromJSON( JSON.stringify( { type: 'linear', range: range } ) ),
+		ve.dm.Selection.static.newFromJSON( JSON.stringify( { type: 'linear', range } ) ),
 		selection,
 		'newFromJSON'
 	);

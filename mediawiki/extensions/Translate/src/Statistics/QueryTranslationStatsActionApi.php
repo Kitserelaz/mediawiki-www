@@ -3,8 +3,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Extension\Translate\Statistics;
 
-use ApiBase;
-use ApiMain;
+use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\TypeDef\IntegerDef;
 
@@ -16,11 +16,13 @@ use Wikimedia\ParamValidator\TypeDef\IntegerDef;
  * @license GPL-2.0-or-later
  */
 class QueryTranslationStatsActionApi extends ApiBase {
-	private TranslationStatsDataProvider $dataProvider;
 
-	public function __construct( ApiMain $mainModule, $moduleName, TranslationStatsDataProvider $dataProvider ) {
+	public function __construct(
+		ApiMain $mainModule,
+		string $moduleName,
+		private readonly TranslationStatsDataProvider $dataProvider,
+	) {
 		parent::__construct( $mainModule, $moduleName );
-		$this->dataProvider = $dataProvider;
 	}
 
 	public function execute() {
@@ -39,7 +41,7 @@ class QueryTranslationStatsActionApi extends ApiBase {
 		$this->getResult()->addValue( null, $this->getModuleName(), $output );
 	}
 
-	protected function getAllowedParams() {
+	protected function getAllowedParams(): array {
 		return [
 			'count' => [
 				ParamValidator::PARAM_TYPE => $this->dataProvider->getGraphTypes(),
@@ -51,7 +53,7 @@ class QueryTranslationStatsActionApi extends ApiBase {
 				ParamValidator::PARAM_DEFAULT => 30,
 				IntegerDef::PARAM_MIN => 1,
 				IntegerDef::PARAM_MAX => 10000,
-				ApiBase::PARAM_RANGE_ENFORCE => true
+				IntegerDef::PARAM_IGNORE_RANGE => false
 			],
 			'group' => [
 				ParamValidator::PARAM_TYPE => 'string',
@@ -71,7 +73,7 @@ class QueryTranslationStatsActionApi extends ApiBase {
 		];
 	}
 
-	protected function getExamplesMessages() {
+	protected function getExamplesMessages(): array {
 		return [
 			'action=translationstats&count=edits&days=30'
 				=> 'apihelp-translationstats-example-1',

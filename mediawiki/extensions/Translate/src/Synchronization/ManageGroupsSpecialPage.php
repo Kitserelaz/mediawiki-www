@@ -4,14 +4,14 @@ declare( strict_types = 1 );
 namespace MediaWiki\Extension\Translate\Synchronization;
 
 use Cdb\Reader;
-use ContentHandler;
-use DifferenceEngine;
-use Exception;
 use FileBasedMessageGroup;
-use JobQueueGroup;
-use Language;
-use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\Content\ContentHandler;
+use MediaWiki\Content\TextContent;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Diff\DifferenceEngine;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Exception\UserBlockedError;
+use MediaWiki\Extension\Translate\LogNames;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroups;
 use MediaWiki\Extension\Translate\MessageGroupProcessing\MessageGroupSubscription;
 use MediaWiki\Extension\Translate\MessageLoading\MessageHandle;
@@ -19,23 +19,25 @@ use MediaWiki\Extension\Translate\MessageLoading\MessageIndex;
 use MediaWiki\Extension\Translate\MessageSync\MessageSourceChange;
 use MediaWiki\Extension\Translate\Utilities\Utilities;
 use MediaWiki\Html\Html;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Language\Language;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Request\WebRequest;
+use MediaWiki\Revision\MutableRevisionRecord;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\SlotRecord;
+use MediaWiki\Skin\Skin;
 use MediaWiki\SpecialPage\DisabledSpecialPage;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\NamespaceInfo;
 use MediaWiki\Title\Title;
 use MessageGroup;
 use OOUI\ButtonInputWidget;
-use PermissionsError;
 use RuntimeException;
-use Skin;
-use TextContent;
-use UserBlockedError;
+use Throwable;
 
 /**
  * Class for special page Special:ManageMessageGroups. On this special page
@@ -52,67 +54,59 @@ class ManageGroupsSpecialPage extends SpecialPage {
 	private const GROUP_SYNC_INFO_WRAPPER_CLASS = 'smg-group-sync-cache-info';
 	private const RIGHT = 'translate-manage';
 	protected DifferenceEngine $diff;
-	/** Path to the change cdb file. */
+	/** Name of the import. */
+	private string $name;
+	/** Path to the change cdb file, derived from the name. */
 	protected string $cdb;
 	/** Has the necessary right specified by the RIGHT constant */
 	protected bool $hasRight = false;
-	private Language $contLang;
-	private NamespaceInfo $nsInfo;
-	private RevisionLookup $revLookup;
-	private GroupSynchronizationCache $synchronizationCache;
 	private DisplayGroupSynchronizationInfo $displayGroupSyncInfo;
-	private JobQueueGroup $jobQueueGroup;
-	private MessageIndex $messageIndex;
-	private LinkBatchFactory $linkBatchFactory;
-	private MessageGroupSubscription $messageGroupSubscription;
 
 	public function __construct(
-		Language $contLang,
-		NamespaceInfo $nsInfo,
-		RevisionLookup $revLookup,
-		GroupSynchronizationCache $synchronizationCache,
-		JobQueueGroup $jobQueueGroup,
-		MessageIndex $messageIndex,
-		LinkBatchFactory $linkBatchFactory,
-		MessageGroupSubscription $messageGroupSubscription
+		private readonly Language $contLang,
+		private readonly NamespaceInfo $nsInfo,
+		private readonly RevisionLookup $revLookup,
+		private readonly GroupSynchronizationCache $synchronizationCache,
+		private readonly JobQueueGroup $jobQueueGroup,
+		private readonly MessageIndex $messageIndex,
+		private readonly LinkBatchFactory $linkBatchFactory,
+		private readonly MessageGroupSubscription $messageGroupSubscription
 	) {
 		// Anyone is allowed to see, but actions are restricted
 		parent::__construct( 'ManageMessageGroups' );
-		$this->contLang = $contLang;
-		$this->nsInfo = $nsInfo;
-		$this->revLookup = $revLookup;
-		$this->synchronizationCache = $synchronizationCache;
 		$this->displayGroupSyncInfo = new DisplayGroupSynchronizationInfo( $this, $this->getLinkRenderer() );
-		$this->jobQueueGroup = $jobQueueGroup;
-		$this->messageIndex = $messageIndex;
-		$this->linkBatchFactory = $linkBatchFactory;
-		$this->messageGroupSubscription = $messageGroupSubscription;
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
 
-	protected function getGroupName() {
+	protected function getGroupName(): string {
 		return 'translation';
 	}
 
+	/** @inheritDoc */
 	public function getDescription() {
 		return $this->msg( 'managemessagegroups' );
 	}
 
+	/** @inheritDoc */
 	public function execute( $par ) {
 		$this->setHeaders();
 
 		$out = $this->getOutput();
-		$out->addModuleStyles( 'ext.translate.specialpages.styles' );
+		$out->addModuleStyles( [
+			'ext.translate.specialpages.styles',
+			'mediawiki.codex.messagebox.styles',
+		] );
 		$out->addModules( 'ext.translate.special.managegroups' );
 		$out->addHelpLink( 'Help:Extension:Translate/Group_management' );
 
-		$name = $par ?: MessageChangeStorage::DEFAULT_NAME;
+		$this->name = $par ?: MessageChangeStorage::DEFAULT_NAME;
 
-		$this->cdb = MessageChangeStorage::getCdbPath( $name );
-		if ( !MessageChangeStorage::isValidCdbName( $name ) || !file_exists( $this->cdb ) ) {
+		$this->cdb = MessageChangeStorage::getCdbPath( $this->name );
+		if ( !MessageChangeStorage::isValidCdbName( $this->name ) || !file_exists( $this->cdb ) ) {
 			if ( $this->getConfig()->get( 'TranslateGroupSynchronizationCache' ) ) {
 				$out->addHTML(
 					$this->displayGroupSyncInfo->getGroupsInSyncHtml(
@@ -196,10 +190,7 @@ class ManageGroupsSpecialPage extends SpecialPage {
 
 		$out = $this->getOutput();
 		$out->addHTML(
-			Html::openElement( 'form', [ 'method' => 'post' ] ) .
-			Html::hidden( 'title', $this->getPageTitle()->getPrefixedText(), [
-				'id' => 'smgPageTitle'
-			] ) .
+			Html::openElement( 'form', [ 'method' => 'post', 'id' => 'smgForm', 'data-name' => $this->name ] ) .
 			Html::hidden( 'token', $this->getContext()->getCsrfTokenSet()->getToken() ) .
 			Html::hidden( 'changesetModifiedTime',
 				MessageChangeStorage::getLastModifiedTime( $this->cdb ) ) .
@@ -228,7 +219,7 @@ class ManageGroupsSpecialPage extends SpecialPage {
 		}
 
 		$reader = Reader::open( $this->cdb );
-		$groups = $this->getGroupsFromCdb( $reader );
+		$groups = self::getGroupsFromCdb( $reader );
 		foreach ( $groups as $id => $group ) {
 			$sourceChanges = MessageSourceChange::loadModifications(
 				Utilities::deserialize( $reader->get( $id ) )
@@ -264,10 +255,11 @@ class ManageGroupsSpecialPage extends SpecialPage {
 
 			foreach ( $languages as $language ) {
 				// Handle and generate UI for additions, deletions, change
-				$changes = [];
-				$changes[ MessageSourceChange::ADDITION ] = $sourceChanges->getAdditions( $language );
-				$changes[ MessageSourceChange::DELETION ] = $sourceChanges->getDeletions( $language );
-				$changes[ MessageSourceChange::CHANGE ] = $sourceChanges->getChanges( $language );
+				$changes = [
+					MessageSourceChange::ADDITION => $sourceChanges->getAdditions( $language ),
+					MessageSourceChange::DELETION => $sourceChanges->getDeletions( $language ),
+					MessageSourceChange::CHANGE => $sourceChanges->getChanges( $language ),
+				];
 
 				foreach ( $changes as $type => $messages ) {
 					foreach ( $messages as $params ) {
@@ -297,7 +289,7 @@ class ManageGroupsSpecialPage extends SpecialPage {
 			'title' => !$this->hasRight ? $this->msg( 'translate-smg-notallowed' )->plain() : null,
 			'flags' => [ 'primary', 'progressive' ],
 		] );
-		$out->addHTML( $button );
+		$out->addHTML( (string)$button );
 		$out->addHTML( Html::closeElement( 'form' ) );
 	}
 
@@ -349,9 +341,10 @@ class ManageGroupsSpecialPage extends SpecialPage {
 				);
 			}
 
-			$oldContent = ContentHandler::makeContent( (string)$wiki, $title );
-			$newContent = ContentHandler::makeContent( '', $title );
-			$this->diff->setContent( $oldContent, $newContent );
+			$newRevision = new MutableRevisionRecord( $title );
+			$newRevision->setContent( SlotRecord::MAIN, ContentHandler::makeContent( '', $title ) );
+
+			$this->diff->setRevisions( $revTitle, $newRevision );
 			$text = $this->diff->getDiff( $titleLink, '', $noticeHtml );
 		} elseif ( $type === 'addition' ) {
 			$menu = '';
@@ -387,9 +380,16 @@ class ManageGroupsSpecialPage extends SpecialPage {
 				);
 			}
 
-			$oldContent = ContentHandler::makeContent( '', $title );
-			$newContent = ContentHandler::makeContent( (string)$params['content'], $title );
-			$this->diff->setContent( $oldContent, $newContent );
+			$oldRevision = new MutableRevisionRecord( $title );
+			$oldRevision->setContent( SlotRecord::MAIN, ContentHandler::makeContent( '', $title ) );
+
+			$newRevision = new MutableRevisionRecord( $title );
+			$newRevision->setContent(
+				SlotRecord::MAIN,
+				ContentHandler::makeContent( (string)$params['content'], $title )
+			);
+
+			$this->diff->setRevisions( $oldRevision, $newRevision );
 			$text = $this->diff->getDiff( '', $titleLink . $menu, $noticeHtml );
 		} elseif ( $type === 'change' ) {
 			$wiki = Utilities::getContentForTitle( $title, true );
@@ -428,10 +428,16 @@ class ManageGroupsSpecialPage extends SpecialPage {
 				$limit--;
 			}
 
-			$oldContent = ContentHandler::makeContent( (string)$wiki, $title );
-			$newContent = ContentHandler::makeContent( (string)$params['content'], $title );
+			$oldRevision = new MutableRevisionRecord( $title );
+			$oldRevision->setContent( SlotRecord::MAIN, ContentHandler::makeContent( (string)$wiki, $title ) );
 
-			$this->diff->setContent( $oldContent, $newContent );
+			$newRevision = new MutableRevisionRecord( $title );
+			$newRevision->setContent(
+				SlotRecord::MAIN,
+				ContentHandler::makeContent( (string)$params['content'], $title )
+			);
+
+			$this->diff->setRevisions( $oldRevision, $newRevision );
 			$text .= $this->diff->getDiff( $titleLink, $actions, $noticeHtml );
 		}
 
@@ -462,7 +468,7 @@ class ManageGroupsSpecialPage extends SpecialPage {
 		}
 
 		$reader = Reader::open( $this->cdb );
-		$groups = $this->getGroupsFromCdb( $reader );
+		$groups = self::getGroupsFromCdb( $reader );
 		$groupSyncCacheEnabled = $this->getConfig()->get( 'TranslateGroupSynchronizationCache' );
 		$postponed = [];
 
@@ -517,10 +523,11 @@ class ManageGroupsSpecialPage extends SpecialPage {
 
 				$modificationJobs[$groupId] = $groupModificationJobs;
 				$renameJobData[$groupId] = $groupRenameJobData;
-			} catch ( Exception $e ) {
+			} catch ( Throwable $e ) {
 				error_log(
-					"ManageGroupsSpecialPage: Error in processSubmit. Group: $groupId\n" .
-					"Exception: $e"
+					"ManageGroupsSpecialPage: Error in processSubmit. " .
+					"Group: $groupId; Language: " . ( $language ?? 'N/A' ) .
+					"\nError: $e"
 				);
 
 				$errorGroups[] = $group->getLabel();
@@ -579,16 +586,16 @@ class ManageGroupsSpecialPage extends SpecialPage {
 		[ $alias, ] = $specialPageFactory->resolveAlias( $title->getText() );
 
 		$pagesInGroup = [
-			'ManageMessageGroups' => 'namespaces',
-			'AggregateGroups' => 'namespaces',
+			'ManageMessageGroups' => 'associated-pages',
+			'AggregateGroups' => 'associated-pages',
 			'SupportedLanguages' => 'views',
 			'TranslationStats' => 'views',
 		];
-		if ( !isset( $pagesInGroup[$alias] ) ) {
+		if ( $alias === null || !isset( $pagesInGroup[$alias] ) ) {
 			return;
 		}
 
-		$tabs['namespaces'] = [];
+		$tabs['associated-pages'] = [];
 		foreach ( $pagesInGroup as $spName => $section ) {
 			$spClass = $specialPageFactory->getPage( $spName );
 
@@ -732,8 +739,14 @@ class ManageGroupsSpecialPage extends SpecialPage {
 		$limit--;
 
 		$addedContent = ContentHandler::makeContent( (string)$addedMsg['content'], $addedTitle );
+		$addedRevision = new MutableRevisionRecord( $addedTitle );
+		$addedRevision->setContent( SlotRecord::MAIN, $addedContent );
+
 		$deletedContent = ContentHandler::makeContent( (string)$deletedMsg['content'], $deletedTitle );
-		$this->diff->setContent( $deletedContent, $addedContent );
+		$deletedRevision = new MutableRevisionRecord( $deletedTitle );
+		$deletedRevision->setContent( SlotRecord::MAIN, $deletedContent );
+
+		$this->diff->setRevisions( $deletedRevision, $addedRevision );
 
 		$menu = '';
 		if ( $group->getSourceLanguage() === $language && $this->hasRight ) {
@@ -887,7 +900,7 @@ class ManageGroupsSpecialPage extends SpecialPage {
 					$this->messageGroupSubscription->queueMessage(
 						$jobParams[ 'targetTitle' ],
 						MessageGroupSubscription::STATE_UPDATED,
-						[ $groupId ]
+						$groupId
 					);
 				}
 			} elseif ( isset( $jobData[ $targetStr ] ) ) {
@@ -1055,7 +1068,8 @@ class ManageGroupsSpecialPage extends SpecialPage {
 	}
 
 	/** @return array<int|string, MessageGroup> */
-	private function getGroupsFromCdb( Reader $reader ): array {
+	public static function getGroupsFromCdb( Reader $reader ): array {
+		// TODO: Move this function to a seperate class.
 		$groups = [];
 		$groupIds = Utilities::deserialize( $reader->get( '#keys' ) );
 		foreach ( $groupIds as $id ) {
@@ -1114,7 +1128,7 @@ class ManageGroupsSpecialPage extends SpecialPage {
 				$this->synchronizationCache->addMessages( $groupId, ...$messages );
 				$this->synchronizationCache->markGroupForSync( $groupId );
 
-				LoggerFactory::getInstance( 'Translate.GroupSynchronization' )->info(
+				LoggerFactory::getInstance( LogNames::GROUP_SYNCHRONIZATION )->info(
 					'[' . __CLASS__ . '] Synchronization started for {groupId} by {user}',
 					[
 						'groupId' => $groupId,
@@ -1153,7 +1167,9 @@ class ManageGroupsSpecialPage extends SpecialPage {
 		);
 	}
 
-	private function sendNotificationsForChangedMessages( string $groupId, Title $title, $type, bool $fuzzy ): void {
+	private function sendNotificationsForChangedMessages(
+		string $groupId, Title $title, string $type, bool $fuzzy
+	): void {
 		$subscriptionState = $type === MessageSourceChange::ADDITION ?
 			MessageGroupSubscription::STATE_ADDED :
 			MessageGroupSubscription::STATE_UPDATED;
@@ -1165,7 +1181,7 @@ class ManageGroupsSpecialPage extends SpecialPage {
 		}
 
 		if ( $subscriptionState ) {
-			$this->messageGroupSubscription->queueMessage( $title, $subscriptionState, [ $groupId ] );
+			$this->messageGroupSubscription->queueMessage( $title, $subscriptionState, $groupId );
 		}
 	}
 }

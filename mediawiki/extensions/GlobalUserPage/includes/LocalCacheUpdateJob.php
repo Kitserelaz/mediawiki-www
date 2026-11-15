@@ -16,9 +16,8 @@
 
 namespace MediaWiki\GlobalUserPage;
 
-use HTMLFileCache;
-use Job;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Cache\HTMLCacheUpdater;
+use MediaWiki\JobQueue\Job;
 use MediaWiki\Title\Title;
 
 /**
@@ -27,22 +26,21 @@ use MediaWiki\Title\Title;
  */
 class LocalCacheUpdateJob extends Job {
 	/**
-	 * @param Title $title
 	 * @param array $params Should have 'username' and 'touch' keys
 	 */
-	public function __construct( Title $title, array $params ) {
-		parent::__construct( 'LocalGlobalUserPageCacheUpdateJob', $title, $params );
+	public function __construct(
+		array $params,
+		private readonly HTMLCacheUpdater $htmlCacheUpdater,
+	) {
+		parent::__construct( 'LocalGlobalUserPageCacheUpdateJob', $params );
 	}
 
+	/** @inheritDoc */
 	public function run() {
 		$title = Title::makeTitleSafe( NS_USER, $this->params['username'] );
 		// We want to purge the cache of the accompanying page so the tabs change colors
 		$other = $title->getOtherPage();
-		$hcu = MediaWikiServices::getInstance()->getHtmlCacheUpdater();
-		$hcu->purgeTitleUrls( $title, $hcu::PURGE_INTENT_TXROUND_REFLECTED );
-		$hcu->purgeTitleUrls( $other, $hcu::PURGE_INTENT_TXROUND_REFLECTED );
-		HTMLFileCache::clearFileCache( $title );
-		HTMLFileCache::clearFileCache( $other );
+		$this->htmlCacheUpdater->purgeTitleUrls( [ $title, $other ], HTMLCacheUpdater::PURGE_INTENT_TXROUND_REFLECTED );
 		if ( $this->params['touch'] ) {
 			$title->touchLinks();
 		}

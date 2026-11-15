@@ -2,13 +2,14 @@
 
 namespace CirrusSearch\Search;
 
-use BaseSearchResultSet;
-use HtmlArmor;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Search\BaseSearchResultSet;
+use MediaWiki\Search\ISearchResultSet;
+use MediaWiki\Search\SearchResult;
+use MediaWiki\Search\SearchResultSetTrait;
 use MediaWiki\Title\Title;
-use SearchResult;
-use SearchResultSetTrait;
 use Wikimedia\Assert\Assert;
+use Wikimedia\HtmlArmor\HtmlArmor;
 
 /**
  * Base class to represent a CirrusSearchResultSet
@@ -36,7 +37,7 @@ abstract class BaseCirrusSearchResultSet extends BaseSearchResultSet implements 
 	private $suggestionSnippet;
 
 	/**
-	 * @var array
+	 * @var array<int,array<string,CirrusSearchResultSet>>
 	 */
 	private $interwikiResults = [];
 
@@ -158,7 +159,7 @@ abstract class BaseCirrusSearchResultSet extends BaseSearchResultSet implements 
 
 	/**
 	 * @param CirrusSearchResultSet $res
-	 * @param int $type one of searchresultset::* constants
+	 * @param int $type One of the ISearchResultSet::…_RESULTS constants
 	 * @param string $interwiki
 	 */
 	final public function addInterwikiResults( CirrusSearchResultSet $res, $type, $interwiki ) {
@@ -166,19 +167,19 @@ abstract class BaseCirrusSearchResultSet extends BaseSearchResultSet implements 
 	}
 
 	/**
-	 * @param int $type
-	 * @return \ISearchResultSet[]
+	 * @param int $type One of the ISearchResultSet::…_RESULTS constants
+	 * @return ISearchResultSet[]
 	 */
 	final public function getInterwikiResults( $type = self::SECONDARY_RESULTS ) {
 		return $this->interwikiResults[$type] ?? [];
 	}
 
 	/**
-	 * @param int $type
+	 * @param int $type One of the ISearchResultSet::…_RESULTS constants
 	 * @return bool
 	 */
-	final public function hasInterwikiResults( $type = self::SECONDARY_RESULTS ) {
-		return isset( $this->interwikiResults[$type] );
+	final public function hasInterwikiResults( $type = self::SECONDARY_RESULTS ): bool {
+		return (bool)( $this->interwikiResults[$type] ?? [] );
 	}
 
 	/**
@@ -268,6 +269,17 @@ abstract class BaseCirrusSearchResultSet extends BaseSearchResultSet implements 
 	}
 
 	/**
+	 * @inheritDoc
+	 */
+	public function isApproximateTotalHits(): bool {
+		$elasticaResultSet = $this->getElasticaResultSet();
+		if ( $elasticaResultSet !== null ) {
+			return $elasticaResultSet->getTotalHitsRelation() !== 'eq';
+		}
+		return false;
+	}
+
+	/**
 	 * @return \Elastica\Response|null
 	 */
 	final public function getElasticResponse() {
@@ -277,7 +289,6 @@ abstract class BaseCirrusSearchResultSet extends BaseSearchResultSet implements 
 
 	/**
 	 * Useful to inject your own TitleHelper during tests
-	 * @return TitleHelper
 	 */
 	protected function getTitleHelper(): TitleHelper {
 		if ( $this->titleHelper === null ) {

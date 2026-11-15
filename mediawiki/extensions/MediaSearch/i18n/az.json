@@ -2,14 +2,16 @@
 	"@metadata": {
 		"authors": [
 			"Nemoralis",
-			"Əkrəm Cəfər",
-			"Əkrəm"
+			"Əkrəm",
+			"Əkrəm Cəfər"
 		]
 	},
 	"mediasearch-desc": "Axtarış nəticələrini [[Special:MediaSearch|media axtarışı]] səhifəsi vasitəsilə göstərməyin media yönümlü yolu.",
 	"mediasearch-title": "Media axtar",
 	"mediasearch-continue": "Növbəti",
 	"mediasearch-tab-image": "Şəkillər",
+	"mediasearch-tab-audio": "Audio",
+	"mediasearch-tab-video": "Video",
 	"mediasearch-tab-page": "Kateqoriyalar və səhifələr",
 	"mediasearch-tab-other": "Digər media",
 	"mediasearch-filter-size": "Şəkil ölçüsü",

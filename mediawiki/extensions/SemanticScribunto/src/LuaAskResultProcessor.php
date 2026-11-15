@@ -2,15 +2,17 @@
 
 namespace SMW\Scribunto;
 
+use MediaWiki\Linker\Linker;
+use SMW\DataValues\DataValue;
+use SMW\DataValues\NumberValue;
+use SMW\Query\PrintRequest;
 use SMW\Query\QueryResult;
 use SMW\Query\Result\ResultArray;
-use SMWDataValue as DataValue;
-use SMW\Query\PrintRequest;
 
 /**
  * Class LuaAskResultProcessor
  *
- * @license GNU GPL v2+
+ * @license GPL-2.0-or-later
  * @since 1.0
  *
  * @author Tobias Oetterer
@@ -20,35 +22,35 @@ use SMW\Query\PrintRequest;
 class LuaAskResultProcessor {
 
 	/**
-	 * Holds all possible representations of "true" in this smw instance
-	 *
-	 * @var array
+	 * Cached representations of "true" — shared across all processor instances
+	 * within a request because the message bundle is request-stable.
 	 */
-	private $msgTrue;
+	private static ?array $msgTrue = null;
 
 	/**
-	 * This counter serves as fallback, if no label for printout is specified
-	 *
-	 * @var int
+	 * Fallback index for printouts without a label.
 	 */
-	private $numericIndex;
+	private int $numericIndex;
+
+	private QueryResult $queryResult;
+
+	private readonly Linker $linker;
 
 	/**
-	 * Holds the query result for this object
+	 * Memoised PrintRequest labels, keyed by spl_object_id.
+	 * Per-processor (i.e. per-ask-call) scope.
 	 *
-	 * @var QueryResult
+	 * @var array<int, int|string>
 	 */
-	private $queryResult;
+	private array $printRequestLabels = [];
 
-	/**
-	 * LuaAskResultProcessor constructor.
-	 *
-	 * @param QueryResult $queryResult
-	 */
 	public function __construct( QueryResult $queryResult ) {
 		$this->queryResult = $queryResult;
-		$this->msgTrue = explode( ',', wfMessage( 'smw_true_words' )->text() . ',true,t,yes,y' );
+		if ( self::$msgTrue === null ) {
+			self::$msgTrue = explode( ',', wfMessage( 'smw_true_words' )->text() . ',true,t,yes,y' );
+		}
 		$this->numericIndex = 1;
+		$this->linker = new Linker();
 	}
 
 	/**
@@ -60,7 +62,6 @@ class LuaAskResultProcessor {
 	 * @return array|null
 	 */
 	public function getProcessedResult() {
-
 		$result = null;
 
 		if ( $this->queryResult->getCount() ) {
@@ -86,14 +87,13 @@ class LuaAskResultProcessor {
 	 * @return array
 	 */
 	public function getDataFromQueryResultRow( array $resultRow ) {
-
 		$rowData = [];
 
 		/** @var ResultArray $resultArray */
 		foreach ( $resultRow as $resultArray ) {
 
 			// get key and data
-			list ( $key, $data ) = $this->getDataFromResultArray( $resultArray );
+			[ $key, $data ] = $this->getDataFromResultArray( $resultArray );
 
 			$rowData[$key] = $data;
 		}
@@ -110,7 +110,6 @@ class LuaAskResultProcessor {
 	 * @return array array ( int|string, array )
 	 */
 	public function getDataFromResultArray( ResultArray $resultArray ) {
-
 		// first, extract the key (label), if any
 		$key = $this->getKeyFromPrintRequest( $resultArray->getPrintRequest() );
 
@@ -139,12 +138,15 @@ class LuaAskResultProcessor {
 	 * @return int|string
 	 */
 	public function getKeyFromPrintRequest( PrintRequest $printRequest ) {
-
-		if ( $printRequest->getLabel() !== '' ) {
-			return $printRequest->getText( SMW_OUTPUT_WIKI );
+		$id = spl_object_id( $printRequest );
+		if ( isset( $this->printRequestLabels[$id] ) ) {
+			return $this->printRequestLabels[$id];
 		}
-
-		return $this->getNumericIndex();
+		$label = $printRequest->getLabel() !== ''
+			? $printRequest->getText( SMW_OUTPUT_WIKI )
+			: $this->getNumericIndex();
+		$this->printRequestLabels[$id] = $label;
+		return $label;
 	}
 
 	/**
@@ -156,21 +158,20 @@ class LuaAskResultProcessor {
 	 * @return mixed
 	 */
 	public function getValueFromDataValue( DataValue $dataValue ) {
-
 		switch ( $dataValue->getTypeID() ) {
 			case '_boo':
 				// boolean value found, convert it
-				$value = in_array( strtolower( $dataValue->getWikiValue() ?? 'null' ), $this->msgTrue );
+				$value = in_array( strtolower( $dataValue->getWikiValue() ?? 'null' ), self::$msgTrue );
 				break;
 			case '_num':
 				// number value found
-				/** @var \SMWNumberValue $dataValue */
+				/** @var NumberValue $dataValue */
 				$value = $dataValue->getNumber();
 				$value = ( $value == (int)$value ) ? intval( $value ) : $value;
 				break;
 			default:
 				# FIXME ignores parameter link=none|subject
-				$value = $dataValue->getShortText( SMW_OUTPUT_WIKI, new \Linker() );
+				$value = $dataValue->getShortText( SMW_OUTPUT_WIKI, $this->linker );
 		}
 
 		return $value;
@@ -184,7 +185,6 @@ class LuaAskResultProcessor {
 	 * @return mixed
 	 */
 	public function extractLuaDataFromDVData( $resultArrayData ) {
-
 		if ( empty( $resultArrayData ) ) {
 			// this key has no value(s). set to null
 			return null;

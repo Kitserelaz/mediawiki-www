@@ -7,6 +7,7 @@ use MediaWiki\Html\Html;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\FormSpecialPage;
 use Miraheze\CreateWiki\ConfigNames;
+use Miraheze\CreateWiki\Helpers\WikiCategoryLabels;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\WikiManagerFactory;
 use Miraheze\CreateWiki\Services\CreateWikiValidator;
@@ -93,12 +94,15 @@ class SpecialCreateNewWikiLegacy extends FormSpecialPage {
 		}
 
 		if ( $this->getConfig()->get( ConfigNames::Categories ) ) {
-                        $formDescriptor['category'] = [
-                                'section' => 'category',
-                                'type' => 'select',
-                                'label-message' => 'createwiki-label-category',
-                                'options' => $this->getConfig()->get( ConfigNames::Categories ),
-                                'default' => 'uncategorised',
+			$this->getOutput()->addModules( 'ext.skywiki.wikiCategoryIcon' );
+			$formDescriptor['category'] = [
+				'section' => 'category',
+				'type' => 'select',
+				'label-message' => 'createwiki-label-category',
+				'options' => WikiCategoryLabels::getOptions(
+					$this->getContext(), $this->getConfig()->get( ConfigNames::Categories )
+				),
+				'default' => 'uncategorised',
 			];
 			$formDescriptor['categoryIcon'] = [
                                 'section' => 'category',
@@ -301,50 +305,6 @@ class SpecialCreateNewWikiLegacy extends FormSpecialPage {
                                         margin-right: 1rem;
                                 }
 			</style>
-                        <script>
-                                const icons = {
-                                        'Games': 'gamepad',
-                                        'Anime & Manga': 'heart',
-                                        'Movies & TV': 'film',
-                                        'Music': 'music',
-                                        'Books & Literature': 'book',
-                                        'Technology & Computing': 'computer',
-                                        'Science': 'flask',
-                                        'History': 'landmark-dome',
-                                        'Geography & Travel': 'map',
-                                        'Education & Learning': 'school',
-                                        'Art & Design': 'paintbrush',
-                                        'Sports': 'baseball',
-                                        'Communities & Fandoms': 'comments',
-                                        'Original Fiction & Worldbuilding': 'dragon',
-                                        'Other': 'question',
-                                        'Uncategorised': 'folder',
-				};
-				 addEventListener('load', () => {
-					const observer = new MutationObserver(() => {
-mw.loader.using( ['oojs-ui-core', 'ext.fontawesome', 'ext.fontawesome.far', 'ext.fontawesome.fas', 'ext.fontawesome.fab'], () => {
-						observer.disconnect();
-						console.log('ready!')
-                                                document.querySelector('#mw-input-wpcategoryIcon').innerHTML = `<i class=\"fa-solid fa-\${icons[document.querySelector('#mw-input-wpcategory .oo-ui-dropdownWidget .oo-ui-labelElement-label').textContent.trim()] ?? 'question'}\"></i>`//'&#xf53f;'
-						const mutationObserver = new MutationObserver(() => {
-							console.log('OK IT CHANGED')
-                                                        document.querySelector('#mw-input-wpcategoryIcon').innerHTML = `<i class=\"fa-solid fa-\${icons[document.querySelector('#mw-input-wpcategory .oo-ui-dropdownWidget .oo-ui-labelElement-label').textContent.trim()] ?? 'question'}\"></i>`//'&#xf53f;'
-
-                                                });
-console.log(document.querySelector('#mw-input-wpcategory .oo-ui-dropdownWidget .oo-ui-labelElement-label'))
-                                                mutationObserver.observe(document.querySelector('#mw-input-wpcategory .oo-ui-dropdownWidget .oo-ui-labelElement-label'), {
-                                                        characterData: true,
-                                                        childList: true,
-                                                        subtree: true
-                                                })
-})
-                                        });
-                                        observer.observe(document.querySelector('#mw-input-wpcategory'), {
-                                                childList: true,
-                                                subtree: true,
-					});
-                                })
-                        </script>
 		";
 	}
 	public function getRestriction(): string {

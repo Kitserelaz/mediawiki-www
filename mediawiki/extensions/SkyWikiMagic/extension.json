@@ -78,6 +78,10 @@
 		"ext.skywiki.createWikiForm.styles": {
 			"styles": [ "resources/createWikiForm.css" ]
 		},
+		"ext.skywiki.wikiCategoryIcon": {
+			"scripts": [ "resources/wikiCategoryIcon.js" ],
+			"dependencies": [ "oojs-ui-widgets", "ext.fontawesome.fas" ]
+		},
 		"ext.skywiki.createNewWiki": {
 			"scripts": [
 				"resources/createNewWiki.js"

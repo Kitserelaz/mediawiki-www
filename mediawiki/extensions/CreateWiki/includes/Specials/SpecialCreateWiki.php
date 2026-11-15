@@ -6,6 +6,7 @@ use MediaWiki\Exception\ErrorPageError;
 use MediaWiki\Html\Html;
 use MediaWiki\SpecialPage\FormSpecialPage;
 use Miraheze\CreateWiki\ConfigNames;
+use Miraheze\CreateWiki\Helpers\WikiCategoryLabels;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\CreateWikiValidator;
 use Miraheze\CreateWiki\Services\WikiManagerFactory;
@@ -76,7 +77,9 @@ class SpecialCreateWiki extends FormSpecialPage {
 				'type' => 'select',
 				'label-message' => 'createwiki-label-category',
 				'required' => true,
-				'options' => $this->getConfig()->get( ConfigNames::Categories ),
+				'options' => WikiCategoryLabels::getOptions(
+					$this->getContext(), $this->getConfig()->get( ConfigNames::Categories )
+				),
 			];
 		}
 

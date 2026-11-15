@@ -17,6 +17,7 @@ use MediaWiki\User\User;
 use Miraheze\CreateWiki\ConfigNames;
 use Miraheze\CreateWiki\CreateWikiOOUIForm;
 use Miraheze\CreateWiki\Exceptions\UnknownRequestError;
+use Miraheze\CreateWiki\Helpers\WikiCategoryLabels;
 use Miraheze\CreateWiki\Hooks\CreateWikiHookRunner;
 use Miraheze\CreateWiki\RequestWiki\FormFields\DetailsWithIconField;
 use function array_diff_key;
@@ -226,7 +227,9 @@ class WikiRequestViewer {
 					'type' => 'select',
 					'label-message' => 'createwiki-label-category',
 					'required' => true,
-					'options' => $this->options->get( ConfigNames::Categories ),
+					'options' => WikiCategoryLabels::getOptions(
+						$this->context, $this->options->get( ConfigNames::Categories )
+					),
 					'default' => $this->wikiRequestManager->getCategory(),
 					'disabled' => $this->wikiRequestManager->isLocked(),
 					'cssclass' => 'ext-createwiki-infuse',

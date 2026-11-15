@@ -225,6 +225,9 @@
 		"MakeGlobalVariablesScript": {
 			"handler": "Main"
 		},
+		"ManageWikiCoreAddFormFields": {
+			"handler": "ManageWiki"
+		},
 		"ManageWikiCoreProvider": {
 			"handler": "ManageWiki"
 		},

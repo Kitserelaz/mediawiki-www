@@ -8,6 +8,7 @@ use MediaWiki\SpecialPage\FormSpecialPage;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
 use Miraheze\CreateWiki\ConfigNames;
+use Miraheze\CreateWiki\Helpers\WikiCategoryLabels;
 use Miraheze\CreateWiki\Hooks\CreateWikiHookRunner;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\CreateWikiValidator;
@@ -99,7 +100,9 @@ class SpecialRequestWiki extends FormSpecialPage {
 				'label-message' => 'createwiki-label-category',
 				'help-message' => 'createwiki-help-category',
 				'required' => true,
-				'options' => $this->getConfig()->get( ConfigNames::Categories ),
+				'options' => WikiCategoryLabels::getOptions(
+					$this->getContext(), $this->getConfig()->get( ConfigNames::Categories )
+				),
 			];
 		}
 

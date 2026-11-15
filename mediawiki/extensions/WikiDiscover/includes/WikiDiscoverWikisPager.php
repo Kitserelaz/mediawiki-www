@@ -7,6 +7,7 @@ use MediaWiki\Html\Html;
 use MediaWiki\Languages\LanguageNameUtils;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Pager\TablePager;
+use Miraheze\CreateWiki\Helpers\WikiCategoryLabels;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\CreateWikiValidator;
 use Miraheze\CreateWiki\Services\RemoteWikiFactory;
@@ -90,10 +91,11 @@ class WikiDiscoverWikisPager extends TablePager {
 				break;
 			case 'wiki_category':
 				$wikiCategories = array_flip( $this->getConfig()->get( 'CreateWikiCategories' ) );
-				$formatted = $this->escape(
-					$wikiCategories[$row->wiki_category] ??
-					$row->wiki_category
-				);
+				$formatted = $this->escape( WikiCategoryLabels::getLabel(
+					$this->getContext(),
+					$row->wiki_category,
+					$wikiCategories[$row->wiki_category] ?? $row->wiki_category
+				) );
 				break;
 			case 'wiki_creation':
 				$formatted = $this->escape( $this->getLanguage()->userTimeAndDate(

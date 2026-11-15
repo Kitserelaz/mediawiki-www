@@ -4,20 +4,23 @@ namespace Miraheze\CreateWiki\Hooks\Handlers;
 
 use MediaWiki\Config\Config;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\Context\IContextSource;
 use MediaWiki\JobQueue\JobQueueGroupFactory;
 use Miraheze\CreateWiki\Exceptions\MissingWikiError;
 use Miraheze\CreateWiki\Helpers\ManageWikiCoreModule;
 use Miraheze\CreateWiki\Helpers\RemoteWiki;
+use Miraheze\CreateWiki\Helpers\WikiCategoryLabels;
 use Miraheze\CreateWiki\Hooks\CreateWikiHookRunner;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\CreateWikiDataStore;
 use Miraheze\ManageWiki\Exceptions\MissingWikiError as MWMissingWikiError;
 use Miraheze\ManageWiki\Helpers\Factories\ModuleFactory;
+use Miraheze\ManageWiki\Hooks\ManageWikiCoreAddFormFieldsHook;
 use Miraheze\ManageWiki\Hooks\ManageWikiCoreProviderHook;
 use Miraheze\ManageWiki\ICoreModule;
 
 /** @codeCoverageIgnore Tested by testing RemoteWiki. */
-class ManageWiki implements ManageWikiCoreProviderHook {
+class ManageWiki implements ManageWikiCoreAddFormFieldsHook, ManageWikiCoreProviderHook {
 
 	public function __construct(
 		private readonly Config $config,
@@ -26,6 +29,21 @@ class ManageWiki implements ManageWikiCoreProviderHook {
 		private readonly CreateWikiHookRunner $hookRunner,
 		private readonly JobQueueGroupFactory $jobQueueGroupFactory,
 	) {
+	}
+
+	/** @inheritDoc */
+	public function onManageWikiCoreAddFormFields(
+		IContextSource $context,
+		ModuleFactory $moduleFactory,
+		string $dbname,
+		bool $ceMW,
+		array &$formDescriptor
+	): void {
+		if ( isset( $formDescriptor['category']['options'] ) ) {
+			$formDescriptor['category']['options'] = WikiCategoryLabels::getOptions(
+				$context, $formDescriptor['category']['options']
+			);
+		}
 	}
 
 	/** @inheritDoc */

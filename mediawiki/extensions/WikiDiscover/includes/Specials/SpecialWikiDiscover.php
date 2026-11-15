@@ -5,6 +5,7 @@ namespace Miraheze\WikiDiscover\Specials;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Languages\LanguageNameUtils;
 use MediaWiki\SpecialPage\SpecialPage;
+use Miraheze\CreateWiki\Helpers\WikiCategoryLabels;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\CreateWikiValidator;
 use Miraheze\CreateWiki\Services\RemoteWikiFactory;
@@ -66,9 +67,11 @@ class SpecialWikiDiscover extends SpecialPage {
 				'type' => 'select',
 				'name' => 'category',
 				'label-message' => 'wikidiscover-table-category',
-				'options' => [
-					$this->msg( 'wikidiscover-label-any' )->text() => '*',
-				] + $this->getConfig()->get( 'CreateWikiCategories' ),
+				'options' => WikiCategoryLabels::getOptions(
+					$this->getContext(),
+					$this->getConfig()->get( 'CreateWikiCategories' ),
+					[ $this->msg( 'wikidiscover-label-any' )->text() => '*' ]
+				),
 				'default' => $category ?: '*',
 			],
 			'state' => [

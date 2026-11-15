@@ -6,6 +6,7 @@ final class FarmDispatch {
     public const PROVISION = 'global:farm:provision';
     public const PROVISION_PENDING = 'global:farm:provision-pending';
     public const CREATION_CONTEXT = 'global:farm:creation-context';
+    public const CREATION_COMPLETE = 'global:farm:creation-complete:';
     public const GROUP = 'farm-dispatch-v1';
 
     public static function connect(): Redis {
@@ -24,6 +25,10 @@ final class FarmDispatch {
 
     public static function statusKey(string $wiki): string {
         return 'global:farm:provision-status:' . $wiki;
+    }
+
+    public static function creationTicketKey(string $token): string {
+        return 'global:farm:creation-ticket:' . hash('sha256', $token);
     }
 
     public static function provision(Redis $redis, string $wiki, ?array $creation = null): string {
@@ -99,7 +104,7 @@ LUA, [$stream, self::GROUP, $consumer, $id, (string)$idle], 1);
         string $id, string $key, string $ready = '', bool $reschedule = true, string $status = ''): void {
         $redis->eval(<<<'LUA'
 local stream, pending, ready, status, context = unpack(KEYS)
-local group, consumer, id, queue, again = unpack(ARGV)
+local group, consumer, id, queue, again, creationChannel = unpack(ARGV)
 local p = redis.call('XPENDING',stream,group,id,id,1)
 if #p == 0 or p[1][2] ~= consumer then return 0 end
 if status ~= '' then
@@ -119,10 +124,12 @@ if status ~= '' then
     redis.call('HSET',status,'state','complete','finished_ms',now[1]*1000+math.floor(now[2]/1000))
     redis.call('EXPIRE',status,604800)
     redis.call('HDEL',context,queue)
+    redis.call('PUBLISH',creationChannel,id)
 end
 redis.call('XACK',stream,group,id)
 redis.call('XDEL',stream,id)
 return 1
-LUA, [$stream, $pending, $ready, $status, self::CREATION_CONTEXT, self::GROUP, $consumer, $id, $key, $reschedule ? '1' : '0'], 5);
+LUA, [$stream, $pending, $ready, $status, self::CREATION_CONTEXT, self::GROUP, $consumer, $id, $key,
+            $reschedule ? '1' : '0', self::CREATION_COMPLETE . $key], 5);
     }
 }

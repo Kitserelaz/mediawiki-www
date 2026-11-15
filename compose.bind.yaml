@@ -28,6 +28,9 @@ services:
     volumes: *source-volumes
   provisioner:
     volumes: *source-volumes
+  creation-events:
+    volumes:
+      - ${MW_SOURCE_DIRECTORY:-.}/docker/mediawiki:/opt/farm:ro
   scheduler:
     volumes: *source-volumes
   init:

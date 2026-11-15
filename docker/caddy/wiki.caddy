@@ -12,6 +12,8 @@
     encode zstd gzip
     header X-Content-Type-Options nosniff
     route {
+        @creationEvents path /wiki-creation/events
+        reverse_proxy @creationEvents creation-events:8080
         # Only public assets and known entrypoints are exposed. Caddy ignores .htaccess.
         @private path_regexp private (?i)(^/\.|/\.|^/(vendor|includes|maintenance|tests|sql|cache|cw_cache|docker|image-imports|sitemaps|mw-config)(/|$)|^/(LocalSettings|PrivateSettings|GlobalSettings|GlobalCache|GlobalExtensions|ConfigSettings|SkyWikiFunctions|ManageWikiSettings|ManageWikiNamespaces|ManageWikiExtensions|LocalWiki|SetupCreateWiki|db-health|redis-health|smtp-health|honeypot)\.php|\.(key|pem|log|sql|db|rdb|ya?ml|lock|bak|save|tar\.gz)$)
         respond @private 404
@@ -76,6 +78,28 @@
                 env HTTPS on
                 env HTTP_X_FORWARDED_PROTO https
                 env REQUEST_URI {http.request.orig_uri}
+            }
+        }
+        respond 404
+    }
+}
+
+# Unpublished port for checking the new wiki through the normal PHP-FPM pool.
+http://:8083 {
+    @probe {
+        method GET
+        path /wiki-creation/probe
+    }
+    route {
+        handle @probe {
+            rewrite * /api.php?action=query&meta=siteinfo&format=json
+            reverse_proxy php:9000 {
+                transport fastcgi {
+                    root /var/www/mediawiki
+                    split .php
+                    env HTTPS on
+                    env HTTP_X_FORWARDED_PROTO https
+                }
             }
         }
         respond 404

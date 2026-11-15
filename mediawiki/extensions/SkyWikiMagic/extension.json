@@ -71,6 +71,10 @@
 		}
 	},
 	"ResourceModules": {
+		"ext.skywiki.creationProgress": {
+			"scripts": [ "resources/creationProgress.js" ],
+			"messages": [ "createnewwiki-progress-delayed", "createnewwiki-progress-unavailable" ]
+		},
 		"ext.skywiki.createWikiForm.styles": {
 			"styles": [ "resources/createWikiForm.css" ]
 		},

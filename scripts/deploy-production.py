@@ -63,7 +63,7 @@ def stop_application(runner, project, live):
     rows = runner.run(['docker', 'ps', '-a', '--filter',
                        'label=com.docker.compose.project=' + project, '--format',
                        '{{.ID}} {{.Label "com.docker.compose.service"}}'], capture=True)
-    services = set(WRITERS) | ({'code'} if live else set())
+    services = {*WRITERS, 'creation-events'} | ({'code'} if live else set())
     ids = []
     for line in rows.splitlines():
         fields = line.split()
@@ -122,8 +122,10 @@ def rollback_application(root, state, runner, health, progress, *, old_commit,
         # path; also verify the previous runtime's read-only prerequisites.
         runner.run(compose + ['run', '--rm', '--no-deps', 'init', 'php',
                               '/opt/farm/manage.php', 'preflight'], input='')
+    restored_services = json.loads(runner.run(compose + ['config', '--format', 'json'], capture=True))['services']
+    runtime = [*WRITERS, 'creation-events'] if 'creation-events' in restored_services else WRITERS
     runner.run(compose + ['up', '-d', '--no-deps', '--no-build', '--pull', 'never',
-                          '--wait', '--wait-timeout', '180', *WRITERS])
+                          '--wait', '--wait-timeout', '180', *runtime])
     health(root, runner)
     check_worktree(runner)
     check_local_config(root, state, runner, initial_config)

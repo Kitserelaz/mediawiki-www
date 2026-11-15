@@ -24,7 +24,7 @@ case "${1:-help}" in
   watch-code)
     compose exec -T provisioner python3 /sync-control/provisioner-source.py reconcile
     compose watch --no-up provisioner ;;
-  reload-code) compose restart php worker provisioner jobchron scheduler web ;;
+  reload-code) compose restart php worker provisioner jobchron scheduler creation-events web ;;
   init) shift; compose run --rm init php /opt/farm/manage.php fresh "$@" ;;
   init-production) shift; compose run --rm init php /opt/farm/manage.php fresh-production "$@" ;;
   restore)

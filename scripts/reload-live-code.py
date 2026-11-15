@@ -10,7 +10,7 @@ import tempfile
 import time
 
 STATE = Path('/var/lib/cloudwiki')
-SERVICES = ('php', 'worker', 'provisioner', 'jobchron', 'scheduler')
+SERVICES = ('php', 'worker', 'provisioner', 'jobchron', 'scheduler', 'creation-events')
 
 
 def consume_request(path):

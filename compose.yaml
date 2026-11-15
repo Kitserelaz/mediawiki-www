@@ -80,7 +80,20 @@ services:
       - uploads:${MW_UPLOAD_ROOT:-/var/www/mediawiki/images}:ro
       - caddy-data:/data
       - caddy-config:/config
-    depends_on: [php, counter]
+    depends_on: [php, counter, creation-events]
+    restart: unless-stopped
+  creation-events:
+    image: ${MW_IMAGE:-cloudwiki-php:local}
+    user: www-data
+    command: [python3, /opt/farm/creation-events.py]
+    environment:
+      MW_REDIS: redis:6379
+    depends_on:
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, curl, -fsS, http://127.0.0.1:8080/health]
+      interval: 15s
+      timeout: 5s
     restart: unless-stopped
   worker:
     <<: *farm

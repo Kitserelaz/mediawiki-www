@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && pecl install redis-6.2.0 memcached-3.3.0 \
     && docker-php-ext-enable redis memcached \
     && rm -rf /var/lib/apt/lists/* /tmp/pear
-RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils djvulibre-bin libtiff-tools python3 python3-pygments && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils djvulibre-bin libtiff-tools python3 python3-pygments python3-aiohttp python3-redis && rm -rf /var/lib/apt/lists/*
 # ResourceLoader caches minified assets in CACHE_ACCEL, independently of Memcached.
 RUN pecl install apcu-5.1.28 \
     && docker-php-ext-enable apcu \

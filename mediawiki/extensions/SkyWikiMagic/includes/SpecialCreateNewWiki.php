@@ -2,8 +2,10 @@
 
 namespace WikiOasis\WikiOasisMagic;
 
+use FarmDispatch;
 use MediaWiki\Exception\ErrorPageError;
 use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Html\Html;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\FormSpecialPage;
 use MediaWiki\SpecialPage\SpecialPage;
@@ -12,6 +14,7 @@ use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\WikiManagerFactory;
 use Miraheze\CreateWiki\Services\CreateWikiValidator;
 use OOUI;
+use Throwable;
 
 class SpecialCreateNewWiki extends FormSpecialPage {
 
@@ -42,6 +45,10 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 		}
 
 		$request = $this->getRequest();
+		if ( $par === 'progress' && getenv( 'MW_DOCKER' ) ) {
+			$this->showProgress( $request->getText( 'ticket' ) );
+			return;
+		}
 		if ( !$par && !$request->wasPosted() && $request->getVal( 'sitename' ) !== null ) {
 			$this->checkExecutePermissions( $this->getUser() );
 			$sitename = trim( $request->getText( 'sitename' ) );
@@ -179,7 +186,8 @@ class SpecialCreateNewWiki extends FormSpecialPage {
                         throw new ErrorPageError( 'createnewwiki', 'createnewwiki-too-many-creations' );
                 }
 
-		$wikiManager = $this->wikiManagerFactory->newInstance( $formData['dbname'] . 'wiki' );
+		$wiki = $formData['dbname'] . 'wiki';
+		$wikiManager = $this->wikiManagerFactory->newInstance( $wiki );
 		$wikiManager->create(
 			sitename: $formData['sitename'],
 			language: $formData['language'],
@@ -190,10 +198,73 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 			reason: $this->msg( 'createnewwiki-creation-reason' )->inContentLanguage()->text(),
 			extra: []
 		);
-		$this->getOutput()->redirect(
-			$this->validator->getValidUrl( $formData['dbname'] . 'wiki' )
-		);
+		$url = $this->validator->getValidUrl( $wiki );
+		$output = $this->getOutput();
+		$output->redirect( $url );
+		if ( getenv( 'MW_DOCKER' ) ) {
+			// The farm publishes the Redis event from an earlier callback on this connection.
+			$this->databaseUtils->getGlobalPrimaryDB()->onTransactionCommitOrIdle(
+				function () use ( $output, $wiki, $url, $formData ): void {
+					$progress = $this->getProgressUrl( $wiki, $url, $formData['sitename'],
+						(bool)( $formData['private'] ?? false ) );
+					if ( $progress ) {
+						$output->redirect( $progress, '303' );
+					}
+				},
+				__METHOD__
+			);
+		}
 		return true;
+	}
+
+	private function getProgressUrl( string $wiki, string $url, string $siteName, bool $private ): ?string {
+		try {
+			$redis = FarmDispatch::connect();
+			$event = $redis->hGet( FarmDispatch::statusKey( $wiki ), 'event' );
+			if ( !$event ) {
+				return null;
+			}
+			$token = bin2hex( random_bytes( 32 ) );
+			$ticket = json_encode( [
+				'event' => $event,
+				'wiki' => $wiki,
+				'host' => parse_url( $url, PHP_URL_HOST ),
+				'private' => $private,
+				'owner' => $this->getUser()->getId(),
+				'siteName' => $siteName,
+			], JSON_THROW_ON_ERROR );
+			if ( $redis->setex( FarmDispatch::creationTicketKey( $token ), 86400, $ticket ) ) {
+				return $this->getPageTitle( 'progress' )->getLocalURL( [ 'ticket' => $token ] );
+			}
+		} catch ( Throwable $error ) {
+			wfLogWarning( 'Could not open wiki creation progress: ' . $error->getMessage() );
+		}
+		return null;
+	}
+
+	private function showProgress( string $token ): void {
+		require_once dirname( __DIR__, 3 ) . '/docker/mediawiki/dispatch.php';
+		$this->setHeaders();
+		$output = $this->getOutput();
+		$output->disableClientCache();
+		$this->getRequest()->response()->header( 'Referrer-Policy: no-referrer' );
+		$ticket = null;
+		if ( $this->getUser()->isRegistered() && preg_match( '/^[a-f0-9]{64}$/D', $token ) ) {
+			$ticket = json_decode( FarmDispatch::connect()->get( FarmDispatch::creationTicketKey( $token ) ) ?: 'null', true );
+		}
+		if ( !$ticket || $ticket['owner'] !== $this->getUser()->getId() ) {
+			$output->setStatusCode( 404 );
+			$output->addWikiMsg( 'createnewwiki-progress-unavailable' );
+			return;
+		}
+
+		$output->setPageTitleMsg( $this->msg( 'createnewwiki-progress-title' )->plaintextParams( $ticket['siteName'] ) );
+		$output->addHTML( Html::element( 'p', [ 'id' => 'skywiki-creation-status', 'role' => 'status' ],
+			$this->msg( 'createnewwiki-progress-wait' )->text() ) );
+		$output->addHTML( Html::element( 'a', [ 'id' => 'skywiki-creation-link',
+			'href' => $this->validator->getValidUrl( $ticket['wiki'] ) ], $this->msg( 'createnewwiki-progress-open' )->text() ) );
+		$output->addJsConfigVars( 'wgSkyWikiCreationEvents', '/wiki-creation/events?ticket=' . $token );
+		$output->addModules( 'ext.skywiki.creationProgress' );
 	}
 
 	private function continueWithName( string $sitename ): ?Message {

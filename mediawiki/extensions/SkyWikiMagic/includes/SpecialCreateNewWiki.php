@@ -197,7 +197,9 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 	}
 
 	private function continueWithName( string $sitename ): ?Message {
-		$subdomain = ( new SubdomainSuggester( $this->validator ) )->suggest( $sitename );
+		$subdomain = ( new SubdomainSuggester( $this->validator ) )->suggest(
+			$sitename, $this->getLanguage()->getCode()
+		);
 		if ( $subdomain === null ) {
 			return $this->msg( 'createnewwiki-subdomain-unavailable' );
 		}

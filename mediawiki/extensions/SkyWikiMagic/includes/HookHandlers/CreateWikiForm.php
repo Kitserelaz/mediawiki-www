@@ -34,7 +34,6 @@ class CreateWikiForm implements ParserFirstCallInitHook {
 		],
 			Html::hidden( 'title', $title->getPrefixedDBkey() ) .
 			Html::rawElement( 'label', [],
-				Html::element( 'span', [], wfMessage( 'createnewwiki-inline-label' )->inLanguage( $language )->text() ) .
 				Html::input( 'sitename', '', 'text', [
 					'required' => true,
 					'maxlength' => SpecialCreateNewWiki::MAX_SITENAME_LENGTH,

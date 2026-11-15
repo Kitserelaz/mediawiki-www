@@ -7,7 +7,7 @@ use Miraheze\CreateWiki\Hooks\CreateWikiTablesHook;
 
 final class CustomDomainSchema implements LoadExtensionSchemaUpdatesHook, CreateWikiTablesHook {
 	public function onLoadExtensionSchemaUpdates( $updater ) {
-		foreach ( [ 'cw_custom_domain_state', 'cw_custom_domain_claims' ] as $table ) {
+		foreach ( [ 'cw_custom_domain_state', 'cw_custom_domain_claims', 'cw_custom_domain_cloudflare' ] as $table ) {
 			$updater->addExtensionUpdateOnVirtualDomain( [
 				'virtual-createwiki', 'addTable', $table, __DIR__ . "/../../sql/$table.sql", true,
 			] );

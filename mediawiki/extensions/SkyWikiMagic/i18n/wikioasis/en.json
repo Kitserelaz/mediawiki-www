@@ -164,8 +164,8 @@
 	"customdomains-remove": "Remove custom domain",
 	"customdomains-dns-heading": "DNS setup",
 	"customdomains-txt": "Create a TXT record at $1 with this value: $2",
-	"customdomains-cname": "For a subdomain, point $1 to $2 with a DNS-only CNAME.",
-	"customdomains-apex": "For an apex domain, point an ALIAS or ANAME record to $1, or use the same A and AAAA addresses published for that target. Disable DNS proxying for this hostname.",
+	"customdomains-cname": "For a subdomain, point $1 to $2 with a CNAME.",
+	"customdomains-apex": "For an apex domain, use a flattened CNAME, ALIAS, or ANAME pointing to $1. Your DNS provider must support one of these record types.",
 	"customdomains-queued": "Verification is queued. This page shows the result after the next check.",
 	"customdomains-invalid-host": "Enter an eligible hostname such as wiki.example.org or example.org.",
 	"customdomains-already-active": "This hostname is already active for the wiki.",
@@ -176,6 +176,10 @@
 	"customdomains-taken": "This hostname is already assigned to a wiki.",
 	"customdomains-dns-ownership": "The TXT token is missing or has not propagated yet. CloudWiki will check again.",
 	"customdomains-dns-routing": "The hostname does not resolve to the CloudWiki ingress yet. Check your DNS records. CloudWiki will check again.",
-	"customdomains-https": "CloudWiki could not establish trusted HTTPS for this hostname yet. Check for DNS proxying or certificate authority restrictions. CloudWiki will retry.",
+	"customdomains-cloudflare-config": "Cloudflare provisioning is unavailable. Contact a farm steward.",
+	"customdomains-cloudflare-api": "Cloudflare could not process the hostname yet. CloudWiki will retry.",
+	"customdomains-cloudflare-conflict": "This hostname already has a separate Cloudflare registration. Contact a farm steward.",
+	"customdomains-cloudflare-pending": "Waiting for Cloudflare to activate the hostname and its HTTPS certificate.",
+	"customdomains-cloudflare-https": "Cloudflare has issued a certificate. CloudWiki will retry its connection check through Cloudflare.",
 	"logentry-managewiki-custom-domain": "$1 {{GENDER:$2|changed}} the custom domain for $3 from $4 to $5"
 }

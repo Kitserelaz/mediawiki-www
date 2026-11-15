@@ -1,0 +1,45 @@
+services:
+  web:
+    environment:
+      MW_CLOUDFLARE_TUNNEL_ORIGIN_IP: 172.31.240.2
+      MW_CLOUDFLARE_TUNNEL_PROXY_IP: 172.31.240.3
+    networks:
+      default: {}
+      cloudflare-saas-origin:
+        ipv4_address: 172.31.240.2
+  scheduler:
+    environment:
+      MW_CLOUDFLARE_SAAS_ZONE_ID: ${MW_CLOUDFLARE_SAAS_ZONE_ID:?Set the Cloudflare SaaS zone ID}
+    secrets:
+      - cloudflare-saas-token
+  cloudflared:
+    image: cloudflare/cloudflared:2026.11.0@sha256:b94b96edf2c9c4360f8879c8580cfaa99077f19c849ec595ca2f711b27d4f344
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --config
+      - /etc/cloudflared/config.yaml
+      - run
+      - ${MW_CLOUDFLARE_TUNNEL_ID:?Set the Cloudflare Tunnel ID}
+    user: "0:0"
+    cap_drop: [ALL]
+    read_only: true
+    depends_on: [web]
+    restart: unless-stopped
+    networks:
+      cloudflare-saas-origin:
+        ipv4_address: 172.31.240.3
+    volumes:
+      - ./docker/cloudflare-saas/config.yaml:/etc/cloudflared/config.yaml:ro
+    secrets:
+      - cloudflare-saas-tunnel
+secrets:
+  cloudflare-saas-token:
+    file: ${MW_CLOUDFLARE_SAAS_TOKEN_FILE:-/var/lib/cloudwiki/custom-domains/cloudflare-runtime-token}
+  cloudflare-saas-tunnel:
+    file: ${MW_CLOUDFLARE_TUNNEL_CREDENTIALS_FILE:-/var/lib/cloudwiki/custom-domains/cloudflare-tunnel.json}
+networks:
+  cloudflare-saas-origin:
+    ipam:
+      config:
+        - subnet: 172.31.240.0/29

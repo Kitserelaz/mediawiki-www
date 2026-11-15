@@ -10,6 +10,11 @@
         client_ip_headers CF-Connecting-IP
         trusted_proxies_strict
     }
+    servers {$MW_CLOUDFLARE_TUNNEL_ORIGIN_IP:127.0.0.1}:8082 {
+        trusted_proxies static {$MW_CLOUDFLARE_TUNNEL_PROXY_IP:127.0.0.1}/32
+        client_ip_headers CF-Connecting-IP
+        trusted_proxies_strict
+    }
 }
 import /etc/caddy/wiki.caddy
 import /etc/caddy/custom-domains.caddy

@@ -294,14 +294,22 @@ Validate without starting services:
 docker compose --env-file .env.production config --quiet
 ```
 
-Caddy publishes public 80/443. Explicit service hosts and the optional farm wildcard follow their configured TLS policies. External custom hostnames use a separate certificate policy backed by a private lookup of DNS-verified claims.
+Caddy publishes public 80/443. Explicit service hosts and the optional farm wildcard follow their configured TLS policies. Cloudflare terminates public TLS for new self-service hostnames. Caddy still validates all hostname claims before serving wiki traffic.
 
 ### Self-service custom domains
 
-1. Deploy the PHP and web changes with `MW_CUSTOM_DOMAINS_ROUTING=0` and `MW_CUSTOM_DOMAINS_ENABLED=0`. Use `scripts/farm update` to create both registry tables in `wikidb` before enabling routing. Keep any legacy external domains in the explicit `MW_PUBLIC_HOSTS` list and retain their current wiki metadata. Those hostnames are excluded from self-service.
-2. Publish a DNS-only ingress name at `custom-domains.cloudwiki.us` (override with `MW_CUSTOM_DOMAINS_TARGET`). Its A and AAAA records must point directly to Caddy on public ports 80 and 443. Publish AAAA only where IPv6 ingress works. For apex domains, use DNS flattening to the ingress name or its published addresses.
-3. Rehearse in an isolated deployment with `MW_CUSTOM_DOMAINS_ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory`. Mount the staging trust bundle into the scheduler and set `MW_CUSTOM_DOMAINS_PROBE_CA` to that in-container path. Verify one CNAME and one apex mapping. Production uses the default public ACME endpoint and system trust.
-4. Set both flags to `1` and recreate the PHP and scheduler services through the reviewed production configuration. Wiki bureaucrats and farm stewards can then use `Special:CustomDomains/<subdomain>` on Meta. Scheduler work runs once a minute, with retry delays on transient DNS or TLS errors. Look for denied issuance or registry errors in the web and PHP logs.
+1. Deploy with `MW_CUSTOM_DOMAINS_ROUTING=0` and `MW_CUSTOM_DOMAINS_ENABLED=0`. Run `scripts/farm update` so all custom-domain tables exist before enabling routing. Legacy direct claims still use Caddy's public listener. Preserve manually configured hosts in `MW_PUBLIC_HOSTS` and their existing wiki metadata.
+2. Enable Cloudflare for SaaS for the farm zone. Create a dedicated [locally managed Cloudflare Tunnel](https://developers.cloudflare.com/tunnel/features/locally-managed-tunnels/create-local-tunnel/). Configure a proxied `fallback.cloudwiki.us` CNAME pointing to the tunnel and set it as the SaaS fallback origin. Create a proxied CNAME for `custom-domains.cloudwiki.us` pointing to that fallback, or set `MW_CUSTOM_DOMAINS_TARGET` to the chosen customer-facing name. The tunnel forwards the original request hostname to the unpublished Caddy port 8082. Cloudflare manages the public certificate.
+3. Store the tunnel credential JSON as a root-owned `0600` file at `/var/lib/cloudwiki/custom-domains/cloudflare-tunnel.json`. Prepare a scheduler-readable copy of the zone-scoped **SSL and Certificates Write** API token on the VPS:
+
+   ```sh
+   sudo install -o root -g 33 -m 0640 \
+     /var/lib/cloudwiki/custom-domains/cloudflare-api-token \
+     /var/lib/cloudwiki/custom-domains/cloudflare-runtime-token
+   ```
+
+   Append `compose.cloudflare-saas.yaml` to the existing production `COMPOSE_FILE` and set `MW_CLOUDFLARE_SAAS_ZONE_ID` and `MW_CLOUDFLARE_TUNNEL_ID`. Only the scheduler receives the Custom Hostnames API token. The overlay places Caddy and the connector on a dedicated bridge. Caddy accepts the visitor IP header from the connector's address and passes the normalized address to MediaWiki. Review the configuration fingerprints when installing the overlay.
+4. Pilot a subdomain and a flattened apex with real DNS. Use a CNAME, flattened CNAME, ALIAS, or ANAME pointing at the SaaS target as appropriate. CloudWiki waits for the owner's TXT record, both Cloudflare activation statuses, and a successful HTTPS probe through the tunnel before switching the wiki's primary address. Set both feature flags to `1` in the environment where you want to open self-service, and recreate the PHP and scheduler services. Failed checks retry through the scheduler. Removal and cancellation disable the route immediately and queue removal of the Cloudflare registration.
 
 Set `MW_CUSTOM_DOMAINS_ENABLED=0` to pause new setup and activation. While `MW_CUSTOM_DOMAINS_ROUTING=1`, existing domains can renew, serve traffic, and be removed. Before disabling routing or rolling back to an older release, remove managed domains on Meta and verify their built-in addresses serve again. Keep the legacy RequestSSL workflow disabled when self-service is enabled.
 

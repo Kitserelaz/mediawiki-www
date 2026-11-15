@@ -1,6 +1,6 @@
 (custom_domain_registry) {
     forward_auth 127.0.0.1:8081 {
-        uri /route
+        uri {args[0]}
         header_up Host 127.0.0.1:8081
         header_up X-CloudWiki-Lookup-Host {http.request.host}
         header_up X-CloudWiki-Lookup-SNI {http.request.tls.server_name}
@@ -14,7 +14,7 @@
 http://127.0.0.1:8081 {
     bind 127.0.0.1
     route {
-        @lookup path /tls-allow /route
+        @lookup path /tls-allow /route /route-saas /probe-saas
         reverse_proxy @lookup php:9001 {
             transport fastcgi {
                 env SCRIPT_FILENAME /opt/farm/custom-domain-lookup.php
@@ -35,7 +35,7 @@ https:// {
     route {
         request_header -X-CloudWiki-Route-Wiki
         request_header -X-CloudWiki-Route-Host
-        import custom_domain_registry
+        import custom_domain_registry /route
         vars cloudwiki_custom_wiki {http.request.header.X-CloudWiki-Route-Wiki}
         vars cloudwiki_custom_host {http.request.header.X-CloudWiki-Route-Host}
         import wiki
@@ -46,7 +46,39 @@ http:// {
     route {
         request_header -X-CloudWiki-Route-Host
         request_header -X-CloudWiki-Route-Wiki
-        import custom_domain_registry
+        import custom_domain_registry /route
         redir https://{http.request.header.X-CloudWiki-Route-Host}{uri} 308
+    }
+}
+
+# Cloudflared reaches this port on its dedicated Compose network.
+http://:8082 {
+    bind {$MW_CLOUDFLARE_TUNNEL_ORIGIN_IP:127.0.0.1}
+    @untrusted not remote_ip {$MW_CLOUDFLARE_TUNNEL_PROXY_IP:127.0.0.1}/32
+    @probe {
+        method GET
+        path_regexp saas_probe ^/\.well-known/cloudwiki-saas-check/([a-f0-9]{48})/([a-f0-9]{32})$
+    }
+    route {
+        respond @untrusted 404
+        handle @probe {
+            rewrite * /probe-saas?challenge={re.saas_probe.1}&nonce={re.saas_probe.2}
+            reverse_proxy 127.0.0.1:8081 {
+                header_up Host 127.0.0.1:8081
+                header_up X-CloudWiki-Lookup-Host {http.request.host}
+                header_up -Cookie
+                header_up -Authorization
+            }
+        }
+        handle {
+            route {
+                request_header -X-CloudWiki-Route-Wiki
+                request_header -X-CloudWiki-Route-Host
+                import custom_domain_registry /route-saas
+                vars cloudwiki_custom_wiki {http.request.header.X-CloudWiki-Route-Wiki}
+                vars cloudwiki_custom_host {http.request.header.X-CloudWiki-Route-Host}
+                import wiki
+            }
+        }
     }
 }

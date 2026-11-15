@@ -9,6 +9,7 @@ use Wikimedia\Rdbms\IDatabase;
 final class CustomDomainStore {
 	private const STATE = 'cw_custom_domain_state';
 	private const CLAIMS = 'cw_custom_domain_claims';
+	private const CLOUDFLARE = 'cw_custom_domain_cloudflare';
 
 	public function __construct(
 		private readonly IDatabase $db,
@@ -155,20 +156,70 @@ final class CustomDomainStore {
 		} );
 	}
 
-	public function fail( string $wiki, string $token, string $error, bool $retry ): void {
-		$this->atomic( __METHOD__, function () use ( $wiki, $token, $error, $retry ) {
+	public function fail( string $wiki, string $token, string $error, bool $retry, bool $keepClaim = false ): void {
+		$this->atomic( __METHOD__, function () use ( $wiki, $token, $error, $retry, $keepClaim ) {
 			[ , $state ] = $this->lockCandidate( $wiki, $token );
 			if ( !$state ) {
 				return;
 			}
 			$attempts = min( $state->cd_attempts + 1, 10 );
-			$this->deleteClaim( $wiki, false );
+			if ( !$keepClaim ) {
+				$this->deleteClaim( $wiki, false );
+			}
 			$this->update( $wiki, [
 				'cd_due' => $retry ? time() + min( 1800, 60 * ( 2 ** $attempts ) ) : null,
 				'cd_attempts' => $attempts,
 				'cd_error' => $error,
 			] );
 		} );
+	}
+
+	public function cloudflareEntry( string $host ): ?stdClass {
+		return $this->db->newSelectQueryBuilder()->select( '*' )->from( self::CLOUDFLARE )
+			->where( [ 'cdf_host' => $host ] )->caller( __METHOD__ )->fetchRow() ?: null;
+	}
+
+	public function recordCloudflareIntent( string $wiki, string $token ): bool {
+		return $this->atomic( __METHOD__, function () use ( $wiki, $token ) {
+			[ $row, $state ] = $this->lockCandidate( $wiki, $token );
+			if ( !$row || !$state || $state->cd_expires <= time() ) {
+				return false;
+			}
+			$exists = $this->db->newSelectQueryBuilder()->select( 'cdc_host' )->from( self::CLAIMS )
+				->where( [ 'cdc_host' => $state->cd_candidate, 'cdc_wiki' => $wiki, 'cdc_active' => 0 ] )
+				->forUpdate()->caller( __METHOD__ )->fetchField();
+			if ( !$exists ) {
+				return false;
+			}
+			$this->db->newInsertQueryBuilder()->insertInto( self::CLOUDFLARE )->row( [
+				'cdf_host' => $state->cd_candidate, 'cdf_request' => $token, 'cdf_created' => time(),
+			] )->ignore()->caller( __METHOD__ )->execute();
+			return $this->db->affectedRows() === 1;
+		} );
+	}
+
+	public function recordCloudflareId( string $host, string $token, string $id ): void {
+		$this->db->newUpdateQueryBuilder()->update( self::CLOUDFLARE )->set( [ 'cdf_id' => $id ] )
+			->where( [ 'cdf_host' => $host, 'cdf_request' => $token ] )->caller( __METHOD__ )->execute();
+	}
+
+	/** @return stdClass[] */
+	public function orphanedCloudflareEntries(): array {
+		// Keep active registrations and valid candidates. A retired record survives
+		// cancellation/removal until the worker has confirmed its cleanup at Cloudflare.
+		$rows = $this->db->newSelectQueryBuilder()->select( [ 'f.cdf_host', 'f.cdf_request', 'f.cdf_id' ] )
+			->from( self::CLOUDFLARE, 'f' )
+			->leftJoin( self::CLAIMS, 'c', 'c.cdc_host = f.cdf_host' )
+			->leftJoin( self::STATE, 's', 's.cd_wiki = c.cdc_wiki AND s.cd_token = f.cdf_request' )
+			->where( '(c.cdc_host IS NULL OR (c.cdc_active = 0 AND s.cd_wiki IS NULL))' )
+			->andWhere( $this->db->expr( 'f.cdf_created', '<=', time() - 60 ) )
+			->orderBy( 'f.cdf_created' )->limit( 8 )->caller( __METHOD__ )->fetchResultSet();
+		return iterator_to_array( $rows, false );
+	}
+
+	public function forgetCloudflareEntry( string $host, string $token ): void {
+		$this->db->newDeleteQueryBuilder()->deleteFrom( self::CLOUDFLARE )
+			->where( [ 'cdf_host' => $host, 'cdf_request' => $token ] )->caller( __METHOD__ )->execute();
 	}
 
 	/** @return stdClass[] */

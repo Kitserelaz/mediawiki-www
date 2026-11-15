@@ -1,0 +1,3 @@
+credentials-file: /run/secrets/cloudflare-saas-tunnel
+ingress:
+  - service: http://web:8082

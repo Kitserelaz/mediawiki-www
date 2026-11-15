@@ -35,6 +35,10 @@ final class CustomDomainConfig {
 		return getenv( 'MW_DOCKER' ) && getenv( 'MW_CUSTOM_DOMAINS_ROUTING' ) === '1';
 	}
 
+	public static function probeProof( string $host, string $challenge, string $nonce, string $secret ): string {
+		return hash_hmac( 'sha256', "cloudflare-saas\n$host\n$challenge\n$nonce", $secret );
+	}
+
 	public static function isReserved( string $host ): bool {
 		$zones = [
 			getenv( 'MW_DOMAIN' ) ?: 'cloudwiki.us',

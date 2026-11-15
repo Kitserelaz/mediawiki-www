@@ -9,6 +9,7 @@ use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
+use Miraheze\CreateWiki\ConfigNames;
 use stdClass;
 
 final class SpecialCustomDomains extends SpecialPage {
@@ -122,11 +123,16 @@ final class SpecialCustomDomains extends SpecialPage {
 	}
 
 	private function showPicker(): void {
+		$this->getOutput()->addModuleStyles( 'ext.skywiki.customDomains.styles' );
 		$form = HTMLForm::factory( 'ooui', [
 			'wiki' => [
-				'type' => 'text',
+				'type' => 'textwithbutton',
 				'label-message' => 'customdomains-wiki',
 				'required' => true,
+				'buttontype' => 'button',
+				'buttonflags' => [],
+				'buttonid' => 'customdomains-subdomain-suffix',
+				'buttondefault' => '.' . $this->getConfig()->get( ConfigNames::Subdomain ),
 			],
 		], $this->getContext() );
 		$form->setFormIdentifier( self::FORM_PICKER );

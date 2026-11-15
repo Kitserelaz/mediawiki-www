@@ -75,6 +75,9 @@
 			"scripts": [ "resources/creationProgress.js" ],
 			"messages": [ "createnewwiki-progress-delayed", "createnewwiki-progress-unavailable" ]
 		},
+		"ext.skywiki.customDomains.styles": {
+			"styles": [ "resources/customDomains.css" ]
+		},
 		"ext.skywiki.createWikiForm.styles": {
 			"styles": [ "resources/createWikiForm.css" ]
 		},

@@ -495,7 +495,8 @@ class RemoteWiki {
 		return $this->logParams;
 	}
 
-	public function commit(): void {
+	/** When the caller controls publication, it must rebuild caches after committing its transaction. */
+	public function commit( bool $publishCaches = true ): void {
 		if ( $this->hasChanges() ) {
 			if ( $this->newRows ) {
 				$dbw = $this->databaseUtils->getGlobalPrimaryDB();
@@ -526,11 +527,13 @@ class RemoteWiki {
 				}
 			}
 
-			if ( $this->resetDatabaseLists ) {
+			if ( $publishCaches && $this->resetDatabaseLists ) {
 				$this->dataStore->resetDatabaseLists( isNewChanges: true );
 			}
 
-			$this->hookRunner->onCreateWikiRemoteWikiCommit( $this->dbname );
+			if ( $publishCaches ) {
+				$this->hookRunner->onCreateWikiRemoteWikiCommit( $this->dbname );
+			}
 
 			if ( $this->log === null ) {
 				$this->log = 'settings';

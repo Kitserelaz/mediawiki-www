@@ -1,0 +1,52 @@
+(custom_domain_registry) {
+    forward_auth 127.0.0.1:8081 {
+        uri /route
+        header_up Host 127.0.0.1:8081
+        header_up X-CloudWiki-Lookup-Host {http.request.host}
+        header_up X-CloudWiki-Lookup-SNI {http.request.tls.server_name}
+        header_up X-CloudWiki-Lookup-Scheme {scheme}
+        header_up -Cookie
+        header_up -Authorization
+        copy_headers X-CloudWiki-Route-Wiki X-CloudWiki-Route-Host
+    }
+}
+
+http://127.0.0.1:8081 {
+    bind 127.0.0.1
+    route {
+        @lookup path /tls-allow /route
+        reverse_proxy @lookup php:9001 {
+            transport fastcgi {
+                env SCRIPT_FILENAME /opt/farm/custom-domain-lookup.php
+                env CLOUDWIKI_LOOKUP_HOST {http.request.header.X-CloudWiki-Lookup-Host}
+                env CLOUDWIKI_LOOKUP_SNI {http.request.header.X-CloudWiki-Lookup-SNI}
+                env CLOUDWIKI_LOOKUP_SCHEME {http.request.header.X-CloudWiki-Lookup-Scheme}
+            }
+        }
+        respond 404
+    }
+}
+
+https:// {
+    tls {
+        ca {$MW_CUSTOM_DOMAINS_ACME_CA:https://acme-v02.api.letsencrypt.org/directory}
+        on_demand
+    }
+    route {
+        request_header -X-CloudWiki-Route-Wiki
+        request_header -X-CloudWiki-Route-Host
+        import custom_domain_registry
+        vars cloudwiki_custom_wiki {http.request.header.X-CloudWiki-Route-Wiki}
+        vars cloudwiki_custom_host {http.request.header.X-CloudWiki-Route-Host}
+        import wiki
+    }
+}
+
+http:// {
+    route {
+        request_header -X-CloudWiki-Route-Host
+        request_header -X-CloudWiki-Route-Wiki
+        import custom_domain_registry
+        redir https://{http.request.header.X-CloudWiki-Route-Host}{uri} 308
+    }
+}

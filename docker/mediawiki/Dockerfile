@@ -40,6 +40,7 @@ COPY --link mediawiki/docs/ ./docs/
 COPY --link mediawiki/*.php ./
 COPY --link mediawiki/composer.json mediawiki/composer.local.json mediawiki/composer.lock mediawiki/README.md mediawiki/INSTALL mediawiki/UPGRADE mediawiki/FAQ mediawiki/COPYING mediawiki/CREDITS mediawiki/HISTORY mediawiki/SECURITY mediawiki/RELEASE-NOTES-1.46 ./
 COPY --link docker/mediawiki/ /opt/farm/
+COPY --link docker/mediawiki/custom-domain-fpm.conf /usr/local/etc/php-fpm.d/
 COPY --link docker/mediawiki/ ./docker/mediawiki/
 COPY --link docker/mediawiki/private.php ./PrivateSettings.php
 RUN mkdir -p images cw_cache cache /var/www/dumps /var/log/mediawiki \

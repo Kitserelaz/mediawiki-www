@@ -1,12 +1,16 @@
 {
     admin off
     email {$ACME_EMAIL}
+    on_demand_tls {
+        ask http://127.0.0.1:8081/tls-allow
+    }
 }
 import /etc/caddy/wiki.caddy
+import /etc/caddy/custom-domains.caddy
 https://counter.{$MW_DOMAIN} {
     reverse_proxy counter:3000
 }
-# Explicit host list avoids unbounded on-demand issuance and DNS-provider dependencies.
+# Farm and service hostnames use their explicit routes.
 {$MW_PUBLIC_HOSTS} {
     import wiki
 }

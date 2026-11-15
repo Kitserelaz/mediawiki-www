@@ -47,6 +47,10 @@ function farmSiteConfiguration(): void {
         foreach (MirahezeFunctions::readDbListFile('databases', false) as $wiki => $metadata) {
             $servers[$wiki] = $metadata['u'] ?? 'https://' . preg_replace('/wiki$/', '', $wiki) . '.' . $domain;
         }
+        $customRoute = MirahezeFunctions::getCustomDomainRoute();
+        if ($customRoute) {
+            $servers[$customRoute[0]] = 'https://' . $customRoute[1];
+        }
     }
     $wgConf->settings['wgServer'] = $servers;
     // Share the populated farm configuration for ManageWiki remote lookups.
@@ -195,7 +199,9 @@ function farmRuntime(): void {
         // Retain deliberately configured local custom domains while translating
         // restored production hosts into the isolated development farm.
         $configuredHost = parse_url($wgServer, PHP_URL_HOST);
-        if (!$configuredHost || ($configuredHost !== $domain && !str_ends_with($configuredHost, ".$domain"))) {
+        $verifiedCustomHost = getenv('MW_CUSTOM_DOMAINS_ROUTING') === '1' &&
+            $configuredHost && $configuredHost === ($_SERVER['CLOUDWIKI_CUSTOM_HOST'] ?? null);
+        if (!$verifiedCustomHost && (!$configuredHost || ($configuredHost !== $domain && !str_ends_with($configuredHost, ".$domain")))) {
             $wgServer = 'https://' . preg_replace('/wiki$/', '', $wgDBname ?? 'metawiki') . ".$domain";
         }
         $wgCanonicalServer = (($_SERVER['HTTP_HOST'] ?? '') === "auth.$domain") ? "https://auth.$domain" : $wgServer;

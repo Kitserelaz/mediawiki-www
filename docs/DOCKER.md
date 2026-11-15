@@ -294,7 +294,16 @@ Validate without starting services:
 docker compose --env-file .env.production config --quiet
 ```
 
-Caddy publishes public 80/443 and issues certificates for explicitly listed hosts. Add newly created wiki domains to the configured host list and recreate web; custom domains also need matching farm metadata and DNS. The implementation deliberately avoids unrestricted on-demand certificate issuance. Ensure hosts resolve to the deployment and inbound HTTP validation can reach port 80.
+Caddy publishes public 80/443. Explicit service hosts and the optional farm wildcard follow their configured TLS policies. External custom hostnames use a separate certificate policy backed by a private lookup of DNS-verified claims.
+
+### Self-service custom domains
+
+1. Deploy the PHP and web changes with `MW_CUSTOM_DOMAINS_ROUTING=0` and `MW_CUSTOM_DOMAINS_ENABLED=0`. Use `scripts/farm update` to create both registry tables in `wikidb` before enabling routing. Keep any legacy external domains in the explicit `MW_PUBLIC_HOSTS` list and retain their current wiki metadata. Those hostnames are excluded from self-service.
+2. Publish a DNS-only ingress name at `custom-domains.cloudwiki.us` (override with `MW_CUSTOM_DOMAINS_TARGET`). Its A and AAAA records must point directly to Caddy on public ports 80 and 443. Publish AAAA only where IPv6 ingress works. For apex domains, use DNS flattening to the ingress name or its published addresses.
+3. Rehearse in an isolated deployment with `MW_CUSTOM_DOMAINS_ACME_CA=https://acme-staging-v02.api.letsencrypt.org/directory`. Mount the staging trust bundle into the scheduler and set `MW_CUSTOM_DOMAINS_PROBE_CA` to that in-container path. Verify one CNAME and one apex mapping. Production uses the default public ACME endpoint and system trust.
+4. Set both flags to `1` and recreate the PHP and scheduler services through the reviewed production configuration. Wiki bureaucrats and farm stewards can then use `Special:CustomDomains/<subdomain>` on Meta. Scheduler work runs once a minute, with retry delays on transient DNS or TLS errors. Look for denied issuance or registry errors in the web and PHP logs.
+
+Set `MW_CUSTOM_DOMAINS_ENABLED=0` to pause new setup and activation. While `MW_CUSTOM_DOMAINS_ROUTING=1`, existing domains can renew, serve traffic, and be removed. Before disabling routing or rolling back to an older release, remove managed domains on Meta and verify their built-in addresses serve again. Keep the legacy RequestSSL workflow disabled when self-service is enabled.
 
 Rehearse restore, schema updates, cross-domain authentication, private uploads, wiki creation, jobs, dumps, search, and backup restoration before a write freeze. During cutover: stop writes/jobs, take a final coordinated snapshot, restore it, run explicit updates, validate, then switch traffic. Monitor HTTP errors, service health, job backlog, database connections, and free storage.
 

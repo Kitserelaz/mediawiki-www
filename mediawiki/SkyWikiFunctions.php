@@ -313,6 +313,11 @@ class MirahezeFunctions {
 			return MW_DB;
 		}
 
+		$customRoute = self::getCustomDomainRoute();
+		if ( $customRoute ) {
+			return $customRoute[0];
+		}
+
 		$hostname = $_SERVER['HTTP_HOST'] ?? 'undefined';
 		if ( in_array( $hostname, self::SHARED_DOMAIN, true ) ) {
 			$requestUri = $_SERVER['REQUEST_URI'];
@@ -440,15 +445,39 @@ class MirahezeFunctions {
 	 * @return string
 	 */
 	public static function getServer(): string {
+		$customRoute = self::getCustomDomainRoute();
+		if ( $customRoute ) {
+			return 'https://' . $customRoute[1];
+		}
 		self::$currentDatabase ??= self::getCurrentDatabase();
 
 		return self::getServers( self::$currentDatabase ?: 'default' );
+	}
+
+	public static function getCustomDomainRoute(): ?array {
+		if ( !getenv( 'MW_DOCKER' ) || getenv( 'MW_CUSTOM_DOMAINS_ROUTING' ) !== '1' ) {
+			return null;
+		}
+		// These are FastCGI parameters set by Caddy. Client headers get an HTTP_ prefix.
+		$wiki = $_SERVER['CLOUDWIKI_CUSTOM_WIKI'] ?? '';
+		$host = $_SERVER['CLOUDWIKI_CUSTOM_HOST'] ?? '';
+		$requestHost = preg_replace( '/:443$/D', '', $_SERVER['HTTP_HOST'] ?? '' );
+		if ( !preg_match( '/^[a-z0-9][a-z0-9_-]{0,63}$/D', $wiki ) ||
+			!preg_match( '/^[a-z0-9.-]+$/D', $host ) ||
+			$host !== strtolower( rtrim( $requestHost, '.' ) )
+		) {
+			return null;
+		}
+		return [ $wiki, $host ];
 	}
 
 	public function setServers() {
 		global $wgConf, $wgServer;
 
 		$wgConf->settings['wgServer'] = self::getServers( null, true );
+		if ( self::getCustomDomainRoute() ) {
+			$wgConf->settings['wgServer'][$this->dbname] = $this->server;
+		}
 		$wgServer = $this->server;
 	}
 

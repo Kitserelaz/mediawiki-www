@@ -25,6 +25,11 @@ x-farm: &farm
     MW_EMAIL_ENABLED: ${MW_EMAIL_ENABLED:-1}
     MW_LEGACY_BRANDING: ${MW_LEGACY_BRANDING:-1}
     MW_SSL_REQUESTS: ${MW_SSL_REQUESTS:-0}
+    MW_CUSTOM_DOMAINS_ROUTING: ${MW_CUSTOM_DOMAINS_ROUTING:-0}
+    MW_CUSTOM_DOMAINS_ENABLED: ${MW_CUSTOM_DOMAINS_ENABLED:-0}
+    MW_CUSTOM_DOMAINS_TARGET: ${MW_CUSTOM_DOMAINS_TARGET:-custom-domains.${MW_DOMAIN:-localhost}}
+    MW_CUSTOM_DOMAINS_PROBE_CA: ${MW_CUSTOM_DOMAINS_PROBE_CA:-}
+    MW_PUBLIC_HOSTS: ${MW_PUBLIC_HOSTS:-}
     MW_SMTP_HOST: ${MW_SMTP_HOST:-mailpit}
     MW_SMTP_PORT: ${MW_SMTP_PORT:-1025}
     MW_SEARCH: ${MW_SEARCH:-0}
@@ -72,6 +77,7 @@ services:
     volumes:
       - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./docker/caddy/wiki.caddy:/etc/caddy/wiki.caddy:ro
+      - ./docker/caddy/custom-domains.caddy:/etc/caddy/custom-domains.caddy:ro
       - uploads:${MW_UPLOAD_ROOT:-/var/www/mediawiki/images}:ro
       - caddy-data:/data
       - caddy-config:/config

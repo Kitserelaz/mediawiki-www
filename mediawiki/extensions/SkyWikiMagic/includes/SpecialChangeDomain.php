@@ -11,6 +11,7 @@ use Miraheze\CreateWiki\ConfigNames;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\RemoteWikiFactory;
 use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\MediaWikiServices;
 
 class SpecialChangeDomain extends SpecialPage {
 
@@ -152,6 +153,18 @@ class SpecialChangeDomain extends SpecialPage {
 				Html::errorBox( $this->msg( 'managewiki-error-nopermission' )->escaped() )
 			);
 			return;
+		}
+
+		if ( CustomDomainConfig::routingEnabled() ) {
+			$wiki = $params['wiki'];
+			$store = MediaWikiServices::getInstance()->get( 'SkyWikiCustomDomains' )->store;
+			$builtin = CustomDomainConfig::slug( $wiki ) . '.' . \MirahezeFunctions::getPrimaryDomain( $wiki );
+			$nextHost = parse_url( $params['subdomain'], PHP_URL_HOST );
+			if ( $store->active( $wiki ) || $store->state( $wiki )?->cd_candidate ||
+				( $params['subdomain'] !== '' && $nextHost !== $builtin )
+			) {
+				return $this->msg( 'customdomains-use-page' );
+			}
 		}
 
 		$remoteWiki->setServerName( $params['subdomain'] );

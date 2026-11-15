@@ -10,6 +10,17 @@
     "per_wiki": false
   },
   {
+    "name": "process-custom-domains",
+    "interval_seconds": 60,
+    "command": [
+      "php",
+      "maintenance/run.php",
+      "/opt/farm/process-custom-domains.php",
+      "--wiki=metawiki"
+    ],
+    "per_wiki": false
+  },
+  {
     "name": "recover-archive-imports",
     "interval_seconds": 60,
     "command": [

@@ -45,6 +45,8 @@
         @entry path_regexp entry ^/(index|api|load|rest|img_auth|thumb|thumb_handler|opensearch_desc)\.php(/.*)?$
         handle @entry {
             php_fastcgi php:9000 {
+                env CLOUDWIKI_CUSTOM_WIKI {http.vars.cloudwiki_custom_wiki}
+                env CLOUDWIKI_CUSTOM_HOST {http.vars.cloudwiki_custom_host}
                 env HTTPS on
                 env HTTP_X_FORWARDED_PROTO https
                     env REQUEST_URI {http.request.orig_uri}
@@ -56,6 +58,8 @@
         handle @upload {
             rewrite * /img_auth.php/{re.upload.1}
             php_fastcgi php:9000 {
+                env CLOUDWIKI_CUSTOM_WIKI {http.vars.cloudwiki_custom_wiki}
+                env CLOUDWIKI_CUSTOM_HOST {http.vars.cloudwiki_custom_host}
                 env HTTPS on
                 env HTTP_X_FORWARDED_PROTO https
                     env REQUEST_URI {http.request.orig_uri}

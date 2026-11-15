@@ -48,6 +48,10 @@
 				"WikiRequestManager"
 			]
 		},
+		"CustomDomains": {
+			"class": "WikiOasis\\WikiOasisMagic\\SpecialCustomDomains",
+			"services": [ "CreateWikiDatabaseUtils", "SkyWikiCustomDomains" ]
+		},
 		"ChangeDomain": {
 			"class": "WikiOasis\\WikiOasisMagic\\SpecialChangeDomain",
 			"services": [
@@ -56,6 +60,7 @@
 			]
 		}
 	},
+	"ServiceWiringFiles": [ "includes/CustomDomainServices.php" ],
 	"APIModules": {
 		"skywikisubdomain": {
 			"class": "WikiOasis\\WikiOasisMagic\\ApiSubdomain",
@@ -95,6 +100,9 @@
 		"createnewwiki"
 	],
 	"Hooks": {
+		"LoadExtensionSchemaUpdates": "CustomDomainSchema",
+		"CreateWikiTables": "CustomDomainSchema",
+		"MediaWikiPerformAction": "CustomDomainRedirect",
 		"ParserFirstCallInit": "CreateWikiForm",
 		"AuthChangeFormFields": {
 			"handler": "RegistrationHeader"
@@ -140,6 +148,12 @@
 		}
 	},
 	"HookHandlers": {
+		"CustomDomainSchema": {
+			"class": "WikiOasis\\WikiOasisMagic\\HookHandlers\\CustomDomainSchema"
+		},
+		"CustomDomainRedirect": {
+			"class": "WikiOasis\\WikiOasisMagic\\HookHandlers\\CustomDomainRedirect"
+		},
 		"CreateWikiForm": {
 			"class": "WikiOasis\\WikiOasisMagic\\HookHandlers\\CreateWikiForm",
 			"services": [ "CreateWikiDatabaseUtils" ]

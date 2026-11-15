@@ -38,8 +38,14 @@ class RemoveCustomDomain extends Maintenance {
 	}
 
 	public function execute(): void {
+		$services = $this->getServiceContainer();
+		if ( getenv( 'MW_CUSTOM_DOMAINS_ROUTING' ) === '1' && $services->has( 'SkyWikiCustomDomains' ) &&
+			$services->get( 'SkyWikiCustomDomains' )->store->active( $this->getOption( 'dbname' ) )
+		) {
+			$this->fatalError( 'Remove this managed hostname through Special:CustomDomains on Meta.' );
+		}
 		$this->output( "Removing custom domain for " . $this->getOption( 'dbname' ) . "\n" );
-		$moduleFactory = $this->getServiceContainer()->get( 'ManageWikiModuleFactory' );
+		$moduleFactory = $services->get( 'ManageWikiModuleFactory' );
 		$mwCore = $moduleFactory->core( $this->getOption( 'dbname' ) );
 		$mwCore->setServerName( "" );
 		$mwCore->commit();

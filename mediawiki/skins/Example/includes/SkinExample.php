@@ -53,11 +53,10 @@ class SkinExample extends SkinMustache {
 				->getBoolOption( $this->getUser(), 'showhiddencats' );
 		$copyright = $this->getCopyright();
 		$title = $this->getTitle();
-		$signedIn = $this->getUser()->isRegistered() && !$this->getUser()->isTemp();
-		$articleLayout = $signedIn && $data['is-article'] && $title->exists() &&
-			!$title->isTalkPage() && !$title->isMainPage() &&
-			$this->getRequest()->getVal( 'action', 'view' ) === 'view' &&
-			!$this->getRequest()->getCheck( 'printable' );
+		$signedInPage = $this->getUser()->isNamed();
+		$homeLayout = $signedInPage && $data['is-mainpage'];
+		$articleLayout = $signedInPage && !$homeLayout;
+		$talkPage = $signedInPage && !$title->isTalkPage() ? $title->getTalkPageIfDefined() : null;
 
 		$sections = $articleLayout
 			? ( new SkinComponentTableOfContents( $this->getOutput() ) )->getTemplateData()['array-sections'] ?? []
@@ -99,6 +98,37 @@ class SkinExample extends SkinMustache {
 			}
 		}
 
+		$toolbarTools = [
+			'watch' => [ 'watch', $watchAction['url'] ?? null, $watchAction['label'] ?? null ],
+			'history' => [ 'example-history', $views['ca-history'] ?? null ],
+			'edit' => [ 'edit', $views['ca-ve-edit'] ?? $views['ca-edit'] ?? null ],
+			'whatlinkshere' => [ 'whatlinkshere' ],
+			'recentchangeslinked' => [ 'recentchangeslinked-toolbox' ],
+			'upload' => [ 'upload' ],
+			'permalink' => [ 'permalink' ],
+			'info' => [ 'pageinfo-toolboxlink' ],
+			'recentchanges' => [ 'recentchanges', SpecialPage::getTitleFor( 'Recentchanges' )->getLocalURL() ],
+			'specialpages' => [ 'specialpages', SpecialPage::getTitleFor( 'Specialpages' )->getLocalURL() ],
+			'watchlist' => [ 'mywatchlist', SpecialPage::getTitleFor( 'Watchlist' )->getLocalURL() ],
+		];
+		$toolCatalog = [];
+		if ( $signedInPage ) {
+			foreach ( $toolbarTools as $key => $tool ) {
+				$url = $tool[1] ?? null;
+				foreach ( $toolbox[$key]['array-links'][0]['array-attributes'] ?? [] as $attribute ) {
+					if ( $attribute['key'] === 'href' ) {
+						$url ??= $attribute['value'];
+						break;
+					}
+				}
+				$toolCatalog[] = [
+					'key' => $key,
+					'label' => $tool[2] ?? $this->msg( $tool[0] )->text(),
+					'url' => $url,
+				];
+			}
+		}
+
 		$railItem = function ( string $name, string $icon, ?string $url = null, string $class = '' ): array {
 			return [
 				'label' => $this->msg( "example-$name" )->text(),
@@ -110,6 +140,8 @@ class SkinExample extends SkinMustache {
 		};
 
 		return $data + [
+			'signed-in-page' => $signedInPage,
+			'signed-in-home' => $homeLayout,
 			'signed-in-article' => $articleLayout,
 			'page-tools' => array_values( $pageTools ),
 			'page-sections' => $sections,
@@ -117,8 +149,12 @@ class SkinExample extends SkinMustache {
 			'normal-category-count' => !empty( $categories['normal'] ),
 			'category-count-label' => $this->msg( 'example-in-categories' )
 				->numParams( count( $categories['normal'] ?? [] ) )->text(),
-			'talk-url' => $articleLayout ? $title->getTalkPage()->getLocalURL() : null,
+			'talk-url' => $talkPage?->getLocalURL(),
 			'watch-action' => $watchAction,
+			'toolbar-tools' => $toolCatalog,
+			'toolbar-specialpages-url' => SpecialPage::getTitleFor( 'Specialpages' )->getLocalURL(),
+			'toolbar-preference' => $signedInPage ? MediaWikiServices::getInstance()->getUserOptionsLookup()
+				->getOption( $this->getUser(), 'userjs-example-toolbar' ) : null,
 			'watchlist-url' => SpecialPage::getTitleFor( 'Watchlist' )->getLocalURL(),
 			'recent-changes-url' => SpecialPage::getTitleFor( 'Recentchanges' )->getLocalURL(),
 			'preferences-url' => SpecialPage::getTitleFor( 'Preferences' )->getLocalURL(),
@@ -142,7 +178,7 @@ class SkinExample extends SkinMustache {
 				$railItem( 'home', 'wds-icons-home-small', $data['link-mainpage'] ),
 				$railItem( 'explore', 'example-compass', SpecialPage::getTitleFor( 'AllPages' )->getLocalURL() ),
 				$railItem( 'saved', 'wds-icons-ribbon-small' ),
-				...( $articleLayout ? [ $railItem( 'ranks', 'example-ranks' ) ] : [] ),
+				...( $signedInPage ? [ $railItem( 'ranks', 'example-ranks' ) + [ 'new-badge' => true ] ] : [] ),
 				$railItem( 'progress', 'wds-icons-checkbox-circle-small' ),
 				$railItem( 'history', 'wds-icons-history-small', $views['ca-history'] ?? null ),
 				$railItem( 'utilities', 'wds-icons-grid-utils',

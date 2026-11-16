@@ -1,13 +1,13 @@
 {{>NavigationIcons}}
-{{^signed-in-article}}
+{{^signed-in-page}}
 <div class="notifications-placeholder">
 	{{#data-portlets.data-notifications}}{{>Portlet}}{{/data-portlets.data-notifications}}
 </div>
-{{/signed-in-article}}
-{{^signed-in-article}}{{>GlobalHeader}}{{/signed-in-article}}
-{{#signed-in-article}}{{>ArticleNavigation}}{{/signed-in-article}}
+{{/signed-in-page}}
+{{^signed-in-page}}{{>GlobalHeader}}{{/signed-in-page}}
+{{#signed-in-page}}{{>ArticleNavigation}}{{/signed-in-page}}
 {{>GlobalRail}}
-<div class="main-container{{#signed-in-article}} example-signed-in-article{{/signed-in-article}}">
+<div class="main-container{{#signed-in-page}} example-signed-in-page{{/signed-in-page}}{{#signed-in-home}} example-signed-in-home{{/signed-in-home}}">
 	<div class="fandom-community-header__background cover header" style="--image-ratio:0.44829647340108"></div>
 	<div class="resizable-container{{#signed-in-article}} resizable-container--has-right-rail{{/signed-in-article}}">
 		<a class="example-skip" href="#page-header">{{msg-example-skip}}</a>
@@ -25,10 +25,10 @@
 						<div class="page-counter__label">{{msg-example-pages}}</div>
 					</a></div>
 					<div class="wiki-tools wds-button-group">
-						{{^signed-in-article}}<button class="wds-button wds-is-secondary" type="button" disabled aria-label="{{msg-example-discuss}}"><svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-discussions-small"/></svg></button>{{/signed-in-article}}
-						{{#signed-in-article}}<a class="wds-button wds-is-secondary" href="{{talk-url}}" aria-label="{{msg-example-discuss}}"><svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-discussions-small"/></svg></a><a class="wds-button wds-is-secondary" href="{{recent-changes-url}}" aria-label="{{msg-recentchanges}}"><svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-activity-small"/></svg></a>{{/signed-in-article}}
+						{{^signed-in-page}}<button class="wds-button wds-is-secondary" type="button" disabled aria-label="{{msg-example-discuss}}"><svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-discussions-small"/></svg></button>{{/signed-in-page}}
+						{{#signed-in-page}}{{#talk-url}}<a class="wds-button wds-is-secondary" href="{{talk-url}}" aria-label="{{msg-example-discuss}}"><svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-discussions-small"/></svg></a>{{/talk-url}}<a class="wds-button wds-is-secondary" href="{{recent-changes-url}}" aria-label="{{msg-recentchanges}}"><svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-activity-small"/></svg></a>{{/signed-in-page}}
 						<button class="wds-button wds-is-secondary wiki-tools__theme-switch" type="button" aria-label="{{msg-example-theme-light}}" data-label-light="{{msg-example-theme-light}}" data-label-dark="{{msg-example-theme-dark}}"><svg class="wds-icon wds-icon-small" aria-hidden="true"><use class="example-theme-dark" href="#wds-icons-sun-small"/><use class="example-theme-light" href="#wds-icons-moon-small"/></svg></button>
-						{{#signed-in-article}}<button type="button" class="wds-button wds-is-secondary example-page-tools-trigger" data-disclosure="example-page-tools-toggle" aria-label="{{msg-example-page-tools}}"><svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-more-small"/></svg></button>{{/signed-in-article}}
+						{{#signed-in-page}}<button type="button" class="wds-button wds-is-secondary example-page-tools-trigger" data-disclosure="example-page-tools-toggle" aria-label="{{msg-example-page-tools}}"><svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-more-small"/></svg></button>{{/signed-in-page}}
 					</div>
 				</div>
 				{{{html-wiki-navigation}}}
@@ -51,4 +51,4 @@
 	{{#data-footer}}{{>Footer}}{{/data-footer}}
 </div>
 
-{{#signed-in-article}}{{>ArticleToolbar}}{{/signed-in-article}}
+{{#signed-in-page}}{{>ArticleToolbar}}{{/signed-in-page}}

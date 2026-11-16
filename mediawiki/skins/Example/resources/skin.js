@@ -129,9 +129,16 @@ document.querySelectorAll( '.example-disclosure' ).forEach( ( menu ) => {
 		toggle.setAttribute( 'aria-expanded', String( open ) );
 		panel.hidden = !open;
 	};
-	disclosures.set( toggle.id, setOpen );
+	if ( toggle.id ) {
+		disclosures.set( toggle.id, setOpen );
+	}
 
-	toggle.addEventListener( 'click', () => setOpen( panel.hidden ) );
+	toggle.addEventListener( 'click', () => {
+		setOpen( panel.hidden );
+		if ( !panel.hidden ) {
+			toggle.focus();
+		}
+	} );
 	document.addEventListener( 'click', ( event ) => {
 		if ( !menu.contains( event.target ) &&
 			event.target.closest( '.example-page-tools-trigger' )?.dataset.disclosure !== toggle.id
@@ -161,9 +168,45 @@ document.querySelectorAll( '.example-page-tools-trigger' ).forEach( ( trigger ) 
 	} );
 } );
 
-document.querySelector( '.example-toolbar-close' )?.addEventListener( 'click', ( event ) => {
-	event.currentTarget.closest( '.example-article-toolbar' ).hidden = true;
-} );
+const toolbar = document.getElementById( 'example-article-toolbar' );
+if ( toolbar ) {
+	require( './toolbar.js' )( toolbar );
+	const closeToolbar = toolbar.querySelector( '.example-toolbar-close' );
+	const showToolbar = document.querySelector( '.example-toolbar-show' );
+	closeToolbar.addEventListener( 'click', () => {
+		toolbar.hidden = true;
+		showToolbar.hidden = false;
+		showToolbar.focus();
+	} );
+	showToolbar.addEventListener( 'click', () => {
+		toolbar.hidden = false;
+		showToolbar.hidden = true;
+		closeToolbar.focus();
+	} );
+}
+
+const railToggle = document.querySelector( '.example-rail-toggle' );
+if ( railToggle ) {
+	const rail = railToggle.closest( '.example-article-rail' );
+	const overview = document.getElementById( railToggle.getAttribute( 'aria-controls' ) );
+	const desktopRail = window.matchMedia( '(min-width: 1280px)' );
+	let collapsed = false;
+
+	const updateRail = () => {
+		const hideOverview = desktopRail.matches && collapsed;
+		const label = hideOverview ? railToggle.dataset.labelShow : railToggle.dataset.labelHide;
+		rail.classList.toggle( 'is-rail-hidden', hideOverview );
+		overview.hidden = hideOverview;
+		railToggle.setAttribute( 'aria-expanded', String( !hideOverview ) );
+		railToggle.setAttribute( 'aria-label', label );
+	};
+
+	railToggle.addEventListener( 'click', () => {
+		collapsed = !collapsed;
+		updateRail();
+	} );
+	desktopRail.addEventListener( 'change', updateRail );
+}
 
 const recentActivity = document.querySelector( '.example-recent-activity' );
 if ( recentActivity ) {

@@ -1,27 +1,27 @@
 <div class="community-navigation__fandom-heart example-article-heart">
 		<a href="{{link-mainpage}}" class="community-navigation__fandom-heart__link" aria-label="{{msg-mainpage}}"><svg class="wds-icon" aria-hidden="true"><use href="#wds-brand-fandom-logomark"/></svg></a>
 	</div>
-<div id="community-navigation" class="community-navigation fandom-sticky-header is-visible community-navigation--new-wiki-nav example-article-navigation" role="navigation" aria-label="{{msg-example-top-navigation}}">
+<div id="community-navigation" class="community-navigation fandom-sticky-header is-visible community-navigation--new-wiki-nav example-article-navigation{{#signed-in-home}} example-home-navigation{{/signed-in-home}}" role="navigation" aria-label="{{msg-example-top-navigation}}">
 	<div class="community-navigation__identity">
 		<a class="wds-button wds-is-text community-navigation__menu-button" href="{{all-pages-url}}" aria-label="{{msg-example-explore}}"><svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-page-list"/></svg></a>
 		<a class="fandom-sticky-header__logo community-navigation__logo" href="{{link-mainpage}}"><img src="{{community-logo}}" width="30" height="30" alt="{{msg-sitetitle}}"></a>
 		<div class="community-navigation__identity-text">
-			<strong class="community-navigation__article-name">{{{html-title}}}</strong>
+			<strong class="community-navigation__article-name">{{#signed-in-home}}{{msg-sitetitle}}{{/signed-in-home}}{{^signed-in-home}}{{{html-title}}}{{/signed-in-home}}</strong>
 			<a class="community-navigation__community-name" href="{{link-mainpage}}">{{msg-sitetitle}}</a>
 		</div>
 	</div>
 	{{>SearchBox}}
 	<div class="community-navigation__action-wrapper example-article-nav-actions">
-		<a class="wds-button example-article-nav-discuss" href="{{talk-url}}"><svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-comment-small"/></svg>{{msg-example-discuss}}</a>
-		<button class="wds-button example-article-nav-save" type="button" disabled><svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-ribbon-small"/></svg>{{msg-example-save}}</button>
-		<div class="wds-dropdown example-disclosure">
+		{{#signed-in-article}}{{#talk-url}}<a class="wds-button example-article-nav-discuss" href="{{talk-url}}"><svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-comment-small"/></svg>{{msg-example-discuss}}</a>{{/talk-url}}{{/signed-in-article}}
+		{{#is-article}}<button class="wds-button example-article-nav-save" type="button" disabled><svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-ribbon-small"/></svg>{{msg-example-save}}</button>{{/is-article}}
+		<div class="wds-dropdown wds-is-not-hoverable example-disclosure">
 			<button class="wds-button wds-is-text wds-dropdown__toggle" type="button" aria-controls="example-article-notifications" aria-expanded="false" aria-label="{{msg-example-notifications}}"><svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-trophy"/></svg></button>
 			<div id="example-article-notifications" class="wds-dropdown__content wds-is-right-aligned" hidden>
 				{{#data-portlets.data-notifications}}{{>Portlet}}{{/data-portlets.data-notifications}}
 				<a class="example-notifications-link" href="{{watchlist-url}}">{{msg-watchlist}}</a>
 			</div>
 		</div>
-		<div class="wds-dropdown example-disclosure">
+		<div class="wds-dropdown wds-is-not-hoverable example-disclosure">
 			<button class="wds-button wds-is-text wds-dropdown__toggle" type="button" aria-controls="example-article-account" aria-expanded="false" aria-label="{{msg-example-user-menu}}"><svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-avatar"/></svg></button>
 			<div id="example-article-account" class="wds-dropdown__content wds-is-right-aligned" hidden>
 				{{#data-portlets.data-user-menu}}{{>Portlet}}{{/data-portlets.data-user-menu}}

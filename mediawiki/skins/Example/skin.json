@@ -75,7 +75,29 @@
 						"watchlist",
 						"close",
 						"example-notifications",
-						"example-ranks"
+						"example-ranks",
+						"example-new",
+						"example-rail-hide",
+						"example-rail-show",
+						"example-toolbar-show",
+						"hide",
+						"cancel",
+						"example-toolbar-title",
+						"example-toolbar-add-title",
+						"example-toolbar-search",
+						"example-toolbar-advanced",
+						"example-toolbar-popular",
+						"example-toolbar-list",
+						"example-toolbar-reset",
+						"example-toolbar-add",
+						"example-toolbar-remove",
+						"example-toolbar-up",
+						"example-toolbar-down",
+						"example-toolbar-move-menu",
+						"example-toolbar-move-bar",
+						"example-toolbar-rename",
+						"example-toolbar-empty",
+						"example-toolbar-error"
 					],
 					"styles": [
 						"skins.example.styles"
@@ -114,7 +136,8 @@
 		},
 		"skins.example": {
 			"packageFiles": [
-				"resources/skin.js"
+				"resources/skin.js",
+				"resources/toolbar.js"
 			],
 			"dependencies": [
 				"mediawiki.storage",

@@ -1,6 +1,13 @@
 <aside class="page__right-rail example-article-rail">
-	<a class="example-rail-jump page-side-tool" href="{{all-pages-url}}" aria-label="{{msg-example-explore}}"><svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-grid-small"/></svg></a>
-	<div class="right-rail-wrapper">
+	<button type="button" class="example-rail-toggle page-side-tool" aria-controls="example-rail-overview" aria-expanded="true" aria-label="{{msg-example-rail-hide}}" data-label-hide="{{msg-example-rail-hide}}" data-label-show="{{msg-example-rail-show}}">
+		<svg class="wds-icon example-rail-grid" aria-hidden="true"><use href="#wds-icons-grid-small"/></svg>
+		<svg class="wds-icon example-rail-chevron" aria-hidden="true"><use href="#wds-icons-menu-control-tiny"/></svg>
+		<span class="wds-tooltip example-rail-tooltip" aria-hidden="true">
+			<span class="example-rail-tooltip-hide">{{msg-hide}}</span>
+			<span class="example-rail-tooltip-show">{{msg-example-rail-show}}</span>
+		</span>
+	</button>
+	<div id="example-rail-overview" class="right-rail-wrapper">
 		<section class="rail-module page-tools-module">
 			<h2 class="rail-module__header">{{msg-example-page-tools}}</h2>
 			<ul class="rail-module__list">{{#page-tools}}{{{html-item}}}{{/page-tools}}</ul>

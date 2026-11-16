@@ -97,6 +97,7 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 			],
 			'dbname' => [
 				'label-message' => 'createnewwiki-label-subdomain',
+				'help-message' => 'createwiki-help-subdomain',
 				'section' => 'placeholder-subdomain',
 				#'label' => "." . $this->getConfig()->get( 'CreateWikiSubdomain' ),
 				'cssclass' => 'subdomain',
@@ -113,6 +114,7 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 			'sitename' => [
 				'section' => 'createnewwiki-placeholder-sitename',
 				'label-message' => 'createwiki-label-sitename',
+				'help-message' => 'createwiki-help-sitename',
 				'placeholder-message' => 'createnewwiki-placeholder-sitename',
 				'type' => 'text',
 				'size' => 20,
@@ -130,6 +132,7 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 			$formDescriptor['private'] = [
 				'type' => 'check',
 				'label-message' => 'createwiki-label-private',
+				'help-message' => 'createwiki-help-private',
 			];
 		}
 
@@ -139,6 +142,7 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 				'section' => 'category',
 				'type' => 'select',
 				'label-message' => 'createwiki-label-category',
+				'help-message' => 'createwiki-help-category',
 				'options' => WikiCategoryLabels::getOptions(
 					$this->getContext(), $this->getConfig()->get( ConfigNames::Categories )
 				),
@@ -404,6 +408,33 @@ class SpecialCreateNewWiki extends FormSpecialPage {
                                 }
                                 .oo-ui-fieldsetLayout-group > .oo-ui-widget > div > * {
                                         margin: 0;
+				}
+				/* Keep the category icon beside the dropdown when help wraps below it. */
+				.oo-ui-fieldsetLayout-group > .oo-ui-widget > #mw-htmlform-category {
+					display: grid;
+					grid-template-columns: max-content 24px minmax(0, 1fr);
+				}
+				#mw-htmlform-category > .mw-htmlform-field-HTMLSelectField,
+				#mw-htmlform-category > .mw-htmlform-field-HTMLSelectField > .oo-ui-fieldLayout-body {
+					display: contents;
+				}
+				#mw-htmlform-category .mw-htmlform-field-HTMLSelectField .oo-ui-fieldLayout-header {
+					grid-area: 1 / 1 / 2 / -1;
+				}
+				#mw-htmlform-category #mw-input-wpcategory {
+					vertical-align: top;
+				}
+				#mw-htmlform-category .mw-htmlform-field-HTMLSelectField .oo-ui-fieldLayout-field {
+					grid-area: 2 / 1;
+				}
+				#mw-htmlform-category > .mw-htmlform-field-HTMLInfoField {
+					grid-area: 2 / 2;
+				}
+				#mw-htmlform-category .oo-ui-inline-help {
+					grid-area: 3 / 1 / 4 / -1;
+				}
+				#mw-htmlform-category .oo-ui-fieldLayout-messages {
+					grid-area: 4 / 1 / 5 / -1;
 				}
                                 #mw-content-text .mw-htmlform-field-HTMLTextField {
                                         width: 100%;

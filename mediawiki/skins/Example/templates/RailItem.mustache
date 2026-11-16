@@ -2,6 +2,7 @@
 	{{#url}}<div class="global-explore-navigation__button"><a class="{{link-class}}" href="{{url}}">{{/url}}
 	{{^url}}<button type="button" class="global-explore-navigation__button" disabled>{{/url}}
 		<span class="wds-avatar wds-avatar--square">
+			{{#new-badge}}<span class="example-rail-new">{{msg-example-new}}</span>{{/new-badge}}
 			<span class="global-explore-navigation__icon"><svg class="wds-icon wds-icon-small" aria-hidden="true" focusable="false"><use href="#{{icon}}"/></svg></span>
 			<span class="global-explore-navigation__label">{{label}}</span>
 		</span>

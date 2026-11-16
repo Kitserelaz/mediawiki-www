@@ -1,0 +1,38 @@
+<template id="example-toolbar-catalog">
+	{{#toolbar-tools}}<span data-key="{{key}}" data-url="{{url}}">{{label}}</span>{{/toolbar-tools}}
+</template>
+<dialog id="example-toolbar-dialog" class="user-tools-modal__wrapper example-toolbar-dialog" aria-labelledby="example-toolbar-title"
+	data-add="{{msg-example-toolbar-add}}" data-remove="{{msg-example-toolbar-remove}}" data-up="{{msg-example-toolbar-up}}" data-down="{{msg-example-toolbar-down}}"
+	data-move-menu="{{msg-example-toolbar-move-menu}}" data-move-bar="{{msg-example-toolbar-move-bar}}" data-rename="{{msg-example-toolbar-rename}}"
+	data-empty="{{msg-example-toolbar-empty}}" data-error="{{msg-example-toolbar-error}}">
+	<header class="example-toolbar-dialog-header">
+		<h2 id="example-toolbar-title">{{msg-example-toolbar-title}}</h2>
+		<button type="button" data-toolbar-cancel aria-label="{{msg-cancel}}"><svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-close-small"/></svg></button>
+	</header>
+	<div class="example-toolbar-dialog-body">
+		<section>
+			<label for="example-toolbar-search">{{msg-example-toolbar-add-title}}</label>
+			<div class="example-toolbar-search-box">
+				<input id="example-toolbar-search" type="search" placeholder="{{msg-example-toolbar-search}}" autocomplete="off">
+				<ul class="example-toolbar-matches" hidden></ul>
+				<a href="{{toolbar-specialpages-url}}">{{msg-example-toolbar-advanced}}</a>
+			</div>
+		</section>
+		<details class="example-toolbar-popular">
+			<summary>{{msg-example-toolbar-popular}} <svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-dropdown-tiny"/></svg></summary>
+			<ul></ul>
+		</details>
+		<section>
+			<div class="example-toolbar-list-heading">
+				<h3>{{msg-example-toolbar-list}}</h3>
+				<button type="button" data-toolbar-reset>{{msg-example-toolbar-reset}}</button>
+			</div>
+			<ul class="example-toolbar-options"></ul>
+		</section>
+		<p class="example-toolbar-error" role="alert" hidden></p>
+	</div>
+	<footer class="example-toolbar-dialog-actions">
+		<button type="button" class="wds-button wds-is-secondary" data-toolbar-cancel>{{msg-cancel}}</button>
+		<button type="button" class="wds-button" data-toolbar-save>{{msg-example-save}}</button>
+	</footer>
+</dialog>

@@ -1,0 +1,17 @@
+<div class="mijovia-header-leading">
+	<a href="{{link-mainpage}}" class="mijovia-header-logo"{{#no-community-logo}} hidden{{/no-community-logo}}>
+		<img {{#community-logo}}src="{{community-logo}}" {{/community-logo}}data-mijovia-default-logo="{{default-community-logo}}" width="30" height="30" alt="{{msg-sitetitle}}">
+	</a>
+	<div class="mijovia-header-heading">
+		<div class="mijovia-header-identity">
+			<strong>{{#html-title}}{{{html-title}}}{{/html-title}}{{^html-title}}{{msg-sitetitle}}{{/html-title}}</strong>
+			<a href="{{link-mainpage}}">{{msg-sitetitle}}</a>
+		</div>
+		<div class="mijovia-header-menu wds-dropdown wds-is-not-hoverable mijovia-disclosure" inert>
+			<button id="mijovia-header-menu-toggle" class="wds-button wds-is-text wds-dropdown__toggle mijovia-header-menu-button" type="button" aria-controls="mijovia-header-wiki-navigation" aria-expanded="false" aria-label="{{msg-mijovia-top-navigation}}">
+				<svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-page-list"/></svg>
+			</button>
+			<div id="mijovia-header-wiki-navigation" hidden>{{{html-header-wiki-navigation}}}</div>
+		</div>
+	</div>
+</div>

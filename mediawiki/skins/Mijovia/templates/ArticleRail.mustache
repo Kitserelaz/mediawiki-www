@@ -1,0 +1,23 @@
+<aside class="page__right-rail mijovia-article-rail">
+	<div class="mijovia-rail-toggle-tab">
+		<button type="button" class="mijovia-rail-toggle page-side-tool" aria-controls="mijovia-rail-overview" aria-expanded="true" aria-label="{{msg-mijovia-rail-hide}}" data-label-hide="{{msg-mijovia-rail-hide}}" data-label-show="{{msg-mijovia-rail-show}}">
+			<svg class="wds-icon mijovia-rail-grid" aria-hidden="true"><use href="#wds-icons-grid-small"/></svg>
+			<svg class="wds-icon mijovia-rail-chevron" aria-hidden="true"><use href="#wds-icons-menu-control-tiny"/></svg>
+			<span class="wds-tooltip mijovia-rail-tooltip" aria-hidden="true">
+				<span class="mijovia-rail-tooltip-hide">{{msg-hide}}</span>
+				<span class="mijovia-rail-tooltip-show">{{msg-mijovia-rail-show}}</span>
+			</span>
+		</button>
+	</div>
+	<div id="mijovia-rail-overview" class="right-rail-wrapper">
+		<section class="rail-module page-tools-module">
+			<h2 class="rail-module__header">{{msg-mijovia-page-tools}}</h2>
+			<ul class="rail-module__list">{{#page-tools}}{{{html-item}}}{{/page-tools}}</ul>
+		</section>
+		<section class="rail-module recent-wiki-activity">
+			<h2 class="rail-module__header"><svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-activity-small"/></svg>{{msg-mijovia-recent-activity}}</h2>
+			<ul class="rail-module__list mijovia-recent-activity"></ul>
+			<a href="{{recent-changes-url}}">{{msg-recentchanges}}</a>
+		</section>
+	</div>
+</aside>

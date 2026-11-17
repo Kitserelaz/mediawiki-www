@@ -1,0 +1,38 @@
+<template id="mijovia-toolbar-catalog">
+	{{#toolbar-tools}}<span data-key="{{key}}" data-url="{{url}}">{{label}}</span>{{/toolbar-tools}}
+</template>
+<dialog id="mijovia-toolbar-dialog" class="user-tools-modal__wrapper mijovia-toolbar-dialog" aria-labelledby="mijovia-toolbar-title"
+	data-add="{{msg-mijovia-toolbar-add}}" data-remove="{{msg-mijovia-toolbar-remove}}" data-up="{{msg-mijovia-toolbar-up}}" data-down="{{msg-mijovia-toolbar-down}}"
+	data-move-menu="{{msg-mijovia-toolbar-move-menu}}" data-move-bar="{{msg-mijovia-toolbar-move-bar}}" data-rename="{{msg-mijovia-toolbar-rename}}"
+	data-empty="{{msg-mijovia-toolbar-empty}}" data-error="{{msg-mijovia-toolbar-error}}">
+	<header class="mijovia-toolbar-dialog-header">
+		<h2 id="mijovia-toolbar-title">{{msg-mijovia-toolbar-title}}</h2>
+		<button type="button" data-toolbar-cancel aria-label="{{msg-cancel}}"><svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-close-small"/></svg></button>
+	</header>
+	<div class="mijovia-toolbar-dialog-body">
+		<section>
+			<label for="mijovia-toolbar-search">{{msg-mijovia-toolbar-add-title}}</label>
+			<div class="mijovia-toolbar-search-box">
+				<input id="mijovia-toolbar-search" type="search" placeholder="{{msg-mijovia-toolbar-search}}" autocomplete="off">
+				<ul class="mijovia-toolbar-matches" hidden></ul>
+				<a href="{{toolbar-specialpages-url}}">{{msg-mijovia-toolbar-advanced}}</a>
+			</div>
+		</section>
+		<details class="mijovia-toolbar-popular">
+			<summary>{{msg-mijovia-toolbar-popular}} <svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-dropdown-tiny"/></svg></summary>
+			<ul></ul>
+		</details>
+		<section>
+			<div class="mijovia-toolbar-list-heading">
+				<h3>{{msg-mijovia-toolbar-list}}</h3>
+				<button type="button" data-toolbar-reset>{{msg-mijovia-toolbar-reset}}</button>
+			</div>
+			<ul class="mijovia-toolbar-options"></ul>
+		</section>
+		<p class="mijovia-toolbar-error" role="alert" hidden></p>
+	</div>
+	<footer class="mijovia-toolbar-dialog-actions">
+		<button type="button" class="wds-button wds-is-secondary" data-toolbar-cancel>{{msg-cancel}}</button>
+		<button type="button" class="wds-button" data-toolbar-save>{{msg-mijovia-save}}</button>
+	</footer>
+</dialog>

@@ -1,0 +1,38 @@
+<div id="community-navigation" class="community-navigation fandom-sticky-header is-visible community-navigation--new-wiki-nav mijovia-article-navigation{{#signed-in-home}} mijovia-home-navigation{{/signed-in-home}}" data-scroll-navigation role="navigation" aria-label="{{msg-mijovia-top-navigation}}">
+	{{>HeaderIdentity}}
+	{{>SearchBox}}
+	<div class="community-navigation__action-wrapper mijovia-article-nav-actions">
+		<div class="wds-dropdown wds-is-not-hoverable mijovia-disclosure">
+			<button class="wds-button wds-is-text wds-dropdown__toggle global-action-notifications mijovia-notifications-toggle" type="button" aria-controls="mijovia-article-notifications" aria-expanded="false" aria-label="{{msg-mijovia-notifications}}" aria-describedby="mijovia-notifications-count">
+				<svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-bell"/></svg>
+				<span id="mijovia-notifications-count" class="notifications__counter">{{notifications.count}}</span>
+			</button>
+			<div id="mijovia-article-notifications" class="wds-dropdown__content wds-is-right-aligned{{#notifications}} mijovia-notifications-panel{{/notifications}}" hidden>
+				{{#notifications}}
+				<header class="mijovia-notifications-header">
+					<h2>{{msg-mijovia-notifications}}</h2>
+					<button type="button" class="wds-button wds-is-text mijovia-notifications-mark-read" disabled>{{msg-mijovia-notifications-mark-read}}</button>
+				</header>
+				<div class="mijovia-notifications-status" role="status">
+					<p data-status="loading" hidden>{{msg-mijovia-notifications-loading}}</p>
+					<p data-status="empty" hidden>{{msg-mijovia-notifications-empty}}</p>
+					<p data-status="error" hidden>{{msg-mijovia-notifications-error}} <button type="button" class="wds-button wds-is-text mijovia-notifications-retry">{{msg-mijovia-notifications-retry}}</button></p>
+				</div>
+				<ul class="mijovia-notifications-list"></ul>
+				<footer class="mijovia-notifications-footer">
+					<a href="{{url}}">{{msg-mijovia-notifications-all}}</a>
+					<a href="{{preferences-url}}">{{msg-preferences}}</a>
+				</footer>
+				{{/notifications}}
+				{{^notifications}}<a class="mijovia-notifications-link" href="{{watchlist-url}}">{{msg-watchlist}}</a>{{/notifications}}
+			</div>
+		</div>
+		<div class="wds-dropdown wds-is-not-hoverable mijovia-disclosure">
+			<button class="wds-button wds-is-text wds-dropdown__toggle" type="button" aria-controls="mijovia-article-account" aria-expanded="false" aria-label="{{msg-mijovia-user-menu}}"><svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-avatar"/></svg></button>
+			<div id="mijovia-article-account" class="wds-dropdown__content wds-is-right-aligned" hidden>
+				{{#data-portlets.data-user-menu}}{{>Portlet}}{{/data-portlets.data-user-menu}}
+				{{#theme-designer-url}}<ul class="wds-list wds-is-linked"><li><a href="{{theme-designer-url}}">{{msg-mijoviathemedesigner}}</a></li></ul>{{/theme-designer-url}}
+			</div>
+		</div>
+	</div>
+</div>

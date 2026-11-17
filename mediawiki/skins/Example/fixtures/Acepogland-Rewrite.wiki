@@ -1,5 +1,0 @@
-<div class="example-article-notice">
-'''Article being rewritten'''<br />
-''ALERT'': This article is being re-written by the creator of the page or another editor.
-</div><includeonly>[[Category:Articles_being_rewritten]]</includeonly><noinclude>
-{{Documentation}}</noinclude>

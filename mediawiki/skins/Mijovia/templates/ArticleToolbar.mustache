@@ -1,0 +1,16 @@
+<nav id="mijovia-article-toolbar" class="WikiaBar mijovia-article-toolbar" aria-label="{{msg-mijovia-my-tools}}" data-preference="{{toolbar-preference}}" data-menu-label="{{msg-mijovia-my-tools}}">
+	<div class="mijovia-toolbar-items">
+		{{#watch-action}}<a href="{{url}}">{{label}}</a>{{/watch-action}}
+	</div>
+	<button type="button" class="mijovia-toolbar-customize" aria-haspopup="dialog" aria-controls="mijovia-toolbar-dialog" hidden>
+		<svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-gear-small"/></svg>{{msg-mijovia-customize}}
+	</button>
+	<a href="{{watchlist-url}}">{{msg-mijovia-shortcuts}}</a>
+	<button type="button" class="mijovia-toolbar-close" aria-label="{{msg-hide}}" title="{{msg-hide}}">
+		<svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-close-small"/></svg>
+	</button>
+</nav>
+<button type="button" class="mijovia-toolbar-show" aria-label="{{msg-mijovia-toolbar-show}}" title="{{msg-mijovia-toolbar-show}}" aria-controls="mijovia-article-toolbar" aria-expanded="false" hidden>
+	<svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-gear-small"/></svg>
+</button>
+{{>ToolbarDialog}}

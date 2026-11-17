@@ -1,0 +1,1469 @@
+/* Local integration rules for the Fandom Desktop markup. */
+.skin-mijovia {
+	--desktop-global-navigation-width: 0px;
+	--left-panel-spacing: 0px;
+	color-scheme: dark;
+}
+
+body.skin-mijovia {
+	margin: 0;
+	font-family: Rubik, Helvetica, Arial, sans-serif;
+	background-color: var( --theme-body-background-color );
+	color: var( --theme-page-text-color );
+}
+
+.skin-mijovia button,
+.skin-mijovia input {
+	font-family: inherit;
+}
+
+html[data-theme='light'] .skin-mijovia {
+	color-scheme: light;
+}
+
+.skin-mijovia .mijovia-theme-light,
+html[data-theme='light'] .skin-mijovia .mijovia-theme-dark {
+	display: none;
+}
+
+html[data-theme='light'] .skin-mijovia .mijovia-theme-light {
+	display: initial;
+}
+
+.skin-mijovia .mijovia-skip {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 500;
+	transform: translateY( -200% );
+}
+
+.skin-mijovia .mijovia-skip:focus {
+	transform: none;
+	background: var( --theme-page-background-color );
+	padding: 8px;
+}
+
+.skin-mijovia .mijovia-disclosure [hidden] {
+	display: none;
+}
+
+/* The desktop offset creates a stacking context around the action buttons. */
+.skin-mijovia .page-header__actions:has( #mijovia-page-tools-toggle[aria-expanded='true'] ) {
+	z-index: 1;
+}
+
+.skin-mijovia #mijovia-page-tools {
+	box-sizing: border-box;
+	inline-size: max-content;
+	min-inline-size: min( 10rem, calc( 100vw - 2rem ) );
+	max-inline-size: calc( 100vw - 2rem );
+	max-block-size: min( 26rem, 52dvh );
+	overflow: auto;
+	overscroll-behavior: contain;
+	left: auto;
+	right: auto;
+	inset-inline-end: 0;
+}
+
+.skin-mijovia #mijovia-page-tools .emptyPortlet {
+	display: none;
+}
+
+.skin-mijovia #mijovia-page-tools .wds-list > li {
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
+.skin-mijovia .page-side-tool:disabled,
+.skin-mijovia .wiki-tools button:disabled {
+	cursor: default;
+	opacity: 1;
+}
+
+.skin-mijovia .wiki-tools button:disabled {
+	color: var( --theme-community-header-color );
+	border-color: currentColor;
+}
+
+.skin-mijovia .mijovia-guest-header .mw-portlet ul {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.skin-mijovia .mijovia-guest-header {
+	box-sizing: border-box;
+	top: 0;
+	left: 0;
+	min-width: 0;
+	gap: 18px;
+	box-shadow: none;
+}
+
+.skin-mijovia .mijovia-guest-header,
+.skin-mijovia #community-navigation.mijovia-article-navigation {
+	--mijovia-search-width: 360px;
+	padding-inline: 14px 18px;
+}
+
+.skin-mijovia .mijovia-header-leading {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-width: 0;
+}
+
+.skin-mijovia .mijovia-header-logo {
+	display: flex;
+	flex: none;
+}
+
+.skin-mijovia .mijovia-header-logo img {
+	object-fit: contain;
+}
+
+.skin-mijovia .mijovia-header-heading {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+.skin-mijovia .mijovia-header-identity {
+	min-width: 3ch;
+	max-width: min( 18rem, 24vw );
+	line-height: 1.2;
+}
+
+.skin-mijovia .mijovia-header-identity > * {
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.skin-mijovia .mijovia-header-identity strong {
+	font-size: 16px;
+	font-weight: 700;
+}
+
+.skin-mijovia .mijovia-header-identity a {
+	margin-block-start: 2px;
+	font-size: 12px;
+}
+
+.skin-mijovia .mijovia-header-menu {
+	flex: none;
+	transition: opacity 180ms ease;
+}
+
+.skin-mijovia [data-scroll-navigation]:not( .is-showing-navigation ) .mijovia-header-menu {
+	opacity: 0;
+	pointer-events: none;
+}
+
+@media ( prefers-reduced-motion: reduce ) {
+	.skin-mijovia .mijovia-header-menu {
+		transition: none;
+	}
+}
+
+.skin-mijovia .mijovia-header-menu .fandom-community-header__local-navigation {
+	top: auto;
+	margin: 0;
+}
+
+.skin-mijovia .mijovia-guest-header .search-container {
+	flex: 0 1 var( --mijovia-search-width );
+	min-width: 0;
+	max-width: var( --mijovia-search-width );
+	margin-inline-start: auto;
+}
+
+.skin-mijovia [data-scroll-navigation] .search-app__wrapper {
+	margin: 0;
+}
+
+.skin-mijovia [data-scroll-navigation] .search-app__input {
+	border-radius: 27px;
+}
+
+.skin-mijovia .mijovia-guest-actions {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.skin-mijovia .mijovia-guest-header .mijovia-guest-icon,
+.skin-mijovia .mijovia-header-menu .mijovia-header-menu-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	color: var( --theme-sticky-nav-text-color );
+}
+
+.skin-mijovia .mijovia-guest-icon .wds-icon,
+.skin-mijovia .mijovia-header-menu-button .wds-icon {
+	width: 18px;
+	min-width: 18px;
+	height: 18px;
+}
+
+.skin-mijovia .mijovia-guest-header .mijovia-guest-register {
+	box-sizing: border-box;
+	display: inline-flex;
+	min-height: 36px;
+	padding-inline: 12px;
+	border-radius: 6px;
+	border-color: var( --theme-sticky-nav-text-color );
+	background: var( --theme-sticky-nav-text-color );
+	color: var( --theme-sticky-nav-background-color );
+	white-space: nowrap;
+}
+
+.skin-mijovia .mijovia-guest-register .mijovia-guest-register-short {
+	display: none;
+}
+
+@media ( max-width: 520px ) {
+	.skin-mijovia .mijovia-guest-header .mijovia-guest-discuss,
+	.skin-mijovia .mijovia-guest-register > span:not( .mijovia-guest-register-short ) {
+		display: none;
+	}
+
+	.skin-mijovia .mijovia-guest-register .mijovia-guest-register-short {
+		display: inline;
+	}
+}
+
+@media ( min-width: 1280px ) {
+	.skin-mijovia .mijovia-header-leading {
+		flex: none;
+	}
+
+	.skin-mijovia .mijovia-header-heading {
+		gap: 24px;
+	}
+
+	.skin-mijovia .mijovia-header-menu .fandom-community-header__local-navigation > .wds-tabs {
+		display: flex;
+		align-items: center;
+		gap: 24px;
+		width: auto;
+	}
+
+	.skin-mijovia .mijovia-header-menu .wds-tabs > .wds-dropdown {
+		flex: none;
+	}
+
+	.skin-mijovia .mijovia-header-menu > .mijovia-header-menu-button,
+	.skin-mijovia .mijovia-header-menu.wds-is-active::before,
+	.skin-mijovia .mijovia-header-menu.wds-is-active::after {
+		display: none;
+	}
+
+	.skin-mijovia #mijovia-header-wiki-navigation[hidden] {
+		display: block;
+	}
+}
+
+@media ( max-width: 1279px ) {
+	.skin-mijovia .mijovia-header-menu {
+		position: static;
+	}
+
+	.skin-mijovia .mijovia-header-menu.wds-is-active::before,
+	.skin-mijovia .mijovia-header-menu.wds-is-active::after {
+		display: none;
+	}
+
+	.skin-mijovia #mijovia-header-wiki-navigation {
+		position: absolute;
+		inset-block-start: 100%;
+		inset-inline-start: 0;
+		width: min( 30rem, calc( 100vw - 10rem ) );
+		padding: 12px;
+		border: 1px solid var( --theme-border-color );
+		border-radius: 3px;
+		background: var( --theme-sticky-nav-background-color );
+	}
+}
+
+.skin-mijovia .page-footer {
+	clear: both;
+}
+
+.skin-mijovia .fandom-community-header__background.header {
+	display: var( --mijovia-banner-display, block );
+	--header-background-image-offset: var( --left-panel-spacing );
+	position: relative;
+}
+
+.skin-mijovia :is( .mijovia-header-logo, .fandom-community-header__image )[hidden] {
+	display: none;
+}
+
+.skin-mijovia .fandom-community-header.has-no-logo .fandom-community-header__local-navigation {
+	grid-column: 1 / -1;
+}
+
+.skin-mijovia .fandom-community-header__image img {
+	/* The built-in MediaWiki icon is a 25px SVG. Scale it to the header's logo box. */
+	object-fit: contain;
+	object-position: center;
+}
+
+.skin-mijovia .page-content .mw-heading,
+.skin-mijovia .page-content :is( h1, h2, h3, h4, h5, h6 ),
+.skin-mijovia .global-footer__header {
+	color: inherit;
+}
+
+/* MediaWiki wraps the heading and its edit links in a single block. */
+.skin-mijovia .page-content .mw-heading {
+	border: 0;
+	font-family: var( --theme-page-headings-font ), Rubik, Helvetica, Arial, sans-serif;
+	line-height: 1.25;
+	margin: 18px 0 9px;
+	padding: 0;
+}
+
+.skin-mijovia .page-content :is( .mw-heading2, h2 ) {
+	border-bottom: 1px solid var( --theme-border-color );
+	font-size: 24px;
+	font-weight: 500;
+	padding: 6px 0;
+}
+
+.skin-mijovia .page-content .mw-heading > :is( h1, h2, h3, h4, h5, h6 ) {
+	border: 0;
+	font: inherit;
+	margin: 0;
+	padding: 0;
+}
+
+.skin-mijovia .page-content .mw-editsection {
+	font-size: 12px;
+	font-weight: 400;
+	margin-inline-start: 8px;
+	white-space: nowrap;
+}
+
+.skin-mijovia .page-content .mijovia-section-link {
+	color: var( --theme-link-color );
+}
+
+.skin-mijovia .mijovia-section-link .wds-icon {
+	height: 12px;
+	width: 12px;
+}
+
+.skin-mijovia .page-footer__categories:last-child {
+	border-bottom: 1px solid var( --theme-border-color );
+}
+
+.skin-mijovia .page-footer__categories .wds-collapsible-panel__header {
+	list-style: none;
+}
+
+.skin-mijovia .page-footer__categories .wds-collapsible-panel__header::-webkit-details-marker {
+	display: none;
+}
+
+.skin-mijovia .page-footer__categories:not( [open] ) .wds-icon {
+	transform: none;
+}
+
+.skin-mijovia .page-footer__categories .wds-collapsible-panel__content {
+	padding-bottom: 16px;
+}
+
+.skin-mijovia .page-footer__categories .catlinks {
+	background: transparent;
+	border: 0;
+	margin: 0;
+	padding: 0;
+}
+
+.skin-mijovia .page-footer__categories ul {
+	display: inline;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.skin-mijovia .page-footer__categories li {
+	display: inline;
+}
+
+.skin-mijovia .page-footer__categories li + li::before {
+	content: ' · ';
+}
+
+.skin-mijovia .page-footer a {
+	color: var( --theme-link-color );
+}
+
+.skin-mijovia .global-footer__header {
+	border: 0;
+	font-size: 20px;
+	line-height: 1.25;
+	padding: 0;
+}
+
+.skin-mijovia .global-footer a {
+	color: #ffc500;
+}
+
+.skin-mijovia .global-footer a:hover {
+	color: #fff;
+}
+
+@media ( max-width: 767px ) {
+	.skin-mijovia .main-container {
+		margin: 0;
+		min-width: 0;
+		transition: none;
+		width: 100%;
+	}
+
+	.skin-mijovia .mijovia-guest-header {
+		gap: 6px;
+	}
+
+	.skin-mijovia .mijovia-guest-header,
+	.skin-mijovia #community-navigation.mijovia-article-navigation {
+		padding-inline: 8px;
+	}
+
+	.skin-mijovia .mijovia-header-leading {
+		gap: 6px;
+	}
+
+	.skin-mijovia .mijovia-guest-header .mijovia-guest-icon,
+	.skin-mijovia .mijovia-header-menu .mijovia-header-menu-button {
+		width: 28px;
+	}
+
+	.skin-mijovia .mijovia-guest-header .mijovia-guest-register {
+		padding-inline: 6px;
+		font-size: 10px;
+	}
+
+	.skin-mijovia .resizable-container {
+		width: 96%;
+	}
+
+	.skin-mijovia .fandom-community-header__top-container,
+	.skin-mijovia .fandom-community-header__local-navigation .wds-tabs {
+		flex-wrap: wrap;
+	}
+
+	.skin-mijovia .page__main {
+		padding: 16px 12px;
+	}
+
+	.skin-mijovia .page-side-tools__wrapper {
+		display: none;
+	}
+
+	.skin-mijovia .page-content {
+		overflow-wrap: anywhere;
+	}
+
+	.skin-mijovia .page-content table {
+		max-width: 100%;
+	}
+}
+
+@media print {
+	.skin-mijovia .mijovia-guest-header,
+	.skin-mijovia .page-header__actions,
+	.skin-mijovia .page-side-tools__wrapper,
+	.skin-mijovia .global-footer {
+		display: none;
+	}
+}
+
+.skin-mijovia .page-header__title {
+	border: 0;
+	color: inherit;
+	margin: 0;
+	padding: 0;
+}
+
+.skin-mijovia .resizable-container {
+	position: relative;
+}
+
+.skin-mijovia .mijovia-skip:not( :focus ) {
+	clip-path: inset( 50% );
+	height: 1px;
+	overflow: hidden;
+	white-space: nowrap;
+	width: 1px;
+}
+
+.skin-mijovia .main-page-tag-lcs .fandom-table {
+	width: 100%;
+}
+.skin-mijovia .fandom-community-header__local-navigation .opens-left > .wds-dropdown-level-nested__content {
+	left: auto;
+	right: 100%;
+}
+
+.skin-mijovia .fandom-community-header__local-navigation .wds-is-active > .wds-dropdown-level-nested__content {
+	display: block;
+}
+
+.skin-mijovia .wiki-tools button {
+	box-sizing: border-box;
+	width: 31px;
+	height: 30px;
+}
+
+.skin-mijovia .main-page-tag-lcs .fandom-table td {
+	padding-top: 13px;
+	padding-inline-start: 12px;
+	letter-spacing: 0.02px;
+}
+
+@media ( min-width: 1280px ) {
+	.skin-mijovia .fandom-community-header__community-name-wrapper,
+	.skin-mijovia .fandom-community-header__local-navigation {
+		position: relative;
+		top: 1.5px;
+	}
+}
+
+
+@media ( min-width: 1280px ) {
+	.skin-mijovia .fandom-community-header__image {
+		translate: -0.5px 0;
+	}
+
+	.skin-mijovia .page-counter {
+		translate: -2px 1px;
+	}
+
+	.skin-mijovia .page-header__actions {
+		translate: -1px 0;
+	}
+
+	html[data-theme='light'] .skin-mijovia .wiki-tools {
+		translate: -1px 1px;
+	}
+}
+
+/* Registered readers use the compact article navigation and tools rail. */
+.skin-mijovia .mijovia-article-navigation {
+	left: 0;
+	box-shadow: none;
+	display: grid;
+	grid-template-columns: minmax( 0, 1fr ) minmax( 0, var( --mijovia-search-width ) ) minmax( 0, 1.18fr );
+	gap: 16px;
+}
+
+.skin-mijovia #community-navigation.mijovia-article-navigation .search-container {
+	min-width: 0;
+	max-width: var( --mijovia-search-width );
+	margin-inline: auto 0;
+	display: flex;
+}
+
+.skin-mijovia .mijovia-article-nav-actions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 6px;
+}
+
+.skin-mijovia .mijovia-article-nav-actions .wds-is-text {
+	color: var( --theme-sticky-nav-text-color );
+}
+
+.skin-mijovia .mijovia-article-nav-actions svg {
+	width: 22px;
+	height: 22px;
+}
+
+.skin-mijovia .mijovia-article-nav-actions #p-personal {
+	min-width: 160px;
+}
+
+.skin-mijovia .mijovia-article-nav-actions #p-personal a {
+	color: var( --theme-link-color );
+}
+
+.skin-mijovia .mijovia-signed-in-page .page-header__bottom {
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.skin-mijovia .mijovia-signed-in-page .page-header__title-wrapper {
+	min-width: 0;
+}
+
+.skin-mijovia .mijovia-signed-in-page .page-header__categories-bar {
+	margin-top: 7px;
+}
+
+.skin-mijovia .page-header__categories-dropdown-content {
+	min-inline-size: min( 178px, calc( 100vw - 4rem ) );
+	max-inline-size: min( 320px, calc( 100vw - 4rem ) );
+	left: auto;
+	inset-inline-start: 0;
+}
+
+.skin-mijovia .mijovia-signed-in-page .wiki-tools > a {
+	display: inline-flex;
+	width: 31px;
+	height: 30px;
+	box-sizing: border-box;
+}
+
+.skin-mijovia .mijovia-article-rail {
+	position: relative;
+	border: 0;
+	background: transparent;
+	padding-top: 34px;
+}
+
+.skin-mijovia .mijovia-article-rail:not( .is-rail-hidden ) {
+	background-color: var( --mijovia-theme-rail-color, transparent );
+}
+
+.skin-mijovia .mijovia-article-rail .rail-module {
+	padding: 0 0 22px;
+	margin: 0 0 22px;
+	border-bottom: 1px solid var( --theme-border-color );
+}
+
+.skin-mijovia .rail-module__header {
+	color: var( --theme-page-text-color );
+	font: 700 16px/1.25 Rubik, Helvetica, Arial, sans-serif;
+	padding: 0;
+	margin: 4px 0 12px;
+	border: 0;
+}
+
+.skin-mijovia .mijovia-article-rail ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.skin-mijovia .mijovia-article-rail li {
+	padding: 3px 0;
+}
+
+.skin-mijovia .mijovia-article-rail a:not( .page-side-tool ) {
+	color: var( --theme-link-color );
+}
+
+@media screen and ( min-width: 1024px ) {
+	.skin-mijovia .mijovia-article-rail {
+		--rail-overview-sticky-top: min( 64px, calc( 100dvh - var( --mijovia-article-rail-height, 0px ) - 12px ) );
+		border-start-start-radius: 12px;
+		border-end-start-radius: 12px;
+	}
+
+	.skin-mijovia .mijovia-article-rail .right-rail-wrapper {
+		margin-inline: 12px;
+	}
+}
+
+@media screen and ( max-width: 1023px ) {
+	html:not( .ve-active ) .skin-mijovia .page.has-right-rail > .mijovia-article-rail {
+		box-sizing: border-box;
+	}
+}
+
+.skin-mijovia .mijovia-recent-activity .mijovia-editor {
+	display: block;
+	font-size: 12px;
+	color: var( --theme-page-text-color );
+	opacity: .8;
+}
+
+.skin-mijovia .sticky-toc-wrapper {
+	position: relative;
+}
+
+.skin-mijovia .mijovia-article-contents {
+	position: absolute;
+	inset-inline-start: 44px;
+	top: 0;
+	width: 240px;
+	max-height: 45vh;
+	overflow: auto;
+	padding: 8px 18px;
+	background: var( --theme-page-background-color--secondary );
+	border: 1px solid var( --theme-border-color );
+	border-radius: 6px;
+}
+
+.skin-mijovia .mijovia-article-contents a {
+	color: var( --theme-link-color );
+}
+
+.skin-mijovia .page-side-tools .page-side-tool {
+	position: relative;
+}
+
+.skin-mijovia .mijovia-side-tool-tooltip {
+	position: absolute;
+	inset-block-start: 50%;
+	inset-inline-start: calc( 100% + 6px );
+	translate: 0 -50%;
+	width: max-content;
+	display: none;
+	pointer-events: none;
+}
+
+.skin-mijovia .mijovia-side-tool-tooltip::before {
+	inset-block-start: calc( 50% - 6px );
+	inset-inline-end: 100%;
+	border-inline-end-color: var( --wds-tooltip-background-color );
+}
+
+.skin-mijovia .page-side-tool:not( [aria-expanded='true'] ):is( :hover, :focus-visible ) > .mijovia-side-tool-tooltip {
+	display: block;
+}
+
+@media screen and ( min-width: 1280px ) {
+	.skin-mijovia .mijovia-article-rail {
+		padding-block-start: 0;
+	}
+
+	.skin-mijovia .mijovia-article-rail .right-rail-wrapper {
+		padding-block-start: 34px;
+	}
+
+	.skin-mijovia .mijovia-rail-toggle-tab {
+		position: sticky;
+		inset-block-start: 64px;
+		block-size: 0;
+		z-index: 1;
+	}
+}
+
+.skin-mijovia .mijovia-rail-toggle {
+	position: absolute;
+	inset-block-start: 6px;
+	inset-inline-start: calc( 100% + 6px );
+	width: 42px;
+	height: 42px;
+	border-radius: 12px;
+	color: var( --theme-page-text-color );
+}
+
+.skin-mijovia .mijovia-rail-toggle > .wds-icon {
+	position: absolute;
+	inset: 0;
+	margin: auto;
+	width: 18px;
+	height: 18px;
+	transition: opacity .3s;
+}
+
+.skin-mijovia .mijovia-rail-toggle .mijovia-rail-chevron {
+	opacity: 0;
+	transform: rotate( 90deg );
+}
+
+.skin-mijovia .mijovia-rail-toggle[aria-expanded='true']:is( :hover, :focus-visible ) .mijovia-rail-grid {
+	opacity: 0;
+}
+
+.skin-mijovia .mijovia-rail-toggle[aria-expanded='true']:is( :hover, :focus-visible ) .mijovia-rail-chevron {
+	opacity: 1;
+}
+
+.skin-mijovia:dir( rtl ) .mijovia-rail-toggle .mijovia-rail-chevron {
+	transform: rotate( -90deg );
+}
+
+.skin-mijovia .mijovia-rail-toggle .mijovia-rail-tooltip {
+	position: absolute;
+	inset-block-start: 50%;
+	inset-inline-end: calc( 100% + 6px );
+	transform: translateY( -50% );
+	display: none;
+	pointer-events: none;
+	white-space: nowrap;
+}
+
+.skin-mijovia .mijovia-rail-tooltip::before {
+	inset-block-start: calc( 50% - 6px );
+	inset-inline-start: 100%;
+	border-inline-start-color: var( --wds-tooltip-background-color );
+}
+
+.skin-mijovia .mijovia-rail-toggle:is( :hover, :focus-visible ) .mijovia-rail-tooltip {
+	display: block;
+}
+
+.skin-mijovia .mijovia-rail-toggle[aria-expanded='true'] .mijovia-rail-tooltip-show,
+.skin-mijovia .mijovia-rail-toggle[aria-expanded='false'] .mijovia-rail-tooltip-hide {
+	display: none;
+}
+
+.skin-mijovia .mijovia-article-rail .right-rail-wrapper[hidden] {
+	display: none;
+}
+
+.skin-mijovia .mijovia-article-toolbar,
+.skin-mijovia .mijovia-toolbar-show {
+	position: fixed;
+	inset-block-end: 9px;
+	inset-inline-end: 9px;
+	z-index: 501;
+	display: flex;
+	align-items: center;
+	border-radius: 20px;
+	padding: 0 5px;
+	background: var( --theme-accent-color );
+	color: var( --theme-accent-label-color );
+	font-size: 12px;
+}
+
+.skin-mijovia .mijovia-article-toolbar {
+	box-sizing: border-box;
+	flex-wrap: wrap;
+	max-width: calc( 100% - 18px );
+	min-height: 25px;
+}
+
+.skin-mijovia .mijovia-toolbar-items {
+	display: contents;
+}
+
+.skin-mijovia .mijovia-article-toolbar > a,
+.skin-mijovia .mijovia-toolbar-items > a,
+.skin-mijovia .mijovia-toolbar-menu > summary,
+.skin-mijovia .mijovia-toolbar-customize {
+	display: inline-flex;
+	align-items: center;
+	min-height: 25px;
+	color: inherit;
+	padding: 0 8px;
+	border: 0;
+	border-inline-end: 1px solid color-mix( in srgb, currentColor 35%, transparent );
+	background: transparent;
+	cursor: pointer;
+	font: inherit;
+	line-height: 1.25;
+}
+
+.skin-mijovia .mijovia-toolbar-menu {
+	position: relative;
+}
+
+.skin-mijovia .mijovia-toolbar-customize {
+	gap: 4px;
+}
+
+.skin-mijovia .mijovia-toolbar-customize .wds-icon {
+	width: 12px;
+	height: 12px;
+}
+
+.skin-mijovia :is( .mijovia-toolbar-menu, .mijovia-toolbar-popular ) > summary {
+	list-style: none;
+}
+
+.skin-mijovia :is( .mijovia-toolbar-menu, .mijovia-toolbar-popular ) > summary::-webkit-details-marker {
+	display: none;
+}
+
+.skin-mijovia .mijovia-toolbar-menu > summary::before {
+	border: 4px solid transparent;
+	border-block-start-color: currentColor;
+	border-block-end: 0;
+	margin-inline-end: 6px;
+	content: '';
+}
+
+.skin-mijovia .mijovia-toolbar-menu > ul {
+	position: absolute;
+	inset-block-end: calc( 100% + 6px );
+	inset-inline-start: 0;
+	width: max-content;
+	max-width: min( 230px, 50vw );
+	max-height: 50vh;
+	overflow: auto;
+	margin: 0;
+	padding: 6px;
+	border: 1px solid var( --theme-border-color );
+	border-radius: 4px;
+	background: var( --theme-page-background-color--secondary );
+	box-shadow: 0 2px 12px #0004;
+	list-style: none;
+}
+
+.skin-mijovia .mijovia-toolbar-menu li > a {
+	display: block;
+	padding: 6px 10px;
+	overflow-wrap: anywhere;
+	color: var( --theme-link-color );
+}
+
+.skin-mijovia .mijovia-article-toolbar :is( a, summary, .mijovia-toolbar-customize ):hover {
+	text-decoration: underline;
+}
+
+.skin-mijovia .mijovia-toolbar-close {
+	display: grid;
+	place-items: center;
+	border: 0;
+	border-radius: 50%;
+	margin-inline-start: 5px;
+	padding: 0;
+	width: 18px;
+	height: 18px;
+	background: var( --theme-accent-label-color );
+	color: var( --theme-accent-color );
+	cursor: pointer;
+}
+
+.skin-mijovia .mijovia-toolbar-close .wds-icon {
+	width: 10px;
+	height: 10px;
+}
+
+.skin-mijovia .mijovia-toolbar-show {
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	border: 0;
+	cursor: pointer;
+}
+
+.skin-mijovia .mijovia-toolbar-show .wds-icon {
+	width: 18px;
+	height: 18px;
+}
+
+.skin-mijovia .mijovia-article-toolbar[hidden],
+.skin-mijovia .mijovia-toolbar-show[hidden],
+.skin-mijovia .mijovia-toolbar-customize[hidden] {
+	display: none;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog {
+	box-sizing: border-box;
+	width: min( 640px, calc( 100% - 24px ) );
+	max-height: calc( 100dvh - 24px );
+	margin: auto;
+	padding: 0;
+	border: 0;
+	border-radius: 3px;
+	background: var( --theme-page-background-color--secondary );
+	color: var( --theme-page-text-color );
+	font: inherit;
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog[open] {
+	display: flex;
+	flex-direction: column;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog::backdrop {
+	background: linear-gradient( transparent 46px, #0008 46px );
+}
+
+html:has( .mijovia-toolbar-dialog[open] ) {
+	overflow: hidden;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-header,
+.skin-mijovia .mijovia-toolbar-dialog-actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 16px;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-header h2,
+.skin-mijovia .mijovia-toolbar-list-heading h3 {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	color: inherit;
+	font: inherit;
+	font-size: 16px;
+	font-weight: 700;
+	line-height: 1.25;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-header h2 {
+	font-size: 24px;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-header button,
+.skin-mijovia .mijovia-toolbar-dialog-body button {
+	border: 0;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+	font: inherit;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-header button {
+	display: grid;
+	place-items: center;
+	align-self: start;
+	padding: 0;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-header .wds-icon {
+	width: 18px;
+	height: 18px;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-body {
+	overflow: auto;
+	padding: 22px 24px 19px;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-body label {
+	display: block;
+	margin-block-end: 8px;
+	font-size: 16px;
+	font-weight: 700;
+}
+
+.skin-mijovia :is( .mijovia-toolbar-search-box, .mijovia-toolbar-popular, .mijovia-toolbar-options ) {
+	border: 1px solid var( --theme-border-color );
+}
+
+.skin-mijovia .mijovia-toolbar-search-box {
+	padding: 10px 10px 8px;
+}
+
+.skin-mijovia .mijovia-toolbar-search-box input,
+.skin-mijovia .mijovia-toolbar-options input {
+	box-sizing: border-box;
+	min-width: 0;
+	padding: 6px 8px;
+	border: 1px solid var( --theme-border-color );
+	background: transparent;
+	color: inherit;
+	font: inherit;
+}
+
+.skin-mijovia .mijovia-toolbar-search-box input {
+	width: 100%;
+	border-width: 0 0 1px;
+}
+
+.skin-mijovia .mijovia-toolbar-search-box a {
+	display: inline-block;
+	margin-block-start: 16px;
+	color: var( --theme-link-color );
+}
+
+.skin-mijovia .mijovia-toolbar-popular {
+	margin: 20px 0;
+}
+
+.skin-mijovia .mijovia-toolbar-popular > summary {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px 10px;
+	color: var( --theme-link-color );
+	cursor: pointer;
+}
+
+.skin-mijovia .mijovia-toolbar-popular .wds-icon {
+	width: 12px;
+	height: 12px;
+}
+
+.skin-mijovia .mijovia-toolbar-popular[open] .wds-icon {
+	transform: rotate( 180deg );
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-body ul {
+	margin: 0;
+	padding: 0 6px;
+	list-style: none;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-body ul[hidden] {
+	display: none;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-body li {
+	margin: 0;
+	padding: 6px;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-body li + li {
+	border-block-start: 1px dashed var( --theme-border-color );
+}
+
+.skin-mijovia .mijovia-toolbar-list-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	margin-block-end: 8px;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-body :is( [data-toolbar-reset], li > button ) {
+	padding: 0;
+	color: var( --theme-link-color );
+	text-align: start;
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-body [data-toolbar-reset] {
+	font-size: 12px;
+}
+
+.skin-mijovia .mijovia-toolbar-options > li {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0 6px;
+	box-sizing: border-box;
+	min-height: 37px;
+}
+
+.skin-mijovia .mijovia-toolbar-options > .mijovia-toolbar-nested {
+	margin-inline-start: 30px;
+}
+
+.skin-mijovia .mijovia-toolbar-options span {
+	overflow-wrap: anywhere;
+}
+
+.skin-mijovia .mijovia-toolbar-item-actions {
+	display: flex;
+	margin-inline-start: auto;
+}
+
+.skin-mijovia .mijovia-toolbar-item-actions button {
+	min-width: 24px;
+	padding: 0 2px;
+	color: var( --theme-link-color );
+}
+
+.skin-mijovia .mijovia-toolbar-item-actions button:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
+@media ( hover: hover ) {
+	.skin-mijovia .mijovia-toolbar-options li:not( :hover, :focus-within ) .mijovia-toolbar-item-actions {
+		opacity: 0;
+	}
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-actions {
+	justify-content: flex-end;
+	gap: 22px;
+	border-block-start: 1px solid var( --theme-border-color );
+}
+
+.skin-mijovia .mijovia-toolbar-dialog-actions .wds-button {
+	--wds-primary-button-background-color: var( --theme-accent-color );
+	--wds-primary-button-background-color--hover: var( --theme-accent-color--hover );
+	--wds-primary-button-label-color: var( --theme-accent-label-color );
+	--wds-secondary-button-label-color: var( --theme-page-text-color );
+	--wds-secondary-button-label-color--hover: var( --theme-page-text-color--hover );
+	box-sizing: border-box;
+	min-height: 34px;
+	padding: 0 18px;
+}
+
+@media ( max-width: 1279px ) {
+	.skin-mijovia .mijovia-rail-toggle-tab {
+		display: none;
+	}
+
+	.skin-mijovia .mijovia-article-navigation {
+		grid-template-columns: minmax( 0, 1fr ) minmax( 0, 280px ) auto;
+	}
+}
+
+@media ( max-width: 767px ) {
+	.skin-mijovia #community-navigation.mijovia-article-navigation {
+		min-width: 0;
+		grid-template-columns: minmax( 0, 1fr ) minmax( 0, 1fr ) auto;
+		gap: 6px;
+	}
+
+	.skin-mijovia .mijovia-article-nav-actions .wds-button {
+		padding-inline: 3px;
+	}
+
+	.skin-mijovia .mijovia-signed-in-page .page-header__actions {
+		flex-wrap: wrap;
+		margin-inline-start: 0;
+	}
+
+	.skin-mijovia .mijovia-article-rail {
+		padding-top: 6px;
+	}
+}
+
+@media print {
+	.skin-mijovia .mijovia-article-navigation,
+	.skin-mijovia .mijovia-article-toolbar,
+	.skin-mijovia .mijovia-toolbar-show,
+	.skin-mijovia .mijovia-article-rail {
+		display: none;
+	}
+}
+
+.skin-mijovia .mijovia-article-notice {
+	border: 1px solid #d6d6d6;
+	border-radius: 3px;
+	padding: 9px 15px;
+	margin-bottom: 5px;
+}
+
+/* Reserve the same vertical space as the guest bar for the fixed article navigation. */
+.skin-mijovia .mijovia-signed-in-page .resizable-container {
+	top: 46px;
+}
+
+.skin-mijovia .mijovia-signed-in-page .portable-infobox {
+	--pi-background: var( --theme-page-background-color );
+	--pi-border-color: var( --theme-border-color );
+	--pi-secondary-background: var( --theme-page-background-color--secondary );
+	--pi-width: 270px;
+	border: 1px solid var( --theme-border-color );
+	max-width: 100%;
+}
+
+.skin-mijovia .page-content .portable-infobox .pi-title {
+	background: var( --theme-accent-color );
+	color: var( --theme-accent-label-color );
+	text-align: center;
+	border: 0;
+	margin: 0;
+	padding: 12px 8px;
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 1.25;
+}
+
+.skin-mijovia .portable-infobox .pi-title a {
+	color: inherit;
+}
+
+.skin-mijovia .portable-infobox .pi-horizontal-group-item img {
+	max-width: 100%;
+	height: auto;
+}
+
+.skin-mijovia .mijovia-article-notice {
+	clear: both;
+}
+
+.skin-mijovia .mijovia-article-nav-actions .mijovia-notifications-toggle {
+	box-sizing: border-box;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	padding: 0;
+}
+
+.skin-mijovia .mijovia-article-nav-actions .mijovia-notifications-toggle .wds-icon {
+	width: 24px;
+	height: 24px;
+}
+
+.skin-mijovia .mijovia-notifications-toggle .notifications__counter {
+	box-sizing: border-box;
+	left: auto;
+	inset-inline-start: 2px;
+	inline-size: auto;
+	min-inline-size: 18px;
+	padding-inline: 2px;
+}
+
+.skin-mijovia #mijovia-article-notifications {
+	min-width: 140px;
+}
+
+.skin-mijovia #mijovia-article-notifications .mijovia-notifications-link {
+	color: var( --theme-link-color );
+	display: block;
+	padding-inline: 10px;
+}
+
+.skin-mijovia #mijovia-article-notifications.mijovia-notifications-panel {
+	box-sizing: border-box;
+	width: min( 360px, calc( 100vw - 70px ) );
+	padding: 0;
+	box-shadow: 0 3px 12px #0004;
+}
+
+.skin-mijovia .mijovia-notifications-header,
+.skin-mijovia .mijovia-notifications-footer {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 4px 12px;
+	padding: 12px;
+}
+
+.skin-mijovia .mijovia-notifications-header {
+	border-block-end: 1px solid var( --theme-border-color );
+}
+
+.skin-mijovia .mijovia-notifications-header h2 {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	color: inherit;
+	font-size: 16px;
+	font-weight: 700;
+}
+
+.skin-mijovia .mijovia-notifications-panel .wds-button.wds-is-text,
+.skin-mijovia .mijovia-notifications-footer a {
+	color: var( --theme-link-color );
+}
+
+.skin-mijovia .mijovia-notifications-status p {
+	margin: 0;
+	padding: 16px 12px;
+}
+
+.skin-mijovia .mijovia-notifications-list {
+	max-height: min( 360px, 48dvh );
+	margin: 0;
+	padding: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	list-style: none;
+}
+
+.skin-mijovia .mijovia-notifications-list li {
+	display: grid;
+	gap: 4px;
+	padding: 12px;
+	overflow-wrap: anywhere;
+}
+
+.skin-mijovia .mijovia-notifications-list li + li,
+.skin-mijovia .mijovia-notifications-footer {
+	border-block-start: 1px solid var( --theme-border-color );
+}
+
+.skin-mijovia .mijovia-notifications-list a {
+	color: var( --theme-link-color );
+	font-weight: 500;
+}
+
+.skin-mijovia .mijovia-notifications-list time {
+	color: var( --theme-page-text-color--hover );
+	font-size: 12px;
+}
+
+.skin-mijovia .mijovia-notification-snippet {
+	display: -webkit-box;
+	overflow: hidden;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+}
+
+.skin-mijovia .mijovia-article-notice p:last-child {
+	margin-bottom: 0;
+}
+
+.skin-mijovia .mijovia-article-nav-actions .mw-portlet > input,
+.skin-mijovia .mijovia-article-nav-actions .mw-portlet > h3 {
+	display: none;
+}
+
+@media ( min-width: 1280px ) {
+	.skin-mijovia #community-navigation.mijovia-home-navigation {
+		grid-template-columns: minmax( 0, 1.13fr ) minmax( 0, var( --mijovia-search-width ) ) minmax( 0, 1fr );
+	}
+}
+
+html[data-theme='light'] .skin-mijovia .page.has-right-rail {
+	--mijovia-article-rail-background: var( --mijovia-theme-rail-color, color-mix( in srgb, var( --theme-page-background-color ) 75%, var( --theme-body-background-color ) ) );
+}
+
+html[data-theme='light'] .skin-mijovia .mijovia-article-rail:not( .is-rail-hidden ) {
+	background-color: var( --mijovia-article-rail-background );
+}
+
+html[data-theme='light'] .skin-mijovia .mijovia-article-rail .rail-module__header {
+	color: var( --theme-page-dynamic-color-1 );
+	padding-inline: 3px;
+}
+
+html[data-theme='light'] .skin-mijovia .mijovia-signed-in-page .portable-infobox {
+	--pi-border-color: var( --theme-page-accent-mix-color );
+	border-color: var( --pi-border-color );
+}
+
+html[data-theme='light'] .skin-mijovia .mijovia-signed-in-page .mijovia-article-notice {
+	padding-block: 8px;
+}
+
+@media ( min-width: 1280px ) {
+	html[data-theme='light'] .skin-mijovia #community-navigation.mijovia-article-navigation:not( .mijovia-home-navigation ) {
+		grid-template-columns: minmax( 0, 1fr ) minmax( 0, var( --mijovia-search-width ) ) minmax( 0, 1.14fr );
+	}
+
+	html[data-theme='light'] .skin-mijovia .page.has-right-rail .page-header {
+		margin-bottom: 13px;
+	}
+
+	html[data-theme='light'] .skin-mijovia .mijovia-article-rail {
+		border-start-end-radius: 0;
+	}
+
+	html[data-theme='light'] .skin-mijovia .mijovia-rail-toggle-tab::before {
+		content: '';
+		position: absolute;
+		inset-block-start: 0;
+		inset-inline-start: 100%;
+		width: 54px;
+		height: 54px;
+		border-start-end-radius: 12px;
+		border-end-end-radius: 12px;
+		background: var( --mijovia-article-rail-background );
+	}
+
+	html[data-theme='light'] .skin-mijovia .mijovia-article-rail .mijovia-rail-toggle {
+		background: rgba( var( --theme-page-dynamic-color-1--rgb ), .15 );
+		color: var( --theme-page-dynamic-color-1 );
+		box-shadow: none;
+	}
+
+	html[data-theme='light'] .skin-mijovia .mijovia-article-rail .mijovia-rail-toggle:is( :hover, :focus-visible ) {
+		background: rgba( var( --theme-page-dynamic-color-1--rgb ), .3 );
+	}
+
+	html[data-theme='light'] .skin-mijovia .page.has-right-rail .pi-horizontal-group-item {
+		height: 124px;
+		vertical-align: middle;
+	}
+}

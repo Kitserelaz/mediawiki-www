@@ -1,0 +1,71 @@
+<div class="page-side-tools__wrapper">
+	<div class="page-side-tools">
+		<button class="page-side-tool content-size-toggle" type="button" aria-pressed="false" aria-label="{{msg-mijovia-width}}">
+			<svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-zoom-in-small"/></svg>
+			<span class="wds-tooltip mijovia-side-tool-tooltip" aria-hidden="true">{{msg-mijovia-width}}</span>
+		</button>
+		{{#has-page-sections}}
+		<div class="sticky-toc-wrapper mijovia-disclosure">
+			<button type="button" class="page-side-tool" aria-controls="mijovia-contents" aria-expanded="false" aria-label="{{msg-toc}}">
+				<svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-bullet-list-small"/></svg>
+				<span class="wds-tooltip mijovia-side-tool-tooltip" aria-hidden="true">{{msg-toc}}</span>
+			</button>
+			<nav id="mijovia-contents" class="mijovia-article-contents" aria-label="{{msg-toc}}" hidden><ul>{{>ArticleSections}}</ul></nav>
+		</div>
+		{{/has-page-sections}}
+		{{#edit-url}}
+		<a class="page-side-tool page-side-edit" href="{{edit-url}}" aria-label="{{edit-label}}">
+			<svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-pencil-small"/></svg>
+			<span class="wds-tooltip mijovia-side-tool-tooltip" aria-hidden="true">{{edit-label}}</span>
+		</a>
+		{{/edit-url}}
+	</div>
+</div>
+<div id="page-header" class="page-header" tabindex="-1">
+	<div class="page-header__top">
+		<div class="page-header__meta">
+			{{#array-indicators}}<span id="{{id}}" class="{{class}}">{{{html}}}</span>{{/array-indicators}}
+		</div>
+	</div>
+	<div class="page-header__bottom">
+		<div class="page-header__title-wrapper">
+			<h1 id="firstHeading" class="page-header__title firstHeading mw-first-heading" {{#is-title-blank}}hidden{{/is-title-blank}} {{{html-user-language-attributes}}}>{{{html-title}}}</h1>
+		</div>
+		<div class="page-header__actions">
+			{{#signed-in-article}}{{#talk-url}}
+			<a class="wds-button wds-is-text page-header__action-button has-label" href="{{talk-url}}"><svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-comment-small"/></svg><span>{{msg-mijovia-discuss}}</span></a>
+			{{/talk-url}}{{/signed-in-article}}
+			{{#edit-url}}<a class="wds-button wds-is-text page-header__action-button has-label" id="mijovia-primary-edit" href="{{edit-url}}"><svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-pencil-small"/></svg><span>{{edit-label}}</span></a>{{/edit-url}}
+			{{#has-page-actions}}
+			<div class="wds-dropdown wds-is-not-hoverable wds-is-clickable mijovia-disclosure" data-open-on-hover>
+				<button class="wds-button wds-is-text wds-dropdown__toggle page-header__action-button" type="button" id="mijovia-page-tools-toggle" aria-controls="mijovia-page-tools" aria-expanded="false" aria-label="{{msg-mijovia-page-tools}}">
+					<svg class="wds-icon wds-icon-small" aria-hidden="true"><use href="#wds-icons-more-small"/></svg>
+				</button>
+				<nav id="mijovia-page-tools" class="wds-dropdown__content wds-is-right-aligned wds-is-not-scrollable" aria-label="{{msg-mijovia-page-tools}}" hidden>
+					{{#page-action-views}}{{>PageToolsPortlet}}{{/page-action-views}}
+					{{#page-action-links}}{{>PageToolsPortlet}}{{/page-action-links}}
+					{{#data-portlets}}
+						{{#data-variants}}{{>PageToolsPortlet}}{{/data-variants}}
+						{{#data-languages}}{{>PageToolsPortlet}}{{/data-languages}}
+					{{/data-portlets}}
+				</nav>
+			</div>
+			{{/has-page-actions}}
+		</div>
+	</div>
+	{{#signed-in-article}}{{#has-normal-categories}}
+	<div class="page-header__categories-bar">
+		<div class="wds-dropdown wds-has-shadow wds-is-not-hoverable mijovia-disclosure" data-open-on-hover>
+			<button type="button" class="wds-button wds-is-text wds-dropdown__toggle" aria-controls="page-header-categories-dropdown" aria-expanded="false">
+				{{category-count-label}}
+				<svg class="wds-icon wds-icon-tiny wds-dropdown__toggle-chevron" aria-hidden="true"><use href="#wds-icons-dropdown-tiny"/></svg>
+			</button>
+			<div id="page-header-categories-dropdown" class="wds-dropdown__content wds-is-left-aligned page-header__categories-dropdown-content" hidden>
+				<ul class="wds-list wds-is-linked">
+					{{#normal-category-links}}<li>{{{.}}}</li>{{/normal-category-links}}
+				</ul>
+			</div>
+		</div>
+	</div>
+	{{/has-normal-categories}}{{/signed-in-article}}
+</div>

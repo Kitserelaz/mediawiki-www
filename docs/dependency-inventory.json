@@ -3610,16 +3610,6 @@
     },
     {
       "type": "skins",
-      "name": "Example",
-      "manifest": "mediawiki/skins/Example/skin.json",
-      "version": "1.0.0",
-      "sha256": "f29a664a15458eb6537ecda960427689ae1e55f1b27b62164b367799a7049de8",
-      "requires": {
-        "MediaWiki": ">= 1.46"
-      }
-    },
-    {
-      "type": "skins",
       "name": "Femiwiki",
       "manifest": "mediawiki/skins/Femiwiki/skin.json",
       "version": "5.1.2",
@@ -3696,6 +3686,16 @@
       "sha256": "52eca441e290f5d66ea75be8d14dc3df20faa45a0dfc1cc7af095e487931449e",
       "requires": {
         "MediaWiki": ">= 1.41.0"
+      }
+    },
+    {
+      "type": "skins",
+      "name": "Mijovia",
+      "manifest": "mediawiki/skins/Mijovia/skin.json",
+      "version": "1.0.0",
+      "sha256": "9c3cf7a952c35cfc664746d2711c17e3731ff857e4e527354b0bd87fbe5d7392",
+      "requires": {
+        "MediaWiki": ">= 1.46"
       }
     },
     {

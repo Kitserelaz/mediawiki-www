@@ -1,0 +1,194 @@
+{
+	"name": "Mijovia",
+	"version": "1.0.0",
+	"author": [
+		"..."
+	],
+	"descriptionmsg": "mijovia-skin-desc",
+	"namemsg": "skinname-mijovia",
+	"license-name": "CC0-1.0",
+	"type": "skin",
+	"AutoloadClasses": {
+		"MediaWiki\\Skins\\Mijovia\\SkinMijovia": "includes/SkinMijovia.php",
+		"MediaWiki\\Skins\\Mijovia\\WikiNavigation": "includes/WikiNavigation.php",
+		"MediaWiki\\Skins\\Mijovia\\ThemeDesignerConfig": "includes/ThemeDesignerConfig.php",
+		"MediaWiki\\Skins\\Mijovia\\SpecialMijoviaThemeDesigner": "includes/SpecialMijoviaThemeDesigner.php"
+	},
+	"SpecialPages": {
+		"MijoviaThemeDesigner": "MediaWiki\\Skins\\Mijovia\\SpecialMijoviaThemeDesigner"
+	},
+	"AvailableRights": [ "mijoviathemedesigner" ],
+	"GroupPermissions": {
+		"sysop": {
+			"mijoviathemedesigner": true
+		}
+	},
+	"requires": {
+		"MediaWiki": ">= 1.46"
+	},
+	"ValidSkinNames": {
+		"mijovia": {
+			"class": "MediaWiki\\Skins\\Mijovia\\SkinMijovia",
+			"args": [
+				{
+					"name": "mijovia",
+					"responsive": true,
+					"templateSectionLinks": "SectionLinks",
+					"menus": [
+						"user-page",
+						"notifications",
+						"associated-pages",
+						"variants",
+						"views",
+						"actions",
+						"user-interface-preferences",
+						"languages",
+						"user-menu"
+					],
+					"messages": [
+						"mijovia-no-categories",
+						"sitetitle",
+						"search",
+						"otherlanguages",
+						"tagline",
+						"navigation-heading",
+						"mainpage",
+						"categories",
+						"mijovia-skip",
+						"mijovia-top-navigation",
+						"mijoviathemedesigner",
+						"mijovia-pages",
+						"mijovia-discuss",
+						"mijovia-theme-light",
+						"mijovia-theme-dark",
+						"mijovia-width",
+						"mijovia-save",
+						"mijovia-page-tools",
+						"mijovia-sign-in",
+						"mijovia-create-account",
+						"createaccount",
+						"mijovia-home",
+						"mijovia-explore",
+						"mijovia-saved",
+						"mijovia-progress",
+						"mijovia-history",
+						"mijovia-utilities",
+						"mijovia-network",
+						"mijovia-settings",
+						"mijovia-more",
+						"mijovia-in-categories",
+						"mijovia-user-menu",
+						"mijovia-recent-activity",
+						"mijovia-my-tools",
+						"mijovia-customize",
+						"mijovia-shortcuts",
+						"toc",
+						"recentchanges",
+						"watchlist",
+						"close",
+						"mijovia-notifications",
+						"mijovia-notifications-mark-read",
+						"mijovia-notifications-loading",
+						"mijovia-notifications-empty",
+						"mijovia-notifications-error",
+						"mijovia-notifications-retry",
+						"mijovia-notifications-all",
+						"preferences",
+						"mijovia-ranks",
+						"mijovia-new",
+						"mijovia-rail-hide",
+						"mijovia-rail-show",
+						"mijovia-toolbar-show",
+						"hide",
+						"cancel",
+						"mijovia-toolbar-title",
+						"mijovia-toolbar-add-title",
+						"mijovia-toolbar-search",
+						"mijovia-toolbar-advanced",
+						"mijovia-toolbar-popular",
+						"mijovia-toolbar-list",
+						"mijovia-toolbar-reset",
+						"mijovia-toolbar-add",
+						"mijovia-toolbar-remove",
+						"mijovia-toolbar-up",
+						"mijovia-toolbar-down",
+						"mijovia-toolbar-move-menu",
+						"mijovia-toolbar-move-bar",
+						"mijovia-toolbar-rename",
+						"mijovia-toolbar-empty",
+						"mijovia-toolbar-error"
+					],
+					"styles": [
+						"skins.mijovia.styles"
+					],
+					"scripts": [
+						"skins.mijovia"
+					]
+				}
+			]
+		}
+	},
+	"MessagesDirs": {
+		"Mijovia": [
+			"i18n"
+		]
+	},
+	"ResourceModules": {
+		"skins.mijovia.themeDesigner": {
+			"packageFiles": [ "resources/themeDesigner.js" ],
+			"dependencies": [ "mediawiki.api" ],
+			"messages": [
+				"mijovia-theme-contrast-article",
+				"mijovia-theme-contrast-rail",
+				"mijovia-theme-preview-choose-article",
+				"mijovia-theme-preview-loading",
+				"mijovia-theme-preview-unavailable"
+			]
+		},
+		"skins.mijovia.themeDesigner.styles": {
+			"styles": [ "resources/themeDesigner.css" ]
+		},
+		"skins.mijovia.styles": {
+			"class": "MediaWiki\\ResourceLoader\\SkinModule",
+			"features": {
+				"normalize": true,
+				"elements": true,
+				"content-tables": true,
+				"content-links": false,
+				"content-media": false,
+				"content-links-external": false,
+				"interface-category": false,
+				"toc": true
+			},
+			"styles": [
+				"resources/fonts.css",
+				"resources/fandom-theme.css",
+				"resources/fandom-desktop.css",
+				"resources/skin.css"
+			]
+		},
+		"skins.mijovia": {
+			"packageFiles": [
+				"resources/skin.js",
+				"resources/toolbar.js",
+				"resources/notifications.js"
+			],
+			"dependencies": [
+				"mediawiki.storage",
+				"jquery.makeCollapsible",
+				"mediawiki.api",
+				"mediawiki.util"
+			]
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteSkinPath": "Mijovia"
+	},
+	"ResourceModuleSkinStyles": {
+		"mijovia": {
+			"+ext.echo.styles.badge": "resources/extensions/echo.styles.badge.less"
+		}
+	},
+	"manifest_version": 2
+}

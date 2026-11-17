@@ -1,0 +1,8 @@
+<span class="{{class}}">
+	{{#array-links}}
+	<a {{#array-attributes}}{{key}}="{{value}}" {{/array-attributes}}class="mijovia-section-link{{#class}} {{.}}{{/class}}" aria-label="{{text}}">
+		{{#icon}}<svg class="wds-icon" aria-hidden="true"><use href="#wds-icons-pencil-small"/></svg>{{/icon}}
+		{{^icon}}{{text}}{{/icon}}
+	</a>
+	{{/array-links}}
+</span>

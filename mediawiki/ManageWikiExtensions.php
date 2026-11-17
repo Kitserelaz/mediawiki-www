@@ -3783,6 +3783,14 @@ $wgManageWikiExtensions = [
 		'requires' => [],
 		'section' => 'skins',
 	],
+	'mijovia' => [
+		'name' => 'Mijovia',
+		'linkPage' => 'https://www.mediawiki.org/wiki/Manual:Skins',
+		'description' => 'A community wiki skin with light and dark themes and a built-in Theme Designer.',
+		'conflicts' => false,
+		'requires' => [],
+		'section' => 'skins',
+	],
 	'minervaneue' => [
 		'name' => 'MinervaNeue',
 		'linkPage' => 'https://www.mediawiki.org/wiki/Special:MyLanguage/Skin:Minerva_Neue',

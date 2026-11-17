@@ -16,6 +16,8 @@
 		[ 'sport', 'baseball' ],
 		[ 'communitiesfandoms', 'comments' ],
 		[ 'originalfiction', 'dragon' ],
+		[ 'societyculture', 'people-group' ],
+		[ 'lifestylehobbies', 'chess' ],
 		[ 'other', 'question' ],
 		[ 'uncategorised', 'folder' ]
 	] );

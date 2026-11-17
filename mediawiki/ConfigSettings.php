@@ -229,6 +229,8 @@ $wgConf->settings += [
 			'Sports' => 'sport',
 			'Communities & Fandoms' => 'communitiesfandoms',
 			'Original Fiction & Worldbuilding' => 'originalfiction',
+			'Society & Culture' => 'societyculture',
+			'Lifestyle & Hobbies' => 'lifestylehobbies',
 			'Other' => 'other',
 			'Uncategorised' => 'uncategorised',
 		],

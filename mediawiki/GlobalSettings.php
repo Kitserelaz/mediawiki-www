@@ -57,7 +57,12 @@ $wgDiscordNotificationWikiUrlEndingHistory = '?action=history';
 $wgDiscordNotificationWikiUrlEndingUserRights = 'Special:UserRights?user=';
 
 if ( !$cwPrivate ) {
-        $wgDiscordIncomingWebhookUrl = $wmgGlobalDiscordWebhookUrl ?? ""; //$wmgGlobalDiscordWebhookUrl;
+        $wgDiscordIncomingWebhookUrl = $wmgGlobalDiscordWebhookUrl ?? '';
+        if ( $wgDiscordIncomingWebhookUrl === '' ) {
+                $wgDiscordIncomingWebhookUrl = function_exists( 'farmEnv' )
+                        ? farmEnv( 'MW_DISCORD_WEBHOOK', '' )
+                        : ( getenv( 'MW_DISCORD_WEBHOOK' ) ?: '' );
+        }
 }
 
 if ($cwClosed) {

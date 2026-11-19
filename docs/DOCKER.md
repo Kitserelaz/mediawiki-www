@@ -315,6 +315,12 @@ The farm has 25 custom-domain slots shared by all wikis. Active domains, manuall
 
 Set `MW_CUSTOM_DOMAINS_ENABLED=0` to pause new setup and activation. While `MW_CUSTOM_DOMAINS_ROUTING=1`, existing domains can renew, serve traffic, and be removed. Before disabling routing or rolling back to an older release, remove managed domains on Meta and verify their built-in addresses serve again. Keep the legacy RequestSSL workflow disabled when self-service is enabled.
 
+### Edge caching and purging
+
+Public wikis set `$wgUseCdn = true` and `$wgCdnMaxAge = 300` in `GlobalSettings.php`; private wikis never do. Cached responses only take effect when a Cloudflare Cache Rule serves HTML for the public hosts, because the default cache level does not store extension-less HTML regardless of `Cache-Control`.
+
+`CFCachePurge` invalidates the edge on page save, deletion, and move through `DeferredUpdates`, using the same zone and token as the manual special page. It stays inert unless `$wgUseCdn` is true and `CFCachePurgeZoneId`/`CFCachePurgeApiToken` resolve, so no API calls occur without a CDN. Purge failures are logged to the `CFCachePurge` debug group and never surfaced to editors. Keeping `$wgCdnMaxAge` low bounds staleness if a purge is missed.
+
 Rehearse restore, schema updates, cross-domain authentication, private uploads, wiki creation, jobs, dumps, search, and backup restoration before a write freeze. During cutover: stop writes/jobs, take a final coordinated snapshot, restore it, run explicit updates, validate, then switch traffic. Monitor HTTP errors, service health, job backlog, database connections, and free storage.
 
 Rollback before accepting new writes: route traffic back to the original host or restore the exact previous image/configuration and coordinated database/files snapshot. After accepting writes, freeze again and reconcile data before rollback; simply running old code against migrated schemas is unsafe.

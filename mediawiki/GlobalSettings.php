@@ -57,6 +57,11 @@ $wgDiscordNotificationWikiUrlEndingHistory = '?action=history';
 $wgDiscordNotificationWikiUrlEndingUserRights = 'Special:UserRights?user=';
 
 if ( !$cwPrivate ) {
+        // Public wikis only. Private wikis must never be edge-cached.
+        // A short max-age keeps stale content bounded when a purge fails.
+        $wgUseCdn = true;
+        $wgCdnMaxAge = 300;
+
         $wgDiscordIncomingWebhookUrl = $wmgGlobalDiscordWebhookUrl ?? '';
         if ( $wgDiscordIncomingWebhookUrl === '' ) {
                 $wgDiscordIncomingWebhookUrl = function_exists( 'farmEnv' )

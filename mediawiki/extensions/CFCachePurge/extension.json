@@ -11,6 +11,11 @@
   "SpecialPages": {
     "CFCachePurge": "MediaWiki\\Extension\\CFCachePurge\\SpecialCFCachePurge"
   },
+  "Hooks": {
+    "PageSaveComplete": "MediaWiki\\Extension\\CFCachePurge\\Hooks::onPageSaveComplete",
+    "ArticleDeleteComplete": "MediaWiki\\Extension\\CFCachePurge\\Hooks::onArticleDeleteComplete",
+    "PageMoveComplete": "MediaWiki\\Extension\\CFCachePurge\\Hooks::onPageMoveComplete"
+  },
   "AvailableRights": [
     "cloudflarepurge"
   ],

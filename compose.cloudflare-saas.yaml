@@ -7,6 +7,18 @@ services:
       default: {}
       cloudflare-saas-origin:
         ipv4_address: 172.31.240.2
+  # Cache purge reuses the zone-scoped SaaS token so no second Cloudflare credential
+  # is needed. The token must allow Cache Purge as well as SSL and Certificates Write.
+  php:
+    environment:
+      MW_CLOUDFLARE_SAAS_ZONE_ID: ${MW_CLOUDFLARE_SAAS_ZONE_ID:?Set the Cloudflare SaaS zone ID}
+    secrets:
+      - cloudflare-saas-token
+  worker:
+    environment:
+      MW_CLOUDFLARE_SAAS_ZONE_ID: ${MW_CLOUDFLARE_SAAS_ZONE_ID:?Set the Cloudflare SaaS zone ID}
+    secrets:
+      - cloudflare-saas-token
   scheduler:
     environment:
       MW_CLOUDFLARE_SAAS_ZONE_ID: ${MW_CLOUDFLARE_SAAS_ZONE_ID:?Set the Cloudflare SaaS zone ID}

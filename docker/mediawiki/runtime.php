@@ -93,7 +93,28 @@ function farmRuntime(): void {
         $wgCaptchaTriggers = array_fill_keys(['edit', 'create', 'addurl', 'createaccount', 'badlogin', 'badloginperuser'], false);
     }
     if (farmEnv('MW_NOTIFICATIONS', '0') !== '1') { $wgDiscordIncomingWebhookUrl = ''; }
-    if (farmEnv('MW_CACHE_PURGE', '0') !== '1') { $wgCFCachePurgeApiToken = ''; }
+    if (farmEnv('MW_CACHE_PURGE', '0') !== '1') {
+        $wgCFCachePurgeApiToken = '';
+    } else {
+        // Prefer cloudflare_token from the farm secrets; otherwise use the zone-scoped
+        // Cloudflare SaaS credential that also serves custom hostnames. That token must
+        // carry Cache Purge in addition to SSL and Certificates Write.
+        if ( $wgCFCachePurgeApiToken === '' ) {
+            $saasTokenFile = farmEnv('MW_CLOUDFLARE_SAAS_TOKEN_FILE', '/run/secrets/cloudflare-saas-token');
+            if ( is_readable($saasTokenFile) ) {
+                $saasToken = trim( (string)file_get_contents($saasTokenFile) );
+                if ( $saasToken !== '' && !preg_match('/\s/', $saasToken) ) {
+                    $wgCFCachePurgeApiToken = $saasToken;
+                }
+            }
+        }
+        if ( ( $GLOBALS['wgCFCachePurgeZoneId'] ?? '' ) === '' ) {
+            $saasZone = farmEnv('MW_CLOUDFLARE_SAAS_ZONE_ID', '');
+            if ( preg_match('/^[a-f0-9]{32}$/D', $saasZone) ) {
+                $GLOBALS['wgCFCachePurgeZoneId'] = $saasZone;
+            }
+        }
+    }
     if (farmEnv('MW_ANALYTICS', '0') !== '1') { $wgMatomoAnalyticsTokenAuth = ''; }
     $wgPingback = false;
     $wgCreateWikiDatabase = 'wikidb';

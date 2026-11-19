@@ -2085,6 +2085,10 @@ class CentralAuthUser implements IDBAccessObject {
 	}
 
 	private function applyLock(): StatusValue {
+		return StatusValue::newFatal( 'centralauth-admin-not-authorized' );
+	}
+
+	private function applyLockDisabled(): StatusValue {
 		$this->checkWriteMode();
 		$this->loadState();
 

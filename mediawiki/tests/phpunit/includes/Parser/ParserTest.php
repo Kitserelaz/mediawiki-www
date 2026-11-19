@@ -17,6 +17,7 @@ use MediaWiki\Parser\MagicWordFactory;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserCoreTagHooks;
 use MediaWiki\Parser\ParserFactory;
+use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Preferences\SignatureValidatorFactory;
 use MediaWiki\SpecialPage\SpecialPageFactory;
 use MediaWiki\Tidy\TidyDriverBase;
@@ -96,6 +97,7 @@ class ParserTest extends MediaWikiIntegrationTestCase {
 		} finally {
 			ParserFactory::$inParserFactory--;
 		}
+		$this->assertInstanceOf( ParserOutput::class, $parser->getOutput() );
 
 		$refObject = new ReflectionObject( $parser );
 		foreach ( $refObject->getProperties() as $prop ) {

@@ -65,6 +65,28 @@ if ( !$cwPrivate ) {
         }
 }
 
+$wgDiscordIgnoreMinorEdits = false;
+$wgDiscordNotificationIncludeAutocreatedUsers = true;
+$wgDiscordNotificationEnabledActions = [
+        'AddedArticle' => true,
+        'EditedArticle' => true,
+        'MovedArticle' => true,
+        'ProtectedArticle' => true,
+        'RemovedArticle' => true,
+        'UnremovedArticle' => true,
+        'AfterImportPage' => true,
+        'FileUpload' => true,
+        'BlockedUser' => true,
+        'NewUser' => true,
+        'UserGroupsChanged' => true,
+        'ModerationPending' => true,
+];
+$wgDiscordEnableExperimentalCVTFeatures = true;
+$wgDiscordExperimentalWebhook = $wgDiscordIncomingWebhookUrl;
+$wgDiscordExperimentalCVTSendAllIPEdits = true;
+$wgDiscordExperimentalCVTSendAllNewUsers = true;
+$wgDiscordExperimentalCVTSendAllUserBlocks = true;
+
 if ($cwClosed) {
         $wgRevokePermissions = [
                 '*' => [

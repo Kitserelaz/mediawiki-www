@@ -529,6 +529,14 @@ $wgConf->settings += [
 	'wgManageWikiPermissionsAdditionalAddGroups' => [
 		'default' => [],
 	],
+	'wgRevokePermissions' => [
+		'default' => [
+			'*' => [
+				'centralauth-lock' => true,
+				'disable-account' => true,
+			],
+		],
+	],
 	'wgManageWikiPermissionsAdditionalRights' => [
 		'default' => [
 			'*' => [

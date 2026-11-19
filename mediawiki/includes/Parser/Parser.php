@@ -438,6 +438,7 @@ class Parser {
 				'disableLangConversion' => $languageConverterFactory->isConversionDisabled(),
 			]
 		);
+		$this->mOutput = new ParserOutput;
 
 		// These steps used to be done in "::firstCallInit()"
 		// (if you're chasing a reference from some old code)

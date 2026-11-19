@@ -1242,6 +1242,12 @@ class SpecialCentralAuth extends SpecialPage {
 	}
 
 	private function showLogExtract() {
+		if ( !CentralAuthUser::getInstance( $this->getAuthority()->getUser() )
+			->hasGlobalPermission( 'viewglobalblocks' )
+		) {
+			return;
+		}
+
 		$user = $this->mGlobalUser->getName();
 		$globalTitle = Title::newFromText( $this->namespaceInfo->getCanonicalName( NS_USER ) . ":{$user}@global" );
 		if ( !$globalTitle ) {

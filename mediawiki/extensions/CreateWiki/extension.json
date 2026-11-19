@@ -80,7 +80,6 @@
 	"AvailableRights": [
 		"createwiki",
 		"createwiki-deleterequest",
-		"createwiki-permanentlydelete",
 		"createwiki-suppressionlog",
 		"createwiki-suppressrequest",
 		"upgrade-mediawiki",
@@ -169,13 +168,6 @@
 			"services": [
 				"CreateWikiDatabaseUtils",
 				"CreateWikiValidator",
-				"WikiManagerFactory"
-			]
-		},
-		"PermanentlyDeleteWiki": {
-			"class": "Miraheze\\CreateWiki\\Specials\\SpecialPermanentlyDeleteWiki",
-			"services": [
-				"CreateWikiDatabaseUtils",
 				"WikiManagerFactory"
 			]
 		},

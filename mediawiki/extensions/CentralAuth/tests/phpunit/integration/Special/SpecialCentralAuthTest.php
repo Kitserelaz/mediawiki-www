@@ -293,7 +293,7 @@ class SpecialCentralAuthTest extends SpecialPageTestBase {
 	 */
 	private function verifyForExistingGlobalAccount(
 		string $targetUsername, bool $userCanSuppress, bool $userCanUnmerge, bool $userCanLock,
-		?WebRequest $request = null
+		?WebRequest $request = null, bool $userHasGlobalViewGlobalBlocks = false
 	): string {
 		// Explicitly set the user's language as qqx as some messages look at the user's language and not the request
 		// language.
@@ -315,7 +315,28 @@ class SpecialCentralAuthTest extends SpecialPageTestBase {
 		if ( $userCanLock ) {
 			$authorityRights[] = 'centralauth-lock';
 		}
-		$authority = $this->mockRegisteredAuthorityWithPermissions( $authorityRights );
+		if ( $userHasGlobalViewGlobalBlocks ) {
+			$testUser = $this->getMutableTestUser();
+			$localUser = $testUser->getUser();
+			$centralUser = CentralAuthUser::getPrimaryInstance( $localUser );
+			$centralUser->register( $testUser->getPassword(), null );
+			$centralUser->attach( WikiMap::getCurrentWikiId() );
+
+			$globalGroup = 'test-viewglobalblocks-' . $localUser->getId();
+			CentralAuthServices::getDatabaseManager( $this->getServiceContainer() )
+				->getCentralPrimaryDB()->newInsertQueryBuilder()
+				->insertInto( 'global_group_permissions' )
+				->row( [
+					'ggp_group' => $globalGroup,
+					'ggp_permission' => 'viewglobalblocks',
+				] )
+				->caller( __METHOD__ )
+				->execute();
+			$centralUser->addToGlobalGroup( $globalGroup );
+			$authority = $this->mockUserAuthorityWithPermissions( $localUser, $authorityRights );
+		} else {
+			$authority = $this->mockRegisteredAuthorityWithPermissions( $authorityRights );
+		}
 		// Execute the special page with the username specified via the target parameter
 		$request = $request ?? new FauxRequest();
 		$request->setVal( 'target', $targetUsername );
@@ -523,12 +544,14 @@ class SpecialCentralAuthTest extends SpecialPageTestBase {
 	}
 
 	private function verifyForExistingGlobalAccountOnFormSubmission(
-		string $targetUsername, array $requestData, bool $userCanSuppress, bool $userCanUnmerge, bool $userCanLock
+		string $targetUsername, array $requestData, bool $userCanSuppress, bool $userCanUnmerge, bool $userCanLock,
+		bool $userHasGlobalViewGlobalBlocks = false
 	): string {
 		// Add fields to the request and set that the request was posted
 		$fauxRequest = new FauxRequest( $requestData, true );
 		return $this->verifyForExistingGlobalAccount(
-			$targetUsername, $userCanSuppress, $userCanUnmerge, $userCanLock, $fauxRequest
+			$targetUsername, $userCanSuppress, $userCanUnmerge, $userCanLock, $fauxRequest,
+			$userHasGlobalViewGlobalBlocks
 		);
 	}
 
@@ -603,6 +626,7 @@ class SpecialCentralAuthTest extends SpecialPageTestBase {
 		$html = $this->verifyForExistingGlobalAccountOnFormSubmission(
 			$targetCentralAuthUser->getName(),
 			$requestData,
+			true,
 			true,
 			true,
 			true
@@ -808,7 +832,7 @@ class SpecialCentralAuthTest extends SpecialPageTestBase {
 			$targetUsername, 'Test global block', 'indefinite',
 			$this->getTestUser( [ 'steward' ] )->getUserIdentity()
 		) );
-		$html = $this->verifyForExistingGlobalAccount( $targetUsername, true, true, true );
+		$html = $this->verifyForExistingGlobalAccount( $targetUsername, true, true, true, null, true );
 		// Verify that that the log snippet is present and that is contains the log entries for the lock
 		// and global block.
 		$logSnippet = $this->assertAndGetByElementId( $html, 'mw-centralauth-admin-logsnippet' );
@@ -816,6 +840,20 @@ class SpecialCentralAuthTest extends SpecialPageTestBase {
 		$this->assertStringContainsString( 'Test global block', $logSnippet );
 		$this->assertStringContainsString( 'Test global lock', $logSnippet );
 		$this->assertStringContainsString( $targetUsername, $logSnippet );
+	}
+
+	public function testLogExtractHiddenWithoutGlobalViewGlobalBlocksPermission() {
+		$targetUsername = $this->getTestCentralAuthUser();
+		$targetUser = CentralAuthUser::getInstanceByName( $targetUsername );
+		$context = new DerivativeContext( RequestContext::getMain() );
+		$context->setAuthority( $this->mockRegisteredUltimateAuthority() );
+		$this->assertStatusGood( $targetUser->adminLockHide( true, null, 'Test global lock', $context ) );
+
+		$html = $this->verifyForExistingGlobalAccount( $targetUsername, false, false, false );
+		$this->assertNull( DOMCompat::getElementById(
+			DOMUtils::parseHTML( $html ), 'mw-centralauth-admin-logsnippet'
+		) );
+		$this->assertStringNotContainsString( 'Test global lock', $html );
 	}
 
 	public function testLogExtractWithSuppressionLog() {
@@ -827,7 +865,7 @@ class SpecialCentralAuthTest extends SpecialPageTestBase {
 		$this->assertStatusGood( $targetUser->adminLockHide(
 			true, CentralAuthUser::HIDDEN_LEVEL_SUPPRESSED, 'Test global suppression', $context
 		) );
-		$html = $this->verifyForExistingGlobalAccount( $targetUsername, true, true, true );
+		$html = $this->verifyForExistingGlobalAccount( $targetUsername, true, true, true, null, true );
 		// Verify that that the log snippet is present and contains the global suppression entry.
 		$logSnippet = $this->assertAndGetByElementId( $html, 'mw-centralauth-admin-logsnippet' );
 		$this->assertStringContainsString( 'Test global suppression', $logSnippet );
@@ -848,7 +886,7 @@ class SpecialCentralAuthTest extends SpecialPageTestBase {
 
 		// Verify that that the log snippet is not present and the global suppression log is
 		// not present in the page.
-		$html = $this->verifyForExistingGlobalAccount( $targetUsername, true, true, true );
+		$html = $this->verifyForExistingGlobalAccount( $targetUsername, true, true, true, null, true );
 		$specialPageDocument = DOMUtils::parseHTML( $html );
 		$logSnippet = DOMCompat::getElementById( $specialPageDocument, 'mw-centralauth-admin-logsnippet' );
 		$this->assertNull(

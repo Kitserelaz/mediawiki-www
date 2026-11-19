@@ -62,6 +62,15 @@ if ( !$cwPrivate ) {
         $wgUseCdn = true;
         $wgCdnMaxAge = 18000;
 
+        // ResourceLoader sets both max-age and s-maxage from these values.
+        // Versioned URLs carry a content hash, so they may cache for 30 days.
+        // Unversioned ones are shared entrypoints (startup module, site CSS/JS),
+        // where the 5 minute default is shorter than needed at the edge.
+        $wgResourceLoaderMaxage = [
+                'versioned' => 30 * 24 * 60 * 60,
+                'unversioned' => 18000,
+        ];
+
         $wgDiscordIncomingWebhookUrl = $wmgGlobalDiscordWebhookUrl ?? '';
         if ( $wgDiscordIncomingWebhookUrl === '' ) {
                 $wgDiscordIncomingWebhookUrl = function_exists( 'farmEnv' )

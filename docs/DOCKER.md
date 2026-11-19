@@ -317,7 +317,7 @@ Set `MW_CUSTOM_DOMAINS_ENABLED=0` to pause new setup and activation. While `MW_C
 
 ### Edge caching and purging
 
-Public wikis set `$wgUseCdn = true` and `$wgCdnMaxAge = 18000` in `GlobalSettings.php`; private wikis never do. Cached responses only take effect when a Cloudflare Cache Rule serves HTML for the public hosts, because the default cache level does not store extension-less HTML regardless of `Cache-Control`.
+Public wikis set `$wgUseCdn = true` and `$wgCdnMaxAge = 18000` in `GlobalSettings.php`; private wikis never do. The same block sets `$wgResourceLoaderMaxage` to 30 days for versioned URLs and 18000 seconds for unversioned ones, so `/load.php` sends a matching `s-maxage`; versioned URLs are content-hashed and safe to hold longer. Cached responses only take effect when a Cloudflare Cache Rule serves HTML for the public hosts, because the default cache level does not store extension-less HTML regardless of `Cache-Control`.
 
 `CFCachePurge` invalidates the edge on page save, deletion, and move through `DeferredUpdates`, using the same zone and token as the manual special page. It stays inert unless `$wgUseCdn` is true and `CFCachePurgeZoneId`/`CFCachePurgeApiToken` resolve, so no API calls occur without a CDN. Purge failures are logged to the `CFCachePurge` debug group and never surfaced to editors. The 18000 second TTL matches MediaWiki's default; because it is five hours, a missed purge leaves stale content until the entry expires, so verify purging after any change to the cache rule or credentials.
 

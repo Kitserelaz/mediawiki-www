@@ -58,9 +58,9 @@ $wgDiscordNotificationWikiUrlEndingUserRights = 'Special:UserRights?user=';
 
 if ( !$cwPrivate ) {
         // Public wikis only. Private wikis must never be edge-cached.
-        // A short max-age keeps stale content bounded when a purge fails.
+        // Matches MediaWiki's default; edits rely on purge-on-save to stay fresh.
         $wgUseCdn = true;
-        $wgCdnMaxAge = 300;
+        $wgCdnMaxAge = 18000;
 
         $wgDiscordIncomingWebhookUrl = $wmgGlobalDiscordWebhookUrl ?? '';
         if ( $wgDiscordIncomingWebhookUrl === '' ) {

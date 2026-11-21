@@ -20216,23 +20216,23 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/composer.lock",
-      "sha256": "b28c9a45044f704a805b29555dab97af76e5e42a4ecd637e719c2ca1f16d81c9"
+      "sha256": "7120cff34f0c9a3a9e848e1d3a8bde39cb720dcb979924b85d4ffc1d73e89492"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/autoload.php",
-      "sha256": "f3abf93f4745a297faa8f60c266798613e7851ed73b522db6fbab92485d7bd7b"
+      "sha256": "21d0de8c9d1b75b04cdf20726dde8368055f7cd0480a5f296902e197ed99ba7d"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/LICENSE",
-      "sha256": "6748d0268a176f839bfa1031724f9ce0963acbdadc71e503c2c3e9b59c8fcd68"
+      "sha256": "973af1db913b076a85e09732c75df802a6b8a61a63701c38f2ce6d471c213260"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/README.md",
-      "sha256": "95a26a1e4c1ff9a8976224af9380485baa57ab99cd1b23f372b2c725690fa6fd"
+      "sha256": "7ce81554c3d49e416960376ddc223d1198f66961aa8323972f3528024f357682"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/composer.json",
-      "sha256": "e7d2fba0cbe5b8bd98a78524e2cc8235cd345bc88b8d19e192de003d870ccd64"
+      "sha256": "9717ae6d82f298b024fb15fc5e7088245b8f94712cec088ee50922c7b9ca7462"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Common/BitArray.php",
@@ -20288,11 +20288,11 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Encoder/Encoder.php",
-      "sha256": "c9e3cc113c275bb55e613f707870236e8645a4d1b89ebc5f4af7cf9c59aabcbd"
+      "sha256": "89bb2beba25474ebe196fc0b2d81b8dadeaea4ce008c678a48d8e6e668f74d58"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Encoder/MaskUtil.php",
-      "sha256": "a325ce3fd418f688e93aff5f3d00de79674aa5c11f1c00e632ed150dc3cd66d2"
+      "sha256": "23bb47d8120aee32dffbd4854a1d63309baf64ad74c5112759f3c9a9ca9b8851"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Encoder/MatrixUtil.php",
@@ -20332,7 +20332,7 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Renderer/Color/Cmyk.php",
-      "sha256": "847c5e453651dd96d86e1e0e9d2ed60110022c19e7ab7b563bab87a95d5bf508"
+      "sha256": "6a60d03366eaefb3ee68b6d19a0e31a12d8c89ef3352e5d8f8f25190993f9376"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Renderer/Color/ColorInterface.php",
@@ -20340,11 +20340,11 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Renderer/Color/Gray.php",
-      "sha256": "904c0a1fd4ea931188db43c9e412218234ba702c9ad35284fa25fc800faff0a7"
+      "sha256": "cf8af193141742cb9fde98361269a9b3c06a0280a88af331bad24cc20279df9b"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Renderer/Color/Rgb.php",
-      "sha256": "b5acd9bce3071809818995473ed0c816a7188f3f83a460ee976c264d06a72fd1"
+      "sha256": "7f35a334184109c9c173904df68b20efa7988f2578675dbc78a1bc026ec1dc7f"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Renderer/Eye/CompositeEye.php",
@@ -20372,7 +20372,7 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Renderer/GDLibRenderer.php",
-      "sha256": "4dab278b44ec41581bcd3119ec18965df8e5002340b9c1ae915816a4d43a7903"
+      "sha256": "98969481235e2df682491c3c3413c31376453aa01f5fc0acf89f41932dd8a6b5"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Renderer/Image/EpsImageBackEnd.php",
@@ -20384,11 +20384,11 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Renderer/Image/ImagickImageBackEnd.php",
-      "sha256": "1f4ad6c044918fd2186d237697fdf63cd3aadd18a9297f1579142ccef7241d7c"
+      "sha256": "6fccfe219064bafe1e91da34c0344bca30bfb93526e45914e6478359a0b3f43a"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Renderer/Image/SvgImageBackEnd.php",
-      "sha256": "9069af534999acdd649cad87e06a57cf2b3413ea607cc574dee3affef852b5e7"
+      "sha256": "defe57ed85c6a8bc6227ab49fcca098428f0420955b1f52efb8de58c75209cd0"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Renderer/Image/TransformationMatrix.php",
@@ -20432,7 +20432,7 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Renderer/Path/EllipticArc.php",
-      "sha256": "dc4cb757304746fef0d5276f603b9e8b764af1cdf655a1cc4c7d110d11159abb"
+      "sha256": "15ced4eaef0219617821f47ea880cf2f08fb51afca9eed7106effa478d4568e7"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/bacon/bacon-qr-code/src/Renderer/Path/Line.php",
@@ -20484,43 +20484,47 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/composer/ClassLoader.php",
-      "sha256": "6df8dd8658f8f0c82e7065a7c71e88f608199a546ad23795211f8a3ccae3164e"
+      "sha256": "d4b2313e562edf942838ec316d983c1a3459ca67da3e5658e861200b0b3693c2"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/composer/InstalledVersions.php",
-      "sha256": "5b9102768652a2c723844eec5ba803be0d1a99d4e720eeff704cc5cd8329ca4b"
+      "sha256": "1e4525198301d1ed1f87ac3df2a8555a6f139f8df30a703d0b775a61963c96e4"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/composer/LICENSE",
-      "sha256": "7855ac293067aebe7e51afdd23b9dea54b8be24187dbecc9b9142581c37f596c"
+      "sha256": "c8cce4b6b9729f264ffdf9296d505d63432497feeed1f586d1902b942197e024"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/composer/autoload_classmap.php",
-      "sha256": "74dcf24a738537227f9b40fa55bfc26ae77341b765914d4e8f518d5ec9eccb43"
+      "sha256": "375085d0d6690301081436cd75755cb2c882f8a7f6fc385c8814a11734fc413a"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/composer/autoload_namespaces.php",
-      "sha256": "6d1b582b311799934568f00d45e01de7a04f8a1865a8a72c7841904ad4dac3a7"
+      "sha256": "ede505407590638a435137f4e060136f1008de79fc169b3de9793423b0cea38c"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/composer/autoload_psr4.php",
-      "sha256": "47e57af96e91be1b08559bfd04d8a6e216e809d8b6a5c5693b3a3739c581e2f0"
+      "sha256": "fb29647bee7c90ca47de020b556a3c1b890374cde4893da06b1e1c521af1ae0d"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/composer/autoload_real.php",
-      "sha256": "61f2ddc6243d9377c943db12c88177e47adcfcc0ca6acf9446aca5921daba638"
+      "sha256": "5a909e8fe93c0fa1e6c80cff9e54b7ea39775821172ee381377adf56323cf715"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/composer/autoload_static.php",
-      "sha256": "9d32aa71f13e4fa6680fd61c33a8d5f01b5cf5b7156384b2272af2927fdcd962"
+      "sha256": "178b81ee6a686c2257a18d5c5f2fcdbd15cdd87c0268af63a04dc18f24912620"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/composer/installed.json",
-      "sha256": "31af324f08270962a3cd0c2045263bb58a200defb4a1420ed03956af4e2f3ac6"
+      "sha256": "d285c327d6c000f1048e0bb739f218238a28e618dcc15f94cfd2c68ae9b9f802"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/composer/installed.php",
-      "sha256": "8ac1294040f40cfe4e0bd0a0e783c5d5a531a212f21af164d3844839095e3143"
+      "sha256": "d42653d272c1142208ee91028eb6604dae10fa25812fb223e6022cef626871e3"
+    },
+    {
+      "path": "mediawiki/extensions/UrlShortener/vendor/composer/platform_check.php",
+      "sha256": "d9d67386b623922c4821f6a1a25980950a0d7815c0eb909759e79c4bab12474e"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/dasprid/enum/LICENSE",
@@ -20536,7 +20540,7 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/dasprid/enum/src/AbstractEnum.php",
-      "sha256": "ce74f615ab585c96d5f905d7692f33496003fb5b8e99fb868e905a59c05fe73b"
+      "sha256": "1c2d7baa5e2a9c9b9419ee6b1e49e5af35229c51ef9c77c489b087faaa6e0040"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/dasprid/enum/src/EnumMap.php",
@@ -20572,19 +20576,15 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/dasprid/enum/src/NullValue.php",
-      "sha256": "592287a01f9a11e335f2dd75b863a68215051b25d391a466372a9131ab310a28"
+      "sha256": "c2e503fab5e76a21e5e6bf45954780a8759d0c6ae7d13ba09f0a7c3d37b0e838"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/LICENSE",
-      "sha256": "55f4a81e457beb2d868cf94bf664751491735d4a33d22506a6e71431a445a2a0"
+      "sha256": "27ea9b7210821367f6d8bc4a8f0ab132ad5e29f3334140f8b2295fd2b9bf0016"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/README.md",
-      "sha256": "5de94a97e8a2f5c43d16fd88a9d6100e42d91292c58571951d75380f42d57c9f"
-    },
-    {
-      "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/assets/noto_sans.otf",
-      "sha256": "f18253affd968c8ea592d8df6d84b1d4c5d3a46d267e53a1f6749e6c4f76a23d"
+      "sha256": "2438b49646ff5365997b120d5ce24891d3c7c457e3419604f2e9e3da1ff1aa94"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/assets/open_sans.ttf",
@@ -20592,35 +20592,35 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/composer.json",
-      "sha256": "bd74bbda4e34888f5a25d8e1ace720692b8321283c77d1caaa6078a5153173ac"
+      "sha256": "c95c04ee5082367b56046dab5b31577ffe1fa2d3caca1511afb9bd948a0bf4be"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Bacon/ErrorCorrectionLevelConverter.php",
-      "sha256": "d749d3e2102aafa5a0e3c645c4b3e7f3d410cd1b76579b25b04220692c0f17ae"
+      "sha256": "ca6d06b6be99b630b735ba8b92001c9368f0d3ac706bee2480425cab9824a5b2"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Bacon/MatrixFactory.php",
-      "sha256": "2ea23cadaad74995c34d5142165f6e70daf300bb7b7024296e250da3400ebd18"
+      "sha256": "c011de8232a960f54e5689916db8b950330c8ed9bef234f04cf4d678f8570840"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Builder/Builder.php",
-      "sha256": "2101f97ff9bb0a79f8a39b570586d9c7a3d17d1c9190d91b9cf6775f5f39d530"
+      "sha256": "5818d138651fce9458e8d3c9ce8bd5396a1b395137d8b5dc23eec7922602bb84"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Builder/BuilderInterface.php",
-      "sha256": "92afd839f6734a156feb7a1acceed8880f77452230750735b698e18499e11035"
+      "sha256": "358391cf6f2323b477b54bc136eb163e26719a89e62b9539de763884d6ba8f6b"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Builder/BuilderRegistry.php",
-      "sha256": "561cc5c5e1e8d7f542c84cc417b1d07fcaeef4566266003eed4f95064e08f559"
+      "sha256": "962e8fe302e96fbc22f84bc9f3b0128e51c606656a00b784990a70f39c37d082"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Builder/BuilderRegistryInterface.php",
-      "sha256": "357cc6ddc43bdb1ca585d9512557da639b57918808564b8ad4678d27e3519ac3"
+      "sha256": "96d67eb14868c4df3efb1f4265063d3d47769def43cd2e9c757dcf19229433fb"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Color/Color.php",
-      "sha256": "c7adfe108be40bf342a4a4003e7c4bc73c9e892a0d01e767c4f847aeb3216dec"
+      "sha256": "81d226b51432d6b9615f82e005add998c5cf695e556a8bf30a62329356f248ff"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Color/ColorInterface.php",
@@ -20628,7 +20628,7 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Encoding/Encoding.php",
-      "sha256": "01db8b6ee24d9c3a3b7ad48e44c400bb2b0b6bc3667e249ea6984a67ef4734f8"
+      "sha256": "b737bb9eba9c811a04c6a403a073c94800d17c470987e50542951a5a0eaf751c"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Encoding/EncodingInterface.php",
@@ -20639,36 +20639,36 @@
       "sha256": "a9c23bf3633f33ddd4800350e86e0d435f517920861b6c19518b5b8b51d81be0"
     },
     {
+      "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Exception/BlockSizeTooSmallException.php",
+      "sha256": "230b62d4daf4917b6bed824e1f1cc4c8402cb6d74d615e48195faa7cb26871d0"
+    },
+    {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Exception/ValidationException.php",
       "sha256": "fce876fc77814b33015e317c57d3beca6cfb0adf2bb39232dde1d8cd09984aee"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/ImageData/LabelImageData.php",
-      "sha256": "4f6a04b088c5ddb85cbf58d158fd54670bdc68e5f276e79106fd45decd9c13ee"
+      "sha256": "9903eeeea861fdcdf66acf8cace78414848cdd497eb9d47486074bc66ef1bb7b"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/ImageData/LogoImageData.php",
-      "sha256": "42a1672751646196a9c4c42ff11c56eeb07481965130ec15df7a14bab0d673ef"
+      "sha256": "3534e6c4e3e8bb100507276cec94070b6c13f4603b7bb6a32b3a50fed677873e"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Label/Font/Font.php",
-      "sha256": "d22ace3d84aeb962d91b7492fd9f413295ce1eeea675cc19a2ce7232fdee4dff"
+      "sha256": "11f0c44cea08120925e0c0d61dbc716798b7d04c439393e8474c058724e22a8c"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Label/Font/FontInterface.php",
       "sha256": "248ac2e9aaacdc6a41bcd3175935192b8e78b6ebacf6d7ff8cbccd7cb434a863"
     },
     {
-      "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Label/Font/NotoSans.php",
-      "sha256": "28fb08d872e96f771694234d0d7190308adc3f5f5ff32003584a074006e5db7a"
-    },
-    {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Label/Font/OpenSans.php",
-      "sha256": "6a0f11256248c75ec26586035f043f489c83d3878dd3a27453e7d86594790500"
+      "sha256": "246e6fbe087fe608bf943bbe2bd9b463e9b02b221adcb74ada4b3d3cadeb92b4"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Label/Label.php",
-      "sha256": "a01c10c267a7c3c95202d77f13464ff12b360027de0c7dbed775b847651bb856"
+      "sha256": "1b5a678ec098f14351b596930d895552d50577e822fe0f67090f4303656c1bcf"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Label/LabelAlignment.php",
@@ -20680,7 +20680,7 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Label/Margin/Margin.php",
-      "sha256": "c92aa061ae2764ab71fb39cb96aab99201fa4544c9cceaf3e3d851865db331f0"
+      "sha256": "4382c46d15c711ce3ecef13478e8a4b2d703a48f72e0d55b4edba085e8afece8"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Label/Margin/MarginInterface.php",
@@ -20688,15 +20688,15 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Logo/Logo.php",
-      "sha256": "95fb1ed0edbdc5bdbc92c57409fd8fba3ec406dc9176055245817756701c1100"
+      "sha256": "a413c8713e367e362a37d8fdc636763ab9dcc2edd4233e96c79717963f3daf90"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Logo/LogoInterface.php",
-      "sha256": "85f516f34bf9c4a87a63de79ef29b4997148077fe88ae8a7c49625ad98d65aaa"
+      "sha256": "65cf3095f8aa822ede80271cefdb898f1a6fe2ef6e6e8313b34a57d7f2234070"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Matrix/Matrix.php",
-      "sha256": "d1d73ee570a166f99265ecc74a5446215821419ec66fdc85b18f43ecd0f9ee72"
+      "sha256": "285a4743a18ccb128d4ca3cf7116aacccda2f13454c83085400e2d12b2e515b0"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Matrix/MatrixFactoryInterface.php",
@@ -20708,7 +20708,7 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/QrCode.php",
-      "sha256": "367d0fc6958a3d87dab5afe9f1eb92c52178850a05a6de451302441ea88d5e7a"
+      "sha256": "cc90c9aff3f13b794b4270628e5662e18448184920306f8de750119074747b7e"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/QrCodeInterface.php",
@@ -20720,39 +20720,39 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/AbstractGdWriter.php",
-      "sha256": "062d84a8acc4064a7e88d4cce73d05395c2098bb6a9d8a298b5f43ee873d240c"
+      "sha256": "c095d72e5ecf4ea87d9a327c07e182de55a9fc905ccf58860dc10995d2102b6e"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/BinaryWriter.php",
-      "sha256": "d64688411cedf71d8de07de7bb3f5d8ee6c3cef438b48e4374fb4ac33191685f"
+      "sha256": "7c3170d7801b9441ef1211a322b2d28a5579aa88f3d27135c96c9178c371f7ce"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/ConsoleWriter.php",
-      "sha256": "211447a1c846113b9ea45e794c302dc5ea4c71bdeb7ed8fe85f1efc5a90a099f"
+      "sha256": "64598e16a65d15f610b777d40ddaf34eb81a4777bc58d1a7ad32692d1bd2b0c4"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/DebugWriter.php",
-      "sha256": "f096445f1a63fd2acd9366272a419bfb939edacc5a99677e688136646bf22668"
+      "sha256": "dda43effb5cb32d20774447f7b617f38151dee3301467a5f7825f514a6179788"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/EpsWriter.php",
-      "sha256": "51e9304cf7600572e2ae882045d84ee9086a436bf212a60b9c196abf50f7f86d"
+      "sha256": "b93912b5aba22262e61a27cb8db8e239dcdd650388cdc01e481c1572f1df906b"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/GifWriter.php",
-      "sha256": "6924d1cc0c19e0b92b6a200db44dc1d773dc782963c928af534bd8eb111b9aa9"
+      "sha256": "e7d3afe10d37c371a8e901311969948b9bf1e6b3c0f687424a39eed6174d20e1"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/PdfWriter.php",
-      "sha256": "348175f4a8bbb80f6f1c3b1d97f6da38b06276d54b6699dd6fe67c8476389f69"
+      "sha256": "e84c0ad92c44ca60dbcbcd2da43a19a918441553e98d8d2bef59fd39042a1b82"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/PngWriter.php",
-      "sha256": "deea79d93147ed58f1fade4c5a752ddd9b0115aefeb91831f078de0b822a42c6"
+      "sha256": "747d176b4c19057a2a38a0074557af354cd23bdac3dee2656bf1f3f5dc90a286"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/Result/AbstractResult.php",
-      "sha256": "5c93a0f10118234371ed709987f7612946875ead11a8a1f90a0f33a92c42c76a"
+      "sha256": "e83930c59d0ca0f631de3544a77fb7c939e0d54d9cd7761ce01ccfdef9dfce89"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/Result/BinaryResult.php",
@@ -20760,19 +20760,19 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/Result/ConsoleResult.php",
-      "sha256": "39aa8eae67cc7b491598451ee442e3e72ec1d151a2ec255718898cf964d52625"
+      "sha256": "4220ebaf075c55b1d1fc0a8d32d89e71bee897041741c8831c555db96ed9595f"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/Result/DebugResult.php",
-      "sha256": "3211c1ef2b7d7b8a855c0412e58cd194e3c9087447ed54889653ecfc79c2da14"
+      "sha256": "80c484709b01f8d3e2a54406ec7b8832c1ac3233ca96abe83623de784efaba48"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/Result/EpsResult.php",
-      "sha256": "f1dfe6552f6beda42eba87c3705639f7be06f468421605d419035f6d24e770c5"
+      "sha256": "b4e21ffd041a15c9ea9b7479fbb3c954896d04f8f35b0adde7724d172fc5e8fe"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/Result/GdResult.php",
-      "sha256": "1928c988f96814ba4a0f5e097d9f3dd572f321861d2a846a720b0a8a5b4649c1"
+      "sha256": "32b52bbebbf719968165ad60596aafcb0b1847ee0170379277a0b71a41d076a1"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/Result/GifResult.php",
@@ -20780,11 +20780,11 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/Result/PdfResult.php",
-      "sha256": "517018e8d29d2ed4e268aa6c5180104c40f4d2125cc50f91b792267fc76d3526"
+      "sha256": "f65bdba18ff0bf0583df790afc6aba2f00db1ae1560b70204657da29051adc72"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/Result/PngResult.php",
-      "sha256": "77d6a1af6f2ef6937b3a966ad7580c48aa1272f44ade1beb7fe1348be19094ff"
+      "sha256": "03fcee6a57fb3049af5ed2e867a4695f470b18580652c689fcbb533d43cbbe3e"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/Result/ResultInterface.php",
@@ -20792,15 +20792,15 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/Result/SvgResult.php",
-      "sha256": "8caabb36b6d6abdf38de7071c13ff3c1a7a796a9f5abc4d25d269bdd7d537309"
+      "sha256": "8f12f2ee16e98975104ca072c8e6cf06fddc0097d198908e8bd5208e155f28c4"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/Result/WebPResult.php",
-      "sha256": "2938b36b7546ddca14907eb9b78a012221b845dbdbcc482dbf3c3fea1dba43d1"
+      "sha256": "4d1ddcb7273f0296925835bf38e4692820d474592951c396a79e3908b848d7db"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/SvgWriter.php",
-      "sha256": "b5c51ed4f43eac8ed2d47cdc462738fc3a6ee6aa0f04a49a423547631f284d8d"
+      "sha256": "85b41e6935c3be1b294872c8bd2cf45caf57a483f151f5ee050081bb9b29c7df"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/ValidatingWriterInterface.php",
@@ -20808,11 +20808,11 @@
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/WebPWriter.php",
-      "sha256": "39e7ce432f3c1fb2af83019185fa48f7af71818d74f1284ce7fd0aa13c15a9c2"
+      "sha256": "84d060180941ef916eb7e1c854909e916a8f417af0dd82fa2505a3cd176000fa"
     },
     {
       "path": "mediawiki/extensions/UrlShortener/vendor/endroid/qr-code/src/Writer/WriterInterface.php",
-      "sha256": "7b030a3b109b8b0cb237df68b2d91ef0851d238fd892faf544974fc1d721dc79"
+      "sha256": "b964f7c711b840453bd427be43a62d6a42d27e025d9a770d8c8af1b173c19447"
     },
     {
       "path": "mediawiki/extensions/WebAuthn/composer.lock",

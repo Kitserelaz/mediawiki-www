@@ -1,12 +1,12 @@
 {
   "core": {
-    "version": "1.46.2",
-    "archive_url": "https://releases.wikimedia.org/mediawiki/1.46/mediawiki-1.46.2.tar.gz",
-    "sha256": "8f7f937f8bbc1acd4cef1c5362a95f248dcd242020f2588798eb2f73ac2e69ba"
+    "version": "1.46.3",
+    "archive_url": "https://releases.wikimedia.org/mediawiki/1.46/mediawiki-1.46.3.tar.gz",
+    "sha256": "c74987cc2da7c88c3644c106a264cc558c3026f2f9ad632a3465925afb3a1395"
   },
   "php": {
-    "version": "8.4.27",
-    "image": "php:8.4.27-fpm-bookworm@sha256:df5a5113e1179ddf4560cd15727eb3812f6457829756d2a96c6c11bb4c250089",
+    "version": "8.4.28",
+    "image": "php:8.4.28-fpm-bookworm@sha256:e4b1eec29a5be22428aa93fb43da75a0e39006e403da0c3e93631dde92f067df",
     "pecl_extensions": {
       "redis": "6.2.0",
       "memcached": "3.3.0",
@@ -989,15 +989,11 @@
   "baseline_source_archive_sha256": "057e8b4e79fbad191cc18895a8d0969e1390ccfdee7afb13a19b7c513c6c0a2c",
   "baseline_data_snapshot": "backups/pre-createwiki-upgrade",
   "composer": {
-    "version": "2.10.3",
-    "sha256": "7a2d379d5b8ffdaa028580ef26494c36d2feef4b178d3dd1473a4dbc5e17c8d6",
+    "version": "2.11.2",
+    "sha256": "dd158c0afd41d15fac89e1b4e47b5d42911fe316c3687cd5edac98319b25d028",
     "source": "https://getcomposer.org/download/"
   },
   "dependency_overrides": {
-    "symfony/yaml": {
-      "version": "7.4.18",
-      "reason": "Fix PKSA-xz3r-9gp4-4m1z in core release dependency"
-    },
     "squizlabs/php_codesniffer": {
       "version": "3.13.6 as 3.13.5",
       "reason": "Fix PKSA-rdkp-vv9z-mjkg while satisfying MediaWiki codesniffer exact patch constraint"

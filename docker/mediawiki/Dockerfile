@@ -1,12 +1,13 @@
 # syntax=docker/dockerfile:1.4
 # Immutable multi-platform base digests and a dated Debian snapshot fix dependency resolution.
-ARG PHP_IMAGE=php:8.4.27-fpm-bookworm@sha256:df5a5113e1179ddf4560cd15727eb3812f6457829756d2a96c6c11bb4c250089
-ARG CADDY_IMAGE=caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+ARG PHP_IMAGE=php:8.4.28-fpm-bookworm@sha256:e4b1eec29a5be22428aa93fb43da75a0e39006e403da0c3e93631dde92f067df
+ARG CADDY_IMAGE=caddy:2.11.9-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0
 FROM ${PHP_IMAGE} AS php
-ARG DEBIAN_SNAPSHOT=20261015T000000Z
+ARG DEBIAN_SNAPSHOT=20261119T000000Z
 RUN printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/%s/ bookworm main\ndeb [check-valid-until=no] https://snapshot.debian.org/archive/debian/%s/ bookworm-updates main\ndeb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/%s/ bookworm-security main\n' "$DEBIAN_SNAPSHOT" "$DEBIAN_SNAPSHOT" "$DEBIAN_SNAPSHOT" > /etc/apt/sources.list \
     && rm -f /etc/apt/sources.list.d/debian.sources
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends \
     libicu-dev libonig-dev libxml2-dev libzip-dev libpng-dev libjpeg62-turbo-dev \
     libfreetype6-dev libgmp-dev libldap2-dev libmemcached-dev zlib1g-dev libssl-dev \
     imagemagick ffmpeg lua5.1 zip unzip diffutils fonts-freefont-ttf \

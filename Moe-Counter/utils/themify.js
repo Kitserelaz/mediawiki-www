@@ -3,7 +3,7 @@
 const fs = require('fs')
 const path = require('path')
 const mimeType = require('mime-types')
-const sizeOf = require('image-size')
+const { imageSize } = require('image-size')
 const { toFixed } = require('./index')
 
 const themePath = path.resolve(__dirname, '../assets/theme')
@@ -24,22 +24,16 @@ fs.readdirSync(themePath).forEach(theme => {
 
     const imgPath = path.resolve(currentThemePath, img)
     const char = path.parse(img).name
-    const { width, height } = sizeOf(imgPath)
+    const image = fs.readFileSync(imgPath)
+    const { width, height } = imageSize(image)
 
     themeList[theme][char] = {
       width,
       height,
-      data: convertToDatauri(imgPath)
+      data: `data:${mimeType.lookup(imgPath)};base64,${image.toString('base64')}`
     }
   })
 })
-
-function convertToDatauri(path) {
-  const mime = mimeType.lookup(path)
-  const base64 = fs.readFileSync(path).toString('base64')
-
-  return `data:${mime};base64,${base64}`
-}
 
 function getCountImage(params) {
   let { count, theme = 'moebooru', padding = 7, prefix = -1, offset = 0, align = 'top', scale = 1, pixelated = '1', darkmode = 'auto' } = params

@@ -146,9 +146,9 @@
             'dev_requirement' => false,
         ),
         'symfony/filesystem' => array(
-            'pretty_version' => 'v8.1.9',
-            'version' => '8.1.9.0',
-            'reference' => '43d109c803d22c00bb820ed45df250b6a8792ca2',
+            'pretty_version' => 'v8.1.11',
+            'version' => '8.1.11.0',
+            'reference' => '58f57b6a33e3495f7f41e01258f1ae5ef76cccd2',
             'type' => 'library',
             'install_path' => __DIR__ . '/../symfony/filesystem',
             'aliases' => array(),

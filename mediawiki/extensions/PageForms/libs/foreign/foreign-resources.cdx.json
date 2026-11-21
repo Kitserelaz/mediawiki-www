@@ -157,7 +157,7 @@
         {
             "type": "library",
             "name": "jsuites",
-            "version": "4.17.7",
+            "version": "5.0.1",
             "licenses": [
                 {
                     "license": {
@@ -165,7 +165,7 @@
                     }
                 }
             ],
-            "purl": "pkg:npm/jsuites@4.17.7",
+            "purl": "pkg:npm/jsuites@5.0.1",
             "authors": [
                 {
                     "name": "jSuites Team"

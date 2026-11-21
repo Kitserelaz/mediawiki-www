@@ -1536,55 +1536,55 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/composer.lock",
-      "sha256": "0244ae6f43576d5642f7a658770c0640708298e3de6e6fd212f5e0e9eac18b35"
+      "sha256": "a63dcb4c5960fa4d8d055da05b1b94cd26d393e2c1cb5662fe477fccfedf60ce"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/autoload.php",
-      "sha256": "73def05aa40c8b0c89db0b7ca556f0073aa7281d15e4d401a40be819cf73cbad"
+      "sha256": "c59f9c6a9eee9d135287619a192cdda2428be8db2f064464fd8ce485f2e098d3"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/composer/ClassLoader.php",
-      "sha256": "6df8dd8658f8f0c82e7065a7c71e88f608199a546ad23795211f8a3ccae3164e"
+      "sha256": "d4b2313e562edf942838ec316d983c1a3459ca67da3e5658e861200b0b3693c2"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/composer/InstalledVersions.php",
-      "sha256": "c2b702d4b022bfc833fc8ea10768766cb4e4de4b101d7bca2ec86fbd17c4a63b"
+      "sha256": "1e4525198301d1ed1f87ac3df2a8555a6f139f8df30a703d0b775a61963c96e4"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/composer/LICENSE",
-      "sha256": "7855ac293067aebe7e51afdd23b9dea54b8be24187dbecc9b9142581c37f596c"
+      "sha256": "c8cce4b6b9729f264ffdf9296d505d63432497feeed1f586d1902b942197e024"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/composer/autoload_classmap.php",
-      "sha256": "74dcf24a738537227f9b40fa55bfc26ae77341b765914d4e8f518d5ec9eccb43"
+      "sha256": "375085d0d6690301081436cd75755cb2c882f8a7f6fc385c8814a11734fc413a"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/composer/autoload_files.php",
-      "sha256": "4b3d88fb26565c808ba424fabf41a78a5895b38ebb77e8de577dc1035f810994"
+      "sha256": "ff6a6b8bff4d60ba9b23ebe63a8e4825293f25da20c94c3fcf8818d25ea39a2d"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/composer/autoload_namespaces.php",
-      "sha256": "4a8929ede896d3fbd00692b367d6ee9657fa8bdff0c09326180e6f8fbf4e2866"
+      "sha256": "77f3610df3d6284d409ffd753ce2bc6c7625c744edd89c2735d78aeb1a843643"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/composer/autoload_psr4.php",
-      "sha256": "9727e7dce355df4a8f8154c11a766bd72e129a71a16768d4f88764aed077ebae"
+      "sha256": "347183091f6da7ffdc0c43b7900bb5d7498151edbc93bba55c187e19afcbc9ef"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/composer/autoload_real.php",
-      "sha256": "30578f377420ef68d6bd9e1f4f26f5612630e785c94b78cca0212089620e8e42"
+      "sha256": "59781894e9412120c69b830b4b901fda96aa4407885409ad11da7f6e54b6cefc"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/composer/autoload_static.php",
-      "sha256": "86b5a5537597214dae2ac05fe2721df5ca65034d982ca31ca915e6eb791ab1c3"
+      "sha256": "9fe5c789222c5c708ec83e258fad88d3e2bf19ad7cc5fd55cfe85bcf2a73d6e4"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/composer/installed.json",
-      "sha256": "44cf8d69b56f4672cb19995679b0a871fa5cfb45e27b5f653574e87756872909"
+      "sha256": "272a84f42387577279a122b6d4eb431a6588e2f045c543b61c80e086f2e32a3b"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/composer/installed.php",
-      "sha256": "04c79528b1b28920f5db787beb644717bd103f2e38279e88f392a23bb9faf873"
+      "sha256": "29fb044e186e6f9359c4e00ab4f900ca21a3bb7403109aa2254536ce0c764428"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/composer/installers/.github/workflows/continuous-integration.yml",
@@ -2089,6 +2089,10 @@
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/composer/pcre/src/UnexpectedNullMatchException.php",
       "sha256": "afb2cd8e97741cec148efc623496e97e094db7029a7a10b97c178d413eeb7af5"
+    },
+    {
+      "path": "mediawiki/extensions/DataTransfer/vendor/composer/platform_check.php",
+      "sha256": "47b037ef0215a160eb8579cd2ca94580c956ec706308f233f5e457bd5aeb8445"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/ezyang/htmlpurifier/CREDITS",
@@ -4120,7 +4124,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/CHANGELOG.md",
-      "sha256": "989bfdc05180d483736513d03be5465523fc0de0ab6bc5a616d142768d18b116"
+      "sha256": "d1e192fbfcb1613091114342e5a2c782b58a27a9b92a8fda332ec06921d53ccf"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/CONTRIBUTING.md",
@@ -4128,15 +4132,15 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/LICENSE",
-      "sha256": "45ccc0b978c7b53f075fc3d90988ea1fcd5695ef622b2aaffa82ace8852ee342"
+      "sha256": "1416c9cb9b9925bbbecbd2aaeb62864fa5544f5572e5e0e130304f532c38ac8e"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/README.md",
-      "sha256": "b369e88d0022495450b23e4921e0a7fb4be5ca09fbe7fc8494858a34d0ee513e"
+      "sha256": "5c61b799076de3824872d7dbc9a10e062611c025a96b0cbb61a354c74a9c841c"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/composer.json",
-      "sha256": "ed7c182f9f783ca5c6940a1b63ffb1ffc3df677d9d844e5d6f4fb9f8e0630481"
+      "sha256": "dd7d25c07718e48b58fa28eac395c5f1348c33ef34d5ccd83a454ffefe1585c7"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/ArrayEnabled.php",
@@ -4148,7 +4152,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/Calculation.php",
-      "sha256": "92a626370e0229f0cc8c53affb7f16b1b6070525cfc3b1507e77b124b123aca9"
+      "sha256": "eb941e5e0b043291d3edfdda5be27283e7483ee3863a9e648435c3df526b4be0"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/Category.php",
@@ -4232,7 +4236,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/DateTimeExcel/DateValue.php",
-      "sha256": "a41bf50f2f5e8c091bea6799979327841752c407a2f287ad56d04d240844c221"
+      "sha256": "1c352998982a518d9a5bcf5a2e3ef0943b02ce14fc0307ec4967d051fe79834e"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/DateTimeExcel/Days.php",
@@ -4268,7 +4272,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/DateTimeExcel/TimeValue.php",
-      "sha256": "4a03afa949f79a0e6c81bced62773fe96f11591742cb4d3bd408bb4c8b1db113"
+      "sha256": "b2637f0a16ddbdb67a2984a24803766914ee81ad0155341f11ab18d8175f1f77"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/DateTimeExcel/Week.php",
@@ -4312,7 +4316,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/Engine/Operands/StructuredReference.php",
-      "sha256": "b1d99d105ebb718ddb337bcd6229c16883bd48bbed4abad8076ddae36e341f07"
+      "sha256": "5a579a38ce2bd674ec5a618dcbbb8b5cb48aa746ecf138a06efb0fa92cc8f88c"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/Engineering.php",
@@ -4500,7 +4504,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/FormulaParser.php",
-      "sha256": "96e864fafc338cefc1585cc25ed1f57ff7dcd113119288c35af93723e27d28c4"
+      "sha256": "d6112b2fb12370518b86ccc30b07e3e0469da4a2e44de71c4c155dd0356a9a88"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/FormulaToken.php",
@@ -4508,7 +4512,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/Functions.php",
-      "sha256": "9f6ab925c1d4eeca1e1b508ff5c28ddd4881ee0ae1cffaeeb82fdb8fe557d701"
+      "sha256": "69f60ad7f7a5ba63aa559c5636970b26231a052670dd79836662272ed9c0b449"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/Information/ErrorValue.php",
@@ -4528,7 +4532,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/Internal/WildcardMatch.php",
-      "sha256": "109fa0577fce880332b0a91132688cd26fd9cf21da09fcf3196c166932a0139a"
+      "sha256": "b383e08ccdd2d65d1d069d72ba412c4f094a541832eb45359bf3aecf8c03b0e7"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/Logical.php",
@@ -4924,7 +4928,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/TextData/Format.php",
-      "sha256": "c4f920f183cd80bfb677f6e423bc0b6d27b9a1ac516d53a988f83d83e12af39c"
+      "sha256": "5d901c0bcc5282fdcb20f494e4f77cddf77f65d1bdffcb542e4a271f529d3f08"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/TextData/Helpers.php",
@@ -4944,7 +4948,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/TextData/Trim.php",
-      "sha256": "28046afbdc343d1c34ca9c5af288bc580341780b6717c82de818abe1b34b711b"
+      "sha256": "2c687bffb98992fba7c445faede59e5498b6c732720e5ab72014ad08395062f5"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/Token/Stack.php",
@@ -4952,11 +4956,11 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/Web.php",
-      "sha256": "f96ab4b66a0bd6d5adf6d473e046ece5f2f11f66f92316a10438c9346444dfbc"
+      "sha256": "45aaeec546e87c3c60a8510913dfc2f6a930587057fec65707810a6d81a077d6"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/Web/Service.php",
-      "sha256": "8f154d83f813b5ac7c070afb045456f2bb2cf38a8bfdbd8d9e77ab1574816445"
+      "sha256": "548872c78ce780323167f5bc3d696cfbcb1532438c2f0c1ea392ff27f94017f1"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Calculation/locale/Translations.xlsx",
@@ -5116,7 +5120,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Cell/Cell.php",
-      "sha256": "115c9ff3b0f9f624e47c2ebfe791736e159b36f78302216c7e62c39dc16ab899"
+      "sha256": "79cb45393fbca083ae61678a940d053b82c0273fbfcc2fc4cefa8b4cea2a8346"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Cell/CellAddress.php",
@@ -5148,7 +5152,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Cell/DefaultValueBinder.php",
-      "sha256": "8a896755c394df70a58bfbbe2a6903d824fd9f42e794ab700f48ebc39f2846fd"
+      "sha256": "b99fbb9b4b87e3576b639388c96df6cbda99ceea89c6d22d7bd0e99208bdc0c8"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Cell/Hyperlink.php",
@@ -5276,7 +5280,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Document/Properties.php",
-      "sha256": "7627605ec385ca823edd29c34084352e1f2e0da153bf6e2098a38b8fa0f27998"
+      "sha256": "a0c218a0853f42df2a61565552a3085d78877d147acac85ec773d5bd02f38ca6"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Document/Security.php",
@@ -5296,7 +5300,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Helper/Downloader.php",
-      "sha256": "1c89e25799db8795adedcfe0a59c89c86d02596130c7b6b34b2a1915ac1be543"
+      "sha256": "7f7baf98e0247754b0d54b65325cb3ce3c7e19ceefcc26e5540b04e4a1aae904"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Helper/Handler.php",
@@ -5324,7 +5328,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/IOFactory.php",
-      "sha256": "194945552ff8f202374f156dcfa86c199f3a7a4f2768498f191b428aa419c47f"
+      "sha256": "03f97e9b132cd517d491b59af45bf1ddcc4f45834f42c9a529154113c1e118ec"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/NamedFormula.php",
@@ -5336,7 +5340,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/BaseReader.php",
-      "sha256": "bb4dfb4ddb5ecae3d0b7bd34b7f6fb30b4675b5484025712abe720eb4047e0b1"
+      "sha256": "9cbda4984803e8305ebfa1989e64652584ce4544fdd9e59608eaa7ab9030d934"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Csv.php",
@@ -5356,7 +5360,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Gnumeric.php",
-      "sha256": "2ceae137dbb31b95f0cab9d167a4bae11c8a63e0ebfa26a186d9556a4457f87c"
+      "sha256": "df0525d8565e7ec9740cc25f788e9480c9fcb78df9124ca333ab6e617dfe32c2"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Gnumeric/PageSetup.php",
@@ -5372,7 +5376,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Html.php",
-      "sha256": "f9b5aa0d6772641c06d351178618fc71d400a0937f78b588095cc4d388412a5e"
+      "sha256": "de2c5bcbc6714fce37a466e4373301c10fb9f7e8d975d5d3ad7234ee1cf78569"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/IReadFilter.php",
@@ -5380,11 +5384,11 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/IReader.php",
-      "sha256": "44159205b1687c4cbba88ba75175d3fde4dda4821065f6b021545d0c34518b62"
+      "sha256": "84916081dba97df5900b1c2f585f2095900a182c77ce095fbfc503a0442b3326"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Ods.php",
-      "sha256": "e55ae6d06d37a427fbf20ed50fe9a53bc413661bcedbcc8d66e66eea9000925b"
+      "sha256": "8fc5fe845dc205469720d45e7a1180c44e1bfe8ec8e97156c0dbf67027e1e0cf"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Ods/AutoFilter.php",
@@ -5412,11 +5416,11 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Security/XmlScanner.php",
-      "sha256": "b13031aa55d453d946b8962fbe419ee5a72c7db6d1b57313c552ef15613aa93a"
+      "sha256": "899c2041e6d89fd593062188d4a6044068b192469b3621532642fcccce05621b"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Slk.php",
-      "sha256": "65980a05fbd8c4ba99657178877b66c6d23cd74b8f67f38c496235f0a728a49a"
+      "sha256": "c83b147b863a085adb5b5635d7d92df31c17d3ff8409b875ba51d5ddcb5164fc"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Xls.php",
@@ -5480,7 +5484,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Xlsx.php",
-      "sha256": "a9da5e10f63fd46dc5e0575290b5e2e8e950962af055ab592a35cbe1f57ef301"
+      "sha256": "8090aee6e4aa627f3ad690a354fbb1c18fdfa5509dff2ca16c31a6280ff08dd4"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Xlsx/AutoFilter.php",
@@ -5496,7 +5500,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Xlsx/ColumnAndRowAttributes.php",
-      "sha256": "c86dee76c3f9c43e52c363f08f498e5f0da96fde9aa5fd3ecf789e49c0e02fb0"
+      "sha256": "3e6b4619ba280def4ab92c64e4f6e3dbbadcc31fb769dbe20d5b2b2da78dfe1a"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Xlsx/ConditionalStyles.php",
@@ -5504,7 +5508,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Xlsx/DataValidations.php",
-      "sha256": "31466bb89b38891a93b6547f89f9c0ceab9d16635bb65eddf62f64e1b48140ac"
+      "sha256": "9fbf3a78ad4c3f9bf97234d6b1ae012decdbacb5b147707798e526ee6d980010"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Xlsx/Hyperlinks.php",
@@ -5552,7 +5556,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Xml.php",
-      "sha256": "24e52b93e97543ddf66aa6987ac645eb4df298862346ba48bce0fe8e76afe5f0"
+      "sha256": "d706b05e68d57811e0baffb6f7455121e6fb45cc650b15a01752f0a13a5e43d5"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Reader/Xml/DataValidations.php",
@@ -5616,7 +5620,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Settings.php",
-      "sha256": "00c902cc2f668c405f524268c33cf995bb22f254e0eb6d0c80c7944107ca0ae5"
+      "sha256": "593abe328cf740ba926a959f55fc694e0432c99eb7ed236925da6256d4d658ce"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Shared/CodePage.php",
@@ -5624,7 +5628,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Shared/Date.php",
-      "sha256": "fb39b14e1e7935606aebeef69695f7781621bc058917a9473f63f9051192cc71"
+      "sha256": "cf5946a3bc59681e8585351c97d0ba819525eeac16a3a9bc390676f1f5d5ae7e"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Shared/Drawing.php",
@@ -5664,11 +5668,11 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Shared/File.php",
-      "sha256": "fde10671ef65dd34059aafbdf332ddc5f81faa65d8ff3678ca927ce2629b2686"
+      "sha256": "ac3b118c371884325c5dd50cae54d319e0bb30739018a8deb7a37940b428212c"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Shared/Font.php",
-      "sha256": "0c50451190e8882a8d4b33e00456a0eda244ab0049d11bbc7fab979a99461264"
+      "sha256": "02afc134176a43e37b4d420db02e63a17ac6e3419bc1b8002090b5e310e026c9"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Shared/IntOrFloat.php",
@@ -5696,7 +5700,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Shared/OLERead.php",
-      "sha256": "2e67893d15c2160e66f5e169a6fd402d347cf1186e6d6248d467fbfbc536adde"
+      "sha256": "cd3ab19ba061f820add8b2526fe3db3e352951c8f5f5cf4acf38ad44c6dc8da5"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Shared/PasswordHasher.php",
@@ -5748,7 +5752,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Spreadsheet.php",
-      "sha256": "be98ce6fb4641ff81709946f19a7293a8fb646bdfc5b6ffb1638443178cfe1e1"
+      "sha256": "fe472925d85cfcd64c288d76b90f0f5741e18e68716994f0a019bfc8ee3806d6"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Style/Alignment.php",
@@ -5856,19 +5860,19 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Style/NumberFormat/DateFormatter.php",
-      "sha256": "f10d38fd3ba13e7bc80930867758ea2aeda6f8104fa745b62fde0452417565af"
+      "sha256": "a30831308fbee838eeaedfbe8828b92c6c31b0693309068ff616f3e13687d0fd"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Style/NumberFormat/Formatter.php",
-      "sha256": "068f87f25c7a530746d5174020336b54f17ad86f3d98ce04bf5448b6836f73fc"
+      "sha256": "8949172ee2753163cdea34078294ab2373b3ef7c3349fac3b52656fbd1feb06b"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Style/NumberFormat/FractionFormatter.php",
-      "sha256": "6a8d1de4c6d5141fd0cea245cd4342a11c2311d5221d2f192ce9720832f18c56"
+      "sha256": "c0ac2a7ae9f847199d71db9f3651b236b15a2ab70f16ba63912491ad0cefc98e"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Style/NumberFormat/NumberFormatter.php",
-      "sha256": "445a665a300e724cada9bc2a948a135750bab59c1cac29407071d2e2da021cfb"
+      "sha256": "dd03459d295a558b289fc0c0408f55a8167a9b084033d07a49af9d5178bbcfa0"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Style/NumberFormat/PercentageFormatter.php",
@@ -5948,7 +5952,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Worksheet/AutoFilter.php",
-      "sha256": "271ac53f52b343eba13f144349d942651d91e5bba985c53f4e4a7befe6d21a87"
+      "sha256": "1e4982e663ec199c6b1211d212e7bce0831b849c49764eedd13f6bc5ddb4f572"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Worksheet/AutoFilter/Column.php",
@@ -5992,7 +5996,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Worksheet/Drawing.php",
-      "sha256": "7f9d58eabb6bd96d38f80a4e850a0be70a027b11ebe71ee3d9ff4ccd980f49b2"
+      "sha256": "9b02d6c8313bd6ebbdb213631d6881faced6f2b3ba3a9ae0656f64c7d8a0e018"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Worksheet/Drawing/Shadow.php",
@@ -6052,7 +6056,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Worksheet/Table.php",
-      "sha256": "73fde1f9ba8792cbb37b115be391da7bf278dd8a74d70ab750bda026505efa89"
+      "sha256": "3c606eaf457146f02190f201c158aae017c8f5f54d1d4c906e75c4d348a614f0"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Worksheet/Table/Column.php",
@@ -6064,11 +6068,11 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Worksheet/Validations.php",
-      "sha256": "76a2eb5cae15fabb173f4c4652b101ac807554fd5af514cd8b556d1b757aa97a"
+      "sha256": "9492685dc2a5cb43002e855df0e1440b837dc9f307b3fd82da6570db30d9bea7"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Worksheet/Worksheet.php",
-      "sha256": "d95f55aafc03d61347d6c6a0c0616f6b728c214547cf0bde689caa1cc98de991"
+      "sha256": "42d8c6935f5c7b216d52d0e37917568cb03b1352203ff65e164d8f9a5c2e8e6b"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Writer/BaseWriter.php",
@@ -6084,7 +6088,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Writer/Html.php",
-      "sha256": "5a1723daf8256d5498af22ce4f9d7c6174c34763ef45738ee7f820b20eef0bf0"
+      "sha256": "c1eeaa7cc91d1f76a251547093c127c81486d169b8d3b32e98cfecf6d2ccd505"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Writer/IWriter.php",
@@ -6152,7 +6156,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Writer/Pdf/Dompdf.php",
-      "sha256": "ff6cb3238a11b4c923cae1b22b61697c2007f0b2ebb3016c423b30864f42bd0b"
+      "sha256": "3bfcf5bc81b13fdb6485f88c917d539eb0c53766b740002ff55c21728cfc4c22"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Writer/Pdf/Mpdf.php",
@@ -6192,7 +6196,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Writer/Xls/Parser.php",
-      "sha256": "1b144a11365e04172e8b37624b64dd12d814f027d62d4a266bd0d52b64f8adfc"
+      "sha256": "c7f363a9ffee6a92c98ef4f1335ff2ddbe9b16317941b325a3cdf526b0632899"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Writer/Xls/Style/CellAlignment.php",
@@ -6216,7 +6220,7 @@
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Writer/Xls/Worksheet.php",
-      "sha256": "ec18ff2c311621680f23dd7d4d18c2756b02de8a10f1cff32595d63695aec7ae"
+      "sha256": "b9022040e53bd617d7696e18b1c3dd00188441051391818c762e773a0eedb337"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Writer/Xls/Xf.php",
@@ -6309,126 +6313,6 @@
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/phpoffice/phpspreadsheet/src/PhpSpreadsheet/Writer/ZipStream3.php",
       "sha256": "cc6d941b8f684a9c02c0503c99aff1c19e668f759cfe8c55a0f9ca0c64753ba3"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-client/CHANGELOG.md",
-      "sha256": "6b23804ba8bb7226ab80b5a68dd0b3d1e9291f4b999385c44f60c40c6585628f"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-client/LICENSE",
-      "sha256": "ea5ec78820494a5256b0ccbecef9212bc7b93b797273ab08cc2eaa34e0ab3e50"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-client/README.md",
-      "sha256": "2864b8d922627a18701f9f2730d1506a81ef28544d630cda0f682a94440c2b2d"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-client/composer.json",
-      "sha256": "0ac2435b7bf0fd6ded53a95d2a8914d8a326f1902b512314391226ee52911af5"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-client/src/ClientExceptionInterface.php",
-      "sha256": "2ae6b264ddfc8d48096fe50927634a6b406e1eb26e1d00bd992e9aa36f55410b"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-client/src/ClientInterface.php",
-      "sha256": "f377b570f3211f8d824c7f1edd5c2288c97b51cc27347b1aa74988b05616e137"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-client/src/NetworkExceptionInterface.php",
-      "sha256": "93b74d294718e772af07780a6df2bb13671701df8a1d1e752d79cb3decd08f66"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-client/src/RequestExceptionInterface.php",
-      "sha256": "1bcf5fc2b4a6e1a982020caddab497edd889124fd8d17aea1efb1895cb96ee38"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-factory/LICENSE",
-      "sha256": "d2e70341a9667b93ad542e4842b0b7022d302aa7c2d2a909b156b8f1e3c4cca8"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-factory/README.md",
-      "sha256": "d80b63e2a8c4f80af830e5307683fc73718d15e71db3c5af56e15b56b2a47d63"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-factory/composer.json",
-      "sha256": "1dedaf2d8613201a978dbcad920bd7a332cd28c95be57c0d75be7a8d6e868362"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-factory/src/RequestFactoryInterface.php",
-      "sha256": "95bb9e09f52d05bf09630cce49abbfdb2282d396ccc3e16e77e3a9f54cd4071f"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-factory/src/ResponseFactoryInterface.php",
-      "sha256": "fb58f39db8e472bed4109f6392443a10785305ccc0c920d11f98208f91214e02"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-factory/src/ServerRequestFactoryInterface.php",
-      "sha256": "8584390af1bc3c624918525e725a7cfa639366c15bb7a3c7c065d04d8a20703b"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-factory/src/StreamFactoryInterface.php",
-      "sha256": "25fe9d048ce6718141d21c122ef9b3498be45025300717ccbe912ef5bc0083ec"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-factory/src/UploadedFileFactoryInterface.php",
-      "sha256": "712c705ac850b43dbf47458e571c8be314d1d1f01b0e470407ed014b702d9e5b"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-factory/src/UriFactoryInterface.php",
-      "sha256": "2600f967cd969706dcdff326d3fe602e812110352c75c6b5e9773601f2d17c7d"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-message/CHANGELOG.md",
-      "sha256": "0e0a6a6166edde635031315c05f880d4e792f2cdd493618f5bac0b09bd9a11a7"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-message/LICENSE",
-      "sha256": "8d36e938943b04ef01994bb148793c971685b746d0ced31da03a97594a47ee62"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-message/README.md",
-      "sha256": "4cd6339fa85e7a903f2117b081de8446cd45229b9b761539dd8f440ccd2eb288"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-message/composer.json",
-      "sha256": "96781ea96de30367767e298f5a340a040878144b7540ce490c9089bf7e0b9b37"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-message/docs/PSR7-Interfaces.md",
-      "sha256": "255d8acfecf55b477403a49775c907b4a9c833237ca9a856b96d8a71b545ea30"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-message/docs/PSR7-Usage.md",
-      "sha256": "49daf54cea1064dc256357ae684b42bac35ccb6df930a2f4cb3f05fa0226e9a6"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-message/src/MessageInterface.php",
-      "sha256": "1ef5798924509ccea3ff3e596af4c5b6b63e121f7d0441503310b29cf837b9df"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-message/src/RequestInterface.php",
-      "sha256": "3d7531e17a3e704d7bed9f0f2bb37ffc7f1842a2cd39f789ce7e7a4023d434f9"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-message/src/ResponseInterface.php",
-      "sha256": "1cc32dded30a668714b17688a2be8a0053effb7fabe7655bd4459ecfbc6eeb44"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-message/src/ServerRequestInterface.php",
-      "sha256": "43c218d6c4426c7f1d354b20736ec77be924b94e7c1b11786057de6c3f3f66e8"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-message/src/StreamInterface.php",
-      "sha256": "0a3267552ebbcac5f0cd522dd10d96ad985595fd4f90d8566b449db2e060b385"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-message/src/UploadedFileInterface.php",
-      "sha256": "2823ae936f8f0030879fe12a507080d4eb91c6a534f57ff38e8f37561d78916c"
-    },
-    {
-      "path": "mediawiki/extensions/DataTransfer/vendor/psr/http-message/src/UriInterface.php",
-      "sha256": "8d96e63fb984db31eaedd858ae60549dcf6332c939d4cc940ca97f1fe6d91d1e"
     },
     {
       "path": "mediawiki/extensions/DataTransfer/vendor/psr/simple-cache/.editorconfig",
@@ -13159,8 +13043,12 @@
       "sha256": "1c42611f1e43041aea68ec916b77686f1f57028e7bcaa799818b601954bee4fa"
     },
     {
+      "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/DependencyInjection/NamedSerializerNestedNormalizersPass.php",
+      "sha256": "c21f83288bdeac7a66d7a7c6fe8f1455d4c396a7d6f0c719f4c2cbdf7055736f"
+    },
+    {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/DependencyInjection/SerializerPass.php",
-      "sha256": "403736d32d5cf1be1bfa758aca7e7a3e1eaab8e12e670b1a1fa6fc230f8aafcf"
+      "sha256": "ab18b9a72c782eaa6079db1bbb9883ae5bcca0a6ebdd5dfa68f3d4d50c035e11"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/Encoder/ChainDecoder.php",
@@ -13180,7 +13068,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/Encoder/CsvEncoder.php",
-      "sha256": "710c161acf943381a67bb5537a99031d1eba3c08c85791bfedf3092f68f5e890"
+      "sha256": "2979fc8c753b932fea28d8bb41189c3a8379a94d836e237a8722f66f8d3e1cca"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/Encoder/DecoderInterface.php",
@@ -13392,7 +13280,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/Normalizer/AbstractObjectNormalizer.php",
-      "sha256": "1dc287ae8d670aeff5474f9da4f2b36980b3900d05448c0dc77eef2f6936182b"
+      "sha256": "d77adc04b0ecb7b95ffe7aab2589005a64259b2930bb5769e03089fb4e0a13f4"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/Normalizer/ArrayDenormalizer.php",
@@ -13412,7 +13300,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/Normalizer/DataUriNormalizer.php",
-      "sha256": "2282de6f392e12199e2f8dd83f2d19039d6253c0101d5190089de130c6c05e50"
+      "sha256": "c2f34a9c6d9f6191abfdd8229cc5c88f4d0981a5ad11ea1213215e115cc01904"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/Normalizer/DateIntervalNormalizer.php",
@@ -13448,7 +13336,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/Normalizer/GetSetMethodNormalizer.php",
-      "sha256": "754d43321532ff37b5ef4d112ee25fce4510fb5ff3bfb59fa5fa859dee519d92"
+      "sha256": "70c26159afe7055e49e0d1e16000909758d4e79dc99334bf39318d69324910cc"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/Normalizer/JsonSerializableNormalizer.php",
@@ -13480,7 +13368,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/Normalizer/ObjectNormalizer.php",
-      "sha256": "79efb296aa693057c01e65a428bc62e2c94900924a355ae151f9e76750ddab23"
+      "sha256": "8827a0b615f14c0cd0b91ebb76df607186932a051540e82873b34e57b94b2e71"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/Normalizer/ObjectToPopulateTrait.php",
@@ -13492,7 +13380,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/Normalizer/PropertyNormalizer.php",
-      "sha256": "e302eb4f0fa2b607f34f1c983500de0db541be0239b7eb6ce489468aa52729a7"
+      "sha256": "e5b42a7e8557c4fc583ee6ce858dc446eeceb63458bad1c62ebbfb05781ec6b3"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/Normalizer/TranslatableNormalizer.php",
@@ -13512,7 +13400,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/Serializer.php",
-      "sha256": "8c479b3fe8c2a93d50490f70beff36ad52f78bcad69581e152acd34bac9a4336"
+      "sha256": "294881e8f1f6500fd4b50f4664f455bad54222f6025c269c3569913c3f1e7a48"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/symfony/serializer/SerializerAwareInterface.php",
@@ -14224,7 +14112,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/AttestationStatement/AndroidKeyAttestationStatementSupport.php",
-      "sha256": "129689a8fe6bf99e45c1eb31f58530d9aad83ca2507f9beb305e1e2011ad5390"
+      "sha256": "3c8a83b24e95b8e1fa989f3ceb20f7927c5cf0e3bc19c96f1795a0d57ce60537"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/AttestationStatement/AppleAttestationStatementSupport.php",
@@ -14272,11 +14160,11 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/AttestationStatement/PackedAttestationStatementSupport.php",
-      "sha256": "238f1d20ca8bf203e27720e3157fd6e894d19def18c6ed2af0e1e49d5ea5b052"
+      "sha256": "7902a4daeb92756ed0688e04b3f3098474f7b691582355a2388e0b0415598772"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/AttestationStatement/TPMAttestationStatementSupport.php",
-      "sha256": "896ba18a62efcd12e229203a6c0049f4101f13a29663be882e4f3214aba67113"
+      "sha256": "bec9ca42835f700502070a479a954c1ee047be24607de00e2eeb3912b8a07141"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/AttestedCredentialData.php",
@@ -14340,7 +14228,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/AuthenticatorAssertionResponseValidator.php",
-      "sha256": "d724e731ecfda64feb29ac9917e14ecfd26e14f7b7f32d9270d722fe6323d9a9"
+      "sha256": "ee09f1e53be499ba5e4b5426703fb5d4f960f44cf52d7528f147698931606349"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/AuthenticatorAttestationResponse.php",
@@ -14376,7 +14264,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/CeremonyStep/CeremonyStepManagerFactory.php",
-      "sha256": "810aa1bc2444e37a5f3a503be05c15a6694da2aad4bb6aeed41e85a98154189d"
+      "sha256": "f46fb92f3281abf7cc83d2bafb7e12f0d54dc2a7a45cd838b495c204107d5004"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/CeremonyStep/CheckAlgorithm.php",
@@ -14397,6 +14285,10 @@
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/CeremonyStep/CheckBackupBitsAreConsistent.php",
       "sha256": "fb2d090beaf20b9b3190f913ecfc83334c015e35e6f5f9f54f8b8257367b1646"
+    },
+    {
+      "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/CeremonyStep/CheckBackupEligibilityIsUnchanged.php",
+      "sha256": "2792345a16e42911344e8267bf50522d588ab054646327d8a607f4c72525cd41"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/CeremonyStep/CheckChallenge.php",
@@ -14424,7 +14316,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/CeremonyStep/CheckMetadataStatement.php",
-      "sha256": "0a917057fc801b954a0460d6cf92b95b387bd54a6739e9b5b2094aa00de1cd9f"
+      "sha256": "05406330998a7ed36f7418eed1fde3640db8c415a0bb471f3627b4651cf81329"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/CeremonyStep/CheckOrigin.php",
@@ -14472,11 +14364,11 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/ClientDataCollector/WebauthnAuthenticationCollector.php",
-      "sha256": "568bf2a6a8f715351c97961a84c9bbd88b45d9bc9dc5f85c5a845e0a186f61d4"
+      "sha256": "fd4afbb67718422f83367993af44227171f799fb5ebb670d75ff42c471319181"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/CollectedClientData.php",
-      "sha256": "09d6f8592096be2d9223176e61d11d74f6c9264ba12d1dd8bb5e2b4563ccf813"
+      "sha256": "3b2367e938712ad80f0ed9b3d63ae0121e3c217b141b223295b6467d38276af2"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/Counter/CounterChecker.php",
@@ -14516,11 +14408,11 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/Denormalizer/AuthenticatorAssertionResponseDenormalizer.php",
-      "sha256": "ca62a91750079e02364256e74714bfc7b20a765c8fffb98a27bfa7ec2362f6ca"
+      "sha256": "3ed03f66817f2a3e9408c5faa367213239869614bb774714f7222dee44c67618"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/Denormalizer/AuthenticatorAttestationResponseDenormalizer.php",
-      "sha256": "c8a857e16c5df684cae699b33d4b53365cd53c3052cdd596ddb1e2721a3f1784"
+      "sha256": "0f96f3b5d966b3114b6af1814d97c20698699cac467be1518fc5e5a88b96f30e"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/Denormalizer/AuthenticatorDataDenormalizer.php",
@@ -14544,7 +14436,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/Denormalizer/PublicKeyCredentialDenormalizer.php",
-      "sha256": "4e75b29171cdc1c5594de02edfb4b4aa9a9644bea280c59097a9fe3301833c9b"
+      "sha256": "737073f1caa8e455cd0fe18ec008d9d30ab49c9ef661b3d2d09d8ce0ee0bf19a"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/Denormalizer/PublicKeyCredentialDescriptorNormalizer.php",
@@ -14624,7 +14516,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/Event/BackupEligibilityChangedEvent.php",
-      "sha256": "2e87956dadd9475a8b39e1964e233fea78b5a1a0e69e82a2deb281b3330bd8ec"
+      "sha256": "a1a4817a4f2649b928245361a1994daef6922d05ac2be655fa4e9a28e2e55ce4"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/Event/BackupStatusChangedEvent.php",
@@ -14751,6 +14643,10 @@
       "sha256": "dfb6531f1cc648bfe509ff4a3ecbf80cdaf96c43f3bf0ad157f458cd0890f5dc"
     },
     {
+      "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/FakeCredentialShape.php",
+      "sha256": "3ca11e7b5be4c9d9ba0fe6b160903563a2532a42b019bfec974c9bc66aee5adf"
+    },
+    {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/MetadataService/CanLogData.php",
       "sha256": "d2ea7a0c24955301d2b2d5cb2320e6860be8f196c0e976d7d1e18b7d0092cad5"
     },
@@ -14760,11 +14656,11 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/MetadataService/CertificateChain/CertificateToolbox.php",
-      "sha256": "65572c040108eae3ab0cff4659d23b5147372dcb0040eded7619cda6e9a1fda4"
+      "sha256": "ce869b327b58e4c9eaf8c1191ce580d56e460928b652010606f0c8766c200f4b"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/MetadataService/CertificateChain/PhpCertificateChainValidator.php",
-      "sha256": "0abbf8cc8cfaea9885abb8859f6de59e530fa6c51d080c41a2ec8e2939469f92"
+      "sha256": "feb4fef9af6e690a311416993646f09e0808e06a028cf1f2cf3b893cb049ae1b"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/MetadataService/MetadataStatementRepository.php",
@@ -14784,7 +14680,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/MetadataService/Service/FidoAllianceCompliantMetadataService.php",
-      "sha256": "4fb80b255f4a1151b83278dbb5ef3c43463469c4ece78d5704c60e5daa197742"
+      "sha256": "e6c18787b496146e6f570900c3a06712245f532f31af96940033c37b45b4e3ab"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/MetadataService/Service/FolderResourceMetadataService.php",
@@ -14852,7 +14748,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/MetadataService/Statement/MetadataStatement.php",
-      "sha256": "468d0f25618aad1b7ee3c8f453e964a2716dff862bf310bc85027f01a168cdc0"
+      "sha256": "a2225c5e6b2222d122e0e2f6ed192ff67c8b915eee3c6dbc80ab804ff57d1ac8"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/MetadataService/Statement/PatternAccuracyDescriptor.php",
@@ -14868,7 +14764,7 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/MetadataService/Statement/StatusReport.php",
-      "sha256": "e15899dee5770f2887daf6b3030f8dc1f25833fee2543230c8fd5612e29675c5"
+      "sha256": "3306ad8a26c0dc3ffc2a1a8fd64384912debeabb054c1f3162bcc5f656a9382e"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/MetadataService/Statement/VerificationMethodANDCombinations.php",
@@ -14948,11 +14844,11 @@
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/SimpleFakeCredentialGenerator.php",
-      "sha256": "a12d46dcd91e0fde02de6d3c3674bbfbd280dd069feb8b40aa1e58d74cfb4ce0"
+      "sha256": "9f65cf4f5f38e21f7e545da4477245dbc020743105430d85d20b590d348f326f"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/StringStream.php",
-      "sha256": "7e724eb8809fc241b6881ba3e9d6f0f95816aa22d3651e977aee8b94c88ca79f"
+      "sha256": "9df6aa23ba3a5b981f8fda6fb9e2714f4c3fee167c7e6553eeab56593b7491d0"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/TrustPath/CertificateTrustPath.php",
@@ -14973,6 +14869,10 @@
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/Url.php",
       "sha256": "47d1cce88aea4f877043f77b8317240a896ea1b0ab558b4093eeaaefe83371de"
+    },
+    {
+      "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/UsernameNormalizer.php",
+      "sha256": "df88670bdd971cb7d162c836f1b115da28396fa6bf8e0b59404e63be7389a512"
     },
     {
       "path": "mediawiki/extensions/OATHAuth/vendor/web-auth/webauthn-lib/src/Util/Base64.php",
@@ -20916,7 +20816,7 @@
     },
     {
       "path": "mediawiki/extensions/WebAuthn/composer.lock",
-      "sha256": "18fa1da2fa827f846e5ee3f1bd2638e79825cc227b4fb2e5259a7a5c1125ea1c"
+      "sha256": "b5d892a985eb8c06202f868ee28fcfc01e5945a757ae63a0e3d00c430b1b7403"
     },
     {
       "path": "mediawiki/extensions/WebAuthn/vendor/autoload.php",
@@ -21040,47 +20940,51 @@
     },
     {
       "path": "mediawiki/extensions/WebAuthn/vendor/composer/ClassLoader.php",
-      "sha256": "6df8dd8658f8f0c82e7065a7c71e88f608199a546ad23795211f8a3ccae3164e"
+      "sha256": "d4b2313e562edf942838ec316d983c1a3459ca67da3e5658e861200b0b3693c2"
     },
     {
       "path": "mediawiki/extensions/WebAuthn/vendor/composer/InstalledVersions.php",
-      "sha256": "317eef891f5fa513d1d348fc3f0757b2dcad07af1088810ee1bc28b0546aaf7a"
+      "sha256": "1e4525198301d1ed1f87ac3df2a8555a6f139f8df30a703d0b775a61963c96e4"
     },
     {
       "path": "mediawiki/extensions/WebAuthn/vendor/composer/LICENSE",
-      "sha256": "7855ac293067aebe7e51afdd23b9dea54b8be24187dbecc9b9142581c37f596c"
+      "sha256": "c8cce4b6b9729f264ffdf9296d505d63432497feeed1f586d1902b942197e024"
     },
     {
       "path": "mediawiki/extensions/WebAuthn/vendor/composer/autoload_classmap.php",
-      "sha256": "e570975b7b6321df351e6def3fbac74e9279e4c45c00c52b46f1de5737ecb3a7"
+      "sha256": "e907ff45269e33f9d450136397ffa8acbc6ea0e014b73ff2de6586f2aa9e49a8"
     },
     {
       "path": "mediawiki/extensions/WebAuthn/vendor/composer/autoload_files.php",
-      "sha256": "9ca69f13bd1913828e21ffef770b0814acae4c4325820e4165d72df8b4fa7ef6"
+      "sha256": "19b021096f892a2e87029e992c86063ebd7d2be535d735c0d79614d92fd5a96f"
     },
     {
       "path": "mediawiki/extensions/WebAuthn/vendor/composer/autoload_namespaces.php",
-      "sha256": "6d1b582b311799934568f00d45e01de7a04f8a1865a8a72c7841904ad4dac3a7"
+      "sha256": "ede505407590638a435137f4e060136f1008de79fc169b3de9793423b0cea38c"
     },
     {
       "path": "mediawiki/extensions/WebAuthn/vendor/composer/autoload_psr4.php",
-      "sha256": "404f108cd67592b159d99fc4ca92f603db77edd4cc433587151ff6c19c8aeea1"
+      "sha256": "b97e1bf356023f8a55f530c7bdc87c1af0e679e9f078cfb89e82d3e522c9a921"
     },
     {
       "path": "mediawiki/extensions/WebAuthn/vendor/composer/autoload_real.php",
-      "sha256": "d8573db8a914b2ed5b12672c1cc7598a78199ce01bd4f7abc8eac5ae2e58d7ba"
+      "sha256": "c6b7de6df14e90222212cce235bfea8a7fac602bc68ab2f58fea9c4247a0787d"
     },
     {
       "path": "mediawiki/extensions/WebAuthn/vendor/composer/autoload_static.php",
-      "sha256": "413e88e62073e9ee8f26d982195a9e5574dea07eb339f0ba4ace5a416abcb701"
+      "sha256": "7b9817257d05953d31c8e1a6bd242629818b8ced03baf7bee881e3c002eab08d"
     },
     {
       "path": "mediawiki/extensions/WebAuthn/vendor/composer/installed.json",
-      "sha256": "8aea931c3253b4bafaf0ec27cd1d270e93928b72d1bc32ffde8fcc089041d2f3"
+      "sha256": "260a844294dae93fabb11c96ed4798586a9c52d81e8125f95a603beb86ea92d7"
     },
     {
       "path": "mediawiki/extensions/WebAuthn/vendor/composer/installed.php",
-      "sha256": "6d4f520eba627d79a3a438f9742838fdddec77dd4b66685291adb721a4f26598"
+      "sha256": "8aceb78d8d79cbab028fe244666b1b5d7f821a2521a191f43de8f85fc28600c4"
+    },
+    {
+      "path": "mediawiki/extensions/WebAuthn/vendor/composer/platform_check.php",
+      "sha256": "4d6b890ba90c7126c20b0afcf72acbdb4bb55808e0f2546059894224d056af39"
     },
     {
       "path": "mediawiki/extensions/WebAuthn/vendor/fgrosse/phpasn1/CHANGELOG.md",
@@ -22616,7 +22520,7 @@
     },
     {
       "path": "mediawiki/extensions/WebAuthn/vendor/symfony/process/Process.php",
-      "sha256": "a6d0c3c816d48f7f21c76979514df69b7ec4ad9150041dfcc2b5bbe46b10df13"
+      "sha256": "ccf32f01b4d65654fc7b981a2efb3feec17dbfae5a936fc3da33273e0b45a50f"
     },
     {
       "path": "mediawiki/extensions/WebAuthn/vendor/symfony/process/ProcessUtils.php",

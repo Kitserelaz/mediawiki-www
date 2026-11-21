@@ -95,11 +95,11 @@ jsuites:
   license: MIT
   homepage: https://github.com/jsuites/jsuites
   authors: jSuites Team
-  version: 4.17.7
-  purl: pkg:npm/jsuites@4.17.7
+  version: 5.0.1
+  purl: pkg:npm/jsuites@5.0.1
   type: tar
-  src: https://registry.npmjs.org/jsuites/-/jsuites-4.17.7.tgz
-  integrity: sha512-qxR9bXsrN2a5nz1hhJjBwKafIg/dFVJY3AZbm1Idvo6rI98t8tlH9oIZVr6nNMGisVbD44HNtLr1juYHlsXpmg==
+  src: https://registry.npmjs.org/jsuites/-/jsuites-5.0.1.tgz
+  integrity: sha512-1dFIrVZBQxnC+J2jvjnyAjktmnXyDXSVVqSrI9zy0GVmnx7NhdrpDXc+SsWQZNC3Qid5McmyKYN7RzjuSrsyzQ==
   dest:
     package/dist/jsuites.js:
     package/dist/jsuites.css:

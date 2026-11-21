@@ -2573,37 +2573,37 @@
         },
         {
             "name": "mediawiki/mediawiki-codesniffer",
-            "version": "v50.0.0",
-            "version_normalized": "50.0.0.0",
+            "version": "v51.0.1",
+            "version_normalized": "51.0.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/wikimedia/mediawiki-tools-codesniffer.git",
-                "reference": "8f8ba0099b59f26c908f8d3b299ba01fb9a0e1dc"
+                "reference": "ff737a50517ae3b02160288e601a87cd1d1691e1"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/wikimedia/mediawiki-tools-codesniffer/zipball/8f8ba0099b59f26c908f8d3b299ba01fb9a0e1dc",
-                "reference": "8f8ba0099b59f26c908f8d3b299ba01fb9a0e1dc",
+                "url": "https://api.github.com/repos/wikimedia/mediawiki-tools-codesniffer/zipball/ff737a50517ae3b02160288e601a87cd1d1691e1",
+                "reference": "ff737a50517ae3b02160288e601a87cd1d1691e1",
                 "shasum": ""
             },
             "require": {
                 "composer/semver": "^3.4.2",
-                "composer/spdx-licenses": "~1.5.2",
-                "ext-json": "*",
+                "composer/spdx-licenses": "~1.5.2 || ~1.6.0",
                 "ext-mbstring": "*",
                 "php": ">=8.2.0",
-                "phpcsstandards/phpcsextra": "1.4.0",
-                "squizlabs/php_codesniffer": "3.13.5"
+                "phpcsstandards/phpcsextra": "1.5.0",
+                "squizlabs/php_codesniffer": "3.13.6"
             },
             "require-dev": {
                 "ext-dom": "*",
-                "mediawiki/mediawiki-phan-config": "0.18.0",
+                "mediawiki/mediawiki-phan-config": "0.20.0",
                 "mediawiki/minus-x": "2.0.1",
                 "php-parallel-lint/php-console-highlighter": "1.0.0",
                 "php-parallel-lint/php-parallel-lint": "1.4.0",
                 "phpunit/phpunit": "10.5.63"
             },
-            "time": "2026-02-10T11:49:03+00:00",
+            "time": "2026-08-07T22:14:15+00:00",
+            "published-time": "2026-08-07T22:15:36+00:00",
             "type": "phpcodesniffer-standard",
             "installation-source": "dist",
             "autoload": {
@@ -2622,7 +2622,7 @@
                 "mediawiki"
             ],
             "support": {
-                "source": "https://github.com/wikimedia/mediawiki-tools-codesniffer/tree/v50.0.0"
+                "source": "https://github.com/wikimedia/mediawiki-tools-codesniffer/tree/v51.0.1"
             },
             "install-path": "../mediawiki/mediawiki-codesniffer"
         },
@@ -4544,32 +4544,33 @@
         },
         {
             "name": "phpcsstandards/phpcsextra",
-            "version": "1.4.0",
-            "version_normalized": "1.4.0.0",
+            "version": "1.5.0",
+            "version_normalized": "1.5.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCSStandards/PHPCSExtra.git",
-                "reference": "fa4b8d051e278072928e32d817456a7fdb57b6ca"
+                "reference": "b598aa890815b8df16363271b659d73280129101"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPCSStandards/PHPCSExtra/zipball/fa4b8d051e278072928e32d817456a7fdb57b6ca",
-                "reference": "fa4b8d051e278072928e32d817456a7fdb57b6ca",
+                "url": "https://api.github.com/repos/PHPCSStandards/PHPCSExtra/zipball/b598aa890815b8df16363271b659d73280129101",
+                "reference": "b598aa890815b8df16363271b659d73280129101",
                 "shasum": ""
             },
             "require": {
                 "php": ">=5.4",
-                "phpcsstandards/phpcsutils": "^1.1.0",
-                "squizlabs/php_codesniffer": "^3.13.0 || ^4.0"
+                "phpcsstandards/phpcsutils": "^1.2.0",
+                "squizlabs/php_codesniffer": "^3.13.5 || ^4.0.1"
             },
             "require-dev": {
                 "php-parallel-lint/php-console-highlighter": "^1.0",
                 "php-parallel-lint/php-parallel-lint": "^1.4.0",
-                "phpcsstandards/phpcsdevcs": "^1.1.6",
+                "phpcsstandards/phpcsdevcs": "^1.2.0",
                 "phpcsstandards/phpcsdevtools": "^1.2.1",
                 "phpunit/phpunit": "^4.5 || ^5.0 || ^6.0 || ^7.0 || ^8.0 || ^9.3.4"
             },
-            "time": "2025-06-14T07:40:39+00:00",
+            "time": "2025-11-12T23:06:57+00:00",
+            "published-time": "2025-11-12T23:15:50+00:00",
             "type": "phpcodesniffer-standard",
             "extra": {
                 "branch-alias": {
@@ -7983,17 +7984,17 @@
         },
         {
             "name": "symfony/yaml",
-            "version": "v7.4.18",
-            "version_normalized": "7.4.18.0",
+            "version": "v7.4.23",
+            "version_normalized": "7.4.23.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/yaml.git",
-                "reference": "4cef939e55b8a21c5780418de0d98ab00d0736e1"
+                "reference": "1e601207ffe627a2e621faa9d661f1d32dcf1cec"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/yaml/zipball/4cef939e55b8a21c5780418de0d98ab00d0736e1",
-                "reference": "4cef939e55b8a21c5780418de0d98ab00d0736e1",
+                "url": "https://api.github.com/repos/symfony/yaml/zipball/1e601207ffe627a2e621faa9d661f1d32dcf1cec",
+                "reference": "1e601207ffe627a2e621faa9d661f1d32dcf1cec",
                 "shasum": ""
             },
             "require": {
@@ -8007,7 +8008,8 @@
             "require-dev": {
                 "symfony/console": "^6.4|^7.0|^8.0"
             },
-            "time": "2026-08-30T00:47:26+00:00",
+            "time": "2026-11-04T08:27:22+00:00",
+            "published-time": "2026-11-04T11:28:41+00:00",
             "bin": [
                 "Resources/bin/yaml-lint"
             ],
@@ -8038,7 +8040,7 @@
             "description": "Loads and dumps YAML files",
             "homepage": "https://symfony.com",
             "support": {
-                "source": "https://github.com/symfony/yaml/tree/v7.4.18"
+                "source": "https://github.com/symfony/yaml/tree/v7.4.23"
             },
             "funding": [
                 {
@@ -9660,17 +9662,17 @@
         },
         {
             "name": "wikimedia/parsoid",
-            "version": "v0.23.1",
-            "version_normalized": "0.23.1.0",
+            "version": "v0.23.3",
+            "version_normalized": "0.23.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/wikimedia/mediawiki-services-parsoid.git",
-                "reference": "4bcf7e63c7a38836b472b2e39b2e9b23793e9b3c"
+                "reference": "71fa7ec11993a00104e221741b5d6852ef982055"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/wikimedia/mediawiki-services-parsoid/zipball/4bcf7e63c7a38836b472b2e39b2e9b23793e9b3c",
-                "reference": "4bcf7e63c7a38836b472b2e39b2e9b23793e9b3c",
+                "url": "https://api.github.com/repos/wikimedia/mediawiki-services-parsoid/zipball/71fa7ec11993a00104e221741b5d6852ef982055",
+                "reference": "71fa7ec11993a00104e221741b5d6852ef982055",
                 "shasum": ""
             },
             "require": {
@@ -9700,7 +9702,7 @@
             },
             "require-dev": {
                 "ext-curl": "*",
-                "mediawiki/mediawiki-codesniffer": "50.0.0",
+                "mediawiki/mediawiki-codesniffer": "51.0.1",
                 "mediawiki/mediawiki-phan-config": "0.20.0",
                 "mediawiki/minus-x": "2.0.1",
                 "monolog/monolog": "^2.2.0",
@@ -9718,7 +9720,8 @@
             "suggest": {
                 "wikimedia/langconv": "Provides script conversion support"
             },
-            "time": "2026-06-04T06:37:39+00:00",
+            "time": "2026-11-19T16:34:22+00:00",
+            "published-time": "2026-11-19T21:21:57+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -9744,7 +9747,7 @@
             ],
             "support": {
                 "irc": "irc://irc.libera.chat/mediawiki-parsoid",
-                "source": "https://github.com/wikimedia/mediawiki-services-parsoid/tree/v0.23.1",
+                "source": "https://github.com/wikimedia/mediawiki-services-parsoid/tree/v0.23.3",
                 "wiki": "https://www.mediawiki.org/wiki/Parsoid"
             },
             "install-path": "../wikimedia/parsoid"

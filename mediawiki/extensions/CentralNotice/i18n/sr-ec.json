@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"Acamicamacaraca",
 			"BadDog",
 			"Kizule",
@@ -13,8 +14,7 @@
 			"Јованвб",
 			"Милан Јелисавчић",
 			"Михајло Анђелковић",
-			"Сербијана",
-			"Aca"
+			"Сербијана"
 		]
 	},
 	"centralnotice": "Админ централног обавештавања",
@@ -35,7 +35,6 @@
 	"centralnotice-save-banner": "Сачувај",
 	"centralnotice-add-new": "Додај ново централно обавештење",
 	"centralnotice-remove": "Уклони",
-	"centralnotice-translate-heading": "Превод за $1",
 	"centralnotice-manage": "Управљање централним обавештењима",
 	"centralnotice-manage-templates": "Управљање плакатима",
 	"centralnotice-add": "Додај",
@@ -85,7 +84,6 @@
 	"centralnotice-no-templates-assigned": "Нема шаблона додељених за обавештење. Додајте неки.",
 	"centralnotice-available-templates": "Доступни шаблони",
 	"centralnotice-template-already-exists": "Шаблон је већ везан за кампању. Не додаје се.",
-	"centralnotice-change-lang": "Промени језик превода",
 	"centralnotice-weights": "Тежине",
 	"centralnotice-notice-is-locked": "Обавештење је закључано. Не уклања се.",
 	"centralnotice-overlap": "Обавештење се временски поклапа с другим обавештењем. Не додаје се.",
@@ -206,7 +204,7 @@
 	"centralnotice-archive-banner-cancel": "Откажи",
 	"centralnotice-change-summary-label": "Резиме",
 	"centralnotice-change-summary-prompt": "Порука о овим променама (опционално)",
-	"centralnotice-change-summary-action-prompt": "Порука о овој радњи (опционално)",
+	"centralnotice-change-summary-action-prompt": "Порука о овој радњи (необавезно)",
 	"centralnotice-archive-show": "Прикажи архивирана обавештења",
 	"centralnotice-archive-campaign": "Архива",
 	"centralnotice-archive-campaign-cancel": "Откажи",

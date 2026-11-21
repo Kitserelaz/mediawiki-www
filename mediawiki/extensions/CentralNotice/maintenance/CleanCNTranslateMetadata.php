@@ -2,11 +2,13 @@
 
 use MediaWiki\Maintenance\Maintenance;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 /**
  * Cleans up the Revision Tag table which is where CentralNotice stores
@@ -42,7 +44,7 @@ class CleanCNTranslateMetadata extends Maintenance {
 	private function cleanDuplicates() {
 		$this->output( "Cleaning duplicates\n" );
 
-		$db = CNDatabase::getDb( DB_PRIMARY );
+		$db = CNDatabase::getPrimaryDb();
 
 		$res = $db->newSelectQueryBuilder()
 			->select( [
@@ -84,7 +86,7 @@ class CleanCNTranslateMetadata extends Maintenance {
 	private function populateIDs() {
 		$this->output( "Associating metadata with banner ids\n" );
 
-		$db = CNDatabase::getDb( DB_PRIMARY );
+		$db = CNDatabase::getPrimaryDb();
 
 		$res = $db->newSelectQueryBuilder()
 			->select( [ 'rt_page', 'rt_revision', 'page_title', 'tmp_id' ] )
@@ -121,7 +123,7 @@ class CleanCNTranslateMetadata extends Maintenance {
 	 * Delete rows that have no banner ID associated with them
 	 */
 	private function deleteOrphans() {
-		$db = CNDatabase::getDb( DB_PRIMARY );
+		$db = CNDatabase::getPrimaryDb();
 		$this->output( "Preparing to delete orphaned rows\n" );
 
 		$res = $db->newSelectQueryBuilder()
@@ -139,7 +141,8 @@ class CleanCNTranslateMetadata extends Maintenance {
 					'rt_type' => $this->ttag,
 					'rt_page' => $row->rt_page,
 					'rt_revision' => $row->rt_revision,
-					'rt_value' => null, // Just in case something updated it
+					// Just in case something updated it
+					'rt_value' => null,
 				] )
 				->caller( __METHOD__ )
 				->execute();
@@ -147,5 +150,7 @@ class CleanCNTranslateMetadata extends Maintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = CleanCNTranslateMetadata::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

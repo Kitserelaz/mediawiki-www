@@ -150,6 +150,7 @@ function farmRuntime(): void {
     $wgVirtualDomainsMapping['virtual-managewiki'] = ['db' => 'wikidb'];
     $wgVirtualDomainsMapping['virtual-managewiki-central'] = ['db' => 'metawiki'];
     $wgVirtualDomainsMapping['virtual-centralauth'] = ['db' => 'centralauth'];
+    $wgVirtualDomainsMapping['virtual-centralnotice'] ??= ['db' => 'metawiki'];
     $wgVirtualDomainsMapping['virtual-botpasswords'] = ['db' => 'centralauth'];
     $wgVirtualDomainsMapping['virtual-globalblocking'] = ['db' => 'centralauth'];
     $wgVirtualDomainsMapping['virtual-oathauth'] = ['db' => 'centralauth'];

@@ -15,7 +15,7 @@
 	"descriptionmsg": "centralnotice-desc",
 	"license-name": "GPL-2.0-or-later",
 	"requires": {
-		"MediaWiki": ">= 1.43",
+		"MediaWiki": ">= 1.46",
 		"extensions": {
 			"EventLogging": "*"
 		}
@@ -121,8 +121,7 @@
 	},
 	"TestAutoloadClasses": {
 		"CentralNoticeTestFixtures": "tests/phpunit/CentralNoticeTestFixtures.php",
-		"CNTestFixturesResourceLoaderModule": "tests/phpunit/CNTestFixturesResourceLoaderModule.php",
-		"TestingCNChoiceDataResourceLoaderModule": "tests/phpunit/TestingCNChoiceDataResourceLoaderModule.php"
+		"CNTestFixturesResourceLoaderModule": "tests/phpunit/CNTestFixturesResourceLoaderModule.php"
 	},
 	"ResourceModules": {
 		"ext.centralNotice.startUp": {
@@ -168,7 +167,6 @@
 				"ext.centralNotice.kvStore",
 				"ext.eventLogging",
 				"mediawiki.cookie",
-				"mediawiki.Uri",
 				"mediawiki.util",
 				"mediawiki.storage"
 			]
@@ -222,12 +220,6 @@
 				"mediawiki.util"
 			]
 		},
-		"ext.centralNotice.freegeoipLookup": {
-			"scripts": "subscribing/ext.centralNotice.freegeoipLookup.js",
-			"dependencies": [
-				"ext.centralNotice.geoIP"
-			]
-		},
 		"ext.centralNotice.impressionEventsSampleRate": {
 			"scripts": "subscribing/ext.centralNotice.impressionEventsSampleRate.js",
 			"dependencies": [
@@ -250,6 +242,7 @@
 		"remoteExtPath": "CentralNotice",
 		"scripts": [
 			"tests/qunit/ext.centralNotice.display/index.tests.js",
+			"tests/qunit/ext.centralNotice.display/hide.tests.js",
 			"tests/qunit/ext.centralNotice.display/chooser.tests.js",
 			"tests/qunit/ext.centralNotice.kvStore/kvStore.tests.js",
 			"tests/qunit/ext.centralNotice.startUp/kvStoreMaintenance.tests.js",
@@ -284,10 +277,16 @@
 	},
 	"HookHandlers": {
 		"main": {
-			"class": "CentralNoticeHooks"
+			"class": "CentralNoticeHooks",
+			"services": [
+				"SpecialPageFactory"
+			]
 		},
 		"usermerge": {
-			"class": "UserMergeHookHandlers"
+			"class": "UserMergeHookHandlers",
+			"services": [
+				"MainConfig"
+			]
 		},
 		"schema": {
 			"class": "CNDatabasePatcher"
@@ -306,9 +305,6 @@
 		"NoticeInfrastructure": {
 			"value": true
 		},
-		"CentralDBname": {
-			"value": false
-		},
 		"CentralBannerRecorder": {
 			"value": false
 		},
@@ -318,16 +314,10 @@
 		"CentralNoticeImpressionEventSampleRate": {
 			"value": 0
 		},
-		"CentralHost": {
-			"value": false
-		},
 		"CentralNoticeApiUrl": {
 			"value": false
 		},
 		"CentralSelectedBannerDispatcher": {
-			"value": false
-		},
-		"CentralMobileSelectedBannerDispatcher": {
 			"value": false
 		},
 		"CentralNoticeLoader": {
@@ -414,11 +404,6 @@
 							"type": "integer",
 							"labelMsg": "centralnotice-banner-history-logger-max-entries",
 							"helpMsg": "centralnotice-banner-history-logger-max-entries-help"
-						},
-						"waitLogNoSendBeacon": {
-							"type": "integer",
-							"labelMsg": "centralnotice-banner-history-logger-wait-log-no-send-beacon",
-							"helpMsg": "centralnotice-banner-history-logger-wait-log-no-send-beacon-help"
 						}
 					}
 				},
@@ -585,11 +570,11 @@
 					"onForAll": true
 				}
 			}
-		},
-		"CentralNoticeESITestString": {
-			"value": false
 		}
 	},
+	"DatabaseVirtualDomains": [
+		"virtual-centralnotice"
+	],
 	"attributes": {
 		"EventLogging": {
 			"Schemas": {

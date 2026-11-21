@@ -15,7 +15,7 @@
  */
 ( function () {
 
-	var cn = mw.centralNotice,
+	const cn = mw.centralNotice,
 		testingBannerName = mw.util.getParamValue( 'banner' ),
 		kvStoreMaintenance = require( './kvStoreMaintenance.js' ),
 		NULL_BANNER_NAME = 'null';
@@ -32,8 +32,8 @@
 	// even when there were no campaigns. Let's do the same thing for now, in
 	// case other code has grown up around it.
 	// TODO Add this only if there's a banner one day?
-	$( function () {
-		$( '#siteNotice' ).prepend( '<div id="centralNotice"></div>' );
+	$( () => {
+		$( '#siteNotice' ).prepend( '<div id="centralNotice" data-nosnippet=""></div>' );
 	} );
 
 	// Testing banner or forced no banner
@@ -41,7 +41,7 @@
 		if ( testingBannerName === NULL_BANNER_NAME ) {
 			return;
 		}
-		mw.loader.using( 'ext.centralNotice.display' ).done( function () {
+		mw.loader.using( 'ext.centralNotice.display' ).done( () => {
 			cn.displayTestingBanner();
 		} );
 		return;

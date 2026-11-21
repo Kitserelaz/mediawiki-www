@@ -17,9 +17,8 @@
  */
 
 use MediaWiki\Html\Html;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\SpecialPage\SpecialPage;
-use MediaWiki\Xml\Xml;
 
 /**
  * SpecialBannerAllocation
@@ -63,9 +62,11 @@ class SpecialBannerAllocation extends CentralNotice {
 	 */
 	public $locationRegion = '';
 
-	public function __construct() {
+	public function __construct(
+		private readonly LanguageNameUtils $languageNameUtils,
+	) {
 		// Register special page
-		SpecialPage::__construct( 'BannerAllocation' );
+		parent::__construct( 'BannerAllocation' );
 	}
 
 	/**
@@ -129,7 +130,11 @@ class SpecialBannerAllocation extends CentralNotice {
 		$htmlOut .= Html::openElement( 'select', [ 'name' => 'project' ] );
 
 		foreach ( $wgNoticeProjects as $value ) {
-			$htmlOut .= Xml::option( $value, $value, $value === $this->project );
+			$htmlOut .= Html::element(
+				'option',
+				[ 'value' => $value, 'selected' => $value === $this->project ],
+				$value
+			);
 		}
 
 		$htmlOut .= Html::closeElement( 'select' );
@@ -142,7 +147,7 @@ class SpecialBannerAllocation extends CentralNotice {
 		$htmlOut .= Html::openElement( 'td' );
 
 		// Retrieve the list of languages in user's language
-		$languages = MediaWikiServices::getInstance()->getLanguageNameUtils()
+		$languages = $this->languageNameUtils
 			->getLanguageNames( $this->getLanguage()->getCode() );
 		// Make sure the site language is in the list; a custom language code
 		// might not have a defined name...
@@ -155,9 +160,11 @@ class SpecialBannerAllocation extends CentralNotice {
 		$htmlOut .= Html::openElement( 'select', [ 'name' => 'language' ] );
 
 		foreach ( $languages as $code => $name ) {
-			$htmlOut .= Xml::option(
-				$this->msg( 'centralnotice-language-listing', $code, $name )->text(),
-				$code, $code === $this->language );
+			$htmlOut .= Html::element(
+				'option',
+				[ 'value' => $code, 'selected' => $code === $this->language ],
+				$this->msg( 'centralnotice-language-listing', $code, $name )->text()
+			);
 		}
 
 		$htmlOut .= Html::closeElement( 'select' );
@@ -177,8 +184,10 @@ class SpecialBannerAllocation extends CentralNotice {
 		);
 
 		foreach ( $countries as $code => $country ) {
-			$htmlOut .= Xml::option(
-				$country->getName(), $code, $code === $this->locationCountry
+			$htmlOut .= Html::element(
+				'option',
+				[ 'value' => $code, 'selected' => $code === $this->locationCountry ],
+				$country->getName()
 			);
 		}
 
@@ -274,6 +283,10 @@ class SpecialBannerAllocation extends CentralNotice {
 					wfEscapeWikiText( $language ),
 					wfEscapeWikiText( $project ),
 					wfEscapeWikiText( $country ),
+					// Messages keys via CNDeviceTarget and CNDatabasePatcher:
+					// centralnotice-devicetype-desktop, centralnotice-devicetype-android,
+					// centralnotice-devicetype-ipad, centralnotice-devicetype-iphone,
+					// centralnotice-devicetype-unknown
 					$deviceData['label']
 				)->parse()
 			);
@@ -351,7 +364,7 @@ class SpecialBannerAllocation extends CentralNotice {
 	 * @return string HTML
 	 */
 	public function createRows( $banners ) {
-		$viewCampaign = $this->getTitleFor( 'CentralNotice' );
+		$viewCampaign = SpecialPage::getTitleFor( 'CentralNotice' );
 		$htmlOut = '';
 		if ( count( $banners ) > 0 ) {
 			$linkRenderer = $this->getLinkRenderer();
@@ -367,7 +380,7 @@ class SpecialBannerAllocation extends CentralNotice {
 				);
 
 				// Banner name
-				$viewBanner = $this->getTitleFor( 'CentralNoticeBanners', "edit/{$banner['name']}" );
+				$viewBanner = SpecialPage::getTitleFor( 'CentralNoticeBanners', "edit/{$banner['name']}" );
 
 				$htmlOut .= Html::rawElement( 'td', [ 'valign' => 'top' ],
 					Html::rawElement( 'span',

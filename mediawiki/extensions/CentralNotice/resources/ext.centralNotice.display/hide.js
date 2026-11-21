@@ -4,12 +4,11 @@
  */
 ( function () {
 
-	var hide,
-		category,
+	let category,
 		cookieName,
 		shouldHide,
-		reason,
-		durations = mw.config.get( 'wgNoticeCookieDurations' ),
+		reason;
+	const durations = mw.config.get( 'wgNoticeCookieDurations' ),
 
 		HIDE_COOKIE_PREFIX = 'centralnotice_hide_',
 
@@ -24,7 +23,7 @@
 	/**
 	 * Hide object (intended for access from within this RL module)
 	 */
-	hide = mw.centralNotice.internal.hide = {
+	const hide = mw.centralNotice.internal.hide = {
 
 		setCategory: function ( c ) {
 			shouldHide = false;
@@ -34,9 +33,7 @@
 		},
 
 		processCookie: function () {
-			var rawCookieVal = $.cookie( cookieName ),
-				hideData,
-				now;
+			const rawCookieVal = $.cookie( cookieName );
 
 			// No cookie
 			if ( !rawCookieVal ) {
@@ -49,6 +46,7 @@
 				return;
 			}
 
+			let hideData;
 			// Try to parse the cookie
 			try {
 				hideData = JSON.parse( rawCookieVal );
@@ -58,7 +56,7 @@
 				return;
 			}
 
-			now = Date.now() / 1000;
+			const now = Date.now() / 1000;
 
 			// Duration isn't stored in the cookie. Cookies should expire
 			// after the duration is up, some hide reasons have server-side
@@ -96,7 +94,7 @@
 		 * @param {number} duration Cookie duration, in seconds
 		 */
 		setHideCookies: function ( newReason, duration ) {
-			var date = new Date(),
+			const date = new Date(),
 				hideData = {
 					v: 1,
 					created: Math.floor( date.getTime() / 1000 ),
@@ -119,21 +117,36 @@
 				{ expires: date, path: '/' }
 			);
 
-			// Iterate over all configured URLs to hide this category of banner
-			// for all wikis in a cluster
-			mw.config.get( 'wgNoticeHideUrls' ).forEach( function ( val ) {
+			this.fetchHideUrls(
+				mw.config.get( 'wgNoticeHideUrls' ),
+				duration,
+				category,
+				newReason
+			);
+		},
 
-				var url = new mw.Uri( val );
-				url.extend(
-					{
-						duration: duration,
-						category: category,
-						reason: newReason
-					}
-				);
+		/**
+		 * Iterate over all configured URLs to hide this category of banner
+		 * for all wikis in a cluster
+		 *
+		 * @param {string[]} hideUrls
+		 * @param {number} duration Cookie duration, in seconds
+		 * @param {string} categoryName Reason to store in the hide cookie
+		 * @param {string} newReason Reason to store in the hide cookie
+		 * @return {HTMLImageElement[]}
+		 */
+		fetchHideUrls: function ( hideUrls, duration, categoryName, newReason ) {
+			return hideUrls.map( ( hideUrl ) => {
+				const url = new URL( hideUrl, location );
+				url.searchParams.set( 'duration', duration );
+				url.searchParams.set( 'category', categoryName );
+				url.searchParams.set( 'reason', newReason );
 
-				// TODO Can we use sendBeacon here? Would it be worth it?
-				document.createElement( 'img' ).src = url.toString();
+				// NOTE: We can't use sendBeacon here since that would
+				// trigger tons of uncachable POST requests from readers.
+				const img = document.createElement( 'img' );
+				img.src = url.toString();
+				return img;
 			} );
 		},
 

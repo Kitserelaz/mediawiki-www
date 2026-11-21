@@ -4582,11 +4582,16 @@ class GeoTarget {
 				'name' => wfMessage( 'centralnotice-country-unknown' )->inContentLanguage()->text(),
 				'regions' => []
 			];
-			if ( ExtensionRegistry::getInstance()->isLoaded( 'CLDR' ) ) {
+			if (
+				ExtensionRegistry::getInstance()->isLoaded( 'CLDR' )
+				||
+				ExtensionRegistry::getInstance()->isLoaded( 'cldr' )
+			) {
 				$cldrNames = CountryNames::getNames( $languageCode );
 			} else {
 				$cldrNames = [];
 			}
+			self::$countries = [];
 			foreach ( $countries as $code => $country ) {
 				asort( $country['regions'] );
 				if ( isset( $cldrNames[$code] ) ) {

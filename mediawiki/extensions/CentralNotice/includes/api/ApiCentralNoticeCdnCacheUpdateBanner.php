@@ -3,7 +3,8 @@
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Deferred\DeferredUpdates;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
+use Wikimedia\ParamValidator\ParamValidator;
 
 /**
  * Module for the centralnoticecdncacheupdatebanner Web API. Used by a background call
@@ -12,38 +13,30 @@ use MediaWiki\Languages\LanguageNameUtils;
  */
 class ApiCentralNoticeCdnCacheUpdateBanner extends ApiBase {
 
-	/** @var LanguageNameUtils */
-	private $languageNameUtils;
-
-	/**
-	 * @param ApiMain $mainModule
-	 * @param string $moduleName
-	 * @param LanguageNameUtils $languageNameUtils
-	 */
 	public function __construct(
 		ApiMain $mainModule,
 		string $moduleName,
-		LanguageNameUtils $languageNameUtils
+		private readonly LanguageNameUtils $languageNameUtils,
 	) {
 		parent::__construct( $mainModule, $moduleName );
-		$this->languageNameUtils = $languageNameUtils;
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 	public function execute() {
-		$params = $this->extractRequestParams();
-		$langCode = $params[ 'language' ];
-		$bannerName = $params[ 'banner' ];
-
 		if ( !$this->getUser()->isAllowed( 'centralnotice-admin' ) ) {
 			$this->dieWithError( 'apierror-centralnotice-cdn-permissions-error' );
 		}
 
+		$params = $this->extractRequestParams();
+		$langCode = $params[ 'language' ];
+
 		if ( !$this->languageNameUtils->isValidCode( $langCode ) ) {
 			$this->dieWithError( 'apierror-centralnotice-cdn-lang-code-error' );
 		}
+
+		$bannerName = $params[ 'banner' ];
 
 		if ( !Banner::isValidBannerName( $bannerName ) ) {
 			$this->dieWithError( 'apierror-centralnotice-cdn-banner-name-error' );
@@ -70,12 +63,12 @@ class ApiCentralNoticeCdnCacheUpdateBanner extends ApiBase {
 	public function getAllowedParams() {
 		return [
 			'banner' => [
-				ApiBase::PARAM_TYPE => 'string',
-				ApiBase::PARAM_REQUIRED => true
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => true,
 			],
 			'language' => [
-				ApiBase::PARAM_TYPE => 'string',
-				ApiBase::PARAM_REQUIRED => true
+				ParamValidator::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_REQUIRED => true,
 			]
 		];
 	}

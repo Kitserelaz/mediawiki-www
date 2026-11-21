@@ -12,19 +12,20 @@ use Wikimedia\Rdbms\IDBAccessObject;
 
 class BannerMessage {
 
-	/** @var string */
-	private $banner_name;
-	/** @var string */
-	private $name;
-
 	private const SPAN_TAG_PLACEHOLDER_START = '%%%spantagplaceholderstart%%%';
 	private const SPAN_TAG_PLACEHOLDER_END = '%%%spantagplaceholderend%%%';
 
-	public function __construct( $banner_name, $name ) {
-		$this->banner_name = $banner_name;
-		$this->name = $name;
+	public function __construct(
+		private readonly string $banner_name,
+		private readonly string $name,
+	) {
 	}
 
+	/**
+	 * @param string $lang
+	 * @param int $namespace
+	 * @return Title|null
+	 */
 	public function getTitle( $lang, $namespace = NS_MEDIAWIKI ) {
 		return Title::newFromText( $this->getDbKey( $lang, $namespace ), $namespace );
 	}
@@ -104,7 +105,7 @@ class BannerMessage {
 		}
 	}
 
-	public function toHtml( IContextSource $context ) {
+	public function toHtml( IContextSource $context ): string {
 		global $wgNoticeUseLanguageConversion;
 		$lang = $context->getLanguage();
 		if ( $wgNoticeUseLanguageConversion ) {
@@ -144,7 +145,7 @@ class BannerMessage {
 				$user,
 				$summary,
 				EDIT_FORCE_BOT,
-				false, // $originalRevId
+				false,
 				$tags
 			);
 
@@ -164,7 +165,7 @@ class BannerMessage {
 		}
 	}
 
-	public static function sanitize( $text ) {
+	public static function sanitize( string $text ): string {
 		// First, remove any occurrences of the placeholders used to preserve span tags.
 		$text = str_replace( self::SPAN_TAG_PLACEHOLDER_START, '', $text );
 		$text = str_replace( self::SPAN_TAG_PLACEHOLDER_END, '', $text );

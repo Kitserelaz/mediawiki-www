@@ -1,32 +1,9 @@
 <?php
 
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-
-use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
-use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
-use MediaWiki\Hook\CanonicalNamespacesHook;
-use MediaWiki\Hook\PreferencesGetIconHook;
-use MediaWiki\Hook\SkinTemplateNavigation__UniversalHook;
-use MediaWiki\MediaWikiServices;
-use MediaWiki\Message\Message;
-use MediaWiki\Output\OutputPage;
-use MediaWiki\Preferences\Hook\GetPreferencesHook;
-use MediaWiki\Registration\ExtensionRegistry;
-use MediaWiki\ResourceLoader\Hook\ResourceLoaderRegisterModulesHook;
-use MediaWiki\ResourceLoader\ResourceLoader;
-use MediaWiki\SpecialPage\SpecialPage;
-use MediaWiki\User\User;
-
 /**
- * General hook definitions
- *
  * This file is part of the CentralNotice Extension to MediaWiki
  * https://www.mediawiki.org/wiki/Extension:CentralNotice
  *
- * @file
- * @ingroup Extensions
- *
- * @section LICENSE
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -41,8 +18,31 @@ use MediaWiki\User\User;
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  * http://www.gnu.org/copyleft/gpl.html
+ *
+ * @file
  */
 
+use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
+use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
+use MediaWiki\Hook\PreferencesGetIconHook;
+use MediaWiki\Message\Message;
+use MediaWiki\Output\OutputPage;
+use MediaWiki\Preferences\Hook\GetPreferencesHook;
+use MediaWiki\ResourceLoader as RL;
+use MediaWiki\ResourceLoader\Hook\ResourceLoaderRegisterModulesHook;
+use MediaWiki\ResourceLoader\ResourceLoader;
+use MediaWiki\Skin\Hook\SkinTemplateNavigation__UniversalHook;
+use MediaWiki\Skin\Skin;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\SpecialPage\SpecialPageFactory;
+use MediaWiki\Title\Hook\CanonicalNamespacesHook;
+use MediaWiki\User\User;
+
+/**
+ * General hook definitions
+ *
+ * @ingroup Extensions
+ */
 class CentralNoticeHooks implements
 	CanonicalNamespacesHook,
 	ChangeTagsListActiveHook,
@@ -53,6 +53,11 @@ class CentralNoticeHooks implements
 	PreferencesGetIconHook
 {
 
+	public function __construct(
+		private readonly SpecialPageFactory $specialPageFactory,
+	) {
+	}
+
 	/**
 	 * Conditional configuration
 	 */
@@ -60,15 +65,9 @@ class CentralNoticeHooks implements
 		// @phpcs:ignore MediaWiki.Usage.DeprecatedGlobalVariables.Deprecated$wgHooks
 		global $wgHooks, $wgNoticeInfrastructure, $wgSpecialPages,
 			$wgCentralNoticeLoader, $wgNoticeUseTranslateExtension,
-			$wgAvailableRights, $wgGroupPermissions, $wgCentralDBname,
-			$wgDBname, $wgCentralNoticeAdminGroup,
+			$wgAvailableRights, $wgGroupPermissions, $wgCentralNoticeAdminGroup,
 			$wgCentralNoticeMessageProtectRight, $wgResourceModules,
 			$wgDefaultUserOptions;
-
-		// Default for a standalone wiki is that the CN tables are in the main database.
-		if ( !$wgCentralDBname ) {
-			$wgCentralDBname = $wgDBname;
-		}
 
 		// If CentralNotice banners should be shown on this wiki, load the components we need for
 		// showing banners. For discussion of banner loading strategies, see
@@ -98,9 +97,24 @@ class CentralNoticeHooks implements
 
 			$wgSpecialPages['CentralNotice'] = CentralNotice::class;
 			$wgSpecialPages['NoticeTemplate'] = SpecialNoticeTemplate::class;
-			$wgSpecialPages['BannerAllocation'] = SpecialBannerAllocation::class;
-			$wgSpecialPages['CentralNoticeLogs'] = SpecialCentralNoticeLogs::class;
-			$wgSpecialPages['CentralNoticeBanners'] = SpecialCentralNoticeBanners::class;
+			$wgSpecialPages['BannerAllocation'] = [
+				'class' => SpecialBannerAllocation::class,
+				'services' => [
+					'LanguageNameUtils'
+				],
+			];
+			$wgSpecialPages['CentralNoticeLogs'] = [
+				'class' => SpecialCentralNoticeLogs::class,
+				'services' => [
+					'UrlUtils',
+				],
+			];
+			$wgSpecialPages['CentralNoticeBanners'] = [
+				'class' => SpecialCentralNoticeBanners::class,
+				'services' => [
+					'LanguageNameUtils'
+				],
+			];
 
 			$moduleTemplate = [
 				'localBasePath' => dirname( __DIR__ ) . '/resources',
@@ -112,7 +126,6 @@ class CentralNoticeHooks implements
 						'jquery.ui',
 						'mediawiki.jqueryMsg',
 						'mediawiki.util',
-						'mediawiki.Uri'
 					],
 					'scripts' => [
 						'vendor/jquery.ui.multiselect/ui.multiselect.js',
@@ -141,7 +154,6 @@ class CentralNoticeHooks implements
 					'dependencies' => [
 						'ext.centralNotice.adminUi',
 						'jquery.ui',
-						'mediawiki.Uri'
 					],
 					'scripts' => 'infrastructure/bannermanager.js',
 					'styles' => 'infrastructure/bannermanager.less',
@@ -165,7 +177,6 @@ class CentralNoticeHooks implements
 						'jquery.ui',
 						'ext.centralNotice.kvStore',
 						'mediawiki.api',
-						'mediawiki.Uri',
 						'mediawiki.Title',
 						'mediawiki.user',
 					],
@@ -216,8 +227,6 @@ class CentralNoticeHooks implements
 						'centralnotice-banner-history-logger-max-entry-age-help',
 						'centralnotice-banner-history-logger-max-entries',
 						'centralnotice-banner-history-logger-max-entries-help',
-						'centralnotice-banner-history-logger-wait-log-no-send-beacon',
-						'centralnotice-banner-history-logger-wait-log-no-send-beacon-help',
 						'centralnotice-set-record-impression-sample-rate',
 						'centralnotice-custom-record-impression-sample-rate',
 						'centralnotice-banners-not-guaranteed-to-display',
@@ -285,6 +294,9 @@ class CentralNoticeHooks implements
 		}
 	}
 
+	/**
+	 * @param string $right
+	 */
 	private static function addCascadingRestrictionRight( $right ) {
 		global $wgCascadingRestrictionLevels, $wgRestrictionLevels;
 		if ( !in_array( $right, $wgRestrictionLevels ) ) {
@@ -301,7 +313,7 @@ class CentralNoticeHooks implements
 	 */
 	public static function initCentralNotice() {
 		global $wgCentralBannerRecorder, $wgCentralSelectedBannerDispatcher,
-			$wgCentralSelectedMobileBannerDispatcher;
+			$wgNoticeProject, $wgNoticeProjects;
 
 		// Defaults for infrastructure wiki URLs
 		if ( !$wgCentralBannerRecorder ) {
@@ -314,10 +326,8 @@ class CentralNoticeHooks implements
 				SpecialPage::getTitleFor( 'BannerLoader' )->getLocalUrl();
 		}
 
-		if ( !$wgCentralSelectedMobileBannerDispatcher &&
-			ExtensionRegistry::getInstance()->isLoaded( 'MobileFrontend' )
-		) {
-			$wgCentralSelectedMobileBannerDispatcher = $wgCentralSelectedBannerDispatcher;
+		if ( !$wgNoticeProjects ) {
+			$wgNoticeProjects = [ $wgNoticeProject ];
 		}
 	}
 
@@ -370,47 +380,46 @@ class CentralNoticeHooks implements
 	 * @return bool
 	 */
 	public static function onBeforePageDisplay( $out, $skin ) {
-		global $wgCentralHost, $wgServer, $wgCentralNoticeContentSecurityPolicy,
-			$wgCentralNoticeESITestString;
-
-		// Add ESI test string (see T308799)
-		// It is expected that only HTML comments in the form of '<!--esi ...' will be
-		// injected here.
-		// TODO Remove this once ESI tests are complete.
-		if ( $wgCentralNoticeESITestString ) {
-			$out->addHTML( $wgCentralNoticeESITestString );
-		}
+		global $wgCentralSelectedBannerDispatcher, $wgServerName, $wgCentralNoticeContentSecurityPolicy;
 
 		// Always add geoIP
 		// TODO Separate geoIP from CentralNotice
 		$out->addModules( 'ext.centralNotice.geoIP' );
 
+		// Banners can contain user-contributed JavaScript.
+		// Do not show them when executing such scripts is generally disallowed.
+		$isSiteJsAllowed = $out->getAllowedModules( RL\Module::TYPE_SCRIPTS )
+			>= RL\Module::ORIGIN_USER_SITEWIDE;
+
 		$request = $skin->getRequest();
+		$actionsToSkipBanners = [ 'edit', 'history', 'submit' ];
 		// If we're on a special page (or not a normal page view at all),
 		// editing, viewing history or a diff, bow out now
-		// This is to reduce chance of bad misclicks from delayed banner loading
-		if ( !$out->getTitle() ||
+		// This is to reduce the chance of bad misclicks from delayed banner loading
+		if (
+			!$isSiteJsAllowed ||
+			!$out->getTitle() ||
 			$out->getTitle()->inNamespace( NS_SPECIAL ) ||
-			( $request->getText( 'action' ) === 'edit' ) ||
-			( $request->getText( 'action' ) === 'history' ) ||
+			in_array( $request->getText( 'action' ), $actionsToSkipBanners, true ) ||
 			$request->getCheck( 'diff' )
 		) {
 			return true;
 		}
 
+		$centralHost = parse_url( $wgCentralSelectedBannerDispatcher, PHP_URL_HOST );
 		// Insert DNS prefetch for banner loading
-		if ( $wgCentralHost && $wgCentralHost !== $wgServer ) {
+		if ( $centralHost && $centralHost !== $wgServerName ) {
 			$out->addHeadItem(
 				'cn-dns-prefetch',
-				'<link rel="dns-prefetch" href="' . htmlspecialchars( $wgCentralHost ) . '" />'
+				'<link rel="dns-prefetch" href="//' . htmlspecialchars( $centralHost ) . '" />'
 			);
 		}
 
 		// Insert the startup module
 		$out->addModules( 'ext.centralNotice.startUp' );
 
-		// FIXME: as soon as I80f6f469ba4c0b60 is available in core, get rid
-		// of $wgCentralNoticeContentSecurityPolicy and use their stuff.
+		// FIXME: I80f6f469ba4c0b60 has been in core since REL1_32.
+		// Get rid of $wgCentralNoticeContentSecurityPolicy and use their stuff.
 		if (
 			$wgCentralNoticeContentSecurityPolicy &&
 			$request->getVal( 'banner' )
@@ -434,7 +443,7 @@ class CentralNoticeHooks implements
 	public static function onMakeGlobalVariablesScript( &$vars, $out ) {
 		global $wgNoticeProject, $wgCentralNoticeGeoIPBackgroundLookupModule;
 
-		// FIXME Is this no longer used anywhere in JS following the switch to
+		// FIXME: Is this no longer used anywhere in JS following the switch to
 		// client-side banner selection? If so, remove it.
 		$vars[ 'wgNoticeProject' ] = $wgNoticeProject;
 
@@ -443,23 +452,6 @@ class CentralNoticeHooks implements
 		if ( $wgCentralNoticeGeoIPBackgroundLookupModule ) {
 			$vars[ 'wgCentralNoticeGeoIPBackgroundLookupModule' ] =
 				$wgCentralNoticeGeoIPBackgroundLookupModule;
-		}
-
-		// Output the user's registration date, total edit count, and past year's edit count.
-		// This is useful for banners that need to be targeted to specific types of users.
-		// Only do this for logged-in users, keeping anonymous user output equal (for Squid-cache).
-		$user = $out->getUser();
-		if ( $user->isRegistered() ) {
-			if ( $user->isBot() ) {
-				$userData = false;
-			} else {
-				$userData = [
-					// Add the user's registration date (TS_MW)
-					'registration' => $user->getRegistration() ?: 0
-				];
-			}
-			// Set the variable that will be output to the page
-			$vars[ 'wgNoticeUserData' ] = $userData;
 		}
 
 		return true;
@@ -493,7 +485,7 @@ class CentralNoticeHooks implements
 			$wgNoticeNumberOfControllerBuckets, $wgNoticeCookieDurations,
 			$wgNoticeHideUrls, $wgCentralNoticeSampleRate,
 			$wgCentralNoticeImpressionEventSampleRate,
-			$wgCentralSelectedBannerDispatcher, $wgCentralSelectedMobileBannerDispatcher,
+			$wgCentralSelectedBannerDispatcher,
 			$wgCentralNoticePerCampaignBucketExtension, $wgCentralNoticeCampaignMixins,
 			$wgCentralNoticeMaxCampaignFallback;
 
@@ -502,25 +494,7 @@ class CentralNoticeHooks implements
 		// This seems to be just right. We require them at all because MW will 302 page requests
 		// made to non localised namespaces which results in wasteful extra calls.
 
-		// Set infrastructure URL variables, which change between mobile/desktop
-		if ( class_exists( MobileContext::class ) ) {
-			$mc = MobileContext::singleton();
-			$displayMobile = $mc->shouldDisplayMobileView();
-		} else {
-			$displayMobile = false;
-		}
-
-		if ( $displayMobile ) {
-			// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
-			$wgCentralBannerRecorder = $mc->getMobileUrl( $wgCentralBannerRecorder );
-			$bannerDispatcher = $wgCentralSelectedMobileBannerDispatcher;
-		} else {
-			$bannerDispatcher = $wgCentralSelectedBannerDispatcher;
-		}
-
-		$vars[ 'wgCentralNoticeActiveBannerDispatcher' ] = $bannerDispatcher;
-		// TODO Temporary setting to support cached javascript following deploy; remove.
-		$vars[ 'wgCentralSelectedBannerDispatcher' ] = $bannerDispatcher;
+		$vars[ 'wgCentralNoticeActiveBannerDispatcher' ] = $wgCentralSelectedBannerDispatcher;
 		$vars[ 'wgCentralBannerRecorder' ] = $wgCentralBannerRecorder;
 		$vars[ 'wgCentralNoticeSampleRate' ] = $wgCentralNoticeSampleRate;
 
@@ -569,7 +543,7 @@ class CentralNoticeHooks implements
 	}
 
 	/**
-	 * Add tags defined by this extension to list of active tags.
+	 * Add tags defined by this extension to the list of active tags.
 	 *
 	 * @param array &$tags List of defined or active tags
 	 */
@@ -586,6 +560,9 @@ class CentralNoticeHooks implements
 		$this->addDefinedTags( $tags );
 	}
 
+	/**
+	 * @param string[] &$tags
+	 */
 	private function addDefinedTags( &$tags ): void {
 		$tags[] = 'centralnotice';
 		$tags[] = 'centralnotice translation';
@@ -608,7 +585,7 @@ class CentralNoticeHooks implements
 			// This allows fallback languages while also showing something not-too-
 			// horrible if the config variable has types that don't have i18n
 			// messages.
-			// Note also that the value of 'label' will escaped prior to output.
+			// Note also that the value of 'label' will be escaped prior to output.
 			$message = Message::newFromKey( $type->getMessageKey() );
 			$label = $message->exists() ? $message->text() : $type->getId();
 
@@ -645,7 +622,7 @@ class CentralNoticeHooks implements
 			return;
 		}
 
-		// Return if skin allows special pages to register natigation links (in which
+		// Return if skin allows special pages to register navigation links (in which
 		// case this is handled by getShortDescription() and
 		// getAssociatedNavigationLinks()).
 		// See T315562, T313349.
@@ -660,10 +637,9 @@ class CentralNoticeHooks implements
 			return;
 		}
 
-		[ $alias, $sub ] = MediaWikiServices::getInstance()->getSpecialPageFactory()->
-			resolveAlias( $title->getText() );
+		[ $alias, ] = $this->specialPageFactory->resolveAlias( $title->getText() );
 
-		if ( !array_key_exists( $alias, $wgNoticeTabifyPages ) ) {
+		if ( $alias === null || !array_key_exists( $alias, $wgNoticeTabifyPages ) ) {
 			return;
 		}
 

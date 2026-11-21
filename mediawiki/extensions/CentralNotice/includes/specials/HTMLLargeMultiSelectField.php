@@ -2,9 +2,9 @@
 
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\Field\HTMLMultiSelectField;
-use MediaWiki\Xml\Xml;
 
 class HTMLLargeMultiSelectField extends HTMLMultiSelectField {
+	/** @inheritDoc */
 	public function getInputHTML( $value ) {
 		if ( !is_array( $value ) ) {
 			$value = [ $value ];
@@ -12,10 +12,10 @@ class HTMLLargeMultiSelectField extends HTMLMultiSelectField {
 
 		$options = "\n";
 		foreach ( $this->mParams[ 'options' ] as $name => $optvalue ) {
-			$options .= Xml::option(
-				(string)$name,
-				$optvalue,
-				in_array( $optvalue, $value )
+			$options .= Html::element(
+				'option',
+				[ 'value' => $optvalue, 'selected' => in_array( $optvalue, $value ) ],
+				(string)$name
 			) . "\n";
 		}
 

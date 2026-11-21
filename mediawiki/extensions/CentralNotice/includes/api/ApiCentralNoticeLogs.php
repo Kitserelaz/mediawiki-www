@@ -2,19 +2,18 @@
 
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiQueryBase;
+use Wikimedia\ParamValidator\ParamValidator;
+use Wikimedia\ParamValidator\TypeDef\NumericDef;
 
 # TODO: bannerlogs
 
-/** @todo: This needs some major cleanup to work more like the rest of the API. */
+/** @todo This needs some major cleanup to work more like the rest of the API. */
 class ApiCentralNoticeLogs extends ApiQueryBase {
 
 	private const USER_FILTER = '/[a-zA-Z0-9_.]+/';
 	private const CAMPAIGNS_FILTER = '/[a-zA-Z0-9_|\-]+/';
 
 	public function execute() {
-		// Obtain the ApiResults object from the base
-		$result = $this->getResult();
-
 		$params = $this->extractRequestParams();
 
 		$start = $params['start'];
@@ -28,33 +27,34 @@ class ApiCentralNoticeLogs extends ApiQueryBase {
 
 		$logs = Campaign::campaignLogs( $campaign, $user, $start, $end, $limit, $offset );
 
-		$result->addValue( [ 'query', $this->getModuleName() ], 'logs', $logs );
+		$this->getResult()->addValue( [ 'query', $this->getModuleName() ], 'logs', $logs );
 	}
 
+	/** @inheritDoc */
 	public function getAllowedParams() {
 		return [
 			'campaign' => [
-				ApiBase::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_TYPE => 'string',
 			],
 			'user' => [
-				ApiBase::PARAM_TYPE => 'string',
+				ParamValidator::PARAM_TYPE => 'string',
 			],
 			'limit' => [
-				ApiBase::PARAM_DFLT => 50,
-				ApiBase::PARAM_TYPE => 'limit',
-				ApiBase::PARAM_MIN  => 1,
-				ApiBase::PARAM_MAX  => ApiBase::LIMIT_BIG1,
-				ApiBase::PARAM_MAX2 => ApiBase::LIMIT_BIG2,
+				ParamValidator::PARAM_DEFAULT => 50,
+				ParamValidator::PARAM_TYPE => 'limit',
+				NumericDef::PARAM_MIN  => 1,
+				NumericDef::PARAM_MAX  => ApiBase::LIMIT_BIG1,
+				NumericDef::PARAM_MAX2 => ApiBase::LIMIT_BIG2,
 			],
 			'offset' => [
-				ApiBase::PARAM_DFLT => 0,
-				ApiBase::PARAM_TYPE => 'integer',
+				ParamValidator::PARAM_DEFAULT => 0,
+				ParamValidator::PARAM_TYPE => 'integer',
 			],
 			'start' => [
-				ApiBase::PARAM_TYPE => 'timestamp',
+				ParamValidator::PARAM_TYPE => 'timestamp',
 			],
 			'end' => [
-				ApiBase::PARAM_TYPE => 'timestamp',
+				ParamValidator::PARAM_TYPE => 'timestamp',
 			],
 		];
 	}
@@ -71,21 +71,16 @@ class ApiCentralNoticeLogs extends ApiQueryBase {
 
 	/**
 	 * Obtains the parameter $param, sanitizes by returning the first match to $regex or
-	 * $default if there was no match.
+	 * null if there was no match.
 	 *
-	 * @param string $value Incoming value
+	 * @param ?string $value Incoming value
 	 * @param string $regex Sanitization regular expression
-	 * @param string|null $default Default value to return on error
-	 *
-	 * @return string The sanitized value
+	 * @return string|null The sanitized value
 	 */
-	private static function sanitizeText( $value, $regex, $default = null ) {
-		$matches = [];
-
-		if ( preg_match( $regex, $value, $matches ) ) {
+	private static function sanitizeText( ?string $value, string $regex ): ?string {
+		if ( preg_match( $regex, $value ?? '', $matches ) ) {
 			return $matches[ 0 ];
-		} else {
-			return $default;
 		}
+		return null;
 	}
 }

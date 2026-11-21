@@ -625,6 +625,7 @@ class MirahezeFunctions {
 		$confActualMtime = max(
 			// When config files are updated
 			filemtime( __DIR__ . '/LocalSettings.php' ),
+			filemtime( __DIR__ . '/ConfigSettings.php' ),
 			filemtime( __DIR__ . '/ManageWikiExtensions.php' ),
 			filemtime( __DIR__ . '/ManageWikiNamespaces.php' ),
 			filemtime( __DIR__ . '/ManageWikiSettings.php' ),

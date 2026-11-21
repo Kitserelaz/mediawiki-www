@@ -10,15 +10,11 @@ Configuration
   Default: "wikipedia"
 
 * $wgNoticeProjects: List of available projects.
-  Default: []
+  Default: [ $wgNoticeProject ]
 
 * $wgNoticeInfrastructure: Enable the campaign hosting infrastructure on this wiki...
   Set to false for wikis that only use a sister site for the control.
   Default: true
-
-* $wgCentralDBname: The name of the database which hosts the centralized
-  campaign data.  If false, we will default to using the primary database.
-  Default: false
 
 * $wgCentralBannerRecorder: URL which is hit after a banner is loaded, for
   compatibility with analytics.
@@ -32,30 +28,20 @@ Configuration
   using EventLogging (meant to supersede custom URL for impression recording).
   Default: 0
 
-* $wgCentralHost: Protocol and host name of the wiki that hosts the
-  CentralNotice infrastructure, for example "//meta.wikimedia.org". This is
-  used for DNS prefetching.
-  Default: false
-
 * $wgCentralNoticeApiUrl: The API path on the wiki that hosts the CentralNotice
   infrastructure, for example "http://meta.wikimedia.org/api.php".
   This must be set if you enable the selection of banners on the client and you
-  don't have direct access to the infrastructure database (see
-  $wgCentralDBname).  Note that when this is set, it will override your
-  database settings.
+  don't have direct access to the infrastructure database. Note that when this
+  is set, it will override your database settings.
   Default: false
 
-* $wgCentralSelectedBannerDispatcher: URL for BannerLoader, for requests to
-  fetch a banner that is already known (using the "banner" URL param). If
-  false, it will default to Special:BannerLoader. Note: Ugly URL format is allowed,
-  but no other URL parameters or fragment identifiers may be used.
-  Default: false
-
-* $wgCentralMobileSelectedBannerDispatcher: URL for BannerLoader on Mobile
-  sites. See $wgCentralSelectedBannerDispatcher. If false, and if
-  MobileFrontEnd is enabled for this site, this defaults to the same
-  value as $wgCentralSelectedBannerDispatcher. (This is a temporary
-  solution; see bug T156847.).
+* $wgCentralSelectedBannerDispatcher: URL to Special:BannerLoader for requests to
+  fetch the banner HTML (using the "banner" URL param) after it is selected client-side
+  from banner choice data. It defaults to Special:BannerLoader on the local wiki.
+  While "ugly" index.php URLs are supported, only the "title" parameter may be set,
+  no other query parameters or fragment identifiers may be set.
+  When set to a different hostname (i.e. infrastructure wiki), subscribing wikis
+  will automatically perform a DNS prefetch on pageviews.
   Default: false
 
 * $wgCentralNoticeLoader: Enable the loader itself
@@ -187,11 +173,9 @@ Configuration
 * $wgCentralNoticeGeoIPBackgroundLookupModule: Optional name of a ResourceLoader
   module to perform a background GeoIP lookup via a third-party service. If no
   GeoIP cookie is found, the module is used to call the service. It should
-  return geo via a promise. Here we provide an example implementation for
-  freegeoip.net (ext.centralNotice.freegeoipLookup), but modules for other
-  similar services should be easy to create. If this config setting is null, geo
-  data will only be set from the GeoIP cookie. In the WMF production, this
-  cookie should be set server-side from Varnish.
+  return geo via a promise. If this config setting is null, geo data will only
+  be set from the GeoIP cookie. In the WMF production environment, this cookie
+  should be set server-side from Varnish.
   Default: null
 
 * $wgCentralNoticeContentSecurityPolicy: Optional setting to help detect banner

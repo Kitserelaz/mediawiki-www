@@ -1,12 +1,13 @@
 <?php
 
 use MediaWiki\Tests\ResourceLoader\ResourceLoaderTestCase;
+use Wikimedia\TestingAccessWrapper;
 
 /**
  * @group CentralNotice
  * @group medium
  * @group Database
- * @covers CNChoiceDataResourceLoaderModule
+ * @covers \CNChoiceDataResourceLoaderModule
  */
 class CNChoiceDataResourceLoaderModuleTest extends ResourceLoaderTestCase {
 	/** @var CentralNoticeTestFixtures */
@@ -31,17 +32,15 @@ class CNChoiceDataResourceLoaderModuleTest extends ResourceLoaderTestCase {
 		$this->cnFixtures->setupTestCaseFromFixtureData( $testCase );
 
 		foreach ( $testCase['contexts_and_outputs'] as $cAndOName => $contextAndOutput ) {
-			$this->overrideConfigValues( [
-				'NoticeProject' => $contextAndOutput['context']['project'],
-			] );
+			$this->overrideConfigValue( 'NoticeProject', $contextAndOutput['context']['project'] );
 
 			// Following pattern in other RL module tests
 			$rlContext = $this->getResourceLoaderContext(
 				[ 'lang' => $contextAndOutput['context']['language'] ] );
 
-			$module = new TestingCNChoiceDataResourceLoaderModule();
+			$module = TestingAccessWrapper::newFromObject( new CNChoiceDataResourceLoaderModule() );
 			$module->setConfig( $rlContext->getResourceLoader()->getConfig() );
-			$choices = $module->getChoicesForTesting( $rlContext );
+			$choices = $module->getChoices( $rlContext );
 
 			$this->cnFixtures->assertChoicesEqual(
 				$this, $contextAndOutput['choices'], $choices, $cAndOName );

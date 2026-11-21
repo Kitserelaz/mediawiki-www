@@ -4,6 +4,7 @@
 			"A2093064",
 			"Alex S.H. Lin",
 			"Anakmalaysia",
+			"Cookai1205",
 			"Cwek",
 			"Cwlin0416",
 			"Danny0838",
@@ -30,7 +31,7 @@
 			"Xiplus",
 			"Zhxy 519",
 			"捍粵者",
-			"Cookai1205"
+			"LowensteinYang"
 		]
 	},
 	"centralnotice": "中央公告管理",
@@ -52,7 +53,6 @@
 	"centralnotice-live-preview": "預覽最後儲存的版本",
 	"centralnotice-add-new": "新增活動",
 	"centralnotice-remove": "移除",
-	"centralnotice-translate-heading": "$1 的翻譯",
 	"centralnotice-manage": "管理活動",
 	"centralnotice-manage-templates": "管理橫幅",
 	"centralnotice-add": "新增",
@@ -109,7 +109,6 @@
 	"centralnotice-no-templates-assigned": "未分配任何橫幅到活動。\n請新增橫幅！",
 	"centralnotice-available-templates": "可用的橫幅",
 	"centralnotice-template-already-exists": "橫幅已連結至活動。\n無法新增。",
-	"centralnotice-change-lang": "變更翻譯語言",
 	"centralnotice-weights": "權重",
 	"centralnotice-notice-is-locked": "橫幅已鎖定。\n無法移除。",
 	"centralnotice-overlap": "活動的時間與另一個活動重疊。\n無法新增。",
@@ -237,7 +236,7 @@
 	"centralnotice-devicetype-android": "Android OS",
 	"centralnotice-devicetype-ipad": "所有裝置均識別為 iPad，不做為 iPhones",
 	"centralnotice-devicetype-iphone": "所有 iPhone 版本",
-	"centralnotice-devicetype-unknown": "於行動網站上的裝置，不屬於 iPhones、iPads 或 Android - ([https://github.com/wikimedia/mediawiki-extensions-CentralNotice/blob/master/modules/ext.centralNotice.bannerController/mobile/device.js Selector logic])",
+	"centralnotice-devicetype-unknown": "於行動網站上的裝置，不屬於 iPhones、iPads 或 Android - ([https://gerrit.wikimedia.org/g/mediawiki/extensions/CentralNotice/+/master/resources/ext.centralNotice.display/state.js#119 Selector logic])",
 	"centralnotice-all": "全部",
 	"centralnotice-generic-error": "您無權執行此請求的動作或動作無效。",
 	"centralnotice-banner-name-error": "無效的橫幅名稱。名稱只能包含英數字與底線字元。",
@@ -278,7 +277,7 @@
 	"centralnotice-end-time": "結束時間 (UTC)",
 	"centralnotice-banner-not-found-title": "查無橫幅",
 	"centralnotice-banner-not-found-contents": "沒有符合此確切名稱的橫幅。",
-	"centralnotice-csp-violation-alert": "偵測到違反安全方針的內容！嘗試從 $1 載入項目。",
+	"centralnotice-csp-violation-alert": "偵測到違反安全方針的內容。從 wiki 以外的來源載入內容會洩漏讀者資料，請預覽不包含小工具或第三方外掛程式的橫幅。違規 URL：$1",
 	"hidebanners": "隱藏橫幅",
 	"centralnotice-specialhidebanners-p3p": "一些瀏覽器需要 P3P 精簡原則來在某些情況下設定 cookie。然而，目前沒有可用的精簡原則。請參閱網站的可讀性隱私方針。",
 	"centralnotice-banner-history-logger": "橫幅歷史日誌器",
@@ -289,8 +288,6 @@
 	"centralnotice-banner-history-logger-max-entry-age-help": "早於此的日誌項目將會失效，並且不會發回給伺服器。",
 	"centralnotice-banner-history-logger-max-entries": "項目保持在日誌裡的最大數目",
 	"centralnotice-banner-history-logger-max-entries-help": "若日誌被發送到伺服器之前有更多歷史被記錄下來，那最早的項目將不會顯示出來。",
-	"centralnotice-banner-history-logger-wait-log-no-send-beacon": "不使用 sendBeacon 來發送日誌的逾時時間（毫秒）",
-	"centralnotice-banner-history-logger-wait-log-no-send-beacon-help": "在導航至其它頁面之前日誌會立即被發送，在一些瀏覽器裡，我們便會設定等待放棄發送日誌前的最長時間。",
 	"centralnotice-legacy-support": "舊版隱藏與印象計數支援",
 	"centralnotice-legacy-support-help": "與舊有橫幅兼容性方面的設定依靠於 Special:RecordImpression，或是包含隱藏橫幅用的 JavaScript。",
 	"centralnotice-set-record-impression-sample-rate": "設定 Special:RecordImpression 的取樣率",
@@ -363,5 +360,7 @@
 	"centralnotice-campaign-type-maintenance": "維護",
 	"centralnotice-campaign-type-photography": "攝影",
 	"centralnotice-campaign-type-special": "特殊",
-	"centralnotice-user-prefs-intro": "以橫幅顯示維基媒體社群和使用者感興趣的公告。\n\n以下選項允許您管理想要看到的公告類型。與網站維護相關的通知，以及所有使用者有必要了解的特殊通知，不能停用。更多資訊詳見[[metawikimedia:Special:MyLanguage/CentralNotice|元維基文件]]。"
+	"centralnotice-user-prefs-intro": "以橫幅顯示維基媒體社群和使用者感興趣的公告。\n\n以下選項允許您管理想要看到的公告類型。與網站維護相關的通知，以及所有使用者有必要了解的特殊通知，不能停用。更多資訊詳見[[metawikimedia:Special:MyLanguage/CentralNotice|元維基文件]]。",
+	"namespaceinfo-description-ns866": "[[mw:Special:MyLanguage/Extension:CentralNotice|CentralNotice]] 橫幅中使用的訊息及其翻譯",
+	"namespaceinfo-description-ns867": "CentralNotice 橫幅訊息的討論頁"
 }

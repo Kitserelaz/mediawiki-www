@@ -10,7 +10,8 @@
 			"Subi",
 			"Theklan",
 			"Unai Fdz. de Betoño",
-			"පසිඳු කාවින්ද"
+			"පසිඳු කාවින්ද",
+			"Xabier Armendaritz"
 		]
 	},
 	"centralnotice": "Ohar zentralizatuen administrazioa",
@@ -25,7 +26,6 @@
 	"centralnotice-save-banner": "Gorde",
 	"centralnotice-add-new": "Mezu orokor berri bat gehitu",
 	"centralnotice-remove": "Ezabatu",
-	"centralnotice-translate-heading": "$1(r)entzat itzulpena",
 	"centralnotice-manage": "Ohar nagusia kudeatu",
 	"centralnotice-add": "Gehitu",
 	"centralnotice-add-notice": "Gehitu ohar bat",
@@ -36,7 +36,7 @@
 	"centralnotice-show-notices": "Oharrak erakutsi",
 	"centralnotice-list-templates": "Txantiloiak zerrendatu",
 	"centralnotice-translations": "Itzulpenak",
-	"centralnotice-translate-to": "Hona itzuli",
+	"centralnotice-translate-to": "Itzuli hizkuntza honetara:",
 	"centralnotice-translate": "Itzuli",
 	"centralnotice-english": "Ingelesa",
 	"centralnotice-banner-name": "Banner izena:",
@@ -61,7 +61,6 @@
 	"centralnotice-remove-all": "Denak ezabatu",
 	"centralnotice-project-name": "Proiektuaren izena",
 	"centralnotice-assigned-templates": "Ezarritako txantiloiak",
-	"centralnotice-change-lang": "Aldatu itzulpen hizkuntza",
 	"centralnotice-weights": "Pisuak",
 	"centralnotice-number-uses": "Erabilerak",
 	"centralnotice-settings": "Hobespenak",

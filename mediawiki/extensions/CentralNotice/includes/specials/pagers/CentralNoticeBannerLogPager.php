@@ -6,13 +6,6 @@ use MediaWiki\User\User;
 use Wikimedia\Rdbms\SelectQueryBuilder;
 
 class CentralNoticeBannerLogPager extends CentralNoticeCampaignLogPager {
-	/** @var SpecialCentralNoticeLogs */
-	public $special;
-
-	public function __construct( SpecialCentralNoticeLogs $special ) {
-		$this->special = $special;
-		parent::__construct( $special );
-	}
 
 	/**
 	 * Sort the log list by timestamp
@@ -98,9 +91,9 @@ class CentralNoticeBannerLogPager extends CentralNoticeCampaignLogPager {
 			$bannerLink
 		);
 
-		// TODO temporary code for soft dependency on schema change
-		$summary = property_exists( $row, 'tmplog_comment' ) ?
-			htmlspecialchars( $row->tmplog_comment ) : '&nbsp;';
+		$summary = $row->tmplog_comment === null
+			? '&nbsp;'
+			: htmlspecialchars( $row->tmplog_comment );
 
 		$htmlOut .= Html::rawElement( 'td',
 			[ 'valign' => 'top', 'class' => 'primary-summary' ],
@@ -121,12 +114,13 @@ class CentralNoticeBannerLogPager extends CentralNoticeCampaignLogPager {
 			// @phan-suppress-previous-line PhanPossiblyUndeclaredVariable
 
 			$htmlOut .= Html::rawElement( 'td', [ 'valign' => 'top' ],
-				'&nbsp;' // force a table cell in older browsers
+				// force a table cell in older browsers
+				'&nbsp;'
 			);
 			$htmlOut .= Html::openElement( 'td', [ 'valign' => 'top', 'colspan' => '5' ] );
-			if ( $row->tmplog_action == 'created' ) {
+			if ( $row->tmplog_action === 'created' ) {
 				$htmlOut .= $this->showInitialSettings( $row );
-			} elseif ( $row->tmplog_action == 'modified' ) {
+			} elseif ( $row->tmplog_action === 'modified' ) {
 				$htmlOut .= $this->showChanges( $row );
 			}
 			$htmlOut .= Html::closeElement( 'td' );
@@ -138,6 +132,7 @@ class CentralNoticeBannerLogPager extends CentralNoticeCampaignLogPager {
 		return $htmlOut;
 	}
 
+	/** @inheritDoc */
 	public function getStartBody() {
 		$htmlOut = '';
 		$htmlOut .= Html::openElement( 'table', [ 'id' => 'cn-campaign-logs', 'cellpadding' => 3 ] );
@@ -173,6 +168,10 @@ class CentralNoticeBannerLogPager extends CentralNoticeCampaignLogPager {
 		return Html::closeElement( 'table' );
 	}
 
+	/**
+	 * @param stdClass $row
+	 * @return string
+	 */
 	public function showInitialSettings( $row ) {
 		$details = '';
 		$details .= $this->msg(
@@ -213,10 +212,14 @@ class CentralNoticeBannerLogPager extends CentralNoticeCampaignLogPager {
 		return $details;
 	}
 
+	/**
+	 * @param stdClass $newrow
+	 * @return string
+	 */
 	public function showChanges( $newrow ) {
 		$oldrow = false;
 		if ( $newrow->tmplog_action === 'modified' ) {
-			$db = CNDatabase::getDb();
+			$db = CNDatabase::getReplicaDb();
 			$tmplogId = (int)$newrow->tmplog_id;
 			$oldrow = $db->newSelectQueryBuilder()
 				->select( '*' )
@@ -249,6 +252,12 @@ class CentralNoticeBannerLogPager extends CentralNoticeCampaignLogPager {
 		return $details;
 	}
 
+	/**
+	 * @param string $param
+	 * @param stdClass $newrow
+	 * @param stdClass $oldrow
+	 * @return string
+	 */
 	private function testBooleanBannerChange( $param, $newrow, $oldrow ) {
 		$result = '';
 		$endField = 'tmplog_end_' . $param;
@@ -276,6 +285,12 @@ class CentralNoticeBannerLogPager extends CentralNoticeCampaignLogPager {
 		return $result;
 	}
 
+	/**
+	 * @param string $param
+	 * @param stdClass $newrow
+	 * @param stdClass $oldrow
+	 * @return string
+	 */
 	private function testTextBannerChange( $param, $newrow, $oldrow ) {
 		$endField = 'tmplog_end_' . $param;
 

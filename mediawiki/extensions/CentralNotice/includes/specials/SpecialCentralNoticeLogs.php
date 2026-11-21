@@ -2,15 +2,17 @@
 
 use MediaWiki\Html\Html;
 use MediaWiki\SpecialPage\SpecialPage;
-use MediaWiki\Xml\Xml;
+use MediaWiki\Utils\UrlUtils;
 
 class SpecialCentralNoticeLogs extends CentralNotice {
 	/** @var string */
 	public $logType = 'campaignsettings';
 
-	public function __construct() {
+	public function __construct(
+		private readonly UrlUtils $urlUtils,
+	) {
 		// Register special page
-		SpecialPage::__construct( "CentralNoticeLogs" );
+		parent::__construct( 'CentralNoticeLogs' );
 	}
 
 	/**
@@ -56,7 +58,8 @@ class SpecialCentralNoticeLogs extends CentralNotice {
 		$htmlOut .= Html::element( 'h2', [], $this->msg( 'centralnotice-view-logs' )->text() );
 		$htmlOut .= Html::openElement( 'div', [ 'id' => 'cn-log-switcher' ] );
 		$title = SpecialPage::getTitleFor( 'CentralNoticeLogs' );
-		$fullUrl = wfExpandUrl( $title->getFullURL(), PROTO_CURRENT );
+
+		$fullUrl = $this->urlUtils->expand( $title->getFullURL(), PROTO_CURRENT ) ?? '';
 
 		// Build the radio buttons for switching the log type
 		$htmlOut .= $this->getLogSwitcher( 'campaignsettings', 'campaignSettings',
@@ -83,7 +86,8 @@ class SpecialCentralNoticeLogs extends CentralNotice {
 				'/CentralNotice/resources/images/collapsed-rtl.png' :
 				'/CentralNotice/resources/images/collapsed-ltr.png';
 
-			if ( $campaign || $user || $start || $end ) { // filters on
+			if ( $campaign || $user || $start || $end ) {
+				// filters on
 				$htmlOut .= '<a href="javascript:toggleFilterDisplay()">' .
 					'<img src="' . $wgExtensionAssetsPath . $collapsedImg . '" ' .
 					'id="cn-collapsed-filter-arrow" ' .
@@ -95,7 +99,8 @@ class SpecialCentralNoticeLogs extends CentralNotice {
 				$htmlOut .= Html::element( 'span', [ 'style' => 'margin-left: 0.3em;' ],
 					$this->msg( 'centralnotice-filters' )->text() );
 				$htmlOut .= Html::openElement( 'div', [ 'id' => 'cn-log-filters' ] );
-			} else { // filters off
+			} else {
+				// filters off
 				$htmlOut .= '<a href="javascript:toggleFilterDisplay()">' .
 					'<img src="' . $wgExtensionAssetsPath . $collapsedImg . '" ' .
 					'id="cn-collapsed-filter-arrow" ' .
@@ -114,7 +119,7 @@ class SpecialCentralNoticeLogs extends CentralNotice {
 
 			$htmlOut .= Html::rawElement( 'tr', [],
 				Html::rawElement( 'td', [],
-					Xml::label( $this->msg( 'centralnotice-start-date' )->text(), 'month',
+					Html::label( $this->msg( 'centralnotice-start-date' )->text(), 'month',
 						[ 'class' => 'cn-log-filter-label' ] )
 				) .
 				Html::rawElement( 'td', [],
@@ -124,7 +129,7 @@ class SpecialCentralNoticeLogs extends CentralNotice {
 
 			$htmlOut .= Html::rawElement( 'tr', [],
 				Html::rawElement( 'td', [],
-					Xml::label( $this->msg( 'centralnotice-end-date' )->text(), 'month',
+					Html::label( $this->msg( 'centralnotice-end-date' )->text(), 'month',
 						[ 'class' => 'cn-log-filter-label' ] )
 				) .
 				Html::rawElement( 'td', [],
@@ -134,21 +139,26 @@ class SpecialCentralNoticeLogs extends CentralNotice {
 
 			$htmlOut .= Html::rawElement( 'tr', [],
 				Html::rawElement( 'td', [],
-					Xml::label( $this->msg( 'centralnotice-notice' )->text(), 'campaign',
+					Html::label( $this->msg( 'centralnotice-notice' )->text(), 'campaign',
 						[ 'class' => 'cn-log-filter-label' ] )
 				) .
 				Html::rawElement( 'td', [],
-					Xml::input( 'campaign', 25, ( $reset || $campaign === null ? '' : $campaign ) )
+					Html::input(
+						'campaign',
+						( $reset || $campaign === null ? '' : $campaign ),
+						'text',
+						[ 'size' => 25 ]
+					)
 				)
 			);
 
 			$htmlOut .= Html::rawElement( 'tr', [],
 				Html::rawElement( 'td', [],
-					Xml::label( $this->msg( 'centralnotice-user' )->text(), 'user',
+					Html::label( $this->msg( 'centralnotice-user' )->text(), 'user',
 						[ 'class' => 'cn-log-filter-label' ] )
 				) .
 				Html::rawElement( 'td', [],
-					Xml::input( 'user', 25, ( $reset || $user === null ? '' : $user ) )
+					Html::input( 'user', ( $reset || $user === null ? '' : $user ), 'text', [ 'size' => 25 ] )
 				)
 			);
 
@@ -225,17 +235,12 @@ class SpecialCentralNoticeLogs extends CentralNotice {
 	 * @param string $logType which type of log to show
 	 */
 	private function showLog( $logType ) {
-		switch ( $logType ) {
-			case 'bannersettings':
-				$pager = new CentralNoticeBannerLogPager( $this );
-				break;
-			case 'bannercontent':
-			case 'bannermessages':
-				$pager = new CentralNoticePageLogPager( $this, $logType );
-				break;
-			default:
-				$pager = new CentralNoticeCampaignLogPager( $this );
-		}
+		$pager = match ( $logType ) {
+			'bannersettings' => new CentralNoticeBannerLogPager( $this ),
+			'bannercontent',
+			'bannermessages' => new CentralNoticePageLogPager( $this, $logType ),
+			default => new CentralNoticeCampaignLogPager( $this ),
+		};
 
 		$htmlOut = '';
 
@@ -283,13 +288,12 @@ class SpecialCentralNoticeLogs extends CentralNotice {
 		$fullUrlEnc = Html::encodeJsVar( $fullUrl );
 		$typeEnc = Html::encodeJsVar( $type );
 		$htmlOut = '';
-		$htmlOut .= Xml::radio(
+		$htmlOut .= Html::radio(
 			'log_type',
-			$id,
 			$this->logType == $type,
-			[ 'onclick' => "switchLogs( " . $fullUrlEnc . ", " . $typeEnc . " )" ]
+			[ 'value' => $id, 'onclick' => "switchLogs( " . $fullUrlEnc . ", " . $typeEnc . " )" ]
 		);
-		$htmlOut .= Xml::label( $this->msg( $message )->text(), $id );
+		$htmlOut .= Html::label( $this->msg( $message )->text(), $id );
 		return $htmlOut;
 	}
 }

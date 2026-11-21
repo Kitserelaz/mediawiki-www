@@ -1,6 +1,7 @@
 <?php
 
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Exception\ErrorPageError;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\Field\HTMLButtonField;
 use MediaWiki\HTMLForm\Field\HTMLCheckField;
@@ -8,9 +9,9 @@ use MediaWiki\HTMLForm\Field\HTMLInfoField;
 use MediaWiki\HTMLForm\Field\HTMLSelectLimitField;
 use MediaWiki\HTMLForm\Field\HTMLSubmitField;
 use MediaWiki\HTMLForm\Field\HTMLTextField;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Language\LanguageNameUtils;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\SpecialPage\SpecialPage;
-use MediaWiki\Xml\Xml;
 
 /**
  * Special page for management of CentralNotice banners
@@ -34,10 +35,13 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 	/** @var array|null Names of the banners that are marked as templates */
 	private $templateBannerNames = null;
 
-	public function __construct() {
-		SpecialPage::__construct( 'CentralNoticeBanners' );
+	public function __construct(
+		private readonly LanguageNameUtils $languageNameUtils,
+	) {
+		parent::__construct( 'CentralNoticeBanners' );
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
@@ -81,7 +85,7 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 
 		// Now figure out what to display
 		// TODO Use only params instead of subpage to indicate action
-		$parts = explode( '/', $subPage );
+		$parts = explode( '/', $subPage ?? '' );
 		$action = $parts[0] ?: 'list';
 		$this->bannerName = $parts[1] ?? '';
 
@@ -142,7 +146,7 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 		$htmlForm = new CentralNoticeHtmlForm( $formDescriptor, $this->getContext() );
 		$htmlForm->setSubmitCallback( [ $this, 'processBannerList' ] )
 			->prepareForm();
-		$formResult = $htmlForm->trySubmit();
+		$formResult = $htmlForm->tryAuthorizedSubmit();
 
 		if ( $this->bannerFormRedirectRequired ) {
 			return;
@@ -287,6 +291,10 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 	public function processBannerList( $formData ) {
 		$this->setFilterFromUrl();
 
+		if ( !$this->getRequest()->wasPosted() ) {
+			return null;
+		}
+
 		if ( $formData[ 'action' ] && $this->editable ) {
 			switch ( strtolower( $formData[ 'action' ] ) ) {
 				case 'create':
@@ -304,22 +312,22 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 						if ( !empty( $formData['newBannerTemplate'] ) ) {
 							try {
 								$bannerTemplate = Banner::fromName( $formData['newBannerTemplate'] );
-								// This will do data load for the banner, confirming it actually exists in the DB
+								// This will do data-load for the banner, confirming it actually exists in the DB
 								// without calling Banner::exists()
-								if ( !$bannerTemplate || !$bannerTemplate->isTemplate() ) {
-									throw new BannerDataException(
-										"Attempted to create a banner based on invalid template"
+								if ( !$bannerTemplate->isTemplate() ) {
+									wfDebugLog(
+										'CentralNotice',
+										'Attempted to create a banner based on invalid template'
 									);
+									return $this->msg( 'centralnotice-banner-template-error' )->plain();
 								}
 							} catch ( BannerDataException $exception ) {
 								wfDebugLog( 'CentralNotice', $exception->getMessage() );
-
 								// We do not want to show the actual exception to the user here,
 								// since the message does not actually refer to the template being created,
 								// but to the template it is being created from
 								return $this->msg( 'centralnotice-banner-template-error' )->plain();
 							}
-
 							$retval = Banner::addFromBannerTemplate(
 								$this->bannerName,
 								$this->getUser(),
@@ -367,7 +375,7 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 								Banner::removeBanner(
 									$parts[1], $this->getUser(), $summary );
 
-							} catch ( Exception $ex ) {
+							} catch ( Exception ) {
 								$failed[] = $parts[1];
 							}
 						}
@@ -400,13 +408,9 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 	 */
 	private function setFilterFromUrl() {
 		// This is the normal param on visible URLs.
-		$filterParam = $this->getRequest()->getVal( 'filter', null );
-
-		// If the form was posted the filter parameter'll have a different name.
-		if ( $filterParam === null ) {
-			$filterParam =
-				$this->getRequest()->getVal( 'wpbannerNameFilter', null );
-		}
+		$filterParam = $this->getRequest()->getVal( 'filter', null ) ??
+			// If the form was posted the filter parameter'll have a different name.
+			$this->getRequest()->getVal( 'wpbannerNameFilter', null );
 
 		// Clean, clean...
 		if ( $filterParam !== null ) {
@@ -450,8 +454,7 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 		];
 
 		$bannerTitle = $this->banner->getTitle();
-		// $bannerTitle can be null sometimes
-		if ( $bannerTitle && $this->getUser()->isAllowed( 'editinterface' ) ) {
+		if ( $this->getUser()->isAllowed( 'editinterface' ) ) {
 			$links[] = $linkRenderer->makeLink(
 				$bannerTitle,
 				$this->msg( 'centralnotice-banner-edit-onwiki' )->text(),
@@ -459,14 +462,12 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 				[ 'action' => 'edit' ]
 			);
 		}
-		if ( $bannerTitle ) {
-			$links[] = $linkRenderer->makeLink(
-				$bannerTitle,
-				$this->msg( 'centralnotice-banner-history' )->text(),
-				[ 'class' => 'cn-banner-list-element-label-text' ],
-				[ 'action' => 'history' ]
-			);
-		}
+		$links[] = $linkRenderer->makeLink(
+			$bannerTitle,
+			$this->msg( 'centralnotice-banner-history' )->text(),
+			[ 'class' => 'cn-banner-list-element-label-text' ],
+			[ 'action' => 'history' ]
+		);
 		return $links;
 	}
 
@@ -538,15 +539,16 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 
 			$pager = new CNCampaignPager( $this, false, $this->banner->getId() );
 			$out->addModules( 'ext.centralNotice.adminUi.campaignPager' );
-			$out->addHTML( $pager->getBodyOutput()->getText() );
+			$popts = ParserOptions::newFromContext( $this->getContext() );
+			$out->addParserOutputContent( $pager->getBodyOutput(), $popts );
 			$out->addHTML( $pager->getNavigationBar() );
 		}
 	}
 
-	private function generateBannerEditForm() {
+	private function generateBannerEditForm(): array {
 		global $wgCentralNoticeBannerMixins, $wgNoticeUseTranslateExtension, $wgLanguageCode;
 
-		$languages = MediaWikiServices::getInstance()->getLanguageNameUtils()
+		$languages = $this->languageNameUtils
 			->getLanguageNames( $this->getLanguage()->getCode() );
 		array_walk(
 			$languages,
@@ -556,7 +558,7 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 		);
 		$languages = array_flip( $languages );
 
-		$bannerSettings = $this->banner->getBannerSettings( $this->bannerName, true );
+		$bannerSettings = Banner::getBannerSettings( $this->bannerName, true );
 
 		$formDescriptor = [];
 
@@ -618,6 +620,11 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 		$availableDevices = [];
 		foreach ( CNDeviceTarget::getAvailableDevices() as $k => $value ) {
 			$header = htmlspecialchars( $value[ 'header' ] );
+
+			// Messages keys via CNDeviceTarget and CNDatabasePatcher:
+			// centralnotice-devicetype-desktop, centralnotice-devicetype-android,
+			// centralnotice-devicetype-ipad, centralnotice-devicetype-iphone,
+			// centralnotice-devicetype-unknown
 			$label = $this->getOutput()->parseInlineAsInterface( $value[ 'label' ] );
 			$availableDevices[ "($header) $label" ] = $header;
 		}
@@ -912,14 +919,16 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 		// Retrieve the list of languages in user's language
 		// FIXME Similar code in SpecialBannerAllocation::execute(), maybe switch
 		// to language selector?
-		$languages = MediaWikiServices::getInstance()->getLanguageNameUtils()
+		$languages = $this->languageNameUtils
 			->getLanguageNames( $this->getLanguage()->getCode() );
 		ksort( $languages );
 
 		foreach ( $languages as $code => $name ) {
-			$purgeControls .= Xml::option(
-				$this->msg( 'centralnotice-language-listing', $code, $name )->text(),
-				$code );
+			$purgeControls .= Html::element(
+				'option',
+				[ 'value' => $code ],
+				$this->msg( 'centralnotice-language-listing', $code, $name )->text()
+			);
 		}
 
 		$purgeControls .= Html::closeElement( 'select' );
@@ -941,7 +950,14 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 		return $purgeControls;
 	}
 
+	/**
+	 * @param array $formData
+	 * @return string|null
+	 */
 	public function processEditBanner( $formData ) {
+		if ( !$this->getRequest()->wasPosted() ) {
+			return null;
+		}
 		// First things first! Figure out what the heck we're actually doing!
 		switch ( $formData[ 'action' ] ) {
 			case 'update-lang':
@@ -986,10 +1002,15 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 				}
 
 				$this->ensureBanner( $this->bannerName );
-				$this->banner->cloneBanner(
-					$newBannerName, $this->getUser(),
-					$formData[ 'cloneEditSummary' ]
-				);
+				try {
+					$this->banner->cloneBanner(
+						$newBannerName,
+						$this->getUser(),
+						$formData['cloneEditSummary']
+					);
+				} catch ( BannerExistenceException ) {
+					return $this->msg( 'centralnotice-template-exists', $this->bannerName )->parse();
+				}
 
 				$this->getOutput()->redirect(
 					$this->getPageTitle( "Edit/$newBannerName" )->getCanonicalURL()
@@ -1016,6 +1037,10 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 		}
 	}
 
+	/**
+	 * @param array $formData
+	 * @return null
+	 */
 	private function processSaveBannerAction( $formData ) {
 		global $wgNoticeUseTranslateExtension, $wgLanguageCode;
 
@@ -1077,7 +1102,7 @@ class SpecialCentralNoticeBanners extends CentralNotice {
 	 */
 	private function getTemplateBannerDropdownItems() {
 		if ( $this->templateBannerNames === null ) {
-			$dbr = CNDatabase::getDb();
+			$dbr = CNDatabase::getReplicaDb();
 			$this->templateBannerNames = [];
 
 			$res = $dbr->newSelectQueryBuilder()

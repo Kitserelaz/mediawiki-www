@@ -8,39 +8,38 @@
  * cn.bannerHistoryLogger.ensureLogSent().
  */
 ( function () {
+	// Guaranteed to exist; we depend on display RL module
+	const cn = mw.centralNotice;
+	const mixin = new cn.Mixin( 'bannerHistoryLogger' );
+	const doNotTrackEnabled =
+		// Support: Firefox < 32 (yes/no)
+		/1|yes/.test( navigator.doNotTrack ) ||
+		// Support: IE 11, Safari 7.1.3+ (window.doNotTrack)
+		window.doNotTrack === '1';
+	const now = Math.round( Date.now() / 1000 );
+	const readyToLogDeferredObj = $.Deferred();
 
-	var cn = mw.centralNotice, // Guaranteed to exist; we depend on display RL module
-		bhLogger,
-		mixin = new cn.Mixin( 'bannerHistoryLogger' ),
-		doNotTrackEnabled =
-			// Support: Firefox < 32 (yes/no)
-			/1|yes/.test( navigator.doNotTrack ) ||
-			// Support: IE 11, Safari 7.1.3+ (window.doNotTrack)
-			window.doNotTrack === '1',
-		waitLogNoSendBeacon,
-		now = Math.round( Date.now() / 1000 ),
-		log,
-		readyToLogDeferredObj = $.Deferred(),
-		logSent = false,
-		alreadyRun = false,
-		inSample,
+	const BANNER_HISTORY_KV_STORE_KEY = 'banner_history';
+	// Maximum time (in days) that the banner history store KV store item
+	// will persist if no entries are added to it.
+	const BANNER_HISTORY_KV_STORE_TTL = 365;
+	// Update this version when the log format changes
+	const BANNER_HISTORY_LOG_ENTRY_VERSION = 1;
+	const EVENT_LOGGING_SCHEMA = 'CentralNoticeBannerHistory';
 
-		BANNER_HISTORY_KV_STORE_KEY = 'banner_history',
+	// The maximum random shift applied to timestamps, for user privacy
+	const TIMESTAMP_RANDOM_SHIFT_MAX = 60;
 
-		// Maximum time (in days) that the banner history store KV store item
-		// will persist if no entries are added to it.
-		BANNER_HISTORY_KV_STORE_TTL = 365,
-		BANNER_HISTORY_LOG_ENTRY_VERSION = 1, // Update when log format changes
-		EVENT_LOGGING_SCHEMA = 'CentralNoticeBannerHistory',
-
-		// The maximum random shift applied to timestamps, for user privacy
-		TIMESTAMP_RANDOM_SHIFT_MAX = 60;
+	let bhLogger;
+	let log;
+	let logSent = false;
+	let alreadyRun = false;
+	let inSample;
 
 	/**
 	 * Load the banner history log from KV storage
 	 */
 	function loadLog() {
-
 		log = cn.kvStore.getItem(
 			BANNER_HISTORY_KV_STORE_KEY,
 			cn.kvStore.contexts.GLOBAL
@@ -57,31 +56,30 @@
 	 * @return {Object}
 	 */
 	function makeLogEntry() {
+		const data = cn.data;
 
-		var data = cn.data,
+		// Randomly shift timestamp +/- 0 to 10 seconds, so logs can't be
+		// linked to specific Web requests. This is to strengthen user
+		// privacy.
+		const randomTimeShift =
+			Math.round( Math.random() * TIMESTAMP_RANDOM_SHIFT_MAX ) -
+			( TIMESTAMP_RANDOM_SHIFT_MAX / 2 );
 
-			// Randomly shift timestamp +/- 0 to 10 seconds, so logs can't be
-			// linked to specific Web requests. This is to strengthen user
-			// privacy.
-			randomTimeShift =
-				Math.round( Math.random() * TIMESTAMP_RANDOM_SHIFT_MAX ) -
-				( TIMESTAMP_RANDOM_SHIFT_MAX / 2 ),
+		const time = now + randomTimeShift;
 
-			time = now + randomTimeShift,
-
-			logEntry = {
-				version: BANNER_HISTORY_LOG_ENTRY_VERSION,
-				language: data.uselang,
-				country: data.country,
-				isAnon: data.anonymous,
-				campaign: data.campaign,
-				campaignCategory: data.campaignCategory,
-				bucket: data.bucket,
-				time: time,
-				status: data.status,
-				statusCode: data.statusCode,
-				bannersNotGuaranteedToDisplay: !!data.bannersNotGuaranteedToDisplay
-			};
+		const logEntry = {
+			version: BANNER_HISTORY_LOG_ENTRY_VERSION,
+			language: data.uselang,
+			country: data.country,
+			isAnon: data.anonymous,
+			campaign: data.campaign,
+			campaignCategory: data.campaignCategory,
+			bucket: data.bucket,
+			time: time,
+			status: data.status,
+			statusCode: data.statusCode,
+			bannersNotGuaranteedToDisplay: !!data.bannersNotGuaranteedToDisplay
+		};
 
 		if ( data.banner ) {
 			logEntry.banner = data.banner;
@@ -106,8 +104,7 @@
 	 * @param {number} maxEntries
 	 */
 	function purgeOldLogEntries( maxEntryAge, maxEntries ) {
-		var i = 0,
-			cutoff = now - maxEntryAge * 86400;
+		const cutoff = now - maxEntryAge * 86400;
 
 		// If we're above the max number of entries, pare it down, starting
 		// with older entries
@@ -115,6 +112,7 @@
 			log = log.slice( 0 - maxEntries );
 		}
 
+		let i = 0;
 		// Remove any remaining entries that are older than maxEntryAge
 		while ( i < log.length && log[ i ].time < cutoff ) {
 			i++;
@@ -144,10 +142,8 @@
 	 * @return {Object}
 	 */
 	function makeEventLoggingData( rate ) {
-
-		var elData = {},
-			kvError = cn.kvStore.getError(),
-			i, logEntry, elLogEntry;
+		const elData = {};
+		const kvError = cn.kvStore.getError();
 
 		// Log ID: should be generated before this is called, and should not be
 		// persisted anywhere on the client (see below).
@@ -170,12 +166,12 @@
 
 		// Add log entries, starting with the most recent ones, until the EL
 		// URL is too big, or we reach the end of the log.
-		i = log.length - 1;
+		let i = log.length - 1;
 
 		while ( i >= 0 ) {
-			logEntry = log[ i ];
+			const logEntry = log[ i ];
 
-			elLogEntry = [
+			const elLogEntry = [
 				logEntry.banner || '',
 				logEntry.campaign,
 				logEntry.time,
@@ -204,14 +200,13 @@
 	 * @return {jQuery.Promise}
 	 */
 	function sendLog( elData ) {
-		var deferred = $.Deferred(),
-			elPromise;
+		const deferred = $.Deferred();
 
-		elPromise = mw.eventLog.logEvent( EVENT_LOGGING_SCHEMA, elData );
+		const elPromise = mw.eventLog.logEvent( EVENT_LOGGING_SCHEMA, elData );
 
-		elPromise.then( function () {
+		elPromise.then( () => {
 			deferred.resolve();
-		}, function () {
+		}, () => {
 			deferred.reject();
 		} );
 
@@ -224,7 +219,7 @@
 	 *
 	 * FIXME This is a temporary measure!
 	 *
-	 * @param elData
+	 * @param {Object} elData
 	 * @return {boolean} true if the EL payload size is OK
 	 */
 	function checkEventLoggingURLSize( elData ) {
@@ -235,7 +230,8 @@
 	 * Make an EventLogging URL ourselves.
 	 * FIXME This is a temporary measure!
 	 *
-	 * @param elData
+	 * @param {Object} elData
+	 * @return {string}
 	 */
 	function makeEventLoggingURL( elData ) {
 		return mw.eventLog.makeBeaconUrl( {
@@ -248,7 +244,7 @@
 	}
 
 	// Set a function to run after the entire display process
-	mixin.setFinalizeChooseAndMaybeDisplayHandler( function ( mixinParams ) {
+	mixin.setFinalizeChooseAndMaybeDisplayHandler( ( mixinParams ) => {
 
 		// Only run any processes once per pageview. This prevents multiple log
 		// entries per pageview if more than one attempted campaign has enabled
@@ -259,10 +255,8 @@
 		}
 		alreadyRun = true;
 
-		waitLogNoSendBeacon = mixinParams.waitLogNoSendBeacon;
-
 		// Do this idly to avoid browser lock-ups
-		mw.requestIdleCallback( function () {
+		mw.requestIdleCallback( () => {
 
 			if ( !cn.kvStore.isAvailable() ) {
 				cn.kvStore.setNotAvailableError();
@@ -302,9 +296,9 @@
 			mw.loader.using( [
 				'mediawiki.util',
 				'mediawiki.user'
-			] ).done( function () {
+			] ).done( () => {
 				// URL param bannerHistoryLogRate can override rate, for debugging
-				var rateParam = mw.util.getParamValue( 'bannerHistoryLogRate' ),
+				const rateParam = mw.util.getParamValue( 'bannerHistoryLogRate' ),
 					rate = rateParam !== null ?
 						parseFloat( rateParam ) : mixinParams.rate;
 
@@ -314,7 +308,7 @@
 				// Send a sample to the server
 				if ( Math.random() < rate ) {
 
-					sendLog( makeEventLoggingData( rate ) ).always( function () {
+					sendLog( makeEventLoggingData( rate ) ).always( () => {
 
 						inSample = true;
 						logSent = true;
@@ -361,7 +355,7 @@
 		 */
 		ensureLogSent: function () {
 
-			var deferred = $.Deferred();
+			const deferred = $.Deferred();
 
 			// Bow out if DNT
 			if ( doNotTrackEnabled ) {
@@ -370,16 +364,16 @@
 			}
 
 			// It's likely that this will be resolved by the time we get here
-			readyToLogDeferredObj.done( function () {
+			readyToLogDeferredObj.done( () => {
 
 				// This is included in the done() function to ensure a sampled
 				// log would be sent first (see above).
 				if ( logSent ) {
 					deferred.resolve();
 				} else {
-					sendLog( makeEventLoggingData() ).then( function () {
+					sendLog( makeEventLoggingData() ).then( () => {
 						deferred.resolve();
-					}, function () {
+					}, () => {
 						deferred.reject();
 					} );
 				}

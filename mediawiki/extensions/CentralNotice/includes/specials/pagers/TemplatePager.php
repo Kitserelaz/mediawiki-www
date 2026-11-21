@@ -19,21 +19,18 @@ class TemplatePager extends ReverseChronologicalPager {
 	public $onRemoveChange;
 	/** @var Title */
 	public $viewPage;
-	/** @var SpecialPage */
-	public $special;
 	/** @var bool */
 	public $editable;
-	/** @var string */
-	public $filter;
 
-	public function __construct( $special, $filter = '' ) {
-		$this->special = $special;
+	public function __construct(
+		CentralNotice $special,
+		protected readonly string $filter = '',
+	) {
 		$this->editable = $special->editable;
-		$this->filter = $filter;
 		parent::__construct();
 
 		// Override paging defaults
-		[ $this->mLimit, /* $offset */ ] = $this->mRequest->getLimitOffsetForUser(
+		[ $this->mLimit, ] = $this->mRequest->getLimitOffsetForUser(
 			$this->getUser(),
 			20,
 			''
@@ -51,7 +48,7 @@ class TemplatePager extends ReverseChronologicalPager {
 	 * @return array of query settings
 	 */
 	public function getQueryInfo() {
-		$dbr = CNDatabase::getDb();
+		$dbr = CNDatabase::getReplicaDb();
 
 		// When the filter comes in it is space delimited, so break that...
 		$likeArray = preg_split( '/\s+/', $this->filter );

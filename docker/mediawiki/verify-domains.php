@@ -9,6 +9,7 @@ class VerifyFarmVirtualDomains extends MediaWiki\Maintenance\Maintenance {
             'virtual-createwiki-central' => 'metawiki',
             'virtual-managewiki' => 'wikidb',
             'virtual-centralauth' => 'centralauth',
+            'virtual-centralnotice' => 'metawiki',
             'virtual-botpasswords' => 'centralauth',
             'virtual-globalblocking' => 'centralauth',
             'virtual-oathauth' => 'centralauth',

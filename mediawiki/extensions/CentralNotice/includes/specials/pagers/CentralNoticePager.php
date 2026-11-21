@@ -1,22 +1,18 @@
 <?php
 
 use MediaWiki\Html\Html;
-use MediaWiki\Xml\Xml;
+use MediaWiki\Xml\XmlSelect;
 use Wikimedia\Rdbms\IExpression;
 use Wikimedia\Rdbms\LikeValue;
 
 class CentralNoticePager extends TemplatePager {
-
-	public function __construct( $special, $filter = '' ) {
-		parent::__construct( $special, $filter );
-	}
 
 	/**
 	 * Pull banners from the database
 	 * @return array[]
 	 */
 	public function getQueryInfo() {
-		$dbr = CNDatabase::getDb();
+		$dbr = CNDatabase::getReplicaDb();
 
 		// First we must construct the filter before we pull banners
 		// When the filter comes in it is space delimited, so break that...
@@ -37,7 +33,7 @@ class CentralNoticePager extends TemplatePager {
 
 		// Get the current campaign and filter on that as well if required
 		$notice = $this->mRequest->getVal( 'notice' );
-		$noticeId = Campaign::getNoticeId( $notice );
+		$noticeId = Campaign::getNoticeId( $notice, $dbr );
 
 		if ( $noticeId ) {
 			// Return all the banners not already assigned to the current campaign
@@ -102,14 +98,14 @@ class CentralNoticePager extends TemplatePager {
 			);
 
 			// Weight select
+			$options = Html::listDropdownOptions(
+				CentralNotice::dropdownList( $this->msg( 'centralnotice-weight' )->text(), range( 0, 100, 5 ) ),
+				[ 'other' => '' ]
+			);
+			$xmlSelect = new XmlSelect( "weight[$row->tmp_id]", "weight[$row->tmp_id]", '25' );
+			$xmlSelect->addOptions( $options );
 			$htmlOut .= Html::rawElement( 'td', [ 'valign' => 'top', 'class' => 'cn-weight' ],
-				Xml::listDropdown( "weight[$row->tmp_id]",
-					CentralNotice::dropdownList(
-						$this->msg( 'centralnotice-weight' )->text(), range( 0, 100, 5 )
-					),
-					'',
-					'25'
-				)
+				$xmlSelect->getHTML()
 			);
 		}
 
@@ -161,12 +157,16 @@ class CentralNoticePager extends TemplatePager {
 		return Html::closeElement( 'table' );
 	}
 
-	private function bucketDropdown( $bannerName ) {
+	private function bucketDropdown( string $bannerName ): string {
 		global $wgNoticeNumberOfBuckets;
 
 		$html = '';
 		foreach ( range( 0, $wgNoticeNumberOfBuckets - 1 ) as $value ) {
-			$html .= Xml::option( chr( $value + ord( 'A' ) ), $value, false, [] );
+			$html .= Html::element(
+				'option',
+				[ 'value' => $value ],
+				chr( $value + ord( 'A' ) )
+			);
 		}
 
 		return Html::rawElement( 'select', [

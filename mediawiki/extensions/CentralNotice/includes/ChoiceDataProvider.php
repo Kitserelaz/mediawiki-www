@@ -2,7 +2,7 @@
 
 use MediaWiki\MediaWikiServices;
 use Wikimedia\Rdbms\Database;
-use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
  * Provides a set of campaign and banner choices based on allocations for a
@@ -48,7 +48,8 @@ class ChoiceDataProvider {
 			self::CACHE_TTL,
 			function ( $oldValue, &$ttl, array &$setOpts )
 				use ( $project, $language ) {
-				$dbr = CNDatabase::getDb( DB_REPLICA );
+				// TODO: Should this instead be a primary query, given the concern about replag?
+				$dbr = CNDatabase::getReplicaDb();
 
 				// Account for replica lag to prevent a race condition when
 				// campaigns are updated, the cache is invalidated, and
@@ -73,14 +74,19 @@ class ChoiceDataProvider {
 		$now = time();
 		return array_values( array_filter(
 			$choices,
-			static function ( $choice ) use ( $now ) {
-				return $choice['end'] >= $now && $choice['start'] <= $now;
-			}
+			static fn ( array $choice ) => $choice['end'] >= $now && $choice['start'] <= $now
 		) );
 	}
 
+	/**
+	 * @param string $project
+	 * @param string $language
+	 * @param IReadableDatabase $dbr
+	 *
+	 * @return array
+	 */
 	private static function fetchChoices( $project, $language,
-		IDatabase $dbr
+		IReadableDatabase $dbr
 	) {
 		// For speed, we'll do our own queries instead of using methods in
 		// Campaign and Banner.
@@ -118,8 +124,12 @@ class ChoiceDataProvider {
 				'templates.tmp_display_anon',
 				'templates.tmp_display_account',
 				'templates.tmp_category'
-			] )
-			->from( 'cn_notices', 'notices' )
+			] );
+		// Could be null if database is disabled e.g. during tests
+		if ( $dbRows === null ) {
+			return [];
+		}
+		$dbRows = $dbRows->from( 'cn_notices', 'notices' )
 			->join(	'cn_assignments', 'assignments', 'notices.not_id = assignments.not_id' )
 			->join(	'cn_templates', 'templates', 'assignments.tmp_id = templates.tmp_id' )
 			->join(	'cn_notice_projects', 'notice_projects', 'notices.not_id = notice_projects.np_notice_id' )
@@ -181,7 +191,8 @@ class ChoiceDataProvider {
 				'category' => $category,
 				'display_anon' => (bool)$dbRow->tmp_display_anon,
 				'display_account' => (bool)$dbRow->tmp_display_account,
-				'devices' => [] // To be filled by the last query
+				// To be filled by the last query
+				'devices' => []
 			];
 
 			$bannerIds[] = $bannerId;
@@ -290,7 +301,7 @@ class ChoiceDataProvider {
 
 				// Ensure consistent ordering (see comment below)
 				// FIXME: only sorting list for last assignmentKey?
-				// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
+				// @phan-suppress-next-line PhanTypeArraySuspiciousNullable,PhanPossiblyUndeclaredVariable
 				sort( $choices[$campaignId]['banners'][$assignmentKey]['devices'] );
 			}
 		}

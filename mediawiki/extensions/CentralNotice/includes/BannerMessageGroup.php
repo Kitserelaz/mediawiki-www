@@ -20,7 +20,6 @@ class BannerMessageGroup extends WikiMessageGroup {
 
 	/**
 	 * @var int
-	 * @suppress PhanUndeclaredConstant NS_CN_BANNER defined in extension.json
 	 */
 	protected $namespace = NS_CN_BANNER;
 
@@ -143,7 +142,7 @@ class BannerMessageGroup extends WikiMessageGroup {
 
 	/**
 	 * Hook to handle message group review state changes. If the $newState
-	 * for a group is equal to @see $wgNoticeTranslateDeployStates then this
+	 * for a group is equal to $wgNoticeTranslateDeployStates then this
 	 * function will copy from the CNBanners namespace into the MW namespace
 	 * and protect them with right $wgCentralNoticeMessageProtectRight. This
 	 * implies that the user calling this hook must have site-edit permissions
@@ -202,7 +201,7 @@ class BannerMessageGroup extends WikiMessageGroup {
 						$user,
 						'Update from translation plugin',
 						EDIT_FORCE_BOT,
-						false, // $originalRevId
+						false,
 						[ 'centralnotice translation' ]
 					);
 					Banner::protectBannerContent( $wikiPage, $user, true );
@@ -215,7 +214,7 @@ class BannerMessageGroup extends WikiMessageGroup {
 		return true;
 	}
 
-	public function getMessageGroupStates() {
+	public function getMessageGroupStates(): MessageGroupStates {
 		$conf = [
 			'progress' => [ 'color' => 'E00' ],
 			'proofreading' => [ 'color' => 'FFBF00' ],
@@ -243,7 +242,7 @@ class BannerMessageGroup extends WikiMessageGroup {
 	 */
 	public static function registerGroupHook( &$list ) {
 		// Must be explicitly primary for runs under a jobqueue
-		$dbr = CNDatabase::getDb( DB_PRIMARY );
+		$dbr = CNDatabase::getPrimaryDb();
 
 		// Create the base aggregate group
 		$conf = [];
@@ -282,6 +281,11 @@ class BannerMessageGroup extends WikiMessageGroup {
 		return true;
 	}
 
+	/**
+	 * @param string $banner
+	 * @param string $state
+	 * @return string[]
+	 */
 	public static function getLanguagesInState( $banner, $state ) {
 		if ( !self::isUsingGroupReview() ) {
 			throw new LogicException(
@@ -291,7 +295,7 @@ class BannerMessageGroup extends WikiMessageGroup {
 
 		$groupName = self::getTranslateGroupName( $banner );
 
-		$db = CNDatabase::getDb();
+		$db = CNDatabase::getReplicaDb();
 		return $db->newSelectQueryBuilder()
 			->select( 'tgr_lang' )
 			->from( 'translate_groupreviews' )

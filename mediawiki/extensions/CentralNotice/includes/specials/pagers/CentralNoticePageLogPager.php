@@ -3,6 +3,7 @@
 use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Pager\ReverseChronologicalPager;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
@@ -17,22 +18,18 @@ use Wikimedia\Rdbms\LikeValue;
 class CentralNoticePageLogPager extends ReverseChronologicalPager {
 	/** @var Title */
 	public $viewPage;
-	/** @var SpecialPage */
-	public $special;
-	/** @var string */
-	public $logType;
 
 	/**
-	 * Construct instance of class.
-	 * @param SpecialPage $special object calling object
-	 * @param string $type type of log - 'bannercontent' or 'bannermessages' (optional)
+	 * @param SpecialPage $special
+	 * @param string $logType type of log - 'bannercontent' or 'bannermessages' (optional)
 	 */
-	public function __construct( $special, $type = 'bannercontent' ) {
-		$this->special = $special;
+	public function __construct(
+		private readonly SpecialPage $special,
+		private readonly string $logType = 'bannercontent',
+	) {
 		parent::__construct();
 
 		$this->viewPage = SpecialPage::getTitleFor( 'NoticeTemplate', 'view' );
-		$this->logType = $type;
 	}
 
 	/**
@@ -49,19 +46,21 @@ class CentralNoticePageLogPager extends ReverseChronologicalPager {
 	 */
 	public function getQueryInfo() {
 		$conds = [
-			'rc_bot' => 1, // include bot edits (all edits made by CentralNotice are bot edits)
-			'rc_namespace' => 8, // only MediaWiki pages
+			// include bot edits (all edits made by CentralNotice are bot edits)
+			'rc_bot' => 1,
+			// only MediaWiki pages
+			'rc_namespace' => NS_MEDIAWIKI,
 		];
-		$db = CNDatabase::getDb();
+		$db = CNDatabase::getReplicaDb();
 		if ( $this->logType == 'bannercontent' ) {
-			// Add query contitions for banner content log
+			// Add query conditions for banner content log
 			$conds += [
 				// get banner content
 				$db->expr( 'rc_title', IExpression::LIKE,
 					new LikeValue( 'Centralnotice-template-', $db->anyString() ) ),
 			];
 		} else {
-			// Add query contitions for banner messages log
+			// Add query conditions for banner messages log
 			$conds += [
 				// get banner messages
 				$db->expr( 'rc_title', IExpression::LIKE, new LikeValue( 'Centralnotice-', $db->anyString() ) ),
@@ -72,14 +71,12 @@ class CentralNoticePageLogPager extends ReverseChronologicalPager {
 		}
 
 		$rcQuery = RecentChange::getQueryInfo();
-		$ret = [
+		return [
 			'tables' => $rcQuery['tables'],
 			'fields' => $rcQuery['fields'],
-			'conds' => $conds, // WHERE conditions
+			'conds' => $conds,
 			'join_conds' => $rcQuery['joins'],
 		];
-
-		return $ret;
 	}
 
 	/**
@@ -100,7 +97,8 @@ class CentralNoticePageLogPager extends ReverseChronologicalPager {
 			$this->msg( 'centralnotice-talk-link' )->text()
 		);
 
-		$language = 'en'; // English is the default for CentralNotice messages
+		// English is the default for CentralNotice messages
+		$language = 'en';
 
 		if ( $this->logType == 'bannercontent' ) {
 			// Extract the banner name from the title
@@ -192,7 +190,7 @@ class CentralNoticePageLogPager extends ReverseChronologicalPager {
 			$bannerCell
 		);
 		if ( $this->logType == 'bannermessages' ) {
-			// @phan-suppress-next-next-line PhanPossiblyUndeclaredVariable,PhanTypeMismatchArgumentNullable
+			// @phan-suppress-next-next-line PhanPossiblyUndeclaredVariable
 			$htmlOut .= Html::rawElement( 'td', [ 'valign' => 'top', 'class' => 'primary' ],
 				$messageCell
 			);

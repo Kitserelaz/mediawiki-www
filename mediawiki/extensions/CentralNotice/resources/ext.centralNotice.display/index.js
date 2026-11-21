@@ -30,17 +30,16 @@
  * mw.centralNotice.reallyChooseAndMaybeDisplay() (below).
  */
 ( function () {
-
-	var cn, Mixin,
-
-		// Registry of campaign-associated mixins
-		campaignMixins = {},
+	let cn,
 
 		// For providing a jQuery.Promise to signal when a banner has loaded
 		bannerLoadedDeferredObj,
 
 		// Name of a requested banner; see cn.requestBanner(), below.
-		requestedBannerName = null,
+		requestedBannerName = null;
+
+	// Registry of campaign-associated mixins
+	const campaignMixins = {},
 
 		// Maximum time to delay the record impression call, in milliseconds
 		MAX_RECORD_IMPRESSION_DELAY = 250,
@@ -57,9 +56,9 @@
 	/**
 	 * Class for campaign-associated mixins. Access via mw.centralNotice.Mixin.
 	 *
-	 * @param name
+	 * @param {string} name
 	 */
-	Mixin = function ( name ) {
+	const Mixin = function ( name ) {
 		this.name = name;
 	};
 
@@ -70,7 +69,7 @@
 	 * Run after we've chosen a campaign to attempt, but before we try to choose a
 	 * banner from that campaign.
 	 *
-	 * @param handlerFunc
+	 * @param {Function} handlerFunc
 	 */
 	Mixin.prototype.setPreBannerHandler = function ( handlerFunc ) {
 		this.preBannerHandler = handlerFunc;
@@ -80,7 +79,7 @@
 	 * Run after we chose and loaded a banner, or after the campaign failed, or after
 	 * we unsuccessfully attempted to chose a banner.
 	 *
-	 * @param handlerFunc
+	 * @param {Function} handlerFunc
 	 */
 	Mixin.prototype.setPostBannerOrFailHandler = function ( handlerFunc ) {
 		this.postBannerOrFailHandler = handlerFunc;
@@ -91,7 +90,7 @@
 	 * to be displayed, the hook runs after it's loaded. If all attempted campaigns failed
 	 * and no banner will show, the hook runs then.
 	 *
-	 * @param handlerFunc
+	 * @param {Function} handlerFunc
 	 */
 	Mixin.prototype.setFinalizeChooseAndMaybeDisplayHandler = function ( handlerFunc ) {
 		this.finalizeChooseAndMaybeDisplayHandler = handlerFunc;
@@ -103,12 +102,11 @@
 	 *
 	 * @param {string} hookPropertyName The name of a Mixin property containing
 	 * hook handlers
-	 * @param campaign
+	 * @param {Object} campaign
 	 */
 	function runMixinHooks( hookPropertyName, campaign ) {
 		// eslint-disable-next-line no-jquery/no-each-util
-		$.each( campaign.mixins, function ( mixinName, mixinParams ) {
-			var handler;
+		$.each( campaign.mixins, ( mixinName, mixinParams ) => {
 			// Sanity check
 			if ( !( mixinName in campaignMixins ) ) {
 				mw.log.warn( 'Mixin ' + mixinName + ' not registered.' );
@@ -120,7 +118,7 @@
 				return;
 			}
 
-			handler = campaignMixins[ mixinName ][ hookPropertyName ];
+			const handler = campaignMixins[ mixinName ][ hookPropertyName ];
 
 			// Another sanity check
 			if ( typeof handler !== 'function' ) {
@@ -141,7 +139,7 @@
 	}
 
 	function runFinalizeChooseAndMaybeDisplayHooks() {
-		cn.internal.state.getAttemptedCampaigns().forEach( function ( campaign ) {
+		cn.internal.state.getAttemptedCampaigns().forEach( ( campaign ) => {
 			runMixinHooks( 'finalizeChooseAndMaybeDisplayHandler', campaign );
 		} );
 	}
@@ -184,15 +182,27 @@
 		cn.events.bannerLoaded = cn.bannerLoadedPromise;
 	}
 
+	/***
+	 * Based on implementation of now deprecated mw.Uri.encode
+	 *
+	 * @param {string} s
+	 * @return {string}
+	 */
+	function encode( s ) {
+		return encodeURIComponent( s )
+			.replace( /!/g, '%21' ).replace( /'/g, '%27' ).replace( /\(/g, '%28' )
+			.replace( /\)/g, '%29' ).replace( /\*/g, '%2A' )
+			.replace( /%20/g, '+' );
+	}
+
 	function fetchOrRetrieveBanner() {
-		var previewBannerContent,
-			data = cn.internal.state.getData();
+		const data = cn.internal.state.getData();
 
 		// If this is a preview of an unsaved version, retrieve and inject the banner as
 		// soon as the DOM's ready.
 		if ( data.preview ) {
-			$( function () {
-				previewBannerContent = cn.kvStore.getItem(
+			$( () => {
+				const previewBannerContent = cn.kvStore.getItem(
 					PREVIEW_STORAGE_KEY_PREFIX + data.banner,
 					cn.kvStore.contexts.GLOBAL
 				);
@@ -208,48 +218,55 @@
 		}
 	}
 
-	function fetchBanner() {
-
-		var data = cn.internal.state.getData(),
-			urlBase = new mw.Uri(
-				mw.config.get( 'wgCentralNoticeActiveBannerDispatcher' )
-			),
-
-			// For Varnish purges of banner content, we ensure query param order (thus we
-			// can't use the object-based facilities for params in mw.Uri).
-			// Rather, we use mw.Uri only to parse the URL set in config and to
-			// reconstruct the bits before the query.
-			// Param order must coordinate with CdnCacheUpdateBannerLoader in php.
-			urlQuery = [
-				'banner=' + mw.Uri.encode( data.banner ),
-				'uselang=' + mw.Uri.encode( data.uselang ),
-				'debug=' + ( !!data.debug ).toString()
-			];
+	/**
+	 * @param {string} dispatcherUrl
+	 * @param {Object} data Banner data
+	 * @return {URL}
+	 */
+	function getBannerUrl( dispatcherUrl, data ) {
+		const urlBase = new URL( dispatcherUrl, location );
+		// Prior to using URL we were using mw.Uri
+		// For Varnish purges of banner content, we ensure query param order
+		// Param order must coordinate with CdnCacheUpdateBannerLoader in php.
+		// Now we are using URL it should be possible to rewrite this to use
+		// SearchURLParams in a follow up to retain this ordering.
+		const urlQuery = [
+			'banner=' + encode( data.banner ),
+			'uselang=' + encode( data.uselang ),
+			'debug=' + ( !!data.debug ).toString()
+		];
 
 		// If this is a test display, there might not be a campaign
 		if ( data.campaign ) {
-			urlQuery.unshift( 'campaign=' + mw.Uri.encode( data.campaign ) );
+			urlQuery.unshift( 'campaign=' + encode( data.campaign ) );
 		}
 
 		// Only a title param (for ugly URL format) is allowed as a param on the
 		// configured banner dispatchers
-		if ( urlBase.query.title ) {
-			// As per mediawiki.Uri.js
-			urlQuery.unshift( 'title=' + mw.util.wikiUrlencode( urlBase.query.title ) );
+		const searchTitle = urlBase.searchParams.get( 'title' );
+		if ( searchTitle ) {
+			urlQuery.unshift( 'title=' + mw.util.wikiUrlencode( searchTitle ) );
 		}
 
 		// Remove any other query or fragment info parsed from the configured URL
-		urlBase.query = {};
-		urlBase.fragment = '';
+		urlBase.search = urlQuery.join( '&' );
+		urlBase.hash = '';
+		return urlBase;
+	}
+	function fetchBanner() {
+		const url = getBannerUrl(
+			mw.config.get( 'wgCentralNoticeActiveBannerDispatcher' ),
+			cn.internal.state.getData()
+		);
 
 		// The returned javascript will call mw.centralNotice.insertBanner()
 		// or mw.centralNotice.handleBannerLoaderError() (if an error was
 		// handled on the server).
 		$.ajax( {
-			url: urlBase.toString() + '?' + urlQuery.join( '&' ),
+			url: url.toString(),
 			dataType: 'script',
 			cache: true
-		} ).fail( function ( jqXHR, status, error ) {
+		} ).fail( ( jqXHR, status, error ) => {
 			cn.handleBannerLoaderError( status + ': ' + error );
 		} );
 	}
@@ -282,8 +299,7 @@
 	}
 
 	function recordImpression() {
-		var timeout,
-			timeoutHasRun = false;
+		let timeoutHasRun = false;
 
 		if ( cn.recordImpressionDelayPromises.length === 0 ) {
 			reallyRecordImpression();
@@ -294,14 +310,14 @@
 		// cn.recordImpressionDeferredObj (used in resolveRecordImpressionDeferred())
 		// should already have been set.
 
-		timeout = setTimeout( function () {
+		const timeout = setTimeout( () => {
 			timeoutHasRun = true;
 			resolveRecordImpressionDeferred();
 		}, MAX_RECORD_IMPRESSION_DELAY );
 
 		// This function can only run once, so checking that the timeout hasn't run yet
 		// should be sufficient to prevent extra record impression calls.
-		$.when.apply( $, cn.recordImpressionDelayPromises ).always( function () {
+		$.when.apply( $, cn.recordImpressionDelayPromises ).always( () => {
 			if ( !timeoutHasRun ) {
 				clearTimeout( timeout );
 				resolveRecordImpressionDeferred();
@@ -310,15 +326,17 @@
 	}
 
 	function reallyRecordImpression() {
-		var state = cn.internal.state,
-			random = Math.random(),
-			url, dataCopy;
+		const state = cn.internal.state,
+			random = Math.random();
 
+		let dataCopy;
 		// Legacy record impression
 		if ( random <= state.getData().recordImpressionSampleRate ) {
-			url = new mw.Uri( mw.config.get( 'wgCentralBannerRecorder' ) );
+			const url = new URL( mw.config.get( 'wgCentralBannerRecorder' ), location );
 			dataCopy = state.getDataCopy( true );
-			url.extend( dataCopy );
+			Object.keys( dataCopy ).forEach(
+				( key ) => url.searchParams.append( key, dataCopy[ key ] )
+			);
 			sendBeacon( url.toString() );
 		}
 
@@ -335,7 +353,7 @@
 				navigator.sendBeacon( urlStr );
 			} catch ( e ) {}
 		} else {
-			setTimeout( function () {
+			setTimeout( () => {
 				document.createElement( 'img' ).src = urlStr;
 			}, 0 );
 		}
@@ -343,11 +361,10 @@
 
 	function reallyChooseAndMaybeDisplay() {
 
-		var chooser = cn.internal.chooser,
+		const chooser = cn.internal.chooser,
 			bucketer = cn.internal.bucketer,
 			state = cn.internal.state,
-			hide = cn.internal.hide,
-			campaign, banner, i, maxCampaignFallback, maxCampaignFallbackConfig;
+			hide = cn.internal.hide;
 
 		// This will gather initial data needed for selection and display.
 		state.setUp();
@@ -384,14 +401,15 @@
 
 		// Set maximum iterations for the loop below. Pick the lowest between the
 		// configured limit and the total available campaigns.
-		maxCampaignFallbackConfig = mw.config.get( 'wgCentralNoticeMaxCampaignFallback' );
-		maxCampaignFallback = Math.min(
+		const maxCampaignFallbackConfig = mw.config.get( 'wgCentralNoticeMaxCampaignFallback' );
+		const maxCampaignFallback = Math.min(
 			state.getData().availableCampaigns.length,
 			maxCampaignFallbackConfig
 		);
 
+		let campaign;
 		// Fallback loop. Try to display something until we're out of choices.
-		for ( i = 0; i < maxCampaignFallback; i++ ) {
+		for ( let i = 0; i < maxCampaignFallback; i++ ) {
 
 			// Try to choose a campaign. Just because we choose one doesn't necessarily
 			// mean it'll display a banner, though. (That's why we set it as
@@ -427,7 +445,7 @@
 				// Do not check user preferences on anon users
 				if (
 					campaign.type === 0 ||
-					state.getData().optedOutCampaigns.indexOf( campaign.type ) !== -1
+					state.getData().optedOutCampaigns.includes( campaign.type )
 				) {
 					// User opted out of viewing this type of campaigns
 					// or campaign does not have a type set
@@ -496,6 +514,7 @@
 
 		// If a specific banner has been requested from a pre-banner hook, try to choose
 		// it.
+		let banner;
 		if ( requestedBannerName ) {
 
 			banner = chooser.requestBanner(
@@ -556,10 +575,10 @@
 	 * Convenience method used only by reallyChooseAndMaybeDisplay() to update available
 	 * campaigns within the fallback loop.
 	 *
-	 * @param iteration
+	 * @param {number} iteration
 	 */
 	function fallbackLoopUpdateAvailableCampaigns( iteration ) {
-		var state = cn.internal.state;
+		const state = cn.internal.state;
 
 		state.setAvailableCampaigns( cn.internal.chooser.updateAvailableCampaigns(
 			state.getData().availableCampaigns,
@@ -620,20 +639,17 @@
 	 *         loaded.
 	 */
 	cn = {
-
 		/**
 		 * Really insert the banner (without waiting for the DOM to be ready).
 		 * Only exposed for use in tests.
 		 *
-		 * @param bannerJson
+		 * @param {Object} bannerJson
 		 * @private
 		 */
 		reallyInsertBanner: function ( bannerJson ) {
 
-			var state = cn.internal.state,
-				shownAfterLoadingBanner = true,
-				bannerLoadedButHiddenReason,
-				tmpData;
+			const state = cn.internal.state;
+			let shownAfterLoadingBanner = true;
 
 			// Inject the banner HTML into the DOM
 			injectBannerHTML( bannerJson.bannerHtml );
@@ -651,13 +667,13 @@
 					// may add a 'reason' property to the object it receives.
 					// So we send only a copy of the data and check the added
 					// 'reason' property.
-					tmpData = state.getDataCopy();
+					const tmpData = state.getDataCopy();
 
 					shownAfterLoadingBanner =
 						cn.bannerData.alterImpressionData( tmpData );
 
 					if ( !shownAfterLoadingBanner ) {
-						bannerLoadedButHiddenReason = tmpData.reason || '';
+						const bannerLoadedButHiddenReason = tmpData.reason || '';
 						state.setBannerLoadedButHidden(
 							bannerLoadedButHiddenReason
 						);
@@ -724,7 +740,7 @@
 		/**
 		 * Legacy method, deprecated. Use failCampaign().
 		 *
-		 * @param reason
+		 * @param {string} reason
 		 */
 		cancelBanner: function ( reason ) {
 			cn.failCampaign( reason );
@@ -736,6 +752,8 @@
 
 		/**
 		 * Legacy metod, deprecated. Use isCampaignFailed().
+		 *
+		 * @return {boolean}
 		 */
 		isBannerCanceled: function () {
 			return cn.isCampaignFailed();
@@ -749,7 +767,7 @@
 		 * Indicate that a banner was hidden after being loaded, and provide
 		 * a reason.
 		 *
-		 * @param reason
+		 * @param {string} reason
 		 */
 		setBannerLoadedButHidden: function ( reason ) {
 			cn.internal.state.setBannerLoadedButHidden( reason );
@@ -761,7 +779,7 @@
 		 * not be called at all if a campaign was not chosen for this user. Also note
 		 * that the highest rate set will be used.
 		 *
-		 * @param rate
+		 * @param {number} rate
 		 */
 		setMinRecordImpressionSampleRate: function ( rate ) {
 			cn.internal.state.setMinRecordImpressionSampleRate( rate );
@@ -773,7 +791,7 @@
 		 * wgCentralNoticeImpressionEventSampleRate. Also note that the highest rate set
 		 * will be used.
 		 *
-		 * @param rate
+		 * @param {number} rate
 		 */
 		setMinImpressionEventSampleRate: function ( rate ) {
 			cn.internal.state.setMinImpressionEventSampleRate( rate );
@@ -834,7 +852,7 @@
 			mw.geoIP.getPromise()
 				.fail( cn.internal.state.setInvalidGeoData )
 				.done( cn.internal.state.setGeoData )
-				.always( function () {
+				.always( () => {
 					cn.internal.state.setUpForTestingBanner();
 					setUpDataProperty();
 					setUpBannerLoadedPromise();
@@ -845,7 +863,7 @@
 		insertBanner: function ( bannerJson ) {
 
 			// Insert the banner only after the DOM is ready
-			$( function () {
+			$( () => {
 				cn.reallyInsertBanner( bannerJson );
 			} );
 		},
@@ -885,7 +903,7 @@
 		 * The current bucket can be read using
 		 * mw.centralNotice.getDataProperty( 'bucket' )
 		 *
-		 * @param bucket
+		 * @param {number} bucket
 		 */
 		setBucket: function ( bucket ) {
 			cn.internal.bucketer.setBucket( bucket );
@@ -950,12 +968,20 @@
 		 * Get the value of a property used in campaign/banner selection and
 		 * display, and for recording the results of that process.
 		 *
-		 * @param prop
+		 * @param {string} prop
+		 * @return {any}
 		 */
 		getDataProperty: function ( prop ) {
 			return cn.internal.state.getData()[ prop ];
 		}
 	};
+
+	// For testing purposes only.
+	if ( window.QUnit ) {
+		cn.test = {
+			getBannerUrl
+		};
+	}
 
 	// Expose cn. Note that there are situations in which a base
 	// mw.centralNotice object may already have been created by another

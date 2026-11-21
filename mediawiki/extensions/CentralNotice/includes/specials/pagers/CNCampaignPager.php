@@ -2,7 +2,6 @@
 
 use MediaWiki\Html\Html;
 use MediaWiki\Pager\TablePager;
-use MediaWiki\Xml\Xml;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\IResultWrapper;
 
@@ -22,8 +21,6 @@ class CNCampaignPager extends TablePager {
 	// This should be enough--Meta has less than 500 campaigns.
 	private const DEFAULT_LIMIT = 5000;
 
-	/** @var CentralNotice */
-	private $onSpecialCN;
 	/** @var string|false */
 	private $editable;
 	/** @var int|null */
@@ -41,10 +38,10 @@ class CNCampaignPager extends TablePager {
 	 * @param bool|null $showArchived Set true to only show archived campaigns,
 	 * 	 false to only show unarchived campaigns
 	 */
-	public function __construct( CentralNotice $onSpecialCN,
+	public function __construct(
+		private readonly CentralNotice $onSpecialCN,
 		$editable = false, $assignedBannerId = null, $showArchived = null
 	) {
-		$this->onSpecialCN = $onSpecialCN;
 		$this->assignedBannerId = $assignedBannerId;
 		$this->editable = $editable;
 		$this->showArchived = $showArchived;
@@ -221,11 +218,15 @@ class CNCampaignPager extends TablePager {
 				);
 
 			case 'projects':
-				$p = explode( ',', $this->mCurrentRow->projects );
+				$p = $this->mCurrentRow->projects
+					? explode( ',', $this->mCurrentRow->projects )
+					: [];
 				return htmlspecialchars( $this->onSpecialCN->listProjects( $p ) );
 
 			case 'languages':
-				$l = explode( ',', $this->mCurrentRow->languages );
+				$l = $this->mCurrentRow->languages
+					? explode( ',', $this->mCurrentRow->languages )
+					: [];
 				return htmlspecialchars( $this->onSpecialCN->listLanguages( $l ) );
 
 			case 'location':
@@ -377,12 +378,11 @@ class CNCampaignPager extends TablePager {
 
 			$htmlOut .= $this->onSpecialCN->makeSummaryField();
 
-			$htmlOut .= Xml::input(
+			$htmlOut .= Html::input(
 				'centralnoticesubmit',
-				false,
 				$this->msg( 'centralnotice-modify' )->text(),
+				'button',
 				[
-					'type' => 'button',
 					'id' => 'cn-campaign-pager-submit'
 				]
 			);

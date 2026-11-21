@@ -1,14 +1,17 @@
 <?php
 
+use MediaWiki\Exception\ErrorPageError;
+use MediaWiki\Exception\ReadOnlyError;
 use MediaWiki\Html\Html;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\SpecialPage\UnlistedSpecialPage;
-use MediaWiki\Xml\Xml;
+use MediaWiki\Xml\XmlSelect;
 
 class CentralNotice extends UnlistedSpecialPage {
 
@@ -41,11 +44,12 @@ class CentralNotice extends UnlistedSpecialPage {
 	/** @var array */
 	private $campaignWarnings = [];
 
-	public function __construct() {
+	public function __construct( string $name = 'CentralNotice' ) {
 		// Register special page
-		parent::__construct( 'CentralNotice' );
+		parent::__construct( $name );
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
@@ -69,6 +73,7 @@ class CentralNotice extends UnlistedSpecialPage {
 
 		// Check permissions
 		$this->editable = $this->getUser()->isAllowed( 'centralnotice-admin' );
+		$this->getOutput()->addJsConfigVars( [ 'CentralNoticeEditable' => $this->editable ] );
 
 		// Initialize error variable
 		$this->centralNoticeError = false;
@@ -86,7 +91,7 @@ class CentralNotice extends UnlistedSpecialPage {
 		// Handle form submissions from "Manage campaigns" or "Add a campaign" interface
 		if ( $this->editable && $request->wasPosted() ) {
 			if ( MediaWikiServices::getInstance()->getReadOnlyMode()->isReadOnly()
-				|| CNDatabase::getDb( DB_PRIMARY )->isReadOnly()
+				|| CNDatabase::getPrimaryDb()->isReadOnly()
 			) {
 				throw new ReadOnlyError();
 			}
@@ -162,7 +167,8 @@ class CentralNotice extends UnlistedSpecialPage {
 		}
 
 		$pager = new CNCampaignPager( $this, $this->editable, null, $showArchived );
-		$out->addHTML( $pager->getBodyOutput()->getText() );
+		$popts = ParserOptions::newFromContext( $this->getContext() );
+		$out->addParserOutputContent( $pager->getBodyOutput(), $popts );
 		$out->addHTML( $pager->getNavigationBar() );
 
 		// If the user has edit rights, show a form for adding a campaign
@@ -180,7 +186,7 @@ class CentralNotice extends UnlistedSpecialPage {
 
 		// Make the changes requested
 		foreach ( $changes as $campaignName => $campaignChanges ) {
-			$initialSettings = Campaign::getCampaignSettings( $campaignName );
+			$initialSettings = Campaign::getCampaignSettings( $campaignName, true );
 
 			// Next campaign if somehow this one doesn't exist
 			if ( !$initialSettings ) {
@@ -230,11 +236,11 @@ class CentralNotice extends UnlistedSpecialPage {
 			}
 
 			// Log any differences in settings
-			$newSettings = Campaign::getCampaignSettings( $campaignName );
+			$newSettings = Campaign::getCampaignSettings( $campaignName, true );
 			$diffs = array_diff_assoc( $initialSettings, $newSettings );
 
 			if ( $diffs ) {
-				$campaignId = Campaign::getNoticeId( $campaignName );
+				$campaignId = Campaign::getNoticeId( $campaignName, CNDatabase::getPrimaryDb() );
 				Campaign::processAfterCampaignChange(
 					'modified',
 					$campaignId,
@@ -287,17 +293,30 @@ class CentralNotice extends UnlistedSpecialPage {
 		}
 	}
 
+	/**
+	 * @param string $prefix
+	 * @param bool $editable
+	 * @param string|null $timestamp
+	 * @return string
+	 */
 	private function timeSelectorTd( $prefix, $editable, $timestamp = null ) {
 		return Html::rawElement(
 			'td',
 			[
-				'dir' => 'ltr', // Time is left-to-right in all languages
+				// Time is left-to-right in all languages
+				'dir' => 'ltr',
 				'class' => 'cn-timepicker',
 			],
 			$this->timeSelector( $prefix, $editable, $timestamp )
 		);
 	}
 
+	/**
+	 * @param string $prefix
+	 * @param bool $editable
+	 * @param string|null $timestamp
+	 * @return string
+	 */
 	private function timeSelector( $prefix, $editable, $timestamp = null ) {
 		if ( $editable ) {
 			$minutes = $this->paddedRange( 0, 59 );
@@ -327,31 +346,32 @@ class CentralNotice extends UnlistedSpecialPage {
 	public function campaignTypeSelector( $editable, $selectedTypeId, $index = null ) {
 		$types = CampaignType::getTypes();
 		if ( $editable ) {
-			$options = Xml::option(
-				$this->msg( 'centralnotice-empty-campaign-type-option' )->plain(),
-				self::EMPTY_CAMPAIGN_TYPE_OPTION
+			$options = Html::element(
+				'option',
+				[ 'value' => self::EMPTY_CAMPAIGN_TYPE_OPTION ],
+				$this->msg( 'centralnotice-empty-campaign-type-option' )->plain()
 			);
 
 			foreach ( $types as $type ) {
 				$message = $this->msg( $type->getMessageKey() );
 				$text = $message->exists() ? $message->text() : $type->getId();
-				$options .= Xml::option(
-					$text,
-					$type->getId(),
-					$selectedTypeId === $type->getId()
+				$options .= Html::element(
+					'option',
+					[ 'value' => $type->getId(), 'selected' => $selectedTypeId === $type->getId() ],
+					$text
 				);
 			}
 
 			// Handle the case of a type removed from config but still assigned to
 			// a campaign in the DB.
 			if ( $selectedTypeId && !CampaignType::getById( $selectedTypeId ) ) {
-				$options .= Xml::option(
+				$options .= Html::element(
+					'option',
+					[ 'value' => $selectedTypeId, 'selected' => true ],
 					$this->msg(
 						'centralntoice-deleted-campaign-type',
 						$selectedTypeId
-					)->text(),
-					$selectedTypeId,
-					true
+					)->text()
 				);
 			}
 
@@ -410,9 +430,14 @@ class CentralNotice extends UnlistedSpecialPage {
 		];
 
 		if ( $editable ) {
-			$options = ''; // The HTML for the select list options
+			// The HTML for the select list options
+			$options = '';
 			foreach ( $priorities as $key => $labelMsg ) {
-				$options .= Xml::option( $labelMsg->text(), (string)$key, $priorityValue == $key );
+				$options .= Html::element(
+					'option',
+					[ 'value' => (string)$key, 'selected' => $priorityValue == $key ],
+					$labelMsg->text()
+				);
 			}
 
 			// Data attributes set below (data-campaign-name and
@@ -443,17 +468,21 @@ class CentralNotice extends UnlistedSpecialPage {
 	private function createSelector( $prefix, $fields ) {
 		$out = '';
 		foreach ( $fields as [ $field, $label, $set, $current ] ) {
-			$out .= Xml::listDropdown( "{$prefix}[{$field}]",
+			$options = Html::listDropdownOptions(
 				self::dropdownList( $this->msg( $label )->text(), $set ),
-				'',
-				$current );
+				[ 'other' => '' ]
+			);
+
+			$xmlSelect = new XmlSelect( "{$prefix}[{$field}]", "{$prefix}[{$field}]", $current );
+			$xmlSelect->addOptions( $options );
+
+			$out .= $xmlSelect->getHTML();
 		}
 		return $out;
 	}
 
 	/**
 	 * Output a form for adding a campaign.
-	 *
 	 */
 	private function addNoticeForm() {
 		$request = $this->getRequest();
@@ -494,14 +523,14 @@ class CentralNotice extends UnlistedSpecialPage {
 				$this->msg( 'centralnotice-notice-name' )->text()
 			) .
 			Html::rawElement( 'td', [],
-				Xml::input( 'noticeName', 25, $request->getVal( 'noticeName', '' ) )
+				Html::input( 'noticeName', $request->getVal( 'noticeName', '' ), 'text', [ 'size' => 25 ] )
 			)
 		);
 
 		// Campaign type selector
 		$htmlOut .= Html::rawElement( 'tr', [],
 			Html::rawElement( 'td', [],
-				Xml::label( $this->msg( 'centralnotice-campaign-type' )->text(), 'campaign_type' )
+				Html::label( $this->msg( 'centralnotice-campaign-type' )->text(), 'campaign_type' )
 			) .
 			Html::rawElement( 'td', [],
 				$this->campaignTypeSelector( $this->editable, $campaignType )
@@ -539,7 +568,7 @@ class CentralNotice extends UnlistedSpecialPage {
 		// Countries
 		$htmlOut .= Html::openElement( 'tr' );
 		$htmlOut .= Html::rawElement( 'td', [],
-			Xml::label( $this->msg( 'centralnotice-geo' )->text(), 'geotargeted' ) );
+			Html::label( $this->msg( 'centralnotice-geo' )->text(), 'geotargeted' ) );
 		$htmlOut .= Html::rawElement( 'td', [],
 			Html::check( 'geotargeted', false, [ 'value' => 1, 'id' => 'geotargeted' ] ) );
 		$htmlOut .= Html::closeElement( 'tr' );
@@ -657,7 +686,6 @@ class CentralNotice extends UnlistedSpecialPage {
 	 * Show the interface for viewing/editing an individual campaign
 	 *
 	 * @param string $notice The name of the campaign to view
-	 *
 	 */
 	private function outputNoticeDetail( $notice ) {
 		$out = $this->getOutput();
@@ -679,7 +707,8 @@ class CentralNotice extends UnlistedSpecialPage {
 		try {
 			if ( $this->campaign->isArchived() || $this->campaign->isLocked() ) {
 				$out->setSubtitle( $this->msg( 'centralnotice-archive-edit-prevented' ) );
-				$this->editable = false; // Todo: Fix this gross hack to prevent editing
+				// TODO: Fix this gross hack to prevent editing
+				$this->editable = false;
 			}
 			$out->addSubtitle(
 				$this->getLinkRenderer()->makeKnownLink(
@@ -692,7 +721,7 @@ class CentralNotice extends UnlistedSpecialPage {
 					]
 				)
 			);
-		} catch ( CampaignExistenceException $ex ) {
+		} catch ( CampaignExistenceException ) {
 			throw new ErrorPageError( 'centralnotice', 'centralnotice-notice-doesnt-exist' );
 		}
 
@@ -729,14 +758,15 @@ class CentralNotice extends UnlistedSpecialPage {
 		if ( $output_assigned == '' && $output_templates == '' ) {
 			$htmlOut .= $this->msg( 'centralnotice-no-templates' )->escaped();
 			$htmlOut .= Html::element( 'p' );
-			$newPage = $this->getTitleFor( 'NoticeTemplate', 'add' );
+			$newPage = SpecialPage::getTitleFor( 'NoticeTemplate', 'add' );
 			$htmlOut .= $this->getLinkRenderer()->makeLink(
 				$newPage,
 				$this->msg( 'centralnotice-add-template' )->text()
 			);
 			$htmlOut .= Html::element( 'p' );
 		} elseif ( $output_assigned == '' ) {
-			$htmlOut .= Xml::fieldset( $this->msg( 'centralnotice-assigned-templates' )->text() );
+			$htmlOut .= Html::openElement( 'fieldset' ) . "\n" .
+				Html::element( 'legend', [], $this->msg( 'centralnotice-assigned-templates' )->text() ) . "\n";
 			$htmlOut .= $this->msg( 'centralnotice-no-templates-assigned' )->escaped();
 			$htmlOut .= Html::closeElement( 'fieldset' );
 			if ( $this->editable ) {
@@ -794,7 +824,7 @@ class CentralNotice extends UnlistedSpecialPage {
 					Campaign::setBooleanCampaignSetting( $notice, 'archived', true );
 				}
 
-				$initialCampaignSettings = Campaign::getCampaignSettings( $notice );
+				$initialCampaignSettings = Campaign::getCampaignSettings( $notice, true );
 
 				// Handle locking/unlocking campaign
 				Campaign::setBooleanCampaignSetting(
@@ -819,7 +849,7 @@ class CentralNotice extends UnlistedSpecialPage {
 				// Handle user bucketing setting for campaign
 				$numCampaignBuckets = min( $request->getInt( 'buckets', 1 ),
 					$noticeNumberOfBuckets );
-				$numCampaignBuckets = pow( 2, floor( log( $numCampaignBuckets, 2 ) ) );
+				$numCampaignBuckets = (int)pow( 2, floor( log( $numCampaignBuckets, 2 ) ) );
 
 				Campaign::setNumericCampaignSetting(
 					$notice,
@@ -982,15 +1012,20 @@ class CentralNotice extends UnlistedSpecialPage {
 					}
 				}
 
-				$finalCampaignSettings = Campaign::getCampaignSettings( $notice );
-				$campaignId = Campaign::getNoticeId( $notice );
+				$finalCampaignSettings = Campaign::getCampaignSettings( $notice, true );
+				$campaignId = Campaign::getNoticeId( $notice, CNDatabase::getPrimaryDb() );
 
 				$summary = $this->getSummaryFromRequest( $request );
 
 				Campaign::processAfterCampaignChange(
-					'modified', $campaignId, $notice, $this->getUser(),
-					$initialCampaignSettings, $finalCampaignSettings,
-					$summary );
+					'modified',
+					$campaignId,
+					$notice,
+					$this->getUser(),
+					$initialCampaignSettings,
+					$finalCampaignSettings,
+					$summary
+				);
 
 				// If there were no errors, reload the page to prevent duplicate form submission
 				if ( !$this->centralNoticeError ) {
@@ -1018,29 +1053,35 @@ class CentralNotice extends UnlistedSpecialPage {
 	}
 
 	/**
-	 * Create form for managing campaign settings (start date, end date, languages, etc.)
+	 * Create the form for managing campaign settings (start date, end date, languages, etc.)
 	 * @param string $notice
 	 * @return string HTML
 	 */
 	private function noticeDetailForm( $notice ) {
-		if ( $this->editable ) {
-			$readonly = [];
-		} else {
-			$readonly = [ 'disabled' => 'disabled' ];
-		}
+		$readonly = [ 'disabled' => !$this->editable ];
 
-		$campaign = Campaign::getCampaignSettings( $notice );
+		$request = $this->getRequest();
+		$wasPosted = $request->wasPosted();
+
+		// If it's being posted, it's probably a write, so read from primary
+		$campaign = Campaign::getCampaignSettings( $notice, $wasPosted );
 
 		if ( $campaign ) {
 			// If there was an error, we'll need to restore the state of the form
-			$request = $this->getRequest();
-
-			if ( $request->wasPosted() ) {
+			if ( $wasPosted ) {
+				// TODO: Avoid duplicating handleNoticePostFromList which is where the logic
+				// for reading and parsing post data resides. While that method is used when
+				// saving changes, the one below is only used when clicking misc buttons
+				// like "Apply filters", thus leading to subtle bugs (T182343).
 				$start = $this->getDateTime( 'start' );
 				$end = $this->getDateTime( 'end' );
 				$isEnabled = $request->getCheck( 'enabled' );
 				$priority = $request->getInt( 'priority', self::NORMAL_PRIORITY );
-				$throttle = $request->getInt( 'throttle', 100 );
+				if ( $request->getCheck( 'throttle-enabled' ) ) {
+					$throttle = $request->getInt( 'throttle-cur', 100 );
+				} else {
+					$throttle = 100;
+				}
 				$isLocked = $request->getCheck( 'locked' );
 				$isArchived = $request->getCheck( 'archived' );
 				$noticeProjects = $request->getArray( 'projects', [] );
@@ -1049,8 +1090,9 @@ class CentralNotice extends UnlistedSpecialPage {
 				$numBuckets = $request->getInt( 'buckets', 1 );
 				$countries = $this->listToArray( $request->getVal( 'geo_countries' ) );
 				$regions = $this->listToArray( $request->getVal( 'geo_regions' ) );
-				$type = $request->getText( 'type' );
-			} else { // Defaults
+				$type = $request->getText( 'campaign_type' );
+			} else {
+				// Defaults
 				$start = $campaign[ 'start' ];
 				$end = $campaign[ 'end' ];
 				$isEnabled = (bool)$campaign['enabled'];
@@ -1071,9 +1113,7 @@ class CentralNotice extends UnlistedSpecialPage {
 			$isThrottled = ( $throttle < 100 );
 			$type = $type === self::EMPTY_CAMPAIGN_TYPE_OPTION ? null : $type;
 
-			// Build Html
-			$htmlOut = '';
-			$htmlOut .= Html::rawElement( 'h2', [],
+			$htmlOut = Html::rawElement( 'h2', [],
 				$this->msg( 'centralnotice-notice-heading', $notice )->parse() );
 			$htmlOut .= Html::openElement( 'table', [ 'cellpadding' => 9 ] );
 
@@ -1081,7 +1121,7 @@ class CentralNotice extends UnlistedSpecialPage {
 			// Campaign type selector
 			$htmlOut .= Html::openElement( 'tr' );
 			$htmlOut .= Html::rawElement( 'td', [],
-				Xml::label( $this->msg( 'centralnotice-campaign-type' )->text(), 'campaign_type' ) );
+				Html::label( $this->msg( 'centralnotice-campaign-type' )->text(), 'campaign_type' ) );
 			$htmlOut .= Html::rawElement( 'td', [],
 				$this->campaignTypeSelector( $this->editable, $type ) );
 			$htmlOut .= Html::closeElement( 'tr' );
@@ -1135,11 +1175,11 @@ class CentralNotice extends UnlistedSpecialPage {
 			// Countries
 			$htmlOut .= Html::rawElement( 'tr', [],
 				Html::rawElement( 'td', [],
-					Xml::label( $this->msg( 'centralnotice-geo' )->text(), 'geotargeted' )
+					Html::label( $this->msg( 'centralnotice-geo' )->text(), 'geotargeted' )
 				) .
 				Html::rawElement( 'td', [],
 					Html::check( 'geotargeted', $isGeotargeted,
-						array_replace( $readonly, [ 'value' => $notice, 'id' => 'geotargeted' ] )
+						[ ...$readonly, 'value' => $notice, 'id' => 'geotargeted' ]
 					)
 				)
 			);
@@ -1157,7 +1197,7 @@ class CentralNotice extends UnlistedSpecialPage {
 			// User bucketing
 			$htmlOut .= Html::rawElement( 'tr', [],
 				Html::rawElement( 'td', [],
-					Xml::label( $this->msg( 'centralnotice-buckets' )->text(), 'buckets' )
+					Html::label( $this->msg( 'centralnotice-buckets' )->text(), 'buckets' )
 				) .
 				Html::rawElement( 'td', [],
 					$this->numBucketsDropdown( $config->get( 'NoticeNumberOfBuckets' ), $numBuckets )
@@ -1166,38 +1206,38 @@ class CentralNotice extends UnlistedSpecialPage {
 			// Enabled
 			$htmlOut .= Html::rawElement( 'tr', [],
 				Html::rawElement( 'td', [],
-					Xml::label( $this->msg( 'centralnotice-enabled' )->text(), 'enabled' )
+					Html::label( $this->msg( 'centralnotice-enabled' )->text(), 'enabled' )
 				) .
 				Html::rawElement( 'td', [],
 					Html::check( 'enabled', $isEnabled,
-						array_replace( $readonly, [ 'value' => $notice, 'id' => 'enabled' ] )
+						[ ...$readonly, 'value' => $notice, 'id' => 'enabled' ]
 					)
 				)
 			);
 			// Preferred / Priority
 			$htmlOut .= Html::rawElement( 'tr', [],
 				Html::rawElement( 'td', [],
-					Xml::label( $this->msg( 'centralnotice-preferred' )->text(), 'priority' )
+					Html::label( $this->msg( 'centralnotice-preferred' )->text(), 'priority' )
 				) .
 				Html::rawElement( 'td', [],
-					$this::prioritySelector( false, $this->editable, $priority )
+					$this->prioritySelector( false, $this->editable, $priority )
 				)
 			);
 			// Throttle impressions
 			$htmlOut .= Html::rawElement( 'tr', [],
 				Html::rawElement( 'td', [],
-					Xml::label( $this->msg( 'centralnotice-throttle' )->text(), 'throttle-enabled' )
+					Html::label( $this->msg( 'centralnotice-throttle' )->text(), 'throttle-enabled' )
 				) .
 				Html::rawElement( 'td', [],
 					Html::check( 'throttle-enabled', $isThrottled,
-						array_replace( $readonly, [ 'value' => $notice, 'id' => 'throttle-enabled' ] )
+						[ ...$readonly, 'value' => $notice, 'id' => 'throttle-enabled' ]
 					)
 				)
 			);
 			// Throttle value
 			$htmlOut .= Html::openElement( 'tr', [ 'class' => 'cn-throttle-amount' ] );
 			$htmlOut .= Html::rawElement( 'td', [],
-				Xml::label( $this->msg( 'centralnotice-throttle-amount' )->text(), 'throttle' ) );
+				Html::label( $this->msg( 'centralnotice-throttle-amount' )->text(), 'throttle' ) );
 			$throttleLabel = $this->msg( 'percent' )->numParams( $throttle )->text();
 			if ( $this->editable ) {
 				$htmlOut .= Html::rawElement( 'td', [],
@@ -1214,11 +1254,11 @@ class CentralNotice extends UnlistedSpecialPage {
 			// Locked
 			$htmlOut .= Html::rawElement( 'tr', [],
 				Html::rawElement( 'td', [],
-					Xml::label( $this->msg( 'centralnotice-locked' )->text(), 'locked' )
+					Html::label( $this->msg( 'centralnotice-locked' )->text(), 'locked' )
 				) .
 				Html::rawElement( 'td', [],
 					Html::check( 'locked', $isLocked,
-						array_replace( $readonly, [ 'value' => $notice, 'id' => 'locked' ] )
+						[ ...$readonly, 'value' => $notice, 'id' => 'locked' ]
 					)
 				)
 			);
@@ -1226,7 +1266,7 @@ class CentralNotice extends UnlistedSpecialPage {
 				// Locked
 				$htmlOut .= Html::rawElement( 'tr', [],
 					Html::rawElement( 'td', [],
-						Xml::label( $this->msg( 'centralnotice-archive-campaign' )->text(), 'archive' )
+						Html::label( $this->msg( 'centralnotice-archive-campaign' )->text(), 'archive' )
 					) .
 					Html::rawElement( 'td', [],
 						Html::check( 'archive', $isArchived, [ 'value' => $notice, 'id' => 'archive' ] )
@@ -1238,10 +1278,10 @@ class CentralNotice extends UnlistedSpecialPage {
 			// Create controls for campaign-associated mixins (if there are any)
 			$centralNoticeCampaignMixins = $config->get( 'CentralNoticeCampaignMixins' );
 			if ( $centralNoticeCampaignMixins ) {
-				$mixinsThisNotice = Campaign::getCampaignMixins( $notice );
+				$mixinsThisNotice = Campaign::getCampaignMixins( $notice, false, $wasPosted );
 
-				$htmlOut .= Xml::fieldset(
-					$this->msg( 'centralnotice-notice-mixins-fieldset' )->text() );
+				$htmlOut .= Html::openElement( 'fieldset' ) . "\n" .
+					Html::element( 'legend', [], $this->msg( 'centralnotice-notice-mixins-fieldset' )->text() ) . "\n";
 
 				foreach ( $centralNoticeCampaignMixins as $mixinName => $mixinDef ) {
 					$mixinControlName = self::makeNoticeMixinControlName( $mixinName );
@@ -1250,7 +1290,8 @@ class CentralNotice extends UnlistedSpecialPage {
 						'value' => $notice,
 						'class' => 'noticeMixinCheck',
 						'id' => $mixinControlName,
-						'data-mixin-name' => $mixinName
+						'data-mixin-name' => $mixinName,
+						...$readonly,
 					];
 
 					if ( isset( $mixinsThisNotice[$mixinName] ) ) {
@@ -1276,10 +1317,10 @@ class CentralNotice extends UnlistedSpecialPage {
 					$htmlOut .= Html::check(
 						$mixinControlName,
 						$checked,
-						array_replace( $readonly, $attribs )
+						$attribs
 					);
 
-					$htmlOut .= Xml::label(
+					$htmlOut .= Html::label(
 						$this->msg( $mixinDef['nameMsg'] )->text(),
 						$mixinControlName,
 						[ 'for' => $mixinControlName ]
@@ -1300,14 +1341,14 @@ class CentralNotice extends UnlistedSpecialPage {
 			}
 
 			return $htmlOut;
-		} else {
-			return '';
 		}
+
+		return '';
 	}
 
 	private static function makeNoticeMixinControlName(
-		$mixinName, $mixinParam = null
-	) {
+		string $mixinName, ?string $mixinParam = null
+	): string {
 		return 'notice-mixin-' . $mixinName .
 			( $mixinParam ? '-' . $mixinParam : '' );
 	}
@@ -1321,7 +1362,7 @@ class CentralNotice extends UnlistedSpecialPage {
 	 * @return string HTML
 	 */
 	private function assignedTemplatesForm( $notice ) {
-		$dbr = CNDatabase::getDb();
+		$dbr = CNDatabase::getReplicaDb();
 		$res = $dbr->newSelectQueryBuilder()
 			// Aliases are needed to avoid problems with table prefixes
 			->select( [
@@ -1344,12 +1385,6 @@ class CentralNotice extends UnlistedSpecialPage {
 		// No banners found
 		if ( $res->numRows() < 1 ) {
 			return '';
-		}
-
-		if ( $this->editable ) {
-			$readonly = [];
-		} else {
-			$readonly = [ 'disabled' => 'disabled' ];
 		}
 
 		$weights = [];
@@ -1379,23 +1414,22 @@ class CentralNotice extends UnlistedSpecialPage {
 			$banners
 		);
 
-		$htmlOut .= Xml::fieldset(
-			$this->msg( 'centralnotice-assigned-templates' )->text(),
-			false,
-			[
+		$readonly = [ 'disabled' => !$this->editable ];
+
+		$htmlOut .= Html::openElement( 'fieldset', [
 				'data-assigned-banners' => json_encode( $bannersForJS ),
 				'id' => 'centralnotice-assigned-banners'
-			]
-		);
+			] ) . "\n" .
+			Html::element( 'legend', [], $this->msg( 'centralnotice-assigned-templates' )->text() ) . "\n";
 
 		// Equal weight banners
 		$htmlOut .= Html::rawElement( 'tr', [],
 			Html::rawElement( 'td', [],
-				Xml::label( $this->msg( 'centralnotice-balanced' )->text(), 'balanced' )
+				Html::label( $this->msg( 'centralnotice-balanced' )->text(), 'balanced' )
 			) .
 			Html::rawElement( 'td', [],
 				Html::check( 'balanced', $isBalanced,
-					array_replace( $readonly, [ 'value' => $notice, 'id' => 'balanced' ] )
+					[ ...$readonly, 'value' => $notice, 'id' => 'balanced' ]
 				)
 			)
 		);
@@ -1479,13 +1513,22 @@ class CentralNotice extends UnlistedSpecialPage {
 		return $htmlOut;
 	}
 
+	/**
+	 * @param string $name
+	 * @param int|null $selected
+	 * @return string
+	 */
 	private function weightDropdown( $name, $selected ) {
 		$selected = intval( $selected );
 
 		if ( $this->editable ) {
 			$html = Html::openElement( 'select', [ 'name' => $name ] );
 			foreach ( range( 5, 100, 5 ) as $value ) {
-				$html .= Xml::option( $value, (string)$value, $value === $selected );
+				$html .= Html::element(
+					'option',
+					[ 'value' => (string)$value, 'selected' => $value === $selected ],
+					(string)$value
+				);
 			}
 			$html .= Html::closeElement( 'select' );
 			return $html;
@@ -1494,15 +1537,19 @@ class CentralNotice extends UnlistedSpecialPage {
 		}
 	}
 
+	/**
+	 * @param string $name
+	 * @param int|null $selected
+	 * @param int $numberCampaignBuckets
+	 * @param string $bannerName
+	 * @return string
+	 */
 	private function bucketDropdown( $name, $selected, $numberCampaignBuckets, $bannerName ) {
-		$bucketLabel = static function ( $val ) {
-			return chr( $val + ord( 'A' ) );
-		};
+		$bucketLabel = static fn ( int $val ) => chr( ord( 'A' ) + $val );
 
 		if ( $this->editable ) {
-			if ( $selected === null ) {
-				$selected = 0; // default to bucket 'A'
-			}
+			// Default to bucket 'A'
+			$selected ??= 0;
 			$selected %= $numberCampaignBuckets;
 
 			// bucketSelector class is for all bucket selectors (for assigned or
@@ -1514,12 +1561,14 @@ class CentralNotice extends UnlistedSpecialPage {
 			] );
 
 			foreach ( range( 0, $this->getConfig()->get( 'NoticeNumberOfBuckets' ) - 1 ) as $value ) {
-				$attribs = [];
-				if ( $value >= $numberCampaignBuckets ) {
-					$attribs['disabled'] = 'disabled';
-				}
-				$html .= Xml::option(
-					$bucketLabel( $value ), $value, $value === $selected, $attribs
+				$html .= Html::element(
+					'option',
+					[
+						'value' => $value,
+						'selected' => $value === $selected,
+						'disabled' => $value >= $numberCampaignBuckets,
+					],
+					$bucketLabel( $value )
 				);
 			}
 			$html .= Html::closeElement( 'select' );
@@ -1532,16 +1581,23 @@ class CentralNotice extends UnlistedSpecialPage {
 		}
 	}
 
+	/**
+	 * @param int $numBuckets
+	 * @param int|null $selected
+	 * @return string
+	 */
 	private function numBucketsDropdown( $numBuckets, $selected ) {
-		if ( $selected === null ) {
-			$selected = 1;
-		}
+		$selected ??= 1;
 
 		if ( $this->editable ) {
 			$html = Html::openElement( 'select', [ 'name' => 'buckets', 'id' => 'buckets' ] );
 			foreach ( range( 0, intval( log( $numBuckets, 2 ) ) ) as $value ) {
 				$value = pow( 2, $value );
-				$html .= Xml::option( (string)$value, (string)$value, $value === $selected );
+				$html .= Html::element(
+					'option',
+					[ 'value' => (string)$value, 'selected' => $value === $selected ],
+					(string)$value
+				);
 			}
 			$html .= Html::closeElement( 'select' );
 			return $html;
@@ -1561,7 +1617,8 @@ class CentralNotice extends UnlistedSpecialPage {
 		$pager = new CentralNoticePager( $this, $searchTerms );
 
 		// Build HTML
-		$htmlOut = Xml::fieldset( $this->msg( 'centralnotice-available-templates' )->text() );
+		$htmlOut = Html::openElement( 'fieldset' ) . "\n" .
+			Html::element( 'legend', [], $this->msg( 'centralnotice-available-templates' )->text() ) . "\n";
 
 		// Banner search box
 		$htmlOut .= Html::openElement( 'fieldset', [ 'id' => 'cn-template-searchbox' ] );
@@ -1624,25 +1681,23 @@ class CentralNotice extends UnlistedSpecialPage {
 
 		$options = "\n";
 		foreach ( $languages as $code => $name ) {
-			$options .= Xml::option(
-				$this->msg( 'centralnotice-language-listing', $code, $name )->text(),
-				$code,
-				in_array( $code, $selected )
+			$options .= Html::element(
+				'option',
+				[ 'value' => $code, 'selected' => in_array( $code, $selected ) ],
+				$this->msg( 'centralnotice-language-listing', $code, $name )->text()
 			) . "\n";
 		}
 
-		$properties = [
-			'multiple' => 'multiple',
+		$attribs = [
+			'multiple' => true,
 			'id' => 'project_languages',
 			'name' => 'project_languages[]',
 			'class' => 'cn-multiselect',
-			'autocomplete' => 'off'
+			'autocomplete' => 'off',
+			'disabled' => !$this->editable,
 		];
-		if ( !$this->editable ) {
-			$properties['disabled'] = 'disabled';
-		}
 
-		return Html::rawElement( 'select', $properties, $options );
+		return Html::rawElement( 'select', $attribs, $options );
 	}
 
 	/**
@@ -1655,27 +1710,30 @@ class CentralNotice extends UnlistedSpecialPage {
 	private function projectMultiSelector( $selected = [] ) {
 		$options = "\n";
 		foreach ( $this->getConfig()->get( 'NoticeProjects' ) as $project ) {
-			$options .= Xml::option(
-				$project,
-				$project,
-				in_array( $project, $selected )
+			$options .= Html::element(
+				'option',
+				[ 'value' => $project, 'selected' => in_array( $project, $selected ) ],
+				$project
 			) . "\n";
 		}
 
-		$properties = [
-			'multiple' => 'multiple',
+		$attribs = [
+			'multiple' => true,
 			'id' => 'projects',
 			'name' => 'projects[]',
 			'class' => 'cn-multiselect',
-			'autocomplete' => 'off'
+			'autocomplete' => 'off',
+			'disabled' => !$this->editable,
 		];
-		if ( !$this->editable ) {
-			$properties['disabled'] = 'disabled';
-		}
 
-		return Html::rawElement( 'select', $properties, $options );
+		return Html::rawElement( 'select', $attribs, $options );
 	}
 
+	/**
+	 * @param string $text
+	 * @param string[] $values
+	 * @return string
+	 */
 	public static function dropdownList( $text, $values ) {
 		$dropdown = "*{$text}\n";
 		foreach ( $values as $value ) {
@@ -1708,20 +1766,26 @@ class CentralNotice extends UnlistedSpecialPage {
 			);
 	}
 
-	private function getSummaryFromRequest( WebRequest $request ) {
+	private function getSummaryFromRequest( WebRequest $request ): string {
 		return static::truncateSummaryField( $request->getVal( 'changeSummary' ) );
 	}
 
+	/**
+	 * @param int $begin
+	 * @param int $end
+	 * @return string[]
+	 */
 	private function paddedRange( $begin, $end ) {
 		$unpaddedRange = range( $begin, $end );
 		$paddedRange = [];
 		foreach ( $unpaddedRange as $number ) {
-			$paddedRange[] = sprintf( "%02d", $number ); // pad number with 0 if needed
+			// pad number with 0 if needed
+			$paddedRange[] = sprintf( "%02d", $number );
 		}
 		return $paddedRange;
 	}
 
-	private function showError( $message ) {
+	private function showError( string $message ) {
 		$this->getOutput()->wrapWikiMsg( "<div class='cn-error'>\n$1\n</div>", $message );
 		$this->centralNoticeError = true;
 	}
@@ -1754,6 +1818,9 @@ class CentralNotice extends UnlistedSpecialPage {
 						'opened' => $isSelected,
 						'selected' => $isSelected
 					];
+					if ( !$this->editable ) {
+						$data['disabled'] = true;
+					}
 					$regions .= Html::element(
 						'li',
 						[
@@ -1776,6 +1843,9 @@ class CentralNotice extends UnlistedSpecialPage {
 				'opened' => $isSelected,
 				'selected' => $isSelected
 			];
+			if ( !$this->editable ) {
+				$data['disabled'] = true;
+			}
 
 			$countryNameAndCode = $this->msg(
 				'centralnotice-location-name-and-code',
@@ -1838,18 +1908,18 @@ class CentralNotice extends UnlistedSpecialPage {
 			)
 		);
 
-		$hiddenInputs = Xml::input(
+		$hiddenInputs = Html::input(
 			'geo_countries',
-			false,
 			implode( ',', $selectedCountries ),
-			[ 'type' => 'hidden', 'id' => 'geo_countries_value' ]
+			'hidden',
+			[ 'id' => 'geo_countries_value' ]
 		);
 
-		$hiddenInputs .= Xml::input(
+		$hiddenInputs .= Html::input(
 			'geo_regions',
-			false,
 			implode( ',', $selectedRegions ),
-			[ 'type' => 'hidden', 'id' => 'geo_regions_value' ]
+			'hidden',
+			[ 'id' => 'geo_regions_value' ]
 		);
 
 		return Html::rawElement(
@@ -1890,9 +1960,10 @@ class CentralNotice extends UnlistedSpecialPage {
 		// Keys of (default value of $wgNoticeTabifyPages) are the names of the special
 		// pages of the admin interface without the initial 'Special:'.
 		// TODO Make $wgNoticeTabifyPages a constant rather than a config variable.
-		return array_map( static function ( $name ) {
-			return 'Special:' . $name;
-		}, array_keys( $this->getConfig()->get( 'NoticeTabifyPages' ) ) );
+		return array_map(
+			static fn ( $name ) => "Special:$name",
+			array_keys( $this->getConfig()->get( 'NoticeTabifyPages' ) )
+		);
 	}
 
 	/**
@@ -1915,12 +1986,7 @@ class CentralNotice extends UnlistedSpecialPage {
 	 * @return mixed Stored variable or default
 	 */
 	public function getCNSessionVar( $variable, $default = null ) {
-		$val = $this->getRequest()->getSessionData( "centralnotice-$variable" );
-		if ( $val === null ) {
-			$val = $default;
-		}
-
-		return $val;
+		return $this->getRequest()->getSessionData( "centralnotice-$variable" ) ?? $default;
 	}
 
 	/**
@@ -1934,10 +2000,19 @@ class CentralNotice extends UnlistedSpecialPage {
 		$this->getRequest()->setSessionData( "centralnotice-{$variable}", $value );
 	}
 
+	/**
+	 * @param string[] $projects
+	 * @return string
+	 */
 	public function listProjects( $projects ) {
 		return $this->makeShortList( $this->getConfig()->get( 'NoticeProjects' ), $projects );
 	}
 
+	/**
+	 * @param string[] $countries
+	 * @param string[] $regions
+	 * @return string
+	 */
 	public function listCountriesRegions( array $countries, array $regions ) {
 		$allCountries = array_keys( GeoTarget::getCountriesList() );
 		$list = $this->makeShortList( $allCountries, $countries );
@@ -1961,12 +2036,21 @@ class CentralNotice extends UnlistedSpecialPage {
 		return $list;
 	}
 
+	/**
+	 * @param string[] $languages
+	 * @return string
+	 */
 	public function listLanguages( $languages ) {
 		$all = array_keys( MediaWikiServices::getInstance()->getLanguageNameUtils()
 			->getLanguageNames( 'en' ) );
 		return $this->makeShortList( $all, $languages );
 	}
 
+	/**
+	 * @param string[] $all
+	 * @param string[] $list
+	 * @return string
+	 */
 	private function makeShortList( $all, $list ) {
 		// TODO ellipsis and js/css expansion
 		if ( count( $list ) == count( $all ) ) {
@@ -1999,12 +2083,13 @@ class CentralNotice extends UnlistedSpecialPage {
 		return 'wiki';
 	}
 
+	/** @inheritDoc */
 	public function outputHeader( $summaryMsg = '' ) {
 		// Allow users to add a custom nav bar (T138284)
 		$navBar = $this->msg( 'centralnotice-navbar' )->inContentLanguage();
 		if ( !$navBar->isDisabled() ) {
 			$this->getOutput()->addHTML( $navBar->parseAsBlock() );
 		}
-		return parent::outputHeader( $summaryMsg );
+		parent::outputHeader( $summaryMsg );
 	}
 }

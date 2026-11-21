@@ -124,13 +124,6 @@ $wgConf->settings += [
 	'wgCentralBannerRecorder' => [
 		'default' => 'https://meta.cloudwiki.us/wiki/Special:RecordImpression',
 	],
-	'wgCentralDBname' => [
-		'default' => 'metawiki',
-		'beta' => 'metawikibeta',
-	],
-	'wgCentralHost' => [
-		'default' => 'https://meta.cloudwiki.us',
-	],
 	'wgNoticeProjects' => [
 		'default' => [
 			'all',
@@ -1128,6 +1121,9 @@ $wgConf->settings += [
                         'virtual-centralauth' => [
                                 'db' => 'centralauth',
                         ],
+                        'virtual-centralnotice' => [
+                                'db' => 'metawiki',
+                        ],
                         'virtual-globalblocking' => [
                                 'db' => 'centralauth',
                         ],
@@ -1154,6 +1150,11 @@ $wgConf->settings += [
 			],
                         'virtual-requestssl' => [
                                 'db' => 'metawiki',
+                        ],
+                ],
+                '+beta' => [
+                        'virtual-centralnotice' => [
+                                'db' => 'metawikibeta',
                         ],
                 ],
 	],

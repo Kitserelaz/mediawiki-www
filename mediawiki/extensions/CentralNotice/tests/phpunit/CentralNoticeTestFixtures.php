@@ -8,21 +8,15 @@ class CentralNoticeTestFixtures {
 
 	/** @var array */
 	public $spec = [];
-	/** @var User */
-	private $user;
-	/** @var array */
-	private $addedDeviceIds = [];
-	/** @var array|null */
-	private $knownDevices = null;
 
 	/** @var array For legacy test that don't use fixture data: use exactly the api defaults where available */
 	private static $defaultCampaign;
 	/** @var array */
 	private static $defaultBanner;
 
-	public function __construct( $user ) {
-		$this->user = $user;
-
+	public function __construct(
+		private readonly User $user,
+	) {
 		static::$defaultCampaign = [
 			'enabled' => 1,
 			// inclusive comparison is used, so this does not cause a race condition.
@@ -46,24 +40,20 @@ class CentralNoticeTestFixtures {
 		];
 	}
 
-	public static function getDefaultLanguage() {
+	public static function getDefaultLanguage(): string {
 		return 'en';
 	}
 
-	public static function getDefaultProject() {
+	public static function getDefaultProject(): string {
 		return 'wikipedia';
 	}
 
-	public static function getDefaultCountry() {
+	public static function getDefaultCountry(): string {
 		return 'XX';
 	}
 
-	public static function getDefaultRegion() {
+	public static function getDefaultRegion(): string {
 		return 'XX';
-	}
-
-	public static function getDefaultDevice() {
-		return 'desktop';
 	}
 
 	/**
@@ -211,14 +201,14 @@ class CentralNoticeTestFixtures {
 					$campaign['regions'] = [];
 				} else {
 					throw new LogicException( "Campaign is not geotargetted but "
-											  . "'regions' property is set." );
+					. "'regions' property is set." );
 				}
 			}
 		}
 	}
 
 	/**
-	 * Add dummy banner properties throughout a test case setup specification.
+	 * Add a dummy banner properties throughout a test case setup specification.
 	 *
 	 * @param array &$testCaseSetup A data structure with the setup section of a
 	 *  test case specification
@@ -234,9 +224,9 @@ class CentralNoticeTestFixtures {
 	/**
 	 * Make a timestamp offset from the current time by a number of days.
 	 *
-	 * @param MW_TS $now Timestamp of the current time
-	 * @param unknown $offsetInDays
-	 * @return MW_TS
+	 * @param int $now Timestamp of the current time
+	 * @param int $offsetInDays
+	 * @return int
 	 */
 	private static function makeTimestamp( $now, $offsetInDays ) {
 		return $now + ( 86400 * $offsetInDays );
@@ -253,11 +243,17 @@ class CentralNoticeTestFixtures {
 		// It is expected that when a test case is set up via fixture data,
 		// this global will already have been set via
 		// setupTestCaseFromFixtureData(). Legacy (non-fixture data) tests don't
-		// use this (but may be dependant on non-test config).
+		// use this (but may be dependent on non-test config).
 		global $wgNoticeNumberOfBuckets;
 
-		// Needed due to hardcoded default desktop device hack in Banner
-		$this->ensureDesktopDevice();
+		// PHPUnit gives us an empty database clone for each test case,
+		// which means the default values added by maintenance/update.php are missing.
+		//
+		// Relied upon by:
+		// - Banner::getHistoricalBanner (desktop)
+		// - Campaign::getHistoricalCampaigns (desktop)
+		// - 'devices' in AllocationsFixtures.json (desktop, iphone)
+		CNDatabasePatcher::populateKnownDevices( CNDatabase::getPrimaryDb() );
 
 		foreach ( $testCaseSetup['campaigns'] as $campaign ) {
 			$campaign['id'] = Campaign::addCampaign(
@@ -272,7 +268,8 @@ class CentralNoticeTestFixtures {
 				$campaign['throttle'],
 				$campaign['preferred'],
 				$this->user,
-				null // no campaign type assigned
+				// no campaign type assigned
+				null
 			);
 
 			// Update notice end date only if that property was sent in.
@@ -283,7 +280,7 @@ class CentralNoticeTestFixtures {
 					$campaign['startTs'], $campaign['endTs'] );
 			}
 
-			// bucket_count and archived  are also only in test
+			// bucket_count and archived are also only in test
 			// fixture data, not legacy tests.
 			if ( isset( $campaign['bucket_count'] ) ) {
 				$bucket_count = $campaign['bucket_count'];
@@ -345,7 +342,6 @@ class CentralNoticeTestFixtures {
 
 				if ( isset( $bannerSpec['devices'] ) ) {
 					$devices = $bannerSpec['devices'];
-					$this->ensureDevices( $devices );
 					$bannerObj->setDevices( $devices );
 					$bannerObj->save( $this->user );
 				}
@@ -365,16 +361,6 @@ class CentralNoticeTestFixtures {
 
 				Campaign::removeCampaign( $campaign['name'], $this->user );
 			}
-		}
-
-		// Remove any devices we added
-		if ( !empty( $this->addedDeviceIds ) ) {
-			$dbw = CNDatabase::getDb( DB_PRIMARY );
-			$dbw->newDeleteQueryBuilder()
-				->deleteFrom( 'cn_known_devices' )
-				->where( [ 'dev_id' => $this->addedDeviceIds ] )
-				->caller( __METHOD__ )
-				->execute();
 		}
 	}
 
@@ -402,7 +388,6 @@ class CentralNoticeTestFixtures {
 	 * structure, numerically indexed arrays are sorted by value.
 	 * (If $a is a numerically indexed array, sort it by value. Traverse the
 	 * array recursively and do the same for each value.)
-	 * @param array &$a
 	 */
 	private function deepMultisort( array &$a ) {
 		array_multisort( $a );
@@ -411,43 +396,6 @@ class CentralNoticeTestFixtures {
 			if ( is_array( $v ) ) {
 				$this->deepMultisort( $v );
 			}
-		}
-	}
-
-	/**
-	 * Ensure there is a known device called "desktop". This is a workaround
-	 * for a hack (or maybe a hack for a workaround?) in Banner.
-	 */
-	private function ensureDesktopDevice() {
-		$this->ensureDevices( [ 'desktop' ] );
-	}
-
-	/**
-	 * Ensure that among the known devices in the database are all those named
-	 * in $deviceNames.
-	 *
-	 * @param string[] $deviceNames
-	 */
-	private function ensureDevices( $deviceNames ) {
-		if ( !$this->knownDevices ) {
-			$this->knownDevices = CNDeviceTarget::getAvailableDevices( true );
-		}
-
-		$devicesChanged = false;
-
-		// Add any devices not in the database
-		foreach ( $deviceNames as $deviceName ) {
-			if ( !isset( $this->knownDevices[$deviceName] ) ) {
-				// Remember the IDs for teardown
-				$this->addedDeviceIds[] =
-					CNDeviceTarget::addDeviceTarget( $deviceName, $deviceName );
-				$devicesChanged = true;
-			}
-		}
-
-		// If necessary, update in-memory list of available devices
-		if ( $devicesChanged ) {
-			$this->knownDevices = CNDeviceTarget::getAvailableDevices( true );
 		}
 	}
 
@@ -478,8 +426,7 @@ class CentralNoticeTestFixtures {
 	 */
 	public static function allocationsData() {
 		$json = self::allocationsDataAsJson();
-		$data = FormatJson::decode( $json, true );
-		return $data;
+		return FormatJson::decode( $json, true );
 	}
 
 	/**

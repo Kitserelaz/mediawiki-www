@@ -2,37 +2,23 @@
 
 use MediaWiki\Deferred\CdnCacheUpdate;
 use MediaWiki\Deferred\DeferrableUpdate;
-use MediaWiki\Registration\ExtensionRegistry;
 
 class CdnCacheUpdateBannerLoader implements DeferrableUpdate {
 
 	/**
-	 * @var string
-	 */
-	private $langCode;
-
-	/**
-	 * @var Banner
-	 */
-	private $banner;
-
-	/**
 	 * Create a DeferrableUpdate to purge CDN content for a given banner and language
-	 *
-	 * @param string $langCode Language code
-	 * @param Banner $banner
 	 */
-	public function __construct( $langCode, Banner $banner ) {
-		$this->langCode = $langCode;
-		$this->banner = $banner;
+	public function __construct(
+		private readonly string $langCode,
+		private readonly Banner $banner,
+	) {
 	}
 
 	/**
 	 * Purges the banner loader URls for the language and banner passed to the constructor.
 	 */
 	public function doUpdate() {
-		global $wgCentralSelectedBannerDispatcher,
-		$wgCentralSelectedMobileBannerDispatcher;
+		global $wgCentralSelectedBannerDispatcher;
 
 		$paramPerms = [];
 		$bannerName = $this->banner->getName();
@@ -73,12 +59,6 @@ class CdnCacheUpdateBannerLoader implements DeferrableUpdate {
 			];
 		}
 
-		// Determine if we should add mobile URLs, too
-		$addMobile = ( ExtensionRegistry::getInstance()->isLoaded( 'MobileFrontend' ) &&
-			( $wgCentralSelectedBannerDispatcher !==
-				$wgCentralSelectedMobileBannerDispatcher )
-			);
-
 		// Create the full URLs
 		$urlsToPurge = [];
 		foreach ( $paramPerms as $params ) {
@@ -86,13 +66,6 @@ class CdnCacheUpdateBannerLoader implements DeferrableUpdate {
 				$wgCentralSelectedBannerDispatcher,
 				$params
 			);
-
-			if ( $addMobile ) {
-				$urlsToPurge[] = wfAppendQuery(
-					$wgCentralSelectedMobileBannerDispatcher,
-					$params
-				);
-			}
 		}
 
 		( new CdnCacheUpdate( $urlsToPurge ) )->doUpdate();

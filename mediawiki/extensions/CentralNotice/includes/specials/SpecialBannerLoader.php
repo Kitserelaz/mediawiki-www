@@ -52,6 +52,7 @@ class SpecialBannerLoader extends UnlistedSpecialPage {
 		parent::__construct( "BannerLoader" );
 	}
 
+	/** @inheritDoc */
 	public function execute( $par ) {
 		$this->getOutput()->disable();
 
@@ -59,7 +60,7 @@ class SpecialBannerLoader extends UnlistedSpecialPage {
 			$this->getParamsAndSetState();
 			$out = $this->getJsNotice();
 
-		} catch ( EmptyBannerException $e ) {
+		} catch ( EmptyBannerException ) {
 			$out = "mw.centralNotice.handleBannerLoaderError( 'Empty banner' );";
 
 			// Force reduced cache time
@@ -96,6 +97,10 @@ class SpecialBannerLoader extends UnlistedSpecialPage {
 		echo $out;
 	}
 
+	/**
+	 * @throws MissingRequiredParamsException
+	 * @throws BannerPreviewPermissionsException
+	 */
 	public function getParamsAndSetState() {
 		$request = $this->getRequest();
 

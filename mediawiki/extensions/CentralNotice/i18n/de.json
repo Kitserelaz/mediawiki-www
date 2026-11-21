@@ -5,6 +5,7 @@
 			"Geitost",
 			"HvW",
 			"Inkowik",
+			"Johannnes89",
 			"Kghbln",
 			"Killarnee",
 			"McDutchie",
@@ -14,8 +15,7 @@
 			"Raimond Spekking",
 			"Robby",
 			"The Evil IP address",
-			"Umherirrender",
-			"Johannnes89"
+			"Umherirrender"
 		]
 	},
 	"centralnotice": "Verwaltung zentraler Meldungen",
@@ -37,7 +37,6 @@
 	"centralnotice-live-preview": "Vorschau der letzten gesicherten Version",
 	"centralnotice-add-new": "Füge eine neue zentrale Meldung hinzu",
 	"centralnotice-remove": "Entfernen",
-	"centralnotice-translate-heading": "Übersetzung von „$1“",
 	"centralnotice-manage": "Zentrale Meldungen verwalten",
 	"centralnotice-manage-templates": "Vorlagen verwalten",
 	"centralnotice-add": "Hinzufügen",
@@ -94,7 +93,6 @@
 	"centralnotice-no-templates-assigned": "Es sind keine Vorlagen an Meldungen zugewiesen.\nFüge eine hinzu.",
 	"centralnotice-available-templates": "Verfügbare Vorlagen",
 	"centralnotice-template-already-exists": "Vorlage ist bereits mit der Meldung verbunden.\nSie wird daher nicht hinzugefügt.",
-	"centralnotice-change-lang": "Übersetzungssprache ändern",
 	"centralnotice-weights": "Gewicht",
 	"centralnotice-notice-is-locked": "Meldung ist gesperrt.\nSie wird daher nicht entfernt.",
 	"centralnotice-overlap": "Die Meldung überschneidet sich mit dem Zeitraum einer anderen Meldung.\nSie wird daher nicht hinzugefügt.",
@@ -222,7 +220,7 @@
 	"centralnotice-devicetype-android": "Android OS",
 	"centralnotice-devicetype-ipad": "Alle Geräte, die als iPads, aber nicht als iPhones identifiziert wurden.",
 	"centralnotice-devicetype-iphone": "Alle iPhone-Versionen",
-	"centralnotice-devicetype-unknown": "Geräte auf der mobilen Website, die keine iPhones, iPads oder Android-Geräte sind. – ([https://github.com/wikimedia/mediawiki-extensions-CentralNotice/blob/master/modules/ext.centralNotice.bannerController/mobile/device.js Auswahllogik])",
+	"centralnotice-devicetype-unknown": "Geräte auf der mobilen Website, die keine iPhones, iPads oder Android-Geräte sind. – ([https://gerrit.wikimedia.org/g/mediawiki/extensions/CentralNotice/+/master/resources/ext.centralNotice.display/state.js#119 Auswahllogik])",
 	"centralnotice-all": "Alle",
 	"centralnotice-generic-error": "Du hast nicht die korrekte Berechtigung, die angeforderte Aktion auszuführen, oder die Aktion selber war ungültig.",
 	"centralnotice-banner-name-error": "Es wurde ein ungültiger Vorlagenname angegeben. Gültige Namen enthalten nur alphanumerische Zeichen und Unterstriche.",
@@ -263,7 +261,7 @@
 	"centralnotice-end-time": "Endzeitpunkt (UTC)",
 	"centralnotice-banner-not-found-title": "Vorlage nicht gefunden",
 	"centralnotice-banner-not-found-contents": "Es gibt keine Vorlage mit diesem genauen Namen.",
-	"centralnotice-csp-violation-alert": "Verletzung der Content Security Policy entdeckt! Es wurde versucht, etwas von $1 zu laden.",
+	"centralnotice-csp-violation-alert": "Verletzung der Content Security Policy entdeckt! Das Laden von Inhalten aus anderen Quellen führt zu Datenlecks bei den Leserdaten. Bitte zeige eine Vorschau von Bannern ohne Helferlein oder Addons von Drittanbietern an. Verletzende URL: $1.",
 	"hidebanners": "Vorlagen ausblenden",
 	"centralnotice-specialhidebanners-p3p": "Einige Browser erfordern eine P3P-kompakte Richtlinie, um Cookies in bestimmten Situationen zu setzen. Es ist jedoch derzeit keine kompakte Richtlinie verfügbar. Bitte lies die menschenlesbare Datenschutzrichtlinie der Website.",
 	"centralnotice-banner-history-logger": "Vorlagenverlaufsprotokollierung",
@@ -274,8 +272,6 @@
 	"centralnotice-banner-history-logger-max-entry-age-help": "Logbucheinträge, die älter als dies sind, werden ablaufen und nicht an den Server zurückgesendet.",
 	"centralnotice-banner-history-logger-max-entries": "Maximale Anzahl der Einträge, die im Logbuch behalten werden sollen",
 	"centralnotice-banner-history-logger-max-entries-help": "Falls mehr Ereignisse aufgezeichnet werden, bevor das Logbuch an den Server gesandt wird, verschwinden die ältesten Einträge.",
-	"centralnotice-banner-history-logger-wait-log-no-send-beacon": "Zeitüberschreitung für das Senden des Logbuchs ohne sendBeacon (in Millisekunden)",
-	"centralnotice-banner-history-logger-wait-log-no-send-beacon-help": "Um das Logbuch sofort vor dem Navigieren auf eine andere Seite zu senden, haben wir in einigen Browsern eine Maximalzeit vor dem Aufgeben des Logbuchsendens festgelegt.",
 	"centralnotice-legacy-support": "Veraltete Versteck- und Eindruckszählerunterstützung",
 	"centralnotice-legacy-support-help": "Einstellungen für die Kompatibilität mit älteren Vorlagen, die sich auf „Special:RecordImpression“ stützen oder JavaScript beinhalten und die Vorlage verstecken.",
 	"centralnotice-set-record-impression-sample-rate": "Samplerate für „Spezial:Zugriffe zählen“ festlegen",
@@ -348,5 +344,7 @@
 	"centralnotice-campaign-type-maintenance": "Wartung",
 	"centralnotice-campaign-type-photography": "Fotografie",
 	"centralnotice-campaign-type-special": "Spezial",
-	"centralnotice-user-prefs-intro": "Banner zeigen Ankündigungen an, die für die Wikimedia-Gemeinschaften und -Benutzer von Interesse sind.\n\nIm Folgenden findest du Optionen, mit denen du verwalten kannst, welche Arten von Ankündigungen du siehst. Bestimmte Plattform-Hinweise, wie z. B. solche, die sich auf die Wartung der Seite beziehen, und spezielle Hinweise, die für alle Benutzer als notwendig erachtet werden, werden immer angezeigt. Für weitere Informationen lies bitte die [[metawikimedia:Special:MyLanguage/CentralNotice|Dokumentation im Meta-Wiki]]."
+	"centralnotice-user-prefs-intro": "Banner zeigen Ankündigungen an, die für die Wikimedia-Gemeinschaften und -Benutzer von Interesse sind.\n\nIm Folgenden findest du Optionen zur Verwaltung der dir angezeigten Arten von Ankündigungen. Bestimmte Plattform-Hinweise, wie z. B. solche, die sich auf die Wartung der Seite beziehen, und spezielle Hinweise, die für alle Benutzer als notwendig erachtet werden, werden immer angezeigt. Für weitere Informationen lies bitte die [[metawikimedia:Special:MyLanguage/CentralNotice|Dokumentation im Meta-Wiki]].",
+	"namespaceinfo-description-ns866": "In [[mw:Special:MyLanguage/Extension:CentralNotice|CentralNotice]]-Bannern verwendete Nachrichten und deren Übersetzungen",
+	"namespaceinfo-description-ns867": "Diskussionsseiten für CentralNotice-Bannernachrichten"
 }

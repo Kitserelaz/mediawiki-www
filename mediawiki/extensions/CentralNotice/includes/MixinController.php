@@ -3,25 +3,28 @@
 use MediaWiki\Context\IContextSource;
 
 class MixinController {
-	/** @var array */
-	private $mixins;
 
 	/** @var array */
 	private $magicWords = [];
-	/** @var IContextSource */
-	private $uiContext;
 
-	public function __construct( IContextSource $uiContext, $mixins ) {
-		$this->uiContext = $uiContext;
-		$this->mixins = $mixins;
-
+	/**
+	 * @param IContextSource $uiContext
+	 * @param array<string,array> $mixins
+	 */
+	public function __construct(
+		private readonly IContextSource $uiContext,
+		private readonly array $mixins,
+	) {
 		$this->loadPhp();
 	}
 
-	public function getContext() {
+	public function getContext(): IContextSource {
 		return $this->uiContext;
 	}
 
+	/**
+	 * @return string[]
+	 */
 	public function getMagicWords() {
 		$words = array_keys( $this->magicWords );
 		sort( $words );
@@ -30,6 +33,8 @@ class MixinController {
 
 	/**
 	 * Initialize php modules.
+	 *
+	 * @throws MixinNotFoundException
 	 */
 	public function loadPhp() {
 		foreach ( $this->mixins as $name => $info ) {
@@ -49,7 +54,10 @@ class MixinController {
 		}
 	}
 
-	public function getPreloadJsSnippets() {
+	/**
+	 * @throws MixinNotFoundException
+	 */
+	public function getPreloadJsSnippets(): array {
 		$snippets = [];
 		foreach ( $this->mixins as $name => $info ) {
 			if ( !empty( $info['preloadJs'] ) ) {
@@ -64,7 +72,7 @@ class MixinController {
 		return $snippets;
 	}
 
-	public function getResourceLoaderModules() {
+	public function getResourceLoaderModules(): array {
 		$modules = [];
 		foreach ( $this->mixins as $name => $info ) {
 			if ( !empty( $info['resourceLoader'] ) ) {
@@ -74,15 +82,24 @@ class MixinController {
 		return $modules;
 	}
 
+	/**
+	 * @param string $word
+	 * @param callable $callback
+	 */
 	public function registerMagicWord( $word, $callback ) {
 		$this->magicWords[$word] = $callback;
 	}
 
+	/**
+	 * @param string $word
+	 * @param array $params
+	 * @return mixed
+	 */
 	public function renderMagicWord( $word, $params = [] ) {
 		if ( array_key_exists( $word, $this->magicWords ) ) {
 			$callback = $this->magicWords[$word];
 			if ( is_callable( $callback ) ) {
-				return call_user_func_array( $callback, $params );
+				return $callback( ...$params );
 			}
 		}
 	}

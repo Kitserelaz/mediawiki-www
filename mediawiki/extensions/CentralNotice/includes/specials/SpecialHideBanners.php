@@ -11,14 +11,21 @@ use MediaWiki\SpecialPage\UnlistedSpecialPage;
  * see fundrasing banners.
  */
 class SpecialHideBanners extends UnlistedSpecialPage {
+
+	// maximum length for 'reason' or 'category' in cookies
+	private const MAX_FIELD_LENGTH = 64;
+
 	// Cache this blank response for a day or so (60 * 60 * 24 s.)
 	private const CACHE_EXPIRY = 86400;
+	// Hard-coded upper limit of 10 years for the user-provided …&duration=… parameter
+	private const MAX_COOKIE_DURATION = 10 * 365 * 86400;
 	private const P3P_SUBPAGE = 'P3P';
 
 	public function __construct() {
 		parent::__construct( 'HideBanners' );
 	}
 
+	/** @inheritDoc */
 	public function execute( $par ) {
 		$config = $this->getConfig();
 		// Handle /P3P subpage with explanation of invalid P3P header
@@ -34,15 +41,15 @@ class SpecialHideBanners extends UnlistedSpecialPage {
 
 		// No duration parameter for a custom reason is not expected; we have a
 		// fallback value, but we log that this happened.
-		$duration = $this->getRequest()->getInt( 'duration', 0 );
-		if ( !$duration ) {
+		$duration = $this->getRequest()->getInt( 'duration' );
+		if ( $duration <= 0 || $duration > self::MAX_COOKIE_DURATION ) {
 			$noticeCookieDurations = $config->get( 'NoticeCookieDurations' );
 			if ( isset( $noticeCookieDurations[$reason] ) ) {
 				$duration = $noticeCookieDurations[$reason];
 			} else {
 				$duration = $config->get( 'CentralNoticeFallbackHideCookieDuration' );
-				wfLogWarning( 'Missing or 0 duration for hide cookie reason '
-					. $reason . '.' );
+				wfLogWarning( 'Missing or invalid duration for hide cookie reason "'
+					. $reason . '".' );
 			}
 		}
 
@@ -55,6 +62,8 @@ class SpecialHideBanners extends UnlistedSpecialPage {
 		wfResetOutputBuffers();
 
 		header( 'Content-Type: image/png' );
+		header( 'access-control-allow-origin: *' );
+
 		if ( !$this->getUser()->isRegistered() ) {
 			$expiry = self::CACHE_EXPIRY;
 			header( "Cache-Control: public, s-maxage={$expiry}, max-age=0" );
@@ -68,6 +77,8 @@ class SpecialHideBanners extends UnlistedSpecialPage {
 	 * @param string $reason
 	 */
 	private function setHideCookie( $category, $duration, $reason ) {
+		$category = mb_substr( $category, 0, self::MAX_FIELD_LENGTH );
+		$reason = mb_substr( $reason, 0, self::MAX_FIELD_LENGTH );
 		$created = time();
 		$exp = $created + $duration;
 		$value = [
@@ -84,11 +95,14 @@ class SpecialHideBanners extends UnlistedSpecialPage {
 		setcookie(
 			"centralnotice_hide_{$category}",
 			json_encode( $value ),
-			$exp,
-			'/',
-			$cookieDomain,
-			false,
-			false
+			[
+				'expires' => $exp,
+				'path' => '/',
+				'domain' => $cookieDomain,
+				'secure' => true,
+				'httponly' => false,
+				'samesite' => 'None',
+			]
 		);
 	}
 

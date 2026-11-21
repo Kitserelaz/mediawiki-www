@@ -14,6 +14,7 @@
 			"Lloffiwr",
 			"Metalhead64",
 			"Minh Nguyen",
+			"Msz2001",
 			"MuratTheTurkish",
 			"Nemo bis",
 			"Nike",
@@ -28,8 +29,7 @@
 			"The Evil IP address",
 			"Umherirrender",
 			"Verdy p",
-			"Yekrats",
-			"Msz2001"
+			"Yekrats"
 		]
 	},
 	"centralnotice": "{{doc-special|CentralNotice}}\n{{Identical|Central notice admin}}",
@@ -51,7 +51,6 @@
 	"centralnotice-live-preview": "Text for a live site preview/render of the most recent saved version current banner",
 	"centralnotice-add-new": "Unused at this time.",
 	"centralnotice-remove": "Used as column header of the table in [[Special:CentralNotice]].\n{{Related|Centralnotice-th}}\n{{Identical|Remove}}",
-	"centralnotice-translate-heading": "Fieldset label. Parameters:\n* $1 - a name of a template",
 	"centralnotice-manage": "Title of sub-page of [[meta:Special:CentralNotice|Manage Central Notice]] special page.",
 	"centralnotice-manage-templates": "Title of sub-page of [[meta:Special:NoticeTemplate|Manage Banners]] special page.",
 	"centralnotice-add": "Used in [[mw:Extension:CentralNotice]]\n{{Identical|Add}}",
@@ -109,7 +108,6 @@
 	"centralnotice-no-templates-assigned": "Used in [[Special:CentralNotice]].\n\nPreceded by the fieldset label {{msg-mw|Centralnotice-assigned-templates}}.",
 	"centralnotice-available-templates": "Used as fieldset label in [[Special:NoticeTemplate]].",
 	"centralnotice-template-already-exists": "Used as error message when trying to add a banner (template) to a campaign.",
-	"centralnotice-change-lang": "Fieldset legend for a language selector, that is used to set a preference for which language to translate to in the translation module of the extension CentralNotice.",
 	"centralnotice-weights": "Unused at this time.\n{{Identical|Weight}}",
 	"centralnotice-notice-is-locked": "Error message displayed in Special:CentralNotice when trying to delete a locked notice",
 	"centralnotice-overlap": "Unused at this time.",
@@ -292,8 +290,6 @@
 	"centralnotice-banner-history-logger-max-entry-age-help": "Help text for the log expiration age field",
 	"centralnotice-banner-history-logger-max-entries": "Label for the banner history logger campaign mixin maximum number of log entries control in the administration UI",
 	"centralnotice-banner-history-logger-max-entries-help": "Help text for the maximum log size field",
-	"centralnotice-banner-history-logger-wait-log-no-send-beacon": "Label for field for time limit to delay sending the log without sendBeacon, for the banner history logger campaign mixin",
-	"centralnotice-banner-history-logger-wait-log-no-send-beacon-help": "Help text for field for time limit to delay sending the log without sendBeacon, for the banner history logger campaign mixin",
 	"centralnotice-legacy-support": "Name of the legacy support campaign mixin, for administration UI control",
 	"centralnotice-legacy-support-help": "Description of the legacy support feature",
 	"centralnotice-set-record-impression-sample-rate": "Label for the control to activate setting the sample rate for Special:RecordImpression, for the legacy support campaign mixin",
@@ -367,5 +363,7 @@
 	"centralnotice-campaign-type-maintenance": "Name of campaign type for campaigns relating to site maintenance. Used in user preferences '''on client wikis''' and CentralNotice campaign configuration. Included as a default type in $wgCentralNoticeCampaignTypes.",
 	"centralnotice-campaign-type-photography": "Name of campaign type for campaigns relating to photography. Used in user preferences '''on client wikis''' and CentralNotice campaign configuration. Included as a default type in $wgCentralNoticeCampaignTypes.",
 	"centralnotice-campaign-type-special": "Name of campaign type for campaigns of a special category, which cannot be hidden by preferences. Used in user preferences '''on client wikis''' and CentralNotice campaign configuration. Included as a default type in $wgCentralNoticeCampaignTypes.",
-	"centralnotice-user-prefs-intro": "Explanatory introduction for section in user preferences '''on client wikis''' where users can select which banner types to display."
+	"centralnotice-user-prefs-intro": "Explanatory introduction for section in user preferences '''on client wikis''' where users can select which banner types to display.",
+	"namespaceinfo-description-ns866": "Description for the CNBanner namespace",
+	"namespaceinfo-description-ns867": "Description for the CNBanner talk namespace"
 }

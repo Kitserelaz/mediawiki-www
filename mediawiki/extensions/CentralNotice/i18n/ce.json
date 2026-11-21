@@ -2,9 +2,9 @@
 	"@metadata": {
 		"authors": [
 			"Sasan700",
+			"Stjn",
 			"Исмаил Садуев",
-			"Умар",
-			"Stjn"
+			"Умар"
 		]
 	},
 	"centralnotice": "Цхаьна дlахоуьйтуш леладо урхалла",
@@ -26,7 +26,6 @@
 	"centralnotice-live-preview": "ТӀаьххьара Ӏалашйинчу версин хьалххе хьажар гайта",
 	"centralnotice-add-new": "Цхьана дӀахоуьйтуш болу хаамбар тӀетоха",
 	"centralnotice-remove": "ДӀайаккха",
-	"centralnotice-translate-heading": "Гочдар цуна $1",
 	"centralnotice-manage": "Цхаьна дlахоуьйтуш леладо урхалла",
 	"centralnotice-manage-templates": "Баннерашна урхалладар",
 	"centralnotice-add": "ТӀетоха",
@@ -84,7 +83,6 @@
 	"centralnotice-no-templates-assigned": "Цхьа а хаамца йоьзна баннераш йац.\nЦхьацца тӀетоха!",
 	"centralnotice-available-templates": "ТӀекхочуш йолу баннерш",
 	"centralnotice-template-already-exists": "Баннер хӀинца а йихкина йу.\nТӀе ца тоьхна.",
-	"centralnotice-change-lang": "Хийца гоч даран мотт",
 	"centralnotice-weights": "Терза",
 	"centralnotice-notice-is-locked": "ДӀахаийтаршна блоктоха.\nЦатар ло.",
 	"centralnotice-overlap": "Хаам шен хеннахь кхечу хаамца цхьаьнадогӀу.\nТӀе ца туху",
@@ -126,7 +124,7 @@
 	"centralnotice-banner-mixins": "«Эдинарш»:",
 	"centralnotice-banner-mixins-help": "Хьайн баннер дӀакхачош хьайна йукъайаккха лууш йолу хӀора «тӀетохар» билгалдаккха. (Хьажа  [https://www.mediawiki.org/wiki/Extension:CentralNotice/Banner_mixins Banner mixins] кхин а хаамаш лаха)",
 	"centralnotice-banner-cdn-controls": "Фронтэндан кэш",
-	"centralnotice-banner-cdn-label": "РогӀера меттана фронтэндан кэш цӀанъе:",
+	"centralnotice-banner-cdn-label": "РогӀера меттана фронтэндан кэш цӀанйе:",
 	"centralnotice-banner-cdn-button": "ЦӀанйан",
 	"centralnotice-banner-cdn-help": "ДӀабоккху баннерийн чулацам фронтэндан кэшехь анониман декъашхошна, хаьржинчу маттана. (Авторизаци йиначу декъашхошна баннерш кэш йеш йац).",
 	"centralnotice-banner-cdn-dialog-waiting-text": "Фронтэндан кэш дӀацӀанйан дехар дӀахьажор...",
@@ -156,7 +154,7 @@
 	"centralnotice-preferred": "Приоритет",
 	"centralnotice-archived": "Архивйина",
 	"centralnotice-logs": "Журналаш",
-	"centralnotice-view-logs": "Тептаршка хьажар",
+	"centralnotice-view-logs": "Журналаш хьажар",
 	"centralnotice-timestamp": "Терахь/хан",
 	"centralnotice-user": "Декъашхо",
 	"centralnotice-action": "Ардамаш",
@@ -215,10 +213,10 @@
 	"centralnotice-devicetype-android": "Android",
 	"centralnotice-devicetype-ipad": "Дерриге а гӀирсаш, iPhone санна а боцуш, iPad санна билгалбаьхна",
 	"centralnotice-devicetype-iphone": "iPhone массо версеш",
-	"centralnotice-devicetype-unknown": "Мобилан аппараташ iPhone, iPad йа Android йоцчу платформаш тӀехь — ([https://github.com/wikimedia/mediawiki-extensions-CentralNotice/blob/master/modules/ext.centralNotice.bannerController/mobile/device.js билгалдаккхаран логика])",
+	"centralnotice-devicetype-unknown": "Мобилан аппараташ iPhone, iPad йа Android йоцчу платформаш тӀехь — ([https://gerrit.wikimedia.org/g/mediawiki/extensions/CentralNotice/+/master/resources/ext.centralNotice.display/state.js#119 билгалдаккхаран логика])",
 	"centralnotice-all": "Йерриге",
 	"centralnotice-generic-error": "Хьан йац дехар дина гӀуллакх кхочушдан оьшуш йолу бакъонаш йа ша гӀуллакх нийса ца хилла.",
-	"centralnotice-banner-name-error": "Баннеран цӀе нийса йац. Нийсачу цӀерашкахь элпийн терахьийн хьаьркаш а, буха сизаш а бен ца хуьлу.",
+	"centralnotice-banner-name-error": "Баннеран цӀе нийса йац. Нийсачу цӀерашкахь элпийн терахьийн символаш а, буха сизаш а бен ца хуьлу.",
 	"centralnotice-all-except": "Йерриге, $1 йиссалц",
 	"centralnotice-excluding-list": "$1 ($2 йоцуш)",
 	"centralnotice-user-role": "Декъашхочун роль",
@@ -256,7 +254,7 @@
 	"centralnotice-end-time": "Чаккхенна хан (UTC)",
 	"centralnotice-banner-not-found-title": "Баннер ца карийна",
 	"centralnotice-banner-not-found-contents": "Иштта цӀе йолу баннер йац.",
-	"centralnotice-csp-violation-alert": "Чулацам ларбаран политика йохор гучудаьлла! $1 чуьра хӀума чуйаккха гӀертар.",
+	"centralnotice-csp-violation-alert": "Чулацаман Кхерамазаллин политика йохор гучудаьлла. Вики арахьарчу хьостанашкара чулацам чубаккхаро йешархойн хаамаш дӀасабоькъу. Дехар ду, баннерш хьалха хьажа, гаджеташ а, кхоалгӀачу агӀонан тӀетохарш а доцуш. Талхийна URL: $1.",
 	"hidebanners": "Баннерш къайлайаха",
 	"centralnotice-specialhidebanners-p3p": "Цхьайолчу браузершна оьшу компактан P3P бакъо, цхьацца хьолашкахь cookies хӀитторхьама. Амма карарчу хенахь компактан низам дац. Хьажа йеша атта йолчу къайленан политике сетан-меттигехь.",
 	"centralnotice-banner-history-logger": "Баннерийн историн регистраци",
@@ -267,8 +265,6 @@
 	"centralnotice-banner-history-logger-max-entry-age-help": "Кхузахь билгалдаьхначул шира журналан дӀайаздарш нийса доцуш лорур ду, сервере йуха дӀахьажор дац.",
 	"centralnotice-banner-history-logger-max-entries": "Журналехь Ӏалашдан йиш йолу максимум дӀайаздарш.",
 	"centralnotice-banner-history-logger-max-entries-help": "Нагахь санна журнал сервере дӀайахьийтале кхин а хаамаш йазбахь, уггаре а шира элементаш дӀайер йу.",
-	"centralnotice-banner-history-logger-wait-log-no-send-beacon": "Журнал дӀайахьийтаран интервал sendBeacon йоцуш (миллисекундашца)",
-	"centralnotice-banner-history-logger-wait-log-no-send-beacon-help": "Кхечу агӀонна тӀе дӀакхачале хьалха журнал дӀайахьийтархьама, цхьайолчу браузершкахь оха уггаре йоккха хан хӀоттайо журнал дӀайахьийта реза ца хилале собар дан.",
 	"centralnotice-legacy-support": "Ширделла къайладахарийн а, дагардарийн а функци дӀахӀоттор",
 	"centralnotice-legacy-support-help": "Special:RecordImpression лелош йолу йа баннер лечкъош йолу JavaScript йукъайогӀуш йолу ширачу баннершца нийса хиларан параметраш.",
 	"centralnotice-set-record-impression-sample-rate": "ХӀоттабе дискретизацин барам Special:RecordImpression-на",
@@ -341,5 +337,7 @@
 	"centralnotice-campaign-type-maintenance": "Хьашташ кхочушдар",
 	"centralnotice-campaign-type-photography": "Сурт",
 	"centralnotice-campaign-type-special": "Леррина",
-	"centralnotice-user-prefs-intro": "Баннерш гойту Викимедиан йукъараллина а, декъашхошна а хьашто йолу дӀакхайкхорш.\n\nЛахахь гойту хьуна гур йолу дӀакхайкхоршна урхалладан аьтто беш йолу параметраш. Платформин цхьадолу дӀахаийтарш  — сайтан хьашташ кхочушдеш долу а, чӀогӀа оьшу дӀахаийтарш  а берриге декъашхошна оьшуш лоруш дерш а, — гуттара гуш хира ду. Кхин сов хаа, дехар до, йеша [[metawikimedia:Special:MyLanguage/CentralNotice|Мета-вики тӀера документаци]]."
+	"centralnotice-user-prefs-intro": "Баннерш гойту Викимедиан йукъараллина а, декъашхошна а хьашто йолу дӀакхайкхорш.\n\nЛахахь гойту хьуна гур йолу дӀакхайкхоршна урхалладан аьтто беш йолу параметраш. Платформин цхьадолу дӀахаийтарш  — сайтан хьашташ кхочушдеш долу а, чӀогӀа оьшу дӀахаийтарш  а берриге декъашхошна оьшуш лоруш дерш а, — гуттара гуш хира ду. Кхин сов хаа, дехар до, йеша [[metawikimedia:Special:MyLanguage/CentralNotice|Мета-вики тӀера документаци]].",
+	"namespaceinfo-description-ns866": "[[mw:Special:MyLanguage/Extension:CentralNotice|CentralNotice]] баннерашкахь лелош долу хаамаш а, церан гочдарш а",
+	"namespaceinfo-description-ns867": "Центран хаамийн баннеран хаамашна лерина дийцарийн агӀонаш"
 }

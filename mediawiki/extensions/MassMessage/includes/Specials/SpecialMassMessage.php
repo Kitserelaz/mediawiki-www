@@ -17,6 +17,7 @@ use MediaWiki\MassMessage\RequestProcessing\MassMessageRequest;
 use MediaWiki\MassMessage\RequestProcessing\MassMessageRequestParser;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
+use MediaWiki\Parser\ParserOutputLinkTypes;
 use MediaWiki\Parser\Parsoid\LintErrorChecker;
 use MediaWiki\SpecialPage\FormSpecialPage;
 use MediaWiki\Title\Title;
@@ -436,7 +437,8 @@ class SpecialMassMessage extends FormSpecialPage {
 				'items' => [
 					new Widget( [
 						'content' => new HtmlSnippet(
-							$parserOutput->getText( [ 'enableSectionEditLinks' => false ] )
+							$parserOutput->runOutputPipeline( $parserOptions, [ 'enableSectionEditLinks' => false ] )
+								->getContentHolderText()
 						),
 					] ),
 				],
@@ -469,7 +471,7 @@ class SpecialMassMessage extends FormSpecialPage {
 		$this->getOutput()->addHTML( (string)$wikitextPreviewLayout );
 
 		// Check if we have unescaped langlinks (T56846)
-		if ( $parserOutput->getLanguageLinks() ) {
+		if ( $parserOutput->getLinkList( ParserOutputLinkTypes::LANGUAGE ) ) {
 			$this->status->fatal( 'massmessage-unescaped-langlinks' );
 		}
 

@@ -233,6 +233,7 @@
 		"GetBlockErrorMessageKey": "main",
 		"GetLogTypesOnUser": "main",
 		"ContributionsToolLinks": "main",
+		"ChangesListSpecialPageQuery": "main",
 		"CentralAuthInfoFields": "centralauth",
 		"SpreadAnyEditBlock": "main"
 	},

@@ -53,6 +53,7 @@ class GlobalBlockingHooksTest extends MediaWikiIntegrationTestCase {
 			'globalBlockingUserVisibilityLookup' => $globalBlockingServices->getGlobalBlockingUserVisibilityLookup(),
 			'globalBlockManager' => $globalBlockingServices->getGlobalBlockManager(),
 			'globalBlockingLinkBuilder' => $globalBlockingServices->getGlobalBlockingLinkBuilder(),
+			'dbProvider' => $this->getServiceContainer()->getConnectionProvider(),
 		];
 	}
 

@@ -17,6 +17,7 @@ use MediaWiki\User\CentralId\CentralIdLookup;
 use MediaWiki\User\User;
 use MediaWiki\User\UserNameUtils;
 use MediaWikiUnitTestCase;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 /**
  * @covers \MediaWiki\Extension\GlobalBlocking\GlobalBlockingHooks
@@ -33,13 +34,31 @@ class GlobalBlockingHooksTest extends MediaWikiUnitTestCase {
 			$this->createMock( UserNameUtils::class ),
 			$this->createMock( GlobalBlockingUserVisibilityLookup::class ),
 			$this->createMock( GlobalBlockManager::class ),
-			$this->createMock( GlobalBlockingLinkBuilder::class )
+			$this->createMock( GlobalBlockingLinkBuilder::class ),
+			$this->createMock( IConnectionProvider::class )
 		);
 	}
 
 	public function testConstructor() {
 		$hooks = $this->getGlobalBlockingHooks();
 		$this->assertInstanceOf( GlobalBlockingHooks::class, $hooks );
+	}
+
+	public function testOnChangesListSpecialPageQueryExcludesGlobalBlocksOnlyFromRecentChanges() {
+		$hooks = $this->getGlobalBlockingHooks();
+		$tables = $fields = $conds = $queryOptions = $joinConditions = [];
+
+		$hooks->onChangesListSpecialPageQuery(
+			'Recentchanges', $tables, $fields, $conds, $queryOptions, $joinConditions, null
+		);
+
+		$this->assertSame( [ "(rc_source != 'log' OR rc_log_type != 'gblblock')" ], $conds );
+
+		$conds = [];
+		$hooks->onChangesListSpecialPageQuery(
+			'Watchlist', $tables, $fields, $conds, $queryOptions, $joinConditions, null
+		);
+		$this->assertSame( [], $conds );
 	}
 
 	/**

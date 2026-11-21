@@ -22,6 +22,7 @@ use MediaWiki\Logging\LogEventsList;
 use MediaWiki\Message\Message;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\SpecialPage\Hook\SpecialPageBeforeExecuteHook;
+use MediaWiki\SpecialPage\Hook\ChangesListSpecialPageQueryHook;
 use MediaWiki\SpecialPage\ContributionsSpecialPage;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Specials\Hook\ContributionsToolLinksHook;
@@ -50,7 +51,8 @@ class GlobalBlockingHooks implements
 	ContributionsToolLinksHook,
 	SpreadAnyEditBlockHook,
 	SpecialPageBeforeExecuteHook,
-	SpecialLogAddLogSearchRelationsHook
+	SpecialLogAddLogSearchRelationsHook,
+	ChangesListSpecialPageQueryHook
 {
 	public function __construct(
 		private readonly BlockTargetFactory $blockTargetFactory,
@@ -100,6 +102,15 @@ class GlobalBlockingHooks implements
 
 		if ( $type === '' ) {
 			$qc[] = $this->dbProvider->getReplicaDatabase()->expr( 'log_type', '!=', 'gblblock' );
+		}
+	}
+
+	/** @inheritDoc */
+	public function onChangesListSpecialPageQuery(
+		$name, &$tables, &$fields, &$conds, &$query_options, &$join_conds, $opts
+	) {
+		if ( $name === 'Recentchanges' ) {
+			$conds[] = "(rc_source != 'log' OR rc_log_type != 'gblblock')";
 		}
 	}
 

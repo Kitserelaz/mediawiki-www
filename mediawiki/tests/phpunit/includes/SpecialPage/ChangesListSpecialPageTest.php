@@ -1136,4 +1136,13 @@ class ChangesListSpecialPageTest extends AbstractChangesListSpecialPageTestCase 
 			],
 		];
 	}
+
+	public function testValidateOptionsAllowsTenThousandResults() {
+		$opts = $this->changesListSpecialPage->getDefaultOptions();
+		$opts->setValue( 'limit', 10000 );
+
+		$this->changesListSpecialPage->validateOptions( $opts );
+
+		$this->assertSame( 10000, $opts['limit'] );
+	}
 }

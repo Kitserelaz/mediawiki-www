@@ -1,0 +1,6 @@
+{
+  "@metadata": {
+    "authors": ["Luca Mauri"]
+  },
+  "wiki2ban-desc": "Registra i tentativi di accesso falliti di MediaWiki in un file leggibile da Fail2Ban"
+}

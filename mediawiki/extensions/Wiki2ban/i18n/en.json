@@ -1,0 +1,6 @@
+{
+  "@metadata": {
+    "authors": ["Luca Mauri"]
+  },
+  "wiki2ban-desc": "Log failed MediaWiki login attempts to a file consumable by Fail2Ban"
+}

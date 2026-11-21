@@ -7,6 +7,7 @@ use MediaWiki\Block\Block;
 use MediaWiki\Block\BlockTargetFactory;
 use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\Config\HashConfig;
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Extension\GlobalBlocking\GlobalBlock;
 use MediaWiki\Extension\GlobalBlocking\GlobalBlockingHooks;
 use MediaWiki\Extension\GlobalBlocking\Services\GlobalBlockingLinkBuilder;
@@ -47,12 +48,28 @@ class GlobalBlockingHooksTest extends MediaWikiUnitTestCase {
 	public function testOnChangesListSpecialPageQueryExcludesGlobalBlocksOnlyFromRecentChanges() {
 		$hooks = $this->getGlobalBlockingHooks();
 		$tables = $fields = $conds = $queryOptions = $joinConditions = [];
+		$authority = $this->createMock( \MediaWiki\Permissions\Authority::class );
+		$authority->method( 'isAllowed' )
+			->with( 'viewglobalblocks' )
+			->willReturn( false );
+		RequestContext::getMain()->setAuthority( $authority );
 
 		$hooks->onChangesListSpecialPageQuery(
 			'Recentchanges', $tables, $fields, $conds, $queryOptions, $joinConditions, null
 		);
 
-		$this->assertSame( [ "(rc_source != 'log' OR rc_log_type != 'gblblock')" ], $conds );
+		$this->assertSame( [ "(rc_source != 'mw.log' OR rc_log_type != 'gblblock')" ], $conds );
+
+		$authority = $this->createMock( \MediaWiki\Permissions\Authority::class );
+		$authority->method( 'isAllowed' )
+			->with( 'viewglobalblocks' )
+			->willReturn( true );
+		RequestContext::getMain()->setAuthority( $authority );
+		$conds = [];
+		$hooks->onChangesListSpecialPageQuery(
+			'Recentchanges', $tables, $fields, $conds, $queryOptions, $joinConditions, null
+		);
+		$this->assertSame( [], $conds );
 
 		$conds = [];
 		$hooks->onChangesListSpecialPageQuery(

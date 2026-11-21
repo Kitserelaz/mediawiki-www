@@ -338,6 +338,24 @@ class FilterValidatorTest extends MediaWikiUnitTestCase {
 			[ $unrestricted, $restricted, $restrictions, true, null ];
 	}
 
+	public function testGlobalBlockActionRequiresDedicatedPermission() {
+		$permManager = $this->createMock( AbuseFilterPermissionManager::class );
+		$validator = $this->getFilterValidator( $permManager, null, [] );
+		$newFilter = $this->createConfiguredMock( AbstractFilter::class, [
+			'getActions' => [ 'globalblock' => [] ],
+		] );
+		$oldFilter = $this->createConfiguredMock( AbstractFilter::class, [
+			'getActions' => [],
+		] );
+		$performer = $this->createMock( Authority::class );
+		$performer->method( 'isAllowed' )
+			->with( 'abusefilter-globalblock' )
+			->willReturn( false );
+
+		$status = $validator->checkRestrictedActions( $performer, $newFilter, $oldFilter );
+		$this->assertFilterValidatorStatus( 'abusefilter-edit-restricted', $status );
+	}
+
 	public function testCheckProtectedVariablesGood() {
 		$filter = $this->createMock( AbstractFilter::class );
 		$filter->method( 'getRules' )->willReturn( 'user_unnamed_ip' );

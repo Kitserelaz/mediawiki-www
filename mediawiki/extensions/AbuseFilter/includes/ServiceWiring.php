@@ -221,6 +221,7 @@ return [
 			),
 			LoggerFactory::getInstance( 'AbuseFilter' ),
 			$services->getBlockUserFactory(),
+			$services->get( 'GlobalBlocking.GlobalBlockManager' ),
 			$services->getUnblockUserFactory(),
 			$services->getDatabaseBlockStore(),
 			$services->getUserGroupManager(),

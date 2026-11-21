@@ -11,6 +11,7 @@ use MediaWiki\Block\Hook\SpreadAnyEditBlockHook;
 use MediaWiki\CommentFormatter\CommentFormatter;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Extension\CentralAuth\User\CentralAuthUser;
 use MediaWiki\Extension\GlobalBlocking\Services\GlobalBlockingLinkBuilder;
 use MediaWiki\Extension\GlobalBlocking\Services\GlobalBlockingUserVisibilityLookup;
 use MediaWiki\Extension\GlobalBlocking\Services\GlobalBlockLookup;
@@ -21,6 +22,7 @@ use MediaWiki\Html\Html;
 use MediaWiki\Logging\LogEventsList;
 use MediaWiki\Message\Message;
 use MediaWiki\Permissions\Authority;
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SpecialPage\Hook\SpecialPageBeforeExecuteHook;
 use MediaWiki\SpecialPage\Hook\ChangesListSpecialPageQueryHook;
 use MediaWiki\SpecialPage\ContributionsSpecialPage;
@@ -109,13 +111,33 @@ class GlobalBlockingHooks implements
 	public function onChangesListSpecialPageQuery(
 		$name, &$tables, &$fields, &$conds, &$query_options, &$join_conds, $opts
 	) {
-		if ( $name === 'Recentchanges' ) {
-			$conds[] = "(rc_source != 'log' OR rc_log_type != 'gblblock')";
+		if (
+			$name === 'Recentchanges' &&
+			!$this->canViewGlobalBlocks( RequestContext::getMain()->getAuthority() )
+		) {
+			$conds[] = "(rc_source != 'mw.log' OR rc_log_type != 'gblblock')";
 		}
 	}
 
 	private function canViewGlobalBlocks( Authority $authority ): bool {
-		return $authority->isAllowed( 'viewglobalblocks' );
+		if ( $authority->isAllowed( 'viewglobalblocks' ) ) {
+			return true;
+		}
+
+		if ( !ExtensionRegistry::getInstance()->isLoaded( 'CentralAuth' ) ) {
+			return false;
+		}
+
+		$user = $authority->getUser();
+		if ( !$user->isRegistered() ) {
+			return false;
+		}
+
+		return in_array(
+			'viewglobalblocks',
+			CentralAuthUser::getInstance( $user )->getGlobalRights(),
+			true
+		);
 	}
 
 	/**

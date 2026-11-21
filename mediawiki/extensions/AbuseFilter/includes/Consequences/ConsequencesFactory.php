@@ -12,6 +12,7 @@ use MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Block;
 use MediaWiki\Extension\AbuseFilter\Consequences\Consequence\BlockAutopromote;
 use MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Degroup;
 use MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Disallow;
+use MediaWiki\Extension\AbuseFilter\Consequences\Consequence\GlobalBlock;
 use MediaWiki\Extension\AbuseFilter\Consequences\Consequence\RangeBlock;
 use MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Tag;
 use MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Throttle;
@@ -19,6 +20,7 @@ use MediaWiki\Extension\AbuseFilter\Consequences\Consequence\Warn;
 use MediaWiki\Extension\AbuseFilter\FilterUser;
 use MediaWiki\Extension\AbuseFilter\ServiceNames;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
+use MediaWiki\Extension\GlobalBlocking\Services\GlobalBlockManager;
 use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Session\Session;
 use MediaWiki\Session\SessionManager;
@@ -50,6 +52,7 @@ class ConsequencesFactory {
 		private readonly ServiceOptions $options,
 		private readonly LoggerInterface $logger,
 		private readonly BlockUserFactory $blockUserFactory,
+		private readonly GlobalBlockManager $globalBlockManager,
 		private readonly UnblockUserFactory $unblockUserFactory,
 		private readonly DatabaseBlockStore $databaseBlockStore,
 		private readonly UserGroupManager $userGroupManager,
@@ -81,6 +84,18 @@ class ConsequencesFactory {
 			$this->blockUserFactory,
 			$this->unblockUserFactory,
 			$this->databaseBlockStore,
+			$this->filterUser,
+			$this->messageLocalizer,
+			$this->logger
+		);
+	}
+
+	public function newGlobalBlock( Parameters $params, string $expiry, bool $preventsTalk ): GlobalBlock {
+		return new GlobalBlock(
+			$params,
+			$expiry,
+			$preventsTalk,
+			$this->globalBlockManager,
 			$this->filterUser,
 			$this->messageLocalizer,
 			$this->logger

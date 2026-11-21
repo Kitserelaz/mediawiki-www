@@ -1041,12 +1041,15 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 					);
 				return $output;
 			case 'block':
+			case 'globalblock':
+				$isGlobalBlock = $action === 'globalblock';
+				$actionName = ucfirst( $action );
+				$durationPrefix = $isGlobalBlock ? 'wpGlobalBlock' : 'wpBlock';
+				$talkFieldName = $isGlobalBlock ? 'wpFilterGlobalBlockTalk' : 'wpFilterBlockTalk';
 				if ( $set && count( $parameters ) === 3 ) {
-					// Both blocktalk and custom block durations available
 					[ $blockTalk, $defaultAnonDuration, $defaultUserDuration ] = $parameters;
 				} else {
 					if ( $set && count( $parameters ) === 1 ) {
-						// Only blocktalk available
 						$blockTalk = $parameters[0];
 					}
 					$defaultAnonDuration = $config->get( 'AbuseFilterAnonBlockDuration' ) ??
@@ -1060,17 +1063,17 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 				$checkbox =
 					new OOUI\FieldLayout(
 						new OOUI\CheckboxInputWidget( [
-							'name' => 'wpFilterActionBlock',
-							'id' => 'mw-abusefilter-action-checkbox-block',
+							'name' => 'wpFilterAction' . $actionName,
+							'id' => "mw-abusefilter-action-checkbox-$action",
 							'selected' => $set,
 							'classes' => [ 'mw-abusefilter-action-checkbox' ],
 							'disabled' => $readOnly
 						]
 						),
 						[
-							'label' => $this->msg( 'abusefilter-edit-action-block' )->text(),
+							'label' => $this->msg( 'abusefilter-edit-action-' . $action )->text(),
 							'align' => 'inline',
-							'help' => $this->msg( 'abusefilter-edit-action-block-help' )->text(),
+							'help' => $this->msg( 'abusefilter-edit-action-' . $action . '-help' )->text(),
 							'helpInline' => true,
 						]
 					);
@@ -1080,7 +1083,7 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 
 				$anonDuration =
 					new OOUI\DropdownInputWidget( [
-						'name' => 'wpBlockAnonDuration',
+						'name' => $durationPrefix . 'AnonDuration',
 						'options' => $suggestedBlocks,
 						'value' => $defaultAnonDuration,
 						'disabled' => $readOnly
@@ -1088,7 +1091,7 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 
 				$userDuration =
 					new OOUI\DropdownInputWidget( [
-						'name' => 'wpBlockUserDuration',
+						'name' => $durationPrefix . 'UserDuration',
 						'options' => $suggestedBlocks,
 						'value' => $defaultUserDuration,
 						'disabled' => $readOnly
@@ -1099,8 +1102,8 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 					$talkCheckbox =
 						new OOUI\FieldLayout(
 							new OOUI\CheckboxInputWidget( [
-								'name' => 'wpFilterBlockTalk',
-								'id' => 'mw-abusefilter-action-checkbox-blocktalk',
+								'name' => $talkFieldName,
+								'id' => "mw-abusefilter-action-checkbox-$action-talk",
 								'selected' => isset( $blockTalk ) && $blockTalk === 'blocktalk',
 								'classes' => [ 'mw-abusefilter-action-checkbox' ],
 								'disabled' => $readOnly
@@ -1131,7 +1134,7 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 
 				$output .= Html::rawElement(
 						'div',
-						[ 'id' => 'mw-abusefilter-block-parameters' ],
+						[ 'id' => "mw-abusefilter-$action-parameters" ],
 						(string)new OOUI\FieldsetLayout( [ 'items' => $blockOptions ] )
 					);
 
@@ -1446,13 +1449,15 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 					}
 
 					$parameters = [ $specMsg ];
-				} elseif ( $action === 'block' ) {
+				} elseif ( $action === 'block' || $action === 'globalblock' ) {
+					$durationPrefix = $action === 'globalblock' ? 'wpGlobalBlock' : 'wpBlock';
+					$talkFieldName = $action === 'globalblock' ? 'wpFilterGlobalBlockTalk' : 'wpFilterBlockTalk';
 					$parameters = [
 						// TODO: Should save a boolean
-						$request->getCheck( 'wpFilterBlockTalk' )
+						$request->getCheck( $talkFieldName )
 							? 'blocktalk' : 'noTalkBlockSet',
-						$request->getVal( 'wpBlockAnonDuration' ),
-						$request->getVal( 'wpBlockUserDuration' ),
+						$request->getVal( $durationPrefix . 'AnonDuration' ),
+						$request->getVal( $durationPrefix . 'UserDuration' ),
 					];
 				} elseif ( $action === 'disallow' ) {
 					$specMsg = $request->getVal( 'wpFilterDisallowMessage' );

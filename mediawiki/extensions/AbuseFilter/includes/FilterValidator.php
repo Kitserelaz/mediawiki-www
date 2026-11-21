@@ -312,6 +312,11 @@ class FilterValidator {
 		AbstractFilter $originalFilter
 	): Status {
 		$ret = Status::newGood();
+		if ( isset( $newFilter->getActions()['globalblock'] ) && !$performer->isAllowed( 'abusefilter-globalblock' ) ) {
+			$ret->error( 'abusefilter-edit-restricted' );
+			return $ret;
+		}
+
 		$allEnabledActions = $newFilter->getActions() + $originalFilter->getActions();
 		if (
 			array_intersect_key( array_fill_keys( $this->restrictedActions, true ), $allEnabledActions )

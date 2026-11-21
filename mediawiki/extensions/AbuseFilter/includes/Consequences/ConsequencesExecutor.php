@@ -105,6 +105,12 @@ class ConsequencesExecutor {
 						$anonBlockDuration,
 						$registeredBlockDuration
 					];
+				} elseif ( $name === 'globalblock' && count( $parameters ) !== 3 ) {
+					$consParams[$filter][$name] = [
+						'noTalkBlockSet',
+						$this->options->get( 'AbuseFilterAnonBlockDuration' ) ?? $registeredBlockDuration,
+						$registeredBlockDuration
+					];
 				}
 			}
 		}
@@ -124,7 +130,7 @@ class ConsequencesExecutor {
 		$isNamed = $this->userIdentityUtils->isNamed( $user );
 		foreach ( $consParams as $filter => $actions ) {
 			foreach ( $actions as $name => $parameters ) {
-				if ( $name === 'block' ) {
+				if ( $name === 'block' || $name === 'globalblock' ) {
 					$consParams[$filter][$name] = [
 						'expiry' => $isNamed ? $parameters[2] : $parameters[1],
 						'blocktalk' => $parameters[0] === 'blocktalk'
@@ -320,6 +326,12 @@ class ConsequencesExecutor {
 				return $this->consFactory->newBlockAutopromote( $baseConsParams, $duration );
 			case 'block':
 				return $this->consFactory->newBlock(
+					$baseConsParams,
+					$rawParams['expiry'],
+					$rawParams['blocktalk']
+				);
+			case 'globalblock':
+				return $this->consFactory->newGlobalBlock(
 					$baseConsParams,
 					$rawParams['expiry'],
 					$rawParams['blocktalk']

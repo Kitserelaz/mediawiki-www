@@ -28,6 +28,7 @@
 		"abusefilter-hidden-log",
 		"abusefilter-hide-log",
 		"abusefilter-modify-global",
+		"abusefilter-globalblock",
 		"abusefilter-modify-blocked-external-domains",
 		"abusefilter-bypass-blocked-external-domains",
 		"abusefilter-blocked-external-domains-log",
@@ -533,6 +534,7 @@
 				"disallow": true,
 				"blockautopromote": true,
 				"block": true,
+				"globalblock": true,
 				"rangeblock": false,
 				"degroup": false,
 				"tag": true

@@ -12,6 +12,7 @@ class ConsequencesRegistry {
 
 	private const DANGEROUS_ACTIONS = [
 		'block',
+		'globalblock',
 		'blockautopromote',
 		'degroup',
 		'rangeblock'

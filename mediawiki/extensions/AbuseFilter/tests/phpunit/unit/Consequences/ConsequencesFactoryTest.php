@@ -11,6 +11,7 @@ use MediaWiki\Extension\AbuseFilter\ChangeTags\ChangeTagger;
 use MediaWiki\Extension\AbuseFilter\Consequences\ConsequencesFactory;
 use MediaWiki\Extension\AbuseFilter\Consequences\Parameters;
 use MediaWiki\Extension\AbuseFilter\FilterUser;
+use MediaWiki\Extension\GlobalBlocking\Services\GlobalBlockManager;
 use MediaWiki\Extension\AbuseFilter\Variables\VariableHolder;
 use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Session\Session;
@@ -44,6 +45,7 @@ class ConsequencesFactoryTest extends MediaWikiUnitTestCase {
 			$opts,
 			new NullLogger(),
 			$this->createMock( BlockUserFactory::class ),
+			$this->createMock( GlobalBlockManager::class ),
 			$this->createMock( UnblockUserFactory::class ),
 			$this->createMock( DatabaseBlockStore::class ),
 			$this->createMock( UserGroupManager::class ),
@@ -63,6 +65,11 @@ class ConsequencesFactoryTest extends MediaWikiUnitTestCase {
 
 	public function testNewBlock() {
 		$this->getFactory()->newBlock( $this->createMock( Parameters::class ), '', false );
+		$this->addToAssertionCount( 1 );
+	}
+
+	public function testNewGlobalBlock() {
+		$this->getFactory()->newGlobalBlock( $this->createMock( Parameters::class ), '', false );
 		$this->addToAssertionCount( 1 );
 	}
 

@@ -10,6 +10,7 @@ namespace MediaWiki\Extension\GlobalAccountClosure\Special;
 use MediaWiki\Extension\CentralAuth\User\CentralAuthUser;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\UserNameUtils;
 use StatusValue;
@@ -73,6 +74,7 @@ class SpecialCloseAccount extends SpecialPage {
 			if ( !$status->isGood() ) {
 				return $status;
 			}
+			$this->logAccountAction( 'restore', $target, $data['reason'] );
 
 			$this->getOutput()->addHTML(
 				Html::successBox( $this->msg( 'closeaccount-restored', $target )->parse() )
@@ -84,10 +86,20 @@ class SpecialCloseAccount extends SpecialPage {
 		if ( !$status->isGood() ) {
 			return $status;
 		}
+		$this->logAccountAction( 'close', $target, $data['reason'] );
 
 		$this->getOutput()->addHTML(
 			Html::successBox( $this->msg( 'closeaccount-success', $target )->parse() )
 		);
 		return $status;
+	}
+
+	private function logAccountAction( string $action, string $target, string $reason ): void {
+		$logEntry = new ManualLogEntry( 'globalaccountclosure', $action );
+		$logEntry->setPerformer( $this->getAuthority()->getUser() );
+		$logEntry->setTarget( SpecialPage::getTitleFor( 'CentralAuth', $target ) );
+		$logEntry->setComment( $reason );
+		$logId = $logEntry->insert();
+		$logEntry->publish( $logId );
 	}
 }

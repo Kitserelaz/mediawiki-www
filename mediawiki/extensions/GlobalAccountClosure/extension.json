@@ -29,6 +29,27 @@
 			]
 		}
 	},
+	"AvailableRights": [
+		"view-account-closure-log"
+	],
+	"LogTypes": [
+		"globalaccountclosure"
+	],
+	"LogNames": {
+		"globalaccountclosure": "globalaccountclosure-log-name"
+	},
+	"LogHeaders": {
+		"globalaccountclosure": "globalaccountclosure-log-header"
+	},
+	"LogRestrictions": {
+		"globalaccountclosure": "view-account-closure-log"
+	},
+	"ActionFilteredLogs": {
+		"globalaccountclosure": {
+			"close": [ "close" ],
+			"restore": [ "restore" ]
+		}
+	},
 	"HookHandlers": {
 		"specialcontributions": {
 			"class": "MediaWiki\\Extension\\GlobalAccountClosure\\Hooks\\SpecialContributionsHookHandler",

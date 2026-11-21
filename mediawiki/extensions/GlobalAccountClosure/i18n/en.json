@@ -5,6 +5,12 @@
 		]
 	},
 	"globalaccountclosure-desc": "Provides global account closure and restoration tools.",
+	"globalaccountclosure-log-name": "Global account closure log",
+	"globalaccountclosure-log-header": "This log shows global account closures and restorations.",
+	"logentry-globalaccountclosure-close": "$1 {{GENDER:$2|closed}} global account $3",
+	"logentry-globalaccountclosure-restore": "$1 {{GENDER:$2|restored}} global account $3",
+	"right-view-account-closure-log": "View the global account closure log",
+	"action-view-account-closure-log": "view the global account closure log",
 	"closeaccount": "Close account globally",
 	"closeaccount-intro": "Close a global account without locking it. Closed accounts cannot log in or edit.",
 	"closeaccount-legend": "Close or restore a global account",

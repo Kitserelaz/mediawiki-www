@@ -658,6 +658,7 @@ $wgConf->settings += [
 				'view-private-ssl-requests',
 				'viewglobalprivatefiles',
 				'viewglobalblocks',
+				'view-account-closure-log',
 				'viewpmlog',
 				'viewsuppressed',
 				'writeapi',

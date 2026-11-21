@@ -13,16 +13,17 @@ namespace MediaWiki\Extension\UrlShortener;
 
 use MediaWiki\Config\ConfigException;
 use MediaWiki\Config\ConfigFactory;
-use MediaWiki\Hook\SidebarBeforeOutputHook;
-use MediaWiki\Hook\SkinTemplateNavigation__UniversalHook;
 use MediaWiki\Hook\WebRequestPathInfoRouterHook;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Request\PathRouter;
+use MediaWiki\Settings\SettingsBuilder;
+use MediaWiki\Skin\Hook\SidebarBeforeOutputHook;
+use MediaWiki\Skin\Hook\SkinTemplateNavigation__UniversalHook;
+use MediaWiki\Skin\Skin;
+use MediaWiki\Skin\SkinTemplate;
 use MediaWiki\SpecialPage\SpecialPage;
 use MobileContext;
-use Skin;
-use SkinTemplate;
 
 class Hooks implements
 	WebRequestPathInfoRouterHook,
@@ -31,24 +32,17 @@ class Hooks implements
 	SkinTemplateNavigation__UniversalHook
 {
 	private bool $enableSidebar;
-	private bool $enableQrCode;
-	private bool $readOnly;
 	/** @var string|false */
 	private $urlTemplate;
-	/** @phan-suppress-next-line PhanUndeclaredTypeProperty */
-	private ?MobileContext $mobileContext;
 
 	public function __construct(
 		ConfigFactory $configFactory,
-		// @phan-suppress-next-line PhanUndeclaredTypeParameter
-		?MobileContext $mobileContext
+		private readonly ?MobileContext $mobileContext,
 	) {
 		$config = $configFactory->makeConfig( 'urlshortener' );
-		$this->enableSidebar = $config->get( 'UrlShortenerEnableSidebar' );
-		$this->enableQrCode = $config->get( 'UrlShortenerEnableQrCode' );
-		$this->readOnly = $config->get( 'UrlShortenerReadOnly' );
+		$this->enableSidebar = $config->get( 'UrlShortenerEnableSidebar' ) &&
+			( !$config->get( 'UrlShortenerReadOnly' ) || $config->get( 'UrlShortenerEnableQrCode' ) );
 		$this->urlTemplate = $config->get( 'UrlShortenerTemplate' );
-		$this->mobileContext = $mobileContext;
 	}
 
 	/**
@@ -65,13 +59,16 @@ class Hooks implements
 		}
 	}
 
-	public static function onRegistration() {
-		global $wgUrlShortenerIdSet, $wgUrlShortenerIdMapping, $wgUrlShortenerAltPrefix;
+	public static function onRegistration( array $extInfo, SettingsBuilder $settings ) {
+		$config = $settings->getConfig();
+		$idSet = $config->get( 'UrlShortenerIdSet' );
+		$idMapping = $config->get( 'UrlShortenerIdMapping' );
+		$altPrefix = $config->get( 'UrlShortenerAltPrefix' );
 
-		if ( strpos( $wgUrlShortenerIdSet, $wgUrlShortenerAltPrefix ) !== false ) {
+		if ( str_contains( $idSet, $altPrefix ) ) {
 			throw new ConfigException( 'UrlShortenerAltPrefix cannot be contained in UrlShortenerIdSet' );
 		}
-		if ( isset( $wgUrlShortenerIdMapping[ $wgUrlShortenerAltPrefix ] ) ) {
+		if ( isset( $idMapping[ $altPrefix ] ) ) {
 			throw new ConfigException( 'UrlShortenerAltPrefix cannot be contained in UrlShortenerIdMapping' );
 		}
 	}
@@ -83,7 +80,10 @@ class Hooks implements
 	 * @param Skin $skin
 	 */
 	public function onBeforePageDisplay( $out, $skin ): void {
-		if ( $this->readOnly || !$this->enableSidebar || $skin->getTitle()->isSpecial( 'UrlShortener' ) ) {
+		if ( !$this->enableSidebar
+			|| $skin->getTitle()->isSpecial( 'UrlShortener' )
+			|| !$out->getAuthority()->isAllowed( 'urlshortener-create-url' )
+		) {
 			return;
 		}
 
@@ -97,12 +97,15 @@ class Hooks implements
 	 * @param array &$sidebar
 	 */
 	public function onSidebarBeforeOutput( $skin, &$sidebar ): void {
-		if ( $this->readOnly || ( !$this->enableSidebar && !$this->enableQrCode ) ) {
+		if ( !$this->enableSidebar ) {
 			return;
 		}
 
 		$fullURL = self::getFullUrl( $skin );
-		if ( $this->enableSidebar && !$skin->getTitle()->isSpecial( 'UrlShortener' ) ) {
+		if ( $this->enableSidebar
+			&& !$skin->getTitle()->isSpecial( 'UrlShortener' )
+			&& $skin->getAuthority()->isAllowed( 'urlshortener-create-url' )
+		) {
 			// Append link to generate short URL
 			$sidebar['TOOLBOX']['urlshortener'] = [
 				'id' => 't-urlshortener',
@@ -110,48 +113,36 @@ class Hooks implements
 				'text' => $skin->msg( 'urlshortener-toolbox' )->text(),
 			];
 		}
-
-		if ( $this->enableQrCode ) {
-			// Append link to download QR code
-			$sidebar['TOOLBOX']['urlshortener-qrcode'] = [
-				'id' => 't-urlshortener-qrcode',
-				'href' => SpecialPage::getTitleFor( 'QrCode' )->getLocalURL( [ 'url' => $fullURL ] ),
-				'text' => $skin->msg( 'urlshortener-toolbox-qrcode' )->text(),
-			];
-		}
 	}
 
 	/**
-	 * Display the "Download QR code" link in the Minerva overflow menu.
+	 * Display the "Get shortened URL" link in the Minerva overflow menu.
 	 *
 	 * @param SkinTemplate $sktemplate
 	 * @param array &$links
-	 * @phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
 	 */
 	public function onSkinTemplateNavigation__Universal( $sktemplate, &$links ): void {
-		// @phan-suppress-next-line PhanUndeclaredClassMethod
-		if ( $this->enableQrCode && $this->mobileContext && $this->mobileContext->shouldDisplayMobileView() ) {
-			$fullURL = self::getFullUrl( $sktemplate );
-			$links['actions']['qrcode'] = [
+		if ( $this->mobileContext === null || !$this->mobileContext->shouldDisplayMobileView() ) {
+			return;
+		}
+
+		$fullURL = self::getFullUrl( $sktemplate );
+
+		if ( $this->enableSidebar && !$sktemplate->getTitle()->isSpecial( 'UrlShortener' ) ) {
+			// Add "Get shortened URL" link
+			$links['actions']['urlshortener'] = [
+				// Use the QR code icon to distinguish this from the "Permanent link" icon
 				'icon' => 'qrCode',
-				// Needs its own selector to avoid styling clashes.
-				'class' => 'ext-urlshortener-qrcode-download-minerva',
-				'href' => SpecialPage::getTitleFor( 'QrCode' )->getLocalURL( [ 'url' => $fullURL ] ),
-				'text' => $sktemplate->msg( 'urlshortener-toolbox-qrcode' )->plain(),
+				'href' => SpecialPage::getTitleFor( 'UrlShortener' )->getLocalURL( [ 'url' => $fullURL ] ),
+				'text' => $sktemplate->msg( 'urlshortener-toolbox' )->plain(),
 			];
 		}
 	}
 
-	/**
-	 * @param Skin $skin
-	 * @return string
-	 */
 	private static function getFullUrl( Skin $skin ): string {
 		$query = $skin->getRequest()->getQueryValues();
-		if ( isset( $query['title'] ) ) {
-			// We already know the title
-			unset( $query['title'] );
-		}
+		// We already know the title
+		unset( $query['title'] );
 
 		return $skin->getTitle()->getFullURL( $query, false, PROTO_CANONICAL );
 	}

@@ -11,14 +11,23 @@
 
 namespace MediaWiki\Extension\UrlShortener;
 
-use ManualLogEntry;
+use MediaWiki\Language\RawMessage;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\SpecialPage\FormSpecialPage;
+use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\User;
 
 class SpecialManageShortUrls extends FormSpecialPage {
 
-	public function __construct() {
-		parent::__construct( 'ManageShortUrls', 'urlshortener-manage-url' );
+	public function __construct(
+		private readonly UrlShortenerUtils $utils,
+	) {
+		parent::__construct( 'ManageShortUrls' );
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'urlshortener-manage-url';
 	}
 
 	/**
@@ -94,23 +103,27 @@ class SpecialManageShortUrls extends FormSpecialPage {
 			return [ 'urlshortener-manage-not-enough-data' ];
 		}
 
+		if ( $delete && $restore ) {
+			return [ new RawMessage( 'You can only delete or restore one URL short code at a time.' ) ];
+		}
+
 		if ( $delete ) {
-			$url = UrlShortenerUtils::getURL( $delete );
-			if ( $url === false ) {
+			$url = $this->utils->getURL( $delete );
+			if ( $url === null ) {
 				$errors[] = [ 'urlshortener-short-code-not-found' ];
 			}
-			$success = UrlShortenerUtils::deleteURL( $delete );
+			$success = $this->utils->deleteURL( $delete );
 			if ( !$success ) {
 				$errors[] = [ 'urlshortener-manage-delete-failed' ];
 			}
 		}
 
 		if ( $restore ) {
-			$deleted = UrlShortenerUtils::isURLDeleted( $restore );
+			$deleted = $this->utils->isURLDeleted( $restore );
 			if ( !$deleted ) {
 				$errors[] = [ 'urlshortener-short-code-is-not-deleted' ];
 			}
-			$success = UrlShortenerUtils::restoreURL( $restore );
+			$success = $this->utils->restoreURL( $restore );
 			if ( !$success ) {
 				$errors[] = [ 'urlshortener-manage-restore-failed' ];
 			}
@@ -124,7 +137,7 @@ class SpecialManageShortUrls extends FormSpecialPage {
 			$logEntry = new ManualLogEntry( 'urlshortener', $subtype );
 			$logEntry->setPerformer( $this->getUser() );
 			// Set some dummy title. It is required to be set, otherwise we're not using it.
-			$logEntry->setTarget( $this->getTitleFor( 'UrlShortener' ) );
+			$logEntry->setTarget( SpecialPage::getTitleFor( 'UrlShortener' ) );
 			$logEntry->setComment( $reason );
 			$logEntry->setParameters(
 				[ '4::realtarget' => $target ]
@@ -140,8 +153,6 @@ class SpecialManageShortUrls extends FormSpecialPage {
 
 	/**
 	 * Require users to be logged in and have the rights
-	 *
-	 * @param User $user
 	 */
 	protected function checkExecutePermissions( User $user ) {
 		parent::checkExecutePermissions( $user );

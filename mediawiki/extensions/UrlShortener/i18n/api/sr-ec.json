@@ -1,8 +1,8 @@
 {
 	"@metadata": {
 		"authors": [
-			"BadDog",
-			"Aca"
+			"Aca",
+			"BadDog"
 		]
 	},
 	"apihelp-shortenurl-summary": "Скраћивање дугачке URL адресе на краћу.",

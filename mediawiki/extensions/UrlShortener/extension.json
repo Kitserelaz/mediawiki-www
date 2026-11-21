@@ -14,14 +14,15 @@
 	"license-name": "Apache-2.0",
 	"type": "specialpage",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"APIModules": {
 		"shortenurl": {
 			"class": "MediaWiki\\Extension\\UrlShortener\\ApiShortenUrl",
 			"services": [
 				"PermissionManager",
-				"StatsdDataFactory"
+				"StatsFactory",
+				"UrlShortener.Utils"
 			]
 		}
 	},
@@ -61,7 +62,7 @@
 		"urlshortener"
 	],
 	"LogActionsHandlers": {
-		"urlshortener/*": "LogFormatter"
+		"urlshortener/*": "MediaWiki\\Logging\\LogFormatter"
 	},
 	"ActionFilteredLogs": {
 		"urlshortener": {
@@ -109,6 +110,7 @@
 				"urlshortener-error-nouserpass",
 				"urlshortener-shortened-url-alt",
 				"urlshortener-shortened-url-label",
+				"urlshortener-toolbox-qrcode",
 				"urlshortener-url-input-submit",
 				"urlshortener-url-input-submitting"
 			],
@@ -121,33 +123,9 @@
 				"mediawiki.widgets"
 			]
 		},
-		"ext.urlShortener.qrCode.special": {
-			"packageFiles": [
-				"modules/ext.urlShortener.special.js"
-			],
-			"messages": [
-				"urlshortener-copy-fail",
-				"urlshortener-copy-success",
-				"urlshortener-error-badports",
-				"urlshortener-error-disallowed-url",
-				"urlshortener-error-malformed-url",
-				"urlshortener-error-nouserpass",
-				"urlshortener-shortened-url-alt",
-				"urlshortener-shortened-url-label",
-				"urlshortener-qrcode-form-submit",
-				"urlshortener-url-input-submitting"
-			],
-			"dependencies": [
-				"mediawiki.api",
-				"mediawiki.Uri",
-				"mediawiki.htmlform.ooui",
-				"mediawiki.widgets",
-				"ext.urlShortener.qrCode.special.styles"
-			]
-		},
-		"ext.urlShortener.qrCode.special.styles": {
+		"ext.urlShortener.special.styles": {
 			"styles": [
-				"modules/ext.urlShortener.qrCode.special.less"
+				"modules/ext.urlShortener.special.less"
 			]
 		},
 		"ext.urlShortener.toolbar": {
@@ -173,18 +151,41 @@
 		"localBasePath": "",
 		"remoteExtPath": "UrlShortener"
 	},
+	"QUnitTestModule": {
+		"localBasePath": "",
+		"remoteExtPath": "UrlShortener",
+		"scripts": "tests/qunit/special.test.js",
+		"dependencies": [
+			"ext.urlShortener.special"
+		]
+	},
+	"ServiceWiringFiles": [
+		"includes/ServiceWiring.php"
+	],
 	"SpecialPages": {
 		"UrlShortener": {
 			"class": "MediaWiki\\Extension\\UrlShortener\\SpecialUrlShortener",
 			"services": [
+				"UrlShortener.Utils",
 				"UrlUtils"
 			]
 		},
-		"UrlRedirector": "MediaWiki\\Extension\\UrlShortener\\SpecialUrlRedirector",
-		"ManageShortUrls": "MediaWiki\\Extension\\UrlShortener\\SpecialManageShortUrls",
+		"UrlRedirector": {
+			"class": "MediaWiki\\Extension\\UrlShortener\\SpecialUrlRedirector",
+			"services": [
+				"UrlShortener.Utils"
+			]
+		},
+		"ManageShortUrls": {
+			"class": "MediaWiki\\Extension\\UrlShortener\\SpecialManageShortUrls",
+			"services": [
+				"UrlShortener.Utils"
+			]
+		},
 		"QrCode": {
 			"class": "MediaWiki\\Extension\\UrlShortener\\SpecialQrCode",
 			"services": [
+				"UrlShortener.Utils",
 				"UrlUtils",
 				"ConfigFactory"
 			]
@@ -259,7 +260,7 @@
 			"value": 2000
 		},
 		"UrlShortenerEnableQrCode": {
-			"value": false,
+			"value": true,
 			"description": "Enables the QR Code sharing functionality."
 		},
 		"UrlShortenerQrCodeShortenLimit": {
@@ -268,7 +269,7 @@
 		}
 	},
 	"ConfigRegistry": {
-		"urlshortener": "GlobalVarConfig::newInstance"
+		"urlshortener": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"DatabaseVirtualDomains": [
 		"virtual-urlshortener"

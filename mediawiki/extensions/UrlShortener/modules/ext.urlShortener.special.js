@@ -6,7 +6,7 @@ class UrlShortener {
 
 		this.regex = new RegExp( mw.config.get( 'wgUrlShortenerAllowedDomains' ) );
 		this.allowArbitraryPorts = mw.config.get( 'wgUrlShortenerAllowArbitraryPorts' );
-		this.isQrCode = mw.config.get( 'wgCanonicalSpecialPageName' ) === 'QrCode';
+		this.enableQrCode = !!mw.config.get( 'wgUrlShortenerEnableQrCode' );
 		/** @type {OO.ui.FieldLayout} */
 		this.fieldLayout = null;
 		/** @type {OO.ui.TextInputWidget} */
@@ -15,21 +15,25 @@ class UrlShortener {
 		this.shortened = null;
 		/** @type {OO.ui.ButtonInputWidget} */
 		this.submit = null;
-		/** @type {HTMLImageElement} */
-		this.qrCodeImage = null;
-		/** @type {HTMLAnchorElement} */
+		/** @type {jQuery} */
+		this.$qrCodeImage = null;
+		/** @type {OO.ui.ButtonWidget} */
 		this.qrCodeDownloadButton = null;
 	}
 
 	/**
-	 * Validate the input URL clientside. Note that this is not the
-	 * only check - they are checked serverside too.
+	 * Validate the input URL clientside.
+	 *
+	 * NOTE: This an optional enhancement for faster UI feedback.
+	 * When in doubt, allow it here and let the server do the stricter check.
+	 *
+	 * NOTE: Keep in sync with UrlShortenerUtils.php#validateUrl
 	 *
 	 * Checks for both URL validity and AllowedDomains matching.
 	 *
-	 * @param {string} input the URL that is to be shortened
-	 * @return {boolean|Object} true if object is validated, an object matching what is
-	 *                         returned by the API in case of error.
+	 * @param {string} input The URL that is to be shortened
+	 * @return {boolean|Object} True if object is validated, an object matching what is
+	 *  returned by the API in case of error.
 	 */
 	validateInput( input ) {
 		let url;
@@ -40,14 +44,21 @@ class UrlShortener {
 			this.fieldLayout.setErrors( [ mw.msg( 'urlshortener-error-malformed-url' ) ] );
 			return false;
 		}
-		if ( !url.host.match( this.regex ) ) {
+
+		if ( !url.hostname.match( this.regex ) ) {
 			const origin = mw.html.escape( url.origin );
 			this.fieldLayout.setErrors( [ mw.msg( 'urlshortener-error-disallowed-url', origin ) ] );
 			return false;
 		}
-		if ( url.port &&
+
+		if (
+			url.port &&
 			!this.allowArbitraryPorts &&
-			!( url.port === '80' || url.port === '443' )
+			!(
+				url.port === '80' ||
+				url.port === '443' ||
+				url.hostname === mw.config.get( 'wgServerName' )
+			)
 		) {
 			this.fieldLayout.setErrors( [ mw.msg( 'urlshortener-error-badports' ) ] );
 			return false;
@@ -96,54 +107,61 @@ class UrlShortener {
 		this.shortened.textInput.select();
 	}
 
+	/**
+	 * Update the QR code in the UI, creating it if necessary.
+	 *
+	 * @param {string} [qrCodeSvg] SVG string. If not provided the existing QR code will be removed.
+	 */
 	qrCodeUiHandler( qrCodeSvg ) {
-		const qrCodeUri = `data:image/svg+xml,${ encodeURIComponent( qrCodeSvg ) }`;
-		if ( this.qrCodeImage ) {
-			this.qrCodeImage.src = qrCodeUri;
-			this.qrCodeDownloadButton.href = qrCodeUri;
+		if ( !qrCodeSvg ) {
+			// eslint-disable-next-line no-jquery/no-global-selector
+			$( '.ext-urlshortener-qrcode-container' ).remove();
+			this.$qrCodeImage = null;
+			this.qrCodeDownloadButton = null;
+			return;
+		}
+		const qrCodeUri = `data:image/svg+xml;charset=utf-8,${ encodeURIComponent( qrCodeSvg ) }`;
+		if ( this.$qrCodeImage ) {
+			this.$qrCodeImage.attr( 'src', qrCodeUri );
+			this.qrCodeDownloadButton.$button.attr( 'href', qrCodeUri );
 			return;
 		}
 		// Remove PHP result if present
 		// eslint-disable-next-line no-jquery/no-global-selector
 		$( '.ext-urlshortener-qrcode-container' ).remove();
-		this.qrCodeImage = document.createElement( 'img' );
-		this.qrCodeImage.src = qrCodeUri;
-		const qrCodeNode = document.createElement( 'div' );
-		qrCodeNode.className = 'ext-urlshortener-qrcode';
-		qrCodeNode.append( this.qrCodeImage );
-		const qrCodeDownloadIcon = document.createElement( 'span' );
-		qrCodeDownloadIcon.className = 'cdx-icon cdx-icon--medium';
-		this.qrCodeDownloadButton = document.createElement( 'a' );
-		this.qrCodeDownloadButton.classList.add(
-			'ext-urlshortener-download-qr-button',
-			'cdx-button',
-			'cdx-button--fake-button',
-			'cdx-button--fake-button--enabled'
+		this.$qrCodeImage = $( '<img>' ).attr( 'src', qrCodeUri );
+
+		this.qrCodeDownloadButton = new OO.ui.ButtonWidget( {
+			icon: 'download',
+			label: mw.msg( 'urlshortener-toolbox-qrcode' ),
+			href: '.'
+		} );
+
+		this.qrCodeDownloadButton.$button.attr( {
+			download: 'qrcode.svg',
+			// OOUI prefixes './' for security, so set the attribute directly
+			href: qrCodeUri
+		} );
+
+		// eslint-disable-next-line no-jquery/no-global-selector
+		$( '.ext-urlshortener-container' ).append(
+			$( '<div>' ).addClass( 'ext-urlshortener-qrcode-container' ).append(
+				$( '<div>' ).addClass( 'ext-urlshortener-qrcode' ).append( this.$qrCodeImage ),
+				this.qrCodeDownloadButton.$element
+			)
 		);
-		this.qrCodeDownloadButton.href = qrCodeUri;
-		this.qrCodeDownloadButton.download = 'qrcode.svg';
-		this.qrCodeDownloadButton.append(
-			qrCodeDownloadIcon,
-			mw.msg( 'urlshortener-toolbox-qrcode' )
-		);
-		const qrCodeContainer = document.createElement( 'div' );
-		qrCodeContainer.className = 'ext-urlshortener-qrcode-container';
-		qrCodeContainer.append( qrCodeNode, this.qrCodeDownloadButton );
-		document.querySelector( '.ext-urlshortener-container' )
-			.append( qrCodeContainer );
 	}
 
 	/**
 	 * Click handler for the submit button
 	 */
 	onSubmit() {
-		this.input.getValidity().done( () => {
+		this.input.getValidity().then( () => {
 			this.input.pushPending().setReadOnly( true );
 			this.setSubmit( 'submitting' );
 			this.shortenUrl(
 				this.input.getValue()
-			).done( ( result ) => {
-				// shortUrlUiHandler() *may* be called for Special:QrCode, not always
+			).then( ( result ) => {
 				if ( result.shorturl ) {
 					this.shortUrlUiHandler( result );
 				} else if ( this.shortened ) {
@@ -151,12 +169,8 @@ class UrlShortener {
 					this.shortened.$element.remove();
 					this.shortened = null;
 				}
-				// qrCodeUiHandler() should only be called for Special:QrCode,
-				// (but in that case result.qrcode shouldn't be present, anyway)
-				if ( this.isQrCode ) {
-					this.qrCodeUiHandler( result.qrcode );
-				}
-			} ).fail( ( err ) => {
+				this.qrCodeUiHandler( result.qrcode );
+			}, ( err ) => {
 				this.fieldLayout.setErrors( [ err.info ] );
 			} ).always( () => {
 				this.setSubmit( 'submit' );
@@ -201,16 +215,21 @@ class UrlShortener {
 	shortenUrl( url ) {
 		const params = {
 			action: 'shortenurl',
+			qrcode: this.enableQrCode,
 			url
 		};
-		if ( this.isQrCode ) {
-			params.qrcode = true;
-		}
-		return this.api.post( params ).then( ( data ) => data.shortenurl, ( errCode, data ) => $.Deferred().reject( data.error ).promise() );
+		return this.api.post( params ).then(
+			( data ) => data.shortenurl,
+			( errCode, data ) => $.Deferred().reject( data.error ).promise()
+		);
 	}
 }
 
-$( () => {
-	const urlShortener = new UrlShortener();
-	urlShortener.init();
-} );
+if ( window.QUnit ) {
+	module.exports = { UrlShortener };
+} else {
+	$( () => {
+		const shortener = new UrlShortener();
+		shortener.init();
+	} );
+}

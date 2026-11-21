@@ -15,19 +15,26 @@ use Endroid\QrCode\Builder\Builder;
 use Endroid\QrCode\Encoding\Encoding;
 use Endroid\QrCode\Writer\Result\ResultInterface;
 use Endroid\QrCode\Writer\SvgWriter;
+use MediaWiki\Config\Config;
+use MediaWiki\Config\ConfigException;
 use MediaWiki\Deferred\CdnCacheUpdate;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MainConfigNames;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
-use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
 use MediaWiki\User\User;
 use MediaWiki\Utils\UrlUtils;
+use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\IReadableDatabase;
 
 class UrlShortenerUtils {
+	public function __construct(
+		private readonly Config $config,
+		private readonly IConnectionProvider $lbFactory,
+		private readonly UrlUtils $urlUtils,
+	) {
+	}
 
 	/**
 	 * How long to cache valid redirects in CDN (one month)
@@ -43,8 +50,8 @@ class UrlShortenerUtils {
 	 */
 	public const CACHE_TTL_INVALID = 900;
 
-	/** @var int[] */
-	public static $decodeMap;
+	/** @var array<string,int>|null */
+	public static ?array $decodeMap = null;
 
 	/**
 	 * Gets the short code for the given URL, creating if it doesn't
@@ -57,21 +64,20 @@ class UrlShortenerUtils {
 	 * @param User $user User requesting the url, for rate limiting
 	 * @return Status Status with value of base36 encoded shortcode that refers to the $url
 	 */
-	public static function maybeCreateShortCode( string $url, User $user ): Status {
-		$url = self::normalizeUrl( $url );
+	public function maybeCreateShortCode( string $url, User $user ): Status {
+		$url = $this->normalizeUrl( $url );
 
 		if ( $user->getBlock() ) {
 			return Status::newFatal( 'urlshortener-blocked' );
 		}
 
-		$config = MediaWikiServices::getInstance()->getMainConfig();
-		if ( $config->get( 'UrlShortenerReadOnly' ) ) {
+		if ( $this->config->get( 'UrlShortenerReadOnly' ) ) {
 			// All code paths should already have checked for this,
 			// but lets be on the safe side.
 			return Status::newFatal( 'urlshortener-disabled' );
 		}
 
-		$urlSizeLimit = $config->get( 'UrlShortenerUrlSizeLimit' );
+		$urlSizeLimit = $this->config->get( 'UrlShortenerUrlSizeLimit' );
 		if ( mb_strlen( $url ) > $urlSizeLimit ) {
 			return Status::newFatal(
 				wfMessage( 'urlshortener-url-too-long' )->numParams( $urlSizeLimit )
@@ -82,7 +88,7 @@ class UrlShortenerUtils {
 			return Status::newFatal( 'urlshortener-ratelimit' );
 		}
 
-		$dbr = self::getReplicaDB();
+		$dbr = $this->getReplicaDB();
 		$row = $dbr->newSelectQueryBuilder()
 			->select( [ 'usc_id', 'usc_deleted' ] )
 			->from( 'urlshortcodes' )
@@ -93,12 +99,12 @@ class UrlShortenerUtils {
 				return Status::newFatal( 'urlshortener-deleted' );
 			}
 			return Status::newGood( [
-				'url' => self::encodeId( $row->usc_id ),
-				'alt' => self::encodeId( $row->usc_id, true )
+				'url' => $this->encodeId( $row->usc_id ),
+				'alt' => $this->encodeId( $row->usc_id, true )
 			] );
 		}
 
-		$dbw = self::getPrimaryDB();
+		$dbw = $this->getPrimaryDB();
 		$dbw->newInsertQueryBuilder()
 			->insertInto( 'urlshortcodes' )
 			->ignore()
@@ -119,11 +125,11 @@ class UrlShortenerUtils {
 		}
 
 		// In case our CDN cached an earlier 404/error, purge it
-		self::purgeCdnId( $id );
+		$this->purgeCdnId( $id );
 
 		return Status::newGood( [
-			'url' => self::encodeId( $id ),
-			'alt' => self::encodeId( $id, true )
+			'url' => $this->encodeId( $id ),
+			'alt' => $this->encodeId( $id, true )
 		] );
 	}
 
@@ -135,10 +141,10 @@ class UrlShortenerUtils {
 	 * @param string $url might be encoded or decoded (raw user input)
 	 * @return string URL that is saved in DB and used in Location header
 	 */
-	public static function normalizeUrl( string $url ): string {
+	public function normalizeUrl( string $url ): string {
 		// First, force the protocol to HTTP, we'll convert
 		// it to a different one when redirecting
-		$url = self::convertToProtocol( $url, PROTO_HTTP );
+		$url = $this->convertToProtocol( $url, PROTO_HTTP );
 
 		$url = trim( $url );
 
@@ -150,19 +156,23 @@ class UrlShortenerUtils {
 
 		// If the wiki is using an article path (e.g. /wiki/$1) try
 		// and convert plain index.php?title=$1 URLs to the canonical form
-		$parsed = wfParseUrl( $url );
-		if ( !isset( $parsed['path'] ) ) {
-			// T220718: Ensure each URL has a / after the domain name
-			$parsed['path'] = '/';
-		}
-		$articlePath = MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::ArticlePath );
+		$parsed = $this->urlUtils->parse( $url );
+		// T220718: Ensure each URL has a / after the domain name
+		$parsed['path'] ??= '/';
+		$articlePath = $this->config->get( MainConfigNames::ArticlePath );
 		if ( $articlePath !== false && isset( $parsed['query'] ) ) {
 			$query = wfCgiToArray( $parsed['query'] );
-			if ( count( $query ) === 1 && isset( $query['title'] ) && $parsed['path'] === wfScript() ) {
+			if ( count( $query ) === 1 && isset( $query['title'] ) &&
+				$parsed['path'] === $this->config->get( MainConfigNames::Script )
+			) {
 				$parsed['path'] = str_replace( '$1', $query['title'], $articlePath );
 				unset( $parsed['query'] );
 			}
 		}
+
+		// T418533 - eventually migrate to WHATWG-compliant url parser
+		$parsed['host'] = str_replace( '\\', '', $parsed['host'] );
+
 		$url = UrlUtils::assemble( $parsed );
 
 		return $url;
@@ -175,28 +185,28 @@ class UrlShortenerUtils {
 	 * @param string|int $proto PROTO_* constant
 	 * @return string
 	 */
-	public static function convertToProtocol( string $url, $proto = PROTO_RELATIVE ): string {
-		$parsed = wfParseUrl( $url );
+	public function convertToProtocol( string $url, $proto = PROTO_RELATIVE ): string {
+		$parsed = $this->urlUtils->parse( $url ) ?? [];
 		unset( $parsed['scheme'] );
 		$parsed['delimiter'] = '//';
 
-		return wfExpandUrl( wfAssembleUrl( $parsed ), $proto );
+		return $this->urlUtils->expand( UrlUtils::assemble( $parsed ), $proto ) ?? '';
 	}
 
 	/**
-	 * Retrieves a URL for the given shortcode, or false if there's none.
+	 * Retrieves a URL for the given shortcode, or null if there's none.
 	 *
 	 * @param string $shortCode
 	 * @param string|int|null $proto PROTO_* constant
-	 * @return string|false
+	 * @return string|null
 	 */
-	public static function getURL( string $shortCode, $proto = PROTO_RELATIVE ) {
-		$id = self::decodeId( $shortCode );
-		if ( $id === false ) {
-			return false;
+	public function getURL( string $shortCode, $proto = PROTO_RELATIVE ): ?string {
+		$id = $this->decodeId( $shortCode );
+		if ( $id === null ) {
+			return null;
 		}
 
-		$dbr = self::getReplicaDB();
+		$dbr = $this->getReplicaDB();
 		$url = $dbr->newSelectQueryBuilder()
 			->select( 'usc_url' )
 			->from( 'urlshortcodes' )
@@ -204,25 +214,22 @@ class UrlShortenerUtils {
 			->caller( __METHOD__ )->fetchField();
 
 		if ( $url === false ) {
-			return false;
+			return null;
 		}
 
-		return self::convertToProtocol( $url, $proto );
+		return $this->convertToProtocol( $url, $proto );
 	}
 
 	/**
 	 * Whether a URL is deleted or not
-	 *
-	 * @param string $shortCode
-	 * @return bool
 	 */
-	public static function isURLDeleted( string $shortCode ): bool {
-		$id = self::decodeId( $shortCode );
-		if ( $id === false ) {
+	public function isURLDeleted( string $shortCode ): bool {
+		$id = $this->decodeId( $shortCode );
+		if ( $id === null ) {
 			return false;
 		}
 
-		$dbr = self::getReplicaDB();
+		$dbr = $this->getReplicaDB();
 		$url = $dbr->newSelectQueryBuilder()
 			->select( 'usc_url' )
 			->from( 'urlshortcodes' )
@@ -238,20 +245,20 @@ class UrlShortenerUtils {
 	 * @param string $shortcode
 	 * @return bool False if the $shortCode was invalid
 	 */
-	public static function deleteURL( string $shortcode ): bool {
-		$id = self::decodeId( $shortcode );
-		if ( $id === false ) {
+	public function deleteURL( string $shortcode ): bool {
+		$id = $this->decodeId( $shortcode );
+		if ( $id === null ) {
 			return false;
 		}
 
-		$dbw = self::getPrimaryDB();
+		$dbw = $this->getPrimaryDB();
 		$dbw->newUpdateQueryBuilder()
 			->update( 'urlshortcodes' )
 			->set( [ 'usc_deleted' => 1 ] )
 			->where( [ 'usc_id' => $id ] )
 			->caller( __METHOD__ )->execute();
 
-		self::purgeCdnId( $id );
+		$this->purgeCdnId( $id );
 
 		return true;
 	}
@@ -262,20 +269,20 @@ class UrlShortenerUtils {
 	 * @param string $shortcode
 	 * @return bool False if the $shortCode was invalid
 	 */
-	public static function restoreURL( string $shortcode ): bool {
-		$id = self::decodeId( $shortcode );
-		if ( $id === false ) {
+	public function restoreURL( string $shortcode ): bool {
+		$id = $this->decodeId( $shortcode );
+		if ( $id === null ) {
 			return false;
 		}
 
-		$dbw = self::getPrimaryDB();
+		$dbw = $this->getPrimaryDB();
 		$dbw->newUpdateQueryBuilder()
 			->update( 'urlshortcodes' )
 			->set( [ 'usc_deleted' => 0 ] )
 			->where( [ 'usc_id' => $id ] )
 			->caller( __METHOD__ )->execute();
 
-		self::purgeCdnId( $id );
+		$this->purgeCdnId( $id );
 
 		return true;
 	}
@@ -286,13 +293,13 @@ class UrlShortenerUtils {
 	 * @param array[] $sets List of sets
 	 * @return array[]
 	 */
-	public static function cartesianProduct( array $sets ): array {
+	public function cartesianProduct( array $sets ): array {
 		if ( !$sets ) {
 			return [ [] ];
 		}
 
 		$set = array_shift( $sets );
-		$productSet = self::cartesianProduct( $sets );
+		$productSet = $this->cartesianProduct( $sets );
 
 		$result = [];
 		foreach ( $set as $val ) {
@@ -311,72 +318,64 @@ class UrlShortenerUtils {
 	 * @param string $shortcode
 	 * @return string[]
 	 */
-	public static function getShortcodeVariants( string $shortcode ): array {
-		$idMapping = MediaWikiServices::getInstance()->getMainConfig()->get( 'UrlShortenerIdMapping' );
+	public function getShortcodeVariants( string $shortcode ): array {
+		/** @var array<string|int,string> $idMapping */
+		$idMapping = $this->config->get( 'UrlShortenerIdMapping' );
 
 		// Reverse the character alias mapping
 		$targetToVariants = [];
 		foreach ( $idMapping as $variant => $target ) {
-			$targetToVariants[ $target ] ??= [];
 			$targetToVariants[ $target ][] = (string)$variant;
 		}
 
 		// Build a set for each character of possible variants
 		$sets = [];
-		$chars = str_split( $shortcode );
-		foreach ( $chars as $char ) {
-			$set = $targetToVariants[ $char ] ?? [];
-			$set[] = $char;
-			$sets[] = $set;
+		foreach ( str_split( $shortcode ) as $char ) {
+			$sets[] = [
+				...$targetToVariants[$char] ?? [],
+				$char
+			];
 		}
 
 		// Cartesian product to get all combinations
-		$productSet = self::cartesianProduct( $sets );
+		$productSet = $this->cartesianProduct( $sets );
 
 		// Flatten to strings
-		return array_map( static function ( $set ) {
-			return implode( '', $set );
-		}, $productSet );
+		return array_map( static fn ( array $set ) => implode( '', $set ), $productSet );
 	}
 
 	/**
 	 * If configured, purge CDN for the given ID
-	 *
-	 * @param int $id
 	 */
-	public static function purgeCdnId( int $id ): void {
-		if ( MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::UseCdn ) ) {
+	public function purgeCdnId( int $id ): void {
+		if ( $this->config->get( MainConfigNames::UseCdn ) ) {
 			$codes = array_merge(
-				self::getShortcodeVariants( self::encodeId( $id ) ),
-				self::getShortcodeVariants( self::encodeId( $id, true ) )
+				$this->getShortcodeVariants( $this->encodeId( $id ) ),
+				$this->getShortcodeVariants( $this->encodeId( $id, true ) )
 			);
 			foreach ( $codes as $code ) {
-				self::purgeCdn( $code );
+				$this->purgeCdn( $code );
 			}
 		}
 	}
 
 	/**
 	 * If configured, purge CDN for the given shortcode
-	 *
-	 * @param string $shortcode
 	 */
-	private static function purgeCdn( string $shortcode ): void {
-		if ( MediaWikiServices::getInstance()->getMainConfig()->get( MainConfigNames::UseCdn ) ) {
-			$update = new CdnCacheUpdate( [ self::makeUrl( $shortcode ) ] );
+	private function purgeCdn( string $shortcode ): void {
+		if ( $this->config->get( MainConfigNames::UseCdn ) ) {
+			$update = new CdnCacheUpdate( [ $this->makeUrl( $shortcode ) ] );
 			DeferredUpdates::addUpdate( $update, DeferredUpdates::PRESEND );
 		}
 	}
 
-	public static function getPrimaryDB(): IDatabase {
-		return MediaWikiServices::getInstance()
-			->getDBLoadBalancerFactory()
+	public function getPrimaryDB(): IDatabase {
+		return $this->lbFactory
 			->getPrimaryDatabase( 'virtual-urlshortener' );
 	}
 
-	public static function getReplicaDB(): IReadableDatabase {
-		return MediaWikiServices::getInstance()
-			->getDBLoadBalancerFactory()
+	public function getReplicaDB(): IReadableDatabase {
+		return $this->lbFactory
 			->getReplicaDatabase( 'virtual-urlshortener' );
 	}
 
@@ -386,16 +385,19 @@ class UrlShortenerUtils {
 	 * @param string $shortCode base64 shortcode to generate URL For.
 	 * @return string The fully qualified URL
 	 */
-	public static function makeUrl( string $shortCode ): string {
-		$config = MediaWikiServices::getInstance()->getMainConfig();
-		$server = $config->get( 'UrlShortenerServer' );
+	public function makeUrl( string $shortCode ): string {
+		$server = $this->config->get( 'UrlShortenerServer' );
 		if ( $server === false ) {
-			$server = $config->get( MainConfigNames::Server );
+			$server = $this->config->get( MainConfigNames::Server );
 		}
 
-		$template = $config->get( 'UrlShortenerTemplate' );
+		$template = $this->config->get( 'UrlShortenerTemplate' );
 		if ( !is_string( $template ) ) {
-			$urlTemplate = SpecialPage::getTitleFor( 'UrlRedirector', '$1' )->getFullUrl();
+			$articlePath = $this->config->get( MainConfigNames::ArticlePath );
+
+			// This is a cross-wiki action, so we don't want to localize the special page.
+			$localUrl = str_replace( '$1', 'Special:UrlRedirector/$1', $articlePath );
+			$urlTemplate = $server . $localUrl;
 		} else {
 			$urlTemplate = $server . $template;
 		}
@@ -403,7 +405,7 @@ class UrlShortenerUtils {
 		$url = str_replace( '$1', $shortCode, $urlTemplate );
 
 		// Make sure the URL is fully qualified
-		return wfExpandUrl( $url );
+		return $this->urlUtils->expand( $url ) ?? '';
 	}
 
 	/**
@@ -411,56 +413,63 @@ class UrlShortenerUtils {
 	 *
 	 * @return string Regex of allowed domains
 	 */
-	public static function getAllowedDomainsRegex(): string {
-		$config = MediaWikiServices::getInstance()->getMainConfig();
-		$allowedDomains = $config->get( 'UrlShortenerAllowedDomains' );
+	public function getAllowedDomainsRegex(): string {
+		$allowedDomains = $this->config->get( 'UrlShortenerAllowedDomains' );
 		if ( $allowedDomains === false ) {
 			// Allowed Domains not configured, default to wgServer
-			$serverParts = wfParseUrl( $config->get( MainConfigNames::Server ) );
-			return preg_quote( $serverParts['host'], '/' );
+			$serverParts = $this->urlUtils->parse( $this->config->get( MainConfigNames::Server ) ) ?? [];
+
+			return '^(.*\.)?' . preg_quote( $serverParts['host'], '/' ) . '$';
 		}
 		// Collapse the allowed domains into a single string, so we have to run regex check only once
-		return implode( '|', array_map(
-			static function ( $item ) {
-				return '^' . $item . '$';
-			},
-			$allowedDomains
-		) );
+		return '^(?:' . implode( '|', $allowedDomains ) . ')$';
 	}
 
 	/**
 	 * Validates a given URL to see if it is allowed to be used to create a short URL
 	 *
+	 * NOTE: Keep in sync with ext.urlShortener.special.js
+	 *
 	 * @param string $url Url to Validate
 	 * @return bool|Message true if it is valid, or error Message object if invalid
 	 */
-	public static function validateUrl( string $url ) {
-		$urlParts = wfParseUrl( $url );
-		if ( $urlParts === false ) {
+	public function validateUrl( string $url ) {
+		$urlParts = $this->urlUtils->parse( $url );
+		if ( $urlParts === null ) {
 			return wfMessage( 'urlshortener-error-malformed-url' );
-		} else {
-			$allowArbitraryPorts = MediaWikiServices::getInstance()->getMainConfig()
-				->get( 'UrlShortenerAllowArbitraryPorts' );
-			if ( isset( $urlParts['port'] ) && !$allowArbitraryPorts ) {
-				if ( $urlParts['port'] === 80 || $urlParts['port'] === 443 ) {
-					unset( $urlParts['port'] );
-				} else {
-					return wfMessage( 'urlshortener-error-badports' );
-				}
-			}
+		}
 
-			if ( isset( $urlParts['user'] ) || isset( $urlParts['pass'] ) ) {
-				return wfMessage( 'urlshortener-error-nouserpass' );
-			}
-
-			$domain = $urlParts['host'];
-
-			if ( preg_match( '/' . self::getAllowedDomainsRegex() . '/', $domain ) === 1 ) {
-				return true;
-			}
-
+		$domain = $urlParts['host'];
+		if ( preg_match( '/' . $this->getAllowedDomainsRegex() . '/', $domain ) !== 1 ) {
 			return wfMessage( 'urlshortener-error-disallowed-url' )->params( htmlentities( $domain ) );
 		}
+
+		$allowArbitraryPorts = $this->config->get( 'UrlShortenerAllowArbitraryPorts' );
+		$wikiServerParts = $this->urlUtils->parse( $this->urlUtils->getCanonicalServer() );
+		if (
+			isset( $urlParts['port'] ) &&
+			!$allowArbitraryPorts &&
+			!(
+				// Always allowed
+				$urlParts['port'] === 80 ||
+				$urlParts['port'] === 443 ||
+				// Always allow shortening of $wgCanonicalServer,
+				// especially in local development where it tends to contain a port
+				(
+					isset( $wikiServerParts['port'] ) &&
+					$urlParts['host'] === $wikiServerParts['host'] &&
+					$urlParts['port'] === $wikiServerParts['port']
+				)
+			)
+		) {
+			return wfMessage( 'urlshortener-error-badports' );
+		}
+
+		if ( isset( $urlParts['user'] ) || isset( $urlParts['pass'] ) ) {
+			return wfMessage( 'urlshortener-error-nouserpass' );
+		}
+
+		return true;
 	}
 
 	/**
@@ -471,9 +480,8 @@ class UrlShortenerUtils {
 	 * @param bool $alt Provide an alternate string representation
 	 * @return string
 	 */
-	public static function encodeId( int $x, bool $alt = false ): string {
-		$config = MediaWikiServices::getInstance()->getMainConfig();
-		$idSet = $config->get( 'UrlShortenerIdSet' );
+	public function encodeId( int $x, bool $alt = false ): string {
+		$idSet = $this->config->get( 'UrlShortenerIdSet' );
 		$s = '';
 		$n = strlen( $idSet );
 		while ( $x ) {
@@ -481,51 +489,50 @@ class UrlShortenerUtils {
 			$x = ( $x - $remainder ) / $n;
 			$s = $idSet[$alt ? $n - 1 - $remainder : $remainder] . $s;
 		}
-		return $alt ? $config->get( 'UrlShortenerAltPrefix' ) . $s : $s;
+		return $alt ? $this->config->get( 'UrlShortenerAltPrefix' ) . $s : $s;
 	}
 
 	/**
-	 * Decode a compact string to produce an integer, or false if the input is invalid.
-	 *
-	 * @param string $s
-	 * @return int|false
+	 * Decode a compact string to produce an integer, or null if the input is invalid.
 	 */
-	public static function decodeId( string $s ) {
-		if ( $s === '' ) {
-			return false;
+	public function decodeId( string $s ): ?int {
+		// Very basic overflow protection against non-sensical input
+		if ( $s === '' || strlen( $s ) > 20 ) {
+			return null;
 		}
 
-		$config = MediaWikiServices::getInstance()->getMainConfig();
-		$altPrefix = $config->get( 'UrlShortenerAltPrefix' );
+		$altPrefix = $this->config->get( 'UrlShortenerAltPrefix' );
 		$alt = false;
 		if ( $s[0] === $altPrefix ) {
 			$s = substr( $s, 1 );
 			$alt = true;
 		}
 
-		$idSet = $config->get( 'UrlShortenerIdSet' );
+		$idSet = $this->config->get( 'UrlShortenerIdSet' );
 		$n = strlen( $idSet );
 		if ( self::$decodeMap === null ) {
-			self::$decodeMap = [];
-			for ( $i = 0; $i < $n; $i++ ) {
-				self::$decodeMap[$idSet[$i]] = $i;
-			}
-			foreach ( $config->get( 'UrlShortenerIdMapping' ) as $k => $v ) {
-				self::$decodeMap[$k] = self::$decodeMap[$v];
+			self::$decodeMap = array_flip( str_split( $idSet ) );
+			/** @var array<string|int,string> $idMapping */
+			$idMapping = $this->config->get( 'UrlShortenerIdMapping' );
+			foreach ( $idMapping as $variant => $target ) {
+				if ( isset( self::$decodeMap[$variant] ) || !isset( self::$decodeMap[$target] ) ) {
+					throw new ConfigException( 'Invalid wgUrlShortenerIdMapping' );
+				}
+				self::$decodeMap[$variant] = self::$decodeMap[$target];
 			}
 		}
 
 		$x = 0;
 		for ( $i = 0, $len = strlen( $s ); $i < $len; $i++ ) {
 			$x *= $n;
-			if ( isset( self::$decodeMap[$s[$i]] ) ) {
-				$val = self::$decodeMap[$s[$i]];
-				$x += $alt ?
-					$n - 1 - $val :
-					$val;
-			} else {
-				return false;
+			// Overflow protection when the calculation exceeded PHP's int range
+			if ( !isset( self::$decodeMap[$s[$i]] ) || !is_int( $x ) ) {
+				return null;
 			}
+			$val = self::$decodeMap[$s[$i]];
+			$x += $alt ?
+				$n - 1 - $val :
+				$val;
 		}
 		return $x;
 	}
@@ -538,7 +545,7 @@ class UrlShortenerUtils {
 	 * @param int $limit The value of $wgUrlShortenerQrCodeShortenLimit
 	 * @return bool
 	 */
-	public static function shouldShortenUrl( bool $qrCode, string $url, int $limit ): bool {
+	public function shouldShortenUrl( bool $qrCode, string $url, int $limit ): bool {
 		return !$qrCode || strlen( $url ) > $limit;
 	}
 
@@ -552,21 +559,21 @@ class UrlShortenerUtils {
 	 * @param bool $dataUri Return 'qrcode' as a data URI instead of XML.
 	 * @return Status Status with 'qrcode' (XML of the SVG) and if applicable, the shortened 'url' and 'alt'.
 	 */
-	public static function getQrCode( string $url, int $limit, User $user, bool $dataUri = false ): Status {
+	public function getQrCode( string $url, int $limit, User $user, bool $dataUri = false ): Status {
 		$shortUrlCode = null;
 		$shortUrlCodeAlt = null;
-		if ( self::shouldShortenUrl( true, $url, $limit ) ) {
-			$status = self::maybeCreateShortCode( $url, $user );
+		if ( $this->shouldShortenUrl( true, $url, $limit ) ) {
+			$status = $this->maybeCreateShortCode( $url, $user );
 			if ( !$status->isOK() ) {
 				return $status;
 			}
 			$shortUrlCode = $status->getValue()['url'];
 			$shortUrlCodeAlt = $status->getValue()['alt'];
-			$url = self::makeUrl( $shortUrlCode );
+			$url = $this->makeUrl( $shortUrlCode );
 		} else {
-			$url = self::normalizeUrl( $url );
+			$url = $this->normalizeUrl( $url );
 		}
-		$qrCode = self::getQrCodeInternal( $url );
+		$qrCode = $this->getQrCodeInternal( $url );
 		$res = [
 			'qrcode' => $dataUri ? $qrCode->getDataUri() : $qrCode->getString(),
 		];
@@ -577,14 +584,31 @@ class UrlShortenerUtils {
 		return Status::newGood( $res );
 	}
 
-	private static function getQrCodeInternal( string $url ): ResultInterface {
-		return Builder::create()
-			->writer( new SvgWriter() )
-			->writerOptions( [] )
-			->data( $url )
-			->encoding( new Encoding( 'UTF-8' ) )
-			->size( 300 )
-			->margin( 10 )
-			->build();
+	/**
+	 * Build a QR code for an existing short code.
+	 *
+	 * This avoids a second call to maybeCreateShortCode() (and thus a second rate-limit
+	 * hit) when the short code already exists.
+	 *
+	 * @param string $shortUrlCode The short code (not a full URL)
+	 * @param bool $dataUri Return 'qrcode' as a data URI instead of XML.
+	 * @return Status Status with 'qrcode' (XML of the SVG or a data URI).
+	 */
+	public function getQrCodeForShortCode( string $shortUrlCode, bool $dataUri = false ): Status {
+		$url = $this->makeUrl( $shortUrlCode );
+		$qrCode = $this->getQrCodeInternal( $url );
+		return Status::newGood( [
+			'qrcode' => $dataUri ? $qrCode->getDataUri() : $qrCode->getString(),
+		] );
+	}
+
+	private function getQrCodeInternal( string $url ): ResultInterface {
+		return ( new Builder(
+			writer: new SvgWriter(),
+			data: $url,
+			encoding: new Encoding( 'UTF-8' ),
+			size: 300,
+			margin: 10,
+		) )->build();
 	}
 }

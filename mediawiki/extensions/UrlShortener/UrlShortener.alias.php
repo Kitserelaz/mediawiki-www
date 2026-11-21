@@ -25,6 +25,13 @@ $specialPageAliases['arz'] = [
 	'UrlShortener' => [ 'تقصير_المسار' ],
 ];
 
+/** Azerbaijani (Azərbaycanca) */
+$specialPageAliases['az'] = [
+	'UrlShortener' => [ 'UrlQısaldıcısı' ],
+	'ManageShortUrls' => [ 'QısaUrlləriİdarəEt' ],
+	'QrCode' => [ 'QrKodu' ],
+];
+
 /** Bosnian (bosanski) */
 $specialPageAliases['bs'] = [
 	'UrlShortener' => [ 'Skraćivač_adresa', 'Skraćivač_URL_adresa' ],
@@ -63,6 +70,13 @@ $specialPageAliases['pl'] = [
 	'QrCode' => [ 'Kod_QR' ],
 ];
 
+/** Slovak (slovenčina) */
+$specialPageAliases['sk'] = [
+	'UrlShortener' => [ 'SkracovačURL' ],
+	'ManageShortUrls' => [ 'SprávaSkrátenýchURL' ],
+	'QrCode' => [ 'GenerátorQRKódov' ],
+];
+
 /** Serbian (Cyrillic script) (српски (ћирилица)) */
 $specialPageAliases['sr-ec'] = [
 	'UrlShortener' => [ 'Скраћивач_адреса', 'Скраћивач_URL_адреса' ],
@@ -78,12 +92,23 @@ $specialPageAliases['ur'] = [
 	'UrlShortener' => [ 'یوآرایل_مختصر_کنندہ' ],
 ];
 
+/** Chinese (中文) */
+$specialPageAliases['zh'] = [
+	'UrlShortener' => [ 'UrlShortener' ],
+	'ManageShortUrls' => [ 'ManageShortUrls' ],
+	'QrCode' => [ 'QrCode' ],
+];
+
 /** Simplified Chinese (中文（简体）) */
 $specialPageAliases['zh-hans'] = [
-	'UrlShortener' => [ 'URL缩短程序' ],
+	'UrlShortener' => [ 'URL缩短器', 'URL缩短程序' ],
+	'ManageShortUrls' => [ '管理短链接' ],
+	'QrCode' => [ '二维码' ],
 ];
 
 /** Traditional Chinese (中文（繁體）) */
 $specialPageAliases['zh-hant'] = [
-	'UrlShortener' => [ 'URL縮短程式' ],
+	'UrlShortener' => [ '縮網址器', 'URL縮短程式' ],
+	'ManageShortUrls' => [ '管理短網址' ],
+	'QrCode' => [ 'QR碼' ],
 ];

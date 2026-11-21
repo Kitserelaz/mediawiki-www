@@ -2,7 +2,8 @@
 	"@metadata": {
 		"authors": [
 			"Run Li",
-			"Ерней"
+			"Ерней",
+			"Ильгиз"
 		]
 	},
 	"urlshortener": "URL кыскартучы",
@@ -10,8 +11,10 @@
 	"urlshortener-not-found-title": "Кыска URL табылмады",
 	"urlshortener-shortened-url-label": "Кыскартылган URL",
 	"urlshortener-toolbox": "Кыска URL алу",
+	"urlshortener-toolbox-qrcode": "QR кодны йөкләп алу",
 	"urlshortener-url-input-label": "URL",
 	"urlshortener-url-input-submit": "Кыскарту",
 	"urlshortener-url-input-submitting": "Кыскартыла…",
-	"urlshortener-url-too-long": "URL бигрәк тә озын, иң зур озынлыгы {{PLURAL:$1|бер генә билге|$1 билге}} була"
+	"urlshortener-url-too-long": "URL бигрәк тә озын, иң зур озынлыгы {{PLURAL:$1|бер генә билге|$1 билге}} була",
+	"urlshortener-qrcode-downloaded": "QR код SVG файлы итеп йөкләп алынды"
 }

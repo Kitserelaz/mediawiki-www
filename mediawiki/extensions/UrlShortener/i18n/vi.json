@@ -1,11 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
+			"FunnyYellowDog",
 			"Minh Nguyen",
 			"NguyenHung",
 			"Nguyên Lê",
-			"Vinhtantran",
-			"FunnyYellowDog"
+			"Nvdtn19",
+			"Vinhtantran"
 		]
 	},
 	"action-urlshortener-create-url": "tạo URL rút gọn",
@@ -45,7 +46,7 @@
 	"urlshortener-short-code-not-found": "Mã rút gọn URL không tìm thấy hoặc đã bị xóa",
 	"urlshortener-shortened-url-alt": "Bạn cũng có thể dùng URL thay thế sau:",
 	"urlshortener-shortened-url-label": "URL rút gọn",
-	"urlshortener-toolbox": "Lấy URL rút gọn",
+	"urlshortener-toolbox": "Tạo URL rút gọn",
 	"urlshortener-toolbox-qrcode": "Tải mã QR",
 	"urlshortener-url-input-label": "URL",
 	"urlshortener-url-input-submit": "Rút gọn",

@@ -1,14 +1,15 @@
 <?php
 
-use MediaWiki\Extension\UrlShortener\UrlShortenerUtils;
 use MediaWiki\Maintenance\Maintenance;
 use Wikimedia\Rdbms\SelectQueryBuilder;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 /**
  * Creates a pipe-separated text file of generated short codes
@@ -26,7 +27,8 @@ class DumpURLs extends Maintenance {
 	}
 
 	public function execute() {
-		$dbr = UrlShortenerUtils::getReplicaDB();
+		$utils = $this->getServiceContainer()->get( 'UrlShortener.Utils' );
+		$dbr = $utils->getReplicaDB();
 		$file = $this->getArg( 0 );
 		$this->output( "Writing to $file...\n" );
 		$handle = fopen( $file, 'w' );
@@ -44,8 +46,8 @@ class DumpURLs extends Maintenance {
 				->limit( $this->mBatchSize )
 				->caller( __METHOD__ )->fetchResultSet();
 			foreach ( $rows as $row ) {
-				$shortCode = UrlShortenerUtils::encodeId( $row->usc_id );
-				$url = UrlShortenerUtils::convertToProtocol( $row->usc_url, PROTO_CANONICAL );
+				$shortCode = $utils->encodeId( $row->usc_id );
+				$url = $utils->convertToProtocol( $row->usc_url, PROTO_CANONICAL );
 				$text .= "{$shortCode}|{$url}\n";
 				$id = $row->usc_id;
 			}
@@ -62,5 +64,7 @@ class DumpURLs extends Maintenance {
 
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = DumpURLs::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

@@ -24,6 +24,20 @@ function farmWikiId(string $wiki): string {
     return farmWikiRegistry()['aliases'][$wiki] ?? $wiki;
 }
 
+function farmWikiAuthSegment(string $wiki): string {
+    if (preg_match('/^([1-9][0-9]*)wiki$/D', $wiki, $match) && farmWikiIdentity($wiki)) {
+        return $match[1];
+    }
+    return $wiki;
+}
+
+function farmWikiIdFromAuthSegment(string $segment): string {
+    if (preg_match('/^[1-9][0-9]*$/D', $segment) && farmWikiIdentity($segment . 'wiki')) {
+        return $segment . 'wiki';
+    }
+    return farmWikiId($segment);
+}
+
 function farmWikiIdentity(string $wiki): array {
     return farmWikiRegistry()['wikis'][farmWikiId($wiki)] ?? [];
 }

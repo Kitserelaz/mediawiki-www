@@ -347,7 +347,7 @@ class MirahezeFunctions {
 			}
 			[ , $dbname, ] = $pathBits;
 			// No validation of $dbname at this point - if it's invalid, an error will be produced
-			return function_exists( 'farmWikiId' ) ? farmWikiId( $dbname ) : $dbname;
+			return function_exists( 'farmWikiIdFromAuthSegment' ) ? farmWikiIdFromAuthSegment( $dbname ) : $dbname;
 		}
 
 		if ( function_exists( 'farmWikiHostId' ) && ( $registered = farmWikiHostId( $hostname ) ) !== null ) {

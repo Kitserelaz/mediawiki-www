@@ -26,10 +26,10 @@
             respond @assetPhp 404
             file_server
         }
-        # Shared-auth URLs carry the target database in their first path component.
+        # Shared-auth URLs start with a numeric ID or a legacy wiki database name.
         @auth host auth.{$MW_DOMAIN:localhost}
         handle @auth {
-            @authArticle path_regexp authArticle ^/[a-z0-9_]+wiki/wiki/(.*)$
+            @authArticle path_regexp authArticle ^/(?:[1-9][0-9]*|[a-z0-9_]+wiki)/wiki/(.*)$
             handle @authArticle {
                 rewrite * /index.php?title={re.authArticle.1}&{query}
                 php_fastcgi php:9000 {
@@ -39,7 +39,7 @@
                     env REQUEST_URI {http.request.orig_uri}
                 }
             }
-            @authEntry path_regexp authEntry ^/[a-z0-9_]+wiki/w/(index|api|load|rest)\.php(/.*)?$
+            @authEntry path_regexp authEntry ^/(?:[1-9][0-9]*|[a-z0-9_]+wiki)/w/(index|api|load|rest)\.php(/.*)?$
             handle @authEntry {
                 rewrite * /{re.authEntry.1}.php{re.authEntry.2}
                 php_fastcgi php:9000 {

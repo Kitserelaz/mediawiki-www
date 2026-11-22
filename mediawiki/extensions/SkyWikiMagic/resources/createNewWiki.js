@@ -21,7 +21,7 @@
 		status.setAttribute( 'aria-live', 'polite' );
 		status.id = 'skywiki-subdomain-status';
 		const suggestions = document.createElement( 'div' );
-		const suggestionStatus = document.createElement( 'span' );
+		const suggestionStatus = document.createElement( 'div' );
 		suggestionStatus.setAttribute( 'role', 'status' );
 		const useSuggestion = document.createElement( 'button' );
 		useSuggestion.type = 'button';
@@ -62,6 +62,17 @@
 			if ( channel.request && channel.request.abort ) {
 				channel.request.abort();
 			}
+		}
+
+		function showError( target, text ) {
+			const error = new OO.ui.MessageWidget( {
+				type: 'error',
+				inline: true,
+				label: text
+			} );
+			// The container already announces updates.
+			error.$element.removeAttr( 'role' );
+			target.replaceChildren( error.$element[ 0 ] );
 		}
 
 		function applySuggestion( value ) {
@@ -111,16 +122,16 @@
 								useSuggestion.hidden = false;
 							}
 						} else {
-							( automatic ? status : suggestionStatus ).textContent = result.message;
+							showError( feedback, result.message );
 						}
+					} else if ( result.available ) {
+						status.textContent = mw.msg( 'createnewwiki-subdomain-available', result.subdomain );
 					} else {
-						status.textContent = result.available ?
-							mw.msg( 'createnewwiki-subdomain-available', result.subdomain ) : result.message;
+						showError( status, result.message );
 					}
 				}, () => {
 					if ( current === channel.generation ) {
-						( suggest && !automatic ? suggestionStatus : status ).textContent =
-							mw.msg( 'createnewwiki-subdomain-check-failed' );
+						showError( feedback, mw.msg( 'createnewwiki-subdomain-check-failed' ) );
 					}
 				} );
 			}, 350 );

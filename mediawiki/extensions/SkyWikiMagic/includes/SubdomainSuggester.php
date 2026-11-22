@@ -9,11 +9,11 @@ class SubdomainSuggester {
 
 	public function suggest( string $sitename, ?string $lang = null ): ?string {
 		$latinName = $this->romanize( $sitename, $lang );
-		$base = preg_replace( '/[^a-z0-9]/', '', strtolower( $latinName ?: $sitename ) );
+		$base = preg_replace( '/[^a-z0-9]+/', $this->validator->allowsHyphens() ? '-' : '', strtolower( $latinName ?: $sitename ) );
 		// The domain already identifies this as a wiki, so omit a trailing 'wiki'.
-		$base = preg_replace( '/wiki$/', '', $base );
+		$base = preg_replace( '/wiki$/', '', trim( $base, '-' ) );
 		// Leave room for collision suffixes and the database suffix.
-		$base = substr( $base, 0, 50 ) ?: 'wiki';
+		$base = rtrim( substr( $base, 0, 50 ), '-' ) ?: 'wiki';
 
 		for ( $attempt = 0; $attempt < 100; $attempt++ ) {
 			if ( $attempt === 0 ) {

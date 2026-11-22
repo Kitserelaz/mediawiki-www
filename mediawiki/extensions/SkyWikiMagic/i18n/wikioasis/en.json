@@ -131,6 +131,7 @@
 	"createnewwiki-subdomain-available": "$1 is available.",
 	"createnewwiki-subdomain-check-failed": "Could not check availability. Please try again.",
 	"createnewwiki-subdomain-invalid": "Use 1–60 lowercase letters or numbers for the subdomain.",
+	"createnewwiki-subdomain-invalid-hyphen": "Use 1–60 letters, numbers, or hyphens. Start and end with a letter or number.",
 	"createnewwiki-subdomain-use": "Use suggested subdomain: $1",
 	"createnewwiki-subdomain-enter": "Enter a subdomain to check availability.",
 	"apihelp-skywikisubdomain-summary": "Suggest an available wiki subdomain or check a chosen subdomain.",

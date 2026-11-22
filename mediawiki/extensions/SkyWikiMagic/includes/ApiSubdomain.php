@@ -30,17 +30,17 @@ class ApiSubdomain extends ApiBase {
 		}
 		$this->getMain()->setCacheMode( 'private' );
 		$params = $this->extractRequestParams();
-		$validator = new SubdomainValidator( $this->validator, $this->getConfig()->get( ConfigNames::Subdomain ) );
+		$config = $this->getConfig();
+		$validator = new SubdomainValidator(
+			$this->validator, $config->get( ConfigNames::Subdomain ), $config->get( ConfigNames::DisallowedSubdomains )
+		);
 		if ( $params['subdomain'] !== '' ) {
 			$subdomain = $params['subdomain'];
 			$check = $validator->validate( $subdomain );
-			$available = $check === true && strlen( $subdomain ) <= 60
-				&& preg_match( '/^[a-z0-9]+$/D', $subdomain );
 			$result = [
 				'subdomain' => $subdomain,
-				'available' => (bool)$available,
-				'message' => $available ? '' : ( $check === true
-					? $this->msg( 'createnewwiki-subdomain-invalid' )->text() : $check->text() ),
+				'available' => $check === true,
+				'message' => $check === true ? '' : $check->text(),
 			];
 		} else {
 			$name = trim( $params['name'] );

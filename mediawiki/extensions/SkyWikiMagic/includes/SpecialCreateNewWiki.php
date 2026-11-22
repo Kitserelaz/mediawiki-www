@@ -370,7 +370,10 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 	}
 
 	private function getSubdomainValidator(): SubdomainValidator {
-		return new SubdomainValidator( $this->validator, $this->getConfig()->get( ConfigNames::Subdomain ) );
+		$config = $this->getConfig();
+		return new SubdomainValidator(
+			$this->validator, $config->get( ConfigNames::Subdomain ), $config->get( ConfigNames::DisallowedSubdomains )
+		);
 	}
 
 	/**

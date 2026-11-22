@@ -22,6 +22,9 @@ final class SubdomainValidator {
 
 	public function validate( ?string $subdomain ): bool|Message {
 		$label = $this->validator->getValidSubdomain( $subdomain ?? '' );
+		if ( ctype_digit( $label ) ) {
+			return Message::newFromKey( 'createnewwiki-subdomain-numeric' );
+		}
 		if ( strlen( $label ) > 60 ) {
 			return Message::newFromKey( $this->allowsHyphens()
 				? 'createnewwiki-subdomain-invalid-hyphen'

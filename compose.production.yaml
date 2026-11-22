@@ -10,6 +10,7 @@ services:
   web:
     ports: !override ['80:80', '443:443']
     environment:
+      MW_NUMERIC_WIKI_IDS: ${MW_NUMERIC_WIKI_IDS:-0}
       ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL}
       MW_CUSTOM_DOMAINS_ACME_CA: ${MW_CUSTOM_DOMAINS_ACME_CA:-https://acme-v02.api.letsencrypt.org/directory}
       MW_PUBLIC_HOSTS: ${MW_PUBLIC_HOSTS:?List every production wiki and auth hostname separated by comma and space}

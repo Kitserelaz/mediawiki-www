@@ -325,10 +325,11 @@ $wgScribuntoEngineConf['luastandalone']['luaPath'] = '/usr/bin/lua5.1';
 $wmgSharedDomainPathPrefix = '';
 if ( ( $_SERVER['HTTP_HOST'] ?? '' ) === $wi->getSharedDomain()
 ) {
-	$wmgSharedDomainPathPrefix = "/$wgDBname";
+	$wmgSharedDomainPathPrefix = '/' . ( function_exists( 'farmWikiAuthSegment' ) ? farmWikiAuthSegment( $wgDBname ) : $wgDBname );
+	$wgArticlePath = $wmgSharedDomainPathPrefix . $wgArticlePath;
 	$wgScriptPath  = "$wmgSharedDomainPathPrefix/w";
 
-	$wgCanonicalServer = 'https://' . $wi->getSharedDomain();
+	$wgServer = $wgCanonicalServer = 'https://' . $wi->getSharedDomain();
 	$wgLoadScript = "{$wgCanonicalServer}$wgScriptPath/load.php";
 
 	$wgUseSiteCss = false;
@@ -336,11 +337,6 @@ if ( ( $_SERVER['HTTP_HOST'] ?? '' ) === $wi->getSharedDomain()
 
 	// We use load.php directly from auth for custom domains due to CSP
 	$wgCentralAuthSul3SharedDomainRestrictions['allowedEntryPoints'] = [ 'load' ];
-}
-
-if ( $wmgSharedDomainPathPrefix ) {
-	$wgArticlePath = $wmgSharedDomainPathPrefix . $wgArticlePath;
-	$wgServer = getenv('MW_DOCKER') ? $wi->server : $wgDBname . ".cloudwiki.us"; //'//' . $wi->getSharedDomain();
 }
 
 if ( $wmgSharedDomainPathPrefix ) {
@@ -388,7 +384,7 @@ require __DIR__ . '/S3Settings.php';
 // Support imported infoboxes on the local development Test Wiki.
 if ( getenv( 'MW_DOCKER' ) && getenv( 'MW_ENV' ) === 'development'
     && ( getenv( 'MW_DOMAIN' ) ?: 'localhost' ) === 'localhost'
-    && $wi->dbname === 'testwiki'
+    && $wi->dbname === farmWikiId( 'testwiki' )
 ) {
     wfLoadExtension( 'PortableInfobox' );
 }

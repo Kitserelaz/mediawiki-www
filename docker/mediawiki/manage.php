@@ -4,6 +4,7 @@ require_once __DIR__ . '/process.php';
 require __DIR__ . '/private.php';
 require __DIR__ . '/runtime.php';
 require __DIR__ . '/upgrade-preflight.php';
+require __DIR__ . '/wiki-identity-admin.php';
 
 $managementStopping = false;
 $managementChild = null;
@@ -43,12 +44,12 @@ function auxiliary(): void {
     command(['php', 'maintenance/run.php', '/opt/farm/auxiliary-schema.php', '--wiki=centralauth'], ['MW_BOOTSTRAP_DB' => 'centralauth', 'MW_BOOTSTRAP_AUX' => '1']);
 }
 function refresh(): void {
-    command(['php', 'maintenance/run.php', '/opt/farm/refresh.php', '--wiki=metawiki'], ['MW_BOOTSTRAP_DB' => 'metawiki']);
+    command(['php', 'maintenance/run.php', '/opt/farm/refresh.php', '--wiki=' . farmWikiId('metawiki')], ['MW_BOOTSTRAP_DB' => farmWikiId('metawiki')]);
     // Rebuild again with the complete runtime configuration, including additional rights.
-    command(['php', 'maintenance/run.php', '/opt/farm/refresh.php', '--wiki=metawiki'], ['MW_BOOTSTRAP_DB' => '']);
+    command(['php', 'maintenance/run.php', '/opt/farm/refresh.php', '--wiki=' . farmWikiId('metawiki')], ['MW_BOOTSTRAP_DB' => '']);
 }
 function verifyDomains(): void {
-    command(['php', 'maintenance/run.php', '/opt/farm/verify-domains.php', '--wiki=metawiki'], ['MW_BOOTSTRAP_DB' => 'metawiki']);
+    command(['php', 'maintenance/run.php', '/opt/farm/verify-domains.php', '--wiki=' . farmWikiId('metawiki')], ['MW_BOOTSTRAP_DB' => farmWikiId('metawiki')]);
 }
 function seedFarmDefaults(bool $freshProduction = false): void {
     if (farmEnv('MW_ENV', 'development') === 'production' && !$freshProduction) { throw new RuntimeException('Use explicit fresh-production initialization for a new production farm'); }
@@ -71,9 +72,13 @@ function grantApplication(PDO $root): void {
 $mode = $argv[1] ?? 'help';
 try {
     if ($mode === 'help') {
-        echo "Commands: fresh | fresh-production | seed-development | preflight | update | refresh | list | backup DIRECTORY | restore DIRECTORY\n"; exit(0);
+        echo "Commands: fresh | fresh-production | seed-development | preflight | update | refresh | list | backup DIRECTORY | restore DIRECTORY | wiki-id-plan | wiki-id-apply SNAPSHOT PLAN.json [--production] | wiki-id-reserve REQUEST_ID | wiki-id-publish\n"; exit(0);
     }
-    if (in_array($mode, ['fresh', 'fresh-production', 'restore'], true)) {
+    if ($mode === 'wiki-id-apply' && farmEnv('MW_ENV', 'development') === 'production'
+        && ($argv[4] ?? '') !== '--production') {
+        throw new RuntimeException('Production migration requires explicit --production after backup and rehearsal verification');
+    }
+    if (in_array($mode, ['fresh', 'fresh-production', 'restore', 'wiki-id-apply'], true)) {
         $root = new PDO('mysql:host=' . farmEnv('MW_DB_HOST', 'database'), 'root', trim(file_get_contents('/run/secrets/db-root-password')), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
         if ((int)$root->query("SELECT GET_LOCK('farm-initialization', 0)")->fetchColumn() !== 1) { throw new RuntimeException('Another initialization is running'); }
         grantApplication($root);
@@ -151,6 +156,22 @@ try {
         foreach (wikiList() as $wiki) { updateWiki($wiki); }
         refresh();
         foreach (wikiList() as $wiki) { updateWiki($wiki, false); }
+    } elseif ($mode === 'wiki-id-plan') {
+        $db = connectDb('wikidb');
+        $plan = farmWikiMigrationPlan($db);
+        echo json_encode(['wikis' => $plan, 'references' => farmIdentityReferences($db, $plan)],
+            JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT), "\n";
+    } elseif ($mode === 'wiki-id-apply') {
+        $root->exec('USE wikidb');
+        farmApplyWikiIdentityPlan($root, $argv[2] ?? '', $argv[3] ?? '');
+    } elseif ($mode === 'wiki-id-reserve') {
+        if (!farmNumericIdsEnabled() || getenv('MW_FARM_READ_ONLY') === '1'
+            || !preg_match('/^[1-9][0-9]*$/D', $argv[2] ?? '')) {
+            throw new RuntimeException('Pass an open request ID with numeric mode enabled and maintenance ended');
+        }
+        echo farmReserveWikiRequest(connectDb('wikidb'), (int)$argv[2]), "\n";
+    } elseif ($mode === 'wiki-id-publish') {
+        farmPublishIdentityRegistry(connectDb('wikidb'));
     } elseif ($mode === 'backup') {
         $dir = $argv[2] ?? '';
         if (!preg_match('#^/backups/[A-Za-z0-9_-]+$#D', $dir)) { throw new RuntimeException('Backup directory must be below /backups/'); }
@@ -173,7 +194,15 @@ try {
         foreach (['redis', 'counter', 'caddy'] as $volume) {
             command(['tar', '-czf', "$dir/$volume.tar.gz", '-C', "/snapshot/$volume", '.']);
         }
-        file_put_contents("$dir/manifest.json", json_encode(['databases' => array_values($databases), 'created' => gmdate('c'), 'volumes' => ['redis', 'counter', 'caddy'], 'dumps' => true], JSON_PRETTY_PRINT));
+        $hashes = [];
+        foreach (glob("$dir/*") as $file) {
+            $digest = hash_file('sha256', $file);
+            if ($digest === false) {
+                throw new RuntimeException('Cannot checksum backup file: ' . basename($file));
+            }
+            $hashes[basename($file)] = $digest;
+        }
+        file_put_contents("$dir/manifest.json", json_encode(['sha256' => $hashes, 'databases' => array_values($databases), 'created' => gmdate('c'), 'volumes' => ['redis', 'counter', 'caddy'], 'dumps' => true], JSON_PRETTY_PRINT));
         command(['chown', '-R', fileowner('/backups') . ':' . filegroup('/backups'), $dir]);
     } elseif ($mode === 'restore') {
         $dir = $argv[2] ?? '';

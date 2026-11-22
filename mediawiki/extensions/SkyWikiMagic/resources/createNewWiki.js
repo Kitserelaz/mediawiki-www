@@ -1,6 +1,10 @@
 ( function () {
 	'use strict';
 
+	function formatSubdomain( value ) {
+		return value.trimStart().toLowerCase().replace( /-?\s+/g, '-' );
+	}
+
 	function init() {
 		let name = document.querySelector( 'input[name="wpsitename"]' );
 		let subdomain = document.querySelector( 'input[name="wpdbname"]' );
@@ -21,7 +25,7 @@
 		status.setAttribute( 'aria-live', 'polite' );
 		status.id = 'skywiki-subdomain-status';
 		const suggestions = document.createElement( 'div' );
-		const suggestionStatus = document.createElement( 'span' );
+		const suggestionStatus = document.createElement( 'div' );
 		suggestionStatus.setAttribute( 'role', 'status' );
 		const useSuggestion = document.createElement( 'button' );
 		useSuggestion.type = 'button';
@@ -62,6 +66,17 @@
 			if ( channel.request && channel.request.abort ) {
 				channel.request.abort();
 			}
+		}
+
+		function showError( target, text ) {
+			const error = new OO.ui.MessageWidget( {
+				type: 'error',
+				inline: true,
+				label: text
+			} );
+			// The container already announces updates.
+			error.$element.removeAttr( 'role' );
+			target.replaceChildren( error.$element[ 0 ] );
 		}
 
 		function applySuggestion( value ) {
@@ -111,16 +126,16 @@
 								useSuggestion.hidden = false;
 							}
 						} else {
-							( automatic ? status : suggestionStatus ).textContent = result.message;
+							showError( feedback, result.message );
 						}
+					} else if ( result.available ) {
+						status.textContent = mw.msg( 'createnewwiki-subdomain-available', result.subdomain );
 					} else {
-						status.textContent = result.available ?
-							mw.msg( 'createnewwiki-subdomain-available', result.subdomain ) : result.message;
+						showError( status, result.message );
 					}
 				}, () => {
 					if ( current === channel.generation ) {
-						( suggest && !automatic ? suggestionStatus : status ).textContent =
-							mw.msg( 'createnewwiki-subdomain-check-failed' );
+						showError( feedback, mw.msg( 'createnewwiki-subdomain-check-failed' ) );
 					}
 				} );
 			}, 350 );
@@ -132,13 +147,33 @@
 			}
 			schedule( true );
 		} );
-		subdomain.addEventListener( 'input', () => {
-			// Ignore duplicate notifications and our own widget updates.
-			if ( subdomain.value === lastSubdomainValue ) {
+		function onSubdomainInput( event ) {
+			if ( event.isComposing ) {
 				return;
 			}
-			lastSubdomainValue = subdomain.value;
-			automatic = !subdomain.value.trim();
+
+			const raw = subdomain.value;
+			const normalized = formatSubdomain( raw );
+			if ( normalized !== raw ) {
+				const start = subdomain.selectionStart;
+				const end = subdomain.selectionEnd;
+				const direction = subdomain.selectionDirection;
+				subdomainWidget.setValue( normalized );
+				if ( start !== null && end !== null ) {
+					subdomain.setSelectionRange(
+						formatSubdomain( raw.slice( 0, start ) ).length,
+						formatSubdomain( raw.slice( 0, end ) ).length,
+						direction
+					);
+				}
+			}
+
+			// Ignore duplicate notifications and our own widget updates.
+			if ( normalized === lastSubdomainValue ) {
+				return;
+			}
+			lastSubdomainValue = normalized;
+			automatic = normalized === '';
 			autoField.value = automatic ? '1' : '0';
 			cancel( channels.suggest );
 			suggested = '';
@@ -150,7 +185,9 @@
 			} else {
 				schedule( false );
 			}
-		} );
+		}
+		subdomain.addEventListener( 'input', onSubdomainInput );
+		subdomain.addEventListener( 'compositionend', onSubdomainInput );
 		useSuggestion.addEventListener( 'click', () => {
 			if ( suggested ) {
 				applySuggestion( suggested );

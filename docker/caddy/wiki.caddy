@@ -12,6 +12,19 @@
     encode zstd gzip
     header X-Content-Type-Options nosniff
     route {
+        @numericFarmHost {
+            host *.{$MW_DOMAIN:localhost} *.{$MW_BETA_DOMAIN:beta.localhost}
+            expression `'{$MW_NUMERIC_WIKI_IDS:0}' == '1' && {http.request.host}.matches('^[0-9]+[.]')`
+        }
+        forward_auth @numericFarmHost 127.0.0.1:8081 {
+            uri /route-numeric
+            header_up Host 127.0.0.1:8081
+            header_up X-CloudWiki-Lookup-Host {http.request.host}
+            header_up X-CloudWiki-Lookup-SNI {http.request.tls.server_name}
+            header_up X-CloudWiki-Lookup-Scheme {scheme}
+            header_up -Cookie
+            header_up -Authorization
+        }
         @creationEvents path /wiki-creation/events
         reverse_proxy @creationEvents creation-events:8080
         # Only public assets and known entrypoints are exposed. Caddy ignores .htaccess.
@@ -26,10 +39,10 @@
             respond @assetPhp 404
             file_server
         }
-        # Shared-auth URLs carry the target database in their first path component.
+        # Shared-auth URLs start with a numeric ID or a legacy wiki database name.
         @auth host auth.{$MW_DOMAIN:localhost}
         handle @auth {
-            @authArticle path_regexp authArticle ^/[a-z0-9_]+wiki/wiki/(.*)$
+            @authArticle path_regexp authArticle ^/(?:[1-9][0-9]*|[a-z0-9_]+wiki)/wiki/(.*)$
             handle @authArticle {
                 rewrite * /index.php?title={re.authArticle.1}&{query}
                 php_fastcgi php:9000 {
@@ -39,7 +52,7 @@
                     env REQUEST_URI {http.request.orig_uri}
                 }
             }
-            @authEntry path_regexp authEntry ^/[a-z0-9_]+wiki/w/(index|api|load|rest)\.php(/.*)?$
+            @authEntry path_regexp authEntry ^/(?:[1-9][0-9]*|[a-z0-9_]+wiki)/w/(index|api|load|rest)\.php(/.*)?$
             handle @authEntry {
                 rewrite * /{re.authEntry.1}.php{re.authEntry.2}
                 php_fastcgi php:9000 {

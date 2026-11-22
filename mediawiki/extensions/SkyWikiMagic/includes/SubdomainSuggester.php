@@ -2,31 +2,47 @@
 
 namespace WikiOasis\WikiOasisMagic;
 
-use Miraheze\CreateWiki\Services\CreateWikiValidator;
+use MediaWiki\Message\Message;
 
 class SubdomainSuggester {
 
-	public function __construct( private readonly CreateWikiValidator $validator ) {
+	public function __construct( private readonly SubdomainValidator $validator ) {
 	}
 
 	public function suggest( string $sitename, ?string $lang = null ): ?string {
 		$latinName = $this->romanize( $sitename, $lang );
-		$base = preg_replace( '/[^a-z0-9]/', '', strtolower( $latinName ?: $sitename ) );
+		$separator = $this->validator->allowsHyphens() ? '-' : '';
+		$base = preg_replace( '/[^a-z0-9]+/', $separator, strtolower( $latinName ?: $sitename ) );
 		// The domain already identifies this as a wiki, so omit a trailing 'wiki'.
-		$base = preg_replace( '/wiki$/', '', $base );
+		$base = preg_replace( '/wiki$/', '', trim( $base, '-' ) );
 		// Leave room for collision suffixes and the database suffix.
-		$base = substr( $base, 0, 50 ) ?: 'wiki';
+		$base = rtrim( substr( $base, 0, 50 ), '-' ) ?: 'wiki';
+		$wikiSuffix = $separator . 'wiki';
+		if ( strlen( $base ) < SubdomainValidator::MIN_LABEL_LENGTH || ctype_digit( $base ) ) {
+			$base = substr( $base, 0, 50 - strlen( $wikiSuffix ) ) . $wikiSuffix;
+		}
 
-		for ( $attempt = 0; $attempt < 100; $attempt++ ) {
-			if ( $attempt === 0 ) {
-				$candidate = $base;
-			} elseif ( $attempt < 20 ) {
+		$check = $this->validator->validate( $base );
+		if ( $check === true ) {
+			return $base;
+		}
+		if ( $check instanceof Message && $check->getKey() === 'createwiki-error-subdomaintaken' &&
+			!str_ends_with( $base, $wikiSuffix )
+		) {
+			$base = rtrim( substr( $base, 0, 50 - strlen( $wikiSuffix ) ), '-' ) . $wikiSuffix;
+			if ( $this->validator->validate( $base ) === true ) {
+				return $base;
+			}
+		}
+
+		for ( $attempt = 1; $attempt < 100; $attempt++ ) {
+			if ( $attempt < 20 ) {
 				$candidate = $base . ( $attempt + 1 );
 			} else {
 				$candidate = $base . bin2hex( random_bytes( 4 ) );
 			}
 
-			if ( $this->validator->validateSubdomain( $candidate, [] ) === true ) {
+			if ( $this->validator->validate( $candidate ) === true ) {
 				return $candidate;
 			}
 		}

@@ -4,6 +4,7 @@ namespace WikiOasis\WikiOasisMagic;
 
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
+use Miraheze\CreateWiki\ConfigNames;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\CreateWikiValidator;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -29,21 +30,22 @@ class ApiSubdomain extends ApiBase {
 		}
 		$this->getMain()->setCacheMode( 'private' );
 		$params = $this->extractRequestParams();
+		$config = $this->getConfig();
+		$validator = new SubdomainValidator(
+			$this->validator, $config->get( ConfigNames::Subdomain ), $config->get( ConfigNames::DisallowedSubdomains )
+		);
 		if ( $params['subdomain'] !== '' ) {
 			$subdomain = $params['subdomain'];
-			$check = $this->validator->validateSubdomain( $subdomain, [] );
-			$available = $check === true && strlen( $subdomain ) <= 60
-				&& preg_match( '/^[a-z0-9]+$/D', $subdomain );
+			$check = $validator->validate( $subdomain );
 			$result = [
 				'subdomain' => $subdomain,
-				'available' => (bool)$available,
-				'message' => $available ? '' : ( $check === true
-					? $this->msg( 'createnewwiki-subdomain-invalid' )->text() : $check->text() ),
+				'available' => $check === true,
+				'message' => $check === true ? '' : $check->text(),
 			];
 		} else {
 			$name = trim( $params['name'] );
 			$lang = trim( $params['lang'] );
-			$suggester = new SubdomainSuggester( $this->validator );
+			$suggester = new SubdomainSuggester( $validator );
 			$subdomain = $name !== '' ? $suggester->suggest( $name, $lang !== '' ? $lang : null ) : null;
 			$result = [
 				'subdomain' => $subdomain ?? '',

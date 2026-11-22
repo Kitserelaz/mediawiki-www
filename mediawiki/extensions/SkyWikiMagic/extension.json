@@ -91,7 +91,8 @@
 			],
 			"dependencies": [
 				"mediawiki.api",
-				"mediawiki.htmlform.ooui"
+				"mediawiki.htmlform.ooui",
+				"oojs-ui.styles.icons-alerts"
 			],
 			"messages": [
 				"createnewwiki-subdomain-checking",

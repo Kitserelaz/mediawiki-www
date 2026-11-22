@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/provision-metadata.php';
+require_once __DIR__ . '/wiki-identity.php';
 function farmEnv(string $key, string $default): string {
     $value = getenv($key);
     return $value === false || $value === '' ? $default : $value;
@@ -15,7 +16,7 @@ function farmSiteConfiguration(): void {
     global $wgConf;
     $domain = farmEnv('MW_DOMAIN', 'localhost');
     $settings = [
-        'wgCreateWikiDatabase' => 'wikidb', 'wgCreateWikiGlobalWiki' => 'metawiki',
+        'wgCreateWikiDatabase' => 'wikidb', 'wgCreateWikiGlobalWiki' => farmWikiId('metawiki'),
         'wgCreateWikiSubdomain' => $domain,
         'wgCreateWikiCacheDirectory' => '/var/www/mediawiki/cw_cache',
         'wgManageWikiCacheDirectory' => '/var/www/mediawiki/cw_cache',
@@ -36,20 +37,48 @@ function farmSiteConfiguration(): void {
             '/var/www/mediawiki/extensions/OAuth/schema/mysql/tables-generated.sql',
         ], 'is_file')),
     ];
+    if (farmNumericIdsEnabled()) {
+        foreach ($wgConf->settings as &$entries) {
+            if (!is_array($entries)) {
+                continue;
+            }
+            foreach (farmWikiRegistry()['aliases'] as $old => $new) {
+                foreach (['', '+', '-'] as $prefix) {
+                    if (array_key_exists($prefix . $old, $entries)) {
+                        $entries[$prefix . $new] ??= $entries[$prefix . $old];
+                    }
+                }
+            }
+        }
+        unset($entries);
+        foreach (['wgAbuseFilterCentralDB', 'wgCreateWikiGlobalWiki', 'wgCentralAuthLoginWiki',
+            'wgGlobalUserPageDBname', 'wgCentralAuthAutoCreateWikis', 'wgCentralAuthAutoLoginWikis',
+            'wgCentralAuthOldNameAntiSpoofWiki', 'wmgCentralAuthAutoLoginWikis', 'wgCentralDBname',
+            'wgMWOAuthCentralWiki', 'wgInterwikiCentralDB', 'wgVirtualDomainsMapping', 'wmgSharedUploadDBname'] as $setting) {
+            if (isset($wgConf->settings[$setting])) {
+                array_walk_recursive($wgConf->settings[$setting], static function (&$value): void {
+                    if (is_string($value)) {
+                        $value = farmWikiId($value);
+                    }
+                });
+            }
+        }
+        $settings['wgCreateWikiAIThreshold'] = -1;
+    }
     if (farmEnv('MW_ENV', 'development') !== 'production') {
-        $settings['wgCentralAuthLoginWiki'] = 'loginwiki';
-        $settings['wgCentralAuthAutoCreateWikis'] = ['metawiki', 'loginwiki'];
+        $settings['wgCentralAuthLoginWiki'] = farmWikiId('loginwiki');
+        $settings['wgCentralAuthAutoCreateWikis'] = [farmWikiId('metawiki'), farmWikiId('loginwiki')];
         $settings['wgCentralAuthCookieDomain'] = '';
     }
     foreach ($settings as $key => $value) { $wgConf->settings[$key] = ['default' => $value]; }
     $servers = ['default' => 'https://meta.' . $domain];
     if (class_exists('MirahezeFunctions')) {
         foreach (MirahezeFunctions::readDbListFile('databases', false) as $wiki => $metadata) {
-            $servers[$wiki] = $metadata['u'] ?? 'https://' . preg_replace('/wiki$/', '', $wiki) . '.' . $domain;
+            $servers[$wiki] = $metadata['u'] ?? farmWikiBuiltinUrl($wiki) ?? 'https://' . preg_replace('/wiki$/', '', $wiki) . '.' . $domain;
         }
         $customRoute = MirahezeFunctions::getCustomDomainRoute();
         if ($customRoute) {
-            $servers[$customRoute[0]] = 'https://' . $customRoute[1];
+            $servers[farmWikiId($customRoute[0])] = 'https://' . $customRoute[1];
         }
     }
     $wgConf->settings['wgServer'] = $servers;
@@ -75,6 +104,9 @@ function farmRuntime(): void {
         $wgCreateWikiGlobalWiki, $wgOAuth2PrivateKey, $wgOAuth2PublicKey,
         $wgCentralAuthCookieDomain, $wgCookieDomain, $wgCentralAuthEnableSul3;
     $GLOBALS['wgPhpCli'] = '/usr/local/bin/php';
+    if (getenv('MW_FARM_READ_ONLY') === '1' && PHP_SAPI !== 'cli') {
+        $GLOBALS['wgReadOnly'] = 'This wiki is temporarily read-only for a farm database migration.';
+    }
     $wgDBserver = farmEnv('MW_DB_HOST', 'database');
     $wgDBuser = farmEnv('MW_DB_USER', 'mediawiki');
     $wgDBpassword = $farmSecrets['db_password'];
@@ -117,8 +149,29 @@ function farmRuntime(): void {
     }
     if (farmEnv('MW_ANALYTICS', '0') !== '1') { $wgMatomoAnalyticsTokenAuth = ''; }
     $wgPingback = false;
+    static $numericHooksRegistered = false;
+    if (farmNumericIdsEnabled() && !$numericHooksRegistered) {
+        $numericHooksRegistered = true;
+        $GLOBALS['wgHooks']['SpecialPage_initList'][] = static function (array &$pages): void {
+            unset($pages['CreateWiki']);
+        };
+        $GLOBALS['wgHooks']['RequestWikiQueueFormDescriptorModify'][] = static function (
+            array &$form, $user, $request
+        ): void {
+            if (!isset($form['handle-action'])) {
+                return;
+            }
+            $identity = farmWikiIdentity($request->getDBname());
+            if (($identity['request'] ?? null) !== $request->getId()) {
+                unset($form['handle-action']['options-messages']['requestwikiqueue-approve']);
+                $form['handle-action']['validation-callback'] = static function ($value) {
+                    return $value === 'approve' ? 'Reserve the numeric ID before approving this request.' : true;
+                };
+            }
+        };
+    }
     $wgCreateWikiDatabase = 'wikidb';
-    $wgCreateWikiGlobalWiki = 'metawiki';
+    $wgCreateWikiGlobalWiki = farmWikiId('metawiki');
     $GLOBALS['wgHooks']['CreateWikiGenerateDatabaseLists'] = ['MirahezeFunctions::onGenerateDatabaseLists'];
     $GLOBALS['wgExtensionFunctions'][] = static function (): void {
         // This hook follows all creation handlers, including ManageWiki defaults.
@@ -146,16 +199,24 @@ function farmRuntime(): void {
         $GLOBALS['wgManageWikiSiteConfiguration'] = new FarmManageWikiSiteConfiguration($GLOBALS['wgConf']);
     }
     $wgVirtualDomainsMapping['virtual-createwiki'] = ['db' => 'wikidb'];
-    $wgVirtualDomainsMapping['virtual-createwiki-central'] = ['db' => 'metawiki'];
+    $wgVirtualDomainsMapping['virtual-createwiki-central'] = ['db' => farmWikiId('metawiki')];
     $wgVirtualDomainsMapping['virtual-managewiki'] = ['db' => 'wikidb'];
-    $wgVirtualDomainsMapping['virtual-managewiki-central'] = ['db' => 'metawiki'];
+    $wgVirtualDomainsMapping['virtual-managewiki-central'] = ['db' => farmWikiId('metawiki')];
     $wgVirtualDomainsMapping['virtual-centralauth'] = ['db' => 'centralauth'];
-    $wgVirtualDomainsMapping['virtual-centralnotice'] ??= ['db' => 'metawiki'];
+    $wgVirtualDomainsMapping['virtual-centralnotice'] ??= ['db' => farmWikiId('metawiki')];
     $wgVirtualDomainsMapping['virtual-botpasswords'] = ['db' => 'centralauth'];
     $wgVirtualDomainsMapping['virtual-globalblocking'] = ['db' => 'centralauth'];
     $wgVirtualDomainsMapping['virtual-oathauth'] = ['db' => 'centralauth'];
-    $wgVirtualDomainsMapping['virtual-importdump'] = ['db' => 'metawiki'];
+    $wgVirtualDomainsMapping['virtual-importdump'] = ['db' => farmWikiId('metawiki')];
     $wgVirtualDomainsMapping['virtual-checkuser-global'] = ['db' => 'wikidb'];
+    if (farmNumericIdsEnabled()) {
+        foreach ($wgVirtualDomainsMapping as &$mapping) {
+            if (isset($mapping['db']) && is_string($mapping['db'])) {
+                $mapping['db'] = farmWikiId($mapping['db']);
+            }
+        }
+        unset($mapping);
+    }
     $wgOAuth2PrivateKey = '/run/secrets/oauth-private.key';
     $wgOAuth2PublicKey = '/run/secrets/oauth-public.key';
     $wgLocalisationCacheConf = array_replace($wgLocalisationCacheConf ?? [], [
@@ -168,7 +229,7 @@ function farmRuntime(): void {
     $wgDataDumpDirectory = farmEnv('MW_DUMP_DIRECTORY', '/var/www/dumps');
     $GLOBALS['wgArchiveWikiImportDirectory'] = rtrim($wgDataDumpDirectory, '/') . '/archive-wiki-import';
     if (isset($wgDBname)) {
-        $wgUploadDirectory = rtrim(farmEnv('MW_UPLOAD_ROOT', '/var/www/mediawiki/images'), '/') . '/' . $wgDBname;
+        $wgUploadDirectory = rtrim(farmEnv('MW_UPLOAD_ROOT', '/var/www/mediawiki/images'), '/') . '/' . farmWikiStorageKey($wgDBname);
         if (isset($GLOBALS['wgDataDump']['zip']['generate']['options'])) {
             $GLOBALS['wgDataDump']['zip']['generate']['options'][1] = rtrim($wgDataDumpDirectory, '/') . '/${filename}';
             $GLOBALS['wgDataDump']['zip']['generate']['options'][2] = $wgUploadDirectory;
@@ -200,7 +261,7 @@ function farmRuntime(): void {
     $wgCookieDomain = $wgCentralAuthCookieDomain = '';
     $GLOBALS['wgCentralAuthLoginWiki'] = false;
     $GLOBALS['wgCentralAuthAutoLoginWikis'] = [
-        "meta.$domain" => 'metawiki', "test.$domain" => 'testwiki', "login.$domain" => 'loginwiki',
+        "meta.$domain" => farmWikiId('metawiki'), "test.$domain" => farmWikiId('testwiki'), "login.$domain" => farmWikiId('loginwiki'),
     ];
     if (farmEnv('MW_LEGACY_BRANDING', '1') === '0') {
         $GLOBALS['wgFooterIcons'] = [];
@@ -224,7 +285,7 @@ function farmRuntime(): void {
         $verifiedCustomHost = getenv('MW_CUSTOM_DOMAINS_ROUTING') === '1' &&
             $configuredHost && $configuredHost === ($_SERVER['CLOUDWIKI_CUSTOM_HOST'] ?? null);
         if (!$verifiedCustomHost && (!$configuredHost || ($configuredHost !== $domain && !str_ends_with($configuredHost, ".$domain")))) {
-            $wgServer = 'https://' . preg_replace('/wiki$/', '', $wgDBname ?? 'metawiki') . ".$domain";
+            $wgServer = 'https://' . preg_replace('/wiki$/', '', $wgDBname ?? farmWikiId('metawiki')) . ".$domain";
         }
         $wgCanonicalServer = (($_SERVER['HTTP_HOST'] ?? '') === "auth.$domain") ? "https://auth.$domain" : $wgServer;
         $wgCookieDomain = $wgCentralAuthCookieDomain = '';
@@ -232,7 +293,7 @@ function farmRuntime(): void {
         $wgCentralAuthEnableSul3 = true;
         $GLOBALS['wgCentralAuthLoginWiki'] = false;
         $GLOBALS['wgCentralAuthAutoLoginWikis'] = [
-            "meta.$domain" => 'metawiki', "test.$domain" => 'testwiki', "login.$domain" => 'loginwiki',
+            "meta.$domain" => farmWikiId('metawiki'), "test.$domain" => farmWikiId('testwiki'), "login.$domain" => farmWikiId('loginwiki'),
         ];
         if (farmEnv('MW_REMOTE_REPOSITORIES', '0') !== '1') {
             $GLOBALS['wgUseQuickInstantCommons'] = false;

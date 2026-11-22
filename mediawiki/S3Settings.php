@@ -12,7 +12,7 @@ $s3Prefix = trim( getenv( 'MW_S3_PREFIX' ) ?: '', '/' );
 if ( $s3Prefix !== '' && !preg_match( '/^[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*$/D', $s3Prefix ) ) {
     throw new RuntimeException( 'Invalid MW_S3_PREFIX' );
 }
-$wgAWSBucketTopSubdirectory = '/' . ( $s3Prefix === '' ? '' : "$s3Prefix/" ) . $wgDBname;
+$wgAWSBucketTopSubdirectory = '/' . ( $s3Prefix === '' ? '' : "$s3Prefix/" ) . (function_exists('farmWikiStorageKey') ? farmWikiStorageKey($wgDBname) : $wgDBname);
 unset( $s3Prefix );
 $wgAWSRepoHashLevels = 2;
 $wgAWSRepoDeletedHashLevels = 3;

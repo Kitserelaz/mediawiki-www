@@ -8,8 +8,8 @@ require __DIR__ . '/runtime.php';
 $wgDBtype = 'mysql';
 $wgDBserver = farmEnv('MW_DB_HOST', 'database');
 $wgDBuser = farmEnv('MW_DB_USER', 'mediawiki');
-$wgDBname = getenv('MW_BOOTSTRAP_DB');
-$wgServer = 'https://' . preg_replace('/wiki$/', '', $wgDBname) . '.' . farmEnv('MW_DOMAIN', 'localhost');
+$wgDBname = farmWikiId(getenv('MW_BOOTSTRAP_DB'));
+$wgServer = farmWikiBuiltinUrl($wgDBname) ?? 'https://' . preg_replace('/wiki$/', '', $wgDBname) . '.' . farmEnv('MW_DOMAIN', 'localhost');
 $wgScriptPath = '';
 $wgArticlePath = '/wiki/$1';
 $wgLanguageCode = 'en';
@@ -24,17 +24,17 @@ if (getenv('MW_BOOTSTRAP_AUX')) {
     return;
 }
 $wgMainCacheType = CACHE_NONE;
-$wgLocalDatabases = ['metawiki', 'loginwiki', 'testwiki'];
+$wgLocalDatabases = array_map('farmWikiId', ['metawiki', 'loginwiki', 'testwiki']);
 $wgVirtualDomainsMapping = [
     'virtual-createwiki' => ['db' => 'wikidb'],
-    'virtual-createwiki-central' => ['db' => 'metawiki'],
+    'virtual-createwiki-central' => ['db' => farmWikiId('metawiki')],
     'virtual-managewiki' => ['db' => 'wikidb'],
-    'virtual-managewiki-central' => ['db' => 'metawiki'],
+    'virtual-managewiki-central' => ['db' => farmWikiId('metawiki')],
     'virtual-centralauth' => ['db' => 'centralauth'],
     'virtual-botpasswords' => ['db' => 'centralauth'],
     'virtual-globalblocking' => ['db' => 'centralauth'],
     'virtual-oathauth' => ['db' => 'centralauth'],
-    'virtual-importdump' => ['db' => 'metawiki'],
+    'virtual-importdump' => ['db' => farmWikiId('metawiki')],
     'virtual-checkuser-global' => ['db' => 'wikidb'],
 ];
 defined('MW_DB') || define('MW_DB', $wgDBname);

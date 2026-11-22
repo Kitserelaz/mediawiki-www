@@ -1,6 +1,6 @@
 <?php
 
-// This file is loaded only by the farm management container.
+// Registry writes are shared by the management commands and direct wiki creation.
 function farmIdentityTable(PDO $db): void {
     $db->exec("CREATE TABLE IF NOT EXISTS farm_wiki_identity (
         numeric_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -77,7 +77,9 @@ function farmIdentityInventory(PDO $db): array {
         ->fetchAll(PDO::FETCH_ASSOC);
     foreach ($rows as &$row) {
         $wiki = $row['wiki_dbname'];
-        identifier($wiki);
+        if (!preg_match('/^[a-z0-9][a-z0-9_]{0,63}$/D', $wiki)) {
+            throw new RuntimeException('Invalid database identifier');
+        }
         $suffix = str_ends_with($wiki, 'wikibeta') ? 'wikibeta' : 'wiki';
         if (!str_ends_with($wiki, $suffix)) {
             throw new RuntimeException('Unrecognized wiki identifier: ' . $wiki);
@@ -99,6 +101,90 @@ function farmIdentityInventory(PDO $db): array {
         $row = ['old' => $wiki, 'host' => $parts['host'], 'farm_host' => $row['farm_host'], 'realm' => $realm];
     }
     return $rows;
+}
+
+function farmAllocateWikiIdentity(PDO $db, string $host, ?int $requestId = null): string {
+    $domain = farmEnv('MW_DOMAIN', 'localhost');
+    if (!farmValidHostname($host) || !str_ends_with($host, '.' . $domain)
+        || substr_count($host, '.') !== substr_count($domain, '.') + 1) {
+        throw new InvalidArgumentException('Expected a farm subdomain');
+    }
+    $inventory = farmIdentityInventory($db);
+    $identities = farmIdentityRows($db);
+    $occupiedHosts = array_merge(
+        array_column($inventory, 'host'), array_column($inventory, 'farm_host'),
+        array_column($identities, 'hostname'), array_column($identities, 'farm_host')
+    );
+    if (in_array($host, $occupiedHosts, true)) {
+        throw new DomainException('Requested hostname is already assigned');
+    }
+    $occupied = $db->query('SHOW DATABASES')->fetchAll(PDO::FETCH_COLUMN);
+    $insert = $db->prepare('INSERT INTO farm_wiki_identity (request_id,hostname,storage_key,realm) VALUES (?,?,?,?)');
+    $insert->execute([$requestId, $host, '', 'default']);
+    $id = $db->lastInsertId();
+    $initialId = $id;
+    $used = array_map('strval', array_column($identities, 'numeric_id'));
+    $requests = farmQuoteCatalogIdentifier(farmWikiId('metawiki')) . '.cw_requests';
+    $pending = $db->prepare("SELECT COUNT(*) FROM $requests WHERE cw_dbname = ? AND cw_id <> ? AND cw_status IN ('inreview','onhold','moredetails','approved')");
+    while (true) {
+        $pending->execute([$id . 'wiki', $requestId ?? 0]);
+        if (!in_array((string)$id, $used, true) && !in_array($id . 'wiki', $occupied, true)
+            && !in_array($id . '.' . $domain, $occupiedHosts, true) && !$pending->fetchColumn()) {
+            break;
+        }
+        $id++;
+    }
+    $move = $db->prepare('UPDATE farm_wiki_identity SET numeric_id = ?, storage_key = ? WHERE numeric_id = ?');
+    $move->execute([$id, $id . 'wiki', $initialId]);
+    return (string)$id;
+}
+
+function farmLockDirectWikiIdentity(): PDO {
+    global $farmSecrets;
+    $db = new PDO('mysql:host=' . farmEnv('MW_DB_HOST', 'database') . ';dbname=wikidb',
+        farmEnv('MW_DB_USER', 'mediawiki'), $farmSecrets['db_password']);
+    if ((int)$db->query("SELECT GET_LOCK('farm-initialization', 5)")->fetchColumn() !== 1) {
+        throw new RuntimeException('Another farm maintenance operation is running');
+    }
+    return $db;
+}
+
+function farmReserveDirectWikiIdentity(PDO $db, string $host): string {
+    $db->beginTransaction();
+    try {
+        $id = farmAllocateWikiIdentity($db, $host);
+        $db->commit();
+    } catch (Throwable $error) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
+        throw $error;
+    }
+    try {
+        farmPublishIdentityRegistry($db);
+    } catch (Throwable $error) {
+        $db->prepare('DELETE FROM farm_wiki_identity WHERE numeric_id = ?')->execute([$id]);
+        throw $error;
+    }
+    farmWikiRegistry(true);
+    return $id . 'wiki';
+}
+
+function farmFinishDirectWikiIdentity(PDO $db, string $wiki, bool $created): void {
+    $id = substr($wiki, 0, -4);
+    if ($created) {
+        $db->prepare("UPDATE farm_wiki_identity SET state='active' WHERE numeric_id=?")->execute([$id]);
+        return;
+    }
+
+    // A partially provisioned schema retains its reservation for recovery.
+    $schema = $db->prepare('SELECT 1 FROM information_schema.SCHEMATA WHERE SCHEMA_NAME=?');
+    $schema->execute([$wiki]);
+    if (!$schema->fetchColumn()) {
+        $db->prepare("DELETE FROM farm_wiki_identity WHERE numeric_id=? AND state='reserved'
+            AND legacy_id IS NULL AND request_id IS NULL")->execute([$id]);
+        farmPublishIdentityRegistry($db);
+    }
 }
 
 function farmReserveWikiRequest(PDO $db, int $requestId): string {
@@ -125,27 +211,7 @@ function farmReserveWikiRequest(PDO $db, int $requestId): string {
                 || preg_match('/^[0-9]+\./', $host)) {
                 throw new RuntimeException('Request needs an original named farm subdomain');
             }
-            $inventory = farmIdentityInventory($db);
-            $occupiedHosts = array_merge(array_column($inventory, 'host'), array_column($inventory, 'farm_host'));
-            if (in_array($host, $occupiedHosts, true) || isset(farmWikiRegistry()['hosts'][$host])) {
-                throw new RuntimeException('Requested hostname is already assigned');
-            }
-            $occupied = $db->query('SHOW DATABASES')->fetchAll(PDO::FETCH_COLUMN);
-            $insert = $db->prepare('INSERT INTO farm_wiki_identity (request_id,hostname,storage_key,realm) VALUES (?,?,?,?)');
-            $insert->execute([$requestId, $host, '', 'default']);
-            $id = $db->lastInsertId();
-            $move = $db->prepare('UPDATE farm_wiki_identity SET numeric_id = ?, storage_key = ? WHERE request_id = ?');
-            $used = array_column(farmIdentityRows($db), 'numeric_id');
-            $pending = $db->prepare("SELECT COUNT(*) FROM $requests WHERE cw_dbname = ? AND cw_id <> ? AND cw_status IN ('inreview','onhold','moredetails','approved')");
-            while (true) {
-                $pending->execute([$id . 'wiki', $requestId]);
-                if (!in_array($id . 'wiki', $occupied, true)
-                    && !in_array($id . '.' . $domain, $occupiedHosts, true) && !$pending->fetchColumn()) {
-                    break;
-                }
-                do { $id++; } while (in_array((string)$id, array_map('strval', $used), true));
-            }
-            $move->execute([$id, $id . 'wiki', $requestId]);
+            $id = farmAllocateWikiIdentity($db, $host, $requestId);
         }
         $wiki = $id . 'wiki';
         $update = $db->prepare("UPDATE $requests SET cw_dbname = ?, cw_url = ? WHERE cw_id = ?");

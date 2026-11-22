@@ -191,6 +191,7 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 
 		// Recheck the creation permission before provisioning, even on direct submissions.
 		$this->checkPermissions();
+		$this->checkReadOnly();
 		$subdomainStatus = $this->isAllowedSubdomain( $formData['dbname'] );
 		if ( $subdomainStatus !== true ) {
 			return $subdomainStatus;
@@ -203,34 +204,27 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 		$wiki = $this->validator->getValidSubdomain( $formData['dbname'] ) .
 			$this->getConfig()->get( ConfigNames::DatabaseSuffix );
 		$url = $this->validator->getValidUrl( $wiki );
-		$wikiManager = $this->wikiManagerFactory->newInstance( $wiki );
-		// Set the URL once the wiki is registered, before provisioning publishes its metadata.
-		$domainHook = $this->getHookContainer()->scopedRegister(
-			'CreateWikiCreation',
-			function ( string $createdWiki ) use ( $wiki, $url ) {
-				if ( $createdWiki === $wiki ) {
-					$this->databaseUtils->getGlobalPrimaryDB()->newUpdateQueryBuilder()
-						->update( 'cw_wikis' )
-						->set( [ 'wiki_url' => $url ] )
-						->where( [ 'wiki_dbname' => $wiki, 'wiki_url' => null ] )
-						->caller( __METHOD__ )
-						->execute();
-				}
-			}
-		);
+		$identityDb = null;
+		$reservedWiki = null;
+		$created = false;
 		try {
-			$error = $wikiManager->create(
-				sitename: $formData['sitename'],
-				language: $formData['language'],
-				private: $formData['private'] ?? false,
-				category: $formData['category'] ?? 'uncategorised',
-				requester: $this->getContext()->getUser()->getName(),
-				actor: $this->getContext()->getUser()->getName(),
-				reason: $this->msg( 'createnewwiki-creation-reason' )->inContentLanguage()->text(),
-				extra: []
-			);
+			if ( function_exists( 'farmNumericIdsEnabled' ) && \farmNumericIdsEnabled() ) {
+				require_once MW_INSTALL_PATH . '/docker/mediawiki/wiki-identity-admin.php';
+				$identityDb = \farmLockDirectWikiIdentity();
+				try {
+					$reservedWiki = \farmReserveDirectWikiIdentity( $identityDb, parse_url( $url, PHP_URL_HOST ) );
+				} catch ( \DomainException ) {
+					return $this->msg( 'createwiki-error-subdomaintaken' );
+				}
+				$wiki = $reservedWiki;
+			}
+			$error = $this->createWikiWithUrl( $wiki, $url, $formData );
+			$created = $error === null;
 		} finally {
-			ScopedCallback::consume( $domainHook );
+			if ( $reservedWiki !== null ) {
+				\farmFinishDirectWikiIdentity( $identityDb, $reservedWiki, $created );
+			}
+			$identityDb = null;
 		}
 		if ( $error !== null ) {
 			return ( new RawMessage( '$1' ) )->rawParams( $error );
@@ -252,6 +246,38 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 			);
 		}
 		return true;
+	}
+
+	private function createWikiWithUrl( string $wiki, string $url, array $formData ): ?string {
+		$wikiManager = $this->wikiManagerFactory->newInstance( $wiki );
+		// Set the URL once the wiki is registered, before provisioning publishes its metadata.
+		$domainHook = $this->getHookContainer()->scopedRegister(
+			'CreateWikiCreation',
+			function ( string $createdWiki ) use ( $wiki, $url ): void {
+				if ( $createdWiki === $wiki ) {
+					$this->databaseUtils->getGlobalPrimaryDB()->newUpdateQueryBuilder()
+						->update( 'cw_wikis' )
+						->set( [ 'wiki_url' => $url ] )
+						->where( [ 'wiki_dbname' => $wiki, 'wiki_url' => null ] )
+						->caller( __METHOD__ )
+						->execute();
+				}
+			}
+		);
+		try {
+			return $wikiManager->create(
+				sitename: $formData['sitename'],
+				language: $formData['language'],
+				private: $formData['private'] ?? false,
+				category: $formData['category'] ?? 'uncategorised',
+				requester: $this->getContext()->getUser()->getName(),
+				actor: $this->getContext()->getUser()->getName(),
+				reason: $this->msg( 'createnewwiki-creation-reason' )->inContentLanguage()->text(),
+				extra: []
+			);
+		} finally {
+			ScopedCallback::consume( $domainHook );
+		}
 	}
 
 	private function getProgressUrl( string $wiki, string $url, string $siteName, bool $private ): ?string {
@@ -299,7 +325,7 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 		$output->addHTML( Html::element( 'p', [ 'id' => 'skywiki-creation-status', 'role' => 'status' ],
 			$this->msg( 'createnewwiki-progress-wait' )->text() ) );
 		$output->addHTML( Html::element( 'a', [ 'id' => 'skywiki-creation-link',
-			'href' => $this->validator->getValidUrl( $ticket['wiki'] ) ], $this->msg( 'createnewwiki-progress-open' )->text() ) );
+			'href' => 'https://' . $ticket['host'] ], $this->msg( 'createnewwiki-progress-open' )->text() ) );
 		$output->addJsConfigVars( 'wgSkyWikiCreationEvents', '/wiki-creation/events?ticket=' . $token );
 		$output->addModules( 'ext.skywiki.creationProgress' );
 	}

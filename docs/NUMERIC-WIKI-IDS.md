@@ -83,7 +83,9 @@ The audit found zero exact legacy IDs in structured data in `cw_wikis.wiki_extra
 
 ## Provision a new wiki
 
-Have the requester enter the desired named subdomain in the ordinary request form. Reserve an ID before staff approval.
+In numeric mode, `Special:CreateNewWiki` reserves the next available numeric ID before it calls CreateWiki. The requester’s selected subdomain is stored in the identity registry and in `cw_wikis.wiki_url`. The progress page links to that subdomain.
+
+For staff-approved requests, have the requester enter the desired named subdomain in the ordinary request form. Reserve an ID before staff approval.
 
 ```sh
 cd /var/www

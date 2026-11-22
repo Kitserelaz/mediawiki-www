@@ -4,12 +4,12 @@ function farmNumericIdsEnabled(): bool {
     return getenv('MW_NUMERIC_WIKI_IDS') === '1';
 }
 
-function farmWikiRegistry(): array {
+function farmWikiRegistry(bool $refresh = false): array {
     static $registry;
     if (!farmNumericIdsEnabled()) {
         return [];
     }
-    if ($registry === null) {
+    if ($registry === null || $refresh) {
         $file = '/var/www/mediawiki/cw_cache/wiki-identities.json';
         $data = is_readable($file) ? file_get_contents($file) : false;
         if ($data === false) {

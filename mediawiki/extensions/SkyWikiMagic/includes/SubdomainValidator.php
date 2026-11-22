@@ -9,6 +9,8 @@ use Miraheze\CreateWiki\Services\CreateWikiValidator;
 
 final class SubdomainValidator {
 
+	public const MIN_LABEL_LENGTH = 3;
+
 	public function __construct(
 		private readonly CreateWikiValidator $validator,
 		private readonly string $domain,
@@ -29,7 +31,7 @@ final class SubdomainValidator {
 			return Message::newFromKey( 'createnewwiki-subdomain-numeric' );
 		}
 		$length = strlen( $label );
-		if ( $length === 1 || $length > 60 ) {
+		if ( $length < self::MIN_LABEL_LENGTH || $length > 60 ) {
 			return Message::newFromKey( $this->allowsHyphens()
 				? 'createnewwiki-subdomain-invalid-hyphen'
 				: 'createnewwiki-subdomain-invalid' );

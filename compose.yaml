@@ -9,6 +9,8 @@ x-farm: &farm
     args: {BUILDKIT_INLINE_CACHE: '1', SOURCE_REVISION: '${GITHUB_SHA:-unknown}'}
   environment: &farm-env
     MW_DOCKER: '1'
+    MW_NUMERIC_WIKI_IDS: ${MW_NUMERIC_WIKI_IDS:-0}
+    MW_FARM_READ_ONLY: ${MW_FARM_READ_ONLY:-0}
     MIRAHEZE_WIKI_VERSION: '1.46'
     MW_ENV: ${MW_ENV:-development}
     MW_DOMAIN: ${MW_DOMAIN:-localhost}

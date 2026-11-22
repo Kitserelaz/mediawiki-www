@@ -387,7 +387,7 @@ require __DIR__ . '/S3Settings.php';
 // Support imported infoboxes on the local development Test Wiki.
 if ( getenv( 'MW_DOCKER' ) && getenv( 'MW_ENV' ) === 'development'
     && ( getenv( 'MW_DOMAIN' ) ?: 'localhost' ) === 'localhost'
-    && $wi->dbname === 'testwiki'
+    && $wi->dbname === farmWikiId( 'testwiki' )
 ) {
     wfLoadExtension( 'PortableInfobox' );
 }

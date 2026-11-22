@@ -70,10 +70,17 @@ final class CustomDomainConfig {
 		) {
 			return null;
 		}
-		return $slug . $suffix;
+		$wiki = $slug . $suffix;
+		if ( function_exists( 'farmWikiHostId' ) ) {
+			$domain = $suffix === 'wikibeta' ? ( getenv( 'MW_BETA_DOMAIN' ) ?: 'beta.localhost' )
+				: ( getenv( 'MW_DOMAIN' ) ?: 'cloudwiki.us' );
+			return farmWikiHostId( "$slug.$domain" ) ?? farmWikiId( $wiki );
+		}
+		return $wiki;
 	}
 
 	public static function slug( string $wiki ): string {
-		return preg_replace( '/wikibeta$|wiki$/D', '', $wiki );
+		$builtin = function_exists( 'farmWikiIdentity' ) ? ( farmWikiIdentity( $wiki )['farm_host'] ?? null ) : null;
+		return $builtin ? explode( '.', $builtin, 2 )[0] : preg_replace( '/wikibeta$|wiki$/D', '', $wiki );
 	}
 }

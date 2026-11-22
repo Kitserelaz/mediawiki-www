@@ -6,15 +6,21 @@ use WikiOasis\WikiOasisMagic\CustomDomainConfig;
 require '/var/www/mediawiki/extensions/SkyWikiMagic/includes/CustomDomainConfig.php';
 
 $path = strtok( $_SERVER['REQUEST_URI'] ?? '', '?' );
+$numericRoute = $path === '/route-numeric';
 $ask = $path === '/tls-allow';
 $probe = $path === '/probe-saas';
 $saas = $probe || $path === '/route-saas';
 $name = $ask ? ( $_GET['domain'] ?? '' ) : ( $_SERVER['CLOUDWIKI_LOOKUP_HOST'] ?? '' );
 $host = is_string( $name ) ? CustomDomainConfig::hostname( $name ) : null;
-if ( !CustomDomainConfig::routingEnabled() || ( !$ask && !$saas && $path !== '/route' ) ||
-	!$host || CustomDomainConfig::isReserved( $host )
+if ( !$host ||
+	( !$numericRoute && ( !CustomDomainConfig::routingEnabled() ||
+		( !$ask && !$saas && $path !== '/route' ) || CustomDomainConfig::isReserved( $host ) ) )
 ) {
 	http_response_code( $ask ? 403 : 404 );
+	return;
+}
+if ( $numericRoute && getenv( 'MW_NUMERIC_WIKI_IDS' ) !== '1' ) {
+	http_response_code( 204 );
 	return;
 }
 if ( !$ask && !$saas && ( $_SERVER['CLOUDWIKI_LOOKUP_SCHEME'] ?? '' ) !== 'http' &&
@@ -38,6 +44,18 @@ try {
 		'mysql:host=' . ( getenv( 'MW_DB_HOST' ) ?: 'database' ) . ';dbname=wikidb',
 		getenv( 'MW_DB_USER' ) ?: 'mediawiki', $secrets['db_password'], [ PDO::ATTR_TIMEOUT => 2 ]
 	);
+	if ( $numericRoute ) {
+		header( 'Cache-Control: no-store' );
+		$query = $db->prepare(
+			"SELECT 1 FROM cw_wikis w LEFT JOIN farm_wiki_identity i
+				ON w.wiki_dbname = CONCAT(i.numeric_id, 'wiki')
+			WHERE w.wiki_deleted = 0 AND (w.wiki_url = CONCAT('https://', ?) OR i.hostname = ? OR i.farm_host = ?)
+			LIMIT 1"
+		);
+		$query->execute( [ $host, $host, $host ] );
+		http_response_code( $query->fetchColumn() ? 204 : 404 );
+		return;
+	}
 	$sql = "SELECT c.cdc_wiki FROM cw_custom_domain_claims c
 		JOIN cw_wikis w ON w.wiki_dbname = c.cdc_wiki AND w.wiki_deleted = 0
 		LEFT JOIN cw_custom_domain_cloudflare f ON f.cdf_host = c.cdc_host

@@ -370,6 +370,11 @@ class MirahezeFunctions {
 
 		if ( isset( $explode[1] ) ) {
 			foreach ( self::SUFFIXES as $suffix => $sites ) {
+				if ( in_array( $explode[1], $sites, true ) && ctype_digit( $explode[0] ) &&
+					function_exists( 'farmNumericIdsEnabled' ) && farmNumericIdsEnabled()
+				) {
+					return '';
+				}
 				if ( in_array( $explode[1], $sites ) && ( $ignorePrimary || $explode[1] === self::getPrimaryDomain( $explode[0] . $suffix ) ) ) {
 					return $explode[0] . $suffix;
 				}

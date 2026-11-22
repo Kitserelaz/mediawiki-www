@@ -35,7 +35,7 @@ function farmPublishIdentityRegistry(PDO $db): void {
         // Reserved wikis still pass through the ordinary missing/pending and privacy checks.
         $domain = $row['realm'] === 'beta'
             ? farmEnv('MW_BETA_DOMAIN', 'beta.localhost') : farmEnv('MW_DOMAIN', 'localhost');
-        $hosts = [$row['farm_host'], $row['hostname'], $row['numeric_id'] . '.' . $domain];
+        $hosts = [$row['farm_host'], $row['hostname']];
         foreach ($hosts as $host) {
             // Custom hosts are authorized separately by the verified edge routing table.
             if (!$host || !str_ends_with($host, '.' . $domain)) {

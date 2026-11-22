@@ -14,7 +14,7 @@
 http://127.0.0.1:8081 {
     bind 127.0.0.1
     route {
-        @lookup path /tls-allow /route /route-saas /probe-saas
+        @lookup path /tls-allow /route /route-saas /probe-saas /route-numeric
         reverse_proxy @lookup php:9001 {
             transport fastcgi {
                 env SCRIPT_FILENAME /opt/farm/custom-domain-lookup.php

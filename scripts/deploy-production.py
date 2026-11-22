@@ -445,6 +445,11 @@ def _deploy(payload, root, state, runner, health, progress):
     tracked_paths = {str(root / path) for path in tracked.split('\0') if path}
     resolved = runner.run(['docker', 'compose', '--env-file', str(env_file), 'config', '--environment'], capture=True)
     settings = dict(line.split('=', 1) for line in resolved.splitlines() if '=' in line)
+    if settings.get('MW_NUMERIC_WIKI_IDS') == '1':
+        try:
+            runner.run(['git', 'cat-file', '-e', f'{commit}:docker/mediawiki/wiki-identity.php'])
+        except subprocess.CalledProcessError as error:
+            raise RuntimeError('Candidate release lacks numeric wiki identity support required by production') from error
     project_config = json.loads(runner.run(['docker', 'compose', '--env-file', str(env_file),
                                           'config', '--format', 'json'], capture=True))
     project = project_config.get('name', settings.get('COMPOSE_PROJECT_NAME', 'cloudwiki'))
@@ -618,6 +623,133 @@ def _deploy(payload, root, state, runner, health, progress):
         raise
 
 
+def manual_rollback(payload, root, state, runner, health=probe):
+    """Explicit compatible application rollback selected from private release records."""
+    required = {'release_id', 'expected_current', 'expected_target', 'operation_id', 'registry_user', 'registry_token'}
+    if not isinstance(payload, dict) or set(payload) != required:
+        raise ValueError('Invalid rollback request')
+    release_id = payload['release_id']
+    if not isinstance(release_id, str) or not re.fullmatch(r'deploy-[0-9]+-[0-9a-f]{12}', release_id):
+        raise ValueError('Invalid recorded release')
+    if not isinstance(payload['expected_current'], str) or not re.fullmatch(r'[0-9a-f]{40}', payload['expected_current']):
+        raise ValueError('Invalid current revision')
+    if not isinstance(payload['operation_id'], str) or not re.fullmatch(r'[a-f0-9-]{36}', payload['operation_id']):
+        raise ValueError('Invalid operation identity')
+    path = state / 'history' / (release_id + '.json')
+    info = path.lstat()
+    if not stat.S_ISREG(info.st_mode) or info.st_uid != 0 or info.st_mode & 0o022:
+        raise RuntimeError('Recorded release is not trusted')
+    record = json.loads(path.read_text())
+    target = record['commit']
+    if payload['expected_target'] != target:
+        raise RuntimeError('Recorded release differs from the confirmed target')
+    validate_request('deploy', {'commit': target, 'images': record['images'], 'registry_user': payload['registry_user'], 'registry_token': payload['registry_token']})
+    initial = check_local_config(root, state, runner)
+    check_worktree(runner)
+    current = runner.run(['git', 'rev-parse', 'HEAD'], capture=True)
+    if current != payload['expected_current']:
+        raise RuntimeError('Current release changed; review rollback again')
+    if not rollback_approved(state, target, current):
+        raise RuntimeError('This release pair lacks explicit database and partial-migration compatibility approval')
+    if runner.run(['git', 'config', '--get', 'remote.origin.url'], capture=True) != REPOSITORY:
+        raise RuntimeError('Unexpected production Git origin')
+    runner.run(['git', 'fetch', '--no-tags', 'origin', 'main'])
+    runner.run(['git', 'merge-base', '--is-ancestor', target, 'FETCH_HEAD'])
+    old_env = (root / '.env.production').read_text()
+    compose = compose_command(root, root / '.env.production')
+    settings = dict(line.split('=', 1) for line in runner.run(compose + ['config', '--environment'], capture=True).splitlines() if '=' in line)
+    mode = settings.get('MW_CODE_MODE', 'image')
+    strategy = settings.get('MW_BIND_STRATEGY', 'versioned')
+    if record.get('code_mode', 'image') != mode or (mode == 'bind' and record.get('bind_strategy') != strategy):
+        raise RuntimeError('Rollback cannot change source deployment mode')
+    if settings.get('MW_NUMERIC_WIKI_IDS') == '1':
+        runner.run(['git', 'cat-file', '-e', target + ':docker/mediawiki/wiki-identity.php'])
+    before = json.loads(runner.run(compose + ['config', '--format', 'json'], capture=True))
+    project = before['name']
+    new_env = image_environment(old_env, record['images'])
+    if mode == 'bind':
+        source = str(root) if strategy == 'live' else str(state / 'releases' / target)
+        if strategy != 'live' and not (Path(source) / 'release.json').exists():
+            raise RuntimeError('Retained application source is unavailable')
+        lines = new_env.splitlines()
+        new_env = '\n'.join('MW_SOURCE_DIRECTORY=' + json.dumps(source) if line.startswith('MW_SOURCE_DIRECTORY=') else line for line in lines) + '\n'
+    with tempfile.TemporaryDirectory(prefix='rollback-registry-', dir=state) as temporary:
+        environment = dict(os.environ, DOCKER_CONFIG=temporary)
+        runner.run(['docker', 'login', 'ghcr.io', '--username', payload['registry_user'], '--password-stdin'], input=payload['registry_token'] + '\n', env=environment)
+        for image in record['images'].values():
+            runner.run(['docker', 'pull', image], env=environment)
+            if runner.run(['docker', 'image', 'inspect', image, '--format', '{{index .Config.Labels "org.opencontainers.image.revision"}}'], capture=True) != target:
+                raise RuntimeError('Rollback image revision mismatch')
+    check_local_config(root, state, runner, initial)
+    check_worktree(runner)
+    progress = DeploymentProgress(state, target)
+    snapshot = 'deploy-' + str(time.time_ns()) + '-' + target[:12]
+    previous_success = (state / 'last-success.json').read_bytes() if (state / 'last-success.json').exists() else None
+    changed = False
+    try:
+        progress.stage('backup')
+        runner.run(['scripts/snapshot', '--env-file', str(root / '.env.production'), '--keep-stopped', snapshot], input='')
+        atomic_private_write(root / 'backups' / snapshot / 'production.env', old_env)
+        if strategy == 'live':
+            runner.run(compose + ['stop', 'code'])
+        check_worktree(runner)
+        check_local_config(root, state, runner, initial)
+        progress.stage('switching_release')
+        changed = True
+        runner.run(['git', 'checkout', '--detach', target])
+        atomic_private_write(root / '.env.production', new_env)
+        if mode == 'bind' and strategy == 'live':
+            runner.run(['python3', 'scripts/source-release.py', '--directory', str(root)])
+            runner.run(['python3', '/usr/local/libexec/cloudwiki-live-permissions.py'])
+        compose = compose_command(root, root / '.env.production')
+        candidate = json.loads(runner.run(compose + ['config', '--format', 'json'], capture=True))
+        if candidate['name'] != project:
+            raise RuntimeError('Rollback cannot change Compose identity')
+        for service in ('database', 'redis', 'memcached'):
+            if persistent_service_config(candidate, service) != persistent_service_config(before, service):
+                raise RuntimeError('Rollback cannot change persistent data-service definitions')
+        runner.run(compose + ['start', 'database', 'redis', 'memcached'])
+        runner.run(compose + ['run', '--rm', '--no-deps', 'init', 'php', '/opt/farm/manage.php', 'preflight'], input='')
+        runtime = [*WRITERS, 'creation-events']
+        runner.run(compose + ['up', '-d', '--no-deps', '--no-build', '--pull', 'never', '--wait', '--wait-timeout', '180', *runtime])
+        health(root, runner)
+        check_worktree(runner)
+        if strategy == 'live': runner.run(compose + ['up', '-d', '--no-deps', '--no-build', '--pull', 'never', 'code'])
+        accepted = capture_local_config(root, runner)
+        # External operator-owned files must remain at their reviewed fingerprints.
+        external = {name: value for name, value in initial.items() if not Path(name).is_relative_to(root)}
+        check_stable_files(external, set())
+        restored = {**record, 'previous_commit': current, 'snapshot': snapshot, 'rollback_from': current, 'operation_id': payload['operation_id']}
+        atomic_private_write(state / 'history' / (snapshot + '.json'), json.dumps(restored) + '\n')
+        atomic_private_write(state / 'last-success.json', json.dumps(restored) + '\n')
+        save_config_baseline(state, accepted, 'Explicit compatible application rollback to ' + target)
+        progress.stage('complete', 'success', 'application_restored_database_preserved')
+        print('Compatible application rollback completed; current data preserved', flush=True)
+    except Exception:
+        try:
+            stop_application(runner, project, mode == 'bind' and strategy == 'live')
+            if changed:
+                runner.run(['git', 'checkout', '--detach', current])
+                atomic_private_write(root / '.env.production', old_env)
+                if mode == 'bind' and strategy == 'live':
+                    runner.run(['python3', 'scripts/source-release.py', '--directory', str(root)])
+                    runner.run(['python3', '/usr/local/libexec/cloudwiki-live-permissions.py'])
+            compose = compose_command(root, root / '.env.production')
+            runner.run(compose + ['start', 'database', 'redis', 'memcached'])
+            runner.run(compose + ['up', '-d', '--no-deps', '--no-build', '--pull', 'never', '--wait', '--wait-timeout', '180', *WRITERS, 'creation-events'])
+            health(root, runner)
+            if strategy == 'live': runner.run(compose + ['up', '-d', '--no-deps', '--no-build', '--pull', 'never', 'code'])
+            if previous_success is not None: atomic_private_write(state / 'last-success.json', previous_success.decode())
+            save_config_baseline(state, initial, 'Recovered unsuccessful explicit rollback')
+            progress.stage('rolled_back', 'failed', 'rollback_attempt_failed_original_application_restored')
+        except Exception:
+            with contextlib.suppress(Exception): stop_application(runner, project, mode == 'bind' and strategy == 'live')
+            progress.stage('rolling_back', 'failed', 'rollback_failed')
+        raise
+    finally:
+        progress.finish()
+
+
 def main():
     if len(sys.argv) != 2:
         raise ValueError("A restricted SSH command is required")
@@ -638,6 +770,9 @@ def main():
         body = sys.stdin.read(16385)
         if len(body) > 16384:
             raise ValueError("Deployment request is too large")
+        if sys.argv[1] == 'rollback':
+            manual_rollback(json.loads(body), root, state, Runner(root))
+            return
         payload = validate_request(sys.argv[1], json.loads(body))
         deployed = deploy(payload, root, state, Runner(root))
         # Keep the separately installed SSH entry point in sync after a successful

@@ -445,6 +445,11 @@ def _deploy(payload, root, state, runner, health, progress):
     tracked_paths = {str(root / path) for path in tracked.split('\0') if path}
     resolved = runner.run(['docker', 'compose', '--env-file', str(env_file), 'config', '--environment'], capture=True)
     settings = dict(line.split('=', 1) for line in resolved.splitlines() if '=' in line)
+    if settings.get('MW_NUMERIC_WIKI_IDS') == '1':
+        try:
+            runner.run(['git', 'cat-file', '-e', f'{commit}:docker/mediawiki/wiki-identity.php'])
+        except subprocess.CalledProcessError as error:
+            raise RuntimeError('Candidate release lacks numeric wiki identity support required by production') from error
     project_config = json.loads(runner.run(['docker', 'compose', '--env-file', str(env_file),
                                           'config', '--format', 'json'], capture=True))
     project = project_config.get('name', settings.get('COMPOSE_PROJECT_NAME', 'cloudwiki'))

@@ -4,6 +4,7 @@ use MediaWiki\Config\SiteConfiguration;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\SpecialPage\RedirectSpecialPage;
 use Miraheze\ManageWiki\Helpers\Factories\ModuleFactory;
 use Wikimedia\Rdbms\IReadableDatabase;
 use Wikimedia\StaticArrayWriter;
@@ -1321,6 +1322,20 @@ class MirahezeFunctions {
 				$mainPageIsDomainRoot,
 				$formData['mainpage-is-domain-root']
 			);
+		}
+	}
+
+	public static function onSpecialPage_initList( array &$pages ): void {
+		if ( !isset( $pages['CreateNewWiki'] ) ) {
+			return;
+		}
+
+		foreach ( [ 'CreateWiki', 'RequestWiki' ] as $name ) {
+			$pages[$name] = static fn () => new class( $name ) extends RedirectSpecialPage {
+				public function getRedirect( $subpage ) {
+					return self::getTitleFor( 'CreateNewWiki' );
+				}
+			};
 		}
 	}
 

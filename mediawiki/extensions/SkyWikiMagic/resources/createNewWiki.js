@@ -2,7 +2,7 @@
 	'use strict';
 
 	function formatSubdomain( value ) {
-		return value.trimStart().toLowerCase().replace( /\s+/g, '-' );
+		return value.trimStart().toLowerCase().replace( /-?\s+/g, '-' );
 	}
 
 	function init() {
@@ -45,7 +45,6 @@
 		autoField.value = automatic ? '1' : '0';
 		let suggested = '';
 		let lastSubdomainValue = subdomain.value;
-		let pendingSpace = false;
 		const channels = {
 			suggest: { generation: 0 },
 			check: { generation: 0 }
@@ -84,7 +83,6 @@
 			cancel( channels.check );
 			automatic = true;
 			autoField.value = '1';
-			pendingSpace = false;
 			lastSubdomainValue = value;
 			subdomainWidget.setValue( value );
 			status.textContent = mw.msg( 'createnewwiki-subdomain-available', value );
@@ -155,24 +153,18 @@
 			}
 
 			const raw = subdomain.value;
-			const start = subdomain.selectionStart;
-			const end = subdomain.selectionEnd;
-			const direction = subdomain.selectionDirection;
-			const appended = start === raw.length && raw.startsWith( lastSubdomainValue ) ?
-				raw.slice( lastSubdomainValue.length ) : '';
-			// Hide a typed trailing space until another word makes it a separator.
-			const addSeparator = pendingSpace && /\S/.test( appended );
-			const value = addSeparator ? lastSubdomainValue + ' ' + appended : raw;
-			const normalized = formatSubdomain( value.trimEnd() );
-			pendingSpace = normalized !== '' && event.inputType === 'insertText' && /^\s+$/.test( appended );
+			const normalized = formatSubdomain( raw );
 			if ( normalized !== raw ) {
+				const start = subdomain.selectionStart;
+				const end = subdomain.selectionEnd;
+				const direction = subdomain.selectionDirection;
 				subdomainWidget.setValue( normalized );
 				if ( start !== null && end !== null ) {
-					const offset = addSeparator ? 1 : 0;
-					const caret = ( index ) => Math.min(
-						normalized.length, formatSubdomain( value.slice( 0, index + offset ) ).length
+					subdomain.setSelectionRange(
+						formatSubdomain( raw.slice( 0, start ) ).length,
+						formatSubdomain( raw.slice( 0, end ) ).length,
+						direction
 					);
-					subdomain.setSelectionRange( caret( start ), caret( end ), direction );
 				}
 			}
 
@@ -196,9 +188,6 @@
 		}
 		subdomain.addEventListener( 'input', onSubdomainInput );
 		subdomain.addEventListener( 'compositionend', onSubdomainInput );
-		subdomain.addEventListener( 'blur', () => {
-			pendingSpace = false;
-		} );
 		useSuggestion.addEventListener( 'click', () => {
 			if ( suggested ) {
 				applySuggestion( suggested );

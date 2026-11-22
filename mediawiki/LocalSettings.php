@@ -220,6 +220,7 @@ $globals = MirahezeFunctions::getConfigGlobals();
 
 // phpcs:ignore MediaWiki.Usage.ForbiddenFunctions.extract
 extract($globals);
+$wgHooks['SpecialPage_initList'][] = 'MirahezeFunctions::onSpecialPage_initList';
 #if ($wgDBname != "topicalballswiki") {
 	$wi->loadExtensions();
 #}

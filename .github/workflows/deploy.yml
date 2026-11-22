@@ -1,11 +1,37 @@
 ---
 name: Production deployment
+run-name: ${{ github.event_name == 'workflow_dispatch' && format('CloudWiki {0} {1}', inputs.action, inputs.operation_id) || 'Automatic production deployment' }}
 'on':
   workflow_run:
-    workflows:
-    - Docker stack
-    types:
-    - completed
+    workflows: [Docker stack]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      operation_id:
+        description: Panel operation UUID
+        required: true
+        type: string
+      action:
+        description: Production operation
+        required: true
+        type: choice
+        options: [deploy, rollback]
+      run_id:
+        description: Successful Docker stack run for deployment
+        required: false
+        type: string
+      expected_commit:
+        description: Exact target commit
+        required: true
+        type: string
+      release_id:
+        description: Private recorded release ID for rollback
+        required: false
+        type: string
+      current_commit:
+        description: Reviewed current source revision for rollback
+        required: false
+        type: string
 permissions:
   contents: read
   actions: read
@@ -15,46 +41,94 @@ jobs:
     timeout-minutes: 5
     permissions:
       actions: read
+      contents: read
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    outputs:
+      kind: ${{ steps.manifest.outputs.kind }}
+      artifact: ${{ steps.manifest.outputs.artifact }}
+      run_id: ${{ steps.manifest.outputs.run_id }}
+      commit: ${{ steps.manifest.outputs.commit }}
     steps:
     - name: Select trusted release manifest
       id: manifest
       uses: actions/github-script@v7
+      env:
+        PANEL_OPERATION: ${{ inputs.operation_id }}
+        PANEL_ACTION: ${{ inputs.action }}
+        PANEL_RUN: ${{ inputs.run_id }}
+        PANEL_COMMIT: ${{ inputs.expected_commit }}
+        PANEL_CURRENT: ${{ inputs.current_commit }}
+        PANEL_RELEASE: ${{ inputs.release_id }}
       with:
-        script: |-
-          const run = context.payload.workflow_run;
+        script: |
+          const manual = context.eventName === 'workflow_dispatch';
+          if (manual) {
+            if (!/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/.test(process.env.PANEL_OPERATION)) throw new Error('Invalid operation ID');
+            if (!/^[a-f0-9]{40}$/.test(process.env.PANEL_COMMIT)) throw new Error('Invalid target commit');
+            if (process.env.PANEL_ACTION === 'rollback') {
+              if (!/^deploy-[0-9]+-[a-f0-9]{12}$/.test(process.env.PANEL_RELEASE)) throw new Error('Invalid recorded release');
+              if (!/^[a-f0-9]{40}$/.test(process.env.PANEL_CURRENT)) throw new Error('Invalid current revision');
+              core.setOutput('kind', 'rollback');
+              core.setOutput('commit', process.env.PANEL_COMMIT);
+              return;
+            }
+            if (process.env.PANEL_ACTION !== 'deploy' || !/^[0-9]+$/.test(process.env.PANEL_RUN)) throw new Error('Invalid deployment selection');
+          }
+          const run = manual
+            ? (await github.rest.actions.getWorkflowRun({...context.repo, run_id: Number(process.env.PANEL_RUN)})).data
+            : context.payload.workflow_run;
+          if (run.conclusion !== 'success' || run.event !== 'push' || run.head_branch !== 'main' || run.head_repository.full_name !== context.payload.repository.full_name) throw new Error('Untrusted CI release');
+          if (manual) {
+            const workflow = (await github.rest.actions.getWorkflow({...context.repo, workflow_id: 'docker.yml'})).data;
+            if (run.workflow_id !== workflow.id || run.head_sha !== process.env.PANEL_COMMIT) throw new Error('CI run does not match the reviewed release');
+            const main = (await github.rest.repos.getCommit({...context.repo, ref: 'main'})).data;
+            if (main.sha !== run.head_sha) throw new Error('A newer main commit exists');
+          }
           const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {...context.repo, run_id: run.id});
           const artifact = artifacts.find(a => a.name === 'release-manifest' && !a.expired) || artifacts.find(a => a.name === 'dashboard-manifest' && !a.expired);
+          if (manual && !artifact) throw new Error('No unexpired CI release artifact');
           core.setOutput('kind', artifact ? artifact.name === 'release-manifest' ? 'runtime' : 'dashboard' : 'none');
           core.setOutput('artifact', artifact ? artifact.name : '');
-    if: "${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event
-      == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name
-      == github.repository }}"
-    outputs:
-      kind: "${{ steps.manifest.outputs.kind }}"
-      artifact: "${{ steps.manifest.outputs.artifact }}"
+          core.setOutput('run_id', run.id);
+          core.setOutput('commit', run.head_sha);
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    needs:
-    - prepare
+    needs: [prepare]
+    if: ${{ needs.prepare.outputs.kind != 'none' }}
     permissions:
       contents: read
       actions: read
       packages: read
+    environment:
+      name: production
+      url: https://meta.cloudwiki.us
+    concurrency:
+      group: cloudwiki-production
+      cancel-in-progress: false
     steps:
     - uses: actions/download-artifact@v4
+      if: ${{ needs.prepare.outputs.kind != 'rollback' }}
       with:
-        name: "${{ needs.prepare.outputs.artifact }}"
-        path: "${{ runner.temp }}/release"
-        run-id: "${{ github.event.workflow_run.id }}"
-        github-token: "${{ github.token }}"
-    - name: Deploy the exact tested release
+        name: ${{ needs.prepare.outputs.artifact }}
+        path: ${{ runner.temp }}/release
+        run-id: ${{ needs.prepare.outputs.run_id }}
+        github-token: ${{ github.token }}
+    - name: Execute the reviewed production operation
       env:
-        DEPLOY_KEY: "${{ secrets.PRODUCTION_SSH_KEY }}"
-        KNOWN_HOSTS: "${{ secrets.PRODUCTION_KNOWN_HOSTS }}"
-        REGISTRY_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-        EXPECTED_COMMIT: "${{ github.event.workflow_run.head_sha }}"
-        RELEASE_KIND: "${{ needs.prepare.outputs.kind }}"
+        DEPLOY_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+        KNOWN_HOSTS: ${{ secrets.PRODUCTION_KNOWN_HOSTS }}
+        REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        EXPECTED_COMMIT: ${{ needs.prepare.outputs.commit }}
+        RELEASE_KIND: ${{ needs.prepare.outputs.kind }}
+        PANEL_RELEASE: ${{ inputs.release_id }}
+        PANEL_CURRENT: ${{ inputs.current_commit }}
+        PANEL_OPERATION: ${{ inputs.operation_id }}
       shell: bash
       run: |
         set -euo pipefail
@@ -66,24 +140,21 @@ jobs:
         python3 - <<'REQUEST' > "$task_dir/request.json"
         import json, os
         from pathlib import Path
-        runtime = os.environ['RELEASE_KIND'] == 'runtime'
-        manifest = json.loads((Path(os.environ['RUNNER_TEMP']) / 'release' / ('release.json' if runtime else 'dashboard.json')).read_text())
-        assert manifest['commit'] == os.environ['EXPECTED_COMMIT']
-        payload = {'commit': manifest['commit']}
-        if runtime:
-            payload.update(images=manifest['images'], registry_user=os.environ['GITHUB_ACTOR'], registry_token=os.environ['REGISTRY_TOKEN'])
+        kind = os.environ['RELEASE_KIND']
+        if kind == 'rollback':
+            payload = {'release_id': os.environ['PANEL_RELEASE'], 'expected_current': os.environ['PANEL_CURRENT'], 'expected_target': os.environ['EXPECTED_COMMIT'], 'operation_id': os.environ['PANEL_OPERATION'], 'registry_user': os.environ['GITHUB_ACTOR'], 'registry_token': os.environ['REGISTRY_TOKEN']}
+        else:
+            manifest = json.loads((Path(os.environ['RUNNER_TEMP']) / 'release' / ('release.json' if kind == 'runtime' else 'dashboard.json')).read_text())
+            assert manifest['commit'] == os.environ['EXPECTED_COMMIT']
+            payload = {'commit': manifest['commit']}
+            if kind == 'runtime':
+                payload.update(images=manifest['images'], registry_user=os.environ['GITHUB_ACTOR'], registry_token=os.environ['REGISTRY_TOKEN'])
         print(json.dumps(payload))
         REQUEST
         command=deploy
         if [ "$RELEASE_KIND" = dashboard ]; then command=deploy-dashboard; fi
+        if [ "$RELEASE_KIND" = rollback ]; then command=rollback; fi
         ssh -i "$task_dir/key" -o IdentitiesOnly=yes -o BatchMode=yes \
           -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$task_dir/known_hosts" \
           -o ConnectTimeout=20 -o ServerAliveInterval=15 -o ServerAliveCountMax=12 \
           ubuntu@15.204.121.114 "$command" < "$task_dir/request.json"
-    if: "${{ needs.prepare.outputs.kind != 'none' }}"
-    environment:
-      name: production
-      url: https://meta.cloudwiki.us
-    concurrency:
-      group: cloudwiki-production
-      cancel-in-progress: false

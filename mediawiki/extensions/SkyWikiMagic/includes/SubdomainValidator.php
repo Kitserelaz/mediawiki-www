@@ -1,0 +1,64 @@
+<?php
+
+namespace WikiOasis\WikiOasisMagic;
+
+use MediaWiki\Message\Message;
+use Miraheze\CreateWiki\ConfigNames;
+use Miraheze\CreateWiki\CreateWikiRegexConstraint;
+use Miraheze\CreateWiki\Services\CreateWikiValidator;
+
+final class SubdomainValidator {
+
+	public const MIN_LABEL_LENGTH = 3;
+
+	public function __construct(
+		private readonly CreateWikiValidator $validator,
+		private readonly string $domain,
+		private readonly array $disallowedSubdomains,
+	) {
+	}
+
+	public function allowsHyphens(): bool {
+		return function_exists( 'farmNumericIdsEnabled' ) && \farmNumericIdsEnabled();
+	}
+
+	public function validate( ?string $subdomain ): bool|Message {
+		$label = $this->validator->getValidSubdomain( $subdomain ?? '' );
+		if ( str_starts_with( $label, 'xn--' ) ) {
+			return Message::newFromKey( 'createnewwiki-subdomain-reserved-prefix' );
+		}
+		if ( ctype_digit( $label ) ) {
+			return Message::newFromKey( 'createnewwiki-subdomain-numeric' );
+		}
+		$length = strlen( $label );
+		if ( $length < self::MIN_LABEL_LENGTH || $length > 60 ) {
+			return Message::newFromKey( $this->allowsHyphens()
+				? 'createnewwiki-subdomain-invalid-hyphen'
+				: 'createnewwiki-subdomain-invalid' );
+		}
+
+		if ( $this->allowsHyphens() && str_contains( $label, '-' ) ) {
+			if ( !preg_match( '/^[a-z0-9][a-z0-9-]*[a-z0-9]$/D', $label ) ) {
+				return Message::newFromKey( 'createnewwiki-subdomain-invalid-hyphen' );
+			}
+			$disallowed = CreateWikiRegexConstraint::regexFromArray(
+				$this->disallowedSubdomains, '/^(', ')+$/', ConfigNames::DisallowedSubdomains
+			);
+			if ( $disallowed !== '' && preg_match( $disallowed, $label ) ) {
+				return Message::newFromKey( 'createwiki-error-disallowed' );
+			}
+		} else {
+			$result = $this->validator->validateSubdomain( $subdomain, [] );
+			if ( $result !== true ) {
+				return $result;
+			}
+		}
+
+		$host = $label . '.' . $this->domain;
+		if ( function_exists( 'farmWikiHostId' ) && \farmWikiHostId( $host ) !== null ) {
+			return Message::newFromKey( 'createwiki-error-subdomaintaken' );
+		}
+
+		return true;
+	}
+}

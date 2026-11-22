@@ -18,7 +18,7 @@ class SubdomainSuggester {
 		// Leave room for collision suffixes and the database suffix.
 		$base = rtrim( substr( $base, 0, 50 ), '-' ) ?: 'wiki';
 		$wikiSuffix = $separator . 'wiki';
-		if ( ctype_digit( $base ) ) {
+		if ( strlen( $base ) === 1 || ctype_digit( $base ) ) {
 			$base = substr( $base, 0, 50 - strlen( $wikiSuffix ) ) . $wikiSuffix;
 		}
 

@@ -25,7 +25,8 @@ final class SubdomainValidator {
 		if ( ctype_digit( $label ) ) {
 			return Message::newFromKey( 'createnewwiki-subdomain-numeric' );
 		}
-		if ( strlen( $label ) > 60 ) {
+		$length = strlen( $label );
+		if ( $length === 1 || $length > 60 ) {
 			return Message::newFromKey( $this->allowsHyphens()
 				? 'createnewwiki-subdomain-invalid-hyphen'
 				: 'createnewwiki-subdomain-invalid' );

@@ -102,6 +102,7 @@
   "createnewwiki-subdomain-invalid": "サブドメインには、2〜60 文字の半角英小文字または数字を使用してください。",
   "createnewwiki-subdomain-invalid-hyphen": "2〜60 文字の半角英小文字、数字、またはハイフンを使用してください。先頭と末尾にはハイフンを使用できません。",
   "createnewwiki-subdomain-numeric": "数字だけのサブドメインは予約されています。",
+  "createnewwiki-subdomain-reserved-prefix": "xn-- で始まるサブドメインは予約されています。別のサブドメインを選んでください。",
   "createnewwiki-subdomain-use": "提案されたサブドメインを使用：$1",
   "createnewwiki-subdomain-enter": "使用可能か確認するサブドメインを入力してください。",
   "apihelp-skywikisubdomain-summary": "使用可能なウィキのサブドメインを提案するか、指定したサブドメインが使用可能か確認します。",

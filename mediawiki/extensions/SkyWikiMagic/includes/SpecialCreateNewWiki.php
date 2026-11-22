@@ -107,7 +107,7 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 				'default' => $this->getRequest()->getText( 'wpdbname' ),
 				'type' => 'textwithbutton',
 				'required' => true,
-				'validation-callback' => [ $this->validator, 'validateSubdomain' ],
+				'validation-callback' => [ $this, 'isAllowedSubdomain' ],
 				'buttontype' => 'button',
 				'buttonflags' => [],
 				'buttonid' => 'inline-subdomain',
@@ -191,6 +191,10 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 
 		// Recheck the creation permission before provisioning, even on direct submissions.
 		$this->checkPermissions();
+		$subdomainStatus = $this->isAllowedSubdomain( $formData['dbname'] );
+		if ( $subdomainStatus !== true ) {
+			return $subdomainStatus;
+		}
 
                 if ( $this->getUser()->pingLimiter( 'createnewwiki' ) ) {
                         throw new ErrorPageError( 'createnewwiki', 'createnewwiki-too-many-creations' );
@@ -301,7 +305,7 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 	}
 
 	private function continueWithName( string $sitename ): ?Message {
-		$subdomain = ( new SubdomainSuggester( $this->validator ) )->suggest(
+		$subdomain = ( new SubdomainSuggester( $this->getSubdomainValidator() ) )->suggest(
 			$sitename, $this->getLanguage()->getCode()
 		);
 		if ( $subdomain === null ) {
@@ -335,16 +339,12 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 		return true;
 	}
 
-	public function isAllowedSubdomain( ?string $subdomain ): bool|string|Message {
-		$check = $this->validator->validateSubdomain(
-                        subdomain: $subdomain
-                );
+	public function isAllowedSubdomain( ?string $subdomain ): bool|Message {
+		return $this->getSubdomainValidator()->validate( $subdomain );
+	}
 
-                if ( $check ) {
-                        // Will return a string — the error it received
-                        return $check;
-                }
-		return true;
+	private function getSubdomainValidator(): SubdomainValidator {
+		return new SubdomainValidator( $this->validator, $this->getConfig()->get( ConfigNames::Subdomain ) );
 	}
 
 	/**

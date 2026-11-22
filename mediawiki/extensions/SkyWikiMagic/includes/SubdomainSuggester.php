@@ -2,11 +2,9 @@
 
 namespace WikiOasis\WikiOasisMagic;
 
-use Miraheze\CreateWiki\Services\CreateWikiValidator;
-
 class SubdomainSuggester {
 
-	public function __construct( private readonly CreateWikiValidator $validator ) {
+	public function __construct( private readonly SubdomainValidator $validator ) {
 	}
 
 	public function suggest( string $sitename, ?string $lang = null ): ?string {
@@ -26,7 +24,7 @@ class SubdomainSuggester {
 				$candidate = $base . bin2hex( random_bytes( 4 ) );
 			}
 
-			if ( $this->validator->validateSubdomain( $candidate, [] ) === true ) {
+			if ( $this->validator->validate( $candidate ) === true ) {
 				return $candidate;
 			}
 		}

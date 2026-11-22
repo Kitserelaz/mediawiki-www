@@ -4,6 +4,7 @@ namespace WikiOasis\WikiOasisMagic;
 
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
+use Miraheze\CreateWiki\ConfigNames;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\CreateWikiValidator;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -29,9 +30,10 @@ class ApiSubdomain extends ApiBase {
 		}
 		$this->getMain()->setCacheMode( 'private' );
 		$params = $this->extractRequestParams();
+		$validator = new SubdomainValidator( $this->validator, $this->getConfig()->get( ConfigNames::Subdomain ) );
 		if ( $params['subdomain'] !== '' ) {
 			$subdomain = $params['subdomain'];
-			$check = $this->validator->validateSubdomain( $subdomain, [] );
+			$check = $validator->validate( $subdomain );
 			$available = $check === true && strlen( $subdomain ) <= 60
 				&& preg_match( '/^[a-z0-9]+$/D', $subdomain );
 			$result = [
@@ -43,7 +45,7 @@ class ApiSubdomain extends ApiBase {
 		} else {
 			$name = trim( $params['name'] );
 			$lang = trim( $params['lang'] );
-			$suggester = new SubdomainSuggester( $this->validator );
+			$suggester = new SubdomainSuggester( $validator );
 			$subdomain = $name !== '' ? $suggester->suggest( $name, $lang !== '' ? $lang : null ) : null;
 			$result = [
 				'subdomain' => $subdomain ?? '',

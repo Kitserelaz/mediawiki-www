@@ -172,7 +172,8 @@ final class CustomDomainStore {
 			}
 			$this->deleteClaim( $wiki, false );
 			$this->deleteClaim( $wiki, true );
-			$this->changeUrl( $wiki, '' );
+			$builtin = CustomDomainConfig::slug( $wiki ) . '.' . \MirahezeFunctions::getPrimaryDomain( $wiki );
+			$this->changeUrl( $wiki, "https://$builtin" );
 			$this->clearCandidate( $wiki, $this->state( $wiki, true ), true );
 			return true;
 		} );

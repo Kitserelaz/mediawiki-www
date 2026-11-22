@@ -6,6 +6,7 @@ use FarmDispatch;
 use MediaWiki\Exception\ErrorPageError;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Html\Html;
+use MediaWiki\Language\RawMessage;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\FormSpecialPage;
 use MediaWiki\SpecialPage\SpecialPage;
@@ -16,6 +17,7 @@ use Miraheze\CreateWiki\Services\WikiManagerFactory;
 use Miraheze\CreateWiki\Services\CreateWikiValidator;
 use OOUI;
 use Throwable;
+use Wikimedia\ScopedCallback;
 
 class SpecialCreateNewWiki extends FormSpecialPage {
 
@@ -194,19 +196,42 @@ class SpecialCreateNewWiki extends FormSpecialPage {
                         throw new ErrorPageError( 'createnewwiki', 'createnewwiki-too-many-creations' );
                 }
 
-		$wiki = $formData['dbname'] . 'wiki';
-		$wikiManager = $this->wikiManagerFactory->newInstance( $wiki );
-		$wikiManager->create(
-			sitename: $formData['sitename'],
-			language: $formData['language'],
-			private: $formData['private'] ?? false,
-			category: $formData['category'] ?? 'uncategorised',
-			requester: $this->getContext()->getUser()->getName(),
-			actor: $this->getContext()->getUser()->getName(),
-			reason: $this->msg( 'createnewwiki-creation-reason' )->inContentLanguage()->text(),
-			extra: []
-		);
+		$wiki = $this->validator->getValidSubdomain( $formData['dbname'] ) .
+			$this->getConfig()->get( ConfigNames::DatabaseSuffix );
 		$url = $this->validator->getValidUrl( $wiki );
+		$wikiManager = $this->wikiManagerFactory->newInstance( $wiki );
+		// Set the URL once the wiki is registered, before provisioning publishes its metadata.
+		$domainHook = $this->getHookContainer()->scopedRegister(
+			'CreateWikiCreation',
+			function ( string $createdWiki ) use ( $wiki, $url ) {
+				if ( $createdWiki === $wiki ) {
+					$this->databaseUtils->getGlobalPrimaryDB()->newUpdateQueryBuilder()
+						->update( 'cw_wikis' )
+						->set( [ 'wiki_url' => $url ] )
+						->where( [ 'wiki_dbname' => $wiki, 'wiki_url' => null ] )
+						->caller( __METHOD__ )
+						->execute();
+				}
+			}
+		);
+		try {
+			$error = $wikiManager->create(
+				sitename: $formData['sitename'],
+				language: $formData['language'],
+				private: $formData['private'] ?? false,
+				category: $formData['category'] ?? 'uncategorised',
+				requester: $this->getContext()->getUser()->getName(),
+				actor: $this->getContext()->getUser()->getName(),
+				reason: $this->msg( 'createnewwiki-creation-reason' )->inContentLanguage()->text(),
+				extra: []
+			);
+		} finally {
+			ScopedCallback::consume( $domainHook );
+		}
+		if ( $error !== null ) {
+			return ( new RawMessage( '$1' ) )->rawParams( $error );
+		}
+
 		$output = $this->getOutput();
 		$output->redirect( $url );
 		if ( getenv( 'MW_DOCKER' ) ) {

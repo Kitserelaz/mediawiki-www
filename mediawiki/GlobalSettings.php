@@ -316,7 +316,7 @@ $wgPasswordConfig['null'] = [ 'class' => InvalidPassword::class ];
 $wgLoginNotifyUseCentralId = true;
 $wgWebAuthnNewCredsDisabled = true;
 $wgCentralAuthSharedDomainCallback = static fn ( $dbname ) =>
-        "https://{$wi->getSharedDomain()}/$dbname";
+        "https://{$wi->getSharedDomain()}/" . ( function_exists( 'farmWikiAuthSegment' ) ? farmWikiAuthSegment( $dbname ) : $dbname );
 
 if ( $_SERVER['HTTP_HOST'] === 'login.cloudwiki.us' ) {
         $wgCentralAuthEnableSul3 = false;

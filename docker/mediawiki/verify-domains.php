@@ -16,7 +16,7 @@ class VerifyFarmVirtualDomains extends MediaWiki\Maintenance\Maintenance {
             'virtual-importdump' => 'metawiki',
         ] as $domain => $expected) {
             $db = $provider->getReplicaDatabase($domain);
-            if ($db->getDBname() !== $expected) {
+            if ($db->getDBname() !== farmWikiId($expected)) {
                 throw new RuntimeException("Upgrade preflight: $domain must map to $expected");
             }
             // Establish that the configured connection is reachable without

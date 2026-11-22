@@ -89,7 +89,10 @@ class MirahezeFunctions {
 		$this->dbname = self::getCurrentDatabase();
 
 		$expectedSuffix = ( getenv( 'MW_REALM' ) ? getenv( 'MW_REALM' ) === 'beta' : php_uname( 'n' ) === self::BETA_HOSTNAME ) ? 'wikibeta' : 'wiki';
-		if ( !str_ends_with( $this->dbname, $expectedSuffix ) ) {
+		$identity = function_exists( 'farmWikiIdentity' ) ? farmWikiIdentity( $this->dbname ) : [];
+		$matchesRealm = $identity ? $identity['realm'] === ( $expectedSuffix === 'wikibeta' ? 'beta' : 'default' )
+			: str_ends_with( $this->dbname, $expectedSuffix );
+		if ( !$matchesRealm ) {
 			if ( MW_ENTRY_POINT === 'cli' ) {
 				die( 'INVALID DATABASE! YOU CAN NOT USE THE DATABASE OF A DIFFERENT REALM!' . PHP_EOL );
 			}
@@ -150,6 +153,9 @@ class MirahezeFunctions {
 			$databasesArray = include $filePath;
             if ( getenv( 'MW_DOCKER' ) && getenv( 'MW_ENV' ) !== 'production' ) {
                 foreach ( array_keys( $databasesArray['databases'] ?? [] ) as $name ) {
+                    if ( function_exists( 'farmWikiIdentity' ) && farmWikiIdentity( $name ) ) {
+                        continue;
+                    }
                     $suffix = str_ends_with( $name, 'wikibeta' ) ? 'wikibeta' : 'wiki';
                     $domain = self::DEFAULT_SERVER[$suffix === 'wikibeta' ? 'beta' : 'default'];
                     $databasesArray['databases'][$name]['d'] = $domain;
@@ -159,6 +165,15 @@ class MirahezeFunctions {
                     }
                 }
             }
+            if ( function_exists( 'farmNumericIdsEnabled' ) && farmNumericIdsEnabled() ) {
+                foreach ( $databasesArray['databases'] ?? [] as $name => $metadata ) {
+                    $builtin = farmWikiBuiltinUrl( $name );
+                    if ( empty( $metadata['u'] ) && $builtin !== null ) {
+                        $databasesArray['databases'][$name]['u'] = $builtin;
+                    }
+                }
+            }
+
 		}
 
 		if ( $database ) {
@@ -215,6 +230,10 @@ class MirahezeFunctions {
 	 * @return string
 	 */
 	public static function getRealm( ?string $database = null ): string {
+		$identity = function_exists( 'farmNumericIdsEnabled' ) && farmNumericIdsEnabled() ? farmWikiIdentity( $database ?? self::getCurrentDatabase() ) : [];
+		if ( isset( $identity['realm'] ) ) {
+			return $identity['realm'];
+		}
 		if ( $database ) {
 			return ( substr( $database, -strlen( array_keys( self::SUFFIXES )[0] ) ) === array_keys( self::SUFFIXES )[0] ) ?
 				self::TAGS['default'] : self::TAGS['beta'];
@@ -310,12 +329,12 @@ class MirahezeFunctions {
 	 */
 	public static function getCurrentDatabase( bool $ignorePrimary = false ): string {
 		if ( defined( 'MW_DB' ) ) {
-			return MW_DB;
+			return function_exists( 'farmWikiId' ) ? farmWikiId( MW_DB ) : MW_DB;
 		}
 
 		$customRoute = self::getCustomDomainRoute();
 		if ( $customRoute ) {
-			return $customRoute[0];
+			return function_exists( 'farmWikiId' ) ? farmWikiId( $customRoute[0] ) : $customRoute[0];
 		}
 
 		$hostname = $_SERVER['HTTP_HOST'] ?? 'undefined';
@@ -328,7 +347,11 @@ class MirahezeFunctions {
 			}
 			[ , $dbname, ] = $pathBits;
 			// No validation of $dbname at this point - if it's invalid, an error will be produced
-			return $dbname;
+			return function_exists( 'farmWikiIdFromAuthSegment' ) ? farmWikiIdFromAuthSegment( $dbname ) : $dbname;
+		}
+
+		if ( function_exists( 'farmWikiHostId' ) && ( $registered = farmWikiHostId( $hostname ) ) !== null ) {
+			return $registered;
 		}
 
 		static $database = null;
@@ -347,6 +370,11 @@ class MirahezeFunctions {
 
 		if ( isset( $explode[1] ) ) {
 			foreach ( self::SUFFIXES as $suffix => $sites ) {
+				if ( in_array( $explode[1], $sites, true ) && ctype_digit( $explode[0] ) &&
+					function_exists( 'farmNumericIdsEnabled' ) && farmNumericIdsEnabled()
+				) {
+					return '';
+				}
 				if ( in_array( $explode[1], $sites ) && ( $ignorePrimary || $explode[1] === self::getPrimaryDomain( $explode[0] . $suffix ) ) ) {
 					return $explode[0] . $suffix;
 				}
@@ -367,7 +395,8 @@ class MirahezeFunctions {
 	 * @return string
 	 */
 	public function getCentralDatabase(): string {
-		return self::CENTRAL_DATABASE[ array_flip( self::TAGS )[$this->realm] ];
+		$wiki = self::CENTRAL_DATABASE[ array_flip( self::TAGS )[$this->realm] ];
+		return function_exists( 'farmWikiId' ) ? farmWikiId( $wiki ) : $wiki;
 	}
 
 	/**

@@ -6,6 +6,7 @@ use FarmDispatch;
 use MediaWiki\Exception\ErrorPageError;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\Html\Html;
+use MediaWiki\Language\RawMessage;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\FormSpecialPage;
 use MediaWiki\SpecialPage\SpecialPage;
@@ -16,6 +17,7 @@ use Miraheze\CreateWiki\Services\WikiManagerFactory;
 use Miraheze\CreateWiki\Services\CreateWikiValidator;
 use OOUI;
 use Throwable;
+use Wikimedia\ScopedCallback;
 
 class SpecialCreateNewWiki extends FormSpecialPage {
 
@@ -105,7 +107,7 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 				'default' => $this->getRequest()->getText( 'wpdbname' ),
 				'type' => 'textwithbutton',
 				'required' => true,
-				'validation-callback' => [ $this->validator, 'validateSubdomain' ],
+				'validation-callback' => [ $this, 'isAllowedSubdomain' ],
 				'buttontype' => 'button',
 				'buttonflags' => [],
 				'buttonid' => 'inline-subdomain',
@@ -189,24 +191,45 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 
 		// Recheck the creation permission before provisioning, even on direct submissions.
 		$this->checkPermissions();
+		$this->checkReadOnly();
+		$subdomainStatus = $this->isAllowedSubdomain( $formData['dbname'] );
+		if ( $subdomainStatus !== true ) {
+			return $subdomainStatus;
+		}
 
                 if ( $this->getUser()->pingLimiter( 'createnewwiki' ) ) {
                         throw new ErrorPageError( 'createnewwiki', 'createnewwiki-too-many-creations' );
                 }
 
-		$wiki = $formData['dbname'] . 'wiki';
-		$wikiManager = $this->wikiManagerFactory->newInstance( $wiki );
-		$wikiManager->create(
-			sitename: $formData['sitename'],
-			language: $formData['language'],
-			private: $formData['private'] ?? false,
-			category: $formData['category'] ?? 'uncategorised',
-			requester: $this->getContext()->getUser()->getName(),
-			actor: $this->getContext()->getUser()->getName(),
-			reason: $this->msg( 'createnewwiki-creation-reason' )->inContentLanguage()->text(),
-			extra: []
-		);
+		$wiki = $this->validator->getValidSubdomain( $formData['dbname'] ) .
+			$this->getConfig()->get( ConfigNames::DatabaseSuffix );
 		$url = $this->validator->getValidUrl( $wiki );
+		$identityDb = null;
+		$reservedWiki = null;
+		$created = false;
+		try {
+			if ( function_exists( 'farmNumericIdsEnabled' ) && \farmNumericIdsEnabled() ) {
+				require_once MW_INSTALL_PATH . '/docker/mediawiki/wiki-identity-admin.php';
+				$identityDb = \farmLockDirectWikiIdentity();
+				try {
+					$reservedWiki = \farmReserveDirectWikiIdentity( $identityDb, parse_url( $url, PHP_URL_HOST ) );
+				} catch ( \DomainException ) {
+					return $this->msg( 'createwiki-error-subdomaintaken' );
+				}
+				$wiki = $reservedWiki;
+			}
+			$error = $this->createWikiWithUrl( $wiki, $url, $formData );
+			$created = $error === null;
+		} finally {
+			if ( $reservedWiki !== null ) {
+				\farmFinishDirectWikiIdentity( $identityDb, $reservedWiki, $created );
+			}
+			$identityDb = null;
+		}
+		if ( $error !== null ) {
+			return ( new RawMessage( '$1' ) )->rawParams( $error );
+		}
+
 		$output = $this->getOutput();
 		$output->redirect( $url );
 		if ( getenv( 'MW_DOCKER' ) ) {
@@ -223,6 +246,38 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 			);
 		}
 		return true;
+	}
+
+	private function createWikiWithUrl( string $wiki, string $url, array $formData ): ?string {
+		$wikiManager = $this->wikiManagerFactory->newInstance( $wiki );
+		// Set the URL once the wiki is registered, before provisioning publishes its metadata.
+		$domainHook = $this->getHookContainer()->scopedRegister(
+			'CreateWikiCreation',
+			function ( string $createdWiki ) use ( $wiki, $url ): void {
+				if ( $createdWiki === $wiki ) {
+					$this->databaseUtils->getGlobalPrimaryDB()->newUpdateQueryBuilder()
+						->update( 'cw_wikis' )
+						->set( [ 'wiki_url' => $url ] )
+						->where( [ 'wiki_dbname' => $wiki, 'wiki_url' => null ] )
+						->caller( __METHOD__ )
+						->execute();
+				}
+			}
+		);
+		try {
+			return $wikiManager->create(
+				sitename: $formData['sitename'],
+				language: $formData['language'],
+				private: $formData['private'] ?? false,
+				category: $formData['category'] ?? 'uncategorised',
+				requester: $this->getContext()->getUser()->getName(),
+				actor: $this->getContext()->getUser()->getName(),
+				reason: $this->msg( 'createnewwiki-creation-reason' )->inContentLanguage()->text(),
+				extra: []
+			);
+		} finally {
+			ScopedCallback::consume( $domainHook );
+		}
 	}
 
 	private function getProgressUrl( string $wiki, string $url, string $siteName, bool $private ): ?string {
@@ -270,13 +325,13 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 		$output->addHTML( Html::element( 'p', [ 'id' => 'skywiki-creation-status', 'role' => 'status' ],
 			$this->msg( 'createnewwiki-progress-wait' )->text() ) );
 		$output->addHTML( Html::element( 'a', [ 'id' => 'skywiki-creation-link',
-			'href' => $this->validator->getValidUrl( $ticket['wiki'] ) ], $this->msg( 'createnewwiki-progress-open' )->text() ) );
+			'href' => 'https://' . $ticket['host'] ], $this->msg( 'createnewwiki-progress-open' )->text() ) );
 		$output->addJsConfigVars( 'wgSkyWikiCreationEvents', '/wiki-creation/events?ticket=' . $token );
 		$output->addModules( 'ext.skywiki.creationProgress' );
 	}
 
 	private function continueWithName( string $sitename ): ?Message {
-		$subdomain = ( new SubdomainSuggester( $this->validator ) )->suggest(
+		$subdomain = ( new SubdomainSuggester( $this->getSubdomainValidator() ) )->suggest(
 			$sitename, $this->getLanguage()->getCode()
 		);
 		if ( $subdomain === null ) {
@@ -310,16 +365,15 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 		return true;
 	}
 
-	public function isAllowedSubdomain( ?string $subdomain ): bool|string|Message {
-		$check = $this->validator->validateSubdomain(
-                        subdomain: $subdomain
-                );
+	public function isAllowedSubdomain( ?string $subdomain ): bool|Message {
+		return $this->getSubdomainValidator()->validate( $subdomain );
+	}
 
-                if ( $check ) {
-                        // Will return a string — the error it received
-                        return $check;
-                }
-		return true;
+	private function getSubdomainValidator(): SubdomainValidator {
+		$config = $this->getConfig();
+		return new SubdomainValidator(
+			$this->validator, $config->get( ConfigNames::Subdomain ), $config->get( ConfigNames::DisallowedSubdomains )
+		);
 	}
 
 	/**

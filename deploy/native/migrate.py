@@ -238,6 +238,7 @@ def cutover():
         native_units=[name+'.service' for name in manifest['units']]
         c.run(['systemctl','enable',*native_units])
         c.write_json(c.CONFIG/'runtime.json',manifest)
+        shutil.copy2(c.ROOT/'scripts/update-diff-dashboard.py',c.STATE/'diff/update.py')
         shutil.copy2(c.ROOT/'scripts/deploy-ssh','/usr/local/sbin/cloudwiki-deploy-ssh')
         Path('/usr/local/sbin/cloudwiki-deploy-ssh').chmod(0o755)
         c.run(['systemctl','disable','--now','cloudwiki-code-reload.path'])

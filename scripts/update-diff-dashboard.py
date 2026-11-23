@@ -296,7 +296,7 @@ def main():
                 native = importlib.util.module_from_spec(native_spec)
                 native_spec.loader.exec_module(native)
                 view = native.overview()
-                local = {'status': view['configuration']['status'], 'files': view['configuration']['files']}
+                local = {'status': view['configuration']['status'], 'files': [{'filename': Path(item['path']).name, 'status': item['status']} for item in view['configuration']['files']]}
             else:
                 local = config_report(guard, ROOT, STATE, patch)
             worktree = working_tree_report(ROOT, patch)

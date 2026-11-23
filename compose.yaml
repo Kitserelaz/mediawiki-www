@@ -194,7 +194,7 @@ services:
     restart: unless-stopped
   memcached:
     image: memcached:1.6.40-alpine
-    command: [memcached, -m, '128']
+    command: [memcached, -m, '512']
     restart: unless-stopped
   counter:
     image: ${COUNTER_IMAGE:-cloudwiki-counter:local}

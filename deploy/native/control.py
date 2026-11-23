@@ -106,10 +106,37 @@ def systemctl(action, names):
     if names: run(['systemctl', action, *['cloudwiki-'+n+'.service' for n in names]])
 
 
+CADDY_ADMIN = Path('/run/cloudwiki-caddy/admin.sock')
+
+
+def wait_ready(path, timeout):
+    """Wait for an endpoint that exists only after the service has started serving."""
+    path = Path(path)
+    deadline = time.monotonic() + timeout
+    while not path.exists() and time.monotonic() < deadline: time.sleep(0.1)
+    return path.exists()
+
+
+def reload_caddy():
+    # cloudwiki-caddy is Type=simple, so systemd reports the unit started before
+    # Caddy has created its admin socket. A reload sent into that gap fails with
+    # ENOENT and silently leaves the configuration unapplied.
+    for attempt in range(5):
+        if not wait_ready(CADDY_ADMIN, 30):
+            raise RuntimeError('Caddy administration socket did not become ready')
+        try:
+            run(['systemctl', 'reload', 'cloudwiki-caddy.service'])
+            return
+        except RuntimeError:
+            if attempt == 4: raise
+            time.sleep(1)
+
+
 def maintenance(enabled):
     RUN.mkdir(parents=True, exist_ok=True)
     (STATE / 'native-maintenance.caddy').write_text('respond "CloudWiki is undergoing maintenance. Please retry shortly." 503\n' if enabled else '# online\n')
-    run(['systemctl', 'reload', 'cloudwiki-caddy.service'])
+    systemctl('start', ['caddy'])
+    reload_caddy()
 
 
 def capture_config():

@@ -69,6 +69,8 @@ def copy_state(saved,final=False):
         c.run(['rsync','-a','--delete',saved[key]+'/',str(c.DATA/key)+'/'])
         c.run(['chown','-R',owners.get(key,'www-data')+':'+owners.get(key,'www-data'),str(c.DATA/key)])
     if final:
+        c.run(['rsync','-a','--delete','--no-specials','--no-devices','/var/lib/cloudwiki/editor/home/',str(c.DATA/'editor')+'/'])
+        c.run(['chown','-R','cloudwiki-editor:cloudwiki-editor',str(c.DATA/'editor')])
         for name in ['uploads','dumps','farm-cache','localization']:
             (c.DATA/name).chmod(0o755)
 
@@ -203,6 +205,7 @@ def cutover():
         i.write('/etc/haproxy/haproxy.cfg',next_config)
         c.run(['haproxy','-c','-f','/etc/haproxy/haproxy.cfg'])
         c.run(['systemctl','reload','haproxy'])
+        c.systemctl('start',['cloudflared'])
         # All following failures retain the public maintenance response.
         writers=[n for n in saved['containers'] if n not in ('cloudwiki-production-database-1','cloudwiki-production-redis-1','cloudwiki-production-memcached-1') and not n.startswith('cloudwiki-monitoring-')]
         c.run(['docker','stop','--time','60',*writers])

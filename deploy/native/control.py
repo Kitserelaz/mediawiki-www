@@ -154,6 +154,50 @@ def size(path):
     return int(run(['du', '-sb', str(path)]).split()[0]) if path.exists() else 0
 
 
+
+def managed_reference():
+    try:
+        reference=active()
+        record=json.loads((reference/'release.json').read_text())
+        if record.get('runtime')=='native' and re.fullmatch('[a-f0-9]{40}',record.get('commit','')):
+            return reference,record['commit']
+    except (OSError,ValueError):pass
+    return None,None
+
+
+def blob_tree(commit):
+    result={}
+    for row in git('ls-tree','-rz',commit).split(b'\0'):
+        if not row:continue
+        metadata,name=row.split(b'\t',1)
+        mode,kind,blob=metadata.split()
+        if kind==b'blob' and mode in (b'100644',b'100755'):
+            result[name.decode('utf8','surrogateescape')]=(mode,blob)
+    return result
+
+
+def extract_release(archive,destination,commit):
+    # Managed releases are immutable and root-owned. Matching Git blobs can be
+    # linked while the archive streams past, avoiding a duplicate vendor tree.
+    reference,previous=managed_reference()
+    old_tree=blob_tree(previous) if previous else {}
+    new_tree=blob_tree(commit)
+    with tarfile.open(fileobj=archive.stdout,mode='r|') as source:
+        for member in source:
+            filtered=tarfile.data_filter(member,str(destination))
+            if filtered is None:continue
+            name=Path(member.name).as_posix()
+            old=reference/name if reference else None
+            target=destination/name
+            if member.isfile() and not name.startswith('Moe-Counter/') and old and old_tree.get(name)==new_tree.get(name) and name in new_tree and old.is_file() and not old.is_symlink() and old.resolve().is_relative_to(reference):
+                info=old.stat()
+                if info.st_uid==0 and not info.st_mode & 0o022 and info.st_size==member.size:
+                    target.parent.mkdir(parents=True,exist_ok=True)
+                    os.link(old,target)
+                    continue
+            source.extract(member,destination,filter='data')
+
+
 def build(commit, token=None):
     if not re.fullmatch('[a-f0-9]{40}', commit): raise ValueError('Invalid commit')
     destination = BASE / 'releases' / commit
@@ -172,7 +216,7 @@ def build(commit, token=None):
     # git archive contains repository-controlled symlinks; extract with Python's data filter.
     archive = subprocess.Popen(['git', '-c', 'safe.directory=/var/www', '-C', str(ROOT), 'archive', '--format=tar', commit], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     try:
-        with tarfile.open(fileobj=archive.stdout, mode='r|') as source: source.extractall(destination, filter='data')
+        extract_release(archive,destination,commit)
         if archive.wait(): raise RuntimeError('Source export failed')
         wire_release(destination)
         build_counter(destination)
@@ -245,7 +289,7 @@ def build_counter(release):
          '-p', 'CPUQuota=80%', '-p', 'NoNewPrivileges=yes', '-p', 'ProtectSystem=strict',
          '-p', 'ReadWritePaths='+str(counter)+' /var/cache/wiki-admin-build',
          '-p', 'WorkingDirectory='+str(counter), '-p', 'Environment=HOME=/var/cache/wiki-admin-build',
-         '/usr/local/bin/pnpm', 'install', '--prod', '--frozen-lockfile'], timeout=1800)
+         '/usr/local/bin/pnpm', 'install', '--prod', '--frozen-lockfile', '--package-import-method=copy'], timeout=1800)
     run(['chown', '-R', 'root:root', str(counter)])
 
 

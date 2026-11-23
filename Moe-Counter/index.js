@@ -117,7 +117,7 @@ function start() {
     db,
     intervalMs: Number.isFinite(interval) && interval > 0 ? interval * 1000 : 0,
   });
-  const listener = app.listen(process.env.APP_PORT || 3000, () => {
+  const listener = app.listen(process.env.APP_PORT || 3000, process.env.APP_HOST || "0.0.0.0", () => {
     logger.info("Your app is listening on port " + listener.address().port);
   });
   let stopping = false;

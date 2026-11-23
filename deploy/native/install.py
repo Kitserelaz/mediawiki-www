@@ -209,7 +209,9 @@ skip_name_resolve=1
     service('memcached','/usr/bin/memcached -l 127.0.0.1 -p 11211 -m 512 -U 0','memcache','600M',environment=False)
     write(c.CONFIG/'php-fpm.conf','''[global]
 pid=/run/cloudwiki-native/php-fpm.pid
-error_log=/proc/self/fd/2
+error_log=syslog
+syslog.ident=cloudwiki-php
+syslog.facility=daemon
 [wiki]
 user=www-data
 group=www-data
@@ -243,7 +245,7 @@ request_terminate_timeout=5s
                          ('creation-events','python3 /srv/cloudwiki/current/docker/mediawiki/creation-events.py')]:
         service(name,'/usr/bin/'+command,memory='384M' if name in ('worker','provisioner') else '128M')
     counter_env=dict(x.split('=',1) for x in inspect('cloudwiki-production-counter-1')['Config']['Env'] if x.startswith(('APP_','DB_')))
-    counter_env.update(APP_PORT='3001',DB_PATH='/var/lib/cloudwiki-native/counter/count.db',NODE_ENV='production')
+    counter_env.update(APP_PORT='3001',APP_HOST='127.0.0.1',DB_PATH='/var/lib/cloudwiki-native/counter/count.db',NODE_ENV='production')
     write(c.CONFIG/'counter.env',''.join(k+'='+json.dumps(v)+'\n' for k,v in counter_env.items()),0o600)
     service('counter','/usr/bin/node /srv/cloudwiki/current/Moe-Counter/index.js','cloudwiki-counter','256M',
             'EnvironmentFile=/etc/cloudwiki/counter.env\nWorkingDirectory=/srv/cloudwiki/current/Moe-Counter',environment=False)

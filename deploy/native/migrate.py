@@ -255,6 +255,7 @@ def cutover():
         c.write_json(c.STATE/'last-success.json',{'runtime':'native','commit':staged['commit'],'previous_commit':saved.get('active_commit',saved['source_commit']),
                      'snapshot':str(MIGRATION),'created':int(time.time()),'schema_commit':staged['commit']})
         c.write_json(c.STATE/'history'/('native-'+str(time.time_ns())+'.json'),json.loads((c.STATE/'last-success.json').read_text()))
+        c.editor_permissions(saved.get('active_commit',saved['source_commit']),staged['commit'])
         c.save_baseline('Native migration installed by SSH operator')
         c.progress(staged['commit'],'complete','success')
         c.write_json(MIGRATION/'completed.json',{'completed':int(time.time()),'retain_docker_until':int(time.time())+7*86400})

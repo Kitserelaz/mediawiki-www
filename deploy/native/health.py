@@ -4,6 +4,10 @@ import importlib.util,json,time,urllib.request
 from pathlib import Path
 s=importlib.util.spec_from_file_location('native','/usr/local/libexec/cloudwiki-native.py');c=importlib.util.module_from_spec(s);s.loader.exec_module(c)
 result={}
+try:
+    c.run(['runuser','-u','www-data','--','php8.5',str(c.active()/'docker/mediawiki/health.php')],env=dict(__import__('os').environ,**c.environment()),timeout=5)
+    result['cloudwiki-php.service']='healthy'
+except Exception:result['cloudwiki-php.service']='unhealthy'
 for name,kind in [('worker','jobs'),('provisioner','provision'),('jobchron','jobchron')]:
     path=c.RUN/('farm-jobchron-heartbeat' if name=='jobchron' else 'farm-dispatch-'+kind+'-heartbeat')
     try:result['cloudwiki-'+name+'.service']='healthy' if time.time()-int(path.read_text())<(120 if name=='jobchron' else 45) else 'unhealthy'

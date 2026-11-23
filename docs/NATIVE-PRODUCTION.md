@@ -43,6 +43,6 @@ sudo journalctl -fu cloudwiki-php
 sudo systemctl status cloudwiki-mariadb cloudwiki-redis cloudwiki-worker
 ```
 
-The native application units use loopback networking. HAProxy retains public ports 80/443; Caddy uses 18088/18443. Counter uses 3001, creation events 8091, and the editor 8085. Grafana and Prometheus retain their existing loopback ports.
+Native network services bind to loopback. PHP-FPM and Caddy administration use permission-restricted Unix sockets, inaccessible to the editor and build accounts. HAProxy retains public ports 80/443; Caddy uses 18088/18443. Counter uses 3001, creation events 8091, and the editor 8085. Grafana and Prometheus retain their existing loopback ports.
 
 Code-server stays available with a 768 MiB ceiling. Builds have a 768 MiB memory ceiling and 80% of one CPU. The editor may restart if an extension exceeds its memory budget. Native service state and application heartbeat health are reported separately in the admin panel. The existing 4 GiB swap remains enabled.

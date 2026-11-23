@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import pwd
+import grp
 import shutil
 import subprocess
 import tempfile
@@ -110,7 +111,7 @@ def packages():
 def proxy(env,source):
     destination=c.CONFIG/'caddy';destination.mkdir(exist_ok=True)
     main=Path('/var/lib/cloudwiki/admin/Caddyfile.production').read_text()
-    main=main.replace('admin off','admin 127.0.0.1:2019\n    http_port 18088\n    https_port 18443\n    auto_https disable_redirects')
+    main=main.replace('admin off','admin unix//run/cloudwiki-caddy/admin.sock\n    default_bind 127.0.0.1\n    http_port 18088\n    https_port 18443\n    auto_https disable_redirects')
     main=main.replace('servers :443','servers :18443')
     main=main.replace('counter:3000','127.0.0.1:3001')
     main=main.replace('/etc/caddy/',str(destination)+'/')
@@ -128,10 +129,10 @@ http://*.{$MW_DOMAIN} {
     c.run(['setfacl','-m','u:caddy:--x','/var/lib/cloudwiki','/var/lib/cloudwiki/diff'])
     c.run(['setfacl','-R','-m','u:caddy:r-X','/var/lib/cloudwiki/diff/public'])
     wiki=(source/'docker/caddy/wiki.caddy').read_text()
-    wiki=wiki.replace('/var/www/mediawiki','/srv/cloudwiki/current/mediawiki').replace('php:9000','127.0.0.1:9000').replace('creation-events:8080','127.0.0.1:8091')
-    wiki=wiki.replace('    route {','    route {\n        import /run/cloudwiki-native/maintenance.caddy',1)
+    wiki=wiki.replace('/var/www/mediawiki','/srv/cloudwiki/current/mediawiki').replace('php:9000','unix//run/cloudwiki-php/wiki.sock').replace('creation-events:8080','127.0.0.1:8091')
+    wiki=wiki.replace('    route {','    route {\n        import /var/lib/cloudwiki/native-maintenance.caddy',1)
     write(destination/'wiki.caddy',wiki)
-    custom=(source/'docker/caddy/custom-domains.caddy').read_text().replace('php:9001','127.0.0.1:9001').replace('/opt/farm/custom-domain-lookup.php','/srv/cloudwiki/current/docker/mediawiki/custom-domain-lookup.php')
+    custom=(source/'docker/caddy/custom-domains.caddy').read_text().replace('php:9001','unix//run/cloudwiki-php/custom-domains.sock').replace('/opt/farm/custom-domain-lookup.php','/srv/cloudwiki/current/docker/mediawiki/custom-domain-lookup.php')
     write(destination/'custom-domains.caddy',custom)
     editor=Path('/var/lib/cloudwiki/editor/Caddyfile').read_text().replace('code:8080','127.0.0.1:8085')
     write(destination/'editor.caddy',editor)
@@ -141,15 +142,18 @@ http://*.{$MW_DOMAIN} {
     wildcard=Path('/var/lib/cloudwiki/wildcard/Caddyfile').read_text().replace('/run/cloudwiki-tls',str(tls))
     write(destination/'wildcard.caddy',wildcard)
     c.RUN.mkdir(parents=True,exist_ok=True);shutil.chown(c.RUN,'www-data','www-data');c.RUN.chmod(0o755)
-    write(c.RUN/'maintenance.caddy','# online\n')
+    write(c.STATE/'native-maintenance.caddy','# online\n')
     service('caddy','/usr/bin/caddy run --config /etc/cloudwiki/caddy/Caddyfile','caddy','256M',
-            'ExecReload=/usr/bin/caddy reload --config /etc/cloudwiki/caddy/Caddyfile\nEnvironment=XDG_DATA_HOME=/var/lib/cloudwiki-native/caddy XDG_CONFIG_HOME=/var/lib/cloudwiki-native/caddy-config')
+            'RuntimeDirectory=cloudwiki-caddy\nRuntimeDirectoryMode=0750\nReadWritePaths=/run/cloudwiki-caddy\nExecReload=/usr/bin/caddy reload --address unix//run/cloudwiki-caddy/admin.sock --config /etc/cloudwiki/caddy/Caddyfile\nEnvironment=XDG_DATA_HOME=/var/lib/cloudwiki-native/caddy XDG_CONFIG_HOME=/var/lib/cloudwiki-native/caddy-config')
     c.run(['/usr/bin/caddy','validate','--config',str(destination/'Caddyfile')],env=dict(os.environ,**env),capture=False)
 
 
 def configure(source):
     for account in ['cloudwiki-db','cloudwiki-redis','cloudwiki-counter','cloudwiki-editor','cloudwiki-monitoring','wiki-admin-build']:
         user(account)
+    try: grp.getgrnam('cloudwiki-fpm')
+    except KeyError: c.run(['groupadd','--system','cloudwiki-fpm'])
+    for account in ['www-data','caddy']: c.run(['usermod','-aG','cloudwiki-fpm',account])
     c.CONFIG.mkdir(parents=True,exist_ok=True);c.CONFIG.chmod(0o755)
     c.DATA.mkdir(parents=True,exist_ok=True);c.DATA.chmod(0o755)
     c.BASE.mkdir(parents=True,exist_ok=True)
@@ -164,7 +168,7 @@ def configure(source):
     env.update(MW_FARM_RUNTIME='native',MW_INSTALL_PATH='/srv/cloudwiki/current/mediawiki',MW_FARM_HELPERS='/srv/cloudwiki/current/docker/mediawiki',
                MW_DB_HOST='127.0.0.1',MW_DB_PORT='3307',MW_REDIS='127.0.0.1:16379',MW_MEMCACHED='127.0.0.1:11211',
                MW_SECRETS_DIRECTORY='/etc/cloudwiki/secrets',MW_SECRETS_FILE='/etc/cloudwiki/secrets/farm.json',
-               MW_PHP_CLI='/usr/bin/php8.5',MW_UPLOAD_ROOT='/var/lib/cloudwiki-native/uploads',MW_DUMP_DIRECTORY='/var/lib/cloudwiki-native/dumps',
+               MW_PHP_CLI='/usr/bin/php8.5',MW_FPM_SOCKET='/run/cloudwiki-php/wiki.sock',MW_UPLOAD_ROOT='/var/lib/cloudwiki-native/uploads',MW_DUMP_DIRECTORY='/var/lib/cloudwiki-native/dumps',
                MW_HEARTBEAT_DIRECTORY='/run/cloudwiki-native',MW_MAINTENANCE_FILE='/etc/cloudwiki/maintenance.json',
                MW_CREATION_PROBE_URL='http://127.0.0.1:8083/wiki-creation/probe',MW_CREATION_EVENTS_PORT='8091',MW_CREATION_EVENTS_BIND='127.0.0.1',
                MW_CLOUDFLARE_TUNNEL_ORIGIN_IP='127.0.0.1',MW_CLOUDFLARE_TUNNEL_PROXY_IP='127.0.0.1',
@@ -215,7 +219,10 @@ syslog.facility=daemon
 [wiki]
 user=www-data
 group=www-data
-listen=127.0.0.1:9000
+listen=/run/cloudwiki-php/wiki.sock
+listen.owner=www-data
+listen.group=cloudwiki-fpm
+listen.mode=0660
 pm=ondemand
 pm.max_children=3
 pm.process_idle_timeout=30s
@@ -230,14 +237,17 @@ php_admin_value[apc.shm_size]=128M
 [custom-domains]
 user=www-data
 group=www-data
-listen=127.0.0.1:9001
+listen=/run/cloudwiki-php/custom-domains.sock
+listen.owner=www-data
+listen.group=cloudwiki-fpm
+listen.mode=0660
 pm=ondemand
 pm.max_children=2
 pm.process_idle_timeout=15s
 clear_env=no
 request_terminate_timeout=5s
 ''')
-    service('php','/usr/sbin/php-fpm8.5 --nodaemonize --fpm-config /etc/cloudwiki/php-fpm.conf','www-data','1024M')
+    service('php','/usr/sbin/php-fpm8.5 --nodaemonize --fpm-config /etc/cloudwiki/php-fpm.conf','www-data','1024M','RuntimeDirectory=cloudwiki-php\nRuntimeDirectoryMode=0755\nReadWritePaths=/run/cloudwiki-php')
     for name,command in [('worker','php8.5 /srv/cloudwiki/current/docker/mediawiki/worker.php'),
                          ('provisioner','php8.5 /srv/cloudwiki/current/docker/mediawiki/stream-worker.php provision'),
                          ('jobchron','php8.5 /srv/cloudwiki/current/docker/mediawiki/jobchron.php'),
@@ -256,8 +266,8 @@ request_terminate_timeout=5s
     editor_config=re.sub(r'(?m)^bind-addr:.*','bind-addr: 127.0.0.1:8085',editor_config)
     write(c.CONFIG/'editor.yaml',editor_config,0o640);shutil.chown(c.CONFIG/'editor.yaml','root','cloudwiki-editor')
     service('editor','/usr/bin/code-server --config /etc/cloudwiki/editor.yaml --disable-proxy /var/www/mediawiki','cloudwiki-editor','768M',
-            'Environment=HOME=/var/lib/cloudwiki-native/editor\nProtectSystem=full\nReadWritePaths=/var/www/mediawiki\nWorkingDirectory=/var/www',environment=False)
-    write('/etc/tmpfiles.d/cloudwiki-native.conf','d /run/cloudwiki-native 0755 www-data www-data -\nf /run/cloudwiki-native/maintenance.caddy 0644 root root -\n')
+            'Environment=HOME=/var/lib/cloudwiki-native/editor SHELL=/bin/bash USER=cloudwiki-editor LOGNAME=cloudwiki-editor\nProtectSystem=full\nReadWritePaths=/var/www/mediawiki\nWorkingDirectory=/var/www',environment=False)
+    write('/etc/tmpfiles.d/cloudwiki-native.conf','d /run/cloudwiki-native 0755 www-data www-data -\n')
     proxy(env,source)
     acl=c.run(['getfacl','-cp','/var/www/mediawiki']).decode()
     if 'default:user:cloudwiki-editor:rwx' not in acl:

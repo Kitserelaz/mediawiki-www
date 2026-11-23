@@ -108,7 +108,7 @@ def systemctl(action, names):
 
 def maintenance(enabled):
     RUN.mkdir(parents=True, exist_ok=True)
-    (RUN / 'maintenance.caddy').write_text('respond "CloudWiki is undergoing maintenance. Please retry shortly." 503\n' if enabled else '# online\n')
+    (STATE / 'native-maintenance.caddy').write_text('respond "CloudWiki is undergoing maintenance. Please retry shortly." 503\n' if enabled else '# online\n')
     run(['systemctl', 'reload', 'cloudwiki-caddy.service'])
 
 
@@ -348,6 +348,22 @@ def activate_link(release):
     os.replace(temporary,BASE/'current')
 
 
+
+def editor_permissions(previous,commit):
+    source=ROOT/'mediawiki'
+    files=[];directories=set()
+    for name in git('diff','--name-only','-z',previous,commit,'--','mediawiki').decode().split('\0'):
+        if not name:continue
+        path=ROOT/name
+        if not path.exists() or path.is_symlink() or not path.resolve().is_relative_to(source):continue
+        files.append(str(path))
+        for parent in path.parents:
+            if not parent.is_relative_to(source):break
+            directories.add(str(parent))
+    for values,permission in [(files,'u:cloudwiki-editor:rwX'),(sorted(directories),'u:cloudwiki-editor:rwx,d:u:cloudwiki-editor:rwx')]:
+        for offset in range(0,len(values),100):run(['setfacl','-m',permission,*values[offset:offset+100]])
+
+
 def deploy(commit, token=None):
     with lock():
         assert_clean()
@@ -385,7 +401,9 @@ def deploy(commit, token=None):
             write_json(STATE/'history'/('native-'+str(time.time_ns())+'.json'),record)
             write_json(STATE/'last-success.json',record)
             # Keep the operator checkout aligned, only after the successful switch.
+            source_before=git('rev-parse','HEAD').decode().strip()
             git('merge','--ff-only',commit)
+            editor_permissions(source_before,commit)
             progress(commit,'complete','success')
             return {'message':'Native production release activated','commit':commit}
         except Exception:

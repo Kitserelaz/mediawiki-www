@@ -45,8 +45,7 @@ module.exports = function useSuggestedSourceLanguages() {
 	const getSuggestedLanguages =
 		( previousLanguages, validLanguageCodes ) => computed( () => {
 			const countryCode = getCountryCode();
-			const territoryLanguages =
-				( countryCode && languageData.territories[ countryCode ] ) || [];
+			const territoryLanguages = ( countryCode && languageData.territories[ countryCode ] ) || [];
 
 			const possibleSuggestedLanguages = [
 				...previousLanguages.value,
@@ -60,13 +59,8 @@ module.exports = function useSuggestedSourceLanguages() {
 				...territoryLanguages
 			];
 
-			// Resolve redirects so duplicate codes collapse before deduping.
-			const resolveRedirect = ( code ) => $.uls.data.isRedirect( code ) || code;
-
 			// Filter out duplicates and empty values
-			const suggestedLanguages = [ ...new Set(
-				possibleSuggestedLanguages.filter( Boolean ).map( resolveRedirect )
-			) ];
+			const suggestedLanguages = [ ...new Set( possibleSuggestedLanguages ) ].filter( Boolean );
 
 			if ( !validLanguageCodes || !validLanguageCodes.value ) {
 				return suggestedLanguages;

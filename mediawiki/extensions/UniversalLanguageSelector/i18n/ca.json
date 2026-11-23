@@ -6,8 +6,8 @@
 			"Macofe",
 			"Paucabot",
 			"Pginer",
-			"SaraiSan-WMF",
-			"Vriullop"
+			"Vriullop",
+			"SaraiSan-WMF"
 		]
 	},
 	"uls-desc": "Dóna a l'usuari diverses maneres per seleccionar una llengua i ajustar la seva configuració",
@@ -82,14 +82,10 @@
 	"ext-uls-language-title": "Idiomes",
 	"ext-uls-placeholder-search": "Cerca idiomes",
 	"ext-uls-close-button-label": "Tanca",
-	"ext-uls-suggested-languages-title": "{{PLURAL:$1|Idioma|Idiomes}} suggerits",
-	"ext-uls-all-languages-title": "{{PLURAL:$1| Tots els idiomes}}",
-	"ext-uls-search-results-count": "{{PLURAL:$1|$1 idioma|$1 idiomes}} trobats",
-	"ext-uls-search-results-none": "No s'ha trobat cap idioma",
-	"ext-uls-variants-title": "Variants de l'idioma $1",
+	"ext-uls-rewrite-label": "Redisseny del Selector d'Idioma Universal",
+	"ext-uls-rewrite-description": "Un redisseny del Selector d'Idioma Universal (ULS, per les sigles en anglès), creat per modernitzar l'experiència d'usuari i reduir el deute tècnic mitjançant una arquitectura simplificada.",
 	"ext-uls-no-languages-title": "Encara no hi ha idiomes disponibles",
 	"ext-uls-no-languages-description": "No hi ha cap altra idioma disponible per ara",
-	"ext-uls-empty-state-entrypoint-description": "Pots traduir aquesta pàgina. És una manera fàcil de crear contingut en el teu idioma.",
 	"ext-uls-invalid-language-search-title": "Idioma no reconegut",
 	"ext-uls-invalid-language-search-description": "Si us plau, revisa el text introduït. Pots cercar idiomes pel seu nom o codi ISO.",
 	"ext-uls-unsupported-language-title": "Idioma no disponible",
@@ -97,18 +93,7 @@
 	"ext-uls-open-language-settings": "Obre la configuració d'idioma",
 	"ext-uls-open-language-selector": "Torna al selector d'idiomes",
 	"ext-uls-open-quick-actions": "Mostra accions ràpides",
-	"ext-uls-missing-languages-label-single": "Manca en <span>$1</span>, entre d'altres",
-	"ext-uls-missing-languages-label-multiple": "Manca en <strong>$1</strong>, <strong>$2</strong>, entre d'altres",
 	"ext-uls-missing-languages-panel-title": "Traduir aquesta pàgina",
 	"ext-uls-missing-languages-panel-description": "Aquesta pàgina no està disponible en alguns idiomes que potser coneixes. Pots traduir-la fent servir les accions disponibles a continuació:",
-	"ext-uls-quick-actions-panel-title": "Accions ràpides",
-	"ext-uls-preferred-languages-title": "{{PLURAL:$1|Idioma|Idiomes}} suggerits",
-	"ext-uls-preferred-languages-settings-title": "Idiomes preferits",
-	"ext-uls-preferred-languages-desc": "Es mostra primer als menús d'idiomes.",
-	"ext-uls-preferred-languages-label": "Afegeix un idioma",
-	"ext-uls-preferred-languages-help": "Fixa fins a $1 {{PLURAL:$1| idioma|idiomes}}. {{PLURAL:$1| Apareixerà|Apareixeran}} a la part superior del selector quan vulguis canviar l'idioma en qualsevol article.",
-	"ext-uls-preferred-languages-input-placeholder": "Cerca idiomes",
-	"ext-uls-preferred-languages-status": "<strong>$1</strong> {{PLURAL:$1| de}} <strong>$2</strong> {{PLURAL:$2| seleccionats}}",
-	"ext-uls-preferred-languages-limit-reached": "Elimina'n un per afegir-ne un altre",
-	"ext-uls-preferred-languages-save-error": "S'ha produït un error en actualitzar els idiomes preferits."
+	"ext-uls-quick-actions-panel-title": "Accions ràpides"
 }

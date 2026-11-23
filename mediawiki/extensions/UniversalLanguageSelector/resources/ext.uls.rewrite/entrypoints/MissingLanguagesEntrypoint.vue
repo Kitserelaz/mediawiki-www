@@ -1,7 +1,6 @@
 <template>
-	<button
+	<div
 		v-if="actions.length > 0"
-		type="button"
 		class="uls-rewrite__missing-languages"
 		@click.stop="$emit( 'click', actions )"
 	>
@@ -10,16 +9,15 @@
 			class="uls-rewrite__missing-languages__label"
 		></span>
 		<cdx-icon :icon="cdxIconNext" size="small"></cdx-icon>
-	</button>
+	</div>
 </template>
 
 <script>
 const { defineComponent, computed } = require( 'vue' );
 const { CdxIcon } = require( '../../codex.js' );
 const { cdxIconNext } = require( '../../icons.json' );
-const useEntrypointActions = require( '../composables/useEntrypointActions.js' );
 
-module.exports = exports = defineComponent( {
+module.exports = defineComponent( {
 	name: 'MissingLanguagesEntrypoint',
 	components: {
 		CdxIcon
@@ -36,64 +34,43 @@ module.exports = exports = defineComponent( {
 		suggestions: {
 			type: Array,
 			default: () => []
-		},
-		preferredLanguages: {
-			type: Array,
-			default: () => []
 		}
 	},
 	emits: [ 'click' ],
 	setup( props ) {
-		const missingLanguagesCodes = computed( () => {
-			const source = props.preferredLanguages.length > 0 ?
-				props.preferredLanguages :
-				props.suggestions;
-
-			return source.filter( ( code ) => !props.languages[ code ] );
-		} );
+		const missingLanguagesCodes = computed( () => props.suggestions
+			.filter( ( code ) => !props.languages[ code ] )
+		);
 
 		const missingLanguagesNames = computed( () => missingLanguagesCodes.value
 			.map( ( code ) => $.uls.data.getAutonym( code ) )
 			.filter( Boolean )
 		);
 
+		const labelContent = computed( () => {
+			const count = missingLanguagesNames.value.length;
+			const names = missingLanguagesNames.value;
+
+			if ( count > 2 ) {
+				return mw.message( 'ext-uls-missing-languages-label-more', names[ 0 ], names[ 1 ] );
+			}
+
+			return mw.message( 'ext-uls-missing-languages-label', mw.language.listToText( names ) );
+		} );
+
 		const context = computed( () => ( {
 			languages: props.languages,
 			suggestions: props.suggestions,
-			preferredLanguages: props.preferredLanguages,
 			missingLanguages: missingLanguagesCodes.value
 		} ) );
 
-		const actions = useEntrypointActions( props.entrypoints, context );
-
-		/**
-		 * @param {string[]} names
-		 * @return {mw.Message}
-		 */
-		const getLabelContent = ( names ) => {
-			// The banner always invites translating "and more" languages, since
-			// content is missing in other languages beyond the named ones too.
-			if ( names.length >= 2 ) {
-				return mw.message( 'ext-uls-missing-languages-label-multiple', names[ 0 ], names[ 1 ] );
-			}
-
-			return mw.message( 'ext-uls-missing-languages-label-single', names[ 0 ] );
-		};
-
-		const labelContent = computed( () => {
-			const actionLabels = actions.value.reduce( ( acc, action ) => {
-				if ( action.label ) {
-					return acc.concat( action.label );
-				}
-				return acc;
-			}, [] );
-
-			if ( actionLabels.length > 0 ) {
-				return getLabelContent( actionLabels );
-			}
-
-			return getLabelContent( missingLanguagesNames.value );
-		} );
+		const actions = computed( () => props.entrypoints
+			.filter( ( entryPoint ) => entryPoint.shouldShow( context.value ) )
+			.map( ( entryPoint ) => entryPoint.getConfig( context.value ) )
+			.filter( ( config ) => config !== null &&
+				( Array.isArray( config ) ? config.length > 0 : true ) )
+			.reduce( ( acc, val ) => acc.concat( val ), [] )
+		);
 
 		return {
 			labelContent,

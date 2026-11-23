@@ -2,8 +2,6 @@
 	"@metadata": {
 		"authors": [
 			"Aboulouei1",
-			"Aquasen",
-			"Balise42",
 			"Framafan",
 			"Gomoko",
 			"Hyperborean",
@@ -13,11 +11,9 @@
 			"Mahabarata",
 			"Metroitendo",
 			"NemesisIII",
-			"Pamputt",
 			"Pols12",
 			"Sherbrooke",
 			"Sik666",
-			"SleaY",
 			"The RedBurn",
 			"Thibaut120094",
 			"Trizek (WMF)",
@@ -27,7 +23,11 @@
 			"Wyz",
 			"Yasten",
 			"Yodaspirine",
-			"Yzelf"
+			"Yzelf",
+			"Aquasen",
+			"Balise42",
+			"SleaY",
+			"Pamputt"
 		]
 	},
 	"uls-desc": "Donne à l’utilisateur plusieurs manières de sélectionner une langue et d’ajuster ses paramètres de langue",
@@ -102,11 +102,12 @@
 	"ext-uls-language-title": "Langues",
 	"ext-uls-placeholder-search": "Rechercher parmi les langues",
 	"ext-uls-close-button-label": "Fermer",
-	"ext-uls-suggested-languages-title": "{{PLURAL:$1|Langue suggérée|Langues suggérées}}",
-	"ext-uls-all-languages-title": "{{PLURAL:$1|Toutes les langues}}",
+	"ext-uls-rewrite-label": "Réécriture du Sélecteur de Langue Universel",
+	"ext-uls-rewrite-description": "Une réécriture du Sélecteur de Langue Universel (SLU) conçue pour moderniser l’expérience utilisateur et la partie technique grâce à une architecture simplifiée.",
+	"ext-uls-suggested-languages-title": "Suggestions",
+	"ext-uls-all-languages-title": "Toutes les langues",
 	"ext-uls-no-languages-title": "Aucune langue sélectionnée",
 	"ext-uls-no-languages-description": "Aucune langue n’est actuellement disponible.",
-	"ext-uls-empty-state-entrypoint-description": "Vous pouvez traduire cette page. C’est un moyen simple de créer du contenu dans votre langue.",
 	"ext-uls-invalid-language-search-title": "Langue non reconnue",
 	"ext-uls-invalid-language-search-description": "Veuillez vérifier l’orthographe. Vous pouvez chercher une langue par son nom ou son code ISO.",
 	"ext-uls-unsupported-language-title": "Langue non disponible",
@@ -116,9 +117,5 @@
 	"ext-uls-open-quick-actions": "Afficher les actions rapides",
 	"ext-uls-missing-languages-panel-title": "Traduire cette page",
 	"ext-uls-missing-languages-panel-description": "Cette page est manquante dans certaines langues que vous connaissez. Vous pouvez la traduire.",
-	"ext-uls-quick-actions-panel-title": "Actions rapides",
-	"ext-uls-preferred-languages-title": "{{PLURAL:$1|Langue|Langues}} préférée{{PLURAL:$1||s}}",
-	"ext-uls-preferred-languages-settings-title": "Langues préférées",
-	"ext-uls-preferred-languages-desc": "Affiché en premier dans les menus de langue.",
-	"ext-uls-preferred-languages-label": "Ajouter une langue"
+	"ext-uls-quick-actions-panel-title": "Actions rapides"
 }

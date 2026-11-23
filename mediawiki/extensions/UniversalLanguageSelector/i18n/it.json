@@ -2,7 +2,6 @@
 	"@metadata": {
 		"authors": [
 			"Beta16",
-			"Candalua",
 			"Darth Kule",
 			"F. Cosoleto",
 			"FL2226",
@@ -13,7 +12,8 @@
 			"Raoli",
 			"Sakretsu",
 			"Salvemm el lombard",
-			"Valepert"
+			"Valepert",
+			"Candalua"
 		]
 	},
 	"uls-extensionname": "Selettore&shy;di&shy;lingua&shy;universale",
@@ -89,14 +89,13 @@
 	"ext-uls-language-title": "Lingue",
 	"ext-uls-placeholder-search": "Cerca lingue",
 	"ext-uls-close-button-label": "Chiudi",
-	"ext-uls-suggested-languages-title": "{{PLURAL:$1|Lingua suggerita|Lingue suggerite}}",
-	"ext-uls-all-languages-title": "{{PLURAL:$1|Tutte le lingue}}",
-	"ext-uls-search-results-count": "{{PLURAL:$1|$1 lingua trovata|$1 lingue trovate}}",
-	"ext-uls-search-results-none": "Nessuna lingua trovata",
-	"ext-uls-variants-title": "Varianti per $1",
+	"ext-uls-rewrite-label": "Riscrittura del selettore di lingua universale",
+	"ext-uls-rewrite-description": "Una riscrittura del Selettore Universale della Lingua (ULS), progettata per modernizzare l'esperienza utente e ridurre il debito tecnico attraverso un'architettura semplificata.",
+	"ext-uls-suggested-languages-title": "Consigliato",
+	"ext-uls-all-languages-title": "Tutte le lingue",
 	"ext-uls-no-languages-title": "Ancora nessuna lingua",
 	"ext-uls-no-languages-description": "Non sono disponibili lingue per ora.",
-	"ext-uls-empty-state-entrypoint-description": "Puoi tradurre questa pagina. È un modo facile per creare contenuti nella tua lingua.",
+	"ext-uls-no-languages-entrypoint-description": "Puoi tradurre questa pagina. È un modo facile per creare contenuti nella tua lingua.",
 	"ext-uls-invalid-language-search-title": "Lingua non riconosciuta",
 	"ext-uls-invalid-language-search-description": "Controlla l'ortografia. È possibile cercare le lingue per nome o codice ISO.",
 	"ext-uls-unsupported-language-title": "Lingua non disponibile",
@@ -104,18 +103,7 @@
 	"ext-uls-open-language-settings": "Apri impostazioni della lingua",
 	"ext-uls-open-language-selector": "Torna al selettore della lingua",
 	"ext-uls-open-quick-actions": "Mostra azioni rapide",
-	"ext-uls-missing-languages-label-single": "Mancante in <strong>$1</strong> e altre",
-	"ext-uls-missing-languages-label-multiple": "Mancante in <strong>$1</strong>, <strong>$2</strong> e altre",
 	"ext-uls-missing-languages-panel-title": "Traduci questa pagina",
 	"ext-uls-missing-languages-panel-description": "Questa pagina non è disponibile in alcune lingue che potresti conoscere. Puoi tradurla, se vuoi.",
-	"ext-uls-quick-actions-panel-title": "Azioni rapide",
-	"ext-uls-preferred-languages-title": "{{PLURAL:$1|Lingua preferita|Lingue preferite}}",
-	"ext-uls-preferred-languages-settings-title": "Lingue preferite",
-	"ext-uls-preferred-languages-desc": "Mostra per prima nel menù della lingua.",
-	"ext-uls-preferred-languages-label": "Aggiungi una lingua",
-	"ext-uls-preferred-languages-help": "Fissa fino $1 {{PLURAL:$1|lingua|lingue}}. {{PLURAL:$1|Apparirà|Appariranno}} nella parte superiore del selettore quando vorrai cambiare lingua in qualsiasi articolo.",
-	"ext-uls-preferred-languages-input-placeholder": "Cerca lingue",
-	"ext-uls-preferred-languages-status": "<strong>$1</strong> {{PLURAL:$1|di}} <strong>$2</strong> {{PLURAL:$2|selezionata|selezionate}}",
-	"ext-uls-preferred-languages-limit-reached": "Rimuoverne una per aggiungerne un'altra",
-	"ext-uls-preferred-languages-save-error": "C'è stato un errore durante il salvataggio delle lingue preferite."
+	"ext-uls-quick-actions-panel-title": "Azioni rapide"
 }

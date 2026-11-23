@@ -1,4 +1,4 @@
-/*! jquery.ime - v0.2.0+20260903
+/*! jquery.ime - v0.2.0+20260120
 * https://github.com/wikimedia/jquery.ime
 * Copyright (c) 2026 Santhosh Thottingal; License: (GPL-2.0-or-later OR MIT) */
 ( function ( $ ) {
@@ -2058,10 +2058,6 @@
 			name: 'लिप्यंतरण',
 			source: 'rules/hi/hi-transliteration.js'
 		},
-		'hoc-latn-semicolon': {
-			name: 'Ho Latin Semicolon',
-			source: 'rules/hoc-latn/hoc-latn-semicolon.js'
-		},
 		'hoc-latn-tilde': {
 			name: 'Ho Latin Tilde',
 			source: 'rules/hoc-latn/hoc-latn-tilde.js'
@@ -2130,10 +2126,6 @@
 			name: 'Esan Awain tilde',
 			source: 'rules/ish/ish-tilde.js'
 		},
-		'izr-tilde': {
-			name: 'Izere tilde',
-			source: 'rules/izr/izr-tilde.js'
-		},
 		'jab-tilde': {
 			name: 'Hyam tilde',
 			source: 'rules/jab/jab-tilde.js'
@@ -2181,10 +2173,6 @@
 		'ki-tilde': {
 			name: 'Gĩkũyũ',
 			source: 'rules/ki/ki-tilde.js'
-		},
-		'kix-tilde': {
-			name: 'Khiamniungan tilde',
-			source: 'rules/kix/kix-tilde.js'
 		},
 		'kk-arabic': {
 			name: 'Kazakh Arabic transliteration',
@@ -2508,10 +2496,6 @@
 			name: 'Pontic tilde',
 			source: 'rules/pnt/pnt-tilde.js'
 		},
-		'pwo-tilde': {
-			name: 'ဖျိၩ့ၡိ',
-			source: 'rules/pwo/pwo-tilde.js'
-		},
 		'roa-tara-GVU': {
 			name: 'Tarandine',
 			source: 'rules/roa-tara/roa-tara.js'
@@ -2695,10 +2679,6 @@
 		'tn-tilde': {
 			name: 'Setswana tilde',
 			source: 'rules/tn/tn-tilde.js'
-		},
-		'tsw-tilde': {
-			name: 'Tsishingini tilde',
-			source: 'rules/tsw/tsw-tilde.js'
 		},
 		'tum-tilde': {
 			name: 'ChiTumbuka tilde',
@@ -3094,7 +3074,7 @@
 		},
 		'hoc-latn': {
 			autonym: 'Ho',
-			inputmethods: [ 'hoc-latn-tilde', 'hoc-latn-semicolon' ]
+			inputmethods: [ 'hoc-latn-tilde' ]
 		},
 		hr: {
 			autonym: 'Hrvatski',
@@ -3131,10 +3111,6 @@
 		ish: {
 			autonym: 'awain',
 			inputmethods: [ 'ish-tilde' ]
-		},
-		izr: {
-			autonym: 'Izere',
-			inputmethods: [ 'izr-tilde' ]
 		},
 		jab: {
 			autonym: 'Hyam',
@@ -3183,10 +3159,6 @@
 		ki: {
 			autonym: 'Gĩkũyũ',
 			inputmethods: [ 'ki-tilde' ]
-		},
-		kix: {
-			autonym: 'Khiamniungan',
-			inputmethods: [ 'kix-tilde' ]
 		},
 		kk: {
 			autonym: 'Қазақша',
@@ -3408,10 +3380,6 @@
 			autonym: 'Ποντιακά',
 			inputmethods: [ 'pnt-tilde' ]
 		},
-		pwo: {
-			autonym: 'ဖျိၩ့ၡိ',
-			inputmethods: [ 'pwo-tilde' ]
-		},
 		raj: {
 			autonym: 'राजस्थानी',
 			inputmethods: [ 'hi-transliteration', 'hi-inscript', 'hi-bolnagri', 'hi-phonetic', 'hi-inscript2' ]
@@ -3543,10 +3511,6 @@
 		tn: {
 			autonym: 'Setswana',
 			inputmethods: [ 'tn-tilde' ]
-		},
-		tsw: {
-			autonym: 'Tsishingini',
-			inputmethods: [ 'tsw-tilde' ]
 		},
 		tum: {
 			autonym: 'ChiTumbuka',

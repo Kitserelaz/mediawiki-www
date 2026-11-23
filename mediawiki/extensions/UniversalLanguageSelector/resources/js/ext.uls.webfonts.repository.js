@@ -23,7 +23,6 @@
 		],
 		"ar": [
 			"system",
-			"NotoSansArabic",
 			"Amiri"
 		],
 		"arb": [
@@ -399,10 +398,6 @@
 			"East Syriac Adiabene",
 			"SertoUrhoy"
 		],
-		"syl": [
-			"system",
-			"NotoSansSylotiNagri Regular"
-		],
 		"tcn": [
 			"BabelStoneTibetanSlim"
 		],
@@ -704,21 +699,8 @@
 		"NotoNastaliqUrdu Bold": {
 			"woff2": "NotoNastaliqUrdu/NotoNastaliqUrdu-Bold.woff2?a8aac"
 		},
-		"NotoSansArabic": {
-			"woff2": "NotoSansArabic/NotoSansArabic-Regular.woff2?5518b",
-			"variants": {
-				"bold": "NotoSansArabic bold"
-			}
-		},
-		"NotoSansArabic bold": {
-			"fontweight": "bold",
-			"woff2": "NotoSansArabic/NotoSansArabic-Bold.woff2?3809f"
-		},
 		"NotoSansSundanese Regular": {
 			"woff2": "NotoSansSundanese/NotoSansSundanese-Regular.woff2?97973"
-		},
-		"NotoSansSylotiNagri Regular": {
-			"woff2": "NotoSansSylotiNagri/NotoSansSylotiNagri-Regular.woff2?65203"
 		},
 		"Nuosu SIL": {
 			"woff2": "NuosuSIL/NuosuSIL.woff2?223bb"

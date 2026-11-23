@@ -307,9 +307,6 @@
             ],
             "العربية"
         ],
-        "ar-001": [
-            "ar"
-        ],
         "arc": [
             "Syrc",
             [
@@ -2389,13 +2386,6 @@
             ],
             "ižoran keel"
         ],
-        "izr": [
-            "Latn",
-            [
-                "AF"
-            ],
-            "Izere"
-        ],
         "ja": [
             "Jpan",
             [
@@ -2627,13 +2617,6 @@
             ],
             "Kaingáng"
         ],
-        "kha": [
-            "Latn",
-            [
-                "AS"
-            ],
-            "Khasi"
-        ],
         "khk": [
             "mn"
         ],
@@ -2666,13 +2649,6 @@
                 "ME"
             ],
             "Kırmancki"
-        ],
-        "kix": [
-            "Latn",
-            [
-                "AS"
-            ],
-            "Khiamniungan"
         ],
         "kj": [
             "Latn",
@@ -4338,16 +4314,6 @@
             ],
             "𐴌𐴟𐴇𐴥𐴝𐴚𐴒𐴙𐴝"
         ],
-        "rhg-arab": [
-            "Arab",
-            [
-                "AS"
-            ],
-            "رُحَ࣪ڠۡگَ࣪ࢬ عَرࣤبِي لࣦكَ࣪"
-        ],
-        "rhg-rohg": [
-            "rhg"
-        ],
         "rif": [
             "Latn",
             [
@@ -4603,28 +4569,11 @@
             "Scots"
         ],
         "sd": [
-            "sd-arab"
-        ],
-        "sd-arab": [
             "Arab",
             [
                 "AS"
             ],
             "سنڌي"
-        ],
-        "sd-deva": [
-            "Deva",
-            [
-                "AS"
-            ],
-            "सिंधी"
-        ],
-        "sd-sind": [
-            "Sind",
-            [
-                "AS"
-            ],
-            "𑋝𑋡𑋟𑋐𑋢"
         ],
         "sdc": [
             "Latn",
@@ -5352,13 +5301,6 @@
             ],
             "cou"
         ],
-        "tsw": [
-            "Latn",
-            [
-                "AF"
-            ],
-            "Tsishingini"
-        ],
         "tt": [
             "Cyrl",
             [
@@ -5506,9 +5448,6 @@
             ],
             "oʻzbekcha"
         ],
-        "uz-arab": [
-            "uzs"
-        ],
         "uz-cyrl": [
             "Cyrl",
             [
@@ -5521,13 +5460,6 @@
         ],
         "uzn": [
             "uz"
-        ],
-        "uzs": [
-            "Arab",
-            [
-                "AS"
-            ],
-            "اۉزبېکچه"
         ],
         "vai": [
             "Vaii",
@@ -5973,7 +5905,6 @@
             "Orya",
             "Rohg",
             "Saur",
-            "Sind",
             "Sinh",
             "Sylo",
             "Taml",
@@ -6057,7 +5988,6 @@
         "AF": [
             "fa",
             "ps",
-            "uzs",
             "uz",
             "tk",
             "bgn",
@@ -6817,15 +6747,13 @@
             "ks",
             "knn",
             "gbm",
-            "sd-arab",
+            "sd",
             "doi",
             "tcy",
-            "sd-deva",
             "brx",
             "mni",
             "raj",
             "hoc",
-            "kha",
             "saz",
             "ccp",
             "bfq",
@@ -7321,7 +7249,7 @@
             "pa",
             "en",
             "ps",
-            "sd-arab",
+            "sd",
             "skr-arab",
             "hno",
             "brh",
@@ -7498,19 +7426,7 @@
             "en",
             "zh",
             "ms",
-            "nan",
             "ta",
-            "hak",
-            "tl",
-            "yue",
-            "id",
-            "jv",
-            "bn",
-            "cdo",
-            "th",
-            "ja",
-            "cpx",
-            "mad",
             "ml",
             "pa"
         ],
@@ -7855,8 +7771,7 @@
             "ve",
             "tn"
         ]
-    },
-    "version": "2026-08-18T14:09:37+00:00"
+    }
 }
 
 		}( jQuery ) );

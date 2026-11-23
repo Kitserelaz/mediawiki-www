@@ -5,22 +5,44 @@
 			:key="index"
 			class="uls-rewrite__quick-actions-panel__action"
 		>
-			<entrypoint-action-button
-				:action="action"
-				icon-size="small"
-			></entrypoint-action-button>
+			<a
+				v-if="action.url"
+				:href="action.url"
+				class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled cdx-button--action-progressive cdx-button--weight-quiet"
+			>
+				<cdx-icon
+					v-if="action.icon"
+					:icon="action.icon"
+					size="small"
+				></cdx-icon>
+				{{ action.label }}
+			</a>
+			<cdx-button
+				v-else
+				weight="quiet"
+				action="progressive"
+				@click="action.handler"
+			>
+				<cdx-icon
+					v-if="action.icon"
+					:icon="action.icon"
+					size="small"
+				></cdx-icon>
+				{{ action.label }}
+			</cdx-button>
 		</div>
 	</div>
 </template>
 
 <script>
 const { defineComponent } = require( 'vue' );
-const EntrypointActionButton = require( './EntrypointActionButton.vue' );
+const { CdxButton, CdxIcon } = require( '../../codex.js' );
 
-module.exports = exports = defineComponent( {
+module.exports = defineComponent( {
 	name: 'QuickActionsPanel',
 	components: {
-		EntrypointActionButton
+		CdxButton,
+		CdxIcon
 	},
 	props: {
 		actions: {

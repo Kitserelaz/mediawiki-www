@@ -1,37 +1,12 @@
 @import 'mediawiki.skin.variables.less';
 
-@uls-rewrite-font-size-small: 12px;
-@uls-rewrite-font-size-medium: 14px;
-@uls-rewrite-font-size-large: 20px;
-
-@uls-rewrite-horizontal-padding: @spacing-75;
-@uls-rewrite-body-padding: @spacing-50 @uls-rewrite-horizontal-padding;
+@uls-rewrite-body-padding: @spacing-50 @spacing-100;
 // The Codex search input padding is: @spacing-50 + @spacing-50 + @size-icon-medium .
-// The ULS body already has horizontal padding.
+// The ULS body already has @spacing-100 (16px) left padding.
 // We subtract the body padding from the search input padding to align them perfectly.
-@uls-rewrite-language-item-padding-start: calc( @spacing-50 + @spacing-50 + @size-icon-medium - @uls-rewrite-horizontal-padding );
+@uls-rewrite-language-item-padding-start: calc( @spacing-50 + @spacing-50 + @size-icon-medium - @spacing-100 );
+@uls-rewrite-language-item-padding: @spacing-50 @spacing-50 @spacing-50 @uls-rewrite-language-item-padding-start;
 @uls-rewrite-missing-languages-padding-start: calc( @spacing-50 + @spacing-50 + @size-icon-medium );
-@uls-rewrite-quick-actions-trigger-clearance: @spacing-150;
-
-// A Codex button reserves @spacing-horizontal-button of padding plus a 1px
-// border (transparent on quiet buttons) before its label, so a row of quiet
-// buttons reads as indented next to plain text. .cdx-mixin-button-layout-flush()
-// pulls the row back by that amount, putting the labels — not the button boxes —
-// on the shared text edge, while the invisible padding keeps the pointer target
-// and the hover and focus backgrounds intact.
-// The state containers must keep at least that much inline-start padding,
-// otherwise the pulled-back row escapes .uls-rewrite__body, whose
-// `overflow-y: auto` makes `overflow-x` compute to `auto` as well.
-// These buttons override Codex's `white-space: nowrap`, so a long label wraps.
-// Codex sets no line-height of its own — `align-items: center` inside the
-// button's min-height places a single-line label, and the cascade supplies the
-// leading — which leaves a wrapped label's height up to whatever line-height
-// the host page passes down. Pin it so a two-line label reads the same
-// everywhere.
-@uls-rewrite-action-button-line-height: @line-height-x-small;
-// Vertical spacing of the states that replace the language list.
-@uls-rewrite-state-title-margin: @spacing-50;
-@uls-rewrite-state-actions-margin: @spacing-100;
 
 // Layout & Dimensions
 @uls-rewrite-max-height: 312px;
@@ -63,16 +38,12 @@
 	display: flex;
 	flex-direction: column;
 	color: @color-base;
-	font-size: @uls-rewrite-font-size-medium;
-
-	.cdx-button {
-		font-size: @uls-rewrite-font-size-medium;
-	}
+	font-size: @font-size-medium;
 
 	.uls-quick-action-trigger {
 		position: absolute;
 		bottom: @spacing-25;
-		inset-inline-end: @spacing-25;
+		right: @spacing-25;
 	}
 
 	.uls-rewrite__header {
@@ -85,9 +56,9 @@
 				width: 100%;
 
 				input[ type='search' ] {
-					font-size: @uls-rewrite-font-size-medium;
-					padding-block: @spacing-50;
-					padding-inline-end: @uls-rewrite-horizontal-padding;
+					padding-top: @spacing-50;
+					padding-bottom: @spacing-50;
+					padding-inline-end: @spacing-100;
 					/** Don't set padding-inline-start to avoid overriding codex values that are used to align the icon properly */
 					max-height: none;
 					background-color: transparent;
@@ -113,7 +84,7 @@
 		}
 
 		.uls-rewrite__header__mobile {
-			padding: @spacing-75 @uls-rewrite-horizontal-padding;
+			padding: @spacing-75 @spacing-100;
 			font-weight: bold;
 			display: flex;
 			align-items: center;
@@ -132,7 +103,7 @@
 			border-bottom: @border-width-base solid @border-color-subtle;
 
 			@media ( max-width: @uls-rewrite-breakpoint-mobile ) {
-				padding: @spacing-75 @uls-rewrite-horizontal-padding;
+				padding: @spacing-75 @spacing-100;
 			}
 
 			&-title {
@@ -142,45 +113,16 @@
 		}
 	}
 
-	.uls-rewrite__entrypoint-action-button {
-		max-width: 100%;
-		line-height: @uls-rewrite-action-button-line-height;
-		white-space: normal;
-		word-break: break-word;
-		text-align: start;
-
-		.cdx-icon {
-			flex-shrink: 0;
-		}
-
-		// Increase specificity to override the unnecessary padding added by Codex.
-		// See: https://github.com/wikimedia/design-codex/blob/d4656038d94974fb2dec7550dbe8de46490cddff/packages/codex/src/themes/mixins/public/link.less#L73
-		span.cdx-icon.cdx-icon {
-			padding-left: 0;
-		}
-	}
-
 	.uls-rewrite__body {
 		padding: @uls-rewrite-body-padding;
 		overflow-y: auto;
 		flex-grow: 1;
 
 		.uls-rewrite__missing-languages {
-			// Reset the native <button> styling; the element is a button for
-			// keyboard and screen reader access but looks like a banner.
-			appearance: none;
-			border: 0;
-			font: inherit;
-			text-align: start;
 			background-color: @background-color-interactive-subtle;
-			padding-block: @spacing-75;
-			padding-inline: @uls-rewrite-missing-languages-padding-start @uls-rewrite-horizontal-padding;
+			padding: @spacing-50 @spacing-100 @spacing-50 @uls-rewrite-missing-languages-padding-start;
 			/** To make it span the entire width of the body **/
-			margin-inline: -@uls-rewrite-horizontal-padding;
-			// A button's auto width shrinks to fit its content instead of
-			// stretching like the div this used to be, so span the body
-			// (100%) plus the negative margins explicitly.
-			width: calc( 100% + ( 2 * @uls-rewrite-horizontal-padding ) );
+			margin-inline: -@spacing-100;
 			margin-top: -@spacing-50;
 			margin-bottom: @spacing-50;
 			color: @color-subtle;
@@ -189,8 +131,16 @@
 			justify-content: space-between;
 			cursor: pointer;
 
+			&:hover {
+				background-color: @background-color-interactive--hover;
+			}
+
 			&__label {
 				flex-grow: 1;
+
+				strong {
+					color: @color-base;
+				}
 			}
 
 			.cdx-icon {
@@ -201,127 +151,40 @@
 		.uls-rewrite__section-title {
 			font-weight: bold;
 			color: @color-subtle;
-			padding-block: @spacing-50;
-			padding-inline: @uls-rewrite-language-item-padding-start @uls-rewrite-quick-actions-trigger-clearance;
+			padding: @uls-rewrite-language-item-padding;
 			margin: 0;
-			font-size: @uls-rewrite-font-size-medium;
+			font-size: @font-size-medium;
 		}
 
-		// Every state that replaces the language list — the two empty states and
-		// the two sub-panels — shares the body's canonical text edge: the body's
-		// own inline padding plus the offset that lines content up with the search
-		// input's icon, the missing languages banner and every language item label.
 		.uls-rewrite__no-results,
-		.uls-rewrite__no-languages,
-		.uls-rewrite__missing-languages-panel,
-		.uls-rewrite__quick-actions-panel {
-			padding-block: @spacing-50;
-			padding-inline: @uls-rewrite-language-item-padding-start @uls-rewrite-quick-actions-trigger-clearance;
+		.uls-rewrite__no-languages {
+			padding: @uls-rewrite-language-item-padding;
 
-			// Set the vertical spacing here rather than inheriting user agent or
-			// skin element defaults, which differ between the overlay and page
-			// content.
 			h3 {
-				margin: 0 0 @uls-rewrite-state-title-margin;
-				padding: 0;
-				font-size: @uls-rewrite-font-size-large;
-			}
-
-			p {
-				margin: 0;
-				line-height: @line-height-medium;
-			}
-		}
-
-		// Rows of entrypoint actions. The offset goes on the row, not on the
-		// buttons: a negative margin on a flex item would also eat the space
-		// between two adjacent buttons.
-		.uls-rewrite__empty-search-entrypoint__actions,
-		.uls-rewrite__empty-list-entrypoint__actions,
-		.uls-rewrite__missing-languages-panel__actions {
-			.cdx-mixin-button-layout-flush( 'start' );
-			display: flex;
-			flex-wrap: wrap;
-			// Not center: a label that wraps to two lines would otherwise push the
-			// labels of its shorter neighbours down.
-			align-items: flex-start;
-			margin-block-start: @uls-rewrite-state-actions-margin;
-		}
-
-		// The quick actions are a column of blocks, so the offset goes on each
-		// action; there is no inline neighbour for it to interfere with.
-		.uls-rewrite__quick-actions-panel__action {
-			.cdx-mixin-button-layout-flush( 'start' );
-
-			+ .uls-rewrite__quick-actions-panel__action {
-				margin-block-start: @uls-rewrite-state-actions-margin;
+				font-size: @font-size-large;
+				padding-top: 0;
 			}
 		}
 
 		.uls-rewrite__body__language-list {
 			margin: 0;
 			padding: 0;
-			// Margin, not padding: keeps the clearance strip outside the list box so the
-			// cursor leaving an item fires the list's mouseleave and clears the highlight.
-			margin-inline-end: @uls-rewrite-quick-actions-trigger-clearance;
 			display: grid;
 			grid-template-columns: 1fr;
 		}
 
 		.uls-rewrite__language-item {
-			position: relative;
-			display: grid;
-			grid-template-columns: [start] @uls-rewrite-language-item-padding-start [content] 1fr [end] 24px;
-			grid-template-rows: auto auto;
-			padding: @spacing-50 0;
+			list-style: none;
+			padding: @uls-rewrite-language-item-padding;
 			cursor: pointer;
 			margin-bottom: 0;
 			overflow-wrap: break-word;
 			white-space: normal;
 			min-width: 0;
-			list-style: none;
-			align-items: start;
-			direction: inherit;
-			text-align: start;
-
-			// Ensure all direct element children go to the content column by default.
-			// This prevents multiple slot elements from spilling into marker gutters.
-			& > * {
-				grid-column: content;
-				grid-row: 1;
-				text-align: -webkit-match-parent;
-				text-align: match-parent;
-			}
-
-			&::before,
-			&::after {
-				grid-row: 1;
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				place-self: center;
-			}
-
-			&::before {
-				grid-column: start;
-			}
-
-			&::after {
-				grid-column: end;
-			}
+			display: flex;
 
 			a {
-				// When an anchor tag is used in the slot, make it fill the whole item
-				// so that modifier-based clicks (e.g. Ctrl+Click) work as expected.
-				// See: https://css-tricks.com/links-inside-of-larger-clickable-areas/
-				&::after {
-					content: '';
-					position: absolute;
-					top: 0;
-					left: 0;
-					right: 0;
-					bottom: 0;
-				}
+				text-decoration: none;
 			}
 
 			&.uls-rewrite__language-item--selected {
@@ -333,18 +196,19 @@
 			&.uls-rewrite__language-item--highlighted {
 				background-color: @background-color-interactive-subtle--hover;
 			}
+		}
+	}
 
-			&--description {
-				grid-row: 2;
-				display: block;
-				color: @color-subtle;
-				font-size: @uls-rewrite-font-size-small;
-			}
+	.uls-rewrite__missing-languages-panel {
+		&__description {
+			margin-bottom: @spacing-100;
+			line-height: @line-height-medium;
+		}
+	}
 
-			&.uls-rewrite__language-item--unavailable {
-				color: @color-subtle;
-				cursor: not-allowed;
-			}
+	.uls-rewrite__quick-actions-panel {
+		&__action {
+			margin-bottom: @spacing-75;
 		}
 	}
 
@@ -370,8 +234,7 @@
 		&.uls-rewrite--density-medium {
 			width: @uls-rewrite-width-medium;
 
-			.uls-rewrite__section--suggested .uls-rewrite__body__language-list,
-			.uls-rewrite__section--variants .uls-rewrite__body__language-list {
+			.uls-rewrite__section--suggested .uls-rewrite__body__language-list {
 				grid-template-columns: repeat( @uls-rewrite-medium-density-columns, 1fr );
 			}
 		}
@@ -402,19 +265,8 @@
 	}
 }
 
-.uls-rewrite-no-scroll {
-	overflow: hidden;
-}
-
-// Visually hidden but exposed to assistive technology
-.uls-rewrite__sr-only {
-	position: absolute;
-	width: 1px;
-	height: 1px;
-	margin: -1px;
-	padding: 0;
-	border: 0;
-	overflow: hidden;
-	clip: rect( 0, 0, 0, 0 );
-	white-space: nowrap;
+/* Fix for icons in ULS rewrite when directionality is mixed */
+html[ dir='ltr' ] .uls-rewrite .uls-rewrite__language-item[ dir='rtl' ],
+html[ dir='rtl' ] .uls-rewrite .uls-rewrite__language-item[ dir='ltr' ] {
+	flex-direction: row-reverse;
 }

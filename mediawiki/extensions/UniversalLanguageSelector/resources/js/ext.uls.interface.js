@@ -25,28 +25,6 @@
 		ActionsMenuItem = require( './ext.uls.actions.menu.item.js' );
 	require( './ext.uls.actions.menu.items.registry.js' );
 
-	// Whether the ULS V2 (rewrite) selector is enabled for this page.
-	const isULSV2Enabled = mw.config.get( 'wgULSLanguageSelectorV2Enabled' );
-
-	/**
-	 * Warm the lazy-loaded ULS rewrite (V2) modules so the selector opens
-	 * without a network round-trip on click. No-ops when V2 is disabled.
-	 *
-	 * @return {string[]} The list of modules.
-	 */
-	function prefetchRewriteModules() {
-		const isMinerva = mw.config.get( 'skin' ) === 'minerva';
-		const modules = isMinerva ?
-			[ 'ext.uls.mediawiki', 'ext.uls.rewrite' ] :
-			[ 'ext.uls.mediawiki', 'ext.uls.rewrite.languagesettings.entrypoint', 'ext.uls.rewrite' ];
-
-		if ( isULSV2Enabled ) {
-			mw.loader.load( modules );
-		}
-
-		return modules;
-	}
-
 	/**
 	 * For Vector, check if the language button id exists.
 	 * For other skins, check wgULSDisplaySettingsInInterlanguage for the current skin.
@@ -145,7 +123,7 @@
 			'cdx-button--weight-quiet',
 			buttonClass
 		];
-
+		// eslint-disable-next-line mediawiki/class-doc
 		return $( '<button>' ).addClass( classes );
 	}
 
@@ -310,7 +288,7 @@
 				}
 
 				// Message keys listed above
-
+				// eslint-disable-next-line mediawiki/msg-doc
 				return $( '<p>' ).append( mw.message( messageKey, $link ).parseDom() );
 			}() )
 		} );
@@ -414,115 +392,6 @@
 		$trigger.on( 'click', clickHandler );
 	}
 
-	// Mobile-only route for the fullscreen content language selector. This route only
-	// applies to ULS V2 (see isULSV2Enabled guards below);
-	const LANGUAGES_ROUTE = '#/languages';
-
-	// Keep in sync with MOBILE_WIDTH_THRESHOLD (768) in UniversalLanguageSelector.vue.
-	function isMobileViewport() {
-		return window.matchMedia( '(max-width: 767px)' ).matches;
-	}
-
-	// The route controller, created when the content selector is first loaded.
-	let languageRoute = null;
-
-	// The single mounted content selector, shared by every trigger on the page. T431596
-	let contentSelectorVm = null;
-	// Memoized lazy-load of the selector; reset on failure so a click can retry.
-	let contentSelectorLoadPromise = null;
-
-	// Navigating to the route before the selector has loaded: lazy-load and open via the trigger.
-	function openContentSelectorFromRoute() {
-		if (
-			isULSV2Enabled &&
-			!languageRoute &&
-			isMobileViewport() &&
-			location.hash === LANGUAGES_ROUTE
-		) {
-			$( '.mw-interlanguage-selector' ).first().trigger( 'click' );
-		}
-	}
-
-	/**
-	 * Create a controller that keeps the fullscreen mobile content selector in sync
-	 * with the URL hash: deep-linkable, and closeable with the browser back button.
-	 *
-	 * @return {Object} Controller exposing attach(), markNavigating(),
-	 *   onVisibleChange() and onRouteChange().
-	 */
-	function createLanguageRoute() {
-		// The mounted selector instance, attached after mount.
-		let vm = null;
-		// Whether a selection is navigating the page away, so closing skips the
-		// history cleanup that would otherwise race the navigation.
-		let navigatingAway = false;
-		let isMobile = false;
-
-		return {
-			attach( instance ) {
-				vm = instance;
-			},
-			markNavigating() {
-				navigatingAway = true;
-			},
-			// Component visibility -> URL. Mobile only.
-			onVisibleChange( isVisible, mobile ) {
-				isMobile = mobile;
-				if ( !isMobile ) {
-					return;
-				}
-				if ( isVisible ) {
-					// Tag the entry so closing pops it rather than stripping a hash the
-					// user deep-linked to. pushState fires no hashchange, so opening
-					// never loops back through onRouteChange.
-					if ( location.hash !== LANGUAGES_ROUTE ) {
-						history.pushState( { ulsRoute: true }, '', LANGUAGES_ROUTE );
-					}
-				} else if ( !navigatingAway && location.hash === LANGUAGES_ROUTE ) {
-					if ( history.state && history.state.ulsRoute ) {
-						history.back();
-					} else {
-						history.replaceState(
-							null, '', location.pathname + location.search
-						);
-					}
-				}
-			},
-			// URL -> component visibility, for back/forward and manual hash edits.
-			// Gated on the component's reported mobile state (see onVisibleChange).
-			onRouteChange() {
-				if ( !vm || !isMobile ) {
-					return;
-				}
-				const shouldBeVisible = location.hash === LANGUAGES_ROUTE;
-				if ( vm.visible !== shouldBeVisible ) {
-					vm[ shouldBeVisible ? 'open' : 'close' ]();
-				}
-			}
-		};
-	}
-
-	// URL -> selector. Once mounted, the controller drives open/close (gating on the
-	// component's own mobile state); before that, bootstrap the lazy-loaded module.
-	function syncSelectorToRoute() {
-		if ( languageRoute ) {
-			languageRoute.onRouteChange();
-		} else {
-			openContentSelectorFromRoute();
-		}
-	}
-
-	if ( isULSV2Enabled ) {
-		window.addEventListener( 'hashchange', syncSelectorToRoute );
-
-		// Re-sync on bfcache restore to reopen it.
-		window.addEventListener( 'pageshow', ( event ) => {
-			if ( event.persisted ) {
-				syncSelectorToRoute();
-			}
-		} );
-	}
-
 	function initPersonalEntryPoint() {
 		const $trigger = $( '.uls-trigger' );
 
@@ -554,25 +423,20 @@
 
 				e.preventDefault();
 
-				if ( isULSV2Enabled ) {
+				if ( mw.config.get( 'wgULSLanguageSelectorV2Enabled' ) ) {
 					if ( $trigger.attr( 'data-uls-loaded' ) ) {
 						return;
 					}
 					$trigger.attr( 'data-uls-loaded', true );
 
-					// Capture the trigger synchronously: `e.currentTarget` is only
-					// valid during event dispatch and may be reset (e.g. to `document`
-					// by a later delegated click handler) by the time this async
-					// callback runs, which breaks floating-ui positioning.
-					const triggerElement = e.currentTarget;
-					mw.loader.using( prefetchRewriteModules() ).then( () => {
+					mw.loader.using( [ 'ext.uls.mediawiki', 'ext.uls.rewrite', 'ext.uls.rewrite.languagesettings' ] ).then( () => {
 						const { createUniversalLanguageSelector } = require( 'ext.uls.rewrite' );
 
 						const mountPoint = document.createElement( 'div' );
 						document.body.appendChild( mountPoint );
 
 						const app = createUniversalLanguageSelector( {
-							triggerElement: triggerElement,
+							triggerElement: e.currentTarget,
 							selectableLanguages: $.uls.data.getAutonyms(),
 							selected: [ mw.config.get( 'wgUserLanguage' ) ],
 							onSelect: ( language ) => {
@@ -656,14 +520,9 @@
 		}
 
 		$trigger.on( 'click', clickHandler );
-		// Optimization: Prefetch the ResourceLoader modules for ULS on hover/focus
-		// so the selector opens without a network round-trip on click.
-		$trigger.one( 'pointerenter focus', () => {
-			if ( isULSV2Enabled && userCanChangeLanguage() ) {
-				prefetchRewriteModules();
-			} else {
-				mw.loader.load( languageSettingsModules );
-			}
+		// Optimization: Prefetch the Resource loader modules for ULS on mouseover
+		$trigger.one( 'mouseover', () => {
+			mw.loader.load( languageSettingsModules );
 		} );
 	}
 
@@ -747,99 +606,46 @@
 		if ( $target.attr( 'data-uls-loaded' ) ) {
 			return;
 		}
+		$target.attr( 'data-uls-loaded', true );
 
 		ev.preventDefault();
 
-		if ( isULSV2Enabled ) {
-			if ( contentSelectorVm ) {
-				// Same trigger toggles; another trigger re-anchors and keeps it open. T431596
-				if ( contentSelectorVm.currentTriggerElement === $target[ 0 ] ) {
-					contentSelectorVm.toggle();
-				} else {
-					contentSelectorVm.setTriggerElement( $target[ 0 ] );
-					contentSelectorVm.open();
-				}
-				return;
-			}
-			if ( contentSelectorLoadPromise ) {
-				// Clicked while the selector is loading: this trigger takes over on mount.
-				contentSelectorLoadPromise.then(
-					() => contentSelectorVm.setTriggerElement( $target[ 0 ] )
-				);
-				return;
-			}
-			const isMinerva = mw.config.get( 'skin' ) === 'minerva';
-			contentSelectorLoadPromise = mw.loader.using( prefetchRewriteModules() ).then( () => {
+		if ( mw.config.get( 'wgULSLanguageSelectorV2Enabled' ) ) {
+			mw.loader.using( [ 'ext.uls.mediawiki', 'ext.uls.rewrite.languagesettings', 'ext.uls.rewrite' ] ).then( () => {
 				const languageNodes = getLanguageNodes();
-				const languageNodesInjected = injectCurrentLanguage( Array.from( languageNodes ) );
-				const hideActiveLanguages = languageNodesInjected.length !== languageNodes.length;
-				const languageAnnotations = getLanguageAnnotations( languageNodesInjected, isMinerva );
-				const variantNodes = Array.from( getVariantNodes() );
-				const pageContentLanguage = mw.config.get( 'wgPageContentLanguage' ) ||
-					mw.config.get( 'wgContentLanguage' );
-				const variantsByLanguage = {};
-				const variantAnnotationsByLanguage = {};
-				if ( variantNodes.length > 0 && pageContentLanguage ) {
-					variantsByLanguage[ pageContentLanguage ] =
-						mw.uls.getInterlanguageListFromNodes( variantNodes );
-					variantAnnotationsByLanguage[ pageContentLanguage ] =
-						getLanguageAnnotations( variantNodes, isMinerva );
-				}
+				const languageAnnotations = getLanguageAnnotations( languageNodes );
 				const { createUniversalLanguageSelector } = require( 'ext.uls.rewrite' );
 				const { h } = require( 'vue' );
 
 				const mountPoint = document.createElement( 'div' );
 				document.body.appendChild( mountPoint );
 
-				languageRoute = createLanguageRoute();
-
 				const app = createUniversalLanguageSelector( {
-					// `$target` was captured synchronously above; `ev.currentTarget`
-					// is unreliable here as this runs after a later delegated click
-					// handler (e.g. Score's) may have reset it to `document`.
-					triggerElement: $target[ 0 ],
-					selectableLanguages: mw.uls.getInterlanguageListFromNodes( languageNodesInjected ),
+					triggerElement: ev.currentTarget,
+					selectableLanguages: mw.uls.getInterlanguageListFromNodes( languageNodes ),
 					languageAnnotations: languageAnnotations,
-					variantsByLanguage: variantsByLanguage,
-					variantAnnotationsByLanguage: variantAnnotationsByLanguage,
-					selected: [ pageContentLanguage ],
-					hideActiveLanguages: hideActiveLanguages,
 					onSelect: ( language ) => {
-						languageRoute.markNavigating();
 						window.location.assign( language.value.href );
 					},
 					mode: 'content',
-					floatingOptions: isMinerva ? { placement: 'bottom-start' } : undefined,
-					onVisibleChange: languageRoute.onVisibleChange,
 					slots: {
-						'language-item': ( { item, annotations, isAvailable } ) => {
-							if ( isAvailable ) {
-								return h( 'a', {
-									href: item.href,
-									hreflang: annotations.hreflang,
-									title: annotations.linkTitle,
-									tabindex: -1
-								}, item.text );
-							}
-
-							return h( 'span', {
-								title: annotations.linkTitle
-							}, item );
-						}
+						'language-item': ( { item, annotations } ) => h( 'a', {
+							href: item.href,
+							hreflang: annotations.hreflang,
+							title: annotations.linkTitle
+						}, item.text )
 					}
 				} );
 
-				contentSelectorVm = app.mount( mountPoint );
-				languageRoute.attach( contentSelectorVm );
-			} );
-			// Reset on failure so a later click retries instead of doing nothing.
-			contentSelectorLoadPromise.catch( () => {
-				contentSelectorLoadPromise = null;
+				const mountedVm = app.mount( mountPoint );
+				$target.on( 'click', ( event ) => {
+					event.preventDefault();
+					event.stopPropagation();
+					mountedVm.toggle();
+				} );
 			} );
 			return;
 		}
-
-		$target.attr( 'data-uls-loaded', true );
 
 		mw.loader.using( [ 'ext.uls.mediawiki', '@wikimedia/codex' ] ).then( () => {
 			const languageNodes = getLanguageNodes();
@@ -881,21 +687,13 @@
 		// FIXME: In Timeless ULS is embedded in a menu which stops event propagation
 		if ( $( '.sidebar-inner' ).length ) {
 			$( '.sidebar-inner #p-lang' )
-				.on( 'click', '.mw-interlanguage-selector', loadContentLanguageSelector )
-				.one( 'pointerenter focus', '.mw-interlanguage-selector', prefetchRewriteModules );
+				.one( 'click', '.mw-interlanguage-selector', loadContentLanguageSelector );
 		} else {
 			// This button may be created by the new Vector skin, or ext.uls.compactlinks module
 			// if there are many languages. Warning: Both this module and ext.uls.compactlinks
 			// module may run simultaneously. Using event delegation to avoid race conditions where
 			// the trigger may be created after this code.
 			$( document ).on( 'click', '.mw-interlanguage-selector', loadContentLanguageSelector );
-			// Prefetch the rewrite modules on hover/focus so the selector
-			// opens instantly on click. Delegated to handle triggers created later.
-			$( document ).one(
-				'pointerenter focus',
-				'.mw-interlanguage-selector',
-				prefetchRewriteModules
-			);
 			// Special handling for checkbox hack.
 			handleCheckboxSelector();
 		}
@@ -949,15 +747,8 @@
 			addLanguageSettingsToNonContentPages();
 		}
 
-		// show on Minerva if its ULS rewrite
-		const isV2LanguageSelectorOnMinerva = mw.config.get( 'skin' ) === 'minerva' &&
-			isULSV2Enabled;
-
-		if ( !isV2LanguageSelectorOnMinerva ) {
-			// Don't display ime on Minerva skin.
-			initIme();
-			initLanguageChangeUndoTooltip();
-		}
+		initLanguageChangeUndoTooltip();
+		initIme();
 
 		// There are three basic components of ULS interface:
 		// - language selection for interface
@@ -996,16 +787,13 @@
 		// whether to show the omni box or not
 		const languageInHeader = mw.config.get( 'wgVector2022LanguageInHeader' );
 
-		if ( compact || languageInHeader || isV2LanguageSelectorOnMinerva ) {
+		if ( compact || languageInHeader ) {
 			// Init compact languages OR omni selector using the mw-interlanguage-selector class
 			initContentLanguageSelectorClickHandler();
 		} else {
 			$( '.mw-interlanguage-selector' ).removeClass( 'mw-interlanguage-selector' );
 			document.body.classList.add( 'mw-interlanguage-selector-disabled' );
 		}
-
-		// Open the fullscreen selector when deep-linked to its route on mobile.
-		openContentSelectorFromRoute();
 	}
 
 	let languageNodesCache = null;
@@ -1018,70 +806,17 @@
 		return languageNodesCache;
 	}
 
-	function getVariantNodes() {
-		return document.querySelectorAll( '#p-variants li a' );
-	}
-
-	/**
-	 * Injects a synthetic node for the current wiki language into the list of language nodes
-	 * and ensures the list remains sorted by autonym.
-	 *
-	 * @param {Array} nodes
-	 * @return {Array}
-	 */
-	function injectCurrentLanguage( nodes ) {
-		const contentLang = mw.config.get( 'wgPageContentLanguage' ) || mw.config.get( 'wgContentLanguage' );
-
-		if ( contentLang && !nodes.some( ( el ) => el.lang === contentLang ) ) {
-			const syntheticNode = document.createElement( 'a' );
-			syntheticNode.lang = contentLang;
-			syntheticNode.href = location.href;
-			syntheticNode.textContent = $.uls.data.getAutonym( contentLang );
-			syntheticNode.setAttribute( 'data-title', mw.config.get( 'wgTitle' ) );
-
-			// Ensure it has a parent for class lookups in getLanguageAnnotations
-			const parent = document.createElement( 'li' );
-			parent.className = 'interlanguage-link interwiki-' + contentLang;
-			parent.appendChild( syntheticNode );
-
-			nodes.push( syntheticNode );
-			// We don't bother sorting the list since we hide the selected language.
-		}
-
-		return nodes;
-	}
-
-	function getLanguageAnnotations( languageNodes, includeDescriptions ) {
+	function getLanguageAnnotations( languageNodes ) {
 		const annotations = {};
 
-		let titleAttribute = 'data-title';
-		if ( includeDescriptions ) {
-			const firstLanguageNode = languageNodes[ 0 ];
-			// FIXME: Ugly, brittle check to determine if we should use title or data-title attribute.
-			// We use title if its page translation, and data-title if its anything else.
-			if ( firstLanguageNode ) {
-				const isPageTranslation = firstLanguageNode
-					.parentElement
-					.classList
-					.contains( 'interwiki-pagetranslation' );
-				if ( isPageTranslation ) {
-					titleAttribute = 'title';
-				}
-			}
-		}
-
 		Array.prototype.forEach.call( languageNodes, ( node ) => {
-			const lang = mw.uls.convertMediaWikiLanguageCodeToULS( node.lang );
+			const lang = node.lang;
 			if ( lang ) {
 				annotations[ lang ] = {
 					classes: Array.from( node.parentElement.classList ),
 					hreflang: node.hreflang,
 					linkTitle: node.title
 				};
-
-				if ( includeDescriptions ) {
-					annotations[ lang ].description = node.getAttribute( titleAttribute ) || '';
-				}
 			}
 		} );
 

@@ -1,34 +1,36 @@
 'use strict';
 
-const { watch, onBeforeUnmount } = require( 'vue' );
+const { watch, onMounted, onBeforeUnmount } = require( 'vue' );
 
 /**
  * Composable to detect clicks outside a specified element.
  *
  * @param {Object} elementRef Ref to element to detect clicks outside of.
- * @param {Object} activeRef Whether the listener should be activated.
+ * @param {Object} visibleRef Indicates if the element is visible.
  * @param {Document} document The document object to attach event listeners to.
  * @param {Function} callback Function to call when a click outside occurs.
- * @param {Object} [ignoreRef] Ref to an element whose clicks are ignored,
- * e.g. a trigger with its own toggle handler.
  */
-function useClickOutside( elementRef, activeRef, document, callback, ignoreRef ) {
+function useClickOutside( elementRef, visibleRef, document, callback ) {
 	const onClickOutside = ( event ) => {
 		const isClickOnElement = elementRef.value && elementRef.value.contains( event.target );
-		const isClickOnIgnored = ignoreRef && ignoreRef.value &&
-			ignoreRef.value.contains( event.target );
-		if ( !isClickOnElement && !isClickOnIgnored ) {
+		if ( !isClickOnElement ) {
 			callback();
 		}
 	};
 
-	watch( activeRef, ( isActive ) => {
-		if ( isActive ) {
+	watch( visibleRef, ( isVisible ) => {
+		if ( isVisible ) {
 			document.addEventListener( 'click', onClickOutside );
 		} else {
 			document.removeEventListener( 'click', onClickOutside );
 		}
-	}, { immediate: true } );
+	} );
+
+	onMounted( () => {
+		if ( visibleRef.value ) {
+			document.addEventListener( 'click', onClickOutside );
+		}
+	} );
 
 	onBeforeUnmount( () => {
 		document.removeEventListener( 'click', onClickOutside );

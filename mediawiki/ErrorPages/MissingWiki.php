@@ -1,4 +1,12 @@
-<?php $metaUrl = require __DIR__ . '/MetaUrl.php'; ?>
+<?php
+// A missing wiki may be created or routed here later; never cache this response.
+header( 'Cache-Control: private, no-store, no-cache, max-age=0, must-revalidate' );
+header( 'CDN-Cache-Control: no-store' );
+header( 'Cloudflare-CDN-Cache-Control: no-store' );
+header( 'Pragma: no-cache' );
+header( 'Expires: Thu, 01 Jan 1970 00:00:00 GMT' );
+$metaUrl = require __DIR__ . '/MetaUrl.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>

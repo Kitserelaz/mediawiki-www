@@ -168,9 +168,9 @@ def auxiliary():
     tunnel=Path('/var/www/docker/cloudflare-saas/config.yaml').read_text()
     tunnel=re.sub(r'(?m)^credentials-file:.*','credentials-file: /etc/cloudwiki/tunnel.json',tunnel)
     tunnel=re.sub(r'http://(?:web|172\.[0-9.]+):8082','http://127.0.0.1:8082',tunnel)
-    i.write(c.CONFIG/'cloudflared.yaml',tunnel,0o600)
-    shutil.copy2('/var/lib/cloudwiki/custom-domains/cloudflare-tunnel.json',c.CONFIG/'tunnel.json');(c.CONFIG/'tunnel.json').chmod(0o600)
-    i.service('cloudflared','/usr/local/bin/cloudflared tunnel --no-autoupdate --config /etc/cloudwiki/cloudflared.yaml run','root','128M',environment=False)
+    i.write(c.CONFIG/'cloudflared.yaml',tunnel,0o640);shutil.chown(c.CONFIG/'cloudflared.yaml','root','cloudwiki-tunnel')
+    shutil.copy2('/var/lib/cloudwiki/custom-domains/cloudflare-tunnel.json',c.CONFIG/'tunnel.json');(c.CONFIG/'tunnel.json').chmod(0o640);shutil.chown(c.CONFIG/'tunnel.json','root','cloudwiki-tunnel')
+    i.service('cloudflared','/usr/local/bin/cloudflared tunnel --no-autoupdate --config /etc/cloudwiki/cloudflared.yaml run','cloudwiki-tunnel','128M',environment=False)
     c.run(['systemctl','daemon-reload'])
 
 

@@ -112,7 +112,7 @@ def proxy(env,source):
     destination=c.CONFIG/'caddy';destination.mkdir(exist_ok=True)
     main=Path('/var/lib/cloudwiki/admin/Caddyfile.production').read_text()
     main=main.replace('admin off','admin unix//run/cloudwiki-caddy/admin.sock\n    default_bind 127.0.0.1\n    http_port 18088\n    https_port 18443\n    auto_https disable_redirects')
-    main=main.replace('servers :443','servers :18443')
+    main=main.replace('servers :443','servers 127.0.0.1:18443')
     main=main.replace('counter:3000','127.0.0.1:3001')
     main=main.replace('/etc/caddy/',str(destination)+'/')
     main+='\nimport '+str(destination/'editor.caddy')+'\nimport '+str(destination/'wildcard.caddy')+'\n'
@@ -149,7 +149,7 @@ http://*.{$MW_DOMAIN} {
 
 
 def configure(source):
-    for account in ['cloudwiki-db','cloudwiki-redis','cloudwiki-counter','cloudwiki-editor','cloudwiki-monitoring','wiki-admin-build']:
+    for account in ['cloudwiki-db','cloudwiki-redis','cloudwiki-counter','cloudwiki-editor','cloudwiki-monitoring','cloudwiki-tunnel','wiki-admin-build']:
         user(account)
     try: grp.getgrnam('cloudwiki-fpm')
     except KeyError: c.run(['groupadd','--system','cloudwiki-fpm'])

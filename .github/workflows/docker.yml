@@ -118,6 +118,8 @@ jobs:
         cloudwiki-php:local /opt/architecture.sh
     - name: Source mount isolation and live PHP edits
       run: python3 docker/tests/source-mounts.py
+    - name: Blue-green HTTP continuity and routing rehearsal
+      run: python3 docker/tests/blue-green.py
     - name: Syntax check complete immutable PHP runtime
       run: sh scripts/lint-php-image.sh
     - name: Prepared provisioning metadata and interrupted handoff

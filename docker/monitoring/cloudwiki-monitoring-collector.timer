@@ -1,0 +1,8 @@
+[Unit]
+Description=Collect CloudWiki service metrics every 15 seconds
+[Timer]
+OnBootSec=15s
+OnUnitActiveSec=15s
+AccuracySec=1s
+[Install]
+WantedBy=timers.target

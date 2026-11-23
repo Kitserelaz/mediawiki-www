@@ -1,0 +1,79 @@
+{
+  "modules": {
+    "cloudwiki_meta": {
+      "prober": "http",
+      "timeout": "10s",
+      "http": {
+        "method": "GET",
+        "valid_status_codes": [
+          200
+        ],
+        "follow_redirects": true,
+        "preferred_ip_protocol": "ip4",
+        "headers": {
+          "User-Agent": "Mozilla/5.0 (compatible; CloudWikiMonitoring/1.0)"
+        },
+        "fail_if_not_ssl": true,
+        "fail_if_body_not_matches_regexp": [
+          "<title[^>]*>Meta Wiki</title>"
+        ],
+        "fail_if_body_matches_regexp": [
+          "Wiki not found"
+        ],
+        "tls_config": {
+          "insecure_skip_verify": false
+        }
+      }
+    },
+    "cloudwiki_admin": {
+      "prober": "http",
+      "timeout": "10s",
+      "http": {
+        "method": "GET",
+        "valid_status_codes": [
+          200
+        ],
+        "follow_redirects": true,
+        "preferred_ip_protocol": "ip4",
+        "headers": {
+          "User-Agent": "Mozilla/5.0 (compatible; CloudWikiMonitoring/1.0)"
+        },
+        "fail_if_not_ssl": true,
+        "fail_if_body_not_matches_regexp": [
+          "<title[^>]*>Sign in \u00b7 CloudWiki Admin</title>"
+        ],
+        "fail_if_body_matches_regexp": [
+          "Wiki not found"
+        ],
+        "tls_config": {
+          "insecure_skip_verify": false
+        }
+      }
+    },
+    "cloudwiki_grafana": {
+      "prober": "http",
+      "timeout": "10s",
+      "http": {
+        "method": "GET",
+        "valid_status_codes": [
+          200
+        ],
+        "follow_redirects": true,
+        "preferred_ip_protocol": "ip4",
+        "headers": {
+          "User-Agent": "Mozilla/5.0 (compatible; CloudWikiMonitoring/1.0)"
+        },
+        "fail_if_not_ssl": true,
+        "fail_if_body_not_matches_regexp": [
+          "<title[^>]*>Grafana</title>"
+        ],
+        "fail_if_body_matches_regexp": [
+          "Wiki not found"
+        ],
+        "tls_config": {
+          "insecure_skip_verify": false
+        }
+      }
+    }
+  }
+}

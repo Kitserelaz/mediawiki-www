@@ -1,5 +1,8 @@
 # Docker development and deployment
 
+For opt-in blue-green public-asset deployments, release classification, the
+one-time gateway conversion, and recovery, see [zero-downtime deployments](ZERO-DOWNTIME.md).
+
 This candidate packages MediaWiki 1.46.3 on PHP 8.4.28 with the pinned CreateWiki/ManageWiki upgrade and Moe-Counter. It preserves the supplied catalogue with explicit component source/dependency ports recorded in `upgrade-targets.json` and the source-port reports. Application base images use immutable multi-platform digests, and the PHP build resolves apt packages against the signed Debian snapshot dated 2026-11-19; update these deliberately and rebuild both architectures. The container has one core runtime (1.46); historical per-wiki version metadata does not select additional code installations. Component versions, installed Composer package identities, PHP requirements, local patch hashes, and lockfile hashes are recorded in `dependency-inventory.json`; regenerate with `python3 scripts/inventory.py` after intentional dependency changes.
 
 The PHP image includes pinned APCu 5.1.28 with 128 MB of server-local cache for

@@ -31,8 +31,18 @@ def command(args, root=ROOT):
         raise ValueError('MW_PROVISIONER_SOURCE must be bind or sync')
     if provisioner_source == 'sync' and (mode != 'bind' or settings.get('MW_ENV') != 'development'):
         raise ValueError('Provisioner source synchronization requires development bind mode')
+    online = Path(settings.get('MW_BLUE_GREEN_DIRECTORY', '/var/lib/cloudwiki/blue-green')) / 'compose.json'
+    online = online if settings.get('MW_ZERO_DOWNTIME') == '1' and online.is_file() else None
+    files = settings.get('COMPOSE_FILE') or 'compose.yaml'
+    separator = settings.get('COMPOSE_PATH_SEPARATOR') or os.pathsep
+    file_flags = []
+    for name in files.split(separator):
+        if Path(name).name not in ('compose.bind.yaml', 'compose.provisioner-sync.yaml'):
+            file_flags.extend(['-f', str((root / name).resolve())])
     if mode == 'image':
-        return ['docker', 'compose', *flags, *args], dict(os.environ)
+        if online:
+            file_flags.extend(['-f', str(online)])
+        return ['docker', 'compose', *flags, *(file_flags if online else []), *args], dict(os.environ)
     source = Path(settings.get('MW_SOURCE_DIRECTORY') or str(root))
     if not source.is_absolute():
         source = root / source
@@ -55,13 +65,9 @@ def command(args, root=ROOT):
                  'mediawiki/resources', 'mediawiki/extensions', 'mediawiki/skins']:
         if not (source / name).exists():
             raise ValueError('Source is not prepared; run scripts/farm prepare-source first (missing ' + name + ')')
-    files = settings.get('COMPOSE_FILE') or 'compose.yaml'
-    separator = settings.get('COMPOSE_PATH_SEPARATOR') or os.pathsep
-    file_flags = []
-    for name in files.split(separator):
-        if Path(name).name not in ('compose.bind.yaml', 'compose.provisioner-sync.yaml'):
-            file_flags.extend(['-f', str((root / name).resolve())])
     file_flags.extend(['-f', str(root / 'compose.bind.yaml')])
+    if online:
+        file_flags.extend(['-f', str(online)])
     environment = dict(os.environ, MW_SOURCE_DIRECTORY=str(source))
     if provisioner_source == 'sync':
         file_flags.extend(['-f', str(root / 'compose.provisioner-sync.yaml')])

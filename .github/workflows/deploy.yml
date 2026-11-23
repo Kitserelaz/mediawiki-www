@@ -20,6 +20,12 @@ run-name: ${{ github.event_name == 'workflow_dispatch' && format('CloudWiki {0} 
         description: Successful Docker stack run for deployment
         required: false
         type: string
+      deployment_mode:
+        description: Auto selects online only for approved public assets; maintenance permits database updates
+        required: false
+        default: auto
+        type: choice
+        options: [auto, online, maintenance]
       expected_commit:
         description: Exact target commit
         required: true
@@ -129,6 +135,7 @@ jobs:
         PANEL_RELEASE: ${{ inputs.release_id }}
         PANEL_CURRENT: ${{ inputs.current_commit }}
         PANEL_OPERATION: ${{ inputs.operation_id }}
+        DEPLOYMENT_MODE: ${{ inputs.deployment_mode || 'auto' }}
       shell: bash
       run: |
         set -euo pipefail
@@ -148,7 +155,7 @@ jobs:
             assert manifest['commit'] == os.environ['EXPECTED_COMMIT']
             payload = {'commit': manifest['commit']}
             if kind == 'runtime':
-                payload.update(images=manifest['images'], registry_user=os.environ['GITHUB_ACTOR'], registry_token=os.environ['REGISTRY_TOKEN'])
+                payload.update(images=manifest['images'], registry_user=os.environ['GITHUB_ACTOR'], registry_token=os.environ['REGISTRY_TOKEN'], mode=os.environ['DEPLOYMENT_MODE'])
         print(json.dumps(payload))
         REQUEST
         command=deploy

@@ -1,0 +1,929 @@
+{
+  "uid": "cloudwiki-containers",
+  "title": "CloudWiki Containers",
+  "schemaVersion": 39,
+  "version": 2,
+  "editable": false,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "tags": [
+    "cloudwiki",
+    "operations"
+  ],
+  "links": [
+    {
+      "title": "Overview",
+      "url": "/d/cloudwiki-overview",
+      "type": "link",
+      "keepTime": true
+    },
+    {
+      "title": "Host",
+      "url": "/d/cloudwiki-host",
+      "type": "link",
+      "keepTime": true
+    },
+    {
+      "title": "Containers",
+      "url": "/d/cloudwiki-containers",
+      "type": "link",
+      "keepTime": true
+    },
+    {
+      "title": "Availability",
+      "url": "/d/cloudwiki-availability",
+      "type": "link",
+      "keepTime": true
+    }
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Collector status",
+      "type": "stat",
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "Fresh",
+                  "color": "green"
+                },
+                "0": {
+                  "text": "Collection error",
+                  "color": "orange"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "cloudwiki_collector_success and on() ((time() - cloudwiki_snapshot_timestamp_seconds) < 60)",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 2,
+      "title": "Source snapshot age",
+      "type": "stat",
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 60
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "time()-cloudwiki_snapshot_timestamp_seconds",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 3,
+      "title": "Production containers",
+      "type": "table",
+      "description": "CPU: 100% equals one core. Restarts reset on container recreation. Stale data is omitted after 60 seconds.",
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 11
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "State"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "noValue",
+                "value": "Unknown"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Health"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "noValue",
+                "value": "Unknown"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "noValue",
+                "value": "Unknown"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Memory"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              },
+              {
+                "id": "noValue",
+                "value": "Unknown"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Uptime"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "noValue",
+                "value": "Unknown"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Restarts since creation"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "noValue",
+                "value": "Unknown"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "State"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "Running",
+                        "color": "green"
+                      },
+                      "0": {
+                        "text": "Stopped",
+                        "color": "red"
+                      },
+                      "-1": {
+                        "text": "Missing",
+                        "color": "red"
+                      },
+                      "-2": {
+                        "text": "Unknown",
+                        "color": "orange"
+                      },
+                      "-3": {
+                        "text": "Ambiguous",
+                        "color": "orange"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Health"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "Healthy",
+                        "color": "green"
+                      },
+                      "0": {
+                        "text": "Unhealthy",
+                        "color": "red"
+                      },
+                      "2": {
+                        "text": "Starting",
+                        "color": "orange"
+                      },
+                      "-1": {
+                        "text": "Not configured",
+                        "color": "text"
+                      },
+                      "-2": {
+                        "text": "Unknown",
+                        "color": "orange"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "cloudwiki_service_state{kind=\"container\",service=~\"$service\"} and on() ((time() - cloudwiki_snapshot_timestamp_seconds) < 60)",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "expr": "cloudwiki_service_health{kind=\"container\",service=~\"$service\"} and on() ((time() - cloudwiki_snapshot_timestamp_seconds) < 60)",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "C",
+          "expr": "cloudwiki_service_cpu_percent{kind=\"container\",service=~\"$service\"} and on() ((time() - cloudwiki_snapshot_timestamp_seconds) < 60)",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "D",
+          "expr": "cloudwiki_service_memory_bytes{kind=\"container\",service=~\"$service\"} and on() ((time() - cloudwiki_snapshot_timestamp_seconds) < 60)",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "E",
+          "expr": "cloudwiki_service_uptime_seconds{kind=\"container\",service=~\"$service\"} and on() ((time() - cloudwiki_snapshot_timestamp_seconds) < 60)",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "F",
+          "expr": "cloudwiki_service_restarts{kind=\"container\",service=~\"$service\"} and on() ((time() - cloudwiki_snapshot_timestamp_seconds) < 60)",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "sortBy": [
+          {
+            "displayName": "CPU %",
+            "desc": true
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "service",
+            "mode": "outerTabular"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "kind": true,
+              "job": true,
+              "instance": true,
+              "__name__": true
+            },
+            "renameByName": {
+              "service": "Service",
+              "Value #A": "State",
+              "Value #B": "Health",
+              "Value #C": "CPU %",
+              "Value #D": "Memory",
+              "Value #E": "Uptime",
+              "Value #F": "Restarts since creation"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Container CPU \u2014 100% = one core",
+      "type": "timeseries",
+      "description": "",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "cloudwiki_service_cpu_percent{kind=\"container\",service=~\"$service\"} and on() ((time() - cloudwiki_snapshot_timestamp_seconds) < 60)",
+          "legendFormat": "{{service}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 5,
+      "title": "Container memory",
+      "type": "timeseries",
+      "description": "",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "cloudwiki_service_memory_bytes{kind=\"container\",service=~\"$service\"} and on() ((time() - cloudwiki_snapshot_timestamp_seconds) < 60)",
+          "legendFormat": "{{service}}",
+          "instant": false,
+          "range": true,
+          "format": "time_series"
+        }
+      ],
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 6,
+      "title": "Host services",
+      "type": "table",
+      "description": "CPU: 100% equals one core. Restarts reset on container recreation. Stale data is omitted after 60 seconds.",
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 24,
+        "h": 11
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "noValue": "Unknown",
+          "color": {
+            "mode": "palette-classic"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "State"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "noValue",
+                "value": "Unknown"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Health"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "noValue",
+                "value": "Unknown"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "noValue",
+                "value": "Unknown"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Memory"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "bytes"
+              },
+              {
+                "id": "noValue",
+                "value": "Unknown"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Uptime"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "noValue",
+                "value": "Unknown"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Restarts since creation"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "noValue",
+                "value": "Unknown"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "State"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "Running",
+                        "color": "green"
+                      },
+                      "0": {
+                        "text": "Stopped",
+                        "color": "red"
+                      },
+                      "-1": {
+                        "text": "Missing",
+                        "color": "red"
+                      },
+                      "-2": {
+                        "text": "Unknown",
+                        "color": "orange"
+                      },
+                      "-3": {
+                        "text": "Ambiguous",
+                        "color": "orange"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Health"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "Healthy",
+                        "color": "green"
+                      },
+                      "0": {
+                        "text": "Unhealthy",
+                        "color": "red"
+                      },
+                      "2": {
+                        "text": "Starting",
+                        "color": "orange"
+                      },
+                      "-1": {
+                        "text": "Not configured",
+                        "color": "text"
+                      },
+                      "-2": {
+                        "text": "Unknown",
+                        "color": "orange"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "cloudwiki_service_state{kind=\"unit\"} and on() ((time() - cloudwiki_snapshot_timestamp_seconds) < 60)",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "expr": "cloudwiki_service_health{kind=\"unit\"} and on() ((time() - cloudwiki_snapshot_timestamp_seconds) < 60)",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "C",
+          "expr": "cloudwiki_service_cpu_percent{kind=\"unit\"} and on() ((time() - cloudwiki_snapshot_timestamp_seconds) < 60)",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "D",
+          "expr": "cloudwiki_service_memory_bytes{kind=\"unit\"} and on() ((time() - cloudwiki_snapshot_timestamp_seconds) < 60)",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "E",
+          "expr": "cloudwiki_service_uptime_seconds{kind=\"unit\"} and on() ((time() - cloudwiki_snapshot_timestamp_seconds) < 60)",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "refId": "F",
+          "expr": "cloudwiki_service_restarts{kind=\"unit\"} and on() ((time() - cloudwiki_snapshot_timestamp_seconds) < 60)",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "sortBy": [
+          {
+            "displayName": "CPU %",
+            "desc": true
+          }
+        ]
+      },
+      "transformations": [
+        {
+          "id": "joinByField",
+          "options": {
+            "byField": "service",
+            "mode": "outerTabular"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "kind": true,
+              "job": true,
+              "instance": true,
+              "__name__": true
+            },
+            "renameByName": {
+              "service": "Service",
+              "Value #A": "State",
+              "Value #B": "Health",
+              "Value #C": "CPU %",
+              "Value #D": "Memory",
+              "Value #E": "Uptime",
+              "Value #F": "Restarts since creation"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Production service",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(cloudwiki_service_state{kind=\"container\"}, service)",
+        "definition": "label_values(cloudwiki_service_state{kind=\"container\"}, service)",
+        "refresh": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      }
+    ]
+  }
+}

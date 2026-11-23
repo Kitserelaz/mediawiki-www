@@ -3,6 +3,7 @@
 import contextlib
 import fcntl
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -63,7 +64,8 @@ def stop_application(runner, project, live):
     rows = runner.run(['docker', 'ps', '-a', '--filter',
                        'label=com.docker.compose.project=' + project, '--format',
                        '{{.ID}} {{.Label "com.docker.compose.service"}}'], capture=True)
-    services = {*WRITERS, 'creation-events'} | ({'code'} if live else set())
+    services = {*WRITERS, 'creation-events', 'bg-blue-php', 'bg-blue-web',
+                'bg-green-php', 'bg-green-web'} | ({'code'} if live else set())
     ids = []
     for line in rows.splitlines():
         fields = line.split()
@@ -94,13 +96,17 @@ def persistent_service_config(config, name):
 def rollback_application(root, state, runner, health, progress, *, old_commit,
                          candidate_commit, old_environment, new_environment,
                          initial_config, tracked_paths, live, database_started,
-                         previous_success, code_changed, project):
+                         previous_success, code_changed, project, online_settings=None):
     """Restore application selection only. Never restore SQL or data volumes."""
     progress.stage('rolling_back')
     env_file = root / '.env.production'
     # Stop possible partial starts before replacing any code. Failure to stop
     # aborts recovery; never swap source underneath an unknown running writer.
     stop_application(runner, project, live)
+    # A failed maintenance deployment returns to the legacy runtime. A later
+    # successful maintenance release can rebuild the blue/green gateway.
+    if online_settings and online_settings.get('MW_ZERO_DOWNTIME') == '1':
+        disable_online(online_settings)
     check_worktree(runner)
     check_stable_files(initial_config, tracked_paths | {str(env_file)})
     if env_file.read_text() not in (old_environment, new_environment):
@@ -147,8 +153,11 @@ def rollback_application(root, state, runner, health, progress, *, old_commit,
 def validate_request(command, payload):
     if command != "deploy":
         raise ValueError("Only the deploy command is permitted")
-    if not isinstance(payload, dict) or set(payload) != {"commit", "images", "registry_user", "registry_token"}:
+    required = {"commit", "images", "registry_user", "registry_token"}
+    if not isinstance(payload, dict) or not required <= set(payload) or set(payload) - required - {'mode'}:
         raise ValueError("Invalid deployment request")
+    if payload.get('mode', 'auto') not in ('auto', 'online', 'maintenance'):
+        raise ValueError('Invalid deployment mode')
     if not isinstance(payload["commit"], str) or not re.fullmatch(r"[0-9a-f]{40}", payload["commit"]):
         raise ValueError("A full commit SHA is required")
     if not isinstance(payload["images"], dict) or set(payload["images"]) != set(SERVICES):
@@ -369,6 +378,243 @@ def check_worktree(runner):
         raise RuntimeError('MediaWiki has uncommitted or untracked live edits; refusing to overwrite them')
 
 
+def blue_green():
+    spec = importlib.util.spec_from_file_location('cloudwiki_blue_green', Path(__file__).with_name('blue_green.py'))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def online_directory(settings):
+    path = Path(settings.get('MW_BLUE_GREEN_DIRECTORY', '/var/lib/cloudwiki/blue-green'))
+    if not path.is_absolute():
+        raise RuntimeError('MW_BLUE_GREEN_DIRECTORY must be absolute')
+    if path.exists() or path.is_symlink():
+        info = path.lstat()
+        if not stat.S_ISDIR(info.st_mode) or info.st_uid != os.geteuid() or info.st_mode & 0o022:
+            raise RuntimeError('Blue/green state must be a private operator-owned directory')
+    return path
+
+
+def online_changes(runner, previous, candidate):
+    """Reject deletions, type changes and symlinks as well as unknown paths."""
+    raw = runner.run(['git', 'diff', '--raw', '--no-abbrev', '--no-renames', '-z',
+                      previous, candidate, '--'], capture=True)
+    fields = raw.split('\0')
+    paths = []
+    for index in range(0, len(fields) - 1, 2):
+        metadata, path = fields[index:index + 2]
+        parts = metadata.split()
+        if (len(parts) != 5 or parts[0] not in (':000000', ':100644', ':100755')
+                or parts[1] not in ('100644', '100755') or parts[4] not in ('A', 'M')):
+            return False
+        paths.append(path)
+    return blue_green().online_safe(paths)
+
+
+def slot_command(directory, slot):
+    blue_green().slot_name(slot, 'web')  # Validate before using the slot as a path.
+    return ['docker', 'compose', '-f', str(directory / (slot + '.json'))]
+
+
+def write_caddy_files(directory, files):
+    directory.mkdir(mode=0o755, parents=True, exist_ok=True)
+    for name, content in files.items():
+        if Path(name).name != name:
+            raise ValueError('Invalid generated Caddy filename')
+        atomic_private_write(directory / name, content)
+        (directory / name).chmod(0o644)
+
+
+def probe_slot(runner, directory, slot, domain):
+    bg = blue_green()
+    compose = slot_command(directory, slot)
+    for host in ('meta', 'login', 'test'):
+        result = runner.run(compose + ['exec', '-T', bg.slot_name(slot, 'php'),
+                            'curl', '--fail', '--silent', '--show-error', '--max-time', '30',
+                            '-H', 'Host: ' + host + '.' + domain,
+                            'http://' + bg.slot_name(slot, 'web') + ':8080/api.php?action=query&meta=siteinfo&format=json'], capture=True)
+        if not json.loads(result).get('query', {}).get('general', {}).get('generator', '').startswith('MediaWiki '):
+            raise RuntimeError('Candidate HTTP API check failed')
+    result = runner.run(compose + ['exec', '-T', bg.slot_name(slot, 'php'),
+                        'curl', '--fail', '--silent', '--show-error', '--max-time', '30',
+                        '-H', 'Host: meta.' + domain,
+                        'http://' + bg.slot_name(slot, 'web') + ':8080/load.php?modules=startup&only=scripts&lang=en&skin=vector'], capture=True)
+    if not result.strip():
+        raise RuntimeError('Candidate ResourceLoader response is empty')
+
+
+def prepare_slot(root, directory, runner, base, slot, images, source):
+    bg = blue_green()
+    # A retained slot may still be finishing long-running requests from the last
+    # cutover. Never replace it merely because a fixed drain timer expired.
+    ids = runner.run(['docker', 'ps', '--filter', 'label=com.docker.compose.project=' + base['name'],
+                      '--filter', 'label=com.docker.compose.service=' + bg.slot_name(slot, 'web'),
+                      '--format', '{{.ID}}'], capture=True)
+    if ids:
+        count = runner.run(slot_command(directory, slot) + ['exec', '-T', bg.slot_name(slot, 'web'),
+                           'sh', '-ec', 'connections=$(netstat -tn); printf "%s\\n" "$connections" | awk \'$4 ~ /:(8080|8083)$/ && $6 == "ESTABLISHED" { n++ } END { print n+0 }\''], capture=True)
+        if count != '0':
+            raise RuntimeError('Previous application slot is still draining; retry deployment later')
+    backend = directory / slot
+    write_caddy_files(backend, bg.backend_files(root, slot))
+    config = bg.slot_config(base, slot, images, backend, source)
+    atomic_private_write(directory / (slot + '.json'), json.dumps(config) + '\n')
+    compose = slot_command(directory, slot)
+    runner.run(compose + ['config', '--quiet'])
+    runner.run(compose + ['up', '-d', '--no-deps', '--no-build', '--pull', 'never',
+                          '--wait', '--wait-timeout', '180'])
+
+
+def reload_gateway(root, runner):
+    bg = blue_green()
+    compose = compose_command(root, root / '.env.production')
+    runner.run(compose + ['exec', '-T', 'web', 'caddy', 'reload', '--address', bg.ADMIN,
+                          '--config', bg.MOUNT + '/Caddyfile', '--adapter', 'caddyfile'])
+
+
+def enable_online(root, state, runner, settings, images, commit, source=None, health=probe):
+    """One-time gateway conversion, within the existing maintenance window."""
+    directory = online_directory(settings)
+    directory.mkdir(mode=0o700, parents=True, exist_ok=True)
+    if (directory / 'pending.json').exists():
+        raise RuntimeError('Interrupted online deployment; run --recover-online locally first')
+    compose = compose_command(root, root / '.env.production')
+    base = json.loads(runner.run(['docker', 'compose', '--env-file', str(root / '.env.production'),
+                                 'config', '--format', 'json'], capture=True))
+    gateway = directory / 'gateway'
+    prepare_slot(root, directory, runner, base, 'blue', images, source)
+    probe_slot(runner, directory, 'blue', settings.get('MW_DOMAIN', 'cloudwiki.us'))
+    write_caddy_files(gateway, blue_green().gateway_files(base, 'blue'))
+    runner.run(compose + ['run', '--rm', '--no-deps', '--entrypoint', 'caddy',
+                          '-v', str(gateway) + ':' + blue_green().MOUNT + ':ro', 'web',
+                          'validate', '--config', blue_green().MOUNT + '/Caddyfile', '--adapter', 'caddyfile'])
+    atomic_private_write(directory / 'compose.json', json.dumps(blue_green().gateway_override(gateway)) + '\n')
+    try:
+        runner.run(compose + ['config', '--quiet'])
+        # This is the only gateway recreation; future online releases use reload.
+        runner.run(compose + ['up', '-d', '--no-deps', '--no-build', '--pull', 'never', 'web'])
+        runner.run(compose + ['exec', '-T', 'web', 'caddy', 'validate', '--config',
+                              blue_green().MOUNT + '/Caddyfile', '--adapter', 'caddyfile'])
+        for attempt in range(6):
+            try:
+                health(root, runner)
+                break
+            except (subprocess.CalledProcessError, RuntimeError, ValueError):
+                if attempt == 5:
+                    raise
+                time.sleep(2)
+        atomic_private_write(directory / 'active.json', json.dumps({
+            'slot': 'blue', 'commit': commit, 'schema_commit': commit}) + '\n')
+    except Exception:
+        (directory / 'compose.json').unlink(missing_ok=True)
+        runner.run(compose + ['up', '-d', '--no-deps', '--no-build', '--pull', 'never', 'web'])
+        raise
+
+
+def disable_online(settings):
+    # Called only after snapshot has stopped the edge AND both application slots.
+    directory = online_directory(settings)
+    (directory / 'compose.json').unlink(missing_ok=True)
+    (directory / 'active.json').unlink(missing_ok=True)
+
+
+def recover_online(root, state, runner, settings, health=probe):
+    directory = online_directory(settings)
+    pending = directory / 'pending.json'
+    transaction = json.loads(pending.read_text())
+    env = root / '.env.production'
+    check_worktree(runner)
+    check_stable_files(transaction['initial_config'], {str(env)})
+    if env.read_text() not in (transaction['old_environment'], transaction['new_environment']):
+        raise config_changed([str(env)])
+    current = runner.run(['git', 'rev-parse', 'HEAD'], capture=True)
+    if current not in (transaction['old_commit'], transaction['candidate_commit']):
+        raise RuntimeError('Source revision changed during online recovery')
+    # Restore routing first: the previous slot and all its mounts stay intact.
+    write_caddy_files(directory / 'gateway', transaction['gateway_files'])
+    reload_gateway(root, runner)
+    health(root, runner)
+    runner.run(['git', 'checkout', '--detach', transaction['old_commit']])
+    atomic_private_write(env, transaction['old_environment'])
+    atomic_private_write(directory / 'active.json', json.dumps(transaction['active']) + '\n')
+    last = state / 'last-success.json'
+    if transaction['previous_success'] is None:
+        last.unlink(missing_ok=True)
+    else:
+        atomic_private_write(last, transaction['previous_success'])
+    save_config_baseline(state, transaction['initial_config'], 'Recovered online deployment; database unchanged')
+    record_id = transaction.get('record_id', '')
+    if re.fullmatch(r'deploy-[0-9]+-[0-9a-f]{12}', record_id):
+        (state / 'history' / (record_id + '.json')).unlink(missing_ok=True)
+    pending.unlink()
+
+
+def deploy_online(payload, root, state, runner, health, progress, settings, base,
+                  initial_config, old_commit, new_environment, source):
+    directory = online_directory(settings)
+    if (directory / 'pending.json').exists():
+        raise RuntimeError('Interrupted online deployment; run --recover-online locally first')
+    active = json.loads((directory / 'active.json').read_text())
+    if active['commit'] != old_commit:
+        raise RuntimeError('Online routing and checked-out release do not match')
+    slot = 'green' if active['slot'] == 'blue' else 'blue'
+    progress.stage('starting_services')
+    prepare_slot(root, directory, runner, base, slot, payload['images'], source)
+    progress.stage('health_checks')
+    probe_slot(runner, directory, slot, settings.get('MW_DOMAIN', 'cloudwiki.us'))
+    check_worktree(runner)
+    check_local_config(root, state, runner, initial_config)
+    gateway = directory / 'gateway'
+    old_files = {path.name: path.read_text() for path in gateway.iterdir() if path.is_file()}
+    env = root / '.env.production'
+    last = state / 'last-success.json'
+    record_id = 'deploy-' + str(time.time_ns()) + '-' + payload['commit'][:12]
+    transaction = {'old_commit': old_commit, 'candidate_commit': payload['commit'],
+                   'initial_config': initial_config, 'old_environment': env.read_text(),
+                   'new_environment': new_environment, 'active': active, 'gateway_files': old_files,
+                   'previous_success': last.read_text() if last.exists() else None, 'record_id': record_id}
+    atomic_private_write(directory / 'pending.json', json.dumps(transaction) + '\n')
+    try:
+        progress.stage('switching_release')
+        write_caddy_files(gateway, blue_green().gateway_files(base, slot))
+        compose = compose_command(root, env)
+        runner.run(compose + ['exec', '-T', 'web', 'caddy', 'validate', '--config',
+                              blue_green().MOUNT + '/Caddyfile', '--adapter', 'caddyfile'])
+        runner.run(['git', 'checkout', '--detach', payload['commit']])
+        atomic_private_write(env, new_environment)
+        reload_gateway(root, runner)
+        progress.stage('health_checks')
+        health(root, runner)
+        check_worktree(runner)
+        check_stable_files(initial_config, {str(env)})
+        accepted = capture_local_config(root, runner)
+        record = {'commit': payload['commit'], 'images': payload['images'], 'previous_commit': old_commit,
+                  'snapshot': record_id, 'backup': None, 'deployment_mode': 'online',
+                  'schema_commit': active['schema_commit'], 'slot': slot,
+                  'code_mode': settings.get('MW_CODE_MODE', 'image'),
+                  'bind_strategy': 'versioned' if source else None,
+                  'source_directory': str(source) if source else None}
+        (state / 'history').mkdir(mode=0o700, exist_ok=True)
+        atomic_private_write(state / 'history' / (record_id + '.json'), json.dumps(record) + '\n')
+        atomic_private_write(last, json.dumps(record) + '\n')
+        atomic_private_write(directory / 'active.json', json.dumps({
+            'slot': slot, 'commit': payload['commit'], 'schema_commit': active['schema_commit']}) + '\n')
+        save_config_baseline(state, accepted, 'Online application release; database unchanged')
+        (directory / 'pending.json').unlink()
+        # Retain the previous slot, including long-running requests and source.
+        # Reuse is allowed only after its incoming connections have drained.
+        print('Online deployment healthy: ' + payload['commit'] + '; previous slot retained', flush=True)
+    except Exception:
+        try:
+            recover_online(root, state, runner, settings, health)
+            progress.stage('rolled_back', 'rolled_back', 'application_restored_database_preserved')
+        except Exception:
+            progress.stage('rolling_back', 'failed', 'rollback_failed')
+            print('Online recovery needs attention; both slots retained. Run --recover-online locally.', file=sys.stderr)
+        raise
+
+
 
 class DeploymentProgress:
     """Fixed public stage names and timestamps only; no command output or credentials."""
@@ -462,16 +708,40 @@ def _deploy(payload, root, state, runner, health, progress):
     live = mode == 'bind' and strategy == 'live'
     if live and Path(settings.get('MW_SOURCE_DIRECTORY', '')).resolve() != root.resolve():
         raise RuntimeError('Live production source must be the application checkout')
+    enabled = settings.get('MW_ZERO_DOWNTIME') == '1'
+    directory = online_directory(settings)
+    if enabled and live:
+        raise RuntimeError('Blue/green requires image mode or versioned bind source; live editing cannot be isolated')
+    if enabled and mode == 'image':
+        for service in ('php', 'web'):
+            for volume in project_config.get('services', {}).get(service, {}).get('volumes', []):
+                if volume.get('type') == 'bind' and volume['target'] in (
+                        '/var/www/mediawiki', '/opt/farm', '/var/www/mediawiki/resources',
+                        '/var/www/mediawiki/extensions', '/var/www/mediawiki/skins'):
+                    raise RuntimeError('Image blue/green cannot use bind-mounted application source; remove source overlays or select versioned bind mode')
+    if enabled and (directory / 'pending.json').exists():
+        raise RuntimeError('Interrupted online deployment; run --recover-online locally first')
+    ready = enabled and (directory / 'compose.json').is_file() and (directory / 'active.json').is_file()
+    if ready:
+        active = json.loads((directory / 'active.json').read_text())
+        if active.get('commit') != old_commit or active.get('slot') not in ('blue', 'green'):
+            raise RuntimeError('Online routing and checked-out release do not match')
+    safe = online_changes(runner, old_commit, commit) if enabled else False
+    requested_mode = payload.get('mode', 'auto')
+    online = ready and safe and requested_mode != 'maintenance'
+    print('Deployment mode: ' + ('online (public assets only)' if online else 'maintenance (backup and database updates)'), flush=True)
     last = state / "last-success.json"
     previous_success = last.read_text() if last.exists() else None
     if last.exists():
         previous = json.loads(last.read_text())
         source_matches = mode == 'image' or (live and previous.get('bind_strategy') == 'live') or (not live and settings.get('MW_SOURCE_DIRECTORY') == str(state / 'releases' / commit)
                                              and (state / 'releases' / commit / 'release.json').is_file())
-        if previous.get("commit") == commit and previous.get("images") == payload["images"] and previous.get('code_mode', 'image') == mode and source_matches:
+        if previous.get("commit") == commit and previous.get("images") == payload["images"] and previous.get('code_mode', 'image') == mode and source_matches and (not enabled or ready):
             health(root, runner)
             print("This release is already deployed and healthy", flush=True)
             return
+    if requested_mode == 'online' and not online:
+        raise RuntimeError('Online release requires an initialized gateway and only approved public-asset changes; use maintenance mode')
     new_environment = image_environment(old_environment, payload["images"])
     if shutil.disk_usage(root).free < 5 * 1024 ** 3:
         raise RuntimeError("Less than 5 GiB free; free storage before deploying")
@@ -500,6 +770,10 @@ def _deploy(payload, root, state, runner, health, progress):
         new_environment = '\n'.join(replacement if line.partition('=')[0] == key else line for line in lines) + '\n'
         if not found:
             new_environment += replacement + '\n'
+    if online:
+        deploy_online(payload, root, state, runner, health, progress, settings, project_config,
+                      initial_config, old_commit, new_environment, source_directory)
+        return
     snapshot = "deploy-" + str(time.time_ns()) + "-" + commit[:12]
     compose = ['docker', 'compose', '--env-file', str(env_file)]
     # Downloads and source exports can take time. Recheck immediately before
@@ -520,6 +794,8 @@ def _deploy(payload, root, state, runner, health, progress):
         progress.stage("backup")
         frozen = True
         runner.run(["scripts/snapshot", "--env-file", str(env_file), "--keep-stopped", snapshot], input="")
+        if enabled:
+            disable_online(settings)
         check_local_config(root, state, runner, initial_config)
         check_worktree(runner)
         backup = root / "backups" / snapshot
@@ -560,10 +836,14 @@ def _deploy(payload, root, state, runner, health, progress):
         runner.run(compose + ["up", "-d", "--no-build", "--wait", "--wait-timeout", "180"] + (["--scale", "code=0"] if live else []))
         progress.stage("health_checks")
         health(root, runner)
+        if enabled:
+            enable_online(root, state, runner, settings, payload['images'], commit, source_directory, health=health)
+            health(root, runner)
         check_worktree(runner)
         check_local_config(root, state, runner, intended_config)
         record = {"commit": commit, "images": payload["images"], "previous_commit": old_commit, "snapshot": snapshot,
-                  'code_mode': mode, 'bind_strategy': strategy if mode == 'bind' else None, 'source_directory': str(source_directory) if source_directory else None}
+                  'code_mode': mode, 'bind_strategy': strategy if mode == 'bind' else None, 'source_directory': str(source_directory) if source_directory else None,
+                  'deployment_mode': 'maintenance', 'schema_commit': commit}
         history = state / "history"
         history.mkdir(mode=0o700, exist_ok=True)
         atomic_private_write(history / (snapshot + ".json"), json.dumps(record, indent=2) + "\n")
@@ -597,7 +877,7 @@ def _deploy(payload, root, state, runner, health, progress):
                         initial_config=initial_config, tracked_paths=tracked_paths,
                         live=live, database_started=database_started,
                         previous_success=previous_success, code_changed=changed,
-                        project=project)
+                        project=project, online_settings=settings)
                     recovered = True
                 except Exception:
                     progress.stage('rolling_back', 'failed', 'rollback_failed')
@@ -689,6 +969,8 @@ def manual_rollback(payload, root, state, runner, health=probe):
     try:
         progress.stage('backup')
         runner.run(['scripts/snapshot', '--env-file', str(root / '.env.production'), '--keep-stopped', snapshot], input='')
+        if settings.get('MW_ZERO_DOWNTIME') == '1':
+            disable_online(settings)
         atomic_private_write(root / 'backups' / snapshot / 'production.env', old_env)
         if strategy == 'live':
             runner.run(compose + ['stop', 'code'])
@@ -713,6 +995,10 @@ def manual_rollback(payload, root, state, runner, health=probe):
         runtime = [*WRITERS, 'creation-events']
         runner.run(compose + ['up', '-d', '--no-deps', '--no-build', '--pull', 'never', '--wait', '--wait-timeout', '180', *runtime])
         health(root, runner)
+        if settings.get('MW_ZERO_DOWNTIME') == '1':
+            enable_online(root, state, runner, settings, record['images'], target,
+                          Path(source) if mode == 'bind' else None, health=health)
+            health(root, runner)
         check_worktree(runner)
         if strategy == 'live': runner.run(compose + ['up', '-d', '--no-deps', '--no-build', '--pull', 'never', 'code'])
         accepted = capture_local_config(root, runner)
@@ -728,6 +1014,8 @@ def manual_rollback(payload, root, state, runner, health=probe):
     except Exception:
         try:
             stop_application(runner, project, mode == 'bind' and strategy == 'live')
+            if settings.get('MW_ZERO_DOWNTIME') == '1':
+                disable_online(settings)
             if changed:
                 runner.run(['git', 'checkout', '--detach', current])
                 atomic_private_write(root / '.env.production', old_env)
@@ -767,6 +1055,14 @@ def main():
             check_local_config(root, state, Runner(root))
             print('Local configuration matches the accepted baseline')
             return
+        if sys.argv[1] == '--recover-online':
+            runner = Runner(root)
+            resolved = runner.run(['docker', 'compose', '--env-file', str(root / '.env.production'),
+                                   'config', '--environment'], capture=True)
+            settings = dict(line.split('=', 1) for line in resolved.splitlines() if '=' in line)
+            recover_online(root, state, runner, settings)
+            print('Previous online release restored; database unchanged')
+            return
         body = sys.stdin.read(16385)
         if len(body) > 16384:
             raise ValueError("Deployment request is too large")
@@ -780,6 +1076,7 @@ def main():
         last = state / "last-success.json"
         source = root / "scripts/deploy-production.py"
         if deployed and last.exists() and json.loads(last.read_text()).get("commit") == payload["commit"] and source.exists():
+            atomic_private_write(Path('/usr/local/libexec/blue_green.py'), (root / 'scripts/blue_green.py').read_text())
             atomic_private_write(Path("/usr/local/libexec/cloudwiki-deploy-production.py"), source.read_text())
             ssh_source = root / 'scripts/deploy-ssh'
             if ssh_source.is_file():

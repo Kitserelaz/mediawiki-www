@@ -41,7 +41,7 @@
 		const language = document.querySelector( 'select[name="wplanguage"]' );
 
 		const api = new mw.Api();
-		let automatic = autoField.value === '1' || !subdomain.value.trim();
+		let automatic = autoField.value === '1';
 		autoField.value = automatic ? '1' : '0';
 		let suggested = '';
 		let lastSubdomainValue = subdomain.value;
@@ -173,18 +173,13 @@
 				return;
 			}
 			lastSubdomainValue = normalized;
-			automatic = normalized === '';
-			autoField.value = automatic ? '1' : '0';
+			automatic = false;
+			autoField.value = '0';
 			cancel( channels.suggest );
 			suggested = '';
 			useSuggestion.hidden = true;
 			suggestionStatus.textContent = '';
-			if ( automatic ) {
-				cancel( channels.check );
-				schedule( true );
-			} else {
-				schedule( false );
-			}
+			schedule( false );
 		}
 		subdomain.addEventListener( 'input', onSubdomainInput );
 		subdomain.addEventListener( 'compositionend', onSubdomainInput );

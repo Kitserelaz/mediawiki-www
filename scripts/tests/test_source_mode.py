@@ -22,6 +22,7 @@ def load(name, filename):
 
 selector = load('compose_selector', 'compose')
 releases = load('source_release', 'source-release.py')
+blue_green = load('blue_green', 'blue_green.py')
 
 
 def source_fixture(directory):
@@ -46,11 +47,17 @@ class SourceModeTest(unittest.TestCase):
         releases.prepare_mountpoints(self.source)
         self.environment = self.path / 'farm.env'
 
-    def configuration(self, mode, source=None, production=False):
+    def configuration(self, mode, source=None, production=False, online=False):
         self.environment.write_text('MW_CODE_MODE=' + mode + '\nMW_ENV=' + ('production' if production else 'development') +
                                     '\nMW_DOMAIN=example.test\nMW_PUBLIC_HOSTS=meta.example.test\nACME_EMAIL=admin@example.test\n' +
                                     ('COMPOSE_FILE=compose.yaml:compose.production.yaml\n' if production else 'COMPOSE_FILE=compose.yaml\n') +
                                     'MW_SOURCE_DIRECTORY=' + json.dumps(str(source or self.source)) + '\n')
+        if online:
+            directory = self.path / 'online'
+            directory.mkdir(exist_ok=True)
+            (directory / 'compose.json').write_text(json.dumps(blue_green.gateway_override(directory / 'gateway')))
+            with self.environment.open('a') as stream:
+                stream.write('MW_ZERO_DOWNTIME=1\nMW_BLUE_GREEN_DIRECTORY=' + json.dumps(str(directory)) + '\n')
         with patch.dict(os.environ, {}, clear=True):
             # Preserve executable lookup while excluding the caller's Compose settings.
             os.environ['PATH'] = os.defpath + ':/opt/homebrew/bin:/usr/local/bin'
@@ -96,6 +103,24 @@ class SourceModeTest(unittest.TestCase):
     def test_unknown_mode_is_rejected(self):
         with self.assertRaises(ValueError):
             self.configuration('oops')
+
+    def test_online_gateway_override_is_merged_in_image_mode(self):
+        config = self.configuration('image', production=True, online=True)
+        web = config['services']['web']
+        self.assertIn('/etc/caddy/blue-green/Caddyfile', web['command'])
+        volumes = {v['target']: v for v in web['volumes']}
+        self.assertTrue(volumes['/etc/caddy/blue-green']['read_only'])
+        self.assertIn('/data', volumes)
+        self.assertFalse(any(v['target'] == '/var/www/mediawiki' for v in config['services']['php']['volumes']))
+
+    def test_online_gateway_preserves_versioned_source_mounts(self):
+        source = self.path / ('b' * 40)
+        self.source.rename(source)
+        (source / 'release.json').write_text(json.dumps({'commit': 'b' * 40}))
+        config = self.configuration('bind', source, production=True, online=True)
+        self.assertIn('/etc/caddy/blue-green/Caddyfile', config['services']['web']['command'])
+        mounts = {v['target']: v for v in config['services']['php']['volumes']}
+        self.assertEqual(Path(mounts['/var/www/mediawiki']['source']), source / 'mediawiki')
 
     def test_production_refuses_live_working_tree(self):
         with self.assertRaisesRegex(ValueError, 'versioned release'):

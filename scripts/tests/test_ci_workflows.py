@@ -110,9 +110,20 @@ class WorkflowTests(unittest.TestCase):
             self.assertIn(condition,prepare['if'])
         steps=self.deploy['jobs']['deploy']['steps']
         download=steps[0]['with']
-        self.assertEqual(download['run-id'],'${{ github.event.workflow_run.id }}')
+        self.assertEqual(download['run-id'],'${{ needs.prepare.outputs.run_id }}')
+        selection = prepare['steps'][0]['with']['script']
+        self.assertIn("run.conclusion !== 'success'", selection)
+        self.assertIn("run.head_sha !== process.env.PANEL_COMMIT", selection)
         self.assertIn("manifest['commit'] == os.environ['EXPECTED_COMMIT']",steps[1]['run'])
         self.assertEqual(self.deploy['jobs']['deploy']['environment']['name'],'production')
+
+    def test_release_mode_defaults_to_auto_and_is_forwarded_to_the_deployer(self):
+        setting = self.deploy['on']['workflow_dispatch']['inputs']['deployment_mode']
+        self.assertEqual(setting['default'], 'auto')
+        self.assertEqual(setting['options'], ['auto', 'online', 'maintenance'])
+        operation = self.deploy['jobs']['deploy']['steps'][1]
+        self.assertEqual(operation['env']['DEPLOYMENT_MODE'], "${{ inputs.deployment_mode || 'auto' }}")
+        self.assertIn("mode=os.environ['DEPLOYMENT_MODE']", operation['run'])
 
 
     def test_ssh_credential_files_get_real_newlines(self):

@@ -347,11 +347,14 @@ def snapshot(label):
     return folder
 
 
+RUNUSER = shutil.which('runuser') or '/usr/sbin/runuser'
+
+
 def php_manage(action):
     if action not in ('preflight','update','refresh','list'): raise ValueError('Unsupported management action')
     env = dict(os.environ, **environment())
     env.pop('CLOUDWIKI_GITHUB_TOKEN', None)
-    command = ['runuser','-u','www-data','--','php',str(active()/'docker/mediawiki/manage.php'),action]
+    command = [RUNUSER,'-u','www-data','--','php',str(active()/'docker/mediawiki/manage.php'),action]
     return run(command, cwd=active()/'mediawiki', env=env, capture=False, timeout=3600)
 
 
@@ -361,7 +364,7 @@ def probe():
     for command in [['php',str(active()/'docker/mediawiki/health.php')],
                     ['php',str(active()/'docker/mediawiki/dispatch-health.php'),'jobs'],
                     ['php',str(active()/'docker/mediawiki/dispatch-health.php'),'provision']]:
-        run(['runuser','-u','www-data','--',*command], env=dict(os.environ,**environment()))
+        run([RUNUSER,'-u','www-data','--',*command], env=dict(os.environ,**environment()))
     # Probe through the actual HAProxy TLS entry point with verified public certificates.
     for host in ['meta','auth','counter']:
         domain=host+'.'+environment()['MW_DOMAIN']
@@ -403,6 +406,34 @@ def deploy(commit, token=None):
         if release==previous:
             progress(commit,'complete','success')
             return {'message':'This commit is already active','commit':commit,'skipped':True}
+        diff=[name for name in git('diff','--name-only','-z',previous.name,commit).decode('utf8','surrogateescape').split('\0') if name]
+        has_schema=any(name.endswith('.sql') for name in diff)
+        last_success={}
+        try: last_success=json.loads((STATE/'last-success.json').read_text())
+        except (OSError,ValueError): pass
+        schema_commit=commit if has_schema else last_success.get('schema_commit',previous.name)
+        if not has_schema:
+            progress(commit,'activating')
+            try:
+                assert_clean()
+                activate_link(release)
+                systemctl('restart',APP_UNITS)
+                time.sleep(5)
+                probe()
+                record={'runtime':'native','commit':commit,'previous_commit':previous.name,'snapshot':None,
+                        'created':int(time.time()),'schema_commit':schema_commit,'deployment_mode':'online'}
+                write_json(STATE/'history'/('native-'+str(time.time_ns())+'.json'),record)
+                write_json(STATE/'last-success.json',record)
+                source_before=git('rev-parse','HEAD').decode().strip()
+                git('merge','--ff-only',commit)
+                editor_permissions(source_before,commit)
+                progress(commit,'complete','success')
+                return {'message':'Native production release activated (online)','commit':commit}
+            except Exception:
+                activate_link(previous)
+                systemctl('restart',APP_UNITS)
+                progress(commit,'recovered','failed','Previous application resumed after online activation failure')
+                raise
         capacity(size(DATA))
         progress(commit,'maintenance')
         maintenance(True)
@@ -424,7 +455,7 @@ def deploy(commit, token=None):
             time.sleep(5)
             probe()
             record={'runtime':'native','commit':commit,'previous_commit':previous.name,'snapshot':str(backup),
-                    'created':int(time.time()),'schema_commit':commit,'deployment_mode':'maintenance'}
+                    'created':int(time.time()),'schema_commit':schema_commit,'deployment_mode':'maintenance'}
             write_json(STATE/'history'/('native-'+str(time.time_ns())+'.json'),record)
             write_json(STATE/'last-success.json',record)
             # Keep the operator checkout aligned, only after the successful switch.

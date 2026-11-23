@@ -28,18 +28,29 @@ test('browser login propagates between local wikis and global logout ends it', a
     // Allow MediaWiki's background SSO request to establish this host's cookie.
     await expect.poll(() => currentUser(page), { timeout: 15000 }).toBe(username);
   }
-  await page.goto('https://meta.localhost/wiki/Special:CreateWiki', {waitUntil:'domcontentloaded'});
-  await expect(page.locator('[name=wpdbname]')).toBeVisible();
   const uiWiki = `${process.env.DOCKER_FIXTURE_PREFIX || 'docker'}uismoke`;
+  const creationQuery = new URLSearchParams({wpsitename:'Docker browser fixture', wpdbname:uiWiki, wpsubdomainauto:'0'});
+  await page.goto(`https://meta.localhost/wiki/Special:CreateNewWiki/wiki?${creationQuery}`, {waitUntil:'domcontentloaded'});
+  const subdomain = page.locator('[name=wpdbname]');
+  await expect(subdomain).toBeVisible();
+  // Clearing a manual subdomain must survive the next suggestion response.
+  await subdomain.fill('');
+  await expect(page.locator('[name=wpsubdomainauto]')).toHaveValue('0');
+  const renamed = 'Docker browser fixture renamed';
+  await Promise.all([
+    page.waitForResponse(response => {
+      const url = new URL(response.url());
+      return url.searchParams.get('action') === 'skywikisubdomain' && url.searchParams.get('name') === renamed;
+    }),
+    page.locator('[name=wpsitename]').fill(renamed),
+  ]);
+  await expect(subdomain).toHaveValue('');
   const uiApi = `https://${uiWiki}.localhost/api.php?action=query&meta=siteinfo&format=json`;
   const existing = await page.request.get(uiApi);
   if (existing.status() !== 200) {
-    await page.locator('[name=wpdbname]').fill(uiWiki + 'wiki');
-    await page.locator('[name=wprequester]').fill(username);
+    await subdomain.fill(uiWiki);
     await page.locator('[name=wpsitename]').fill('Docker browser fixture');
-    await page.locator('[name=wpreason]').fill('Verify fresh administrator farm creation and worker provisioning');
     await page.locator('form').filter({has:page.locator('[name=wpdbname]')}).locator('button[type=submit], input[type=submit]').click();
-    await expect(page.locator('.cdx-message--success').first()).toContainText('The wiki was successfully created.');
   }
   await expect.poll(async () => {
     const response = await page.request.get(uiApi);

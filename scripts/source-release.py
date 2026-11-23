@@ -37,15 +37,29 @@ def export_release(commit, directory, root=ROOT):
         staging = Path(temporary).resolve()
         process = subprocess.Popen(['git', 'archive', '--format=tar', commit, 'mediawiki', 'docker/mediawiki'],
                                    cwd=root, stdout=subprocess.PIPE)
+        links = []
         try:
             with tarfile.open(fileobj=process.stdout, mode='r|') as archive:
                 for member in archive:
                     target = (staging / member.name).resolve()
-                    if not target.is_relative_to(staging) or not (member.isfile() or member.isdir()):
-                        raise ValueError('Unsafe entry in source archive')
-                    archive.extract(member, staging)
+                    if not target.is_relative_to(staging):
+                        raise ValueError('Unsafe entry in source archive: ' + member.name)
+                    if member.issym():
+                        destination = Path(member.linkname)
+                        if destination.is_absolute() or not (target.parent / destination).resolve().is_relative_to(staging):
+                            raise ValueError('Unsafe symbolic link in source archive: ' + member.name)
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        target.symlink_to(member.linkname)
+                        links.append(target)
+                    elif member.isfile() or member.isdir():
+                        archive.extract(member, staging)
+                    else:
+                        raise ValueError('Unsafe entry in source archive: ' + member.name)
             if process.wait() != 0:
                 raise RuntimeError('Could not export release source')
+            for link in links:
+                if not link.resolve().is_relative_to(staging) or not link.exists():
+                    raise ValueError('Unresolved symbolic link in source archive: ' + str(link.relative_to(staging)))
         finally:
             process.stdout.close()
             if process.poll() is None:

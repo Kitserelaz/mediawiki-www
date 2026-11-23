@@ -167,6 +167,31 @@ class SourceModeTest(unittest.TestCase):
         self.assertTrue((output / 'mediawiki/docker/mediawiki').is_dir())
         releases.export_release(commit, output, repository)
 
+    def test_export_preserves_internal_symlinks_and_rejects_escapes(self):
+        for destination, allowed in [('config.prod.yaml', True), ('../../../../outside', False), ('/etc/passwd', False)]:
+            with self.subTest(destination=destination), tempfile.TemporaryDirectory() as temporary:
+                repository = Path(temporary) / 'repo'
+                repository.mkdir()
+                source_fixture(repository)
+                folder = repository / 'mediawiki/resources'
+                (folder / 'config.prod.yaml').write_text('tracked configuration')
+                (folder / 'config.yaml').symlink_to(destination)
+                def git(*args):
+                    return subprocess.check_output(['git', *args], cwd=repository, text=True).strip()
+                git('init', '-q')
+                git('add', '.')
+                git('-c', 'user.name=Test', '-c', 'user.email=test@example.test', 'commit', '-qm', 'Symlink fixture')
+                commit = git('rev-parse', 'HEAD')
+                output = Path(temporary) / 'releases' / commit
+                if allowed:
+                    releases.export_release(commit, output, repository)
+                    self.assertTrue((output / 'mediawiki/resources/config.yaml').is_symlink())
+                    self.assertEqual((output / 'mediawiki/resources/config.yaml').read_text(), 'tracked configuration')
+                else:
+                    with self.assertRaisesRegex(ValueError, 'Unsafe symbolic link'):
+                        releases.export_release(commit, output, repository)
+                    self.assertFalse(output.exists())
+
 
 if __name__ == '__main__':
     unittest.main()

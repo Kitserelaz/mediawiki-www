@@ -283,6 +283,20 @@ $wgConf->settings += [
 	],
 	'wgCreateWikiDisallowedSubdomains' => [
 		'default' => [
+			// Farm services and infrastructure names reserved for future use.
+			'api',
+			'cdn',
+			'smtp',
+			'autodiscover',
+			'dev',
+			'staging',
+			'auth',
+			'counter',
+			'code',
+			'diff',
+			'admin',
+			'fallback',
+			'custom-domains',
                         '(.*)skywiki(.*)',
 			'subdomain',
 			'example',

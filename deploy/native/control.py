@@ -117,7 +117,7 @@ def capture_config():
     paths = [p for p in CONFIG.rglob('*') if p.is_file() and not p.is_symlink()]
     paths += [p for p in Path('/etc/systemd/system').glob('cloudwiki-*') if p.is_file()]
     paths += [p for p in Path('/etc/systemd/system').glob('cloudwiki-*.service.d/*') if p.is_file()]
-    paths += [Path('/etc/haproxy/haproxy.cfg')]
+    paths += [p for p in [Path('/etc/haproxy/haproxy.cfg'),Path('/etc/apparmor.d/local/mariadbd')] if p.exists()]
     return {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(paths)}
 
 
@@ -143,6 +143,13 @@ def capacity(required):
         raise RuntimeError('Insufficient disk space for staging, a recovery snapshot, and 2 GiB headroom')
 
 
+def file_hash(path):
+    h=hashlib.sha256()
+    with path.open('rb') as stream:
+        for chunk in iter(lambda:stream.read(1024*1024),b''):h.update(chunk)
+    return h.hexdigest()
+
+
 def size(path):
     return int(run(['du', '-sb', str(path)]).split()[0]) if path.exists() else 0
 
@@ -159,12 +166,13 @@ def build(commit, token=None):
     destination.mkdir(parents=True, mode=0o755)
     destination.chmod(0o755)
     # git archive contains repository-controlled symlinks; extract with Python's data filter.
-    archive = destination.parent / (commit+'.tar')
+    archive = subprocess.Popen(['git', '-c', 'safe.directory=/var/www', '-C', str(ROOT), 'archive', '--format=tar', commit], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     try:
-        run(['git', '-c', 'safe.directory=/var/www', '-C', str(ROOT), 'archive', '--format=tar', '-o', str(archive), commit])
-        with tarfile.open(archive) as source: source.extractall(destination, filter='data')
+        with tarfile.open(fileobj=archive.stdout, mode='r|') as source: source.extractall(destination, filter='data')
+        if archive.wait(): raise RuntimeError('Source export failed')
         wire_release(destination)
         build_counter(destination)
+        deduplicate_release(destination)
         run(['php', '-l', str(destination/'mediawiki/LocalSettings.php')])
         write_json(destination/'release.json', {'commit': commit, 'runtime': 'native', 'created': int(time.time())})
         # No dependency installer or application code receives the GitHub token.
@@ -173,7 +181,38 @@ def build(commit, token=None):
     except Exception:
         shutil.rmtree(destination, ignore_errors=True)
         raise
-    finally: archive.unlink(missing_ok=True)
+    finally:
+        archive.stdout.close()
+        if archive.poll() is None:
+            archive.terminate();archive.wait()
+
+
+
+def deduplicate_release(release, reference=None):
+    """Share only identical immutable files; runtime state and editor files are excluded."""
+    import filecmp, stat
+    if reference is None:
+        if (BASE/'current').exists(): reference=active()
+        else:
+            record=json.loads((STATE/'last-success.json').read_text())
+            reference=Path(record.get('source_directory','/nonexistent'))
+    reference=Path(reference).resolve()
+    if reference==release.resolve() or not reference.is_dir():return 0
+    if not (str(reference).startswith(str(BASE/'releases')+'/') or str(reference).startswith(str(STATE/'releases')+'/')):
+        raise RuntimeError('Immutable reference must be a recorded release directory')
+    saved=0
+    for current,dirs,files in os.walk(release,followlinks=False):
+        dirs[:]=[name for name in dirs if not (Path(current)/name).is_symlink()]
+        for name in files:
+            target=Path(current)/name;old=reference/target.relative_to(release)
+            if target.is_symlink() or old.is_symlink() or not old.is_file():continue
+            a=target.stat();b=old.stat()
+            if a.st_uid!=0 or b.st_uid!=0 or b.st_mode & 0o022 or a.st_dev!=b.st_dev or a.st_size!=b.st_size or a.st_ino==b.st_ino:continue
+            if not stat.S_ISREG(a.st_mode) or not stat.S_ISREG(b.st_mode):continue
+            if not filecmp.cmp(target,old,shallow=False):continue
+            temporary=target.with_name(target.name+'.native-link')
+            os.link(old,temporary);os.replace(temporary,target);saved+=a.st_size
+    return saved
 
 
 def wire_release(release):
@@ -229,7 +268,7 @@ def snapshot(label):
     with tarfile.open(folder/'configuration.tar.gz','w:gz') as archive: archive.add(CONFIG, arcname='configuration')
     write_json(folder/'manifest.json', {'runtime':'native','commit':json.loads((active()/'release.json').read_text())['commit'],
              'created':int(time.time()),'databases':databases,
-             'sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in folder.iterdir() if p.is_file()}})
+             'sha256':{p.name:file_hash(p) for p in folder.iterdir() if p.is_file()}})
     return folder
 
 

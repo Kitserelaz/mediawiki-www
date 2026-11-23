@@ -1,6 +1,10 @@
 #!/bin/sh
 # This forced SSH command never exposes local configuration-acceptance commands.
 set -eu
+if [ -f /etc/cloudwiki/runtime.json ]; then
+  echo "Native production is deployed through the admin panel" >&2
+  exit 1
+fi
 case "${SSH_ORIGINAL_COMMAND:-}" in
   deploy-dashboard) exec sudo -n /usr/bin/python3 /usr/local/libexec/cloudwiki-deploy-dashboard.py ;;
   rollback) exec sudo -n /usr/bin/python3 /usr/local/libexec/cloudwiki-deploy-production.py rollback ;;

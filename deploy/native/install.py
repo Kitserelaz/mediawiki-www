@@ -183,6 +183,15 @@ def configure(source):
     write(c.CONFIG/'production.env',''.join(key+'='+json.dumps(value)+'\n' for key,value in sorted(env.items())),0o600)
     schedule = (source/'docker/maintenance.json').read_text().replace('/opt/farm','/srv/cloudwiki/current/docker/mediawiki').replace('/var/www/mediawiki','/srv/cloudwiki/current/mediawiki')
     write(c.CONFIG/'maintenance.json', schedule)
+    profile=Path('/etc/apparmor.d/mariadbd')
+    if profile.exists():
+        local=Path('/etc/apparmor.d/local/mariadbd')
+        text=local.read_text() if local.exists() else ''
+        start='# BEGIN CLOUDWIKI NATIVE\n';end='# END CLOUDWIKI NATIVE\n'
+        if start in text: text=text.split(start)[0]+text.split(end,1)[1]
+        rules='/etc/cloudwiki/mysql.cnf r,\n/var/lib/cloudwiki-native/mysql/ r,\n/var/lib/cloudwiki-native/mysql/** rwk,\n/run/cloudwiki-db/ rw,\n/run/cloudwiki-db/** rwk,\n'
+        write(local,text+'\n'+start+rules+end)
+        c.run(['apparmor_parser','-r',str(profile)])
     write(c.CONFIG/'mysql.cnf','''[mysqld]
 user=cloudwiki-db
 bind-address=127.0.0.1

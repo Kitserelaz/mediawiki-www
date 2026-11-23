@@ -36,6 +36,7 @@ def inventory():
     containers=json.loads(c.run(['docker','inspect',*c.run(['docker','ps','-aq']).decode().split()]))
     result['containers']=[x['Name'].lstrip('/') for x in containers if x['State']['Running'] and x['Name'].startswith(('/cloudwiki-production-','/cloudwiki-monitoring-'))]
     result['source_commit']=c.git('rev-parse','HEAD').decode().strip()
+    result['active_commit']=json.loads((c.STATE/'last-success.json').read_text()).get('commit',result['source_commit'])
     return result
 
 
@@ -93,13 +94,15 @@ def export_database(destination):
 def restore_database(backup,databases):
     c.systemctl('stop',['mariadb'])
     datadir=c.DATA/'mysql'
-    if (datadir/'mysql').exists():
+    if any(datadir.iterdir()):
         # This is exclusively the new migration instance, never the existing host database.
         if not (MIGRATION/'inventory.json').exists():raise RuntimeError('Migration inventory required before replacing staged data')
         for child in datadir.iterdir():
             if child.is_dir():shutil.rmtree(child)
             else:child.unlink()
-    c.run(['mariadb-install-db','--no-defaults','--user=cloudwiki-db','--datadir='+str(datadir),'--auth-root-authentication-method=socket'])
+    with (MIGRATION/'initialize.log').open('wb') as output:
+        result=subprocess.run(['runuser','-u','cloudwiki-db','--','mariadb-install-db','--no-defaults','--datadir='+str(datadir),'--auth-root-authentication-method=socket'],stdout=output,stderr=subprocess.STDOUT)
+    if result.returncode:raise RuntimeError('Native database initialization failed; see private initialize.log')
     c.systemctl('start',['mariadb'])
     for _ in range(30):
         if Path('/run/cloudwiki-db/mysql.sock').exists():break
@@ -243,7 +246,7 @@ def cutover():
         inventory={'runtime':'native','project':'cloudwiki-production','services':[],
                    'units':['haproxy.service','wiki-admin-panel.service',*native_units]}
         c.write_json(Path('/etc/cloudwiki-admin-agent.json'),inventory)
-        c.write_json(c.STATE/'last-success.json',{'runtime':'native','commit':staged['commit'],'previous_commit':saved['source_commit'],
+        c.write_json(c.STATE/'last-success.json',{'runtime':'native','commit':staged['commit'],'previous_commit':saved.get('active_commit',saved['source_commit']),
                      'snapshot':str(MIGRATION),'created':int(time.time()),'schema_commit':staged['commit']})
         c.write_json(c.STATE/'history'/('native-'+str(time.time_ns())+'.json'),json.loads((c.STATE/'last-success.json').read_text()))
         c.save_baseline('Native migration installed by SSH operator')

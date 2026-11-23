@@ -23,6 +23,8 @@ def consume_request(path):
 
 
 def main():
+    if Path('/etc/cloudwiki/runtime.json').exists():
+        raise RuntimeError('Publish source edits and use Deploy in the admin panel')
     control = STATE / 'editor/control'
     with (STATE / 'deploy.lock').open('a') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)

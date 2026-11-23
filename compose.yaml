@@ -171,7 +171,7 @@ services:
       - redis:/snapshot/redis
       - caddy-data:/snapshot/caddy
   database:
-    image: mariadb:11.4.10
+    image: mariadb:11.8.6
     environment:
       MARIADB_ROOT_PASSWORD_FILE: /run/secrets/db-root-password
     secrets: [db-root-password]
@@ -183,7 +183,7 @@ services:
       retries: 30
     restart: unless-stopped
   redis:
-    image: redis:7.4.7-alpine
+    image: redis:8.0.5-alpine
     command: [redis-server, --appendonly, 'yes', --appendfsync, everysec]
     volumes: [redis:/data]
     healthcheck:

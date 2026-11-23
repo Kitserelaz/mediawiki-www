@@ -1,6 +1,7 @@
 <?php
 // Shared by the already-initialized creator and the fresh-process repair helper.
-function farmWikiMetadataIsComplete(string $wiki, string $directory = '/var/www/mediawiki/cw_cache'): bool {
+function farmWikiMetadataIsComplete(string $wiki, ?string $directory = null): bool {
+    $directory ??= rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache';
     $data = @(static fn($path) => include $path)("$directory/$wiki.php");
     return is_array($data) && ($data['database'] ?? null) === $wiki
         && isset($data['core']['wgLanguageCode'], $data['core']['wgSitename'], $data['states']['private'])
@@ -39,7 +40,7 @@ function farmProvisionMetadataSourceHashes(): ?array {
         'ManageWikiSettings.php', 'ManageWikiExtensions.php', 'ManageWikiNamespaces.php',
     ];
     foreach ($configurationFiles as $file) {
-        $source[$file] = hash_file('sha256', '/var/www/mediawiki/' . $file);
+        $source[$file] = hash_file('sha256', (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/') . $file);
         if ($source[$file] === false) {
             return null;
         }
@@ -47,7 +48,8 @@ function farmProvisionMetadataSourceHashes(): ?array {
     return $source;
 }
 
-function farmProvisionMetadataFingerprint(string $wiki, string $directory = '/var/www/mediawiki/cw_cache'): ?string {
+function farmProvisionMetadataFingerprint(string $wiki, ?string $directory = null): ?string {
+    $directory ??= rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache';
     if (!preg_match('/^[a-z0-9][a-z0-9_]{0,63}$/D', $wiki)) {
         return null;
     }
@@ -71,7 +73,8 @@ function farmProvisionMetadataFingerprint(string $wiki, string $directory = '/va
     }
 }
 
-function farmRecordPreparedWikiMetadata(string $wiki, string $directory = '/var/www/mediawiki/cw_cache'): void {
+function farmRecordPreparedWikiMetadata(string $wiki, ?string $directory = null): void {
+    $directory ??= rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache';
     $fingerprint = farmProvisionMetadataFingerprint($wiki, $directory);
     if ($fingerprint === null) {
         throw new RuntimeException('Incomplete provisioning metadata for ' . $wiki);
@@ -93,7 +96,8 @@ function farmRecordPreparedWikiMetadata(string $wiki, string $directory = '/var/
     }
 }
 
-function farmPreparedWikiMetadataIsCurrent(string $wiki, string $directory = '/var/www/mediawiki/cw_cache'): bool {
+function farmPreparedWikiMetadataIsCurrent(string $wiki, ?string $directory = null): bool {
+    $directory ??= rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache';
     if (!preg_match('/^[a-z0-9][a-z0-9_]{0,63}$/D', $wiki)) {
         return false;
     }
@@ -114,13 +118,13 @@ function farmPrepareWikiMetadata(MediaWiki\MediaWikiServices $services, string $
     if (!farmWikiMetadataIsComplete($wiki)) {
         throw new RuntimeException('Incomplete provisioning metadata for ' . $wiki);
     }
-    @unlink('/var/www/mediawiki/cw_cache/config-' . $wiki . '.php');
+    @unlink((rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache/config-') . $wiki . '.php');
     farmRecordPreparedWikiMetadata($wiki);
 }
 
 function farmPublishPreparedWikiMetadata(MediaWiki\MediaWikiServices $services, string $wiki, ?array $creation = null): void {
     require_once __DIR__ . '/dispatch.php';
-    $lock = @fopen('/var/www/mediawiki/cw_cache/.provision-' . $wiki . '.metadata.lock', 'ce');
+    $lock = @fopen((rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache/.provision-') . $wiki . '.metadata.lock', 'ce');
     $locked = is_resource($lock) && flock($lock, LOCK_EX);
     try {
         // Publish first. If this process dies during preparation, its lock is

@@ -2,9 +2,6 @@
 name: Production deployment
 run-name: ${{ github.event_name == 'workflow_dispatch' && format('CloudWiki {0} {1}', inputs.action, inputs.operation_id) || 'Automatic production deployment' }}
 'on':
-  workflow_run:
-    workflows: [Docker stack]
-    types: [completed]
   workflow_dispatch:
     inputs:
       operation_id:
@@ -49,11 +46,7 @@ jobs:
       actions: read
       contents: read
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push' &&
-       github.event.workflow_run.head_branch == 'main' &&
-       github.event.workflow_run.head_repository.full_name == github.repository)
+      github.event_name == 'workflow_dispatch' && vars.CLOUDWIKI_LEGACY_DOCKER_DEPLOY == 'true'
     outputs:
       kind: ${{ steps.manifest.outputs.kind }}
       artifact: ${{ steps.manifest.outputs.artifact }}

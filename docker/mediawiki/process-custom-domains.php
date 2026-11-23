@@ -3,7 +3,7 @@
 use MediaWiki\Maintenance\Maintenance;
 use WikiOasis\WikiOasisMagic\CustomDomainConfig;
 
-require '/var/www/mediawiki/maintenance/Maintenance.php';
+require (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/maintenance/Maintenance.php');
 
 final class ProcessCustomDomains extends Maintenance {
 	public function execute() {

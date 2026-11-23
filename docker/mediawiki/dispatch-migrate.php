@@ -7,7 +7,7 @@ if (($argv[1] ?? '') !== '--legacy-markers') {
     exit(1);
 }
 $redis = FarmDispatch::connect();
-$db = new PDO('mysql:host=' . (getenv('MW_DB_HOST') ?: 'database') . ';dbname=wikidb',
+$db = new PDO('mysql:host=' . (getenv('MW_DB_HOST') ?: 'database') . ';port=' . (getenv('MW_DB_PORT') ?: '3306') . ';dbname=wikidb',
     getenv('MW_DB_USER') ?: 'mediawiki', $wgDBpassword, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 $query = $db->prepare('SELECT 1 FROM cw_wikis WHERE wiki_dbname=? AND wiki_deleted=0');
 $count = 0;
@@ -15,7 +15,7 @@ foreach ($redis->hKeys(FarmDispatch::PROVISION_PENDING) as $wiki) {
     if (!FarmDispatch::validWiki($wiki)) { continue; }
     $query->execute([$wiki]);
     if (!$query->fetchColumn()) { continue; }
-    $file = '/var/www/mediawiki/cw_cache/.provision-' . $wiki;
+    $file = (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache/.provision-') . $wiki;
     if (!is_file($file) && file_put_contents($file, gmdate('c')) === false) {
         throw new RuntimeException('Cannot preserve legacy provisioning marker');
     }

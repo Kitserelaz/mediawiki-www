@@ -63,11 +63,11 @@ $farmExtensions = [
     'WikiEditor',
     'cldr',
 ];
-if (getenv('MW_DOCKER')) {
+if ((getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER'))) {
     foreach (['MW_CACHE_PURGE' => 'CFCachePurge', 'MW_NOTIFICATIONS' => 'DiscordNotifications', 'MW_ANALYTICS' => 'MatomoAnalytics'] as $flag => $extension) {
         if (getenv($flag) !== '1') { $farmExtensions = array_values(array_diff($farmExtensions, [$extension])); }
     }
 }
-if (getenv('MW_DOCKER') && getenv('MW_SEARCH') === '1') { $farmExtensions = array_merge($farmExtensions, ['Elastica', 'CirrusSearch']); }
+if ((getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) && getenv('MW_SEARCH') === '1') { $farmExtensions = array_merge($farmExtensions, ['Elastica', 'CirrusSearch']); }
 wfLoadExtensions($farmExtensions);
 

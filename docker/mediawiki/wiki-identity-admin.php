@@ -47,7 +47,7 @@ function farmPublishIdentityRegistry(PDO $db): void {
             $registry['hosts'][$host] = $wiki;
         }
     }
-    $directory = '/var/www/mediawiki/cw_cache';
+    $directory = (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache');
     $temporary = tempnam($directory, '.wiki-identities-');
     if ($temporary === false) {
         throw new RuntimeException('Cannot write wiki identity registry');
@@ -141,7 +141,7 @@ function farmAllocateWikiIdentity(PDO $db, string $host, ?int $requestId = null)
 
 function farmLockDirectWikiIdentity(): PDO {
     global $farmSecrets;
-    $db = new PDO('mysql:host=' . farmEnv('MW_DB_HOST', 'database') . ';dbname=wikidb',
+    $db = new PDO('mysql:host=' . farmEnv('MW_DB_HOST', 'database') . ';port=' . (getenv('MW_DB_PORT') ?: '3306') . ';dbname=wikidb',
         farmEnv('MW_DB_USER', 'mediawiki'), $farmSecrets['db_password']);
     if ((int)$db->query("SELECT GET_LOCK('farm-initialization', 5)")->fetchColumn() !== 1) {
         throw new RuntimeException('Another farm maintenance operation is running');
@@ -396,7 +396,7 @@ function farmApplyWikiIdentityPlan(PDO $db, string $backup, string $planFile): v
         throw new RuntimeException('Cannot create MariaDB options file');
     }
     try {
-        $password = trim(file_get_contents('/run/secrets/db-root-password'));
+        $password = trim(file_get_contents((rtrim(getenv('MW_SECRETS_DIRECTORY') ?: '/run/secrets', '/') . '/db-root-password')));
         file_put_contents($options, "[client]\nhost=" . farmEnv('MW_DB_HOST', 'database')
             . "\nuser=root\npassword=" . json_encode($password, JSON_THROW_ON_ERROR) . "\n");
         $mapping = [];

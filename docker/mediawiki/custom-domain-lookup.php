@@ -3,7 +3,7 @@
 // Invoked by the private Caddy listener via its own FastCGI pool.
 use WikiOasis\WikiOasisMagic\CustomDomainConfig;
 
-require '/var/www/mediawiki/extensions/SkyWikiMagic/includes/CustomDomainConfig.php';
+require (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/extensions/SkyWikiMagic/includes/CustomDomainConfig.php');
 
 $path = strtok( $_SERVER['REQUEST_URI'] ?? '', '?' );
 $numericRoute = $path === '/route-numeric';
@@ -39,9 +39,9 @@ if ( $probe && ( !CustomDomainConfig::enabled() || !is_string( $challenge ) ||
 }
 
 try {
-	$secrets = json_decode( file_get_contents( '/run/secrets/farm.json' ), true, 512, JSON_THROW_ON_ERROR );
+	$secrets = json_decode( file_get_contents( (rtrim(getenv('MW_SECRETS_DIRECTORY') ?: '/run/secrets', '/') . '/farm.json') ), true, 512, JSON_THROW_ON_ERROR );
 	$db = new PDO(
-		'mysql:host=' . ( getenv( 'MW_DB_HOST' ) ?: 'database' ) . ';dbname=wikidb',
+		'mysql:host=' . ( getenv( 'MW_DB_HOST' ) ?: 'database' ) . ';port=' . (getenv('MW_DB_PORT') ?: '3306') . ';dbname=wikidb',
 		getenv( 'MW_DB_USER' ) ?: 'mediawiki', $secrets['db_password'], [ PDO::ATTR_TIMEOUT => 2 ]
 	);
 	if ( $numericRoute ) {

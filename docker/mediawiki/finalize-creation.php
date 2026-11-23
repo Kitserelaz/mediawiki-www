@@ -61,7 +61,7 @@ class FarmFinalizeCreation extends LoggedUpdateMaintenance {
             if (!$user->getId() || !CentralAuthUser::getPrimaryInstance($user)->isAttached()) {
                 throw new RuntimeException('Creation requester is not attached on ' . $wiki);
             }
-            $promotion = $this->createChild(CreateAndPromote::class, '/var/www/mediawiki/maintenance/createAndPromote.php');
+            $promotion = $this->createChild(CreateAndPromote::class, (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/maintenance/createAndPromote.php'));
             $promotion->loadParamsAndArgs(__FILE__,
                 ['force'=>true, 'bureaucrat'=>true, 'sysop'=>true, 'interface-admin'=>true],
                 [$creation['requester']]);

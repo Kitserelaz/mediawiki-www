@@ -1,7 +1,7 @@
 <?php
 // Match web/worker ownership when called through the root management service.
 if (posix_geteuid() === 0) { posix_setgid(33); posix_setuid(33); }
-require '/var/www/mediawiki/maintenance/Maintenance.php';
+require (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/maintenance/Maintenance.php');
 class DockerFixtures extends MediaWiki\Maintenance\Maintenance {
     public function __construct() {
         parent::__construct();

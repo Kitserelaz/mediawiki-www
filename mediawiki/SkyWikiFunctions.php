@@ -44,7 +44,7 @@ class MirahezeFunctions {
 
 	private const BETA_HOSTNAME = 'test151';
 
-	private const CACHE_DIRECTORY = '/var/www/mediawiki/cw_cache';
+	private static function cacheDirectory(): string { return rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache'; }
 
 	private const CENTRAL_DATABASE = [
 		'default' => 'metawiki',
@@ -66,7 +66,7 @@ class MirahezeFunctions {
 		'beta' => 'testglobal',
 	];
 
-	private const MEDIAWIKI_DIRECTORY = '/var/www/mediawiki/';
+	private static function mediaWikiDirectory(): string { return rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/'; }
 
 	private const TAGS = [
 		'default' => 'default',
@@ -98,7 +98,7 @@ class MirahezeFunctions {
 				die( 'INVALID DATABASE! YOU CAN NOT USE THE DATABASE OF A DIFFERENT REALM!' . PHP_EOL );
 			}
 
-			require_once self::MEDIAWIKI_DIRECTORY . 'ErrorPages/MissingWiki.php';
+			require_once self::mediaWikiDirectory() . 'ErrorPages/MissingWiki.php';
 		}
 
 		$this->wikiDBClusters = self::getDatabaseClusters();
@@ -146,13 +146,13 @@ class MirahezeFunctions {
 			return $database;
 		}
 
-		$filePath = self::CACHE_DIRECTORY . "/{$dblist}.php";
+		$filePath = self::cacheDirectory() . "/{$dblist}.php";
 
 		if ( !file_exists( $filePath ) ) {
 			return [];
 		} else {
 			$databasesArray = include $filePath;
-            if ( getenv( 'MW_DOCKER' ) && getenv( 'MW_ENV' ) !== 'production' ) {
+            if ( (getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) && getenv( 'MW_ENV' ) !== 'production' ) {
                 foreach ( array_keys( $databasesArray['databases'] ?? [] ) as $name ) {
                     if ( function_exists( 'farmWikiIdentity' ) && farmWikiIdentity( $name ) ) {
                         continue;
@@ -205,7 +205,7 @@ class MirahezeFunctions {
 
 					if ( $wgDBname && $key === $wgDBname ) {
 						if ( MW_ENTRY_POINT !== 'cli' && in_array( $data['c'], $wgDatabaseClustersMaintenance ) ) {
-							require_once self::MEDIAWIKI_DIRECTORY . 'ErrorPages/databaseMaintenance.php';
+							require_once self::mediaWikiDirectory() . 'ErrorPages/databaseMaintenance.php';
 						}
 					}
 
@@ -485,7 +485,7 @@ class MirahezeFunctions {
 	}
 
 	public static function getCustomDomainRoute(): ?array {
-		if ( !getenv( 'MW_DOCKER' ) || getenv( 'MW_CUSTOM_DOMAINS_ROUTING' ) !== '1' ) {
+		if ( !(getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) || getenv( 'MW_CUSTOM_DOMAINS_ROUTING' ) !== '1' ) {
 			return null;
 		}
 		// These are FastCGI parameters set by Caddy. Client headers get an HTTP_ prefix.
@@ -590,7 +590,7 @@ class MirahezeFunctions {
 	public static function getMediaWiki( string $file ): string {
 		global $IP;
 
-		$IP = self::MEDIAWIKI_DIRECTORY . self::getMediaWikiVersion();
+		$IP = self::mediaWikiDirectory() . self::getMediaWikiVersion();
 
 		chdir( $IP );
 		putenv( "MW_INSTALL_PATH=$IP" );
@@ -616,11 +616,11 @@ class MirahezeFunctions {
 		self::$currentDatabase ??= self::getCurrentDatabase();
 
 	                        // If we don't have a cache file, let us exit here
-                if ( !file_exists( self::CACHE_DIRECTORY . '/' . self::$currentDatabase . '.php' ) ) {
+                if ( !file_exists( self::cacheDirectory() . '/' . self::$currentDatabase . '.php' ) ) {
                         return [];
                 }
 
-                $currentDatabaseFile = self::CACHE_DIRECTORY . '/' . self::$currentDatabase . '.php';
+                $currentDatabaseFile = self::cacheDirectory() . '/' . self::$currentDatabase . '.php';
 				$data = include $currentDatabaseFile;
 				if (!is_array($data)) {
 					return [];
@@ -639,7 +639,7 @@ class MirahezeFunctions {
 	 * @return array
 	 */
 	public static function getConfigGlobals(): array {
-        if ( getenv( 'MW_DOCKER' ) ) {
+        if ( (getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) ) {
             global $wgConf;
             $wgConf->settings = array_merge( $wgConf->settings, self::getManageWikiConfigCache() );
             farmSiteConfiguration();
@@ -664,12 +664,12 @@ class MirahezeFunctions {
 			filemtime( MW_INSTALL_PATH . '/includes/Defines.php' ),
 
 			// When ManageWiki is changed
-			@filemtime( self::CACHE_DIRECTORY . '/' . $wgDBname . '.php' )
+			@filemtime( self::cacheDirectory() . '/' . $wgDBname . '.php' )
 		);
 
 		static $globals = null;
 		$globals ??= self::readFromCache(
-			self::CACHE_DIRECTORY . '/' . $confCacheFileName,
+			self::cacheDirectory() . '/' . $confCacheFileName,
 			$confActualMtime
 		);
 
@@ -741,13 +741,13 @@ class MirahezeFunctions {
 	 * @param array $configObject
 	 */
 	public static function writeToCache( string $cacheShard, array $configObject ) {
-		@mkdir( self::CACHE_DIRECTORY );
+		@mkdir( self::cacheDirectory() );
 
 		$tmpFile = tempnam( '/tmp/', $cacheShard );
 
 		if ( $tmpFile ) {
 			if ( file_put_contents( $tmpFile, '<?php return ' . var_export( $configObject, true ) . ';' ) ) {
-				if ( rename( $tmpFile, self::CACHE_DIRECTORY . '/' . $cacheShard ) ) {
+				if ( rename( $tmpFile, self::cacheDirectory() . '/' . $cacheShard ) ) {
 					return;
 				}
 			}
@@ -915,12 +915,12 @@ class MirahezeFunctions {
 			filemtime( MW_INSTALL_PATH . '/includes/Defines.php' ),
 
 			// When ManageWiki is changed
-			@filemtime( self::CACHE_DIRECTORY . '/' . $wgDBname . '.php' )
+			@filemtime( self::cacheDirectory() . '/' . $wgDBname . '.php' )
 		);
 
 		static $extensions = null;
 		$extensions ??= self::readFromCache(
-			self::CACHE_DIRECTORY . '/' . $confCacheFileName,
+			self::cacheDirectory() . '/' . $confCacheFileName,
 			$confActualMtime,
 			'extensions'
 		);
@@ -996,8 +996,8 @@ class MirahezeFunctions {
 	/** Build the name/path index without registering mutually exclusive extensions. */
 	public static function rebuildExtensionListCache(): void {
 		$paths = array_merge(
-			glob( self::MEDIAWIKI_DIRECTORY . 'extensions/*/extension*.json' ),
-			glob( self::MEDIAWIKI_DIRECTORY . 'skins/*/skin.json' )
+			glob( self::mediaWikiDirectory() . 'extensions/*/extension*.json' ),
+			glob( self::mediaWikiDirectory() . 'skins/*/skin.json' )
 		);
 		$list = [];
 		foreach ( $paths as $path ) {
@@ -1007,14 +1007,14 @@ class MirahezeFunctions {
 			}
 			$list[$manifest['name']] = $path;
 		}
-		if ( !is_dir( self::CACHE_DIRECTORY ) && !mkdir( self::CACHE_DIRECTORY, 0755, true ) ) {
+		if ( !is_dir( self::cacheDirectory() ) && !mkdir( self::cacheDirectory(), 0755, true ) ) {
 			throw new RuntimeException( 'Cannot create farm metadata directory' );
 		}
-		$tmp = tempnam( self::CACHE_DIRECTORY, 'extension-list-' );
+		$tmp = tempnam( self::cacheDirectory(), 'extension-list-' );
 		if ( $tmp === false ) {
 			throw new RuntimeException( 'Cannot create extension index temporary file' );
 		}
-		$target = self::CACHE_DIRECTORY . '/extension-list.php';
+		$target = self::cacheDirectory() . '/extension-list.php';
 		try {
 			if ( file_put_contents( $tmp, StaticArrayWriter::write( $list, 'Farm component path index.' ) ) === false ||
 				!rename( $tmp, $target )
@@ -1034,7 +1034,7 @@ class MirahezeFunctions {
 	public function loadExtensions() {
 		global $wgDBname;
 
-		if ( !file_exists( self::CACHE_DIRECTORY . '/' . $wgDBname . '.php' ) ) {
+		if ( !file_exists( self::cacheDirectory() . '/' . $wgDBname . '.php' ) ) {
 			global $wgConf;
 			if ( self::getRealm( $wgDBname ) !== 'default' ) {
 				$wgConf->siteParamsCallback = static function () {
@@ -1050,10 +1050,10 @@ class MirahezeFunctions {
 			return;
 		}
 
-		if ( !file_exists( self::CACHE_DIRECTORY . '/extension-list.php' ) ) {
+		if ( !file_exists( self::cacheDirectory() . '/extension-list.php' ) ) {
 			self::rebuildExtensionListCache();
 		}
-		$list = include self::CACHE_DIRECTORY . '/extension-list.php';
+		$list = include self::cacheDirectory() . '/extension-list.php';
 
 		self::handleDisabledExtensions();
 
@@ -1211,7 +1211,7 @@ class MirahezeFunctions {
 	): void {
 		$mwVersion = self::getMediaWikiVersion( $dbname );
 		$versions = array_unique( array_filter( self::MEDIAWIKI_VERSIONS, static function ( $version ) use ( $mwVersion ): bool {
-			return $mwVersion === $version || is_dir( self::MEDIAWIKI_DIRECTORY . $version );
+			return $mwVersion === $version || is_dir( self::mediaWikiDirectory() . $version );
 		} ) );
 
 		asort( $versions );
@@ -1277,7 +1277,7 @@ class MirahezeFunctions {
 		$version = self::getMediaWikiVersion( $dbname );
 		$mediawikiVersion = $formData['mediawiki-version'] ?? $version;
 		$mwCore = $moduleFactory->core( $dbname );
-		if ( $mediawikiVersion !== $version && is_dir( self::MEDIAWIKI_DIRECTORY . $mediawikiVersion ) ) {
+		if ( $mediawikiVersion !== $version && is_dir( self::mediaWikiDirectory() . $mediawikiVersion ) ) {
 			$mwCore->setExtraFieldData(
 				'mediawiki-version', $mediawikiVersion, default: $version
 			);

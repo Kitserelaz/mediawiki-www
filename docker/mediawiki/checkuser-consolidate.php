@@ -5,7 +5,7 @@ $apply = in_array('--apply', $argv, true);
 if ($apply && !in_array('--writers-stopped', $argv, true)) {
     throw new RuntimeException('Stop web, PHP, scheduler, worker, provisioner and chron; then use --apply --writers-stopped');
 }
-$db = new PDO('mysql:host=' . (getenv('MW_DB_HOST') ?: 'database') . ';dbname=wikidb',
+$db = new PDO('mysql:host=' . (getenv('MW_DB_HOST') ?: 'database') . ';port=' . (getenv('MW_DB_PORT') ?: '3306') . ';dbname=wikidb',
     getenv('MW_DB_USER') ?: 'mediawiki', $wgDBpassword,
     [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_EMULATE_PREPARES => false]);
 if ((int)$db->query("SELECT GET_LOCK('farm-checkuser-consolidate',0)")->fetchColumn() !== 1) {

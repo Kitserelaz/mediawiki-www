@@ -11,6 +11,9 @@ compose() {
   if [ -n "$farmEnvFile" ]; then python3 scripts/compose --env-file "$farmEnvFile" "$@";
   else python3 scripts/compose "$@"; fi
 }
+if [ -f /etc/cloudwiki/runtime.json ] && { [ -z "$farmEnvFile" ] || [ "$farmEnvFile" = .env.production ] || [ "$farmEnvFile" = /var/www/.env.production ]; }; then
+  exec python3 /usr/local/libexec/cloudwiki-native-cli.py "$@"
+fi
 case "${1:-help}" in
   setup) exec python3 scripts/setup-dev.py ;;
   setup-production) shift; exec python3 scripts/setup-production.py "$@" ;;

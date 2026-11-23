@@ -32,7 +32,7 @@ final class CustomDomainConfig {
 	}
 
 	public static function routingEnabled(): bool {
-		return getenv( 'MW_DOCKER' ) && getenv( 'MW_CUSTOM_DOMAINS_ROUTING' ) === '1';
+		return (getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) && getenv( 'MW_CUSTOM_DOMAINS_ROUTING' ) === '1';
 	}
 
 	public static function probeProof( string $host, string $challenge, string $nonce, string $secret ): string {

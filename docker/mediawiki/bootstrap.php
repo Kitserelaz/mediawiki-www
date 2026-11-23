@@ -7,6 +7,7 @@ require __DIR__ . '/private.php';
 require __DIR__ . '/runtime.php';
 $wgDBtype = 'mysql';
 $wgDBserver = farmEnv('MW_DB_HOST', 'database');
+    $GLOBALS['wgDBport'] = (int)(getenv('MW_DB_PORT') ?: 3306);
 $wgDBuser = farmEnv('MW_DB_USER', 'mediawiki');
 $wgDBname = farmWikiId(getenv('MW_BOOTSTRAP_DB'));
 $wgServer = farmWikiBuiltinUrl($wgDBname) ?? 'https://' . preg_replace('/wiki$/', '', $wgDBname) . '.' . farmEnv('MW_DOMAIN', 'localhost');
@@ -47,7 +48,7 @@ farmSiteConfiguration();
 // Disable them only for this explicit CLI bootstrap; schema-update hooks stay enabled.
 $wgHooks['SetupAfterCache'][] = static fn() => false;
 $wgHooks['CreateWikiGenerateDatabaseLists'][] = 'MirahezeFunctions::onGenerateDatabaseLists';
-$wgCreateWikiCacheDirectory = '/var/www/mediawiki/cw_cache';
+$wgCreateWikiCacheDirectory = (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache');
 $wgManageWikiCacheDirectory = $wgCreateWikiCacheDirectory;
 $wgCentralAuthDatabase = 'centralauth';
 $wgGlobalPreferencesDB = 'centralauth';

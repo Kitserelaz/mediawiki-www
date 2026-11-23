@@ -290,9 +290,18 @@ def main():
                     patches[key] = local_patch(ROOT, filename, previous, timeout=min(remaining, 2))
                 return patches[key]
 
-            local = config_report(guard, ROOT, STATE, patch)
+            native_mode = Path('/etc/cloudwiki/runtime.json').exists()
+            if native_mode:
+                native_spec = importlib.util.spec_from_file_location('native_guard', '/usr/local/libexec/cloudwiki-native.py')
+                native = importlib.util.module_from_spec(native_spec)
+                native_spec.loader.exec_module(native)
+                view = native.overview()
+                local = {'status': view['configuration']['status'], 'files': view['configuration']['files']}
+            else:
+                local = config_report(guard, ROOT, STATE, patch)
             worktree = working_tree_report(ROOT, patch)
             try:
+                if native_mode: raise RuntimeError('Native runtime has no Compose configuration')
                 resolved = guard.Runner(ROOT).run(['docker', 'compose', '--env-file', str(ROOT / '.env.production'), 'config', '--environment'], capture=True)
                 settings = dict(line.split('=', 1) for line in resolved.splitlines() if '=' in line)
             except Exception:

@@ -1,5 +1,5 @@
 <?php
-if ( getenv('MW_DOCKER') && getenv('MW_BOOTSTRAP_DB') ) {
+if ( (getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) && getenv('MW_BOOTSTRAP_DB') ) {
     $bootstrapPath = __DIR__ . '/docker/mediawiki/bootstrap.php';
     if ( is_file( $bootstrapPath ) ) {
         require $bootstrapPath;
@@ -103,7 +103,7 @@ $wgLocalisationCacheConf['storeDirectory'] = "$IP/cache/$wgDBname";
 
 // Load PrivateSettings (e.g. $wgDBpassword)
 require_once "$IP/PrivateSettings.php";
-if ( getenv( "MW_DOCKER" ) ) {
+if ( (getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) ) {
     $runtimePath = "$IP/docker/mediawiki/runtime.php";
     if ( is_file( $runtimePath ) ) {
         require $runtimePath;
@@ -113,13 +113,13 @@ if ( getenv( "MW_DOCKER" ) ) {
 require_once "$IP/GlobalExtensions.php";
 require_once "$IP/SkyWikiFunctions.php";
 $wi = new MirahezeFunctions();
-if (getenv('MW_DOCKER') && PHP_SAPI !== 'cli' && !$wi->missing && !farmWikiMetadataIsComplete($wgDBname)) {
+if ((getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) && PHP_SAPI !== 'cli' && !$wi->missing && !farmWikiMetadataIsComplete($wgDBname)) {
     http_response_code(503);
     header('Retry-After: 1');
     echo 'This wiki is being prepared. Please try again shortly.';
     exit;
 }
-if (getenv('MW_DOCKER') && MW_ENTRY_POINT !== 'cli' && is_file("$IP/cw_cache/.provision-{$wi->dbname}")) {
+if ((getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) && MW_ENTRY_POINT !== 'cli' && is_file("$IP/cw_cache/.provision-{$wi->dbname}")) {
     http_response_code(503);
     header('Retry-After: 5');
     echo 'This wiki is finishing setup. Please try again shortly.';
@@ -166,8 +166,8 @@ $wgManageWiki = ['cdb' => true, 'core' => true, 'extensions' => true, 'namespace
 
 wfLoadExtension( 'CreateWiki' );
 wfLoadExtension( 'ManageWiki' );
-if (!getenv('MW_DOCKER') || getenv('MW_SSL_REQUESTS') === '1') { wfLoadExtension('RequestSSL'); }
-if (getenv('MW_DOCKER') && getenv('MW_ANALYTICS') !== '1') {
+if (!(getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) || getenv('MW_SSL_REQUESTS') === '1') { wfLoadExtension('RequestSSL'); }
+if ((getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) && getenv('MW_ANALYTICS') !== '1') {
     // Analytics require explicit opt-in and their external database/service.
 } elseif ( $wi->dbname !== 'stagingwiki' ) {
     wfLoadExtension("MatomoAnalytics");
@@ -212,7 +212,7 @@ $wi::$disabledExtensions = [
 	'video' => 'broken',
 	'commentstreams' => 'broken',
 ];
-if ( getenv( "MW_DOCKER" ) ) {
+if ( (getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) ) {
     if (getenv('MW_SEARCH') !== '1') { $wi::$disabledExtensions['cirrussearch'] = 'Enable the Docker search profile first'; }
     farmSiteConfiguration();
 }
@@ -266,7 +266,7 @@ if ( $cwDeleted ) {
 }
 
 function wfHandleDeletedWiki() {
-	require_once '/var/www/mediawiki/ErrorPages/DeletedWiki.php';
+	require_once (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/ErrorPages/DeletedWiki.php');
 	exit();
 }
 
@@ -312,7 +312,7 @@ $wgGroupPermissions['sysop']['globalblock-whitelist'] = false;
 $wgGroupPermissions['bureaucrat']['globalblock-whitelist'] = false;
 
 $wgLocalisationCacheConf['storeClass'] = LCStoreStaticArray::class;
-$wgLocalisationCacheConf['storeDirectory'] = '/var/www/mediawiki/cache/'.$wgDBname;
+$wgLocalisationCacheConf['storeDirectory'] = (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cache/').$wgDBname;
 $wgLocalisationCacheConf['manualRecache'] = false;
 $wgGroupPermissions['checkuser-admin']['checkuser'] = true;
 $wgGroupPermissions['checkuser-admin']['checkuser-log'] = true;
@@ -378,11 +378,11 @@ $wgGroupPermissions['bureaucrat']['managewiki-core'] = true;
 
 
 
-if ( getenv( "MW_DOCKER" ) ) { farmRuntime(); }
+if ( (getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) ) { farmRuntime(); }
 require __DIR__ . '/S3Settings.php';
 
 // Support imported infoboxes on the local development Test Wiki.
-if ( getenv( 'MW_DOCKER' ) && getenv( 'MW_ENV' ) === 'development'
+if ( (getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) && getenv( 'MW_ENV' ) === 'development'
     && ( getenv( 'MW_DOMAIN' ) ?: 'localhost' ) === 'localhost'
     && $wi->dbname === farmWikiId( 'testwiki' )
 ) {

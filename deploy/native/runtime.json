@@ -1,0 +1,29 @@
+{
+  "runtime": "native",
+  "os": "ubuntu-26.04",
+  "php": "8.5",
+  "mariadb": "11.8",
+  "redis": "8.0",
+  "memcached": "1.6.40",
+  "caddy": "2.11",
+  "node": "22",
+  "units": [
+    "cloudwiki-mariadb",
+    "cloudwiki-redis",
+    "cloudwiki-memcached",
+    "cloudwiki-php",
+    "cloudwiki-worker",
+    "cloudwiki-provisioner",
+    "cloudwiki-jobchron",
+    "cloudwiki-scheduler",
+    "cloudwiki-creation-events",
+    "cloudwiki-counter",
+    "cloudwiki-caddy",
+    "cloudwiki-cloudflared",
+    "cloudwiki-editor",
+    "cloudwiki-grafana",
+    "cloudwiki-prometheus",
+    "cloudwiki-node-exporter",
+    "cloudwiki-blackbox-exporter"
+  ]
+}

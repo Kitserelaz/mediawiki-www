@@ -10,7 +10,7 @@ function farmWikiRegistry(bool $refresh = false): array {
         return [];
     }
     if ($registry === null || $refresh) {
-        $file = '/var/www/mediawiki/cw_cache/wiki-identities.json';
+        $file = (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache/wiki-identities.json');
         $data = is_readable($file) ? file_get_contents($file) : false;
         if ($data === false) {
             throw new RuntimeException('Numeric wiki identity registry is unavailable');

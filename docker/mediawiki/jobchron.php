@@ -2,10 +2,10 @@
 declare(strict_types=1);
 
 // Share the farm's locked wikimedia/ip-utils dependency; do not bootstrap MediaWiki.
-require '/var/www/mediawiki/vendor/autoload.php';
+require (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/vendor/autoload.php');
 require __DIR__ . '/jobrunner/src/RedisJobChronService.php';
 
-const FARM_JOBCHRON_HEARTBEAT = '/tmp/farm-jobchron-heartbeat';
+define('FARM_JOBCHRON_HEARTBEAT', (getenv('MW_HEARTBEAT_DIRECTORY') ?: '/tmp') . '/farm-jobchron-heartbeat');
 
 class FarmJobChronService extends RedisJobChronService {
     public function incrStats($event, $delta = 1) {

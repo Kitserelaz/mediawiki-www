@@ -47,7 +47,7 @@ $wgConf->settings += [
 		'default' => [
 			'class' => LocalisationCache::class,
 			'store' => 'files',
-			'storeDirectory' => "/var/www/mediawiki/cache/$wgDBname",
+			'storeDirectory' => ((getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki') . '/cache/' . $wgDBname),
 		],
 	],
 
@@ -250,7 +250,7 @@ $wgConf->settings += [
 		'default' => true,
 	],
 	'wgCreateWikiCacheDirectory' => [
-		'default' => '/var/www/mediawiki/cw_cache',
+		'default' => (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache'),
 	],
 	'wgCreateWikiDatabaseSuffix' => [
 		'default' => 'wiki',
@@ -883,10 +883,10 @@ $wgConf->settings += [
 		'default' => true,
 	],
 	'wgOAuth2PublicKey' => [
-		'default' => '/var/www/mediawiki/OAuth2.key.pub',
+		'default' => (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/OAuth2.key.pub'),
 	],
 	'wgOAuth2PrivateKey' => [
-		'default' => '/var/www/mediawiki/OAuth2.key',
+		'default' => (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/OAuth2.key'),
 	],
 
 

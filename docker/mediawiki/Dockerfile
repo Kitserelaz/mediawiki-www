@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.4
 # Immutable multi-platform base digests and a dated Debian snapshot fix dependency resolution.
-ARG PHP_IMAGE=php:8.4.28-fpm-bookworm@sha256:e4b1eec29a5be22428aa93fb43da75a0e39006e403da0c3e93631dde92f067df
+ARG PHP_IMAGE=php:8.5.4-fpm-bookworm
 ARG CADDY_IMAGE=caddy:2.11.9-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0
 FROM ${PHP_IMAGE} AS php
 ARG DEBIAN_SNAPSHOT=20261119T000000Z

@@ -1,10 +1,10 @@
 <?php
-require '/var/www/mediawiki/maintenance/Maintenance.php';
+require (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/maintenance/Maintenance.php');
 class AttachSeedAdmin extends MediaWiki\Maintenance\Maintenance {
     public function execute() {
         if (getenv('MW_ENV') === 'production' && getenv('MW_FRESH_PRODUCTION') !== '1') { throw new RuntimeException('Production seeding requires explicit fresh-production initialization'); }
         $name = getenv('ADMIN_USER') ?: 'Admin';
-        $password = trim(file_get_contents('/run/secrets/admin-password'));
+        $password = trim(file_get_contents((rtrim(getenv('MW_SECRETS_DIRECTORY') ?: '/run/secrets', '/') . '/admin-password')));
         $services = $this->getServiceContainer();
         $central = MediaWiki\Extension\CentralAuth\User\CentralAuthUser::getPrimaryInstanceByName($name);
         if (!$central->exists() || !$central->getPasswordObject()->verify($password)) { throw new RuntimeException('Seed global account does not match seed credentials'); }

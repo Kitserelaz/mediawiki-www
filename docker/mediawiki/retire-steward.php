@@ -1,5 +1,5 @@
 <?php
-require '/var/www/mediawiki/maintenance/Maintenance.php';
+require (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/maintenance/Maintenance.php');
 
 /** Explicit operator migration; never invoked automatically during initialization. */
 class RetireStewardRole extends MediaWiki\Maintenance\Maintenance {

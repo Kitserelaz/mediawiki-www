@@ -48,7 +48,7 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 		}
 
 		$request = $this->getRequest();
-		if ( $par === 'progress' && getenv( 'MW_DOCKER' ) ) {
+		if ( $par === 'progress' && (getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) ) {
 			$this->showProgress( $request->getText( 'ticket' ) );
 			return;
 		}
@@ -232,7 +232,7 @@ class SpecialCreateNewWiki extends FormSpecialPage {
 
 		$output = $this->getOutput();
 		$output->redirect( $url );
-		if ( getenv( 'MW_DOCKER' ) ) {
+		if ( (getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) ) {
 			// The farm publishes the Redis event from an earlier callback on this connection.
 			$this->databaseUtils->getGlobalPrimaryDB()->onTransactionCommitOrIdle(
 				function () use ( $output, $wiki, $url, $formData ): void {

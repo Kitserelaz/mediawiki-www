@@ -19,7 +19,7 @@ $stream = $kind === 'jobs' ? FarmDispatch::JOBS : FarmDispatch::PROVISION;
 $pending = $kind === 'jobs' ? FarmDispatch::JOB_PENDING : FarmDispatch::PROVISION_PENDING;
 $consumer = gethostname() . '-' . getmypid() . '-' . bin2hex(random_bytes(4));
 $claimMs = max(1000, (int)(getenv('MW_STREAM_CLAIM_MS') ?: 30000));
-$heartbeatFile = '/tmp/farm-dispatch-' . $kind . '-heartbeat';
+$heartbeatFile = ((getenv('MW_HEARTBEAT_DIRECTORY') ?: '/tmp') . '/farm-dispatch-') . $kind . '-heartbeat';
 $stopping = false;
 $child = null;
 pcntl_async_signals(true);
@@ -30,7 +30,7 @@ $stop = static function () use (&$stopping, &$child): void {
 pcntl_signal(SIGTERM, $stop);
 pcntl_signal(SIGINT, $stop);
 $activeWiki = static function (string $wiki) use ($wgDBpassword): bool {
-    $db = new PDO('mysql:host=' . (getenv('MW_DB_HOST') ?: 'database') . ';dbname=wikidb',
+    $db = new PDO('mysql:host=' . (getenv('MW_DB_HOST') ?: 'database') . ';port=' . (getenv('MW_DB_PORT') ?: '3306') . ';dbname=wikidb',
         getenv('MW_DB_USER') ?: 'mediawiki', $wgDBpassword, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
     $query = $db->prepare('SELECT 1 FROM cw_wikis WHERE wiki_dbname=? AND wiki_deleted=0');
     $query->execute([$wiki]);
@@ -51,7 +51,7 @@ while (!$stopping) {
         if ($kind === 'jobs') {
             foreach ($redis->sMembers('global:jobqueue:s-queuesWithJobs') as $queue) { FarmDispatch::job($redis, $queue); }
         } else {
-            foreach (glob('/var/www/mediawiki/cw_cache/.provision-*') as $file) {
+            foreach (glob((rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache/.provision-*')) as $file) {
                 if (preg_match('/^\.provision-([a-z0-9][a-z0-9_]{0,63})$/D', basename($file), $match)) {
                     FarmDispatch::provision($redis, $match[1]);
                 }
@@ -115,7 +115,7 @@ while (!$stopping) {
                             continue;
                         }
                         if ($kind === 'jobs' && ($redis->hExists(FarmDispatch::PROVISION_PENDING, $wiki) ||
-                            is_file('/var/www/mediawiki/cw_cache/.provision-' . $wiki))) {
+                            is_file((rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache/.provision-') . $wiki))) {
                             FarmDispatch::renew($redis, $stream, $consumer, $id, max(0, $claimMs - 1000));
                             continue;
                         }
@@ -124,17 +124,17 @@ while (!$stopping) {
                             continue;
                         }
                         if ($kind === 'provision') {
-                            $marker = '/var/www/mediawiki/cw_cache/.provision-' . $wiki;
+                            $marker = (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache/.provision-') . $wiki;
                             if (!is_file($marker)) { file_put_contents($marker, gmdate('c')); }
                             $redis->hMSet(FarmDispatch::statusKey($wiki), ['state' => 'running', 'started_ms' => (string)round(microtime(true) * 1000)]);
-                            $command = ['php', '/opt/farm/provision.php', $wiki];
+                            $command = ['php', (rtrim(getenv('MW_FARM_HELPERS') ?: '/opt/farm', '/') . '/provision.php'), $wiki];
                         } else {
                             $command = ['php', 'maintenance/run.php', 'runJobs', '--wiki=' . $wiki,
                                 '--type=' . $type, '--maxjobs=20', '--maxtime=10'];
                         }
                         fwrite(STDOUT, "Dispatch $kind: $wiki" . ($kind === 'jobs' ? "/$type" : '') . "\n");
                         $child = proc_open($command, [0 => ['file', '/dev/null', 'r'], 1 => STDOUT, 2 => STDERR],
-                            $pipes, '/var/www/mediawiki');
+                            $pipes, (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/')));
                         $renew = static function () use ($redis, $stream, $consumer, $id, $heartbeatFile): void {
                             FarmDispatch::renew($redis, $stream, $consumer, $id);
                             file_put_contents($heartbeatFile, (string)time());

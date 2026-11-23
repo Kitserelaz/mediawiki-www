@@ -1,5 +1,5 @@
 <?php
-require '/var/www/mediawiki/maintenance/Maintenance.php';
+require (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/maintenance/Maintenance.php');
 class PrepareProvisioningMetadata extends MediaWiki\Maintenance\Maintenance {
     public function __construct() {
         parent::__construct();

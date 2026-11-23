@@ -30,10 +30,10 @@ fclose($metadataLock);
 if ($stopping) { exit(1); }
 if (!$metadataReady) {
     $metadataSource = 'repair';
-    $process = proc_open(['php', 'maintenance/run.php', '/opt/farm/prepare-wiki.php',
+    $process = proc_open(['php', 'maintenance/run.php', (rtrim(getenv('MW_FARM_HELPERS') ?: '/opt/farm', '/') . '/prepare-wiki.php'),
         '--wiki=metawiki', '--target=' . $wiki],
         [0 => ['file', '/dev/null', 'r'], 1 => STDOUT, 2 => STDERR], $pipes,
-        '/var/www/mediawiki', array_merge($env, ['MW_BOOTSTRAP_DB' => '']));
+        (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/')), array_merge($env, ['MW_BOOTSTRAP_DB' => '']));
     $status = is_resource($process) ? farmWaitProcess($process) : 1;
     $process = null;
     if ($stopping || $status !== 0 || !farmWikiMetadataIsComplete($wiki)) { exit(1); }
@@ -45,7 +45,7 @@ $env['MW_BOOTSTRAP_DB'] = '';
 $process = proc_open(['php', 'maintenance/run.php', 'update', '--quick', '--wiki=' . $wiki,
     '--conf=' . __DIR__ . '/provision-settings.php'],
     [0 => ['file', '/dev/null', 'r'], 1 => ['file', $pending . '.log', 'a'], 2 => ['file', $pending . '.log', 'a']],
-    $pipes, '/var/www/mediawiki', $env);
+    $pipes, (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/')), $env);
 if (!is_resource($process)) { exit(1); }
 $status = farmWaitProcess($process);
 $process = null;

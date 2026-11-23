@@ -1,5 +1,5 @@
 <?php
-require '/var/www/mediawiki/maintenance/Maintenance.php';
+require (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/maintenance/Maintenance.php');
 class AuxiliarySchema extends MediaWiki\Maintenance\Maintenance {
     public function execute() {
         // AntiSpoof and GlobalPreferences store auxiliary tables beside global accounts.

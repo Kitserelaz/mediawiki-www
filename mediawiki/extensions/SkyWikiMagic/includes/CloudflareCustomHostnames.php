@@ -14,7 +14,7 @@ final class CloudflareCustomHostnames {
 
 	public static function fromEnvironment(): ?self {
 		$zone = getenv( 'MW_CLOUDFLARE_SAAS_ZONE_ID' ) ?: '';
-		$file = '/run/secrets/cloudflare-saas-token';
+		$file = getenv('MW_CLOUDFLARE_SAAS_TOKEN_FILE') ?: '/run/secrets/cloudflare-saas-token';
 		if ( !preg_match( '/^[a-f0-9]{32}$/D', $zone ) || !is_readable( $file ) ) {
 			return null;
 		}

@@ -4,7 +4,7 @@ function farmUpgradePreflight(PDO $db, array $wikis): void {
     if (PHP_VERSION_ID < 80400) {
         throw new RuntimeException('Upgrade requires PHP 8.4 or newer');
     }
-    $defines = file_get_contents('/var/www/mediawiki/includes/Defines.php');
+    $defines = file_get_contents((rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/includes/Defines.php'));
     if (!preg_match("/define\( 'MW_VERSION', '([^']+)'/", $defines, $match) ||
         version_compare($match[1], '1.46.0', '<')) {
         throw new RuntimeException('Upgrade requires MediaWiki 1.46 or newer');

@@ -14,7 +14,7 @@ from redis.exceptions import RedisError
 TICKET_PREFIX = 'global:farm:creation-ticket:'
 STATUS_PREFIX = 'global:farm:provision-status:'
 CHANNEL_PREFIX = 'global:farm:creation-complete:'
-PROBE_URL = 'http://web:8083/wiki-creation/probe'
+PROBE_URL = os.environ.get('MW_CREATION_PROBE_URL', 'http://web:8083/wiki-creation/probe')
 
 
 async def wiki_is_reachable(http, ticket):
@@ -119,4 +119,4 @@ def create_app():
 
 if __name__ == '__main__':
     # The query string contains a bearer ticket, so omit request URLs from logs.
-    web.run_app(create_app(), port=8080, access_log=None)
+    web.run_app(create_app(), host=os.environ.get('MW_CREATION_EVENTS_BIND', '0.0.0.0'), port=int(os.environ.get('MW_CREATION_EVENTS_PORT', '8080')), access_log=None)

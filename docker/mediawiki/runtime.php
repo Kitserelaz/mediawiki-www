@@ -18,23 +18,23 @@ function farmSiteConfiguration(): void {
     $settings = [
         'wgCreateWikiDatabase' => 'wikidb', 'wgCreateWikiGlobalWiki' => farmWikiId('metawiki'),
         'wgCreateWikiSubdomain' => $domain,
-        'wgCreateWikiCacheDirectory' => '/var/www/mediawiki/cw_cache',
-        'wgManageWikiCacheDirectory' => '/var/www/mediawiki/cw_cache',
+        'wgCreateWikiCacheDirectory' => (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache'),
+        'wgManageWikiCacheDirectory' => (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache'),
         'wgManageWikiServers' => [],
         'wgCreateWikiDatabaseClusters' => [], 'wgCentralAuthDatabase' => 'centralauth',
         'wgCookieDomain' => '', 'wgCookieSecure' => true, 'wgForceHTTPS' => true,
         'wgJobRunRate' => 0,
         'wgCreateWikiSQLFiles' => array_values(array_filter([
-            '/var/www/mediawiki/sql/mysql/tables-generated.sql',
-            '/var/www/mediawiki/extensions/AbuseFilter/db_patches/mysql/tables-generated.sql',
-            '/var/www/mediawiki/extensions/AntiSpoof/sql/mysql/tables-generated.sql',
-            '/var/www/mediawiki/extensions/BetaFeatures/sql/tables-generated.sql',
-            '/var/www/mediawiki/extensions/CheckUser/schema/mysql/tables-generated.sql',
-            '/var/www/mediawiki/extensions/DataDump/sql/data_dump.sql',
-            '/var/www/mediawiki/extensions/Echo/sql/mysql/tables-generated.sql',
-            '/var/www/mediawiki/extensions/GlobalBlocking/sql/mysql/tables-generated-global_block_whitelist.sql',
-            '/var/www/mediawiki/extensions/Linter/sql/mysql/tables-generated.sql',
-            '/var/www/mediawiki/extensions/OAuth/schema/mysql/tables-generated.sql',
+            (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/sql/mysql/tables-generated.sql'),
+            (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/extensions/AbuseFilter/db_patches/mysql/tables-generated.sql'),
+            (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/extensions/AntiSpoof/sql/mysql/tables-generated.sql'),
+            (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/extensions/BetaFeatures/sql/tables-generated.sql'),
+            (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/extensions/CheckUser/schema/mysql/tables-generated.sql'),
+            (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/extensions/DataDump/sql/data_dump.sql'),
+            (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/extensions/Echo/sql/mysql/tables-generated.sql'),
+            (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/extensions/GlobalBlocking/sql/mysql/tables-generated-global_block_whitelist.sql'),
+            (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/extensions/Linter/sql/mysql/tables-generated.sql'),
+            (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/extensions/OAuth/schema/mysql/tables-generated.sql'),
         ], 'is_file')),
     ];
     if (farmNumericIdsEnabled()) {
@@ -83,7 +83,7 @@ function farmSiteConfiguration(): void {
     }
     $wgConf->settings['wgServer'] = $servers;
     // Share the populated farm configuration for ManageWiki remote lookups.
-    require_once '/var/www/mediawiki/FarmSiteConfiguration.php';
+    require_once (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/FarmSiteConfiguration.php');
     $GLOBALS['wgManageWikiSiteConfiguration'] = new FarmManageWikiSiteConfiguration($wgConf);
     if (farmEnv('MW_LEGACY_BRANDING', '1') === '0') {
         $wgConf->settings['+wgFooterIcons']['default'] = [];
@@ -103,11 +103,12 @@ function farmRuntime(): void {
         $wgVirtualDomainsMapping, $wgCreateWikiCacheDirectory, $wgCreateWikiDatabase,
         $wgCreateWikiGlobalWiki, $wgOAuth2PrivateKey, $wgOAuth2PublicKey,
         $wgCentralAuthCookieDomain, $wgCookieDomain, $wgCentralAuthEnableSul3;
-    $GLOBALS['wgPhpCli'] = '/usr/local/bin/php';
+    $GLOBALS['wgPhpCli'] = getenv('MW_PHP_CLI') ?: '/usr/local/bin/php';
     if (getenv('MW_FARM_READ_ONLY') === '1' && PHP_SAPI !== 'cli') {
         $GLOBALS['wgReadOnly'] = 'This wiki is temporarily read-only for a farm database migration.';
     }
     $wgDBserver = farmEnv('MW_DB_HOST', 'database');
+    $GLOBALS['wgDBport'] = (int)(getenv('MW_DB_PORT') ?: 3306);
     $wgDBuser = farmEnv('MW_DB_USER', 'mediawiki');
     $wgDBpassword = $farmSecrets['db_password'];
     $wgMemCachedServers = [farmEnv('MW_MEMCACHED', 'memcached:11211')];
@@ -132,7 +133,7 @@ function farmRuntime(): void {
         // Cloudflare SaaS credential that also serves custom hostnames. That token must
         // carry Cache Purge in addition to SSL and Certificates Write.
         if ( $wgCFCachePurgeApiToken === '' ) {
-            $saasTokenFile = farmEnv('MW_CLOUDFLARE_SAAS_TOKEN_FILE', '/run/secrets/cloudflare-saas-token');
+            $saasTokenFile = farmEnv('MW_CLOUDFLARE_SAAS_TOKEN_FILE', (rtrim(getenv('MW_SECRETS_DIRECTORY') ?: '/run/secrets', '/') . '/cloudflare-saas-token'));
             if ( is_readable($saasTokenFile) ) {
                 $saasToken = trim( (string)file_get_contents($saasTokenFile) );
                 if ( $saasToken !== '' && !preg_match('/\s/', $saasToken) ) {
@@ -191,11 +192,11 @@ function farmRuntime(): void {
             }
         );
     };
-    $wgCreateWikiCacheDirectory = '/var/www/mediawiki/cw_cache';
+    $wgCreateWikiCacheDirectory = (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cw_cache');
     $GLOBALS['wgManageWikiCacheDirectory'] = $wgCreateWikiCacheDirectory;
     $GLOBALS['wgManageWikiServers'] = [];
     if (isset($GLOBALS['wgConf'])) {
-        require_once '/var/www/mediawiki/FarmSiteConfiguration.php';
+        require_once (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/FarmSiteConfiguration.php');
         $GLOBALS['wgManageWikiSiteConfiguration'] = new FarmManageWikiSiteConfiguration($GLOBALS['wgConf']);
     }
     $wgVirtualDomainsMapping['virtual-createwiki'] = ['db' => 'wikidb'];
@@ -217,19 +218,19 @@ function farmRuntime(): void {
         }
         unset($mapping);
     }
-    $wgOAuth2PrivateKey = '/run/secrets/oauth-private.key';
-    $wgOAuth2PublicKey = '/run/secrets/oauth-public.key';
+    $wgOAuth2PrivateKey = (rtrim(getenv('MW_SECRETS_DIRECTORY') ?: '/run/secrets', '/') . '/oauth-private.key');
+    $wgOAuth2PublicKey = (rtrim(getenv('MW_SECRETS_DIRECTORY') ?: '/run/secrets', '/') . '/oauth-public.key');
     $wgLocalisationCacheConf = array_replace($wgLocalisationCacheConf ?? [], [
         'class' => MediaWiki\Language\LocalisationCache::class,
         'store' => 'files', 'storeClass' => false,
-        'storeDirectory' => '/var/www/mediawiki/cache/' . ($wgDBname ?? 'bootstrap'),
+        'storeDirectory' => (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cache/') . ($wgDBname ?? 'bootstrap'),
     ]);
     $wgDebugLogFile = '';
     $wgDebugLogGroups = [];
     $wgDataDumpDirectory = farmEnv('MW_DUMP_DIRECTORY', '/var/www/dumps');
     $GLOBALS['wgArchiveWikiImportDirectory'] = rtrim($wgDataDumpDirectory, '/') . '/archive-wiki-import';
     if (isset($wgDBname)) {
-        $wgUploadDirectory = rtrim(farmEnv('MW_UPLOAD_ROOT', '/var/www/mediawiki/images'), '/') . '/' . farmWikiStorageKey($wgDBname);
+        $wgUploadDirectory = rtrim(farmEnv('MW_UPLOAD_ROOT', (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/images')), '/') . '/' . farmWikiStorageKey($wgDBname);
         if (isset($GLOBALS['wgDataDump']['zip']['generate']['options'])) {
             $GLOBALS['wgDataDump']['zip']['generate']['options'][1] = rtrim($wgDataDumpDirectory, '/') . '/${filename}';
             $GLOBALS['wgDataDump']['zip']['generate']['options'][2] = $wgUploadDirectory;
@@ -315,7 +316,7 @@ function farmRuntime(): void {
         $GLOBALS['wgRightsIcon'] = '';
         $GLOBALS['wgEventLoggingBaseUri'] = false;
         $GLOBALS['wgEventLoggingServiceUri'] = false;
-        if (getenv('MW_AUTH_DEBUG') === '1') { $wgDebugLogGroups['authentication'] = '/var/www/mediawiki/cache/authentication-debug.log'; $wgDebugLogGroups['session'] = '/var/www/mediawiki/cache/session-debug.log'; }
-        if (getenv('MW_EXCEPTION_DEBUG') === '1') { $wgDebugLogGroups['exception'] = '/var/www/mediawiki/cache/exception-debug.log'; }
+        if (getenv('MW_AUTH_DEBUG') === '1') { $wgDebugLogGroups['authentication'] = (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cache/authentication-debug.log'); $wgDebugLogGroups['session'] = (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cache/session-debug.log'); }
+        if (getenv('MW_EXCEPTION_DEBUG') === '1') { $wgDebugLogGroups['exception'] = (rtrim(getenv('MW_INSTALL_PATH') ?: '/var/www/mediawiki', '/') . '/cache/exception-debug.log'); }
     }
 }

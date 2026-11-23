@@ -6,26 +6,38 @@ FROM ${PHP_IMAGE} AS php
 ARG DEBIAN_SNAPSHOT=20261119T000000Z
 RUN printf 'deb [check-valid-until=no] https://snapshot.debian.org/archive/debian/%s/ bookworm main\ndeb [check-valid-until=no] https://snapshot.debian.org/archive/debian/%s/ bookworm-updates main\ndeb [check-valid-until=no] https://snapshot.debian.org/archive/debian-security/%s/ bookworm-security main\n' "$DEBIAN_SNAPSHOT" "$DEBIAN_SNAPSHOT" "$DEBIAN_SNAPSHOT" > /etc/apt/sources.list \
     && rm -f /etc/apt/sources.list.d/debian.sources
-RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+RUN set -eux; \
+    export DEBIAN_FRONTEND=noninteractive; \
+    apt-get update && apt-get upgrade -y --no-install-recommends -o Dpkg::Options::="--force-confold" \
     && apt-get install -y --no-install-recommends \
-    libicu-dev libonig-dev libxml2-dev libzip-dev libpng-dev libjpeg62-turbo-dev \
-    libfreetype6-dev libgmp-dev libldap2-dev libmemcached-dev zlib1g-dev libssl-dev \
     imagemagick ffmpeg lua5.1 zip unzip diffutils fonts-freefont-ttf \
     librsvg2-bin ghostscript graphviz ploticus curl ca-certificates mariadb-client tini \
-    kakasi \
+    kakasi poppler-utils djvulibre-bin libtiff-tools python3 python3-pygments \
+    python3-aiohttp python3-redis p7zip-full zstd \
+    && runtimeAptMark="$(apt-mark showmanual)" \
+    && apt-get install -y --no-install-recommends \
+    libicu-dev libxml2-dev libzip-dev libpng-dev libjpeg62-turbo-dev \
+    libfreetype6-dev libgmp-dev libldap2-dev libmemcached-dev zlib1g-dev libssl-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" intl mbstring mysqli pdo_mysql gd zip gmp bcmath ldap exif calendar pcntl sockets opcache \
-    && pecl install redis-6.2.0 memcached-3.3.0 \
-    && docker-php-ext-enable redis memcached \
-    && rm -rf /var/lib/apt/lists/* /tmp/pear
-RUN apt-get update && apt-get install -y --no-install-recommends poppler-utils djvulibre-bin libtiff-tools python3 python3-pygments python3-aiohttp python3-redis && rm -rf /var/lib/apt/lists/*
-# ResourceLoader caches minified assets in CACHE_ACCEL, independently of Memcached.
-RUN pecl install apcu-5.1.28 \
-    && docker-php-ext-enable apcu \
+    # mbstring and OPcache are already enabled in the pinned PHP base.
+    && docker-php-ext-install -j"$(nproc)" intl mysqli pdo_mysql gd zip gmp bcmath ldap exif calendar pcntl sockets \
+    && pecl install redis-6.2.0 memcached-3.3.0 apcu-5.1.28 \
+    && docker-php-ext-enable redis memcached apcu \
+    # ResourceLoader caches minified assets in CACHE_ACCEL, independently of Memcached.
     && printf 'apc.shm_size=128M\n' > /usr/local/etc/php/conf.d/farm-apcu.ini \
-    && rm -rf /tmp/pear
-RUN apt-get update && apt-get install -y --no-install-recommends p7zip-full zstd \
-    && rm -rf /var/lib/apt/lists/*
+    # Keep runtime tools and the shared libraries used by PHP and its extensions.
+    && apt-mark auto '.*' > /dev/null \
+    && apt-mark manual $runtimeAptMark > /dev/null \
+    && apt-mark auto $PHPIZE_DEPS > /dev/null \
+    && find /usr/local -type f \( -executable -o -name '*.so' \) -exec ldd '{}' ';' \
+        | awk '/=>/ { so = $(NF-1); if (index(so, "/usr/local/") == 1) next; gsub("^/(usr/)?", "", so); printf "*%s\n", so }' \
+        | sort -u \
+        | xargs -r dpkg-query --search \
+        | awk 'sub(":$", "", $1) { print $1 }' \
+        | sort -u \
+        | xargs -r apt-mark manual \
+    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
+    && rm -rf /var/lib/apt/lists/* /tmp/pear
 WORKDIR /var/www/mediawiki
 # Keep large dependency trees separate from frequently edited farm settings.
 # Linked source layers are reusable across architectures and PHP dependency updates.
@@ -43,9 +55,9 @@ COPY --link mediawiki/*.php ./
 COPY --link mediawiki/composer.json mediawiki/composer.local.json mediawiki/composer.lock mediawiki/README.md mediawiki/INSTALL mediawiki/UPGRADE mediawiki/FAQ mediawiki/COPYING mediawiki/CREDITS mediawiki/HISTORY mediawiki/SECURITY mediawiki/RELEASE-NOTES-1.46 ./
 COPY --link docker/mediawiki/ /opt/farm/
 COPY --link docker/mediawiki/custom-domain-fpm.conf /usr/local/etc/php-fpm.d/
-COPY --link docker/mediawiki/ ./docker/mediawiki/
 COPY --link docker/mediawiki/private.php ./PrivateSettings.php
-RUN mkdir -p images cw_cache cache /var/www/dumps /var/log/mediawiki \
+RUN mkdir -p docker images cw_cache cache /var/www/dumps /var/log/mediawiki \
+    && ln -s /opt/farm docker/mediawiki \
     && chown -R www-data:www-data images cw_cache cache /var/www/dumps /var/log/mediawiki \
     && chmod +x /opt/farm/entrypoint.sh \
     && printf 'upload_max_filesize=100M\npost_max_size=110M\nmemory_limit=512M\nexpose_php=Off\n' > /usr/local/etc/php/conf.d/farm.ini

@@ -10,7 +10,11 @@ from unittest.mock import patch
 
 import test_deploy_production as legacy
 
-FakeRunner, deployment, request = legacy.FakeRunner, legacy.deployment, legacy.request
+FakeRunner, deployment = legacy.FakeRunner, legacy.deployment
+
+
+def request():
+    return legacy.request('auto')
 
 ROOT = Path(__file__).resolve().parents[2]
 bg = deployment.blue_green()
@@ -211,7 +215,9 @@ if sys.argv[1] == 'ps': print('0123456789ab')
 
 class OnlineDeploymentTest(unittest.TestCase):
     accept = legacy.DeploymentTest.accept
-    deploy = legacy.DeploymentTest.deploy
+
+    def deploy(self, runner, health=lambda *_: None):
+        return deployment.deploy(request(), self.root, self.state, runner, health)
 
     def setUp(self):
         legacy.DeploymentTest.setUp(self)
@@ -281,13 +287,55 @@ class OnlineDeploymentTest(unittest.TestCase):
             deployment.deploy(payload, self.root, self.state, self.runner, lambda *_: None)
         self.assertFalse(any('up' in call or call[0] == 'scripts/snapshot' for call in self.runner.calls))
 
-    def test_unknown_backend_changes_use_existing_maintenance_path(self):
+    def test_unknown_backend_changes_abort_without_maintenance_selection(self):
         self.runner.changed = 'mediawiki/includes/Unknown.php'
         with patch.object(deployment, 'enable_online') as enable:
-            self.assertTrue(self.deploy(self.runner))
+            with self.assertRaises(deployment.MaintenanceRequiredError):
+                self.deploy(self.runner)
+        self.assert_no_rollout_mutations()
+        enable.assert_not_called()
+
+    def assert_no_rollout_mutations(self):
+        self.assertFalse(any(call[0] in ('scripts/snapshot', 'scripts/farm')
+                             or 'stop' in call or 'up' in call or 'reload' in call
+                             or call[:2] == ['docker', 'pull'] or call[:2] == ['git', 'checkout']
+                             for call in self.runner.calls))
+        self.assertEqual((self.root / '.env.production').read_text(), self.environment)
+        self.assertEqual(json.loads((self.directory / 'active.json').read_text())['slot'], 'blue')
+
+    def test_same_commit_with_new_image_digests_aborts_before_any_rollout(self):
+        self.runner.current = request()['commit']
+        (self.directory / 'active.json').write_text(json.dumps({'slot': 'blue', 'commit': request()['commit'], 'schema_commit': 'c' * 40}))
+        (self.state / 'last-success.json').write_text(json.dumps({
+            'commit': request()['commit'], 'images': {'php': 'old-php', 'web': 'old-web', 'counter': 'old-counter'}, 'code_mode': 'image'}))
+        self.runner.changed = ''
+        original = self.runner.run
+        def run(args, **kwargs):
+            if args[:3] == ['git', 'diff', '--raw']:
+                self.runner.calls.append(list(args))
+                return ''
+            return original(args, **kwargs)
+        self.runner.run = run
+        with self.assertRaises(deployment.MaintenanceRequiredError):
+            self.deploy(self.runner)
+        self.assert_no_rollout_mutations()
+
+    def test_exact_duplicate_release_remains_a_healthy_no_op(self):
+        self.runner.current = request()['commit']
+        active = {'slot': 'blue', 'commit': request()['commit'], 'schema_commit': 'c' * 40}
+        (self.directory / 'active.json').write_text(json.dumps(active))
+        (self.state / 'last-success.json').write_text(json.dumps({
+            'commit': request()['commit'], 'images': request()['images'], 'code_mode': 'image'}))
+        self.assertTrue(self.deploy(self.runner))
+        self.assert_no_rollout_mutations()
+
+    def test_explicit_backend_maintenance_still_performs_backup_and_update(self):
+        self.runner.changed = 'mediawiki/includes/Unknown.php'
+        with patch.object(deployment, 'enable_online'):
+            self.assertTrue(deployment.deploy({**request(), 'mode': 'maintenance'},
+                                             self.root, self.state, self.runner, lambda *_: None))
         self.assertTrue(any(call[0] == 'scripts/snapshot' for call in self.runner.calls))
         self.assertTrue(any(call[0] == 'scripts/farm' and call[-1] == 'update' for call in self.runner.calls))
-        enable.assert_called_once()
 
     def test_interrupted_release_blocks_further_deployments(self):
         (self.directory / 'pending.json').write_text('{}')

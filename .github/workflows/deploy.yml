@@ -21,7 +21,7 @@ run-name: ${{ github.event_name == 'workflow_dispatch' && format('CloudWiki {0} 
         required: false
         type: string
       deployment_mode:
-        description: Auto selects online only for approved public assets; maintenance permits database updates
+        description: Auto aborts unless online is safe; explicitly choose maintenance to permit service stops and database updates
         required: false
         default: auto
         type: choice

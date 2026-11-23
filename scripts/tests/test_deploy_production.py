@@ -14,10 +14,10 @@ deployment = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(deployment)
 
 
-def request():
+def request(mode='maintenance'):
     return {"commit": "a" * 40,
             "images": {service: deployment.REGISTRY + service + "@sha256:" + "b" * 64 for service in deployment.SERVICES},
-            "registry_user": "release-bot", "registry_token": "test-only-credential"}
+            "registry_user": "release-bot", "registry_token": "test-only-credential", "mode": mode}
 
 
 class FakeRunner:
@@ -100,6 +100,43 @@ class DeploymentTest(unittest.TestCase):
         self.assertEqual(progress['status'], 'success')
         self.assertEqual(progress['stage'], 'complete')
         self.assertEqual(progress['commit'], request()['commit'])
+
+    def test_auto_and_omitted_mode_cannot_start_legacy_maintenance(self):
+        for mode in ('auto', None):
+            with self.subTest(mode=mode):
+                payload = request('auto')
+                if mode is None:
+                    payload.pop('mode')
+                runner = FakeRunner(self.root)
+                with self.assertRaises(deployment.MaintenanceRequiredError):
+                    deployment.deploy(payload, self.root, self.state, runner, lambda *_: None)
+                self.assertFalse(any(call[0] in ('scripts/snapshot', 'scripts/farm')
+                                     or 'stop' in call or 'up' in call or call[:2] == ['docker', 'pull']
+                                     or call[:2] == ['git', 'checkout'] for call in runner.calls))
+                self.assertEqual((self.root / '.env.production').read_text(), self.environment)
+                progress = json.loads((self.state / 'deployment-progress.json').read_text())
+                self.assertEqual((progress['status'], progress['reason']), ('blocked', 'maintenance_required'))
+
+    def test_older_checkout_cannot_downgrade_installed_maintenance_policy(self):
+        scripts = self.root / 'scripts'; scripts.mkdir()
+        destination = self.state / 'installed'; destination.mkdir()
+        (scripts / 'deploy-production.py').write_text('print("older controller")\n')
+        (scripts / 'blue_green.py').write_text('older helper\n')
+        (destination / 'cloudwiki-deploy-production.py').write_text('protected controller\n')
+        (destination / 'blue_green.py').write_text('protected helper\n')
+        self.assertFalse(deployment.install_deployment_controller(self.root, destination))
+        self.assertEqual((destination / 'cloudwiki-deploy-production.py').read_text(), 'protected controller\n')
+        self.assertEqual((destination / 'blue_green.py').read_text(), 'protected helper\n')
+
+    def test_compatible_controller_update_installs_both_files(self):
+        scripts = self.root / 'scripts'; scripts.mkdir()
+        destination = self.state / 'installed'; destination.mkdir()
+        source = 'DEPLOYMENT_POLICY_VERSION = 1\n'
+        (scripts / 'deploy-production.py').write_text(source)
+        (scripts / 'blue_green.py').write_text('matching helper\n')
+        self.assertTrue(deployment.install_deployment_controller(self.root, destination))
+        self.assertEqual((destination / 'cloudwiki-deploy-production.py').read_text(), source)
+        self.assertEqual((destination / 'blue_green.py').read_text(), 'matching helper\n')
 
     def test_only_expected_images_and_command_are_accepted(self):
         self.assertEqual(deployment.validate_request("deploy", request())["commit"], "a" * 40)

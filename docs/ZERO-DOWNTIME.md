@@ -9,7 +9,9 @@ admin Unix socket inside the edge container. No admin port is published.
 This path currently covers **public assets only**. PHP/backend changes, MediaWiki
 core changes outside public resources, extension registration, SQL, dependency
 manifests, container images/build inputs, configuration, unknown paths, deletions,
-and symlinks select maintenance. Absence of a changed SQL file is insufficient
+and symlinks require an explicit maintenance selection. Automatic releases abort
+before downloading images or stopping services when online safety is not proven.
+Absence of a changed SQL file is insufficient
 evidence that a backend update is safe. The online path never runs the updater to
 discover whether it needs migrations. The comparison is against the actual
 deployed commit, including changes accumulated across skipped CI runs.
@@ -71,9 +73,20 @@ The Production deployment workflow accepts `deployment_mode`:
 
 | Mode | Behavior |
 | --- | --- |
-| `auto` (default for automatic CI releases) | Online only when the gateway is initialized and every changed file qualifies; otherwise the existing maintenance procedure. |
+| `auto` (default for automatic CI releases) | Online only when the gateway is initialized and every changed file qualifies; otherwise abort with `maintenance_required`, leaving production running. |
 | `online` | Require an initialized gateway and an eligible asset-only diff; otherwise fail before stopping services. This does not override the safety classifier. |
 | `maintenance` | Coordinated backup, database updater and normal service replacement, then rebuild the online gateway. |
+
+There is no automatic fallback to maintenance, including when blue-green is
+disabled or not yet initialized. A same-commit release with different image
+digests also aborts in `auto`: an empty code diff does not authorize replacing
+runtime images. An exact duplicate of the current source, images and source mode
+remains a health-checked no-op. Select `maintenance` explicitly through manual
+workflow dispatch to authorize a release that needs service stops or updates.
+
+The installed controller has a monotonic deployment-policy version. Its normal
+self-update cannot replace the explicit-maintenance guard with an older
+controller from an application checkout or an idempotent release retry.
 
 The root deployer independently checks the actual Git diff, accepted local
 configuration, clean source, trusted repository, full SHA and revision-labelled

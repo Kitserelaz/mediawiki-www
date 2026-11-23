@@ -25,6 +25,7 @@ const stages = {validating: 'Checking configuration and live edits', fetching: '
   rolling_back: 'Restoring the previous application', rolled_back: 'Previous application restored',
   complete: 'Deployment complete', superseded: 'Superseded by a newer commit'};
 const reasons = {local_configuration_changed: 'Blocked: local configuration differs from the accepted baseline.',
+  maintenance_required: 'Blocked: this release requires an explicit maintenance selection. Running services were not changed.',
   uncommitted_files: 'Blocked: production has uncommitted changes.', insufficient_disk: 'Blocked: less than 5 GiB of storage is free.',
   stage_failed: 'This stage failed. Open the deployment job on GitHub for the error and recovery instructions.',
   rollback_failed: 'Automatic rollback failed. Application writers remain stopped; manual recovery is required.',

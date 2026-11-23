@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Restricted SSH entry point for the cloudwiki.us production deployment."""
 import contextlib
+import ast
 import fcntl
 import hashlib
 import importlib.util
@@ -23,6 +24,37 @@ WRITERS = ("web", "php", "worker", "provisioner", "jobchron", "scheduler", "coun
 IMAGE_KEYS = {"php": "MW_IMAGE", "web": "WEB_IMAGE", "counter": "COUNTER_IMAGE"}
 CONFIG_BASELINE = 'accepted-local-config.json'
 ROLLBACK_POLICY = 'rollback-compatibility.json'
+DEPLOYMENT_POLICY_VERSION = 1
+
+
+class MaintenanceRequiredError(RuntimeError):
+    """An online-ineligible release needs an explicit maintenance selection."""
+
+
+def controller_policy_version(source):
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return -1
+    for statement in tree.body:
+        if (isinstance(statement, ast.Assign)
+                and any(isinstance(target, ast.Name) and target.id == 'DEPLOYMENT_POLICY_VERSION'
+                        for target in statement.targets)
+                and isinstance(statement.value, ast.Constant)
+                and type(statement.value.value) is int):
+            return statement.value.value
+    return 0
+
+
+def install_deployment_controller(root, destination=Path('/usr/local/libexec')):
+    source = (root / 'scripts/deploy-production.py').read_text()
+    if controller_policy_version(source) < DEPLOYMENT_POLICY_VERSION:
+        print('Keeping installed deployment safety policy; checkout has an older controller', flush=True)
+        return False
+    helper = (root / 'scripts/blue_green.py').read_text()
+    atomic_private_write(destination / 'blue_green.py', helper)
+    atomic_private_write(destination / 'cloudwiki-deploy-production.py', source)
+    return True
 
 
 def rollback_approved(state, previous_commit, candidate_commit):
@@ -657,7 +689,8 @@ def deploy(payload, root, state, runner, health=probe):
         return progress.data['status'] == 'success'
     except Exception as error:
         message = str(error)
-        reason = ('local_configuration_changed' if 'Local configuration changed:' in message else
+        reason = ('maintenance_required' if isinstance(error, MaintenanceRequiredError) else
+                  'local_configuration_changed' if 'Local configuration changed:' in message else
                   'uncommitted_files' if 'uncommitted' in message or 'Tracked production' in message else
                   'insufficient_disk' if 'GiB free' in message else 'stage_failed')
         if progress.data['status'] != 'rolled_back' and progress.data.get('reason') != 'rollback_failed':
@@ -729,7 +762,6 @@ def _deploy(payload, root, state, runner, health, progress):
     safe = online_changes(runner, old_commit, commit) if enabled else False
     requested_mode = payload.get('mode', 'auto')
     online = ready and safe and requested_mode != 'maintenance'
-    print('Deployment mode: ' + ('online (public assets only)' if online else 'maintenance (backup and database updates)'), flush=True)
     last = state / "last-success.json"
     previous_success = last.read_text() if last.exists() else None
     if last.exists():
@@ -740,8 +772,12 @@ def _deploy(payload, root, state, runner, health, progress):
             health(root, runner)
             print("This release is already deployed and healthy", flush=True)
             return
-    if requested_mode == 'online' and not online:
-        raise RuntimeError('Online release requires an initialized gateway and only approved public-asset changes; use maintenance mode')
+    if not online and requested_mode != 'maintenance':
+        raise MaintenanceRequiredError(
+            'Release requires an initialized gateway and only approved public-asset changes for online deployment. '
+            'Automatic maintenance fallback is disabled; explicitly select maintenance mode to permit service stops and database updates.'
+        )
+    print('Deployment mode: ' + ('online (public assets only)' if online else 'maintenance (explicitly selected)'), flush=True)
     new_environment = image_environment(old_environment, payload["images"])
     if shutil.disk_usage(root).free < 5 * 1024 ** 3:
         raise RuntimeError("Less than 5 GiB free; free storage before deploying")
@@ -1076,8 +1112,7 @@ def main():
         last = state / "last-success.json"
         source = root / "scripts/deploy-production.py"
         if deployed and last.exists() and json.loads(last.read_text()).get("commit") == payload["commit"] and source.exists():
-            atomic_private_write(Path('/usr/local/libexec/blue_green.py'), (root / 'scripts/blue_green.py').read_text())
-            atomic_private_write(Path("/usr/local/libexec/cloudwiki-deploy-production.py"), source.read_text())
+            install_deployment_controller(root)
             ssh_source = root / 'scripts/deploy-ssh'
             if ssh_source.is_file():
                 ssh_target = Path('/usr/local/sbin/cloudwiki-deploy-ssh')

@@ -2,11 +2,6 @@ name: ${COMPOSE_PROJECT_NAME:-cloudwiki}
 x-farm: &farm
   user: www-data
   image: ${MW_IMAGE:-cloudwiki-php:local}
-  build:
-    context: .
-    dockerfile: docker/mediawiki/Dockerfile
-    target: php
-    args: {BUILDKIT_INLINE_CACHE: '1', SOURCE_REVISION: '${GITHUB_SHA:-unknown}'}
   environment: &farm-env
     MW_DOCKER: '1'
     MW_NUMERIC_WIKI_IDS: ${MW_NUMERIC_WIKI_IDS:-0}
@@ -60,6 +55,13 @@ x-farm: &farm
 services:
   php:
     <<: *farm
+    # The only service that builds the PHP image; worker, scheduler, provisioner
+    # and init reuse it via the shared image tag instead of rebuilding it.
+    build:
+      context: .
+      dockerfile: docker/mediawiki/Dockerfile
+      target: php
+      args: {BUILDKIT_INLINE_CACHE: '1', SOURCE_REVISION: '${GITHUB_SHA:-unknown}'}
     healthcheck:
       test: [CMD, php, /opt/farm/health.php]
       interval: 15s

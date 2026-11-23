@@ -1,25 +1,39 @@
 <template>
 	<div>
-		<p>{{ $i18n( 'ext-uls-empty-state-entrypoint-description' ) }}</p>
-		<div class="uls-rewrite__empty-list-entrypoint__actions">
-			<entrypoint-action-button
-				v-for="( action, index ) in actions"
-				:key="index"
-				:action="action"
-			></entrypoint-action-button>
-		</div>
+		<p>{{ $i18n( 'ext-uls-no-languages-entrypoint-description' ) }}</p>
+		<span
+			v-for="( action, index ) in actions"
+			:key="index"
+		>
+			<cdx-button
+				v-if="action.handler"
+				weight="quiet"
+				@click="action.handler"
+			>
+				<cdx-icon v-if="action.icon" :icon="action.icon"></cdx-icon>
+				{{ action.label }}
+			</cdx-button>
+			<a
+				v-else-if="action.url"
+				:href="action.url"
+				class="cdx-button cdx-button--fake-button cdx-button--fake-button--enabled cdx-button--action-progressive cdx-button--weight-quiet"
+			>
+				<cdx-icon v-if="action.icon" :icon="action.icon"></cdx-icon>
+				{{ action.label }}
+			</a>
+		</span>
 	</div>
 </template>
 
 <script>
 const { defineComponent, computed } = require( 'vue' );
-const useEntrypointActions = require( '../composables/useEntrypointActions.js' );
-const EntrypointActionButton = require( './EntrypointActionButton.vue' );
+const { CdxButton, CdxIcon } = require( '../../codex.js' );
 
-module.exports = exports = defineComponent( {
+module.exports = defineComponent( {
 	name: 'EmptyListEntrypoint',
 	components: {
-		EntrypointActionButton
+		CdxButton,
+		CdxIcon
 	},
 	props: {
 		entrypoints: {
@@ -30,10 +44,6 @@ module.exports = exports = defineComponent( {
 			type: Array,
 			required: true
 		},
-		preferredLanguages: {
-			type: Array,
-			default: () => []
-		},
 		languages: {
 			type: Array,
 			required: true
@@ -42,11 +52,19 @@ module.exports = exports = defineComponent( {
 	setup( props ) {
 		const context = computed( () => ( {
 			suggestions: props.suggestions,
-			preferredLanguages: props.preferredLanguages,
 			languages: props.languages
 		} ) );
 
-		const actions = useEntrypointActions( props.entrypoints, context );
+		// 1. Filter relevant actions based on shouldShow method.
+		// 2. Get their config.
+		// 3. Validate the config & flatten the array.
+		const actions = computed( () => props.entrypoints
+			.filter( ( entryPoint ) => entryPoint.shouldShow( context.value ) )
+			.map( ( entryPoint ) => entryPoint.getConfig( context.value ) )
+			.filter( ( config ) => config !== null &&
+				( Array.isArray( config ) ? config.length > 0 : true ) )
+			.reduce( ( acc, val ) => acc.concat( val ), [] )
+		);
 
 		return {
 			actions

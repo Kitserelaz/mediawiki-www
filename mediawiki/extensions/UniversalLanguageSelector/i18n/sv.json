@@ -4,11 +4,11 @@
 			"Ainali",
 			"Albinomamba",
 			"Jopparn",
-			"Larske",
 			"Lokal Profil",
 			"Sabelöga",
 			"Stefan2255",
-			"WikiPhoenix"
+			"WikiPhoenix",
+			"Larske"
 		]
 	},
 	"uls-desc": "Ger användaren flera sätt att välja ett språk och justera språkinställningar",
@@ -83,11 +83,13 @@
 	"ext-uls-language-title": "Språk",
 	"ext-uls-placeholder-search": "Sök språk",
 	"ext-uls-close-button-label": "Stäng",
+	"ext-uls-rewrite-label": "Omskrivning av Universal Language Selector",
+	"ext-uls-rewrite-description": "En omskrivning av Universal Language Selector (ULS), utformad för att modernisera användarupplevelsen och minska tekniska föroreningar genom förenklad arkitektur.",
 	"ext-uls-suggested-languages-title": "Föreslagen",
 	"ext-uls-all-languages-title": "Alla språk",
 	"ext-uls-no-languages-title": "Inga språk ännu",
 	"ext-uls-no-languages-description": "Inga språk är tillgängliga för närvarande.",
-	"ext-uls-empty-state-entrypoint-description": "Du kan översätta den här sidan. Det är ett enkelt sätt att skapa innehåll på ditt språk.",
+	"ext-uls-no-languages-entrypoint-description": "Du kan översätta den här sidan. Det är ett enkelt sätt att skapa innehåll på ditt språk.",
 	"ext-uls-invalid-language-search-title": "Språket erkäns inte",
 	"ext-uls-invalid-language-search-description": "Kontrollera stavningen. Du kan söka efter språk på namn eller ISO-kod.",
 	"ext-uls-unsupported-language-title": "Språket inte tillgängligt",
@@ -95,7 +97,8 @@
 	"ext-uls-open-language-settings": "Öppna språkinställningar",
 	"ext-uls-open-language-selector": "Tillbaka till språkväljaren",
 	"ext-uls-open-quick-actions": "Visa snabba åtgärder",
-	"ext-uls-missing-languages-label-multiple": "Saknas i <strong>$1</strong>, <strong>$2</strong> och mer",
+	"ext-uls-missing-languages-label": "Saknas i <strong>$1</strong>",
+	"ext-uls-missing-languages-label-more": "Saknas i <strong>$1</strong>, <strong>$2</strong> och mer",
 	"ext-uls-missing-languages-panel-title": "Översätt den här sidan",
 	"ext-uls-missing-languages-panel-description": "Den här sidan saknas på vissa språk du kanske kan. Du kan översätta den.",
 	"ext-uls-quick-actions-panel-title": "Snabba åtgärder"

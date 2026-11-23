@@ -7,10 +7,7 @@
 		>
 			<cdx-icon :icon="cdxIconArrowPrevious"></cdx-icon>
 		</cdx-button>
-		<span
-			ref="titleRef"
-			class="uls-rewrite__header__panel-title"
-			tabindex="-1">
+		<span class="uls-rewrite__header__panel-title">
 			{{ title }}
 		</span>
 		<cdx-button
@@ -24,11 +21,11 @@
 </template>
 
 <script>
-const { defineComponent, ref } = require( 'vue' );
+const { defineComponent } = require( 'vue' );
 const { CdxButton, CdxIcon } = require( '../codex.js' );
 const { cdxIconArrowPrevious, cdxIconClose } = require( '../icons.json' );
 
-module.exports = exports = defineComponent( {
+module.exports = defineComponent( {
 	name: 'LanguageSelectorPanelHeader',
 	components: {
 		CdxButton,
@@ -46,20 +43,9 @@ module.exports = exports = defineComponent( {
 	},
 	emits: [ 'back', 'close' ],
 	setup() {
-		const titleRef = ref( null );
-
-		const focusTitle = () => {
-			if ( titleRef.value ) {
-				titleRef.value.focus();
-			}
-		};
-
 		return {
 			cdxIconArrowPrevious,
-			cdxIconClose,
-			titleRef,
-			// eslint-disable-next-line vue/no-unused-properties
-			focusTitle
+			cdxIconClose
 		};
 	}
 } );

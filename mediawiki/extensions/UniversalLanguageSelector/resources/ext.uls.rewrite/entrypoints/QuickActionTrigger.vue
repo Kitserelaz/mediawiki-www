@@ -1,43 +1,39 @@
 <template>
-	<div v-if="actionToDisplay" class="uls-quick-action-trigger">
-		<template v-if="isSingleAction">
-			<a
-				v-if="actionToDisplay.url"
-				:href="actionToDisplay.url"
-				class="cdx-button cdx-button--weight-quiet cdx-button--icon-only"
-				:aria-label="actionToDisplay.label"
-			>
-				<cdx-icon :icon="actionToDisplay.icon"></cdx-icon>
-			</a>
-			<cdx-button
-				v-else
-				weight="quiet"
-				icon-only
-				:aria-label="actionToDisplay.label"
-				@click.stop="actionToDisplay.handler"
-			>
-				<cdx-icon :icon="actionToDisplay.icon"></cdx-icon>
-			</cdx-button>
-		</template>
+	<template v-if="isSingleAction">
+		<a
+			v-if="actionToDisplay.url"
+			:href="actionToDisplay.url"
+			class="uls-quick-action-trigger cdx-button cdx-button--weight-quiet cdx-button--icon-only"
+			:aria-label="actionToDisplay.label"
+		>
+			<cdx-icon :icon="actionToDisplay.icon"></cdx-icon>
+		</a>
 		<cdx-button
 			v-else
-			weight="quiet"
-			icon-only
+			class="uls-quick-action-trigger cdx-button cdx-button--weight-quiet cdx-button--icon-only"
 			:aria-label="actionToDisplay.label"
-			@click.stop="onTriggerClick"
+			@click.stop="actionToDisplay.handler"
 		>
 			<cdx-icon :icon="actionToDisplay.icon"></cdx-icon>
 		</cdx-button>
-	</div>
+	</template>
+	<cdx-button
+		v-else-if="actionToDisplay"
+		class="uls-quick-action-trigger"
+		weight="quiet"
+		:aria-label="actionToDisplay.label"
+		@click.stop="onTriggerClick"
+	>
+		<cdx-icon :icon="actionToDisplay.icon"></cdx-icon>
+	</cdx-button>
 </template>
 
 <script>
 const { defineComponent, computed } = require( 'vue' );
 const { CdxButton, CdxIcon } = require( '../../codex.js' );
 const { cdxIconEllipsis } = require( '../../icons.json' );
-const useEntrypointActions = require( '../composables/useEntrypointActions.js' );
 
-module.exports = exports = defineComponent( {
+module.exports = defineComponent( {
 	name: 'QuickActionTrigger',
 	components: {
 		CdxButton,
@@ -56,10 +52,6 @@ module.exports = exports = defineComponent( {
 			type: Array,
 			default: () => []
 		},
-		preferredLanguages: {
-			type: Array,
-			default: () => []
-		},
 		searchQuery: {
 			type: String,
 			default: null
@@ -74,12 +66,16 @@ module.exports = exports = defineComponent( {
 		const context = computed( () => ( {
 			languages: props.languages,
 			suggestions: props.suggestions,
-			preferredLanguages: props.preferredLanguages,
 			searchQuery: props.searchQuery,
 			searchQueryHits: props.searchQueryHits
 		} ) );
 
-		const actions = useEntrypointActions( props.entrypoints, context );
+		const actions = computed( () => props.entrypoints
+			.filter( ( entryPoint ) => entryPoint.shouldShow( context.value ) )
+			.map( ( entryPoint ) => entryPoint.getConfig( context.value ) )
+			.filter( ( config ) => config !== null &&
+				( Array.isArray( config ) ? config.length > 0 : true ) )
+			.reduce( ( acc, val ) => acc.concat( val ), [] ) );
 
 		const isSingleAction = computed( () => actions.value.length === 1 );
 

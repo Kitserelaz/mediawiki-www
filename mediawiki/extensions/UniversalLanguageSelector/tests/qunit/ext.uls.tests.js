@@ -33,28 +33,6 @@
 		assert.strictEqual( $.uls.data.getDir( 'als' ), 'ltr', 'The direction of custom MW language als is ltr.' );
 	} );
 
-	QUnit.test( 'BCP 47 redirects for non-standard MW codes (T391575)', ( assert ) => {
-		const cases = [
-			[ 'jv-x-bms', 'map-bms', 'Basa Banyumasan' ],
-			[ 'nap-x-tara', 'roa-tara', 'Tarandíne' ],
-			[ 'nrf', 'nrm', 'Nouormand' ],
-			[ 'ro-cyrl-md', 'mo', 'Moldovan' ]
-		];
-
-		cases.forEach( ( [ bcp47, mwCode, name ] ) => {
-			assert.strictEqual(
-				$.uls.data.isRedirect( bcp47 ),
-				mwCode,
-				bcp47 + ' redirects to ' + mwCode + ' (' + name + ')'
-			);
-			assert.strictEqual(
-				mw.uls.convertMediaWikiLanguageCodeToULS( bcp47 ),
-				mwCode,
-				'convertMediaWikiLanguageCodeToULS resolves ' + bcp47
-			);
-		} );
-	} );
-
 	QUnit.test( 'Common languages', ( assert ) => {
 		// Bug 49847
 		let foundTagalog = false;
@@ -73,22 +51,5 @@
 			foundTagalog,
 			'Tagalog is one of the languages presented to users in the Philippines.'
 		);
-	} );
-
-	QUnit.test( 'Deduplicate redirect codes', ( assert ) => {
-		const previousLanguages = mw.storage.getObject( mw.uls.previousLanguagesStorageKey ) || [];
-		// 'als' is a MediaWiki-specific redirect to 'gsw', registered by the
-		// addLanguage() call at the top of ext.uls.common.js, so a list holding
-		// both codes must collapse to a single Alemannic entry.
-		mw.storage.setObject( mw.uls.previousLanguagesStorageKey, [ 'gsw', 'als' ] );
-
-		const result = mw.uls.getFrequentLanguageList();
-		mw.storage.setObject( mw.uls.previousLanguagesStorageKey, previousLanguages );
-
-		const alemannic = result.filter(
-			( lang ) => ( $.uls.data.isRedirect( lang ) || lang ) === 'gsw'
-		);
-
-		assert.deepEqual( alemannic, [ 'gsw' ], 'Alemannic appears once, under its canonical code' );
 	} );
 }() );

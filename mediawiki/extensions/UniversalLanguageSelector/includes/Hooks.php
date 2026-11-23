@@ -133,16 +133,20 @@ class Hooks implements
 	/**
 	 * Whether the new language selector is enabled.
 	 *
+	 * @param User $user
 	 * @param Skin $skin
-	 * @param Config $config
 	 * @return bool
 	 */
-	public static function isLanguageSelectorV2Enabled( Skin $skin, Config $config ): bool {
-		return in_array(
-			$skin->getSkinName(),
-			$config->get( 'ULSLanguageSelectorV2SupportedSkins' ),
-			true
-		);
+	private function isLanguageSelectorV2Enabled( User $user, Skin $skin ): bool {
+		$isRewriteEnabled = $this->config->get( 'ULSLanguageSelectorV2Enabled' ) ||
+			(
+				ExtensionRegistry::getInstance()->isLoaded( 'BetaFeatures' ) &&
+				\MediaWiki\Extension\BetaFeatures\BetaFeatures::isFeatureEnabled(
+					$user, 'uls-rewrite'
+				)
+			);
+
+		return $isRewriteEnabled && $skin->getSkinName() === 'vector-2022';
 	}
 
 	/**
@@ -151,24 +155,15 @@ class Hooks implements
 	 * Hook: BeforePageDisplay
 	 */
 	public function onBeforePageDisplay( $out, $skin ): void {
-		$skinName = $skin->getSkinName();
-		if ( $skinName === 'apioutput' ) {
+		$unsupportedSkins = [ 'minerva', 'apioutput' ];
+		if ( in_array( $skin->getSkinName(), $unsupportedSkins, true ) ) {
 			return;
 		}
-
-		if ( $skinName === 'minerva' ) {
-			if ( $this->isEnabled() ) {
-				$out->addJsConfigVars( $this->enableCoreFeatures( $out, [], $skin ) );
-			}
-
-			return;
-		}
-
 		// Soft dependency to Wikibase client. Don't enable CLL if links are managed manually.
 		$excludedLinks = $out->getProperty( 'noexternallanglinks' );
 		$override = is_array( $excludedLinks ) && in_array( '*', $excludedLinks, true );
 		$isCompactLinksEnabled = $this->isCompactLinksEnabled( $out->getUser(), $skin );
-		$isVector2022LanguageInHeader = $skinName === 'vector-2022' && $this->isLanguageInHeader( $skin );
+		$isVector2022LanguageInHeader = $skin->getSkinName() === 'vector-2022' && $this->isLanguageInHeader( $skin );
 		$config = [
 			'wgULSPosition' => $this->config->get( 'ULSPosition' ),
 			'wgULSisCompactLinksEnabled' => $isCompactLinksEnabled,
@@ -184,7 +179,19 @@ class Hooks implements
 		}
 
 		if ( $this->isEnabled() ) {
-			$config = $this->enableCoreFeatures( $out, $config, $skin );
+			// Enable UI language selection for the user.
+			$out->addModules( 'ext.uls.interface' );
+
+			$title = $out->getTitle();
+			$isMissingPage = !$title || !$title->exists();
+			// if current page doesn't exist or if it's a talk page, we should use a different layout inside ULS
+			// according to T316559. Add JS config variable here, to let frontend know, when this is the case
+			$config[ 'wgULSisLanguageSelectorEmpty' ] = $isMissingPage || $title->isTalkPage();
+
+			$config[ 'wgULSLanguageSelectorV2Enabled' ] = $this->isLanguageSelectorV2Enabled(
+				$out->getUser(),
+				$skin
+			);
 		}
 
 		// This is added here, and not in onResourceLoaderGetConfigVars to allow skins and extensions
@@ -450,10 +457,6 @@ class Hooks implements
 			'type' => 'api',
 		];
 
-		$preferences['mw-preferred-languages'] = [
-			'type' => 'api',
-		];
-
 		// A link shown for accessing ULS language settings from preferences screen
 		$preferences['languagesettings'] = [
 			'type' => 'info',
@@ -502,6 +505,27 @@ class Hooks implements
 					'https://www.mediawiki.org/wiki/Talk:Universal_Language_Selector/Compact_Language_Links',
 			];
 		}
+
+		if ( $this->config->get( 'ULSLanguageSelectorV2Enabled' ) ) {
+			return;
+		}
+
+		// Enable ULS rewrite beta feature
+		$extensionAssetsPath = $this->config->get( 'ExtensionAssetsPath' );
+		$imagesDir = "$extensionAssetsPath/UniversalLanguageSelector/resources/images";
+		$prefs['uls-rewrite'] = [
+			'label-message' => 'ext-uls-rewrite-label',
+			'desc-message' => 'ext-uls-rewrite-description',
+			'screenshot' => [
+				// TODO: Change these icons
+				'ltr' => "$imagesDir/uls-rewrite-ltr.png",
+				'rtl' => "$imagesDir/uls-rewrite-rtl.png",
+			],
+			'info-link' => 'https://www.mediawiki.org/wiki/Wikimedia_Language_and_Product_Localization/ULS_Rewrite',
+			'discussion-link' =>
+				// phpcs:ignore Generic.Files.LineLength.TooLong
+				'https://www.mediawiki.org/w/index.php?title=Talk:Wikimedia_Language_and_Product_Localization/ULS_Rewrite',
+		];
 	}
 
 	/**
@@ -573,55 +597,20 @@ class Hooks implements
 	public static function getLanguageData( Context $context, Config $config ): array {
 		$languageDataInstance = LanguageUtil::get();
 		$allLanguageData = $languageDataInstance->getLanguages();
-		$rtlLanguages = [];
+		$languages = [];
 
 		foreach ( $allLanguageData as $languageCode => $languageData ) {
-			if ( $languageDataInstance->getDir( $languageCode ) === 'rtl' ) {
-				$rtlLanguages[] = $languageCode;
-			}
+			$languages[$languageCode] = $languageDataInstance->getDir( $languageCode );
 		}
 
 		return [
-			'rtlLanguages' => $rtlLanguages,
+			'languages' => $languages,
 			'territories' => $languageDataInstance->getTerritoriesWithLanguages(),
 		];
 	}
 
 	public static function getLanguageDataSummary(): array {
 		$languageDataInstance = LanguageUtil::get();
-		return [ $languageDataInstance->getVersion(), 'v2' ];
-	}
-
-	/** @return array Modified configuration data */
-	private function enableCoreFeatures( OutputPage $out, array $config, Skin $skin ): array {
-		$enabledLanguageSelectorV2 = self::isLanguageSelectorV2Enabled( $skin, $this->config );
-
-		if ( $skin->getSkinName() !== 'minerva' || $enabledLanguageSelectorV2 ) {
-			// If the ULS rewrite is disabled, don't add the 'ext.uls.interface' module for Minerva,
-			$out->addModules( 'ext.uls.interface' );
-		}
-
-		$title = $out->getTitle();
-		$isMissingPage = !$title || !$title->exists();
-		// if the current page doesn't exist or if it's a talk page, we should use a different layout inside ULS
-		// according to T316559. Add JS config variable here, to let frontend know, when this is the case
-		$config['wgULSisLanguageSelectorEmpty'] = $isMissingPage || $title->isTalkPage();
-		$config['wgULSLanguageSelectorV2Enabled'] = $enabledLanguageSelectorV2;
-
-		return $config;
-	}
-
-	/**
-	 * Callback for resource loader module for ext.uls.preferredlanguages
-	 * @param Context $context
-	 * @return array
-	 */
-	public static function getSupportedLanguages( Context $context ): array {
-		$services = MediaWikiServices::getInstance();
-		return $services->getLanguageNameUtils()
-			->getLanguageNames(
-				$context->getLanguage(),
-				LanguageNameUtils::SUPPORTED
-			);
+		return [ $languageDataInstance->getVersion() ];
 	}
 }

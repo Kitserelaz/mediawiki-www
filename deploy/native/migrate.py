@@ -176,6 +176,7 @@ def auxiliary():
 
 def stage(commit):
     with c.lock():
+        if (c.CONFIG/'runtime.json').exists() or (MIGRATION/'writes-started.json').exists():raise RuntimeError('Native writers have already been activated; use forward recovery, not migration reset')
         MIGRATION.mkdir(parents=True,exist_ok=True,mode=0o700)
         saved=inventory();c.write_json(MIGRATION/'inventory.json',saved)
         release=c.build(commit)
@@ -193,6 +194,7 @@ def stage(commit):
 
 def cutover():
     with c.lock():
+        if (c.CONFIG/'runtime.json').exists() or (MIGRATION/'writes-started.json').exists():raise RuntimeError('Native writers have already been activated; use forward recovery, not migration reset')
         staged=json.loads((MIGRATION/'staged.json').read_text());saved=json.loads((MIGRATION/'inventory.json').read_text())
         c.capacity(c.size(c.DATA/'mysql'))
         if c.git('status','--porcelain').strip():raise RuntimeError('Source changed during staging')
@@ -219,6 +221,7 @@ def cutover():
         c.php_manage('preflight')
         # No application schema changes are introduced by the transport migration itself.
         c.php_manage('refresh')
+        c.write_json(MIGRATION/'writes-started.json',{'commit':staged['commit'],'created':int(time.time())})
         c.systemctl('start',c.APP_UNITS)
         c.systemctl('start',['caddy','grafana','prometheus','node-exporter','blackbox-exporter','cloudflared','editor'])
         next_config=old.replace('127.0.0.1:8443','127.0.0.1:18443').replace('127.0.0.1:8088','127.0.0.1:18088')

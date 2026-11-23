@@ -112,6 +112,21 @@ class ConfigurationTest(unittest.TestCase):
             self.assertEqual(volumes['/var/www/mediawiki/images']['type'], 'volume')
             self.assertNotIn('read_only', volumes['/var/www/mediawiki/images'])
 
+    def test_gateway_validation_does_not_claim_the_live_edges_fixed_tunnel_ip(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            base = fixture(root)
+            base['services']['web']['networks'] = {'default': {}, 'tunnel': {'ipv4_address': '172.31.240.2'}}
+            base['networks']['tunnel'] = {'name': 'fixture_tunnel'}
+            config = bg.gateway_validation_config(base, root / 'gateway')
+            web = config['services']['gateway-validation']
+            self.assertEqual(web['networks'], {'default': {}})
+            self.assertNotIn('ports', web)
+            self.assertEqual(web['entrypoint'], ['caddy'])
+            self.assertEqual(web['command'][0], 'validate')
+            self.assertTrue(any(v['target'] == '/data' for v in web['volumes']))
+            self.assertTrue(all(v['external'] for v in config['volumes'].values()))
+
     def test_gateway_preserves_operator_wrappers_and_prevents_header_spoofing(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -338,7 +353,7 @@ class OnlineDeploymentTest(unittest.TestCase):
     def test_initial_config_validation_fails_before_gateway_recreation(self):
         settings = {'MW_BLUE_GREEN_DIRECTORY': str(self.directory)}
         deployment.disable_online(settings)
-        self.runner.fail = lambda args: 'run' in args and 'validate' in args
+        self.runner.fail = lambda args: 'run' in args and 'gateway-validation' in args
         with self.assertRaises(subprocess.CalledProcessError):
             deployment.enable_online(self.root, self.state, self.runner, settings,
                                      request()['images'], 'c' * 40, health=lambda *_: None)

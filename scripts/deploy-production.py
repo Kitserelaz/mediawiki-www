@@ -486,9 +486,9 @@ def enable_online(root, state, runner, settings, images, commit, source=None, he
     prepare_slot(root, directory, runner, base, 'blue', images, source)
     probe_slot(runner, directory, 'blue', settings.get('MW_DOMAIN', 'cloudwiki.us'))
     write_caddy_files(gateway, blue_green().gateway_files(base, 'blue'))
-    runner.run(compose + ['run', '--rm', '--no-deps', '--entrypoint', 'caddy',
-                          '-v', str(gateway) + ':' + blue_green().MOUNT + ':ro', 'web',
-                          'validate', '--config', blue_green().MOUNT + '/Caddyfile', '--adapter', 'caddyfile'])
+    validation = directory / 'validate.json'
+    atomic_private_write(validation, json.dumps(blue_green().gateway_validation_config(base, gateway)) + '\n')
+    runner.run(['docker', 'compose', '-f', str(validation), 'run', '--rm', '--no-deps', 'gateway-validation'])
     atomic_private_write(directory / 'compose.json', json.dumps(blue_green().gateway_override(gateway)) + '\n')
     try:
         runner.run(compose + ['config', '--quiet'])

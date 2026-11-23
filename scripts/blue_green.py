@@ -48,6 +48,32 @@ def bind(source, target):
             'bind': {'create_host_path': False}}
 
 
+def external_resources(base):
+    result = {}
+    for kind in ('volumes', 'networks'):
+        result[kind] = {name: {'external': True, 'name': value.get('name', base['name'] + '_' + name)}
+                        for name, value in base.get(kind, {}).items()}
+    result['secrets'] = copy.deepcopy(base.get('secrets', {}))
+    result['configs'] = copy.deepcopy(base.get('configs', {}))
+    return result
+
+
+def gateway_validation_config(base, directory):
+    # A production edge may own a fixed Tunnel IP. A one-off copy of that
+    # service cannot start while the real edge owns the address.
+    web = copy.deepcopy(base['services']['web'])
+    for key in ('build', 'ports', 'container_name', 'depends_on', 'profiles',
+                'develop', 'network_mode', 'links', 'healthcheck', 'env_file'):
+        web.pop(key, None)
+    web['networks'] = {'default': {}}
+    web['restart'] = 'no'
+    web['entrypoint'] = ['caddy']
+    web['command'] = ['validate', '--config', MOUNT + '/Caddyfile', '--adapter', 'caddyfile']
+    web['volumes'] = list({v['target']: v for v in
+                           [*web.get('volumes', []), bind(directory, MOUNT)]}.values())
+    return {'name': base['name'], 'services': {'gateway-validation': web}, **external_resources(base)}
+
+
 def slot_config(base, slot, images, directory, source=None):
     """Use the farm's existing named volumes/network, without owning their lifetime."""
     php = copy.deepcopy(base['services']['php'])
@@ -82,11 +108,7 @@ def slot_config(base, slot, images, directory, source=None):
                           'interval': '5s', 'timeout': '3s', 'retries': 12}
     result = {'name': base['name'], 'services': {slot_name(slot, 'php'): php,
                                                 slot_name(slot, 'web'): web}}
-    for kind in ('volumes', 'networks'):
-        result[kind] = {name: {'external': True, 'name': value.get('name', base['name'] + '_' + name)}
-                        for name, value in base.get(kind, {}).items()}
-    result['secrets'] = copy.deepcopy(base.get('secrets', {}))
-    result['configs'] = copy.deepcopy(base.get('configs', {}))
+    result.update(external_resources(base))
     return result
 
 

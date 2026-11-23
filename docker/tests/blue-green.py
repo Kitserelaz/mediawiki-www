@@ -44,7 +44,7 @@ def main():
 }
 import /etc/caddy/wiki.caddy
 import /etc/caddy/custom-domains.caddy
-https://meta.example.test, https://login.example.test, https://test.example.test, https://auth.example.test {
+https://meta.example.test, https://login.example.test, https://test.example.test, https://auth.example.test, https://*.example.test {
     tls internal
     import wiki
 }
@@ -57,7 +57,7 @@ https://meta.example.test, https://login.example.test, https://test.example.test
             'php': {'image': images['php'], 'entrypoint': ['php-fpm'], 'command': ['-F'],
                     'volumes': [], 'environment': {},
                     'healthcheck': {'test': ['CMD', 'php', '-r',
-                                            '$s=@fsockopen("127.0.0.1",9000);exit($s?0:1);'],
+                                            '$$s=@fsockopen("127.0.0.1",9000);exit($$s?0:1);'],
                                     'interval': '1s', 'timeout': '3s', 'retries': 30}},
             'web': {'image': images['web'], 'volumes': [
                 bg.bind(config_dir / name, '/etc/caddy/' + name)
@@ -96,9 +96,9 @@ if (str_starts_with($uri, '/tls-allow')) { http_response_code(200); exit; }
 if (str_starts_with($uri, '/route-numeric')) {
     header('Location: https://meta.example.test/wiki/Main_Page', true, 308); exit;
 }
-if (($_SERVER['CLOUDWIKI_LOOKUP_HOST'] ?? '') === 'custom.example.test') {
+if (($_SERVER['CLOUDWIKI_LOOKUP_HOST'] ?? '') === 'custom.customer.test') {
     header('X-CloudWiki-Route-Wiki: fixturewiki');
-    header('X-CloudWiki-Route-Host: custom.example.test'); exit;
+    header('X-CloudWiki-Route-Host: custom.customer.test'); exit;
 }
 http_response_code(403);
 ''')
@@ -179,8 +179,8 @@ http_response_code(403);
                     public = json.loads(fetch(extra=spoof))
                     assert public['ip'] != '203.0.113.123' and public['wiki'] == ''
                     assert public['https'] == 'on'
-                    custom = json.loads(fetch(host='custom.example.test', extra=spoof))
-                    assert custom['wiki'] == 'fixturewiki' and custom['host'] == 'custom.example.test'
+                    custom = json.loads(fetch(host='custom.customer.test', extra=spoof))
+                    assert custom['wiki'] == 'fixturewiki' and custom['host'] == 'custom.customer.test'
                     auth = json.loads(fetch('/metawiki/w/api.php', 'auth.example.test'))
                     assert auth['slot'] == 'green' and auth['uri'] == '/metawiki/w/api.php'
                     numeric = fetch('/wiki/Main_Page', '123.example.test', ('-o', '/dev/null', '-w', '%{http_code}'))

@@ -257,8 +257,10 @@ request_terminate_timeout=5s
             'Environment=HOME=/var/lib/cloudwiki-native/editor\nProtectSystem=full\nReadWritePaths=/var/www/mediawiki\nWorkingDirectory=/var/www',environment=False)
     write('/etc/tmpfiles.d/cloudwiki-native.conf','d /run/cloudwiki-native 0755 www-data www-data -\nf /run/cloudwiki-native/maintenance.caddy 0644 root root -\n')
     proxy(env,source)
-    c.run(['setfacl','-R','-m','u:cloudwiki-editor:rwX','/var/www/mediawiki'])
-    c.run(['find','/var/www/mediawiki','-type','d','-exec','setfacl','-m','d:u:cloudwiki-editor:rwx','{}','+'])
+    acl=c.run(['getfacl','-cp','/var/www/mediawiki']).decode()
+    if 'default:user:cloudwiki-editor:rwx' not in acl:
+        c.run(['setfacl','-R','-m','u:cloudwiki-editor:rwX','/var/www/mediawiki'])
+        c.run(['find','/var/www/mediawiki','-type','d','-exec','setfacl','-m','d:u:cloudwiki-editor:rwx','{}','+'])
     installed=Path('/usr/local/libexec/cloudwiki-native.py');shutil.copy2(HERE/'control.py',installed);installed.chmod(0o644)
     for helper in ['cli','health','renew','retention']:
         path=HERE/(helper+'.py')

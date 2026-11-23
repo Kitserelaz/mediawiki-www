@@ -6,8 +6,7 @@ global $wgConf, $wgManageWikiExtensions, $wgManageWikiSettings, $wgManageWikiNam
 require __DIR__ . '/private.php';
 require __DIR__ . '/runtime.php';
 $wgDBtype = 'mysql';
-$wgDBserver = farmEnv('MW_DB_HOST', 'database');
-    $GLOBALS['wgDBport'] = (int)(getenv('MW_DB_PORT') ?: 3306);
+$wgDBserver = farmEnv('MW_DB_HOST', 'database') . (getenv('MW_DB_PORT') ? ':' . getenv('MW_DB_PORT') : '');
 $wgDBuser = farmEnv('MW_DB_USER', 'mediawiki');
 $wgDBname = farmWikiId(getenv('MW_BOOTSTRAP_DB'));
 $wgServer = farmWikiBuiltinUrl($wgDBname) ?? 'https://' . preg_replace('/wiki$/', '', $wgDBname) . '.' . farmEnv('MW_DOMAIN', 'localhost');

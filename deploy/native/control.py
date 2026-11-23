@@ -117,7 +117,7 @@ def capture_config():
     paths = [p for p in CONFIG.rglob('*') if p.is_file() and not p.is_symlink()]
     paths += [p for p in Path('/etc/systemd/system').glob('cloudwiki-*') if p.is_file()]
     paths += [p for p in Path('/etc/systemd/system').glob('cloudwiki-*.service.d/*') if p.is_file()]
-    paths += [p for p in [Path('/etc/haproxy/haproxy.cfg'),Path('/etc/apparmor.d/local/mariadbd')] if p.exists()]
+    paths += [p for p in [Path('/etc/haproxy/haproxy.cfg'),Path('/etc/apparmor.d/local/mariadbd'),*Path('/usr/local/libexec').glob('cloudwiki-native*.py'),Path('/usr/local/libexec/cloudwiki-farm-control.py'),Path('/usr/local/libexec/cloudwiki-admin-agent.js'),Path('/usr/local/libexec/cloudwiki-deployment-worker.js')] if p.exists()]
     return {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(paths)}
 
 
@@ -158,10 +158,14 @@ def build(commit, token=None):
     if not re.fullmatch('[a-f0-9]{40}', commit): raise ValueError('Invalid commit')
     destination = BASE / 'releases' / commit
     if (destination/'release.json').exists(): return destination
-    capacity(size(active()) + size(DATA) if (BASE/'current').exists() else size(ROOT))
     git('fetch', '--no-tags', REPO, 'refs/heads/main', token=token)
     latest = git('rev-parse', 'FETCH_HEAD').decode().strip()
     if latest != commit: raise RuntimeError('Main changed before preparation; click Deploy again')
+    tree=git('ls-tree','-rl',commit).decode().splitlines()
+    source_bytes=sum(int(line.split('\t',1)[0].split()[3]) for line in tree if line.split('\t',1)[0].split()[3].isdigit())
+    # Source preparation and the recovery snapshot are sequential; shared immutable
+    # files are deduplicated before maintenance starts.
+    capacity(max(source_bytes+512*1024**2,size(DATA)))
     if destination.exists(): raise RuntimeError('Incomplete release exists; inspect it before retrying')
     destination.mkdir(parents=True, mode=0o755)
     destination.chmod(0o755)

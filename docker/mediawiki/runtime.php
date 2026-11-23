@@ -107,8 +107,7 @@ function farmRuntime(): void {
     if (getenv('MW_FARM_READ_ONLY') === '1' && PHP_SAPI !== 'cli') {
         $GLOBALS['wgReadOnly'] = 'This wiki is temporarily read-only for a farm database migration.';
     }
-    $wgDBserver = farmEnv('MW_DB_HOST', 'database');
-    $GLOBALS['wgDBport'] = (int)(getenv('MW_DB_PORT') ?: 3306);
+    $wgDBserver = farmEnv('MW_DB_HOST', 'database') . (getenv('MW_DB_PORT') ? ':' . getenv('MW_DB_PORT') : '');
     $wgDBuser = farmEnv('MW_DB_USER', 'mediawiki');
     $wgDBpassword = $farmSecrets['db_password'];
     $wgMemCachedServers = [farmEnv('MW_MEMCACHED', 'memcached:11211')];

@@ -7,9 +7,8 @@ with c.lock():
     folder=c.STATE/'native-migration';marker=folder/'completed.json'
     if not marker.exists():raise SystemExit('No completed migration')
     completed=json.loads(marker.read_text())
-    if time.time()<completed['retain_docker_until']:raise SystemExit(0)
     c.probe()
-    if not completed.get('docker_retired'):
+    if not completed.get('docker_retired') and time.time()>=completed['retain_docker_until']:
         saved=json.loads((folder/'inventory.json').read_text())
         names=c.run(['docker','ps','-aq']).decode().split()
         existing=json.loads(c.run(['docker','inspect',*names])) if names else []

@@ -235,6 +235,9 @@ def cutover():
         native_units=[name+'.service' for name in manifest['units']]
         c.run(['systemctl','enable',*native_units])
         c.write_json(c.CONFIG/'runtime.json',manifest)
+        shutil.copy2(c.ROOT/'scripts/deploy-ssh','/usr/local/sbin/cloudwiki-deploy-ssh')
+        Path('/usr/local/sbin/cloudwiki-deploy-ssh').chmod(0o755)
+        c.run(['systemctl','disable','--now','cloudwiki-code-reload.path'])
         for source,target in [('native-wildcard-renew.service','cloudwiki-wildcard-renew.service'),('native-retention.service','cloudwiki-native-retention.service'),('native-retention.timer','cloudwiki-native-retention.timer')]:
             shutil.copy2(c.CONFIG/source,Path('/etc/systemd/system')/target)
         dropin=Path('/etc/systemd/system/cloudwiki-wildcard-renew.service.d/admin-tls.conf')

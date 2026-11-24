@@ -29,10 +29,16 @@
 /mediawiki/*.zip
 
 # MediaWiki runtime data and machine-specific legacy setup/debug files.
+/mediawiki/images
 /mediawiki/images/
 /mediawiki/image-imports/
+/mediawiki/cache
 /mediawiki/cache/
+/mediawiki/cw_cache
 /mediawiki/cw_cache/
+/mediawiki/docker
+/mediawiki/docker/
+/release.json
 /mediawiki/tmp/
 /mediawiki/sitemaps/
 /mediawiki/dump.rdb

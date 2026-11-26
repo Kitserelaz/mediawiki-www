@@ -88,6 +88,7 @@ Desktop.ini
 *.swp
 *.swo
 *~
+/AGENTS.md
 
 # Keep bundled vendor directories, extension/skin sources, and lockfiles:
 # the Docker builds currently rely on the supplied dependency trees.

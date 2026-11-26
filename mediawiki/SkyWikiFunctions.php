@@ -897,10 +897,52 @@ class MirahezeFunctions {
 	}
 
 	/**
+	 * Build the maximal conflict-free, non-disabled ManageWiki extension list for chaoswiki.
+	 *
+	 * @return string[]
+	 */
+	private static function getChaosWikiExtensions(): array {
+		global $wgManageWikiExtensions;
+
+		$included = [];
+		foreach ( $wgManageWikiExtensions as $key => $ext ) {
+			if ( isset( static::$disabledExtensions[$key] ) || !empty( $ext['conflicts'] ) ) {
+				continue;
+			}
+			$included[$key] = $ext;
+		}
+
+		// Drop extensions whose required extension dependencies were excluded above.
+		do {
+			$changed = false;
+			foreach ( $included as $key => $ext ) {
+				$required = $ext['requires']['extensions'] ?? [];
+				foreach ( $required as $req ) {
+					$satisfied = is_array( $req )
+						? (bool)array_intersect( $req, array_keys( $included ) )
+						: isset( $included[$req] );
+					if ( !$satisfied ) {
+						unset( $included[$key] );
+						$changed = true;
+						break;
+					}
+				}
+			}
+		} while ( $changed );
+
+		return array_values( array_unique( array_filter( array_column( $included, 'name' ) ) ) );
+	}
+
+	/**
 	 * @return array
 	 */
 	public static function getActiveExtensions(): array {
 		global $wgDBname;
+
+		if ( $wgDBname === 'chaoswiki' ) {
+			static $chaosExtensions = null;
+			return $chaosExtensions ??= self::getChaosWikiExtensions();
+		}
 
 		$confCacheFileName = "config-$wgDBname.php";
 

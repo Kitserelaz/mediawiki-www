@@ -32,6 +32,13 @@ if ( $wi->isAnyOfExtensionsActive( 'SimpleBlogPage', 'StandardDialogs', 'Enhance
         wfLoadExtension( 'OOJSPlus' );
 }
 
+// UniversalLanguageSelector (2026-02-25) still reads VectorLanguageInMainMenu,
+// which was removed from Vector >= 1.45.
+$wgVectorLanguageInMainMenu ??= [
+        'logged_in' => false,
+        'logged_out' => false,
+];
+
 $wgGlobalPreferencesDB = "centralauth";
 $wgJobTypeConf['default'] = [
     'class'          => 'JobQueueRedis',

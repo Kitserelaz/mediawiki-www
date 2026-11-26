@@ -398,6 +398,5 @@ if ( (getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) && getenv( 'MW_ENV' ) ==
 
 
 
-
 # wfLoadExtension( 'Wiki2ban' );
 # $wgW2BLogFilePath = "/var/log/mediawiki/wiki2ban.log";

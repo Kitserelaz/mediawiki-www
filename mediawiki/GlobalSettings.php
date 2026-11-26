@@ -22,9 +22,6 @@ if ($wi->isExtensionActive('CirrusSearch')) {
     $wgCirrusSearchServers = ['localhost'];
     $wgSearchType = 'CirrusSearch';  
 
-    if ($wi->isExtensionActive('RelatedArticles')) {
-        $wgRelatedArticlesUseCirrusSearch = true;
-    }
 }
 
 if ($wi->isExtensionActive('EasyTimeline')) {

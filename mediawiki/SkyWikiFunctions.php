@@ -940,7 +940,7 @@ class MirahezeFunctions {
 	public static function getActiveExtensions(): array {
 		global $wgDBname;
 
-		if ( $wgDBname === 'chaoswiki' ) {
+		if ( false && $wgDBname === 'chaoswiki' ) {
 			static $chaosExtensions = null;
 			return $chaosExtensions ??= self::getChaosWikiExtensions();
 		}

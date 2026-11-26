@@ -906,7 +906,8 @@ class MirahezeFunctions {
 
 		$included = [];
 		foreach ( $wgManageWikiExtensions as $key => $ext ) {
-			if ( isset( static::$disabledExtensions[$key] ) || !empty( $ext['conflicts'] ) ) {
+			// Citizen is already loaded unconditionally in LocalSettings.php.
+			if ( $key === 'citizen' || isset( static::$disabledExtensions[$key] ) || !empty( $ext['conflicts'] ) ) {
 				continue;
 			}
 			$included[$key] = $ext;

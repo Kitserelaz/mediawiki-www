@@ -17,7 +17,7 @@ class LoadExtensionSchemaUpdatesHookHandler implements LoadExtensionSchemaUpdate
 	 * @return	boolean	true
 	 */
 	public function onLoadExtensionSchemaUpdates($updater) {
-		$extDir = __DIR__;
+		$extDir = dirname( __DIR__ );
 		$updater->addExtensionUpdate(['addTable', 'ext_oredict_items', "{$extDir}/install/sql/ext_oredict_items.sql", true]);
 		return true;
 	}

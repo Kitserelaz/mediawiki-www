@@ -61,8 +61,6 @@ class CampaignConfig {
 
 	/**
 	 * Get an array of mappings between topic ID and its search expression
-	 *
-	 * @return array
 	 */
 	public function getCampaignTopics(): array {
 		$topicConfig = $this->topicConfig;
@@ -74,7 +72,7 @@ class CampaignConfig {
 				if ( array_key_exists( $topicId, $topicConfig ) ) {
 					$topics[] = [
 						'id' => $topicId,
-						'searchExpression' => $topicConfig[ $topicId ]
+						'searchExpression' => $topicConfig[ $topicId ],
 					];
 				}
 				return $topics;
@@ -154,6 +152,19 @@ class CampaignConfig {
 	}
 
 	/**
+	 * Check if this is a Growth campaign by inspecting the campaign query parameter.
+	 */
+	public function isGrowthCampaign(
+		string $campaignParameter
+	): bool {
+		if ( !$campaignParameter ) {
+			return false;
+		}
+
+		return $this->getCampaignIndexFromCampaignTerm( $campaignParameter ) !== null;
+	}
+
+	/**
 	 * Check whether the user is in the specified campaign
 	 *
 	 * @param UserIdentity $user
@@ -197,6 +208,9 @@ class CampaignConfig {
 	 * @return bool
 	 */
 	public function shouldSkipWelcomeSurvey( string $campaignTerm ): bool {
+		if ( !$campaignTerm ) {
+			return false;
+		}
 		$campaign = $this->getCampaignIndexFromCampaignTerm( $campaignTerm );
 		return (bool)$this->getConfigValue( $campaign, 'skipWelcomeSurvey' );
 	}

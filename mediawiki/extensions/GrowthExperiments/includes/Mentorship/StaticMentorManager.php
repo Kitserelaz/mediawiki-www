@@ -3,7 +3,6 @@
 namespace GrowthExperiments\Mentorship;
 
 use GrowthExperiments\Mentorship\Store\MentorStore;
-use GrowthExperiments\WikiConfigException;
 use InvalidArgumentException;
 use MediaWiki\User\UserIdentity;
 
@@ -11,7 +10,7 @@ use MediaWiki\User\UserIdentity;
  * MentorManager implementation for local testing and development.
  * Uses a predefined user => mentor mapping.
  */
-class StaticMentorManager extends MentorManager {
+class StaticMentorManager implements IMentorManager {
 
 	/** @var Mentor[] */
 	private array $mentors;
@@ -37,19 +36,6 @@ class StaticMentorManager extends MentorManager {
 	}
 
 	/** @inheritDoc */
-	public function getMentorForUser(
-		UserIdentity $user,
-		string $role = MentorStore::ROLE_PRIMARY
-	): Mentor {
-		$mentor = $this->getMentorForUserSafe( $user );
-		if ( !$mentor ) {
-			throw new WikiConfigException( __METHOD__ . ': No mentor for {user}',
-				[ 'user' => $user->getName() ] );
-		}
-		return $mentor;
-	}
-
-	/** @inheritDoc */
 	public function getMentorForUserSafe(
 		UserIdentity $user,
 		string $role = MentorStore::ROLE_PRIMARY
@@ -61,15 +47,6 @@ class StaticMentorManager extends MentorManager {
 		} else {
 			throw new InvalidArgumentException( 'Invalid role' );
 		}
-	}
-
-	/** @inheritDoc */
-	public function getEffectiveMentorForUser( UserIdentity $menteeUser ): Mentor {
-		$mentor = $this->getEffectiveMentorForUserSafe( $menteeUser );
-		if ( !$mentor ) {
-			throw new WikiConfigException( __METHOD__ . ': No effective mentor for ' . $menteeUser->getName() );
-		}
-		return $mentor;
 	}
 
 	/** @inheritDoc */
@@ -93,7 +70,17 @@ class StaticMentorManager extends MentorManager {
 
 	/** @inheritDoc */
 	public function getMentorshipStateForUser( UserIdentity $user ): int {
-		return MentorManager::MENTORSHIP_ENABLED;
+		return IMentorManager::MENTORSHIP_ENABLED;
+	}
+
+	/** @inheritDoc */
+	public function isUserIneligibleForMentorship( UserIdentity $user ): bool {
+		return false;
+	}
+
+	/** @inheritDoc */
+	public function didUserExplicitlyOptIntoMentorship( UserIdentity $user ): bool {
+		return false;
 	}
 
 	/** @inheritDoc */

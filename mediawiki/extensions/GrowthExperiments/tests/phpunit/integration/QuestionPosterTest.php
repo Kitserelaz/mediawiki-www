@@ -26,9 +26,17 @@ class QuestionPosterTest extends MediaWikiIntegrationTestCase {
 		bool $postOnTop,
 		string $body,
 		string $sectionHeader,
-		?RevisionRecord $parentRevision,
+		?array $parentRevision,
 		?string $expectedResult
 	) {
+		if ( $parentRevision !== null ) {
+			[ $text, $visibility ] = $parentRevision;
+			$title = $this->makeMockTitle( 'QuestionPosterTest' );
+			$parentRevision = new MutableRevisionRecord( $title );
+			$parentRevision->setContent( SlotRecord::MAIN, new WikitextContent( $text ) );
+			$parentRevision->setVisibility( $visibility );
+		}
+
 		$questionPoster = $this->getMockBuilder( QuestionPoster::class )
 			->disableOriginalConstructor()
 			->getMockForAbstractClass();
@@ -49,17 +57,7 @@ class QuestionPosterTest extends MediaWikiIntegrationTestCase {
 		}
 	}
 
-	public function provideMakeWikitextContent() {
-		$makeParent = function ( string $text ) {
-			$title = $this->makeMockTitle( 'QuestionPosterTest' );
-			$revision = new MutableRevisionRecord( $title );
-			$revision->setContent( SlotRecord::MAIN, new WikitextContent( $text ) );
-			return $revision;
-		};
-
-		$hiddenParent = $makeParent( 'x' );
-		$hiddenParent->setVisibility( RevisionRecord::SUPPRESSED_ALL );
-
+	public static function provideMakeWikitextContent() {
 		return [
 			'no parent' => [
 				'postOnTop' => false,
@@ -72,14 +70,14 @@ class QuestionPosterTest extends MediaWikiIntegrationTestCase {
 				'postOnTop' => false,
 				'body' => "Foo\nbar\n\nbaz",
 				'sectionHeader' => 'Some header',
-				'parentRevision' => $hiddenParent,
+				'parentRevision' => [ 'x', RevisionRecord::SUPPRESSED_ALL ],
 				'expectedResult' => null,
 			],
 			'bottom' => [
 				'postOnTop' => false,
 				'body' => "Foo\nbar\n\nbaz",
 				'sectionHeader' => 'Some header',
-				'parentRevision' => $makeParent( "Section 0\n\n== H1 ==\nSection1\n== H2 ==\nSection2" ),
+				'parentRevision' => [ "Section 0\n\n== H1 ==\nSection1\n== H2 ==\nSection2", 0 ],
 				'expectedResult' => "Section 0\n\n== H1 ==\nSection1\n== H2 ==\nSection2\n\n"
 					. "== Some header ==\n\nFoo\nbar\n\nbaz --~~~~",
 			],
@@ -87,7 +85,7 @@ class QuestionPosterTest extends MediaWikiIntegrationTestCase {
 				'postOnTop' => true,
 				'body' => "Foo\nbar\n\nbaz",
 				'sectionHeader' => 'Some header',
-				'parentRevision' => $makeParent( "Section 0\n\n== H1 ==\nSection1\n== H2 ==\nSection2" ),
+				'parentRevision' => [ "Section 0\n\n== H1 ==\nSection1\n== H2 ==\nSection2", 0 ],
 				'expectedResult' => "Section 0\n\n== Some header ==\n\nFoo\nbar\n\nbaz --~~~~\n\n"
 					. "== H1 ==\nSection1\n\n== H2 ==\nSection2",
 			],
@@ -95,14 +93,14 @@ class QuestionPosterTest extends MediaWikiIntegrationTestCase {
 				'postOnTop' => true,
 				'body' => "Foo\nbar\n\nbaz",
 				'sectionHeader' => 'Some header',
-				'parentRevision' => $makeParent( "Section\n\n0" ),
+				'parentRevision' => [ "Section\n\n0", 0 ],
 				'expectedResult' => "Section\n\n0\n\n== Some header ==\n\nFoo\nbar\n\nbaz --~~~~",
 			],
 			'top with subsections' => [
 				'postOnTop' => true,
 				'body' => "Foo\nbar\n\nbaz",
 				'sectionHeader' => 'Some header',
-				'parentRevision' => $makeParent( "Section 0\n\n== H1 ==\nSection1\n=== H2 ===\nSection2" ),
+				'parentRevision' => [ "Section 0\n\n== H1 ==\nSection1\n=== H2 ===\nSection2", 0 ],
 				'expectedResult' => "Section 0\n\n== Some header ==\n\nFoo\nbar\n\nbaz --~~~~\n\n"
 					. "== H1 ==\nSection1\n=== H2 ===\nSection2",
 			],

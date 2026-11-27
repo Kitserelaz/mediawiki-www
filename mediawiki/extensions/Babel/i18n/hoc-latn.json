@@ -9,6 +9,8 @@
 	"babel-url": "Project:Babel",
 	"babel-footer-url": ":Bara:Babel - Jagar lekate User ko",
 	"babel-autocreate-reason": "Apaćsepen [[$1|Babel]] Bara Sakam baioḱ tana",
+	"babel-autocreate-text-levels": "Nen Bara ren User ko $2 Jagar reaḱ tako $1 Level daesẽa menaḱa menteko ingul akat́a.\n$4",
+	"babel-autocreate-text-main": "Nen Bara ren User ko tako $1 Jagar reaḱ etosẽakô ingul akat́a.\n$3",
 	"babel-0": "Nen User do [[$2|$3]] [[$1|ka]]ć etoana (baredo esu ã́ṭo teć urumsaṕ daea).",
 	"babel-1": "Nen User do [[$2|$3]] [[$1|epewṕ]]geć etoana.",
 	"babel-2": "Nen User do [[$2|$3]] [[$1|taraìkir]]geć etoana.",

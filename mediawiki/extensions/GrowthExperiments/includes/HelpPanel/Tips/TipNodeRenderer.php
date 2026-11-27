@@ -4,34 +4,22 @@ namespace GrowthExperiments\HelpPanel\Tips;
 
 use LogicException;
 use MediaWiki\Html\Html;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Output\OutputPage;
-use MessageLocalizer;
 use OOUI\IconWidget;
 
 /**
  * Transform an array of TipNodes into an array of rendered HTML.
  */
 class TipNodeRenderer {
-	/**
-	 * @var MessageLocalizer
-	 */
-	private $messageLocalizer;
 
-	/**
-	 * @var string
-	 */
-	private $extensionAssetsPath;
+	private MessageLocalizer $messageLocalizer;
+	private string $extensionAssetsPath;
 
-	/**
-	 * @param string $extensionAssetsPath
-	 */
 	public function __construct( string $extensionAssetsPath ) {
 		$this->extensionAssetsPath = $extensionAssetsPath;
 	}
 
-	/**
-	 * @param MessageLocalizer $messageLocalizer
-	 */
 	public function setMessageLocalizer( MessageLocalizer $messageLocalizer ) {
 		$this->messageLocalizer = $messageLocalizer;
 	}
@@ -44,8 +32,7 @@ class TipNodeRenderer {
 	 * @param TipNode[] $nodes
 	 * @param string $skinName
 	 * @param string $dir
-	 * @return array
-	 *   An array of rendered HTML.
+	 * @return string[] An array of rendered HTML.
 	 */
 	public function render( array $nodes, string $skinName, string $dir ): array {
 		OutputPage::setupOOUI( $skinName, $dir );
@@ -54,12 +41,6 @@ class TipNodeRenderer {
 		}, $nodes ) );
 	}
 
-	/**
-	 * @param TipNode $node
-	 * @param string $skin
-	 * @param string $dir
-	 * @return string
-	 */
 	private function buildHtml( TipNode $node, string $skin, string $dir ): string {
 		switch ( $node->getType() ) {
 			case 'header':
@@ -78,24 +59,20 @@ class TipNodeRenderer {
 
 	/**
 	 * @param string $tipTypeId
-	 * @param array $textVariants
-	 * @return array|string[]
+	 * @param string[] $textVariants
+	 * @return string[]
 	 */
 	private function getBaseCssClasses( string $tipTypeId, array $textVariants = [] ): array {
-		$variants = array_map( static function ( $variant ) {
-			return 'growthexperiments-quickstart-tips-tip--' . $variant;
-		}, $textVariants );
-		return array_merge( [
+		return [
 			'growthexperiments-quickstart-tips-tip',
-			'growthexperiments-quickstart-tips-tip-' . $tipTypeId
-		], $variants );
+			'growthexperiments-quickstart-tips-tip-' . $tipTypeId,
+			...array_map(
+				static fn ( $variant ) => 'growthexperiments-quickstart-tips-tip--' . $variant,
+				$textVariants
+			),
+		];
 	}
 
-	/**
-	 * @param TipNode $node
-	 * @param string $skinName
-	 * @return string
-	 */
 	private function mainAndTextRender( TipNode $node, string $skinName ): string {
 		$tipTextVariants = array_values( array_map( static function ( $item ) {
 			if ( $item['type'] == TipTree::TIP_DATA_TYPE_TEXT_VARIANT ) {
@@ -105,7 +82,7 @@ class TipNodeRenderer {
 		}, $node->getData() ) );
 
 		return Html::rawElement( 'div', [
-			'class' => $this->getBaseCssClasses( $node->getType(), $tipTextVariants )
+			'class' => $this->getBaseCssClasses( $node->getType(), $tipTextVariants ),
 		], $this->messageLocalizer->msg(
 			$this->getMessageKeyWithVariantFallback( $node ), $this->getMessageParameters( $node, $skinName )
 		)->parse() );
@@ -139,11 +116,6 @@ class TipNodeRenderer {
 		return $messageKey;
 	}
 
-	/**
-	 * @param TipNode $node
-	 * @param string $dir
-	 * @return string
-	 */
 	private function graphicRender( TipNode $node, string $dir ): string {
 		if ( !$node->getData()[0]['type'] || $node->getData()[0]['type'] !== 'image' ) {
 			return '';
@@ -161,21 +133,11 @@ class TipNodeRenderer {
 		] );
 	}
 
-	/**
-	 * @param string $filename
-	 * @param string $suffix
-	 * @param string $dir
-	 * @return string
-	 */
 	private function getImageSourcePath( string $filename, string $suffix, string $dir ): string {
 		return $this->extensionAssetsPath . '/GrowthExperiments/images/' .
 			$filename . '-' . $dir . '.' . $suffix;
 	}
 
-	/**
-	 * @param TipNode $node
-	 * @return string
-	 */
 	private function exampleRender( TipNode $node ): string {
 		$exampleLabelKey = $node->getData()[0]['data']['labelKey'] ?? null;
 		$exampleLabel = $exampleLabelKey ?
@@ -184,21 +146,16 @@ class TipNodeRenderer {
 				$this->messageLocalizer->msg( $exampleLabelKey )->text() )
 			: '';
 		return $exampleLabel . Html::rawElement( 'div', [
-			'class' => $this->getBaseCssClasses( $node->getType() )
+			'class' => $this->getBaseCssClasses( $node->getType() ),
 		],
 			Html::rawElement( 'p', [
 			'class' => [
-				'growthexperiments-quickstart-tips-tip-' . $node->getType() . '-text'
+				'growthexperiments-quickstart-tips-tip-' . $node->getType() . '-text',
 			] ], $this->messageLocalizer->msg(
 				$this->getMessageKeyWithVariantFallback( $node )
 			)->parse() ) );
 	}
 
-	/**
-	 * @param TipNode $node
-	 * @param string $skinName
-	 * @return array
-	 */
 	private function getMessageParameters( TipNode $node, string $skinName ): array {
 		return array_filter( array_map( function ( $nodeConfig ) use ( $skinName ) {
 			switch ( $nodeConfig['type'] ) {
@@ -208,7 +165,7 @@ class TipNodeRenderer {
 				case TipTree::TIP_DATA_TYPE_OOUI_ICON:
 					$iconConfig = [
 						'icon' => $nodeConfig['data']['icon'],
-						'framed' => $nodeConfig['data']['framed'] ?? true
+						'framed' => $nodeConfig['data']['framed'] ?? true,
 					];
 					if ( isset( $nodeConfig['data']['labelKey'] ) ) {
 						$iconConfig['label'] = $this->messageLocalizer->msg(

@@ -1,12 +1,14 @@
 {
 	"@metadata": {
 		"authors": [
+			"B3rnas",
 			"Hamilton Abreu",
 			"Imperadeiro98",
+			"Luan",
+			"Mansil alfalb",
 			"Ngl2016",
 			"Vitorvicentevalente",
-			"Luan",
-			"B3rnas"
+			"O andras"
 		]
 	},
 	"nstab-data": "Dados",
@@ -19,7 +21,6 @@
 	"jsonconfig-edit-dialog-error": "Não é possível editar como uma tabela: $1",
 	"jsonconfig-edit-dialog-error-data-invalid": "Os dados não correspondem ao esquema",
 	"jsonconfig-edit-dialog-error-data-missing": "A propriedade JSON <code>data</code> está em falta ou não é uma matriz",
-	"jsonconfig-edit-dialog-error-data-too-large": "O conjunto de dados é demasiado extenso para ser editado na forma de tabela",
 	"jsonconfig-edit-dialog-error-field-name-missing": "Cada campo tem de ter um nome",
 	"jsonconfig-edit-dialog-error-field-type-invalid": "Para editar na forma de tabela, todos os campos têm de ter o tipo <code>number</code> ou <code>string</code>",
 	"jsonconfig-edit-dialog-error-fields-missing": "A propriedade JSON <code>schema.fields</code> está em falta ou não é uma matriz",
@@ -35,7 +36,7 @@
 	"jsonconfig-err-bool": "O parâmetro \"$1\" tem de ter o valor <code>true</code> (verdadeiro) ou <code>false</code> (falso)",
 	"jsonconfig-err-integer": "O parâmetro \"$1\" tem de ser um número inteiro",
 	"jsonconfig-err-license": "O parâmetro \"$1\" tem de ser um dos códigos de licença válidos, por exemplo, $2",
-	"jsonconfig-err-localized": "O parâmetro \"$1\" tem de ser um objeto que atribui códigos de língua válidos a linhas únicas de texto sem tabulações nem espaços no final, por exemplo, <kbd>{ \"pt\":\"Texto em português\", ... }</kbd>",
+	"jsonconfig-err-localized": "O parâmetro \"$1\" deve ser um objeto que mapeia os códigos de idioma válidos para as cadeias de carateres de linhas única com $2 carateres, sem separadores ou espaços finais, por exemplo, <kbd>{ \"pt\":\"cadeia de carateres em português\", ... }</kbd>",
 	"jsonconfig-err-number": "O parâmetro \"$1\" tem de ser um número",
 	"jsonconfig-err-object-expected": "Era esperado que o valor em \"$1\" fosse um objeto delimitado por chavetas {…}",
 	"jsonconfig-err-root-array-expected": "Os dados JSON deveriam ser uma lista, delimitada por parênteses retos [...]",
@@ -53,8 +54,6 @@
 	"jsonconfig-type-name-localized": "traduzido",
 	"jsonconfig-type-name-number": "número",
 	"jsonconfig-type-name-boolean": "booliano",
-	"jsonconfig-use-category": "Páginas que utilizam a extensão JsonConfig",
-	"jsonconfig-use-category-desc": "Estas páginas usam o método <code>mw.ext.data.get</code> fornecido pela extensão [[:mw:Extension:JsonConfig|JsonConfig]]. O método <code>mw.ext.data.get</code> é considerado caro.",
 	"jsonconfig-license": "Dados disponibilizados com a licença $1.",
 	"jsonconfig-license-not-set": "Ao editar esta página, concorda em publicar a sua contribuição com a licença especificada no campo <code>licence</code> (licença).",
 	"jsonconfig-license-name-CC0-1.0": "Creative Commons Zero",

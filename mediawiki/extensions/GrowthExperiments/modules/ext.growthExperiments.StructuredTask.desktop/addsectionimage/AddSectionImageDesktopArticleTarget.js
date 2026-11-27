@@ -42,7 +42,7 @@ AddSectionImageDesktopArticleTarget.prototype.prepareSaveWithoutShowingDialog = 
 	const promise = ve.createDeferred(),
 		$desktopLoadingOverlay = $( '<div>' ).addClass(
 			// FIXME modify?
-			'mw-ge-addImageDesktopArticleTarget-loadingOverlay'
+			'mw-ge-addImageDesktopArticleTarget-loadingOverlay',
 		),
 		$element = this.$element,
 		$container = this.$container;
@@ -50,12 +50,12 @@ AddSectionImageDesktopArticleTarget.prototype.prepareSaveWithoutShowingDialog = 
 	$desktopLoadingOverlay.append( new OO.ui.ProgressBarWidget( {
 		progress: false,
 		// FIXME modify?
-		classes: [ 'mw-ge-addImageDesktopArticleTarget-progressBar' ]
+		classes: [ 'mw-ge-addImageDesktopArticleTarget-progressBar' ],
 	} ).$element );
 	// FIXME modify?
 	$element.addClass( 'mw-ge-addImageDesktopArticleTarget--overlay-shown' );
 	$container.append( $desktopLoadingOverlay );
-	promise.done( () => {
+	promise.then( () => {
 		$desktopLoadingOverlay.remove();
 		// FIXME modify?
 		$element.removeClass( 'mw-ge-addImageDesktopArticleTarget--overlay-shown' );

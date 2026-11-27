@@ -1,4 +1,4 @@
-const util = require( '../mobile.startup/util' );
+const util = require( 'mobile.startup' ).util;
 
 /**
  * @param {string} blockinfo
@@ -32,6 +32,17 @@ module.exports = function parseBlockInfo( blockinfo ) {
 		}
 	}
 
+	function parseReason( wikitext ) {
+		return ( new mw.Api() ).get( {
+			action: 'parse',
+			formatversion: 2,
+			text: wikitext,
+			contentmodel: 'wikitext'
+		} )
+			.then( ( result ) => result.parse.text )
+			.catch( () => jqueryMsgParse( wikitext ) || mw.html.escape( wikitext ) );
+	}
+
 	// URL only useful if block creator is a local user
 	if ( blockinfo.blockedbyid === 0 ) {
 		blockInfo.creator.url = '';
@@ -42,7 +53,7 @@ module.exports = function parseBlockInfo( blockinfo ) {
 		).getUrl();
 	}
 
-	if ( [ 'infinite', 'indefinite', 'infinity', 'never' ].indexOf( blockinfo.blockexpiry ) === -1 ) {
+	if ( !( [ 'infinite', 'indefinite', 'infinity', 'never' ].includes( blockinfo.blockexpiry ) ) ) {
 		blockInfo.expiry = mw.message( 'parentheses', blockinfo.blockexpiryformatted ).escaped();
 		blockInfo.duration = blockinfo.blockexpiryrelative;
 	}
@@ -50,19 +61,30 @@ module.exports = function parseBlockInfo( blockinfo ) {
 	const reason = blockinfo.blockreason;
 	if ( reason ) {
 		blockInfo.reason = jqueryMsgParse( reason ) || mw.html.escape( reason );
-		blockInfo.parsedReason = ( new mw.Api() ).get( {
-			action: 'parse',
-			formatversion: 2,
-			text: reason,
-			contentmodel: 'wikitext'
-		} ).then( function ( result ) {
-			return result.parse.text;
-		} ).catch( function () {
-			return jqueryMsgParse( reason ) || mw.html.escape( reason );
-		} );
+		blockInfo.parsedReason = parseReason( reason );
 	} else {
 		blockInfo.reason = mw.message( 'mobile-frontend-editor-generic-block-reason' ).escaped();
 		blockInfo.parsedReason = util.Deferred().resolve( blockInfo.reason ).promise();
+	}
+
+	if ( blockinfo.blockcomponents ) {
+		// This is a composite block. The block reason will be the very
+		// unhelpful "There are multiple blocks against your account and/or
+		// IP address". However, the blockcomponents should explain every
+		// part of the composite block. As such we can construct a more
+		// useful message to the user by combining these. It might be
+		// awkward to display given limited screen space, but that's better
+		// than just bouncing a user with no information.
+		const parsedReasons = [ blockInfo.parsedReason ];
+		for ( const component of blockinfo.blockcomponents ) {
+			parsedReasons.push( component.blockreason ?
+				parseReason( component.blockreason ) :
+				util.Deferred().resolve( '<div>' + mw.message( 'mobile-frontend-editor-generic-block-reason' ).escaped() + '</div>' ).promise() );
+		}
+		blockInfo.parsedReason = util.Promise.all( parsedReasons ).then( ( ...results ) => (
+			// Results will be an array of HTML strings
+			results.join( '\n' )
+		) );
 	}
 
 	return blockInfo;

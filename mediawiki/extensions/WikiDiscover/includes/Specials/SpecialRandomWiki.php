@@ -4,7 +4,6 @@ namespace Miraheze\WikiDiscover\Specials;
 
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\SpecialPage\SpecialPage;
-use Miraheze\CreateWiki\Helpers\WikiCategoryLabels;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\CreateWikiValidator;
 use stdClass;
@@ -18,7 +17,9 @@ class SpecialRandomWiki extends SpecialPage {
 		parent::__construct( 'RandomWiki' );
 	}
 
-	/** @inheritDoc */
+	/**
+	 * @param ?string $par @phan-unused-param
+	 */
 	public function execute( $par ): void {
 		$this->setHeaders();
 		$this->outputHeader();
@@ -38,10 +39,8 @@ class SpecialRandomWiki extends SpecialPage {
 				'type' => 'select',
 				'name' => 'category',
 				'label-message' => 'wikidiscover-table-category',
-				'options' => WikiCategoryLabels::getOptions(
-					$this->getContext(), $this->getConfig()->get( 'CreateWikiCategories' )
-				),
-				'default' => 'uncategorised',
+				'required' => true,
+				'options' => $this->getConfig()->get( 'CreateWikiCategories' ),
 			],
 		];
 

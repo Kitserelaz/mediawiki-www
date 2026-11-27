@@ -16,10 +16,10 @@ module.exports = ( function () {
 					tools: [ MachineSuggestionsPlaceholderTool ],
 					windows: [
 						require( './addlink/AddLinkMobileSaveDialog.js' ),
-						require( './addlink/RecommendedLinkToolbarDialogMobile.js' )
+						require( './addlink/RecommendedLinkToolbarDialogMobile.js' ),
 					],
 					taskArticleTarget: require( './addlink/AddLinkMobileArticleTarget.js' ),
-					suggestionsArticleTarget: SuggestionsMobileArticleTarget
+					suggestionsArticleTarget: SuggestionsMobileArticleTarget,
 				} );
 			addLinkTargetInitializer.disableDefaultEditModeToolsForRegularVeMode();
 			addLinkTargetInitializer.initialize();
@@ -29,10 +29,10 @@ module.exports = ( function () {
 					tools: [ MachineSuggestionsPlaceholderTool ],
 					windows: [
 						require( './addimage/AddImageMobileSaveDialog.js' ),
-						StructuredTask.addImage().RecommendedImageToolbarDialog
+						StructuredTask.addImage().RecommendedImageToolbarDialog,
 					],
 					taskArticleTarget: require( './addimage/AddImageMobileArticleTarget.js' ),
-					suggestionsArticleTarget: SuggestionsMobileArticleTarget
+					suggestionsArticleTarget: SuggestionsMobileArticleTarget,
 				} );
 			addImageTargetInitializer.disableDefaultEditModeToolsForRegularVeMode();
 			addImageTargetInitializer.initialize();
@@ -42,18 +42,21 @@ module.exports = ( function () {
 					tools: [ MachineSuggestionsPlaceholderTool ],
 					windows: [
 						require( './addimage/AddImageMobileSaveDialog.js' ),
-						StructuredTask.addSectionImage().RecommendedSectionImageToolbarDialog
+						StructuredTask.addSectionImage().RecommendedSectionImageToolbarDialog,
 					],
 					taskArticleTarget: require( './addsectionimage/AddSectionImageMobileArticleTarget.js' ),
-					suggestionsArticleTarget: SuggestionsMobileArticleTarget
+					suggestionsArticleTarget: SuggestionsMobileArticleTarget,
 				} );
 			addSectionImageTargetInitializer.disableDefaultEditModeToolsForRegularVeMode();
 			addSectionImageTargetInitializer.initialize();
+		} else if ( taskTypeId === 'revise-tone' ) {
+			const reviseToneInitializer = new ( StructuredTask.reviseTone().ReviseToneInitializer )();
+			reviseToneInitializer.initialize();
 		}
 	}
 
 	return {
-		initializeTarget: initializeTarget
+		initializeTarget: initializeTarget,
 	};
 
 }() );

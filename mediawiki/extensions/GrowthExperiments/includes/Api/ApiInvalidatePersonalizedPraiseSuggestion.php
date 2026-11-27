@@ -21,17 +21,9 @@ class ApiInvalidatePersonalizedPraiseSuggestion extends ApiBase {
 
 	private PersonalizedPraiseLogger $personalizedPraiseLogger;
 
-	/**
-	 * @param ApiMain $mainModule
-	 * @param string $moduleName
-	 * @param MentorProvider $mentorProvider
-	 * @param MentorStore $mentorStore
-	 * @param PraiseworthyMenteeSuggester $praiseworthyMenteeSuggester
-	 * @param PersonalizedPraiseLogger $personalizedPraiseLogger
-	 */
 	public function __construct(
 		ApiMain $mainModule,
-		$moduleName,
+		string $moduleName,
 		MentorProvider $mentorProvider,
 		MentorStore $mentorStore,
 		PraiseworthyMenteeSuggester $praiseworthyMenteeSuggester,
@@ -89,6 +81,7 @@ class ApiInvalidatePersonalizedPraiseSuggestion extends ApiBase {
 		}
 	}
 
+	/** @inheritDoc */
 	public function needsToken() {
 		return 'csrf';
 	}
@@ -115,7 +108,7 @@ class ApiInvalidatePersonalizedPraiseSuggestion extends ApiBase {
 			'reason' => [
 				ParamValidator::PARAM_TYPE => [
 					'skipped',
-					'praised'
+					'praised',
 				],
 			],
 			'skipreason' => [
@@ -124,7 +117,7 @@ class ApiInvalidatePersonalizedPraiseSuggestion extends ApiBase {
 					'already-praised',
 					'not-praiseworthy',
 					'not-now',
-					'other'
+					'other',
 				],
 			],
 		];

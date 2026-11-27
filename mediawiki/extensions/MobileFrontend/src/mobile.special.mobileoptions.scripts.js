@@ -2,8 +2,8 @@
 /* See T354224 for information on the @wikimedia/mediawiki.skins.clientpreferences module. */
 const clientPrefs = require( '@wikimedia/mediawiki.skins.clientpreferences' ),
 	toast = require( './mobile.startup/showOnPageReload' ),
-	amcOutreach = require( './mobile.startup/amcOutreach/amcOutreach' ),
 	EXPAND_SECTIONS_KEY = 'mf-expand-sections',
+	WP25_EASTER_EGGS_KEY = 'wp25eastereggs-enable',
 	msg = mw.msg,
 	USER_FONT_SIZE_SMALL = 'small',
 	USER_FONT_SIZE_REGULAR = 'regular',
@@ -66,91 +66,85 @@ function addClientPreferencesToForm( $form, clientPreferences ) {
  * Additionally it applies all known hacks to make it mobile friendly
  *
  * @private
- * @param {Object[]} toggleObjects an array of toggle objects to infuse
+ * @param {Object} toggleObject a toggle object to infuse
  * @param {jQuery.Object} $form form to submit when there is interaction with toggle
  */
-function infuseToggles( toggleObjects, $form ) {
-	toggleObjects.forEach( function ( toggleObject ) {
-		const $toggleElement = toggleObject.$el;
-		const enableToggle = OO.ui.infuse( $toggleElement );
-		const $checkbox = enableToggle.$element;
-		const toggleSwitch = new OO.ui.ToggleSwitchWidget( {
-			value: enableToggle.isSelected()
-		} );
+function infuseToggle( toggleObject, $form ) {
+	const $toggleElement = toggleObject.$el;
+	const enableToggle = OO.ui.infuse( $toggleElement );
+	const $checkbox = enableToggle.$element;
+	const toggleSwitch = new OO.ui.ToggleSwitchWidget( {
+		value: enableToggle.isSelected()
+	} );
 
-		// Strangely the ToggleSwitchWidget does not behave as an input so any change
-		// to it is not reflected in the form. (see T182466)
-		// Ideally we'd replaceWith here and not have to hide the original element.
-		toggleSwitch.$element.insertAfter( $checkbox );
-		// although the checkbox is hidden already, that is done via visibility
-		// as a result, it still takes up space. We don't want it to any more now that the
-		// new toggle switch has been added.
-		$checkbox.hide();
+	// Strangely the ToggleSwitchWidget does not behave as an input so any change
+	// to it is not reflected in the form. (see T182466)
+	// Ideally we'd replaceWith here and not have to hide the original element.
+	toggleSwitch.$element.insertAfter( $checkbox );
+	// although the checkbox is hidden already, that is done via visibility
+	// as a result, it still takes up space. We don't want it to any more now that the
+	// new toggle switch has been added.
+	$checkbox.hide();
 
-		// listening on checkbox change is required to make the clicking on label working.
-		// Otherwise clicking on label changes the checkbox "checked" state
-		// but it's not reflected in the toggle switch
-		$checkbox.on( 'change', function () {
-			// disable checkbox as submit is delayed by 0.25s
-			$checkbox.attr( 'disabled', true );
-			toggleSwitch.setValue( enableToggle.isSelected() );
-		} );
-		toggleSwitch.on( 'change', function ( value ) {
-			// execute callback
-			toggleObject.onToggle( value );
+	// listening on checkbox change is required to make the clicking on label working.
+	// Otherwise clicking on label changes the checkbox "checked" state
+	// but it's not reflected in the toggle switch
+	$checkbox.on( 'change', () => {
+		// disable checkbox as submit is delayed by 0.25s
+		$checkbox.attr( 'disabled', true );
+		toggleSwitch.setValue( enableToggle.isSelected() );
+	} );
+	toggleSwitch.on( 'change', ( value ) => {
+		// execute callback
+		toggleObject.onToggle( value );
 
-			// ugly hack, we're delaying submit form by 0.25s
-			// and we want to disable registering clicks
-			// we want to disable the toggleSwitch
-			// but we cannot use setDisabled(true) as it makes button gray
-			toggleSwitch.setValue = function () {};
+		// ugly hack, we're delaying submit form by 0.25s
+		// and we want to disable registering clicks
+		// we want to disable the toggleSwitch
+		// but we cannot use setDisabled(true) as it makes button gray
+		toggleSwitch.setValue = function () {};
 
-			$checkbox.find( 'input' )
-				.prop( 'checked', value );
-			notify( true );
-			// On some Android devices animation gets stuck in the middle as browser
-			// starts submitting the form.
-			// Let's call submit on the form after toggle button transition is done
-			// (0.25s, defined in OOUI)
-			setTimeout( function () {
-				$form.trigger( 'submit' );
-			}, 250 );
-		} );
+		$checkbox.find( 'input' )
+			.prop( 'checked', value );
+		notify( true );
+		// On some Android devices animation gets stuck in the middle as browser
+		// starts submitting the form.
+		// Let's call submit on the form after toggle button transition is done
+		// (0.25s, defined in OOUI)
+		setTimeout( () => {
+			$form.trigger( 'submit' );
+		}, 250 );
 	} );
 }
 
 /**
  * Add features, that depends on localStorage, such as "expand all sections" or "fontchanger".
  * The checkbox is used for turning on/off expansion of all sections on page load.
+ *
  * @private
  */
 function initMobileOptions() {
 	const $form = $( '#mobile-options' ),
-		$betaToggle = $( '#enable-beta-toggle' ),
-		$amcToggle = $( '#enable-amc-toggle' ),
-		toggles = [];
+		$amcToggle = $( '#enable-amc-toggle' );
 
-	if ( $betaToggle.length ) {
-		toggles.push( {
-			$el: $betaToggle,
-			onToggle: function () {}
-		} );
-	}
 	if ( $amcToggle.length ) {
-		toggles.push( {
-			$el: $amcToggle,
-			onToggle: function ( value ) {
-				if ( !value && amcOutreach.loadCampaign().isCampaignActive() ) {
-					// Make all amc outreach actions ineligible so the user doesn't have
-					// to see the outreach drawer again
-					amcOutreach.loadCampaign().makeAllActionsIneligible();
-				}
-			}
-		} );
+		infuseToggle( { $el: $amcToggle }, $form );
 	}
-	infuseToggles( toggles, $form );
 
 	const clientPreferences = {};
+	const skin = mw.config.get( 'skin' );
+
+	if ( skin === 'minerva' ) {
+		clientPreferences[ WP25_EASTER_EGGS_KEY ] = {
+			options: [
+				'0',
+				'1'
+			],
+			type: 'switch',
+			preferenceKey: WP25_EASTER_EGGS_KEY,
+			callback: notify
+		};
+	}
 
 	if ( mw.config.get( 'wgMFEnableFontChanger' ) ) {
 		clientPreferences[ FONT_SIZE_KEY ] = {
@@ -164,7 +158,6 @@ function initMobileOptions() {
 		};
 	}
 
-	const skin = mw.config.get( 'skin' );
 	clientPreferences[ THEME ] = {
 		options: [ 'day', 'night', 'os' ],
 		preferenceKey: `${ skin }-theme`
@@ -216,10 +209,25 @@ function initMobileOptions() {
 		// Move the links from the server side preference into the row.
 		$( '#amc-field .option-links' ).appendTo( '#skin-client-prefs-mw-mf-amc' );
 		modifyToggleSwitch( $( '#skin-client-prefs-mf-expand-sections' ) );
+		modifyToggleSwitch( $( '#skin-client-prefs-wp25eastereggs-enable' ) );
 		modifyToggleSwitch( $( '#skin-client-prefs-mw-mf-amc' ) );
 		// Remove the server side rendered OOUI field.
 		$( '#amc-field' ).remove();
 
+		// For the purposes of ReaderExperiments StickyHeaders prototype only:
+		// - This code toggles on and disables the expand section setting for enrolled users T409485
+		// - Please remove code after the stickyHeaders A/B experiment is complete T410754
+		if ( mw.config.get(
+			'wgReaderExperimentsStickyHeaders' ) &&
+			mw.config.get( 'wgReaderExperimentsStickyHeaders' ) === 'enrolled'
+		) {
+			const $toggleSwitch = $( '#skin-client-prefs-mf-expand-sections input' );
+
+			if ( $toggleSwitch ) {
+				$toggleSwitch.prop( 'checked', true );
+				$toggleSwitch.prop( 'disabled', true );
+			}
+		}
 	} );
 }
 

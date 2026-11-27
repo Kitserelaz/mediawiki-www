@@ -3,9 +3,8 @@
 namespace GrowthExperiments\NewcomerTasks\Task;
 
 use GrowthExperiments\NewcomerTasks\TaskSuggester\SearchStrategy\SearchStrategy;
-use MediaWiki\Json\JsonUnserializable;
-use MediaWiki\Json\JsonUnserializableTrait;
-use MediaWiki\Json\JsonUnserializer;
+use Wikimedia\JsonCodec\JsonCodecable;
+use Wikimedia\JsonCodec\JsonCodecableTrait;
 
 /**
  * Class which contains the set of filters (task, topics) used to generate a TaskSet.
@@ -13,9 +12,9 @@ use MediaWiki\Json\JsonUnserializer;
  * JsonSerializable is implemented to provide the ability to compare TaskSetFilters across
  * TaskSets by JSON encoding the objects.
  */
-class TaskSetFilters implements JsonUnserializable {
+class TaskSetFilters implements JsonCodecable {
 
-	use JsonUnserializableTrait;
+	use JsonCodecableTrait;
 
 	/**
 	 * @var string[] List of task type IDs to limit the suggestions to.
@@ -29,7 +28,7 @@ class TaskSetFilters implements JsonUnserializable {
 	private $topicFilters;
 	/**
 	 * @var string|null Matching mode for topics. One of: 'AND', 'OR'.
-	 * @See SearchStrategy::TOPIC_MATCH_MODES
+	 * @see SearchStrategy::TOPIC_MATCH_MODES
 	 */
 	private $topicFiltersMode;
 
@@ -48,9 +47,6 @@ class TaskSetFilters implements JsonUnserializable {
 		$this->topicFiltersMode = $topicFiltersMode ?? SearchStrategy::TOPIC_MATCH_MODE_OR;
 	}
 
-	/**
-	 * @return string
-	 */
 	public function getTopicFiltersMode(): string {
 		return $this->topicFiltersMode;
 	}
@@ -77,17 +73,17 @@ class TaskSetFilters implements JsonUnserializable {
 	}
 
 	/** @inheritDoc */
-	protected function toJsonArray(): array {
+	public function toJsonArray(): array {
 		return [
 			'task' => $this->taskTypeFilters,
 			'topic' => $this->topicFilters,
-			'topicMode' => $this->topicFiltersMode
+			'topicMode' => $this->topicFiltersMode,
 		];
 	}
 
 	/** @inheritDoc */
-	public static function newFromJsonArray( JsonUnserializer $unserializer, array $json ) {
-		return new self(
+	public static function newFromJsonArray( array $json ): self {
+		return new static(
 			$json['task'],
 			$json['topic'],
 			$json['topicMode'] ?? SearchStrategy::TOPIC_MATCH_MODE_OR

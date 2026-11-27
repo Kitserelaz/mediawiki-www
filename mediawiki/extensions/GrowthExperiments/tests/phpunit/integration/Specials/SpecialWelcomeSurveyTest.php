@@ -8,9 +8,9 @@ use GrowthExperiments\Specials\SpecialWelcomeSurvey;
 use GrowthExperiments\WelcomeSurvey;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\Request\FauxRequest;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use MediaWiki\Utils\MWTimestamp;
 use Psr\Log\NullLogger;
-use SpecialPageTestBase;
 use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
@@ -43,7 +43,7 @@ class SpecialWelcomeSurveyTest extends SpecialPageTestBase {
 		$fakeTime = '20200505120000';
 		$userOptionsManager->setOption( $user, WelcomeSurvey::SURVEY_PROP, FormatJson::encode( [
 			'_group' => 'NONE',
-			'_render_date' => $fakeTime
+			'_render_date' => $fakeTime,
 		] ) );
 
 		$params = [
@@ -70,7 +70,7 @@ class SpecialWelcomeSurveyTest extends SpecialPageTestBase {
 			// TODO: 'reason' should be set to placeholder
 			'_submit_date' => $fakeTime,
 			'_render_date' => null,
-			'_counter' => 1
+			'_counter' => 1,
 		], $surveyAnswer );
 	}
 

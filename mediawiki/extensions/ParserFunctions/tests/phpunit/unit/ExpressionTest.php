@@ -77,6 +77,50 @@ class ExpressionTest extends MediaWikiUnitTestCase {
 			[ 'acos(1)', '0' ],
 			[ 'atan(0)', '0' ],
 			[ 'sqrt(4)', '2' ],
+
+			// Very large numbers, INF and NAN
+			[ '1e400', 'INF' ],
+			[ '-1e400', '-INF' ],
+			[ '1e400-1e400', 'NAN' ],
+			[ '0e400', 'NAN' ],
+			[ '(-8)^0.5', 'NAN' ],
+			[ 'sin 1e400', 'NAN' ],
+			[ '1/(1e400*0)', 'NAN' ],
+			[ '1 fmod (1e400*0)', 'NAN' ],
+
+			// NAN in boolean logic
+			[ 'not (1e400*0)', '0' ],
+			[ '(1e400*0) and 1', '1' ],
+			[ '(1e400*0) or 0', '1' ],
+
+			// mod, round and trunc with numbers outside the int range
+			[ '123 mod 2^64', '123' ],
+			[ '-123 mod 2^64', '-123' ],
+			[ '123 mod -(2^64)', '123' ],
+			[ '123 mod 2^63', '123' ],
+			[ '2^64 mod 10', '1.844674407371E+19' ],
+			[ '123 fmod 2^64', '123' ],
+			[ '1.25 round 2^64', '1.25' ],
+			[ '1.25 round -(2^64)', '0' ],
+			[ 'trunc 2^64', '1.844674407371E+19' ],
+			[ 'trunc -(2^64)', '-1.844674407371E+19' ],
+
+			// mod, round and trunc with INF
+			[ '7 mod 1e400', '7' ],
+			[ '7 mod -1e400', '7' ],
+			[ '1e400 mod 2', 'INF' ],
+			[ '1.25 round 1e400', '1.25' ],
+			[ '1.25 round -1e400', '0' ],
+			[ '1e400 round 2', 'INF' ],
+			[ 'trunc 1e400', 'INF' ],
+			[ 'trunc -1e400', '-INF' ],
+
+			// mod, round and trunc with NAN
+			[ '7 mod (1e400*0)', 'NAN' ],
+			[ '(1e400*0) mod 7', 'NAN' ],
+			[ '1.25 round (1e400*0)', 'NAN' ],
+			[ '(1e400*0) round 2', 'NAN' ],
+			[ 'trunc (1e400*0)', 'NAN' ],
 		];
 	}
 

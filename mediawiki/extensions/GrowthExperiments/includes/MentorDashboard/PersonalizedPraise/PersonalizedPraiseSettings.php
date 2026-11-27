@@ -5,6 +5,7 @@ namespace GrowthExperiments\MentorDashboard\PersonalizedPraise;
 use MediaWiki\Config\Config;
 use MediaWiki\Content\WikitextContent;
 use MediaWiki\Json\FormatJson;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
@@ -12,7 +13,6 @@ use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
-use MessageLocalizer;
 
 /**
  * Accessor for mentor's Personalized praise settings
@@ -22,14 +22,11 @@ use MessageLocalizer;
  */
 class PersonalizedPraiseSettings {
 
-	/** @var int */
 	public const NOTIFY_NEVER = -1;
-	/** @var int */
 	public const NOTIFY_IMMEDIATELY = 0;
 
-	/** @var string Note: This is hardcoded on the client side as well */
+	/** Note: This is hardcoded on the client side as well */
 	public const PREF_NAME = 'growthexperiments-personalized-praise-settings';
-	/** @var string */
 	public const USER_MESSAGE_PRELOAD_SUBPAGE_NAME = 'Personalized praise message';
 
 	private const SETTING_MESSAGE_SUBJECT = 'messageSubject';
@@ -43,14 +40,6 @@ class PersonalizedPraiseSettings {
 	private TitleFactory $titleFactory;
 	private RevisionLookup $revisionLookup;
 
-	/**
-	 * @param Config $wikiConfig
-	 * @param MessageLocalizer $messageLocalizer
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param UserFactory $userFactory
-	 * @param TitleFactory $titleFactory
-	 * @param RevisionLookup $revisionLookup
-	 */
 	public function __construct(
 		Config $wikiConfig,
 		MessageLocalizer $messageLocalizer,
@@ -67,20 +56,12 @@ class PersonalizedPraiseSettings {
 		$this->revisionLookup = $revisionLookup;
 	}
 
-	/**
-	 * @param UserIdentity $user
-	 * @return array
-	 */
 	private function loadSettings( UserIdentity $user ): array {
 		return FormatJson::decode( $this->userOptionsLookup->getOption(
 			$user, self::PREF_NAME
 		), true ) ?? [];
 	}
 
-	/**
-	 * @param UserIdentity $user
-	 * @return array
-	 */
 	public function toArray( UserIdentity $user ): array {
 		$conditions = $this->getPraiseworthyConditions( $user );
 		return array_merge( [
@@ -182,10 +163,6 @@ class PersonalizedPraiseSettings {
 		);
 	}
 
-	/**
-	 * @param UserIdentity $user
-	 * @return string
-	 */
 	public function getPraisingMessageContent( UserIdentity $user ): string {
 		$revision = $this->revisionLookup->getRevisionByTitle( $this->getPraisingMessageTitle( $user ) );
 		if ( !$revision ) {

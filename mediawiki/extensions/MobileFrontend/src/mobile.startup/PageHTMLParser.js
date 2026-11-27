@@ -1,17 +1,17 @@
 const
 	Thumbnail = require( './Thumbnail' ),
-	HEADING_SELECTOR = mw.config.get( 'wgMFMobileFormatterHeadings', [ 'h1', 'h2', 'h3', 'h4', 'h5' ] ).join( ',' ),
+	HEADING_SELECTOR = '.mw-heading',
 	EXCLUDE_THUMBNAIL_CLASS_SELECTORS = [ 'noviewer', 'metadata' ],
 	NOT_SELECTORS = EXCLUDE_THUMBNAIL_CLASS_SELECTORS.map( ( excludeSelector ) => `:not(.${ excludeSelector })` ).join( '' ),
 	THUMB_SELECTOR = [ 'a.image', 'a.thumbimage, a.mw-file-description' ].map(
 		( selector ) => `${ selector }${ NOT_SELECTORS }`
 	).join( ',' );
 
+/**
+ * Parses an article and converts it into a queriable object.
+ */
 class PageHTMLParser {
 	/**
-	 * @constructor
-	 * @class module:mobile.startup/PageHTMLParser
-     * @classdesc Parses an article and converts it into a queriable object.
 	 * @param {jQuery.Object} $container Used when parsing to find children within
 	 * this container
 	 */
@@ -28,7 +28,6 @@ class PageHTMLParser {
 	 * This has the benefit of excluding any additional h2s and h3s that may
 	 * have been added programatically.
 	 *
-	 * @memberof module:mobile.startup/PageHTMLParser
 	 * @param {number} sectionIndex as defined by the PHP parser.
 	 *  It should correspond to the section id
 	 *  used in the edit link for the section.
@@ -62,7 +61,6 @@ class PageHTMLParser {
 	 * This code should work on desktop (PHP parser HTML)
 	 * as well as mobile formatted HTML (PHP parser + MobileFormatter)
 	 *
-	 * @memberof module:mobile.startup/PageHTMLParser
 	 * @param {number} sectionIndex as defined by the PHP parser. It should correspond to
 	 *  the section id used in the edit link for the section.
 	 *  Note, confusingly, this is different from section "ID" which is
@@ -131,7 +129,6 @@ class PageHTMLParser {
 	/**
 	 * Get the lead section of the page view.
 	 *
-	 * @memberof module:mobile.startup/PageHTMLParser
 	 * @return {jQuery.Object|null}
 	 */
 	getLeadSectionElement() {
@@ -159,7 +156,6 @@ class PageHTMLParser {
 	 * Returns a Thumbnail object from an anchor element containing an image or
 	 * null if not valid.
 	 *
-	 * @memberof module:mobile.startup/PageHTMLParser
 	 * @param {jQuery} $a Anchor element that contains the image.
 	 * @return {Thumbnail|null}
 	 */
@@ -205,22 +201,19 @@ class PageHTMLParser {
 	 * `<a class="image noviewer"><img></a>` is not a valid thumbnail
 	 * `<a class="image"><img class="noviewer"></a>` is not a valid thumbnail
 	 *
-	 * @memberof module:mobile.startup/PageHTMLParser
 	 * @param {jQuery} [$el] Container to search, defaults to this.$el.
 	 * @return {Thumbnail[]}
 	 */
 	getThumbnails( $el ) {
-		const
-			self = this,
-			thumbs = [];
+		const thumbs = [];
 
 		$el = $el || this.$el;
 
 		const $thumbs = $el.find( THUMB_SELECTOR );
 
-		$thumbs.each( function () {
-			const $a = $el.find( this );
-			const thumb = self.getThumbnail( $a );
+		$thumbs.each( ( i, thumbEl ) => {
+			const $a = $el.find( thumbEl );
+			const thumb = this.getThumbnail( $a );
 
 			if ( thumb ) {
 				thumbs.push( thumb );
@@ -232,7 +225,6 @@ class PageHTMLParser {
 	/**
 	 * Returns a jQuery object representing all redlinks on the page.
 	 *
-	 * @memberof module:mobile.startup/PageHTMLParser
 	 * @return {jQuery.Object}
 	 */
 	getRedLinks() {
@@ -243,28 +235,19 @@ class PageHTMLParser {
 	 * Returns an object consistent with MediaWiki API representing languages
 	 * associated with the page in the user's current language.
 	 *
-	 * @memberof module:mobile.startup/PageHTMLParser
 	 * @param {string} pageTitle to fallback to if none found
 	 * @return {Object} containing langlinks
 	 *   and variant links as defined @ https://en.m.wikipedia.org/w/api.php?action=help&modules=query%2Blanglinks
 	 */
 	getLanguages( pageTitle ) {
 		const mapLinkToLanguageObj = ( node ) => {
-			const DELIMITER = ' – ';
 			// Name of language (e.g. עברית for Hebrew)
 			const autonym = node.textContent;
 			// The name of the language in the current language
 			// e.g. for english this would be Hebrew
-			let langname;
-			let title = node.getAttribute( 'title' ) || pageTitle;
-			if ( title.indexOf( DELIMITER ) > -1 ) {
-				title = title.split( DELIMITER );
-				langname = title.pop();
-				title = title.join( DELIMITER );
-			}
-			if ( !langname ) {
-				langname = autonym;
-			}
+			const langname = node.getAttribute( 'data-language-local-name' ) || autonym;
+			const title = node.getAttribute( 'data-title' ) || pageTitle;
+
 			return {
 				lang: node.getAttribute( 'hreflang' ),
 				autonym,
@@ -288,15 +271,11 @@ class PageHTMLParser {
 
 /**
  * Selector for matching headings
- *
- * @memberof PageHTMLParser
  */
 PageHTMLParser.HEADING_SELECTOR = HEADING_SELECTOR;
 
 /**
  * Selector for thumbnails.
- *
- * @memberof PageHTMLParser
  */
 PageHTMLParser.THUMB_SELECTOR = THUMB_SELECTOR;
 

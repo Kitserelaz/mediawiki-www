@@ -1,8 +1,10 @@
 <?php
 
+declare( strict_types = 1 );
+
 $specialPageAliases = [];
 
 $specialPageAliases['en'] = [
-	'RequestImport' => [ 'RequestImport', 'RequestImportDump' ],
-	'RequestImportQueue' => [ 'RequestImportQueue', 'RequestImportDumpQueue' ],
+	'RequestImport' => [ 'RequestImport' ],
+	'RequestImportQueue' => [ 'RequestImportQueue' ],
 ];

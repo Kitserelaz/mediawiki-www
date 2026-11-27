@@ -8,7 +8,7 @@ use MediaWiki\SpecialPage\FormSpecialPage;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
 use Miraheze\CreateWiki\ConfigNames;
-use Miraheze\CreateWiki\Helpers\WikiCategoryLabels;
+use WikiOasis\WikiOasisMagic\Helpers\WikiCategoryLabels;
 use Miraheze\CreateWiki\Hooks\CreateWikiHookRunner;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\CreateWikiValidator;

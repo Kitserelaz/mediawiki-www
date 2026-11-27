@@ -1,19 +1,17 @@
 <?php
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 
 class NumberOfComments {
 	/**
 	 * Registers NUMBEROFCOMMENTS and NUMPBEROFCOMMENTSPAGE as a valid magic word identifier.
 	 *
 	 * @param array &$variableIds Array of valid magic word identifiers
-	 * @return bool true
 	 */
-	public static function onMagicWordwgVariableIDs( &$variableIds ) {
+	public static function onGetMagicVariableIDs( &$variableIds ): void {
 		$variableIds[] = 'NUMBEROFCOMMENTS';
 		$variableIds[] = 'NUMBEROFCOMMENTSPAGE';
-
-		return true;
 	}
 
 	/**
@@ -26,7 +24,7 @@ class NumberOfComments {
 	 * NumberOfComments::getNumberOfCommentsPage to get the number of comments
 	 * for this article.
 	 *
-	 * @param Parser $parser
+	 * @param MediaWiki\Parser\Parser $parser
 	 * @param array &$cache
 	 * @param string $magicWordId Magic word identifier
 	 * @param string|int &$ret What to return to the user (in our case, the number of comments)
@@ -72,7 +70,7 @@ class NumberOfComments {
 	/**
 	 * Hook for parser function {{NUMBEROFCOMMENTSPAGE:<page>}}
 	 *
-	 * @param Parser $parser
+	 * @param MediaWiki\Parser\Parser $parser
 	 * @param string $pagename Page name
 	 * @return int Amount of comments on the given page
 	 */

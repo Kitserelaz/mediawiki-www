@@ -38,13 +38,12 @@
 				$element: $wrapper,
 				$nav: $container.find( '.suggested-edits-footer-navigation' ),
 				mode: mode,
-				qualityGateConfig: taskPreviewData.qualityGateConfig || {}
+				qualityGateConfig: taskPreviewData.qualityGateConfig || {},
 			},
 			new Logger(
-				mw.config.get( 'wgGEHomepageLoggingEnabled' ),
-				mw.config.get( 'wgGEHomepagePageviewToken' )
+				mw.config.get( 'wgGEHomepagePageviewToken' ),
 			),
-			rootStore
+			rootStore,
 		);
 
 		if ( taskQueue.length && !taskPreviewData.error ) {
@@ -54,8 +53,8 @@
 				new NoResultsWidget( {
 					topicMatching: filtersStore.topicsEnabled,
 					topicMatchModeIsAND: filtersStore.topicsMatchMode === TOPIC_MATCH_MODES.AND,
-					setMatchModeOr: suggestedEditsModule.setMatchModeAndSave.bind( suggestedEditsModule, TOPIC_MATCH_MODES.OR )
-				} )
+					setMatchModeOr: suggestedEditsModule.setMatchModeAndSave.bind( suggestedEditsModule, TOPIC_MATCH_MODES.OR ),
+				} ),
 			);
 		} else if ( taskPreviewData.error ) {
 			suggestedEditsModule.showCard( new ErrorCardWidget() );
@@ -65,27 +64,42 @@
 		}
 
 		suggestedEditsModule.updateControls();
+
+		const clientSideLoadDuration = mw.now() - initTime; // Time since module init
+		let serverClientDuration;
+		const navigationEntries = performance.getEntriesByType( 'navigation' );
+		// Get the time the request was started
+		if ( performance.timeOrigin && navigationEntries.length > 0 ) {
+			const requestStartTime = performance.timeOrigin + navigationEntries[ 0 ].requestStart;
+			serverClientDuration = mw.now() - requestStartTime;
+		} else {
+			serverClientDuration = null;
+		}
+
 		// Track the TTI on client-side.
 		mw.track(
-			'timing.growthExperiments.specialHomepage.modules.suggestedEditsTimeToInteractive.' +
-			( OO.ui.isMobile() ? 'mobile' : 'desktop' ),
-			mw.now() - initTime
+			'stats.mediawiki_GrowthExperiments_suggested_edits_tti_seconds',
+			clientSideLoadDuration,
+			{
+				platform: OO.ui.isMobile() ? 'mobile' : 'desktop',
+				// eslint-disable-next-line camelcase
+				includes_server_response_time: false,
+			},
 		);
-		// Track the server side render start time (first line in SpecialHomepage#execute()) to
-		// TTI on client-side.
-		mw.track(
-			'timing.growthExperiments.specialHomepage.modules.suggestedEditsTimeToInteractive.serverSideStartInclusive.' +
-			( OO.ui.isMobile() ? 'mobile' : 'desktop' ),
-			mw.now() - mw.config.get( 'GEHomepageStartTime' )
-		);
-		// FIXME: suggestedEditsLoadingComplete could probably be removed as it is now a duplicate of
-		// suggestedEditsTimeToInteractive. We can leave it for now in case we decide to rollback this change
-		// or make other adjustments in loading behavior.
-		mw.track(
-			'timing.growthExperiments.specialHomepage.modules.suggestedEditsLoadingComplete.' +
-			( OO.ui.isMobile() ? 'mobile' : 'desktop' ),
-			mw.now() - initTime
-		);
+
+		// Track time from request start to client-side TTI using Performance API
+		if ( serverClientDuration !== null ) {
+			mw.track(
+				'stats.mediawiki_GrowthExperiments_suggested_edits_server_tti_seconds',
+				serverClientDuration,
+				{
+					platform: OO.ui.isMobile() ? 'mobile' : 'desktop',
+					// eslint-disable-next-line camelcase
+					includes_server_response_time: true,
+				},
+			);
+		}
+
 		return $.Deferred().resolve();
 	}
 

@@ -7,9 +7,7 @@ use MediaWiki\Title\Title;
  *
  * @author Alexander Mashin
  * @author Yaron Koren
- *
  */
-
 class EDConnectorWeb extends EDConnectorHttp {
 
 	/** @const int VERSION_TTL Number of seconds that software version is to be cached. */
@@ -43,8 +41,7 @@ class EDConnectorWeb extends EDConnectorHttp {
 			static::$method,
 			$url,
 			$options,
-			$this->suppressError(),
-			__METHOD__
+			$this->suppressError()
 		);
 		if ( $errors && $log_errors ) {
 			$this->error( 'externaldata-url-not-fetched', $this->originalUrl );

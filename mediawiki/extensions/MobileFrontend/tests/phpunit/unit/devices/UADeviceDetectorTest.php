@@ -10,15 +10,8 @@ use MobileFrontend\Devices\UADeviceDetector;
  */
 class UADeviceDetectorTest extends \MediaWikiUnitTestCase {
 
-	/**
-	 * @var UADeviceDetector
-	 */
-	private $detector;
-
-	/**
-	 * @var FauxRequest
-	 */
-	private $request;
+	private UADeviceDetector $detector;
+	private FauxRequest $request;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -85,10 +78,12 @@ class UADeviceDetectorTest extends \MediaWikiUnitTestCase {
 			// Blackberry
 			'BlackBerry9300/5.0.0.716 Profile/MIDP-2.1 Configuration/CLDC-1.1 VendorID/133',
 			'BlackBerry7250/4.0.0 Profile/MIDP-2.0 Configuration/CLDC-1.1',
-			// T32827
+			// T32827: unknown mobile browser with legacy SAMSUNG device token
 			'SAMSUNG-S8000/S800MXEJA1 SHP/VPP/R5 Jasmine/1.0 Nextreaming SMM-MMS/1.2.0 profile/MIDP-2.1 configuration/CLDC-1.1 SS-Widget/S8000-FM',
 			// WML
 			'KDDI-KC31 UP.Browser/6.2.0.5 (GUI) MMP/2.0',
+			// Chrome Mobile on Android (modern SAMSUNG device token, ignored)
+			'Mozilla/5.0 (Linux; Android 4.2.2; nl-nl; SAMSUNG GT-I9505 Build/JDQ39) AppleWebKit/535.19 (KHTML, like Gecko) Version/1.0 Chrome/18.0.1025.308 Mobile Safari/535.19'
 		] );
 		// phpcs:enable
 	}
@@ -113,6 +108,10 @@ class UADeviceDetectorTest extends \MediaWikiUnitTestCase {
 			'Mozilla/5.0 (compatible; googlebot/2.1; +http://www.google.com/bot.html)',
 			'Wget/1.9',
 			'Mozilla/5.0 (compatible; YandexBot/3.0)',
+			// T127021: Samsung Internet on SMART-TV, identifies as desktop Linux
+			'Mozilla/5.0 (SMART-TV; Linux; Tizen 2.3) AppleWebkit/538.1 (KHTML, like Gecko) SamsungBrowser/1.0 TV Safari/538.1',
+			// T405279: Samsung Internet on Android after clicking "Desktop site", identifes as desktop Linux
+			'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/28.0 Chrome/130.0.0.0 Safari/537.36',
 		] );
 		// phpcs:enable
 	}
@@ -167,28 +166,6 @@ class UADeviceDetectorTest extends \MediaWikiUnitTestCase {
 			$this->detectDeviceProperties( $userAgent )
 				->isMobileDevice()
 		);
-	}
-
-	/**
-	 * @covers \MobileFrontend\Devices\UADeviceDetector::detectDeviceProperties
-	 * @covers \MobileFrontend\Devices\UADeviceDetector::detectMobileDevice
-	 */
-	public function testItDoesntClassifySamsungSmartTVsAsMobileDevices() {
-		$properties = $this->detectDeviceProperties(
-			// phpcs:ignore Generic.Files.LineLength
-			'Mozilla/5.0 (SMART-TV; Linux; Tizen 2.3) AppleWebkit/538.1 (KHTML, like Gecko) SamsungBrowser/1.0 TV Safari/538.1'
-		);
-
-		$this->assertFalse( $properties->isMobileDevice() );
-
-		// ---
-
-		$properties = $this->detectDeviceProperties(
-			// phpcs:ignore Generic.Files.LineLength
-			'Mozilla/5.0 (Linux; Android 4.2.2; nl-nl; SAMSUNG GT-I9505 Build/JDQ39) AppleWebKit/535.19 (KHTML, like Gecko) Version/1.0 Chrome/18.0.1025.308 Mobile Safari/535.19'
-		);
-
-		$this->assertTrue( $properties->isMobileDevice() );
 	}
 
 	/**

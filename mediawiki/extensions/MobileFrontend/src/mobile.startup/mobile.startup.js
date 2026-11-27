@@ -12,10 +12,6 @@ const OverlayManager = require( './OverlayManager' );
 const View = require( './View' );
 const Overlay = require( './Overlay' );
 const references = require( './references/references' );
-const search = {
-	SearchOverlay: require( './search/SearchOverlay' ),
-	SearchGateway: require( './search/SearchGateway' )
-};
 const promisedView = require( './promisedView' );
 const headers = require( './headers' );
 const Skin = require( './Skin' );
@@ -24,7 +20,13 @@ const mediaViewer = {
 };
 const languageInfoOverlay = require( './languageOverlay/languageInfoOverlay' );
 const languageOverlay = require( './languageOverlay/languageOverlay' );
-const amcOutreach = require( './amcOutreach/amcOutreach' );
+const util = require( './util.js' );
+const actionParams = require( './actionParams.js' );
+const Icon = require( './Icon.js' );
+const IconButton = require( './IconButton.js' );
+const MessageBox = require( './MessageBox.js' );
+const Section = require( './Section.js' );
+const Button = require( './Button.js' );
 
 // Expose chunk to temporary variable which will be deleted and exported via ResourceLoader
 // package inside mobile.startup.exports.
@@ -34,39 +36,64 @@ const amcOutreach = require( './amcOutreach/amcOutreach' );
  *
  * @module mobile.startup
  */
-mw._mobileFrontend = {
+module.exports = {
 	/**
-	 * Internal for use inside Minerva only
+	 * Internal, strictly for use inside MobileFrontend only
+	 *
+	 * @private
+	 */
+	actionParams,
+	/**
+	 * Internal, strictly for use inside MobileFrontend only
 	 *
 	 * @memberof module:mobile.startup
-	 * @type module:mobile.startup/AmcOutreach
+	 * @type module:mobile.startup/util
+	 * @private
 	 */
-
-	amcOutreach,
+	util,
+	/**
+	 * @private
+	 */
+	headers,
 	// Internal for use inside GrowthExperiments only.
 	overlayHeader: headers.header,
 	/**
 	 * Internal for use inside Minerva, GrowthExperiments only.
+	 *
 	 * @type module:mobile.startup/Drawer
 	 */
 	Drawer,
 	// Internal for use inside Minerva only.
 	CtaDrawer,
 	/**
-	 * Internal for use inside Minerva, ExternalGuidance and Echo only.
-	 *
+	 * @internal for use strictly inside MobileFrontend only. Other extensions
+	 *  should use View.make and Overlay.make
+	 */
+	class: {
+		View,
+		Overlay,
+		Section,
+		MessageBox,
+		Icon,
+		IconButton,
+		Button
+	},
+	/**
+	 * @stable for use
 	 * @memberof module:mobile.startup
 	 * @type module:mobile.startup/View
 	 */
-	View,
+	View: {
+		make: View.make
+	},
 	/**
-	 * Internal for use inside Minerva, ExternalGuidance,
-	 *  GrowthExperiments and Echo only.
-	 *
+	 * @stable for use
 	 * @memberof module:mobile.startup
 	 * @type module:mobile.startup/Overlay
 	 */
-	Overlay,
+	Overlay: {
+		make: Overlay.make
+	},
 	/**
 	 * Internal for use inside Minerva only.
 	 *
@@ -80,27 +107,34 @@ mw._mobileFrontend = {
 	 * @memberof module:mobile.startup
 	 * @return {module:mobile.startup/OverlayManager}
 	 */
-	getOverlayManager: () => {
-		return OverlayManager.getSingleton();
-	},
+	getOverlayManager: () => OverlayManager.getSingleton(),
 	/**
 	 * Internal for use inside Minerva only.
+	 *
 	 * @type module:mobile.startup/Page
 	 * @memberof module:mobile.startup
 	 */
 	currentPage,
 	/**
 	 * Internal for use inside Minerva only.
+	 *
 	 * @type module:mobile.startup/PageHTMLParser
 	 * @memberof module:mobile.startup
 	 */
 	PageHTMLParser,
 	/**
 	 * Internal for use inside Minerva only.
+	 *
 	 * @type module:mobile.startup/Icon
 	 * @memberof module:mobile.startup
 	 */
 	spinner: icons.spinner,
+	/**
+	 * Internal for use inside MobileFrontend only
+	 *
+	 * @private
+	 */
+	cancelIcon: icons.cancel,
 	/**
 	 * Internal for use inside Minerva only.
 	 *
@@ -119,13 +153,6 @@ mw._mobileFrontend = {
 	 * Internal for use inside Minerva only.
 	 *
 	 * @memberof module:mobile.startup
-	 * @type module:mobile.startup/search
-	 */
-	search,
-	/**
-	 * Internal for use inside Minerva only.
-	 *
-	 * @memberof module:mobile.startup
 	 * @type module:mobile.startup/time
 	 */
 	time,
@@ -137,11 +164,9 @@ mw._mobileFrontend = {
 	 * @memberof module:mobile.startup
 	 * @return {jQuery.Deferred}
 	 */
-	loadAllImagesInPage: () => {
-		return lazyImageLoader.loadImages(
-			lazyImageLoader.queryPlaceholders( document.getElementById( 'content' ) )
-		);
-	},
+	loadAllImagesInPage: () => lazyImageLoader.loadImages(
+		lazyImageLoader.queryPlaceholders( document.getElementById( 'content' ) )
+	),
 	/**
 	 * Show a notification on page reload, internal for Minerva
 	 *

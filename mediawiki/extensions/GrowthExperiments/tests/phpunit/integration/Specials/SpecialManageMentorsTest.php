@@ -7,13 +7,13 @@ use GrowthExperiments\MentorDashboard\MentorTools\IMentorWeights;
 use GrowthExperiments\MentorDashboard\MentorTools\MentorStatusManager;
 use GrowthExperiments\Mentorship\Store\MentorStore;
 use GrowthExperiments\Specials\SpecialManageMentors;
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use MediaWiki\User\UserIdentity;
-use PermissionsError;
 use ReflectionMethod;
-use SpecialPageTestBase;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
@@ -64,7 +64,7 @@ class SpecialManageMentorsTest extends SpecialPageTestBase {
 	 */
 	protected function newSpecialPage() {
 		$geServices = GrowthExperimentsServices::wrap( $this->getServiceContainer() );
-		$mainConfig = $this->getServiceContainer()->getMainConfig();
+		$growthWikiConfig = $geServices->getGrowthWikiConfig();
 
 		return new SpecialManageMentors(
 			$this->getServiceContainer()->getUserIdentityLookup(),
@@ -73,12 +73,12 @@ class SpecialManageMentorsTest extends SpecialPageTestBase {
 			$geServices->getMentorWriter(),
 			$geServices->getMentorStatusManager(),
 			$geServices->getMentorRemover(),
-			$mainConfig
+			$growthWikiConfig
 		);
 	}
 
 	public function testNotAuthorizedRead() {
-		[ $html, ] = $this->executeSpecialPage();
+		[ $html ] = $this->executeSpecialPage();
 		$this->assertStringContainsString(
 			$this->mentorUser->getName(),
 			$html
@@ -99,7 +99,7 @@ class SpecialManageMentorsTest extends SpecialPageTestBase {
 
 	public function testAuthorizedRead() {
 		$performer = $this->getTestSysop()->getUser();
-		[ $html, ] = $this->executeSpecialPage( '', null, null, $performer );
+		[ $html ] = $this->executeSpecialPage( '', null, null, $performer );
 		$this->assertStringContainsStringIgnoringCase(
 			$this->mentorUser->getName(),
 			$html
@@ -175,7 +175,7 @@ class SpecialManageMentorsTest extends SpecialPageTestBase {
 			$this->mentorUser,
 			MentorStore::ROLE_PRIMARY
 		) );
-		[ $html, ] = $this->executeSpecialPage(
+		[ $html ] = $this->executeSpecialPage(
 			'remove-mentor/' . $this->mentorUser->getId(),
 			new FauxRequest( [ 'wpreason' => 'foo' ], true ),
 			null,
@@ -215,7 +215,7 @@ class SpecialManageMentorsTest extends SpecialPageTestBase {
 			'this is intro',
 			$mentorProvider->newMentorFromUserIdentity( $this->mentorUser )->getIntroText()
 		);
-		[ $html, ] = $this->executeSpecialPage(
+		[ $html ] = $this->executeSpecialPage(
 			'edit-mentor/' . $this->mentorUser->getId(),
 			new FauxRequest( [
 				'wpmessage' => 'new intro',
@@ -277,7 +277,7 @@ class SpecialManageMentorsTest extends SpecialPageTestBase {
 		$ordinaryUser = $this->getMutableTestUser()->getUserIdentity();
 
 		$this->assertFalse( $mentorProvider->isMentor( $ordinaryUser ) );
-		[ $html, ] = $this->executeSpecialPage(
+		[ $html ] = $this->executeSpecialPage(
 			'add-mentor',
 			new FauxRequest( [
 				'wpusername' => $ordinaryUser->getName(),
@@ -297,26 +297,9 @@ class SpecialManageMentorsTest extends SpecialPageTestBase {
 		$this->assertEquals( IMentorWeights::WEIGHT_NONE, $mentor->getWeight() );
 	}
 
-	/**
-	 * Data provider for testDisplayMentorshipWarningMessage
-	 *
-	 * @return array
-	 */
-	public function configProvider(): array {
-		return [
-			[ false, SpecialPage::getTitleFor( 'EditGrowthConfig' )->getPrefixedText() ],
-			[ true, SpecialPage::getTitleFor(
-				'CommunityConfiguration', 'Mentorship' )->getPrefixedText() ],
-		];
-	}
-
-	/**
-	 * @dataProvider configProvider
-	 */
-	public function testDisplayMentorshipWarningMessage( $useCommunityConfig, $expectedConfigPage ) {
+	public function testDisplayMentorshipWarningMessage() {
 		$this->overrideConfigValues( [
 			'GEMentorshipEnabled' => false,
-			'GEUseCommunityConfiguration' => $useCommunityConfig,
 		] );
 		$extensionRegistry = $this->getMockBuilder( ExtensionRegistry::class )
 			->disableOriginalConstructor()
@@ -324,16 +307,16 @@ class SpecialManageMentorsTest extends SpecialPageTestBase {
 		// Simulate CC extension is loaded
 		$extensionRegistry->method( 'isLoaded' )
 			->willReturn( true );
-		$this->overrideConfigValue( 'GEUseCommunityConfigurationExtension', $useCommunityConfig );
 		$this->getMockBuilder( GrowthExperimentsServices::class )
 			->disableOriginalConstructor()
 			->getMock();
 		$specialPage = $this->newSpecialPage();
 		$reflectionMethod = new ReflectionMethod(
 			SpecialManageMentors::class, 'displayMentorshipWarningMessage' );
-		$reflectionMethod->setAccessible( true );
 		$result = $reflectionMethod->invoke( $specialPage );
 
+		$expectedConfigPage = SpecialPage::getTitleFor( 'CommunityConfiguration', 'Mentorship' )
+			->getPrefixedText();
 		$expectedMessage = wfMessage( 'growthexperiments-mentor-dashboard-mentorship-disabled-with-link' )
 			->params( $expectedConfigPage )
 			->parse();
@@ -360,7 +343,7 @@ class SpecialManageMentorsTest extends SpecialPageTestBase {
 	 * @return void
 	 */
 	public function testSubpageNoException( string $subpage ) {
-		[ $html, ] = $this->executeSpecialPage(
+		[ $html ] = $this->executeSpecialPage(
 			$subpage,
 			 new FauxRequest(),
 			null,

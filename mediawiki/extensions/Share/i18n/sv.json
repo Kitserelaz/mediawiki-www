@@ -1,25 +1,25 @@
 {
 	"@metadata": {
 		"authors": [
-			"Sabelöga"
+			"Sabelöga",
+			"Stefan2255"
 		]
 	},
 	"share": "Dela",
 	"share-desc": "Lägger till en sidofältsportlet som gör det möjligt för användare att enkelt dela wikiartiklar på sociala medier",
 	"share-header": "Dela detta",
 	"share-email": "Dela via e-post",
-	"share-email-desc": "Tillåt att en länk för att dela artiklar via e-post läggs till i sidofältet",
 	"share-facebook": "Dela på Facebook",
-	"share-facebook-desc": "Tillåt att en länk för att dela artiklar via Facebook läggs till i sidofältet",
 	"share-linkedin": "Dela på LinkedIn",
-	"share-linkedin-desc": "Tillåt att en länk för att dela artiklar via LinkedIn läggs till i sidofältet",
+	"share-pinterest": "Dela på Pinterest",
 	"share-reddit": "Dela på Reddit",
-	"share-reddit-desc": "Tillåt att en länk för att dela artiklar via Reddit läggs till i sidofältet",
+	"share-telegram": "Dela på Telegram",
 	"share-tumblr": "Dela på Tumblr",
-	"share-tumblr-desc": "Tillåt att en länk för att dela artiklar via Tumblr läggs till i sidofältet",
 	"share-twitter": "Dela på Twitter",
-	"share-twitter-desc": "Tillåt att en länk för att dela artiklar via Twitter läggs till i sidofältet",
-	"share-sidebar-basicbuttons": "Använda Basic Buttons Mode?",
+	"share-vk": "Dela till VK",
+	"share-weibo": "Dela till Weibo",
+	"share-whatsapp": "Dela på WhatsApp",
 	"share-preftoggle": "Inaktivera visning av dela-länkar i sidofältet?",
-	"right-viewsharelinks": "Visa sidofältets dela-portlet"
+	"right-viewsharelinks": "Visa sidofältets dela-portlet",
+	"action-viewsharelinks": "Visa sidofältets dela-portlet"
 }

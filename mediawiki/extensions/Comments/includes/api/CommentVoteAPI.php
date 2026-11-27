@@ -1,6 +1,8 @@
 <?php
 
-class CommentVoteAPI extends ApiBase {
+use Wikimedia\ParamValidator\ParamValidator;
+
+class CommentVoteAPI extends MediaWiki\Api\ApiBase {
 
 	public function execute() {
 		$user = $this->getUser();
@@ -8,8 +10,6 @@ class CommentVoteAPI extends ApiBase {
 		// and neither can those users without the necessary privileges
 		if ( $user->getBlock() ) {
 			$this->dieBlocked( $user->getBlock() );
-		} elseif ( $user->isBlockedGlobally() ) {
-			$this->dieBlocked( $user->getGlobalBlock() );
 		} elseif ( !$user->isAllowed( 'comment' ) ) {
 			$this->dieWithError( 'comments-not-allowed' );
 		}
@@ -47,6 +47,7 @@ class CommentVoteAPI extends ApiBase {
 
 			$result = $this->getResult();
 			$result->addValue( $this->getModuleName(), 'html', $html );
+
 			return true;
 		}
 	}
@@ -62,12 +63,12 @@ class CommentVoteAPI extends ApiBase {
 	public function getAllowedParams() {
 		return [
 			'commentID' => [
-				ApiBase::PARAM_REQUIRED => true,
-				ApiBase::PARAM_TYPE => 'integer'
+				ParamValidator::PARAM_REQUIRED => true,
+				ParamValidator::PARAM_TYPE => 'integer'
 			],
 			'voteValue' => [
-				ApiBase::PARAM_REQUIRED => true,
-				ApiBase::PARAM_TYPE => 'integer'
+				ParamValidator::PARAM_REQUIRED => true,
+				ParamValidator::PARAM_TYPE => 'integer'
 			],
 		];
 	}

@@ -4,9 +4,10 @@
 			"McDutchie"
 		]
 	},
+	"growthexperiments-exception-not-mentored": "Usator non ha mentor",
+	"growthexperiments-exception-no-mentored-text": "Usator non ha mentor, dunque non pote poner un question a su mentor",
 	"growthexperiments-mentor-dashboard-title": "Tabuliero de instrumentos del mentor",
 	"growthexperiments-mentor-dashboard-pt-link": "Tabuliero de instrumentos del mentor",
-	"growthexperiments-mentor-dashboard-disabled": "Le tabuliero de instrumentos del mentor non es activate sur iste wiki.",
 	"growthexperiments-mentor-dashboard-must-be-mentor": "Pro activar le tabuliero de instrumentos del mentor, tu debe primo [[$1|inscriber te como mentor]].",
 	"growthexperiments-mentor-dashboard-misconfigured-missing-list": "Ante que le tabuliero de instrumentos del mentor pote esser usate, le lista de mentores debe primo esser configurate. Un administrator pote usar [[Special:EditGrowthConfig]] pro isto.",
 	"growthexperiments-mentor-dashboard-mentee-overview-headline": "Tu apprentisses",
@@ -23,6 +24,7 @@
 	"growthexperiments-mentor-dashboard-mentee-overview-info-legend-questions": "Questiones ponite al mentores",
 	"growthexperiments-mentor-dashboard-mentee-overview-info-legend-editcount": "Numero de modificationes",
 	"growthexperiments-mentor-dashboard-mentee-overview-info-legend-registration": "Data de registration",
+	"growthexperiments-mentor-dashboard-mentee-overview-info-updated": "Ultime actualisation: $1 retro",
 	"growthexperiments-mentor-dashboard-mentee-overview-add-filter": "Filtros",
 	"growthexperiments-mentor-dashboard-mentee-overview-add-filter-submit": "Actualisar",
 	"growthexperiments-mentor-dashboard-mentee-overview-add-filter-total-edits-headline": "Numero de modificationes",
@@ -78,7 +80,7 @@
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-text": "Si tu non pote esser mentor durante un periodo specific (plus de 1 septimana), tu pote marcar te como absente. Durante ille periodo, un altere mentor recipera le questiones de tu apprentisses.",
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-away-for": "Tu essera absente durante:",
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-away-for-label": "dies",
-	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-toohigh": "Le entrata in \"Tu essera absente durante\" es troppo alte. Le numero maxime de dies durante le quales un mentor pote esser absente es $1 (un anno).",
+	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-toohigh": "Le numero maxime de dies durante le quales un mentor pote esser absente es $1 (un anno).",
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-unknown": "Un error incognite ha occurrite. Per favor reproba plus tarde.",
 	"growthexperiments-mentor-dashboard-mentor-tools-mentor-changed-to-active": "Tu stato ha cambiate a \"Active\".",
 	"growthexperiments-mentor-dashboard-mentor-tools-mentor-changed-to-away": "Tu stato ha cambiate a \"Absente\".",
@@ -171,7 +173,9 @@
 	"growthexperiments-mentor-dashboard-personalized-praise-settings-success": "Tu parametros personalisate de laude ha essite salveguardate.",
 	"growthexperiments-mentor-list-missing-key": "Le clave <code>$1</code> manca",
 	"growthexperiments-mentor-list-datatype-mismatch": "<code>$1</code> es expectate de esser <code>$2</code> ma es <code>$3</code>",
+	"growthexperiments-mentor-list-datatype-mismatch-not-convertible-timestamp": "<code>$1</code> debe esser un data e hora convertibile valide, ID de usator: <code>$2</code>",
 	"growthexperiments-mentor-list-unexpected-key-mentor": "Le definition del mentor contine un clave non expectate <code>$1</code>",
+	"growthexperiments-mentor-list-invalid-weight": "<code>$1</code> debe esser un del sequentes: <code>$2</code>, ma es <code>$3</code>",
 	"growthexperiments-mentor-writer-error-already-added": "Le mentor $1 ha ja essite addite al lista de mentores",
 	"growthexperiments-mentor-writer-error-not-in-the-list": "Le mentor $1 non es in le lista de mentores",
 	"growthexperiments-mentor-writer-error-anonymous-user": "Le mentor $1 non es un usator registrate",
@@ -235,7 +239,7 @@
 	"growthexperiments-mentorship-enrollasmentor-success": "Tu es ora inscribite como mentor. Continua al [[Special:MentorDashboard|tabuliero de instrumentos pro mentores]].",
 	"growthexperiments-mentorship-enrollasmentor-summary": "Addition de me mesme como mentor",
 	"growthexperiments-mentorship-enrollasmentor-error-not-autoeligible": "Solmente usatores con al minus $1 modification{{PLURAL:$1||es}} e $2 die{{PLURAL:$2||s}} de presentia pote inscriber se como mentores.",
-	"tag-mentor list change": "Cambio del lista de mentores",
-	"tag-mentor list change-description": "Etiquetta applicate al modificationes apportate al lista structurate de mentores per medio de GrowthExperiments",
+	"tag-mentor_list_change": "Cambio del lista de mentores",
+	"tag-mentor_list_change-description": "Etiquetta applicate al modificationes apportate al lista structurate de mentores per medio de GrowthExperiments",
 	"growthexperiments-mentor-dashboard-mentorship-disabled-with-link": "Le mentorato es actualmente disactivate. Administratores pote reactivar le mentorato desde [[$1]]."
 }

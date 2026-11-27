@@ -1,6 +1,6 @@
 <?php
 
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\PageReference;
@@ -10,7 +10,6 @@ use MediaWiki\Parser\ParserOutput;
 /**
  * This class is used as a way to specify how to edit/view JCContent object
  * To use it, set $wgJsonConfigModels[$modelId]['view'] = 'MyJCContentViewClass';
- * @package JsonConfig
  */
 abstract class JCContentView {
 
@@ -60,3 +59,6 @@ $allowedLicenses
 EOT;
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCContentView::class, 'JsonConfig\\JCContentView' );

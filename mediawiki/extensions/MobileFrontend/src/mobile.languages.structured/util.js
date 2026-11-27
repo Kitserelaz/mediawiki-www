@@ -54,7 +54,7 @@ function getDeviceLanguageOrParent( languages, deviceLanguage ) {
 		parentLanguage = deviceLanguage.slice( 0, index );
 	}
 
-	languages.forEach( function ( language ) {
+	languages.forEach( ( language ) => {
 		if ( language.lang === parentLanguage || language.lang === deviceLanguage ) {
 			deviceLanguagesWithVariants[ language.lang ] = true;
 		}
@@ -89,8 +89,8 @@ module.exports = {
 	 * @param {Object} language with 'lang' key.
 	 * @return {Object} language with 'lang' key and new 'dir' key.
 	 */
-	getDir: function ( language ) {
-		const dir = rtlLanguages.indexOf( language.lang ) > -1 ? 'rtl' : 'ltr';
+	getDir( language ) {
+		const dir = rtlLanguages.includes( language.lang ) ? 'rtl' : 'ltr';
 		return mfUtils.extend( {}, language, { dir } );
 	},
 
@@ -116,15 +116,14 @@ module.exports = {
 	 * @param {string} [deviceLanguage] the device's primary language
 	 * @return {StructuredLanguages}
 	 */
-	getStructuredLanguages: function (
+	getStructuredLanguages(
 		languages,
 		variants,
 		frequentlyUsedLanguages,
 		showSuggestedLanguages,
 		deviceLanguage
 	) {
-		const hasOwn = Object.prototype.hasOwnProperty,
-			self = this;
+		const hasOwn = Object.prototype.hasOwnProperty;
 
 		let maxFrequency = 0,
 			minFrequency = 0,
@@ -134,7 +133,7 @@ module.exports = {
 		// Is the article available in the user's device language?
 		deviceLanguage = getDeviceLanguageOrParent( languages, deviceLanguage );
 		if ( deviceLanguage ) {
-			Object.keys( frequentlyUsedLanguages ).forEach( function ( language ) {
+			Object.keys( frequentlyUsedLanguages ).forEach( ( language ) => {
 				const frequency = frequentlyUsedLanguages[ language ];
 				maxFrequency = maxFrequency < frequency ? frequency : maxFrequency;
 				minFrequency = minFrequency > frequency ? frequency : minFrequency;
@@ -149,17 +148,17 @@ module.exports = {
 		 * @param {Object} language
 		 * @return {Object} which has 'dir' key.
 		 */
-		function addLangDir( language ) {
+		const addLangDir = ( language ) => {
 			if ( language.dir ) {
 				return language;
 			} else {
-				return self.getDir( language );
+				return this.getDir( language );
 			}
-		}
+		};
 
 		// Separate languages into suggested and all languages.
 		if ( showSuggestedLanguages ) {
-			languages.map( addLangDir ).forEach( function ( language ) {
+			languages.map( addLangDir ).forEach( ( language ) => {
 				if ( hasOwn.call( frequentlyUsedLanguages, language.lang ) ) {
 					language.frequency = frequentlyUsedLanguages[language.lang];
 					suggestedLanguages.push( language );
@@ -176,7 +175,7 @@ module.exports = {
 		// Note that the variants data doesn't contain the article title, thus
 		// we cannot show it for the variants.
 		if ( variants && showSuggestedLanguages ) {
-			variants.map( addLangDir ).forEach( function ( variant ) {
+			variants.map( addLangDir ).forEach( ( variant ) => {
 				if ( hasOwn.call( frequentlyUsedLanguages, variant.lang ) ) {
 					variant.frequency = frequentlyUsedLanguages[variant.lang];
 				} else {
@@ -187,9 +186,7 @@ module.exports = {
 		}
 
 		// sort suggested languages in descending order by frequency
-		suggestedLanguages = suggestedLanguages.sort( function ( a, b ) {
-			return b.frequency - a.frequency;
-		} );
+		suggestedLanguages = suggestedLanguages.sort( ( a, b ) => b.frequency - a.frequency );
 
 		/**
 		 * Compare language names lexicographically
@@ -216,7 +213,7 @@ module.exports = {
 	 * @instance
 	 * @return {Object}
 	 */
-	getFrequentlyUsedLanguages: function () {
+	getFrequentlyUsedLanguages() {
 		const languageMap = mw.storage.get( 'langMap' );
 
 		return languageMap ? JSON.parse( languageMap ) : {};
@@ -229,7 +226,7 @@ module.exports = {
 	 * @instance
 	 * @param {Object} languageMap
 	 */
-	saveFrequentlyUsedLanguages: function ( languageMap ) {
+	saveFrequentlyUsedLanguages( languageMap ) {
 		mw.storage.set( 'langMap', JSON.stringify( languageMap ) );
 	},
 
@@ -242,7 +239,7 @@ module.exports = {
 	 * @param {string} languageCode
 	 * @param {Object} frequentlyUsedLanguages list of the frequently used languages
 	 */
-	saveLanguageUsageCount: function ( languageCode, frequentlyUsedLanguages ) {
+	saveLanguageUsageCount( languageCode, frequentlyUsedLanguages ) {
 		let count = frequentlyUsedLanguages[ languageCode ] || 0;
 
 		count += 1;

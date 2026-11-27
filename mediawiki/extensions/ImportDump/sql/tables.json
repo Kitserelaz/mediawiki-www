@@ -45,9 +45,65 @@
 				"type": "mwenum",
 				"options": { "notnull": true,
 					"CustomSchemaOptions": {
-						"enum_values": [ "complete", "declined", "failed", "inprogress", "pending", "starting" ]
+						"enum_values": [ "complete", "declined", "failed", "inprogress", "partial", "pending", "starting", "verifying" ]
 					}
 				}
+			},
+			{
+				"name": "request_stage",
+				"comment": "The last import stage that was started, or NULL if none",
+				"type": "string",
+				"options": { "notnull": false, "length": 32 }
+			},
+			{
+				"name": "request_history",
+				"comment": "Whether the dump seems to have the full revision history, or NULL if it was not checked",
+				"type": "mwenum",
+				"options": { "notnull": false,
+					"CustomSchemaOptions": {
+						"enum_values": [ "full", "partial", "unknown" ]
+					}
+				}
+			},
+			{
+				"name": "request_requirements",
+				"comment": "JSON list of the extensions that the dump needs, or NULL if it was not checked",
+				"type": "blob",
+				"options": { "notnull": false, "length": 65530 }
+			},
+			{
+				"name": "request_skipped",
+				"comment": "JSON list of the image files that are left out of the import and why, or NULL if none were",
+				"type": "blob",
+				"options": { "notnull": false, "length": 16777215 }
+			},
+			{
+				"name": "request_file_count",
+				"comment": "How many image files were stored for an images request, or NULL if it was not recorded",
+				"type": "integer",
+				"options": { "notnull": false, "unsigned": true }
+			},
+			{
+				"name": "request_file_size",
+				"comment": "The total size in bytes of the image files that were stored, or NULL if it was not recorded",
+				"type": "bigint",
+				"options": { "notnull": false, "unsigned": true }
+			},
+			{
+				"name": "request_type",
+				"comment": "What is imported, pages from an XML dump or image files",
+				"type": "mwenum",
+				"options": { "notnull": true, "default": "xml",
+					"CustomSchemaOptions": {
+						"enum_values": [ "images", "xml" ]
+					}
+				}
+			},
+			{
+				"name": "request_linked_id",
+				"comment": "The request that this one was made together with, or NULL if it stands alone",
+				"type": "bigint",
+				"options": { "notnull": false, "unsigned": true }
 			},
 			{
 				"name": "request_locked",
@@ -60,6 +116,18 @@
 				"comment": "",
 				"type": "mwtinyint",
 				"options": { "notnull": true, "unsigned": true, "default": 0 }
+			},
+			{
+				"name": "request_overwrite",
+				"comment": "",
+				"type": "mwtinyint",
+				"options": { "notnull": true, "unsigned": true, "default": 0 }
+			},
+			{
+				"name": "request_skip_dupes",
+				"comment": "",
+				"type": "mwtinyint",
+				"options": { "notnull": true, "unsigned": true, "default": 1 }
 			}
 		],
 		"indexes": [
@@ -85,6 +153,12 @@
 				"name": "request_status",
 				"comment": "",
 				"columns": [ "request_status" ],
+				"unique": false
+			},
+			{
+				"name": "request_linked_id",
+				"comment": "",
+				"columns": [ "request_linked_id" ],
 				"unique": false
 			}
 		],
@@ -140,5 +214,25 @@
 			}
 		],
 		"pk": [ "request_comment_id" ]
+	},
+	{
+		"name": "import_request_handlers",
+		"comment": "Everyone who has handled a request, such as by starting it or changing its status",
+		"columns": [
+			{
+				"name": "request_id",
+				"comment": "",
+				"type": "bigint",
+				"options": { "notnull": true, "unsigned": true }
+			},
+			{
+				"name": "request_handler_actor",
+				"comment": "",
+				"type": "bigint",
+				"options": { "notnull": true, "unsigned": true }
+			}
+		],
+		"indexes": [],
+		"pk": [ "request_id", "request_handler_actor" ]
 	}
 ]

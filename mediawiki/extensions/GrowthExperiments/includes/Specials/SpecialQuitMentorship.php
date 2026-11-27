@@ -2,31 +2,32 @@
 
 namespace GrowthExperiments\Specials;
 
-use ErrorPageError;
 use GrowthExperiments\Mentorship\MentorRemover;
 use GrowthExperiments\Mentorship\Provider\MentorProvider;
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\SpecialPage\FormSpecialPage;
+use MediaWiki\Status\Status;
 use MediaWiki\User\User;
-use PermissionsError;
 
 class SpecialQuitMentorship extends FormSpecialPage {
 
 	private MentorProvider $mentorProvider;
 	private MentorRemover $mentorRemover;
 
-	/**
-	 * @param MentorProvider $mentorProvider
-	 * @param MentorRemover $mentorRemover
-	 */
 	public function __construct(
 		MentorProvider $mentorProvider,
 		MentorRemover $mentorRemover
 	) {
-		parent::__construct( 'QuitMentorship', '', false );
+		parent::__construct( 'QuitMentorship' );
 
 		$this->mentorProvider = $mentorProvider;
 		$this->mentorRemover = $mentorRemover;
+	}
+
+	/** @inheritDoc */
+	public function isListed(): bool {
+		return false;
 	}
 
 	/** @inheritDoc */
@@ -63,34 +64,9 @@ class SpecialQuitMentorship extends FormSpecialPage {
 	}
 
 	/**
-	 * Check if mentor dashboard is enabled via GEMentorDashboardEnabled
-	 *
-	 * @return bool
-	 */
-	private function isEnabled(): bool {
-		return $this->getConfig()->get( 'GEMentorDashboardEnabled' );
-	}
-
-	/**
-	 * Ensure mentor dashboard feature flag is on
-	 *
-	 * @throws ErrorPageError
-	 */
-	private function requireMentorDashboardEnabled() {
-		if ( !$this->isEnabled() ) {
-			// Mentor dashboard is disabled, display a meaningful restriction error
-			throw new ErrorPageError(
-				'growthexperiments-quit-mentorship-title',
-				'growthexperiments-quit-mentorship-disabled'
-			);
-		}
-	}
-
-	/**
 	 * @inheritDoc
 	 */
 	public function execute( $par ) {
-		$this->requireMentorDashboardEnabled();
 		$this->requireNamedUser();
 
 		parent::execute( $par );
@@ -103,8 +79,8 @@ class SpecialQuitMentorship extends FormSpecialPage {
 		return [
 			'reason' => [
 				'type' => 'text',
-				'label-message' => 'growthexperiments-quit-mentorship-reason'
-			]
+				'label-message' => 'growthexperiments-quit-mentorship-reason',
+			],
 		];
 	}
 
@@ -131,12 +107,12 @@ class SpecialQuitMentorship extends FormSpecialPage {
 	 * @inheritDoc
 	 */
 	public function onSubmit( array $data ) {
-		return $this->mentorRemover->removeMentor(
+		return Status::wrap( $this->mentorRemover->removeMentor(
 			$this->getUser(),
 			$this->getUser(),
 			$data['reason'],
 			$this->getContext()
-		);
+		) );
 	}
 
 	/**

@@ -3,61 +3,67 @@
 namespace GrowthExperiments\HelpPanel\QuestionPoster;
 
 use GrowthExperiments\HomepageModules\Mentorship;
-use GrowthExperiments\Mentorship\MentorManager;
-use GrowthExperiments\WikiConfigException;
+use GrowthExperiments\MentorDashboard\MentorTools\MentorStatusManager;
+use GrowthExperiments\Mentorship\IMentorManager;
+use GrowthExperiments\Mentorship\UserNotMentoredException;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\User;
-use UserNotLoggedIn;
-use Wikimedia\Stats\PrefixingStatsdDataFactoryProxy;
+use Wikimedia\Assert\Assert;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * QuestionPoster base class for asking a question from the assigned mentor.
  */
 abstract class MentorQuestionPoster extends QuestionPoster {
 
-	/** @var MentorManager */
-	protected $mentorManager;
+	protected IMentorManager $mentorManager;
+	protected MentorStatusManager $mentorStatusManager;
 
-	/**
-	 * @param WikiPageFactory $wikiPageFactory
-	 * @param TitleFactory $titleFactory
-	 * @param MentorManager $mentorManager
-	 * @param PermissionManager $permissionManager
-	 * @param PrefixingStatsdDataFactoryProxy $perDbNameStatsdDataFactory
-	 * @param bool $confirmEditInstalled
-	 * @param bool $flowInstalled
-	 * @param IContextSource $context
-	 * @param string $body
-	 * @param string $relevantTitleRaw
-	 * @throws UserNotLoggedIn
-	 */
 	public function __construct(
 		WikiPageFactory $wikiPageFactory,
 		TitleFactory $titleFactory,
-		MentorManager $mentorManager,
+		IMentorManager $mentorManager,
+		MentorStatusManager $mentorStatusManager,
 		PermissionManager $permissionManager,
-		PrefixingStatsdDataFactoryProxy $perDbNameStatsdDataFactory,
+		StatsFactory $statsFactory,
 		bool $confirmEditInstalled,
 		bool $flowInstalled,
 		IContextSource $context,
-		$body,
-		$relevantTitleRaw = ''
+		string $body,
+		string $relevantTitleRaw = ''
 	) {
 		$this->mentorManager = $mentorManager;
+		$this->mentorStatusManager = $mentorStatusManager;
 		parent::__construct(
 			$wikiPageFactory,
 			$titleFactory,
 			$permissionManager,
-			$perDbNameStatsdDataFactory,
+			$statsFactory,
 			$confirmEditInstalled,
 			$flowInstalled,
 			$context,
 			$body,
 			$relevantTitleRaw
 		);
+		$this->verifyCanPostQuestions();
+	}
+
+	/**
+	 * Throw an exception if the question poster cannot post questions.
+	 * @return void
+	 * @throws UserNotMentoredException
+	 */
+	protected function verifyCanPostQuestions(): void {
+		if ( !$this->userHasAMentor( $this->getContext() ) ) {
+			throw new UserNotMentoredException();
+		}
+	}
+
+	protected function userHasAMentor( IContextSource $context ): bool {
+		return (bool)$this->mentorManager->getEffectiveMentorForUserSafe( $context->getUser() );
 	}
 
 	/**
@@ -78,10 +84,12 @@ abstract class MentorQuestionPoster extends QuestionPoster {
 
 	/**
 	 * @inheritDoc
-	 * @throws WikiConfigException If there's anything wrong with the current user's mentor
 	 */
 	protected function getDirectTargetTitle() {
-		$mentor = $this->mentorManager->getEffectiveMentorForUser( $this->getContext()->getUser() );
+		$mentor = $this->mentorManager->getEffectiveMentorForUserSafe( $this->getContext()->getUser() );
+		// TODO: This is actually not guaranteed by anything; invalid API calls will violate this
+		// condition. See T386567.
+		Assert::invariant( $mentor !== null, 'MentorQuestionPoster called without a mentor present' );
 		return User::newFromIdentity( $mentor->getUserIdentity() )->getTalkPage();
 	}
 
@@ -90,5 +98,43 @@ abstract class MentorQuestionPoster extends QuestionPoster {
 	 */
 	protected function getQuestionStoragePref() {
 		return Mentorship::QUESTION_PREF;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function prependContent( string $body ): string {
+		$primaryMentor = $this->mentorManager->getMentorForUserSafe( $this->getContext()->getUser() );
+		$mentorStatus = $this->mentorStatusManager->getMentorStatus( $primaryMentor->getUserIdentity() );
+		if ( $mentorStatus === MentorStatusManager::STATUS_AWAY ) {
+			$mentorUsername = $primaryMentor->getUserIdentity()->getName();
+			$menteeUsername = $this->getContext()->getUser()->getName();
+			return $this->addAwayDisclaimer( $body, $mentorUsername, $menteeUsername );
+		}
+		return $body;
+	}
+
+	/**
+	 * Add a disclaimer informing the question is posted to a different mentor
+	 * because the primary one is currently away.
+	 */
+	private function addAwayDisclaimer( string $body, string $mentorUsername, string $menteeUsername ): string {
+		$disclaimer = $this->getAwayDisclaimerText( $mentorUsername, $menteeUsername );
+		return ":''" . $disclaimer . "''\n" . $body;
+	}
+
+	private function wrapSystemMessage( string $message ): string {
+		return $this->getContext()
+			->msg( 'growthexperiments-homepage-mentorship-system-message' )
+			->plaintextParams( $message )
+			->inContentLanguage()->plain();
+	}
+
+	private function getAwayDisclaimerText( string $mentorUsername, string $menteeUsername ): string {
+		$disclaimer = $this->getContext()
+			->msg( 'growthexperiments-homepage-mentorship-question-disclaimer-mentor-away' )
+			->plaintextParams( $menteeUsername, $mentorUsername )
+			->inContentLanguage()->plain();
+		return $this->wrapSystemMessage( $disclaimer );
 	}
 }

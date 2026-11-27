@@ -169,11 +169,9 @@ wfLoadExtension( 'ManageWiki' );
 if (!(getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) || getenv('MW_SSL_REQUESTS') === '1') { wfLoadExtension('RequestSSL'); }
 if ((getenv('MW_FARM_RUNTIME') || getenv('MW_DOCKER')) && getenv('MW_ANALYTICS') !== '1') {
     // Analytics require explicit opt-in and their external database/service.
-} elseif ( $wi->dbname !== 'stagingwiki' ) {
-    wfLoadExtension("MatomoAnalytics");
 } else {
-    wfLoadExtension('../extensions_staging/MatomoAnalytics-test');
-};
+    wfLoadExtension("MatomoAnalytics");
+}
 
 
 require "$IP/ConfigSettings.php"; // This is where wgConf settings went

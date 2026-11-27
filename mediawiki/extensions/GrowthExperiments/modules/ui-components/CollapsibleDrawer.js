@@ -16,7 +16,7 @@ function CollapsibleDrawer( config ) {
 	const panelLayoutConfig = {
 			expanded: false,
 			padded: typeof config.padded === 'boolean' ? config.padded : true,
-			content: config.content
+			content: config.content,
 		},
 		panelLayout = new OO.ui.PanelLayout( panelLayoutConfig );
 	this.isIntroContentHidden = true;
@@ -26,7 +26,7 @@ function CollapsibleDrawer( config ) {
 		this.$introContent = config.$introContent;
 		this.$introContent.addClass( [
 			'mw-ge-collapsibleDrawer-introContent',
-			'mw-ge-collapsibleDrawer-introContent--hidden'
+			'mw-ge-collapsibleDrawer-introContent--hidden',
 		] );
 	}
 	this.opening = $.Deferred();
@@ -37,7 +37,7 @@ function CollapsibleDrawer( config ) {
 		'mw-ge-collapsibleDrawer',
 		'mw-ge-collapsibleDrawer--animate-in',
 		OO.ui.isMobile() ? 'mw-ge-collapsibleDrawer-mobile' : 'mw-ge-collapsibleDrawer-desktop',
-		panelLayoutConfig.padded ? 'mw-ge-collapsibleDrawer--padded' : ''
+		panelLayoutConfig.padded ? 'mw-ge-collapsibleDrawer--padded' : '',
 	] );
 	this.$content = $( '<div>' ).addClass( 'mw-ge-collapsibleDrawer-content' );
 	this.setupHeader( config.headerText );
@@ -49,7 +49,7 @@ function CollapsibleDrawer( config ) {
 	$( document.body ).addClass(
 		OO.ui.isMobile() ?
 			'mw-ge-body--with-collapsibleDrawer-mobile' :
-			'mw-ge-body--with-collapsibleDrawer-desktop'
+			'mw-ge-body--with-collapsibleDrawer-desktop',
 	);
 	$( document ).on( 'keyup', this.onEscapeKeyUp.bind( this ) );
 }
@@ -112,22 +112,22 @@ CollapsibleDrawer.prototype.setupHeader = function ( headerText ) {
 	this.closeIconBtn = new OO.ui.ButtonWidget( {
 		classes: [ 'mw-ge-collapsibleDrawer-close-icon' ],
 		framed: false,
-		icon: 'close'
+		icon: 'close',
 	} );
 	this.chevronIcon = new OO.ui.IconWidget( {
 		classes: [ 'mw-ge-collapsibleDrawer-chevron' ],
 		framed: false,
-		icon: 'expand'
+		icon: 'expand',
 	} );
 	this.$head = $( '<div>' ).addClass( 'mw-ge-collapsibleDrawer-header' );
 	this.$headerText = $( '<div>' ).addClass( 'mw-ge-collapsibleDrawer-headerText' )
 		.append( [
 			this.closeIconBtn.$element,
-			$( '<div>' ).addClass( 'mw-ge-collapsibleDrawer-headerText-text' ).text( headerText )
+			$( '<div>' ).addClass( 'mw-ge-collapsibleDrawer-headerText-text' ).text( headerText ),
 		] );
 	this.$head.attr( 'role', 'button' ).append( [
 		this.$headerText,
-		this.chevronIcon.$element
+		this.chevronIcon.$element,
 	] );
 	this.$head.on( 'click', this.toggleDisplayState.bind( this ) );
 	this.closeIconBtn.on( 'click', this.close.bind( this ) );
@@ -193,17 +193,17 @@ CollapsibleDrawer.prototype.openWithIntroContent = function () {
  * @return {jQuery.Promise} Promise that resolves when the intro content has been hidden
  */
 CollapsibleDrawer.prototype.hideIntroContent = function () {
-	const promise = $.Deferred();
+	const deferred = $.Deferred();
 	if ( !this.$introContent || this.isIntroContentHidden ) {
-		return promise.resolve();
+		return deferred.resolve().promise();
 	}
 	this.$introContent.addClass( 'mw-ge-collapsibleDrawer-introContent--hidden' );
 	setTimeout( () => {
 		this.isIntroContentHidden = true;
 		this.$introContent.detach();
-		promise.resolve();
+		deferred.resolve();
 	}, this.contentAnimationDelay );
-	return promise;
+	return deferred.promise();
 };
 
 /**
@@ -212,16 +212,16 @@ CollapsibleDrawer.prototype.hideIntroContent = function () {
  * @return {jQuery.Promise} Promise that resolves when the intro content has been shown
  */
 CollapsibleDrawer.prototype.showIntroContent = function () {
-	const promise = $.Deferred();
+	const deferred = $.Deferred();
 	// Show only the intro content (including its margin)
 	this.$element.css( 'bottom', this.$introContent.outerHeight( true ) );
 	this.$introContent.removeClass( 'mw-ge-collapsibleDrawer-introContent--hidden' );
 	this.isIntroContentHidden = false;
 	setTimeout( () => {
 		this.$element.css( 'bottom', 0 );
-		promise.resolve();
+		deferred.resolve();
 	}, 600 );
-	return promise;
+	return deferred.promise();
 };
 
 module.exports = CollapsibleDrawer;

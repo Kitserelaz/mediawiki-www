@@ -12,24 +12,29 @@
 		"commonjs": true
 	},
 	"rules": {
-		"max-len": "warn",
-		"compat/compat": "warn"
+		"max-len": "warn"
 	},
 	"overrides": [
 		{
 			"files": "**/*.vue",
 			"extends": [
-				"wikimedia/client-common",
-				"wikimedia/vue3-es6"
+				"wikimedia/client/common",
+				"wikimedia/vue3/es6"
 			],
 			"rules": {
 				"max-len": "off",
-				"vue/component-name-in-template-casing": [ "error", "kebab-case" ],
-				"vue/max-len": [ "error", {
-					"code": 120,
-					"template": 120,
-					"comments": 120
-				} ],
+				"vue/component-name-in-template-casing": [
+					"error",
+					"kebab-case"
+				],
+				"vue/max-len": [
+					"error",
+					{
+						"code": 120,
+						"template": 120,
+						"comments": 120
+					}
+				],
 				"vue/no-unsupported-features": [
 					"error",
 					{
@@ -40,13 +45,17 @@
 			}
 		},
 		{
-			"files": [ "**/*.js" ],
+			"files": [
+				"**/*.js"
+			],
 			"extends": [
-				"wikimedia/client-es6"
+				"wikimedia/client"
 			]
 		},
 		{
-			"files": [ "**/*.test.js" ],
+			"files": [
+				"**/*.test.js"
+			],
 			"env": {
 				"jest": true
 			}

@@ -6,6 +6,7 @@
 			"Siebrand"
 		]
 	},
+	"portable-infobox-name": "Overdraagbare infobox",
 	"portable-infobox-desc": "Maakt overdraagbare infoboxen die kunnen worden weergegeven met behulp van zuivere semantische HTML-opmaak, op iedere vormgeving en op ieder platform, met behulp van een eenvoudig te begrijpen, krachtige, XML-achtige notatie. Bevat ook een bouwprogramma voor overdraagbare infoboxen op [[Special:PortableInfoboxBuilder]].",
 	"portable-infobox-unimplemented-infobox-tag": "Niet-geïmplementeerde infobox-tag: <$1>",
 	"portable-infobox-xml-parse-error-info": "Er is een probleem met het interpreteren van de infobox.",
@@ -26,7 +27,7 @@
 	"apihelp-infobox-param-title": "Titel van de pagina waar de tekst bij hoort",
 	"apihelp-infobox-param-args": "Variabelenlijst die gebruikt moet worden tijdens het verwerken (json-formaat)",
 	"apihelp-query+allinfoboxes-summary": "Alle infoboxen weergeven",
-	"apihelp-query+infobox-summary": "Infobox-metadata ophalen",
+	"apihelp-query+infobox-summary": "Infobox-metagegevens ophalen",
 	"apiwarn-infobox-invalidargs": "De opgegeven parameter args is onjuist",
 	"infoboxbuilder-action-addnode": "Infobox-elementen toevoegen",
 	"infoboxbuilder-action-clear": "Infobox wissen",
@@ -44,7 +45,7 @@
 	"infoboxbuilder-node-header": "Koptekst",
 	"infoboxbuilder-node-header-value": "Infobox-koptekst",
 	"infoboxbuilder-node-navigation": "Navigatie",
-	"infoboxbuilder-nodeerror-invalidsource": "Bronparameter is ongeldig.",
+	"infoboxbuilder-nodeerror-invalidsource": "Bronparameter is onjuist.",
 	"infoboxbuilder-nodeerror-nosourceordefault": "Elementen zonder bronparameter of standaardwaarde worden niet weergegeven.",
 	"infoboxbuilder-nodeparam-default": "Standaardwaarde",
 	"infoboxbuilder-nodeparam-format": "Opmaak",

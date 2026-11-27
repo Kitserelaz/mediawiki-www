@@ -1,10 +1,10 @@
 {
 	"@metadata": {
 		"authors": [
-			"ОйЛ"
+			"ОйЛ",
+			"Oujon"
 		]
 	},
-	"mobile-frontend-changeslist-nocomment": "мѣнꙑ опьсаниꙗ нѣстъ",
 	"mobile-frontend-copyright": "подъ прощєниѥмь $1 пьсано ѥстъ · ащє ино нє каꙁано ѥстъ",
 	"mobile-frontend-editor-save": "съхранѥниѥ",
 	"mobile-frontend-last-modified-date": "послѣдьнꙗ мѣна $1 въ $2 бѣ",
@@ -12,7 +12,6 @@
 	"mobile-frontend-missing-image": "видъ",
 	"mobile-frontend-privacy-link-text": "личьнꙑ вѣсти",
 	"mobile-frontend-save-settings": "съхранѥниѥ",
-	"mobile-frontend-settings-beta": "{{SITENAME}} вита",
 	"mobile-frontend-terms-text": "польꙃєваниꙗ оуставъ",
 	"mobile-frontend-view": "носимъ видъ",
 	"mobile-frontend-view-desktop": "настольнъ обраꙁъ",

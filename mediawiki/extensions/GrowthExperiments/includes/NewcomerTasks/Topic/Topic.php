@@ -3,11 +3,10 @@
 namespace GrowthExperiments\NewcomerTasks\Topic;
 
 use LogicException;
-use MediaWiki\Json\JsonUnserializable;
-use MediaWiki\Json\JsonUnserializableTrait;
-use MediaWiki\Json\JsonUnserializer;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Message\Message;
-use MessageLocalizer;
+use Wikimedia\JsonCodec\JsonCodecable;
+use Wikimedia\JsonCodec\JsonCodecableTrait;
 
 /**
  * A topic represents a subgroup of tasks based on the topic of the associated page
@@ -15,9 +14,9 @@ use MessageLocalizer;
  * Topic objects should also contain all the configuration necessary for filtering
  * to that topic in TaskSuggester.
  */
-class Topic implements JsonUnserializable {
+class Topic implements JsonCodecable {
 
-	use JsonUnserializableTrait;
+	use JsonCodecableTrait;
 
 	/** @var string */
 	protected $id;
@@ -91,7 +90,7 @@ class Topic implements JsonUnserializable {
 	}
 
 	/** @inheritDoc */
-	protected function toJsonArray(): array {
+	public function toJsonArray(): array {
 		return [
 			'id' => $this->getId(),
 			'groupId' => $this->getGroupId(),
@@ -99,7 +98,7 @@ class Topic implements JsonUnserializable {
 	}
 
 	/** @inheritDoc */
-	public static function newFromJsonArray( JsonUnserializer $unserializer, array $json ) {
+	public static function newFromJsonArray( array $json ): self {
 		return new static( $json['id'], $json['groupId'] );
 	}
 

@@ -4,26 +4,36 @@ namespace MobileFrontend\Api;
 
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiFormatJson;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Api\ApiMain;
+use MediaWiki\Http\HttpRequestFactory;
+use MediaWiki\Language\Language;
 use MediaWiki\Title\Title;
+use MediaWiki\Utils\UrlUtils;
 
 /**
  * Return the webapp manifest for this wiki
  */
 class ApiWebappManifest extends ApiBase {
 
+	public function __construct(
+		ApiMain $main,
+		string $action,
+		private readonly Language $contentLanguage,
+		private readonly HttpRequestFactory $httpRequestFactory,
+		private readonly UrlUtils $urlUtils,
+	) {
+		parent::__construct( $main, $action );
+	}
+
 	/**
 	 * Execute the requested Api actions.
 	 */
 	public function execute() {
-		$services = MediaWikiServices::getInstance();
-		$urlUtils = $services->getUrlUtils();
-
 		$config = $this->getConfig();
 		$resultObj = $this->getResult();
 		$resultObj->addValue( null, 'name', $config->get( 'Sitename' ) );
 		$resultObj->addValue( null, 'orientation', 'portrait' );
-		$resultObj->addValue( null, 'dir', $services->getContentLanguage()->getDir() );
+		$resultObj->addValue( null, 'dir', $this->contentLanguage->getDir() );
 		$resultObj->addValue( null, 'lang', $config->get( 'LanguageCode' ) );
 		$resultObj->addValue( null, 'display', 'minimal-ui' );
 		$resultObj->addValue( null, 'theme_color', $config->get( 'MFManifestThemeColor' ) );
@@ -34,8 +44,8 @@ class ApiWebappManifest extends ApiBase {
 
 		$appleTouchIcon = $config->get( 'AppleTouchIcon' );
 		if ( $appleTouchIcon !== false ) {
-			$appleTouchIconUrl = $urlUtils->expand( $appleTouchIcon, PROTO_CURRENT ) ?? '';
-			$request = $services->getHttpRequestFactory()->create( $appleTouchIconUrl, [], __METHOD__ );
+			$appleTouchIconUrl = $this->urlUtils->expand( $appleTouchIcon, PROTO_CURRENT ) ?? '';
+			$request = $this->httpRequestFactory->create( $appleTouchIconUrl, [], __METHOD__ );
 			$request->execute();
 			$appleTouchIconContent = $request->getContent();
 			if ( $appleTouchIconContent !== '' ) {

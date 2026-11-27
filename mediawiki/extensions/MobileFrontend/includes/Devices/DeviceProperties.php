@@ -28,35 +28,24 @@ namespace MobileFrontend\Devices;
  * request is a mobile device, a tablet device, or neither.
  */
 class DeviceProperties {
-	/** @var bool */
-	private $isMobileDevice;
-	/** @var bool */
-	private $isTabletDevice;
 
-	/**
-	 * @param bool $isMobileDevice
-	 * @param bool $isTabletDevice
-	 */
-	public function __construct( $isMobileDevice, $isTabletDevice ) {
-		$this->isMobileDevice = $isMobileDevice;
-		$this->isTabletDevice = $isTabletDevice;
+	public function __construct(
+		private readonly bool $isMobileDevice,
+		private readonly bool $isTabletDevice,
+	) {
 	}
 
 	/**
 	 * Is the device a mobile device?
-	 *
-	 * @return bool
 	 */
-	public function isMobileDevice() {
+	public function isMobileDevice(): bool {
 		return $this->isMobileDevice;
 	}
 
 	/**
 	 * Is the device a tablet device?
-	 *
-	 * @return bool
 	 */
-	public function isTabletDevice() {
+	public function isTabletDevice(): bool {
 		return $this->isTabletDevice;
 	}
 }

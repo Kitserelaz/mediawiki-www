@@ -2,7 +2,6 @@
 
 namespace GrowthExperiments\HomepageModules;
 
-use GrowthExperiments\ExperimentUserManager;
 use GrowthExperiments\WelcomeSurveyFactory;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\IContextSource;
@@ -37,11 +36,10 @@ class WelcomeSurveyReminder extends BaseModule {
 	public function __construct(
 		IContextSource $context,
 		Config $wikiConfig,
-		ExperimentUserManager $experimentUserManager,
 		SpecialPageFactory $specialPageFactory,
 		WelcomeSurveyFactory $welcomeSurveyFactory
 	) {
-		parent::__construct( 'welcomesurveyreminder', $context, $wikiConfig, $experimentUserManager );
+		parent::__construct( 'welcomesurveyreminder', $context, $wikiConfig );
 		$this->specialPageFactory = $specialPageFactory;
 		$this->welcomeSurveyFactory = $welcomeSurveyFactory;
 	}
@@ -121,12 +119,11 @@ class WelcomeSurveyReminder extends BaseModule {
 		] );
 		$disableButton->setAttributes( [ 'data-ajax' => $ajaxSkipUrl ] );
 		$disableButton->setAttributes( [ 'data-link-id' => 'welcomesurvey-skip' ] );
-		$disableToken = Html::element( 'input', [
-			'type' => 'hidden',
-			'name' => 'token',
-			'value' => $this->getContext()->getCsrfTokenSet()->getToken( 'welcomesurvey' ),
-		] );
-		$disableForm = HTML::rawElement( 'form', [
+		$disableToken = Html::hidden(
+			'token',
+			$this->getContext()->getCsrfTokenSet()->getToken( 'welcomesurvey' )
+		);
+		$disableForm = Html::rawElement( 'form', [
 			'action' => $noJsSkipUrl,
 			'method' => 'POST',
 		], $disableButton . $disableToken );

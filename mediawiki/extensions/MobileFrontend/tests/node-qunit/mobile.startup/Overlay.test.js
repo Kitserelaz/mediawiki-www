@@ -1,7 +1,6 @@
 const
 	sinon = require( 'sinon' ),
 	jQuery = require( '../utils/jQuery' ),
-	mfExtend = require( '../../../src/mobile.startup/mfExtend' ),
 	dom = require( '../utils/dom' ),
 	mediaWiki = require( '../utils/mw' ),
 	mustache = require( '../utils/mustache' ),
@@ -13,7 +12,7 @@ let
 
 QUnit.module( 'MobileFrontend: Overlay.js', {
 	beforeEach: function () {
-		sandbox = sinon.sandbox.create();
+		sandbox = sinon.createSandbox();
 
 		dom.setUp( sandbox, global );
 		jQuery.setUp( sandbox, global );
@@ -41,7 +40,7 @@ QUnit.module( 'MobileFrontend: Overlay.js', {
 	}
 } );
 
-QUnit.test( 'Simple overlay', function ( assert ) {
+QUnit.test( 'Simple overlay', ( assert ) => {
 	const overlay = new Overlay( {
 		heading: '<h2>Overlay Title</h2>'
 	} );
@@ -51,7 +50,7 @@ QUnit.test( 'Simple overlay', function ( assert ) {
 	assert.strictEqual( $headingNode.length, 1 );
 } );
 
-QUnit.test( '#make', function ( assert ) {
+QUnit.test( '#make', ( assert ) => {
 	const overlay = Overlay.make( {
 		heading: 'Fresh from factory'
 	}, new Overlay( {
@@ -72,16 +71,18 @@ QUnit.test( '#make', function ( assert ) {
 	);
 } );
 
-QUnit.test( 'HTML overlay', function ( assert ) {
-	function TestOverlay() {
-		Overlay.apply( this, arguments );
-	}
+QUnit.test( 'HTML overlay', ( assert ) => {
+	class TestOverlay extends Overlay {
+		constructor( props ) {
+			super( props );
+		}
 
-	mfExtend( TestOverlay, Overlay, {
-		templatePartials: util.extend( {}, Overlay.prototype.templatePartials, {
-			content: util.template( '<div class="content">YO</div>' )
-		} )
-	} );
+		get templatePartials() {
+			return util.extend( {}, Overlay.prototype.templatePartials, {
+				content: util.template( '<div class="content">YO</div>' )
+			} );
+		}
+	}
 	const overlay = new TestOverlay( {
 		heading: 'Awesome'
 	} );
@@ -90,7 +91,7 @@ QUnit.test( 'HTML overlay', function ( assert ) {
 	assert.strictEqual( overlay.$el.find( '.content' ).text(), 'YO' );
 } );
 
-QUnit.test( 'headerActions property', function ( assert ) {
+QUnit.test( 'headerActions property', ( assert ) => {
 	const overlays = [
 		new Overlay( {} ),
 		new Overlay( {
@@ -105,7 +106,7 @@ QUnit.test( 'headerActions property', function ( assert ) {
 		'headerActions will be inserted into the header-action container' );
 } );
 
-QUnit.test( 'onBeforeExit', function ( assert ) {
+QUnit.test( 'onBeforeExit', ( assert ) => {
 	const spies = [],
 		overlays = [
 			new Overlay( {} ),
@@ -118,7 +119,7 @@ QUnit.test( 'onBeforeExit', function ( assert ) {
 				}
 			} )
 		];
-	overlays.forEach( function ( overlay ) {
+	overlays.forEach( ( overlay ) => {
 		spies.push( sandbox.spy( overlay, 'hide' ) );
 		overlay.onExitClick( new Event( 'click' ) );
 	} );
@@ -127,7 +128,7 @@ QUnit.test( 'onBeforeExit', function ( assert ) {
 	assert.strictEqual( spies[2].calledOnce, true, 'Overlay 3 calls the exit function' );
 } );
 
-QUnit.test( 'Close overlay', function ( assert ) {
+QUnit.test( 'Close overlay', ( assert ) => {
 	const overlay = new Overlay( {
 		heading: '<h2>Title</h2>',
 		content: 'Text'

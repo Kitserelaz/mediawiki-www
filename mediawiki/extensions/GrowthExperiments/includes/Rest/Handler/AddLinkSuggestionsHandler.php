@@ -3,9 +3,8 @@
 namespace GrowthExperiments\Rest\Handler;
 
 use GrowthExperiments\ErrorException;
+use GrowthExperiments\FeatureManager;
 use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationHelper;
-use GrowthExperiments\Util;
-use MediaWiki\Context\RequestContext;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\ParamValidator\TypeDef\TitleDef;
 use MediaWiki\Rest\HttpException;
@@ -18,16 +17,15 @@ use Wikimedia\ParamValidator\ParamValidator;
  */
 class AddLinkSuggestionsHandler extends SimpleHandler {
 
-	/** @var LinkRecommendationHelper */
-	private $linkRecommendationHelper;
+	private LinkRecommendationHelper $linkRecommendationHelper;
+	private FeatureManager $featureManager;
 
-	/**
-	 * @param LinkRecommendationHelper $linkRecommendationHelper
-	 */
 	public function __construct(
-		LinkRecommendationHelper $linkRecommendationHelper
+		LinkRecommendationHelper $linkRecommendationHelper,
+		FeatureManager $featureManager
 	) {
 		$this->linkRecommendationHelper = $linkRecommendationHelper;
+		$this->featureManager = $featureManager;
 	}
 
 	/**
@@ -37,7 +35,10 @@ class AddLinkSuggestionsHandler extends SimpleHandler {
 	 * @throws HttpException
 	 */
 	public function run( LinkTarget $title ) {
-		if ( !Util::areLinkRecommendationsEnabled( RequestContext::getMain() ) ) {
+		if (
+			!$this->featureManager->areLinkRecommendationsEnabled() ||
+			!$this->featureManager->isNewcomerTasksAvailable()
+		) {
 			throw new HttpException( 'Disabled', 404 );
 		}
 		try {

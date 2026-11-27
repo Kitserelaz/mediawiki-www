@@ -35,25 +35,37 @@ If you are not running Vagrant, be sure to set your `MEDIAWIKI_URL` env
 variable to your local index path, e.g.
 `MEDIAWIKI_URL=http://localhost/index.php/`
 
+### Development Server (JS/CSS Changes)
+
+1. **Install Dependencies**:
+   ```bash
+   npm install
+2. **Start the Dev Server**:
+   ```bash
+   npm run start
+This watches and auto-reloads changes.
+
 ### Committing
 
-Commits are important as they give the reviewer more information to
+Commit messages are important as they give the reviewer more information to
 successfully review your code and find errors or potential problems you might
 not have thought of.
 
 Commits are also useful when troubleshooting issues and refactoring. If it's
-not clear why a line of code is in the repository important bug fixes could be
+not clear why a line of code is in the repository, important bug fixes could be
 lost.
 
 Commits should be as minor as possible. Please avoid removing unrelated
-console.log statements, fixing unrelated whitespace etc. do that in a separate
-commit which mentions the word cleanup.
+console.log statements, fixing unrelated whitespace, etc. Do that in a separate
+commit which mentions the word "cleanup".
 
-First line commit should summarise the commit with bug it fixes if applicable.
-e.g. *Fix problem with toggling see bug x*.
+The first line of the commit message should summarise the commit with the bug
+it fixes if applicable. E.g.: *Fix problem with toggling*.
 
-Second line should be blank. Third line should go into detail where necessary
-providing links to blog posts/other bugs to provide more background. Mention
+The second line should be blank.
+
+The third line should go into detail where necessary providing links
+to blog posts or other bugs to provide more background. Mention
 the platforms/browsers the change is for where necessary, e.g.:
 
 * *This is a problem on Android but not OSX, see `http://<url></url>` which
@@ -134,7 +146,6 @@ mobile preferences option.
 ```php
   [
     'base' => false,
-    'beta' => false,
     // Enable desktop version of watchlist page when AMC is enabled
     'amc' => true,
   ]
@@ -147,20 +158,6 @@ recruit volunteers.
 
 * Type: `Boolean`
 * Default: `false`
-
-#### $wgMFScriptPath
-
-When set will override the default search script path.
-This should not be used in production, it is strictly for development purposes.
-
-* Type: `string`
-* Default: ''
-
-e.g $wgMFScriptPath = "https://it.wikipedia.org/w/api.php"
-
-When caching this configuration variable, to show Wikidata descriptions please
-update $wgMFEnableWikidataDescriptions and $wgMFDisplayWikibaseDescriptions as these are
-disabled by default.
 
 #### $wgMFMobileFormatterOptions
 
@@ -228,8 +225,8 @@ be collected.
 Requests containing header with this name will be considered as coming from
 mobile devices.
 
-* Type: `String`
-* Default: `'X-Subdomain'`
+* Type: `String|null`
+* Default: `null`
 
 #### $wgMFRemovableClasses
 
@@ -240,8 +237,6 @@ item will be stripped from the page.
 * Default:
 ```php
 [
-  // These rules will be used for all transformations in the beta channel of the site
-	"beta": [],
   // These rules will be used for all transformations
 	"base": [
 		".navbox",
@@ -261,8 +256,6 @@ viewport.
 * Default:
 ```php
   [
-    // These will enable lazy loading images in beta mode
-    'beta' => true,
     // These will enable lazy loading images in all modes
     'base' => true,
   ]
@@ -270,7 +263,8 @@ viewport.
 
 #### $wgMFSearchAPIParams
 
-Define a set of params that should be passed in every gateway query.
+[DEPRECATED]
+Define a set of params that should be passed in every gateway query. Only applies to Special:EditWatchlist.
 
 * Type: `Array`
 * Default:
@@ -283,39 +277,13 @@ Define a set of params that should be passed in every gateway query.
 
 #### $wgMFQueryPropModules
 
+[DEPRECATED]
 Define a set of page props that should be associated with requests for pages
-via the API.
+via the API. Only applies to Special:EditWatchlist
 
 * Type: `Array`
 * Default: `['pageprops']`
 
-#### $wgMFRSSFeedLink
-
-Sets RSS feed `<link>` being outputted or not while on mobile version.
-
-* Type: `Boolean`
-* Default: `false`
-
-#### $wgMFSearchGenerator
-
-Define the generator that should be used for mobile search.
-
-* Type: `Array`
-* Default:
-```php
-  [
-    'name' => 'prefixsearch',
-    'prefix' => 'ps',
-  ]
-```
-
-#### $wgMFMinCachedPageSize
-
-Pages with smaller parsed HTML size are not cached.  Set to 0 to cache
-everything or to some large value to disable caching completely.
-
-* Type: `Integer`
-* Default: `65536`
 
 #### $wgMFAutodetectMobileView
 
@@ -398,40 +366,12 @@ include the preceding `.` (e.g. yes: `.wikipedia.org`, **no**: `wikipedia.org`)
 * Type: `String|null`
 * Default: `null`
 
-#### $wgMFEnableBeta
-
-Whether beta mode is enabled.
-
-* Type: `Boolean`
-* Default: `true`
-
 #### $wgMFAdvancedMobileContributions
 
 Whether Advanced mode is available for users.
 
 * Type: `Boolean`
 * Default: `true`
-
-#### $wgMFAmcOutreach
-
-Whether the AMC Outreach feature is available for users.
-
-* Type: `Boolean`
-* Default: `false`
-
-#### $wgMFAmcOutreachMinEditCount
-
-When Amc Outreach is enabled, this option sets the minimum number of edits a user must make before they are eligible to see the AMC Outreach feature.
-
-* Type: `Number`
-* Default: 100
-
-#### $wgMFBetaFeedbackLink
-
-Link to feedback page for beta features. If false no feedback link will be shown.
-
-* Type: `String|false`
-* Default: `false`
 
 #### $wgDefaultMobileSkin
 
@@ -459,21 +399,6 @@ In which namespaces sections shouldn't be collapsed.
   ]
 ```
 
-#### $wgMFCollapseSectionsByDefault
-
-Controls whether to collapse sections by default.
-
-Leave at default `true` for "encyclopedia style", where the section 0 lead text
-will always be visible and subsequent sections may be collapsed by default.
-
-In tablet sections will always be expanded by default regardless of this
-setting.
-
-Set to `false` for "dictionary style", sections are not collapsed.
-
-* Type: `Boolean`
-* Default: `true`
-
 #### $wgMFUseWikibase
 
 If set to true, the use Wikibase is enabled and associated features is enabled.
@@ -491,7 +416,6 @@ in the UI in the environment they have been told to target.
 * Default:
 ```php
   [
-    'beta' => true,
     'base' => false,
   ]
 ```
@@ -570,17 +494,9 @@ Enable the font-size options for users.
 * Default:
 ```php
 [
-	"base" => true,
-	"beta" => true
+	"base" => true
 ]
 ```
-
-#### $wgMFEnableManifest
-
-Add a webapp-manifest link to mobile view output.
-
-* Type: `Boolean`
-* Default: `true`
 
 #### $wgMFEnableVEWikitextEditor
 
@@ -625,7 +541,6 @@ Move first paragraph in articles to before infobox.
 * Default:
 ```php
 [
-	"base" => true,
-	"beta" => true
+	"base" => true
 ]
 ```

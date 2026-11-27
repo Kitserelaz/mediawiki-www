@@ -2,7 +2,6 @@
 
 namespace GrowthExperiments\HomepageModules;
 
-use GrowthExperiments\ExperimentUserManager;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Html\Html;
@@ -14,7 +13,7 @@ class StartEmail extends BaseModule {
 	/** @inheritDoc */
 	protected static $supportedModes = [
 		self::RENDER_DESKTOP,
-		self::RENDER_MOBILE_SUMMARY
+		self::RENDER_MOBILE_SUMMARY,
 		// RENDER_MOBILE_DETAILS is not supported
 	];
 
@@ -24,15 +23,12 @@ class StartEmail extends BaseModule {
 	/** @inheritDoc */
 	public function __construct(
 		IContextSource $context,
-		Config $wikiConfig,
-		ExperimentUserManager $experimentUserManager
+		Config $wikiConfig
 	) {
-		parent::__construct( 'startemail', $context, $wikiConfig, $experimentUserManager );
+		parent::__construct( 'startemail', $context, $wikiConfig );
 
 		$user = $this->getContext()->getUser();
-		if ( $user->isEmailConfirmed() ) {
-			$this->emailState = self::MODULE_STATE_CONFIRMED;
-		} elseif ( $user->getEmail() ) {
+		if ( $user->getEmail() ) {
 			$this->emailState = self::MODULE_STATE_UNCONFIRMED;
 		} else {
 			$this->emailState = self::MODULE_STATE_NOEMAIL;
@@ -100,7 +96,7 @@ class StartEmail extends BaseModule {
 	protected function getEmailIcon() {
 		return new IconWidget( [
 			'icon' => 'message',
-			'flags' => $this->emailState === self::MODULE_STATE_NOEMAIL ? [ 'progressive' ] : []
+			'flags' => $this->emailState === self::MODULE_STATE_NOEMAIL ? [ 'progressive' ] : [],
 		] );
 	}
 
@@ -139,26 +135,20 @@ class StartEmail extends BaseModule {
 	 */
 	protected function getEmailAction() {
 		$linkAttrs = [
-			'data-link-id' => 'email-' . $this->emailState
+			'data-link-id' => 'email-' . $this->emailState,
 		];
 		$wrapInParentheses = false;
+		$label = '';
 		if ( $this->emailState === self::MODULE_STATE_NOEMAIL ) {
 			$label = $this->getContext()->msg( 'growthexperiments-homepage-email-button-noemail' )->text();
 			$linkAttrs['href'] = SpecialPage::getTitleFor( 'ChangeEmail' )->getLinkURL( [
-				'returnto' => $this->getContext()->getTitle()->getPrefixedText()
+				'returnto' => $this->getContext()->getTitle()->getPrefixedText(),
 			] );
 			$linkAttrs['class'] = 'growthexperiments-homepage-startemail-noemail-link';
 		} elseif ( $this->emailState === self::MODULE_STATE_UNCONFIRMED ) {
 			$label = $this->getContext()->msg( 'growthexperiments-homepage-email-confirmlink' )->text();
 			$wrapInParentheses = true;
 			$linkAttrs['href'] = SpecialPage::getTitleFor( 'Confirmemail' )->getLinkURL();
-		} else {
-			// MODULE_STATE_CONFIRMED
-			$label = $this->getContext()->msg( 'growthexperiments-homepage-email-changelink' )->text();
-			$wrapInParentheses = true;
-			$linkAttrs['href'] = SpecialPage::getTitleFor( 'ChangeEmail' )->getLinkURL( [
-				'returnto' => $this->getContext()->getTitle()->getPrefixedText()
-			] );
 		}
 		$link = Html::element( 'a', $linkAttrs, $label );
 		if ( $wrapInParentheses ) {

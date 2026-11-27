@@ -1,10 +1,17 @@
 <?php
 
 use MediaWiki\Html\Html;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Language\MessageLocalizer;
+use MediaWiki\Skin\Skin;
 use MediaWiki\Title\Title;
+use MediaWiki\Utils\UrlUtils;
 
 class MobileFrontendSkinHooks {
+	public function __construct(
+		private readonly UrlUtils $urlUtils,
+	) {
+	}
+
 	/**
 	 * Returns HTML of terms of use link or null if it shouldn't be displayed
 	 * Note: This is called by a hook in the WikimediaMessages extension.
@@ -12,7 +19,7 @@ class MobileFrontendSkinHooks {
 	 * @param MessageLocalizer $localizer
 	 * @return null|string
 	 */
-	public static function getTermsLink( MessageLocalizer $localizer ) {
+	public function getTermsLink( MessageLocalizer $localizer ) {
 		$urlMsg = $localizer->msg( 'mobile-frontend-terms-url' )->inContentLanguage();
 		if ( $urlMsg->isDisabled() ) {
 			return null;
@@ -31,21 +38,27 @@ class MobileFrontendSkinHooks {
 	 * @param MobileContext $context
 	 * @return string representing the desktop link.
 	 */
-	public static function getDesktopViewLink( Skin $skin, MobileContext $context ) {
+	public function getDesktopViewLink( Skin $skin, MobileContext $context ) {
 		$url = $skin->getOutput()->getProperty( 'desktopUrl' );
 		$req = $skin->getRequest();
+
 		if ( $url ) {
 			$url = wfAppendQuery( $url, 'mobileaction=toggle_view_desktop' );
 		} else {
 			$title = $skin->getTitle() ?? Title::newMainPage();
-			$url = $title->getLocalURL(
-				$req->appendQueryValue( 'mobileaction', 'toggle_view_desktop' )
-			);
+			// Manipulate the query params array to remove mobile-specific
+			// params, and add one for toggle_view_desktop; also removes
+			// any redundant "title" param that may be present
+			$queryValues = $req->getQueryValues();
+			$queryValues['mobileaction'] = 'toggle_view_desktop';
+			unset( $queryValues['title'] );
+			unset( $queryValues['mfnotify'] );
+			$url = $title->getLocalURL( $queryValues );
 		}
-		$urlUtils = MediaWikiServices::getInstance()->getUrlUtils();
-		$desktopUrl = $context->getDesktopUrl( $urlUtils->expand( $url, PROTO_RELATIVE ) ?? '' );
 
+		$desktopUrl = $context->getDesktopUrl( $this->urlUtils->expand( $url, PROTO_RELATIVE ) ?? '' );
 		$desktop = $context->msg( 'mobile-frontend-view-desktop' )->text();
+
 		return Html::element( 'a',
 			[ 'id' => 'mw-mf-display-toggle', 'href' => $desktopUrl,
 				'data-event-name' => 'switch_to_desktop' ], $desktop );
@@ -56,7 +69,7 @@ class MobileFrontendSkinHooks {
 	 * @param MobileContext $context
 	 * @return string representing the mobile link.
 	 */
-	public static function getMobileViewLink( Skin $skin, MobileContext $context ) {
+	public function getMobileViewLink( Skin $skin, MobileContext $context ) {
 		$req = $skin->getRequest();
 		$args = $req->getQueryValues();
 		// avoid title being set twice

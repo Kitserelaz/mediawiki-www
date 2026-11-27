@@ -22,7 +22,7 @@
 	"mobile-frontend-save-settings": "Simpan",
 	"mobile-frontend-terms-text": "Syarat-syarat Ngena",
 	"mobile-frontend-view": "Gamal mobail",
-	"mobile-frontend-view-desktop": "Dekstop",
+	"mobile-frontend-view-desktop": "Pemandang dekstop",
 	"mobile-frontend-watchlist-cta-button-login": "Log tama",
 	"mobile-frontend-watchlist-cta-button-signup": "Rejista",
 	"mobile-frontend-watchlist-feed-empty": "Nadai lambar enggau ubah pemadu baru.",
@@ -34,7 +34,5 @@
 	"mobile-frontend-user-page-describe-yourself-editors": "editor",
 	"mobile-frontend-user-page-create-owner-page-link-label": "Gaga kediri",
 	"mobile-frontend-user-page-create-user-page-link-label": "Gaga lambar ke benama $1",
-	"tag-mobile_edit": "Edit mobail",
-	"mobile-frontend-mobile-option-MFEnableFontChanger": "Saiz fon",
-	"mobile-frontend-amc-outreach-no-thanks": "Enda, terima kasih"
+	"tag-mobile_edit": "Edit mobail"
 }

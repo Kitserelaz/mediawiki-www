@@ -23,20 +23,12 @@ class MentorDashboardModuleRegistry {
 	/** @var IDashboardModule[] */
 	private array $modules;
 
-	/**
-	 * @param MediaWikiServices $services
-	 */
 	public function __construct(
 		MediaWikiServices $services
 	) {
 		$this->services = $services;
 	}
 
-	/**
-	 * @param string $moduleId
-	 * @param IContextSource $context
-	 * @return IDashboardModule
-	 */
 	public function get( string $moduleId, IContextSource $context ): IDashboardModule {
 		if ( isset( $this->modules[$moduleId] ) ) {
 			return $this->modules[$moduleId];
@@ -50,9 +42,6 @@ class MentorDashboardModuleRegistry {
 		return $this->modules[$moduleId];
 	}
 
-	/**
-	 * @return array
-	 */
 	public static function getModules(): array {
 		return array_keys( self::getWiring() );
 	}
@@ -67,21 +56,18 @@ class MentorDashboardModuleRegistry {
 				IContextSource $context
 			): IDashboardModule {
 				return new MenteeOverview(
-					'mentee-overview',
-					$context
+					$context,
+					$services->getUserOptionsLookup()
 				);
 			},
 			'resources' => static function (
 				MediaWikiServices $services,
 				IContextSource $context
 			): IDashboardModule {
-				$geServices = GrowthExperimentsServices::wrap( $services );
 				return new Resources(
-					'resources',
 					$context,
 					$services->getTitleParser(),
-					$services->getLinkRenderer(),
-					$geServices->getMentorProvider()
+					$services->getLinkRenderer()
 				);
 			},
 			'mentor-tools' => static function (
@@ -90,7 +76,6 @@ class MentorDashboardModuleRegistry {
 			): IDashboardModule {
 				$geServices = GrowthExperimentsServices::wrap( $services );
 				return new MentorTools(
-					'mentor-tools',
 					$context,
 					$geServices->getMentorProvider(),
 					$geServices->getMentorStatusManager()
@@ -102,7 +87,6 @@ class MentorDashboardModuleRegistry {
 			) {
 				$geServices = GrowthExperimentsServices::wrap( $services );
 				return new PersonalizedPraise(
-					'personalized-praise',
 					$context,
 					$geServices->getPraiseworthyMenteeSuggester(),
 					$geServices->getPersonalizedPraiseSettings(),

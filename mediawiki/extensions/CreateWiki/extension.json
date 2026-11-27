@@ -82,22 +82,11 @@
 		"createwiki-deleterequest",
 		"createwiki-suppressionlog",
 		"createwiki-suppressrequest",
-		"upgrade-mediawiki",
 		"requestwiki"
 	],
 	"LogActionsHandlers": {
-		"farmer/createwiki": "MediaWiki\\Logging\\LogFormatter",
-		"farmer/permanentlydeletewiki": "MediaWiki\\Logging\\LogFormatter",
-		"farmer/comment": "MediaWiki\\Logging\\LogFormatter",
-		"farmer/create-failure": "MediaWiki\\Logging\\LogFormatter",
-		"farmer/requestapprove": "MediaWiki\\Logging\\LogFormatter",
-		"farmer/requestabandon": "MediaWiki\\Logging\\LogFormatter",
-		"farmer/requestdecline": "MediaWiki\\Logging\\LogFormatter",
-		"farmer/requestmoredetails": "MediaWiki\\Logging\\LogFormatter",
-		"farmer/requestonhold": "MediaWiki\\Logging\\LogFormatter",
-		"farmer/requestreopen": "MediaWiki\\Logging\\LogFormatter",
-		"farmer/requestwiki": "Miraheze\\CreateWiki\\LogFormatter\\FarmerLogFormatter",
-		"farmersuppression/*": "MediaWiki\\Logging\\LogFormatter"
+		"farmer/*": "Miraheze\\CreateWiki\\Logging\\FarmerLogFormatter",
+		"farmersuppression/*": "Miraheze\\CreateWiki\\Logging\\FarmerLogFormatter"
 	},
 	"LogHeaders": {
 		"farmer": "farmer-log-header",
@@ -171,12 +160,6 @@
 				"WikiManagerFactory"
 			]
 		},
-		"Upgrade": {
-			"class": "Miraheze\\CreateWiki\\Specials\\SpecialUpgrade",
-			"services": [
-				"RemoteWikiFactory"
-			]
-		},
 		"RequestWiki": {
 			"class": "Miraheze\\CreateWiki\\RequestWiki\\Specials\\SpecialRequestWiki",
 			"services": [
@@ -198,6 +181,22 @@
 			]
 		}
 	},
+	"attributes": {
+		"ManageWiki": {
+			"CoreProviders": {
+				"CreateWiki": {
+					"factory": "Miraheze\\CreateWiki\\Helpers\\ManageWikiCoreModule::factory",
+					"services": [
+						"CreateWikiDatabaseUtils",
+						"CreateWikiDataStore",
+						"CreateWikiHookRunner",
+						"JobQueueGroupFactory",
+						"RemoteWikiOptions"
+					]
+				}
+			}
+		}
+	},
 	"Hooks": {
 		"BeforeCreateEchoEvent": {
 			"handler": "Notifications"
@@ -216,12 +215,6 @@
 		},
 		"MakeGlobalVariablesScript": {
 			"handler": "Main"
-		},
-		"ManageWikiCoreAddFormFields": {
-			"handler": "ManageWiki"
-		},
-		"ManageWikiCoreProvider": {
-			"handler": "ManageWiki"
 		},
 		"ParserGetVariableValueSwitch": {
 			"handler": "Main"
@@ -244,16 +237,6 @@
 				"CreateWikiDatabaseUtils",
 				"CreateWikiDataStore",
 				"RemoteWikiFactory"
-			]
-		},
-		"ManageWiki": {
-			"class": "Miraheze\\CreateWiki\\Hooks\\Handlers\\ManageWiki",
-			"services": [
-				"CreateWikiConfig",
-				"CreateWikiDatabaseUtils",
-				"CreateWikiDataStore",
-				"CreateWikiHookRunner",
-				"JobQueueGroupFactory"
 			]
 		},
 		"Notifications": {

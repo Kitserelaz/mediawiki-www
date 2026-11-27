@@ -1,11 +1,12 @@
 <?php
 
+use MediaWiki\Actions\Hook\CustomEditorHook;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\IContextSource;
-use MediaWiki\Hook\CustomEditorHook;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\Hook\MakeGlobalVariablesScriptHook;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\ResourceLoader\Context;
 use MediaWiki\User\User;
@@ -38,9 +39,7 @@ class MobileFrontendEditorHooks implements
 	 * Generate config for usage inside MobileFrontend
 	 * This should be used for variables which:
 	 *  - vary with the html
-	 *  - variables that should work cross skin including anonymous users
-	 *  - used for both, stable and beta mode (don't use
-	 *    MobileContext::isBetaGroupMember in this function - T127860)
+	 *  - should work cross skin including anonymous users.
 	 *
 	 * @return array
 	 */
@@ -51,6 +50,7 @@ class MobileFrontendEditorHooks implements
 			'wgMFDefaultEditor' => $config->get( 'MFDefaultEditor' ),
 			'wgMFFallbackEditor' => $config->get( 'MFFallbackEditor' ),
 			'wgMFEnableVEWikitextEditor' => $config->get( 'MFEnableVEWikitextEditor' ),
+			'wgMFEnableAbandonSurvey' => $config->get( 'MFEnableAbandonSurvey' ),
 		];
 	}
 
@@ -70,7 +70,6 @@ class MobileFrontendEditorHooks implements
 		if ( $mobileContext->shouldDisplayMobileView() ) {
 			// mobile.init
 			$vars['wgMFIsSupportedEditRequest'] = self::isSupportedEditRequest( $out->getContext() );
-			$vars['wgMFScriptPath'] = $config->get( 'MFScriptPath' );
 		}
 	}
 
@@ -98,17 +97,17 @@ class MobileFrontendEditorHooks implements
 			$titleMsg = $title->exists() ? 'editing' : 'creating';
 			$out->setPageTitleMsg( wfMessage( $titleMsg, $title->getPrefixedText() ) );
 
-			$msg = false;
-			$msgParams = false;
+			$msgParams = [];
 			if ( $title->inNamespace( NS_FILE ) && !$title->exists() ) {
 				// Is a new file page (enable upload image only) T60311
 				$msg = 'mobile-frontend-editor-uploadenable';
 			} else {
 				$msg = 'mobile-frontend-editor-toload';
 				$urlUtils = MediaWikiServices::getInstance()->getUrlUtils();
-				$msgParams = $urlUtils->expand( $url, PROTO_CURRENT );
+				$msgParams[] = $urlUtils->expand( $url, PROTO_CURRENT );
 			}
-			$out->showPendingTakeover( $url, $msg, $msgParams );
+			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable Only null for invalid URL, shouldn't happen
+			$out->showPendingTakeover( $url, $msg, ...$msgParams );
 
 			$out->setRevisionId( $req->getInt( 'oldid', $article->getRevIdFetched() ) );
 			return false;
@@ -149,7 +148,7 @@ class MobileFrontendEditorHooks implements
 		if ( $title->inNamespace( NS_SPECIAL ) ) {
 			return false;
 		}
-		if ( $title->getContentModel() !== 'wikitext' ) {
+		if ( !$title->hasContentModel( CONTENT_MODEL_WIKITEXT ) ) {
 			// Only load the wikitext editor on wikitext. Otherwise we'll rely on the fallback behaviour
 			// (You can test this on MediaWiki:Common.css) ?action=edit url (T173800)
 			return false;

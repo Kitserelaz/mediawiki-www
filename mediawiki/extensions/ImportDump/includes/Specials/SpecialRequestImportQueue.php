@@ -1,65 +1,45 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace Miraheze\ImportDump\Specials;
 
-use ErrorPageError;
+use MediaWiki\Exception\ErrorPageError;
 use MediaWiki\HTMLForm\HTMLForm;
-use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\Parser\ParserOptions;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\UserFactory;
 use MediaWiki\WikiMap\WikiMap;
-use Miraheze\ImportDump\ImportDumpRequestManager;
-use Miraheze\ImportDump\ImportDumpRequestQueuePager;
-use Miraheze\ImportDump\ImportDumpRequestViewer;
-use Miraheze\ImportDump\ImportDumpStatus;
+use Miraheze\ImportDump\Pager\RequestImportQueuePager;
+use Miraheze\ImportDump\Request\RequestManager;
+use Miraheze\ImportDump\Request\RequestStatus;
+use Miraheze\ImportDump\Requirements\ExtensionNames;
+use Miraheze\ImportDump\Viewer\RequestViewer;
 use Wikimedia\Rdbms\IConnectionProvider;
 
-class SpecialRequestImportQueue extends SpecialPage
-	implements ImportDumpStatus {
+class SpecialRequestImportQueue extends SpecialPage {
 
-	/** @var IConnectionProvider */
-	private $connectionProvider;
-
-	/** @var ImportDumpRequestManager */
-	private $importDumpRequestManager;
-
-	/** @var PermissionManager */
-	private $permissionManager;
-
-	/** @var UserFactory */
-	private $userFactory;
-
-	/**
-	 * @param IConnectionProvider $connectionProvider
-	 * @param ImportDumpRequestManager $importDumpRequestManager
-	 * @param PermissionManager $permissionManager
-	 * @param UserFactory $userFactory
-	 */
 	public function __construct(
-		IConnectionProvider $connectionProvider,
-		ImportDumpRequestManager $importDumpRequestManager,
-		PermissionManager $permissionManager,
-		UserFactory $userFactory
+		private readonly IConnectionProvider $connectionProvider,
+		private readonly ExtensionNames $extensionNames,
+		private readonly RequestManager $requestManager,
+		private readonly UserFactory $userFactory,
 	) {
 		parent::__construct( 'RequestImportQueue' );
-
-		$this->connectionProvider = $connectionProvider;
-		$this->importDumpRequestManager = $importDumpRequestManager;
-		$this->permissionManager = $permissionManager;
-		$this->userFactory = $userFactory;
 	}
 
 	/**
-	 * @param string $par
+	 * @param ?string $par
+	 * @throws ErrorPageError
 	 */
-	public function execute( $par ) {
+	public function execute( $par ): void {
 		$this->setHeaders();
 
-		$dbr = $this->connectionProvider->getReplicaDatabase( 'virtual-importdump' );
+		$dbr = $this->connectionProvider->getReplicaDatabase( RequestManager::VIRTUAL_DOMAIN );
 		if ( !WikiMap::isCurrentWikiDbDomain( $dbr->getDomainID() ) ) {
 			throw new ErrorPageError(
-				'importdump-requestimportqueue-notcentral',
-				'importdump-requestimportqueue-notcentral-text'
+				'requestimport-requestimportqueue-notcentral',
+				'requestimport-requestimportqueue-notcentral-text'
 			);
 		}
 
@@ -72,7 +52,7 @@ class SpecialRequestImportQueue extends SpecialPage
 		$this->doPagerStuff();
 	}
 
-	private function doPagerStuff() {
+	private function doPagerStuff(): void {
 		$requester = $this->getRequest()->getText( 'requester' );
 		$status = $this->getRequest()->getText( 'status' );
 		$target = $this->getRequest()->getText( 'target' );
@@ -85,30 +65,33 @@ class SpecialRequestImportQueue extends SpecialPage
 			'target' => [
 				'type' => 'text',
 				'name' => 'target',
-				'label-message' => 'importdump-label-target',
+				'label-message' => 'requestimport-label-target',
 				'default' => $target,
 			],
 			'requester' => [
 				'type' => 'user',
 				'name' => 'requester',
-				'label-message' => 'importdump-label-requester',
-				'exist' => true,
+				'label-message' => 'requestimport-label-requester',
+				'exists' => true,
+				'excludetemp' => true,
 				'default' => $requester,
 			],
 			'status' => [
 				'type' => 'select',
 				'name' => 'status',
-				'label-message' => 'importdump-label-status',
+				'label-message' => 'requestimport-label-status',
 				'options-messages' => [
-					'importdump-label-pending' => self::STATUS_PENDING,
-					'importdump-label-starting' => self::STATUS_STARTING,
-					'importdump-label-inprogress' => self::STATUS_INPROGRESS,
-					'importdump-label-complete' => self::STATUS_COMPLETE,
-					'importdump-label-declined' => self::STATUS_DECLINED,
-					'importdump-label-failed' => self::STATUS_FAILED,
-					'importdump-label-all' => '*',
+					'requestimport-label-pending' => RequestStatus::Pending->value,
+					'requestimport-label-verifying' => RequestStatus::Verifying->value,
+					'requestimport-label-starting' => RequestStatus::Starting->value,
+					'requestimport-label-inprogress' => RequestStatus::InProgress->value,
+					'requestimport-label-partial' => RequestStatus::Partial->value,
+					'requestimport-label-complete' => RequestStatus::Complete->value,
+					'requestimport-label-declined' => RequestStatus::Declined->value,
+					'requestimport-label-failed' => RequestStatus::Failed->value,
+					'requestimport-label-all' => '*',
 				],
-				'default' => $status ?: self::STATUS_PENDING,
+				'default' => $status ?: RequestStatus::Pending->value,
 			],
 		];
 
@@ -120,7 +103,7 @@ class SpecialRequestImportQueue extends SpecialPage
 			->prepareForm()
 			->displayForm( false );
 
-		$pager = new ImportDumpRequestQueuePager(
+		$pager = new RequestImportQueuePager(
 			$this->getContext(),
 			$this->connectionProvider,
 			$this->getLinkRenderer(),
@@ -131,32 +114,26 @@ class SpecialRequestImportQueue extends SpecialPage
 		);
 
 		$table = $pager->getFullOutput();
-
-		$this->getOutput()->addParserOutputContent( $table );
+		$parserOptions = ParserOptions::newFromContext( $this->getContext() );
+		$this->getOutput()->addParserOutputContent( $table, $parserOptions );
 	}
 
-	/**
-	 * @param string $par
-	 */
-	private function lookupRequest( $par ) {
-		$requestViewer = new ImportDumpRequestViewer(
+	private function lookupRequest( string $par ): void {
+		$requestViewer = new RequestViewer(
 			$this->getConfig(),
 			$this->getContext(),
-			$this->importDumpRequestManager,
-			$this->permissionManager
+			$this->extensionNames,
+			$this->requestManager
 		);
 
 		$htmlForm = $requestViewer->getForm( (int)$par );
-
 		if ( $htmlForm ) {
 			$htmlForm->show();
 		}
 	}
 
-	/**
-	 * @return string
-	 */
-	protected function getGroupName() {
+	/** @inheritDoc */
+	protected function getGroupName(): string {
 		return 'other';
 	}
 }

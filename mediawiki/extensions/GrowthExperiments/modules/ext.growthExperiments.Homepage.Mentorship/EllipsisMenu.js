@@ -16,23 +16,26 @@
 
 		this.menu = new OO.ui.ButtonMenuSelectWidget( {
 			icon: 'ellipsis',
+			// TODO: Use a more verbose accessibility label?
+			label: mw.msg( 'ellipsis' ),
+			invisibleLabel: true,
 			framed: false,
 			menu: {
 				horizontalPosition: 'end',
 				items: [
 					new OO.ui.MenuOptionWidget( {
 						data: 'about',
-						label: mw.msg( 'growthexperiments-homepage-mentorship-ellipsis-menu-about' )
+						label: mw.msg( 'growthexperiments-homepage-mentorship-ellipsis-menu-about' ),
 					} ),
 					new OO.ui.MenuOptionWidget( {
 						data: 'optout',
-						label: mw.msg( 'growthexperiments-homepage-mentorship-ellipsis-menu-optout' )
-					} )
-				]
-			}
+						label: mw.msg( 'growthexperiments-homepage-mentorship-ellipsis-menu-optout' ),
+					} ),
+				],
+			},
 		} );
 		this.menu.getMenu().connect( this, {
-			choose: [ 'onMenuItemSelected' ]
+			choose: [ 'onMenuItemSelected' ],
 		} );
 
 		this.$element.empty().append( this.menu.$element );
@@ -40,15 +43,15 @@
 		this.windowManager = OO.ui.getWindowManager();
 		this.optoutProcess = new MentorshipOptoutProcess(
 			this.windowManager,
-			config.mode
+			config.mode,
 		);
 
 		this.mentorshipDetailsModal = new MentorshipDetailsModal();
 		this.mentorshipDetailsModal.connect( this, {
-			optout: [ 'showOptOutDialog' ]
+			optout: [ 'showOptOutDialog' ],
 		} );
 		this.windowManager.addWindows( [
-			this.mentorshipDetailsModal
+			this.mentorshipDetailsModal,
 		] );
 	}
 
@@ -91,7 +94,7 @@
 	module.exports = function ( $homepageContainer ) {
 		if ( ellipsisMenu === undefined ) {
 			ellipsisMenu = new EllipsisMenu( {
-				mode: $homepageContainer.find( '.growthexperiments-homepage-module-mentorship' ).data( 'mode' )
+				mode: $homepageContainer.find( '.growthexperiments-homepage-module-mentorship' ).data( 'mode' ),
 			} );
 		}
 

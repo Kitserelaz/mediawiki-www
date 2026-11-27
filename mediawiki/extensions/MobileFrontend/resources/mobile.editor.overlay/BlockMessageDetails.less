@@ -4,7 +4,7 @@
 	h5 {
 		font-weight: @font-weight-bold;
 		margin: 0;
-		line-height: unit( @size-icon-medium, rem );
+		line-height: @size-icon-medium;
 	}
 
 	h6 {
@@ -33,9 +33,6 @@
 }
 
 .block-message-buttons {
-	position: fixed;
-	left: 0;
-	bottom: 0;
 	width: 100%;
 	padding: 1em;
 	text-align: right;
@@ -64,7 +61,25 @@
 	padding: 1em;
 	text-align: left;
 	background-color: @background-color-interactive;
-	margin-bottom: 3em;
+	margin-bottom: 0;
+	max-height: 30vh;
+	overflow-y: scroll;
+	display: none;
+}
+
+@media screen and ( max-height: 460px ) {
+	.drawer-container .block-message {
+		// (T390834) On very small screen sizes (i.e. mobile phones in landscape
+		// mode), when the block reason is shown, the height of the div with the
+		// drawer class (that fills the top half of the popup with a white
+		// background) becomes too small (roughly half the screen size), thus
+		// causing a transparent region to appear between the top half of the
+		// popup and the block reason.
+		//
+		// This serves to override the rule from the "drawer" class that sets
+		// the height of that region so it can cover the whole screen height.
+		max-height: none;
+	}
 }
 
 .block-message-title {

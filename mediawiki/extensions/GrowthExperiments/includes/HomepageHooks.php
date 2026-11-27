@@ -1,29 +1,24 @@
 <?php
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
 
 namespace GrowthExperiments;
 
-use CirrusSearch\Search\CirrusIndexField;
+use CirrusSearch\Search\Rescore\BoostedQueriesFunction;
 use CirrusSearch\Search\Rescore\BoostFunctionBuilder;
 use CirrusSearch\Search\SearchContext;
 use CirrusSearch\SearchConfig;
-use CirrusSearch\Wikimedia\WeightedTagsHooks;
+use Elastica\Query\MatchNone;
 use GrowthExperiments\Config\GrowthConfigLoaderStaticTrait;
+use GrowthExperiments\EventLogging\GrowthExperimentsInteractionLogger;
 use GrowthExperiments\Homepage\SiteNoticeGenerator;
 use GrowthExperiments\HomepageModules\Help;
 use GrowthExperiments\HomepageModules\Mentorship;
 use GrowthExperiments\HomepageModules\SuggestedEdits;
 use GrowthExperiments\LevelingUp\LevelingUpManager;
-use GrowthExperiments\LevelingUp\NotificationGetStartedJob;
-use GrowthExperiments\LevelingUp\NotificationKeepGoingJob;
-use GrowthExperiments\Mentorship\MentorPageMentorManager;
-use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationHelper;
-use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationStore;
+use GrowthExperiments\Mentorship\IMentorManager;
+use GrowthExperiments\Mentorship\MentorManager;
 use GrowthExperiments\NewcomerTasks\CampaignConfig;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
-use GrowthExperiments\NewcomerTasks\GrowthArticleTopicFeature;
 use GrowthExperiments\NewcomerTasks\NewcomerTasksChangeTagsManager;
-use GrowthExperiments\NewcomerTasks\NewcomerTasksInfo;
 use GrowthExperiments\NewcomerTasks\NewcomerTasksUserOptionsLookup;
 use GrowthExperiments\NewcomerTasks\Recommendation;
 use GrowthExperiments\NewcomerTasks\Task\TaskSet;
@@ -35,58 +30,52 @@ use GrowthExperiments\NewcomerTasks\TaskSuggester\UnderlinkedFunctionScoreBuilde
 use GrowthExperiments\NewcomerTasks\TaskType\ImageRecommendationTaskTypeHandler;
 use GrowthExperiments\NewcomerTasks\TaskType\LinkRecommendationTaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\LinkRecommendationTaskTypeHandler;
-use GrowthExperiments\NewcomerTasks\TaskType\SectionImageRecommendationTaskTypeHandler;
 use GrowthExperiments\NewcomerTasks\TaskType\StructuredTaskTypeHandler;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
-use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeHandler;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeHandlerRegistry;
+use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeManager;
 use GrowthExperiments\NewcomerTasks\TaskType\TemplateBasedTaskType;
-use GrowthExperiments\NewcomerTasks\TaskType\TemplateBasedTaskTypeHandler;
+use GrowthExperiments\NewcomerTasks\Topic\WikimediaTopicRegistry;
 use GrowthExperiments\Specials\SpecialClaimMentee;
 use GrowthExperiments\Specials\SpecialHomepage;
 use GrowthExperiments\Specials\SpecialImpact;
 use GrowthExperiments\Specials\SpecialNewcomerTasksInfo;
 use GrowthExperiments\UserImpact\UserImpactLookup;
 use GrowthExperiments\UserImpact\UserImpactStore;
-use JobQueueGroup;
-use JobSpecification;
 use MediaWiki\Auth\Hook\LocalUserCreatedHook;
 use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
 use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
 use MediaWiki\Config\Config;
 use MediaWiki\Config\ConfigException;
-use MediaWiki\Content\ContentHandler;
-use MediaWiki\Content\Hook\SearchDataForIndexHook;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Hook\FormatAutocommentsHook;
-use MediaWiki\Hook\RecentChange_saveHook;
-use MediaWiki\Hook\SidebarBeforeOutputHook;
-use MediaWiki\Hook\SiteNoticeAfterHook;
-use MediaWiki\Hook\SkinTemplateNavigation__UniversalHook;
-use MediaWiki\Hook\SpecialContributionsBeforeMainOutputHook;
 use MediaWiki\Html\Html;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Minerva\SkinOptions;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Output\OutputPage;
-use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
+use MediaWiki\RecentChanges\Hook\RecentChange_saveHook;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\ResourceLoader as RL;
 use MediaWiki\ResourceLoader\Hook\ResourceLoaderExcludeUserOptionsHook;
-use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\SpecialPage\Hook\AuthChangeFormFieldsHook;
+use MediaWiki\Skin\Hook\SidebarBeforeOutputHook;
+use MediaWiki\Skin\Hook\SiteNoticeAfterHook;
+use MediaWiki\Skin\Hook\SkinTemplateNavigation__UniversalHook;
+use MediaWiki\Skin\Skin;
+use MediaWiki\Skin\SkinTemplate;
 use MediaWiki\SpecialPage\Hook\SpecialPage_initListHook;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\SpecialPage\SpecialPageFactory;
 use MediaWiki\Specials\Contribute\Card\ContributeCard;
 use MediaWiki\Specials\Contribute\Card\ContributeCardActionLink;
 use MediaWiki\Specials\Contribute\Hook\ContributeCardsHook;
+use MediaWiki\Specials\Hook\SpecialContributionsBeforeMainOutputHook;
 use MediaWiki\Status\Status;
-use MediaWiki\Storage\EditResult;
-use MediaWiki\Storage\Hook\PageSaveCompleteHook;
 use MediaWiki\Title\NamespaceInfo;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
@@ -98,18 +87,12 @@ use MediaWiki\User\Options\UserOptionsManager;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityUtils;
-use MessageLocalizer;
+use MediaWiki\WikiMap\WikiMap;
 use OOUI\ButtonWidget;
-use SearchEngine;
-use Skin;
-use SkinTemplate;
 use StatusValue;
 use stdClass;
-use Wikimedia\Rdbms\DBReadOnlyError;
 use Wikimedia\Rdbms\IDBAccessObject;
-use Wikimedia\Rdbms\ILoadBalancer;
-use Wikimedia\Stats\PrefixingStatsdDataFactoryProxy;
-use WikiPage;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * Hook implementations that related directly or indirectly to Special:Homepage.
@@ -124,16 +107,13 @@ class HomepageHooks implements
 	GetPreferencesHook,
 	UserGetDefaultOptionsHook,
 	ResourceLoaderExcludeUserOptionsHook,
-	AuthChangeFormFieldsHook,
 	LocalUserCreatedHook,
 	ListDefinedTagsHook,
 	ChangeTagsListActiveHook,
 	SpecialContributionsBeforeMainOutputHook,
 	ConfirmEmailCompleteHook,
 	SiteNoticeAfterHook,
-	SearchDataForIndexHook,
 	FormatAutocommentsHook,
-	PageSaveCompleteHook,
 	RecentChange_saveHook,
 	ContributeCardsHook
 {
@@ -146,16 +126,7 @@ class HomepageHooks implements
 	public const CONFIRMEMAIL_QUERY_PARAM = 'specialconfirmemail';
 	private const VE_PREF_DISABLE_BETA = 'visualeditor-betatempdisable';
 	private const VE_PREF_EDITOR = 'visualeditor-editor';
-
-	public const GROWTH_FORCE_OPTIN = 1;
-	public const GROWTH_FORCE_OPTOUT = 2;
-	public const GROWTH_FORCE_NONE = 3;
-
-	/** @var string Query string used on Special:CreateAccount to force enable/disable Growth features */
-	public const REGISTRATION_GROWTHEXPERIMENTS_ENABLED = 'geEnabled';
-
 	private Config $config;
-	private ILoadBalancer $lb;
 	private UserOptionsManager $userOptionsManager;
 	private UserOptionsLookup $userOptionsLookup;
 	private UserIdentityUtils $userIdentityUtils;
@@ -163,14 +134,11 @@ class HomepageHooks implements
 	private TitleFactory $titleFactory;
 	private ConfigurationLoader $configurationLoader;
 	private CampaignConfig $campaignConfig;
-	private ExperimentUserManager $experimentUserManager;
+
+	private IExperimentManager $experimentManager;
 	private TaskTypeHandlerRegistry $taskTypeHandlerRegistry;
 	private TaskSuggesterFactory $taskSuggesterFactory;
 	private NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup;
-	private LinkRecommendationStore $linkRecommendationStore;
-	private LinkRecommendationHelper $linkRecommendationHelper;
-	private NewcomerTasksInfo $suggestionsInfo;
-	private PrefixingStatsdDataFactoryProxy $perDbNameStatsdDataFactory;
 	private JobQueueGroup $jobQueueGroup;
 	private SpecialPageFactory $specialPageFactory;
 	private NewcomerTasksChangeTagsManager $newcomerTasksChangeTagsManager;
@@ -179,80 +147,61 @@ class HomepageHooks implements
 	private ?UserIdentity $userIdentity;
 	private UserImpactLookup $userImpactLookup;
 	private UserImpactStore $userImpactStore;
+	private LevelingUpManager $levelingUpManager;
+	private FeatureManager $featureManager;
 
 	/** @var bool Are we in a context where it is safe to access the primary DB? */
 	private $canAccessPrimary;
+	private StatsFactory $statsFactory;
+	private GrowthExperimentsInteractionLogger $growthInteractionLogger;
+	private TaskTypeManager $taskTypeManager;
 
-	/**
-	 * @param Config $config Uses PHP globals
-	 * @param ILoadBalancer $lb
-	 * @param UserOptionsManager $userOptionsManager
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param UserIdentityUtils $userIdentityUtils
-	 * @param NamespaceInfo $namespaceInfo
-	 * @param TitleFactory $titleFactory
-	 * @param PrefixingStatsdDataFactoryProxy $perDbNameStatsdDataFactory
-	 * @param JobQueueGroup $jobQueueGroup
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param CampaignConfig $campaignConfig
-	 * @param ExperimentUserManager $experimentUserManager
-	 * @param TaskTypeHandlerRegistry $taskTypeHandlerRegistry
-	 * @param TaskSuggesterFactory $taskSuggesterFactory
-	 * @param NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup
-	 * @param LinkRecommendationStore $linkRecommendationStore
-	 * @param LinkRecommendationHelper $linkRecommendationHelper
-	 * @param SpecialPageFactory $specialPageFactory
-	 * @param NewcomerTasksChangeTagsManager $newcomerTasksChangeTagsManager
-	 * @param NewcomerTasksInfo $suggestionsInfo
-	 * @param UserImpactLookup $userImpactLookup
-	 * @param UserImpactStore $userImpactStore
-	 */
 	public function __construct(
 		Config $config,
-		ILoadBalancer $lb,
 		UserOptionsManager $userOptionsManager,
 		UserOptionsLookup $userOptionsLookup,
 		UserIdentityUtils $userIdentityUtils,
 		NamespaceInfo $namespaceInfo,
 		TitleFactory $titleFactory,
-		PrefixingStatsdDataFactoryProxy $perDbNameStatsdDataFactory,
+		StatsFactory $statsFactory,
 		JobQueueGroup $jobQueueGroup,
 		ConfigurationLoader $configurationLoader,
 		CampaignConfig $campaignConfig,
-		ExperimentUserManager $experimentUserManager,
+		IExperimentManager $experimentManager,
 		TaskTypeHandlerRegistry $taskTypeHandlerRegistry,
 		TaskSuggesterFactory $taskSuggesterFactory,
 		NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup,
-		LinkRecommendationStore $linkRecommendationStore,
-		LinkRecommendationHelper $linkRecommendationHelper,
 		SpecialPageFactory $specialPageFactory,
 		NewcomerTasksChangeTagsManager $newcomerTasksChangeTagsManager,
-		NewcomerTasksInfo $suggestionsInfo,
 		UserImpactLookup $userImpactLookup,
-		UserImpactStore $userImpactStore
+		UserImpactStore $userImpactStore,
+		GrowthExperimentsInteractionLogger $growthInteractionLogger,
+		TaskTypeManager $taskTypeManager,
+		LevelingUpManager $levelingUpManager,
+		FeatureManager $featureManager
 	) {
 		$this->config = $config;
-		$this->lb = $lb;
 		$this->userOptionsManager = $userOptionsManager;
 		$this->userOptionsLookup = $userOptionsLookup;
 		$this->userIdentityUtils = $userIdentityUtils;
 		$this->namespaceInfo = $namespaceInfo;
 		$this->titleFactory = $titleFactory;
-		$this->perDbNameStatsdDataFactory = $perDbNameStatsdDataFactory;
+		$this->statsFactory = $statsFactory;
 		$this->jobQueueGroup = $jobQueueGroup;
 		$this->configurationLoader = $configurationLoader;
 		$this->campaignConfig = $campaignConfig;
-		$this->experimentUserManager = $experimentUserManager;
+		$this->experimentManager = $experimentManager;
 		$this->taskTypeHandlerRegistry = $taskTypeHandlerRegistry;
 		$this->taskSuggesterFactory = $taskSuggesterFactory;
 		$this->newcomerTasksUserOptionsLookup = $newcomerTasksUserOptionsLookup;
-		$this->linkRecommendationStore = $linkRecommendationStore;
-		$this->linkRecommendationHelper = $linkRecommendationHelper;
 		$this->specialPageFactory = $specialPageFactory;
 		$this->newcomerTasksChangeTagsManager = $newcomerTasksChangeTagsManager;
-		$this->suggestionsInfo = $suggestionsInfo;
 		$this->userImpactLookup = $userImpactLookup;
 		$this->userImpactStore = $userImpactStore;
+		$this->growthInteractionLogger = $growthInteractionLogger;
+		$this->taskTypeManager = $taskTypeManager;
+		$this->levelingUpManager = $levelingUpManager;
+		$this->featureManager = $featureManager;
 
 		// Ideally this would be injected but the way hook handlers are defined makes that hard.
 		$this->canAccessPrimary = defined( 'MEDIAWIKI_JOB_RUNNER' )
@@ -273,14 +222,13 @@ class HomepageHooks implements
 				'class' => SpecialHomepage::class,
 				'services' => [
 					'GrowthExperimentsHomepageModuleRegistry',
-					'StatsdDataFactory',
-					'PerDbNameStatsdDataFactory',
-					'GrowthExperimentsExperimentUserManager',
+					'StatsFactory',
 					'GrowthExperimentsMentorManager',
 					'GrowthExperimentsCommunityConfig',
 					'UserOptionsManager',
 					'TitleFactory',
-				]
+					'GrowthExperimentsReviseToneExperimentInteractionLogger',
+				],
 			];
 			if ( $pageViewInfoEnabled ) {
 				$list['Impact'] = [
@@ -290,7 +238,7 @@ class HomepageHooks implements
 						'UserNameUtils',
 						'UserNamePrefixSearch',
 						'GrowthExperimentsHomepageModuleRegistry',
-					]
+					],
 				];
 			}
 			$list[ 'ClaimMentee' ] = [
@@ -298,15 +246,16 @@ class HomepageHooks implements
 				'services' => [
 					'GrowthExperimentsMentorProvider',
 					'GrowthExperimentsChangeMentorFactory',
-					'GrowthExperimentsCommunityConfig'
-				]
+					'UserLinkRenderer',
+				],
 			];
 
 			$list[ 'NewcomerTasksInfo' ] = [
 				'class' => SpecialNewcomerTasksInfo::class,
 				'services' => [
-					'GrowthExperimentsSuggestionsInfo'
-				]
+					'GrowthExperimentsSuggestionsInfo',
+					'GrowthExperimentsFeatureManager',
+				],
 			];
 		}
 	}
@@ -320,7 +269,6 @@ class HomepageHooks implements
 		// keep the dependencies minimal, this is used from other hooks as well
 		$services = MediaWikiServices::getInstance();
 		return (
-			$services->getMainConfig()->get( 'GEHomepageEnabled' ) &&
 			(
 				$user === null ||
 				$services->getUserOptionsLookup()->getBoolOption(
@@ -337,9 +285,8 @@ class HomepageHooks implements
 	 * @param UserIdentity $user
 	 * @return bool
 	 */
-	private function isHomepageEnabledGloballyAndForUser( UserIdentity $user ): bool {
-		return $this->config->get( 'GEHomepageEnabled' ) &&
-			$this->userOptionsLookup->getBoolOption( $user, self::HOMEPAGE_PREF_ENABLE );
+	private function isHomepageEnabledForUser( UserIdentity $user ): bool {
+		return $this->userOptionsLookup->getBoolOption( $user, self::HOMEPAGE_PREF_ENABLE );
 	}
 
 	/**
@@ -349,7 +296,7 @@ class HomepageHooks implements
 	 * @return string|null
 	 */
 	public static function getClickId( IContextSource $context ) {
-		if ( SuggestedEdits::isEnabled( $context->getConfig() ) ) {
+		if ( SuggestedEdits::isEnabledForAnyone( $context->getConfig() ) ) {
 			return $context->getRequest()->getVal( 'geclickid' ) ?: null;
 		}
 		return null;
@@ -375,7 +322,7 @@ class HomepageHooks implements
 	 */
 	public function onBeforePageDisplay( $out, $skin ): void {
 		$context = $out->getContext();
-		$isSuggestedEditsEnabled = SuggestedEdits::isEnabled( $context->getConfig() );
+		$isSuggestedEditsEnabled = SuggestedEdits::isEnabledForAnyone( $context->getConfig() );
 		if (
 			Util::isMobile( $skin ) &&
 			// Optimisation: isHomepageEnabled() is non-trivial, check it last
@@ -394,7 +341,6 @@ class HomepageHooks implements
 			$isLevelingUpEnabledForUser = LevelingUpManager::isEnabledForUser(
 				$context->getUser(),
 				$this->config,
-				$this->experimentUserManager
 			);
 			$out->addJsConfigVars( [
 				// Always output these config vars since they are used by ext.growthExperiments.DataStore
@@ -403,9 +349,13 @@ class HomepageHooks implements
 					$context,
 					$this->userOptionsLookup
 				),
+				'wgGESuggestedEditsTaskTypes' => [
+					'taskTypes' => $this->taskTypeManager->getTaskTypesForUser( $context->getUser() ),
+					'unavailableTaskTypes' => $this->taskTypeManager->getUnavailableTaskTypes(
+						$context->getUser()
+					),
+				],
 				'wgGETopicsMatchModeEnabled' => $this->config->get( 'GETopicsMatchModeEnabled' ),
-				'wgGEStructuredTaskRejectionReasonTextInputEnabled' =>
-					$this->config->get( 'GEStructuredTaskRejectionReasonTextInputEnabled' ),
 				// Always output, it's used throughout the suggested editing session.
 				'wgGELevelingUpEnabledForUser' => $isLevelingUpEnabledForUser,
 			] );
@@ -442,6 +392,9 @@ class HomepageHooks implements
 					if ( $taskTypeHandler instanceof StructuredTaskTypeHandler ) {
 						$recommendationProvider = $taskTypeHandler->getRecommendationProvider();
 					}
+					$out->addJsConfigVars( [
+						'wgGEShouldShowHelpPanelTaskQuickTips' => $taskType->shouldShowHelpPanelQuickTips(),
+					] );
 				}
 			}
 
@@ -452,6 +405,7 @@ class HomepageHooks implements
 					json_encode( [] )
 				);
 				$levelingUpTryNewTaskOptOuts = json_decode( $levelingUpTryNewTaskOptOuts ) ?? [];
+				$userTaskTypes = $this->taskTypeManager->getTaskTypesForUser( $context->getUser() );
 				$out->addJsConfigVars( [
 					'wgGESuggestedEditTaskType' => $taskType->getId(),
 					'wgGELevelingUpTryNewTaskOptOuts' => $levelingUpTryNewTaskOptOuts,
@@ -471,7 +425,7 @@ class HomepageHooks implements
 					$taskSet = $this->taskSuggesterFactory->create()->suggest(
 						$context->getUser(),
 						new TaskSetFilters(
-							$this->newcomerTasksUserOptionsLookup->getTaskTypeFilter( $context->getUser() ),
+							$userTaskTypes,
 							$this->newcomerTasksUserOptionsLookup->getTopics( $context->getUser() ),
 							$this->newcomerTasksUserOptionsLookup->getTopicsMatchMode( $context->getUser() )
 						),
@@ -495,12 +449,12 @@ class HomepageHooks implements
 		// Config vars used to modify the suggested edits topics based on campaign
 		// (see ext.growthExperiments.Homepage.SuggestedEdits/Topics.js)
 		if ( ( !$skin->getTitle() || $skin->getTitle()->isSpecial( 'Homepage' ) ) &&
-			SuggestedEdits::isEnabled( $context->getConfig() ) ) {
+			SuggestedEdits::isEnabledForAnyone( $context->getConfig() ) ) {
 			$out->addJsConfigVars( [
 				'wgGETopicsToExclude' => $this->campaignConfig->getTopicsToExcludeForUser(
 					$context->getUser()
 				),
-				'wgGETopicsMatchModeEnabled' => $this->config->get( 'GETopicsMatchModeEnabled' )
+				'wgGETopicsMatchModeEnabled' => $this->config->get( 'GETopicsMatchModeEnabled' ),
 			] );
 		}
 	}
@@ -536,15 +490,11 @@ class HomepageHooks implements
 	 */
 	public function onSkinTemplateNavigation__Universal( $skin, &$links ): void {
 		$user = $skin->getUser();
-		$this->personalUrlsBuilder( $skin, $links, $user );
+		$isMobile = Util::isMobile( $skin );
 		if ( !self::isHomepageEnabled( $user ) ) {
 			return;
 		}
-
-		$isMobile = Util::isMobile( $skin );
-		if ( $isMobile && $this->userHasPersonalToolsPrefEnabled( $user ) ) {
-			$this->updateProfileMenuEntry( $links );
-		}
+		$this->personalUrlsBuilder( $skin, $links, $user );
 
 		$title = $skin->getTitle();
 		$homepageTitle = SpecialPage::getTitleFor( 'Homepage' );
@@ -555,10 +505,11 @@ class HomepageHooks implements
 		$isUserSpace = $title->equals( $userpage ) || $title->isSubpageOf( $userpage );
 		$isUserTalkSpace = $title->equals( $usertalk ) || $title->isSubpageOf( $usertalk );
 
+		$menuKey = 'associated-pages';
 		if ( $isHomepage || $isUserSpace || $isUserTalkSpace ) {
-			unset( $links['namespaces']['special'] );
-			unset( $links['namespaces']['user'] );
-			unset( $links['namespaces']['user_talk'] );
+			unset( $links[$menuKey]['special'] );
+			unset( $links[$menuKey]['user'] );
+			unset( $links[$menuKey]['user_talk'] );
 
 			// T250554: If user currently views a subpage, direct him to the subpage talk page
 			if ( !$isHomepage ) {
@@ -580,26 +531,26 @@ class HomepageHooks implements
 				'source' => $isUserSpace ? 'userpagetab' : 'usertalkpagetab',
 				'namespace' => $title->getNamespace(),
 			] );
-			$links['namespaces']['homepage'] = $skin->tabAction(
+			$links[$menuKey]['homepage'] = $skin->tabAction(
 				$homepageTitle, 'growthexperiments-homepage-tab', $isHomepage, $homepageUrlQuery
 			);
 
-			$links['namespaces']['user'] = $skin->tabAction(
+			$links[$menuKey]['user'] = $skin->tabAction(
 				$subjectpage, wfMessage( 'nstab-user', $user->getName() ), $isUserSpace, '', !$isMobile
 			);
 
-			$links['namespaces']['user_talk'] = $skin->tabAction(
+			$links[$menuKey]['user_talk'] = $skin->tabAction(
 				$talkpage, 'talk', $isUserTalkSpace, '', !$isMobile
 			);
 			// Enable talk overlay on talk page tab
-			$links['namespaces']['user_talk']['context'] = 'talk';
+			$links[$menuKey]['user_talk']['context'] = 'talk';
 			if ( $isMobile ) {
 				$skin->getOutput()->addModules( 'skins.minerva.talk' );
 			}
 		}
 	}
 
-	private static function titleIsUserPageOrUserTalk( Title $title, User $user ) {
+	private static function titleIsUserPageOrUserTalk( Title $title, User $user ): bool {
 		$userpage = $user->getUserPage();
 		$usertalk = $user->getTalkPage();
 		return $title->equals( $userpage ) ||
@@ -611,27 +562,31 @@ class HomepageHooks implements
 	/**
 	 * Conditionally make the userpage link go to the homepage.
 	 *
-	 * @param SkinTemplate $skin
-	 * @param array &$links
-	 * @param User $user
 	 * @throws ConfigException
 	 */
-	public function personalUrlsBuilder( $skin, &$links, $user ): void {
-		if ( Util::isMobile( $skin ) || !self::isHomepageEnabled( $user ) ) {
+	private function personalUrlsBuilder( SkinTemplate $skin, array &$links, User $user ): void {
+		if ( !$this->userHasPersonalToolsPrefEnabled( $user ) ) {
 			return;
 		}
-
-		if ( $this->userHasPersonalToolsPrefEnabled( $user ) ) {
-			$links['user-menu']['userpage']['href'] = $this->getPersonalToolsHomepageLinkUrl(
+		// Make sure the userpage icon exists befor setting href.
+		// if it has been unset we don't want to create a link with only an href.
+		if ( array_key_exists( 'userpage', $links['user-page'] ) ) {
+			$links['user-page']['userpage']['href'] = $this->getPersonalToolsHomepageLinkUrl(
 				$skin->getTitle()->getNamespace()
 			);
-			$links['user-page']['userpage']['href'] = $this->getPersonalToolsHomepageLinkUrl(
+		}
+		// Legacy Vector makes use of user-menu to display the user link
+		if ( array_key_exists( 'userpage', $links['user-menu'] ) ) {
+			$links['user-menu']['userpage']['href'] = $this->getPersonalToolsHomepageLinkUrl(
 				$skin->getTitle()->getNamespace()
 			);
 			// Make the link blue
 			unset( $links['user-menu']['userpage']['link-class'] );
 			// Remove the "this page doesn't exist" part of the tooltip
 			$links['user-menu']['userpage' ]['exists'] = true;
+		}
+		if ( Util::isMobile( $skin ) ) {
+			$this->updateProfileMenuEntry( $links );
 		}
 	}
 
@@ -660,13 +615,11 @@ class HomepageHooks implements
 			'hide-if' => [ '!==', self::HOMEPAGE_PREF_ENABLE, '1' ],
 		];
 
-		if ( HelpPanel::isHelpPanelEnabled() ) {
-			$preferences[ HelpPanelHooks::HELP_PANEL_PREFERENCES_TOGGLE ] = [
-				'type' => 'toggle',
-				'section' => 'personal/homepage',
-				'label-message' => HelpPanelHooks::HELP_PANEL_PREFERENCES_TOGGLE
-			];
-		}
+		$preferences[ HelpPanelHooks::HELP_PANEL_PREFERENCES_TOGGLE ] = [
+			'type' => 'toggle',
+			'section' => 'personal/homepage',
+			'label-message' => HelpPanelHooks::HELP_PANEL_PREFERENCES_TOGGLE,
+		];
 
 		$preferences[ self::HOMEPAGE_MOBILE_DISCOVERY_NOTICE_SEEN ] = [
 			'type' => 'api',
@@ -684,45 +637,49 @@ class HomepageHooks implements
 			'type' => 'api',
 		];
 
-		$preferences[ SuggestedEdits::getTopicFiltersPref( $this->config ) ] = [
-			'type' => 'api'
+		$preferences[ SuggestedEdits::TOPICS_ORES_PREF ] = [
+			'type' => 'api',
 		];
 
 		$preferences[ SuggestedEdits::TOPICS_MATCH_MODE_PREF ] = [
-			'type' => 'api'
+			'type' => 'api',
 		];
 
 		$preferences[ SuggestedEdits::TASKTYPES_PREF ] = [
-			'type' => 'api'
+			'type' => 'api',
 		];
 
 		$preferences[ SuggestedEdits::GUIDANCE_BLUE_DOT_PREF ] = [
-			'type' => 'api'
+			'type' => 'api',
 		];
 
 		$preferences[ SuggestedEdits::ADD_LINK_ONBOARDING_PREF ] = [
-			'type' => 'api'
+			'type' => 'api',
 		];
 
 		$preferences[ SuggestedEdits::ADD_IMAGE_ONBOARDING_PREF ] = [
-			'type' => 'api'
+			'type' => 'api',
+		];
+
+		$preferences[ SuggestedEdits::REVISE_TONE_ONBOARDING_PREF ] = [
+			'type' => 'api',
 		];
 
 		$preferences[ SuggestedEdits::ADD_IMAGE_CAPTION_ONBOARDING_PREF ] = [
-			'type' => 'api'
+			'type' => 'api',
 		];
 
 		$preferences[ SuggestedEdits::ADD_SECTION_IMAGE_CAPTION_ONBOARDING_PREF ] = [
-			'type' => 'api'
+			'type' => 'api',
 		];
 
 		$preferences[ SuggestedEdits::ADD_SECTION_IMAGE_ONBOARDING_PREF ] = [
-			'type' => 'api'
+			'type' => 'api',
 		];
 
-		if ( LevelingUpManager::isEnabledForAnyone( $this->config ) ) {
+		if ( SuggestedEdits::isEnabledForAnyone( $this->config ) ) {
 			$preferences[LevelingUpManager::TASK_TYPE_PROMPT_OPT_OUTS_PREF] = [
-				'type' => 'api'
+				'type' => 'api',
 			];
 		}
 	}
@@ -746,7 +703,7 @@ class HomepageHooks implements
 				'minerva' => [
 					LinkRecommendationTaskTypeHandler::ID => true,
 					ImageRecommendationTaskTypeHandler::ID => true,
-				]
+				],
 			] ),
 			SuggestedEdits::TOPICS_MATCH_MODE_PREF => SearchStrategy::TOPIC_MATCH_MODE_OR,
 			self::HOMEPAGE_PREF_ENABLE => false,
@@ -769,48 +726,8 @@ class HomepageHooks implements
 	}
 
 	/**
-	 * Pass through the debug flag used by LocalUserCreated.
-	 * @inheritDoc
-	 */
-	public function onAuthChangeFormFields( $requests, $fieldInfo, &$formDescriptor, $action ) {
-		$request = RequestContext::getMain()->getRequest();
-
-		$geForceVariant = $request->getVal( 'geForceVariant' );
-		if ( $geForceVariant !== null ) {
-			$formDescriptor['geForceVariant'] = [
-				'type' => 'hidden',
-				'name' => 'geForceVariant',
-				'default' => $geForceVariant,
-			];
-		}
-
-		$formDescriptor[self::REGISTRATION_GROWTHEXPERIMENTS_ENABLED] = [
-			'type' => 'hidden',
-			'name' => self::REGISTRATION_GROWTHEXPERIMENTS_ENABLED,
-			'default' => $request->getInt( self::REGISTRATION_GROWTHEXPERIMENTS_ENABLED, -1 )
-		];
-	}
-
-	/**
-	 * Check if a user opted-in or opted-out from Growth features
-	 *
-	 * @return int One of GROWTH_FORCE_* constants
-	 */
-	public static function getGrowthFeaturesOptInOptOutOverride(): int {
-		$enableGrowthFeatures = RequestContext::getMain()
-			->getRequest()
-			->getInt( self::REGISTRATION_GROWTHEXPERIMENTS_ENABLED, -1 );
-		if ( $enableGrowthFeatures === 1 ) {
-			return self::GROWTH_FORCE_OPTIN;
-		} elseif ( $enableGrowthFeatures === 0 ) {
-			return self::GROWTH_FORCE_OPTOUT;
-		} else {
-			return self::GROWTH_FORCE_NONE;
-		}
-	}
-
-	/**
-	 * Enable the homepage for a percentage of new local accounts.
+	 * Enable Growth features for all new local accounts.
+	 * Growth features are now enabled for 100% of new users.
 	 *
 	 * @param User $user
 	 * @param bool $autocreated
@@ -821,123 +738,94 @@ class HomepageHooks implements
 			return;
 		}
 
-		$geForceVariant = RequestContext::getMain()->getRequest()
-			->getVal( 'geForceVariant' );
-		$growthOptInOptOutOverride = self::getGrowthFeaturesOptInOptOutOverride();
+		$context = RequestContext::getMain();
+		$this->userOptionsManager->setOption( $user, self::HOMEPAGE_PREF_ENABLE, 1 );
+		$this->userOptionsManager->setOption( $user, self::HOMEPAGE_PREF_PT_LINK, 1 );
+		// Default option is that the user has seen the tours/notices (so we don't prompt
+		// existing users to view them). We set the option to false on new user accounts
+		// so they see them once (and then the option gets reset for them).
+		$this->userOptionsManager->setOption( $user, TourHooks::TOUR_COMPLETED_HELP_PANEL, 0 );
+		$this->userOptionsManager->setOption( $user, TourHooks::TOUR_COMPLETED_HOMEPAGE_MENTORSHIP, 0 );
+		$this->userOptionsManager->setOption( $user, TourHooks::TOUR_COMPLETED_HOMEPAGE_WELCOME, 0 );
+		$this->userOptionsManager->setOption( $user, TourHooks::TOUR_COMPLETED_HOMEPAGE_DISCOVERY, 0 );
+		$this->userOptionsManager->setOption( $user, self::HOMEPAGE_MOBILE_DISCOVERY_NOTICE_SEEN, 0 );
 
-		if ( $growthOptInOptOutOverride === self::GROWTH_FORCE_OPTOUT ) {
-			// Growth features cannot be enabled, short-circuit
-			return;
-		}
-		$this->experimentUserManager->setPlatform(
-			Util::isMobile( RequestContext::getMain()->getSkin() ) ?
-				'mobile' :
-				'desktop'
-		);
-
-		// Enable the homepage for a percentage of non-autocreated users.
-		$enablePercentage = $this->config->get( 'GEHomepageNewAccountEnablePercentage' );
 		if (
-			$growthOptInOptOutOverride === self::GROWTH_FORCE_OPTIN ||
-			$geForceVariant !== null ||
-			rand( 0, 99 ) < $enablePercentage
+			$this->config->get( 'GEHelpPanelNewAccountEnableWithHomepage' )
 		) {
-			$this->perDbNameStatsdDataFactory->increment( 'GrowthExperiments.UsersOptedIntoGrowthFeatures' );
-			$this->userOptionsManager->setOption( $user, self::HOMEPAGE_PREF_ENABLE, 1 );
-			$this->userOptionsManager->setOption( $user, self::HOMEPAGE_PREF_PT_LINK, 1 );
-			// Default option is that the user has seen the tours/notices (so we don't prompt
-			// existing users to view them). We set the option to false on new user accounts
-			// so they see them once (and then the option gets reset for them).
-			$this->userOptionsManager->setOption( $user, TourHooks::TOUR_COMPLETED_HELP_PANEL, 0 );
-			$this->userOptionsManager->setOption( $user, TourHooks::TOUR_COMPLETED_HOMEPAGE_MENTORSHIP, 0 );
-			$this->userOptionsManager->setOption( $user, TourHooks::TOUR_COMPLETED_HOMEPAGE_WELCOME, 0 );
-			$this->userOptionsManager->setOption( $user, TourHooks::TOUR_COMPLETED_HOMEPAGE_DISCOVERY, 0 );
-			$this->userOptionsManager->setOption( $user, self::HOMEPAGE_MOBILE_DISCOVERY_NOTICE_SEEN, 0 );
+			$this->userOptionsManager->setOption( $user, HelpPanelHooks::HELP_PANEL_PREFERENCES_TOGGLE, 1 );
+		}
 
-			if (
-				$this->config->get( 'GEHelpPanelNewAccountEnableWithHomepage' ) &&
-				HelpPanel::isHelpPanelEnabled()
-			) {
-				$this->userOptionsManager->setOption( $user, HelpPanelHooks::HELP_PANEL_PREFERENCES_TOGGLE, 1 );
-			}
-
-			// Mentorship
-			$mentorshipEnablePercentage = $this->config->get( 'GEMentorshipNewAccountEnablePercentage' );
-			if ( rand( 0, 99 ) >= $mentorshipEnablePercentage ) {
-				// the default value is enabled, to avoid removing mentorship from someone who used
-				// to have it. Only setOption if the result is "do not enable".
-				$this->userOptionsManager->setOption(
-					$user,
-					MentorPageMentorManager::MENTORSHIP_ENABLED_PREF,
-					0
-				);
-			}
-
-			// Variant assignment
-			if ( $geForceVariant !== null
-				 && $this->experimentUserManager->isValidVariant( $geForceVariant )
-			) {
-				$variant = $geForceVariant;
-			} else {
-				$variant = $this->experimentUserManager->getRandomVariant();
-			}
-			$this->experimentUserManager->setVariant( $user, $variant );
-			$this->perDbNameStatsdDataFactory->increment( 'GrowthExperiments.UserVariant.' . $variant );
-
-			// Place an empty user impact object in the database table cache, to avoid
-			// making an extra HTTP request on first visit to Special:Homepage.
-			DeferredUpdates::addCallableUpdate( function () use ( $user ) {
-				$userImpact = $this->userImpactLookup->getExpensiveUserImpact(
-					$user,
-					IDBAccessObject::READ_LATEST
-				);
-				if ( $userImpact ) {
-					$this->userImpactStore->setUserImpact( $userImpact );
+		// Mentorship
+		$mentorshipEnablePercentage = $this->config->get( 'GEMentorshipNewAccountEnablePercentage' );
+		if ( rand( 0, 99 ) >= $mentorshipEnablePercentage ) {
+			// the default value is enabled, to avoid removing mentorship from someone who used
+			// to have it. Only setOption if the result is "do not enable".
+			$this->userOptionsManager->setOption(
+				$user,
+				MentorManager::MENTORSHIP_ENABLED_PREF,
+				IMentorManager::MENTORSHIP_DISABLED
+			);
+		}
+		$wiki = WikiMap::getCurrentWikiId();
+		// Try to log newly registered account experiment exposure. Wrapped in a deferred update because
+		// CentralAuth generates the central user in a onLocalUserCreated hook, hence the order of execution is
+		// not guaranteed.
+		if ( $this->featureManager->useTestKitchen() ) {
+			DeferredUpdates::addCallableUpdate( function () use ( $wiki ) {
+				$assignments = $this->experimentManager->getAssignments();
+				if ( count( $assignments ) === 0 ) {
+					return;
+				}
+				foreach ( $assignments as $experiment => $variant ) {
+					if ( !$variant ) {
+						continue;
+					}
+					$this->statsFactory
+						->withComponent( 'GrowthExperiments' )
+						->getCounter( 'user_variant_total' )
+						->setLabel( 'wiki', $wiki )
+						->setLabel( 'variant', $variant )
+						->setLabel( 'experiment', $experiment )
+						->increment();
 				}
 			} );
 
-			if ( SuggestedEdits::isEnabledForAnyone( $this->config ) ) {
-				// Populate the cache of tasks with default task/topic selections
-				// so that when the user lands on Special:Homepage, the request to retrieve tasks
-				// will pull from the cached TaskSet instead of doing time consuming search queries.
-				// With nuances in how mobile/desktop users are onboarded, this may not be always
-				// necessary but does no harm to run for all newly created users.
-				DeferredUpdates::addCallableUpdate( function () use ( $user ) {
-					$taskSuggester = $this->taskSuggesterFactory->create();
-					$taskSuggester->suggest(
-						$user,
-						new TaskSetFilters(
-							$this->newcomerTasksUserOptionsLookup->getTaskTypeFilter( $user ),
-							$this->newcomerTasksUserOptionsLookup->getTopics( $user ),
-							$this->newcomerTasksUserOptionsLookup->getTopicsMatchMode( $user )
-						)
-					);
-				} );
+		}
 
-				$jobQueue = $this->jobQueueGroup->get( NotificationKeepGoingJob::JOB_NAME );
-				if ( LevelingUpManager::isEnabledForAnyone( $this->config ) &&
-					$this->experimentUserManager->isUserInVariant( $user, VariantHooks::VARIANT_CONTROL ) &&
-					$jobQueue->delayedJobsEnabled() ) {
-					$this->jobQueueGroup->lazyPush(
-						new JobSpecification( NotificationKeepGoingJob::JOB_NAME, [
-							'userId' => $user->getId(),
-							// Process the job X seconds after account creation (default: 48 hours)
-							'jobReleaseTimestamp' => (int)wfTimestamp() +
-								$this->config->get( 'GELevelingUpKeepGoingNotificationSendAfterSeconds' )
-						] )
-					);
-					$this->jobQueueGroup->lazyPush(
-						new JobSpecification( NotificationGetStartedJob::JOB_NAME, [
-							'userId' => $user->getId(),
-							// Process the job X seconds after account creation (configured in extension.json)
-							'jobReleaseTimestamp' => (int)wfTimestamp() +
-								$this->config->get( 'GELevelingUpGetStartedNotificationSendAfterSeconds' )
-						] )
-					);
-				}
+		// Place an empty user impact object in the database table cache, to avoid
+		// making an extra HTTP request on first visit to Special:Homepage.
+		DeferredUpdates::addCallableUpdate( function () use ( $user ) {
+			$userImpact = $this->userImpactLookup->getExpensiveUserImpact(
+				$user,
+				IDBAccessObject::READ_LATEST
+			);
+			if ( $userImpact ) {
+				$this->userImpactStore->setUserImpact( $userImpact );
 			}
-		} else {
-			$this->perDbNameStatsdDataFactory->increment( 'GrowthExperiments.UsersNotOptedIntoGrowthFeatures' );
+		} );
+
+		if ( SuggestedEdits::isEnabledForAnyone( $this->config ) ) {
+			// Populate the cache of tasks with default task/topic selections
+			// so that when the user lands on Special:Homepage, the request to retrieve tasks
+			// will pull from the cached TaskSet instead of doing time consuming search queries.
+			// With nuances in how mobile/desktop users are onboarded, this may not be always
+			// necessary but does no harm to run for all newly created users.
+			DeferredUpdates::addCallableUpdate( function () use ( $user ) {
+				$taskSuggester = $this->taskSuggesterFactory->create();
+				$taskSuggester->suggest(
+					$user,
+					new TaskSetFilters(
+						$this->taskTypeManager->getTaskTypesForUser( $user ),
+						$this->newcomerTasksUserOptionsLookup->getTopics( $user ),
+						$this->newcomerTasksUserOptionsLookup->getTopicsMatchMode( $user )
+					)
+				);
+			} );
+
+			$this->levelingUpManager->scheduleKeepGoingNotification( $user );
+			$this->levelingUpManager->scheduleGettingStartedNotification( $user );
+			$this->levelingUpManager->scheduleReEngageNotification( $user );
 		}
 	}
 
@@ -949,14 +837,12 @@ class HomepageHooks implements
 	 * @param array &$tags The list of tags.
 	 * @throws ConfigException
 	 */
-	public function onListDefinedTags( &$tags ) {
+	public function onListDefinedTags( &$tags ): void {
 		if ( self::isHomepageEnabled() ) {
 			$tags[] = Help::HELP_MODULE_QUESTION_TAG;
 			$tags[] = Mentorship::MENTORSHIP_MODULE_QUESTION_TAG;
 		}
-		if ( HelpPanel::isHelpPanelEnabled() ) {
-			$tags[] = Mentorship::MENTORSHIP_HELPPANEL_QUESTION_TAG;
-		}
+		$tags[] = Mentorship::MENTORSHIP_HELPPANEL_QUESTION_TAG;
 		if ( SuggestedEdits::isEnabledForAnyone( $this->config ) ) {
 			array_push( $tags, ...$this->taskTypeHandlerRegistry->getChangeTags() );
 		}
@@ -970,14 +856,12 @@ class HomepageHooks implements
 	 * @param array &$tags The list of tags.
 	 * @throws ConfigException
 	 */
-	public function onChangeTagsListActive( &$tags ) {
+	public function onChangeTagsListActive( &$tags ): void {
 		if ( self::isHomepageEnabled() ) {
 			// Help::HELP_MODULE_QUESTION_TAG is no longer active (T232548)
 			$tags[] = Mentorship::MENTORSHIP_MODULE_QUESTION_TAG;
 		}
-		if ( HelpPanel::isHelpPanelEnabled() ) {
-			$tags[] = Mentorship::MENTORSHIP_HELPPANEL_QUESTION_TAG;
-		}
+		$tags[] = Mentorship::MENTORSHIP_HELPPANEL_QUESTION_TAG;
 		if ( SuggestedEdits::isEnabledForAnyone( $this->config ) ) {
 			array_push( $tags, ...$this->taskTypeHandlerRegistry->getChangeTags() );
 		}
@@ -985,7 +869,6 @@ class HomepageHooks implements
 
 	/**
 	 * Helper method to update the "Profile" menu entry in menus
-	 * @param array &$links
 	 */
 	private function updateProfileMenuEntry( array &$links ) {
 		$userItem = $links['user-menu']['userpage'] ?? [];
@@ -1001,7 +884,6 @@ class HomepageHooks implements
 			] + $links['user-menu'];
 			$links['user-page'] = [
 					'homepage' => $userItem,
-					// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset the user-page is always set
 			] + $links['user-page'];
 		}
 	}
@@ -1011,8 +893,6 @@ class HomepageHooks implements
 	 *
 	 * We want "Home" to read "Main Page", because Special:Homepage is intended to be "Home"
 	 * for users with Growth features.
-	 *
-	 * @param array &$sidebar
 	 */
 	private function updateHomeMenuEntry( array &$sidebar ) {
 		foreach ( $sidebar['navigation'] ?? [] as $key => $item ) {
@@ -1043,7 +923,14 @@ class HomepageHooks implements
 		}
 	}
 
-	private static function getZeroContributionsHtml( SpecialPage $sp, $wrapperClasses = '' ) {
+	/**
+	 * Generate HTML for zero contributions message
+	 *
+	 * @param SpecialPage $sp The special page instance
+	 * @param string $wrapperClasses Additional CSS classes for the wrapper
+	 * @return string HTML content
+	 */
+	private static function getZeroContributionsHtml( SpecialPage $sp, string $wrapperClasses = '' ): string {
 		$linkUrl = SpecialPage::getTitleFor( 'Homepage' )
 			->getFullURL( [ 'source' => 'specialcontributions' ] );
 		return Html::rawElement( 'div', [ 'class' => 'mw-ge-contributions-zero ' . $wrapperClasses ],
@@ -1059,7 +946,7 @@ class HomepageHooks implements
 				'label' => $sp->msg( 'growthexperiments-homepage-contributions-zero-button' )
 					->params( $sp->getUser()->getName() )->text(),
 				'href' => $linkUrl,
-				'flags' => [ 'primary', 'progressive' ]
+				'flags' => [ 'primary', 'progressive' ],
 			] )
 		);
 	}
@@ -1071,7 +958,7 @@ class HomepageHooks implements
 		if (
 			$user->equals( $sp->getUser() ) &&
 			$user->getEditCount() === 0 &&
-			self::isHomepageEnabled( $user )
+			$this->shouldShowSuggestedEdits( $user )
 		) {
 			$out = $sp->getOutput();
 			$out->enableOOUI();
@@ -1080,9 +967,7 @@ class HomepageHooks implements
 		}
 	}
 
-	/**
-	 * @param User $user
-	 */
+	/** @inheritDoc */
 	public function onConfirmEmailComplete( $user ) {
 		// context user is used for cases when someone else than $user confirms the email,
 		// and that user doesn't have homepage enabled
@@ -1091,7 +976,7 @@ class HomepageHooks implements
 				->redirect( SpecialPage::getTitleFor( 'Homepage' )
 					->getFullUrlForRedirect( [
 						'source' => self::CONFIRMEMAIL_QUERY_PARAM,
-						'namespace' => NS_SPECIAL
+						'namespace' => NS_SPECIAL,
 					] )
 			);
 		}
@@ -1107,9 +992,9 @@ class HomepageHooks implements
 		global $wgMinervaEnableSiteNotice;
 		if ( self::isHomepageEnabled( $skin->getUser() ) ) {
 			$siteNoticeGenerator = new SiteNoticeGenerator(
-				$this->experimentUserManager,
 				$this->userOptionsLookup,
-				$this->jobQueueGroup
+				$this->jobQueueGroup,
+				$this->config,
 			);
 			return $siteNoticeGenerator->setNotice(
 				$skin->getRequest()->getVal( 'source' ),
@@ -1117,99 +1002,6 @@ class HomepageHooks implements
 				$skin,
 				$wgMinervaEnableSiteNotice
 			);
-		}
-	}
-
-	/**
-	 * @inheritDoc
-	 * Update link recommendation data in the search index. Used to deindex pages after they
-	 * have been edited (and thus the recommendation does not apply anymore).
-	 */
-	public function onSearchDataForIndex2(
-		array &$fields,
-		ContentHandler $handler,
-		WikiPage $page,
-		ParserOutput $output,
-		SearchEngine $engine,
-		RevisionRecord $revision
-	) {
-		$this->doSearchDataForIndex( $fields, $page, $revision );
-	}
-
-	/**
-	 * @inheritDoc
-	 * Update link recommendation data in the search index. Used to deindex pages after they
-	 * have been edited (and thus the recommendation does not apply anymore).
-	 */
-	public function onSearchDataForIndex( &$fields, $handler, $page, $output, $engine ) {
-		if ( !$this->config->get( 'GENewcomerTasksLinkRecommendationsEnabled' ) ) {
-			return;
-		}
-		$revision = $page->getRevisionRecord();
-		if ( $revision === null ) {
-			// should not happen
-			return;
-		}
-		$this->doSearchDataForIndex( $fields, $page, $revision );
-	}
-
-	/**
-	 * Visible for testing
-	 *
-	 * @param array &$fields
-	 * @param WikiPage $page
-	 * @param RevisionRecord $revision
-	 */
-	public function doSearchDataForIndex( array &$fields, WikiPage $page, RevisionRecord $revision ): void {
-		if ( !$this->config->get( 'GENewcomerTasksLinkRecommendationsEnabled' ) ) {
-			return;
-		}
-		if ( $this->config->get( 'GETempLinkRecommendationSwitchTagClearHook' ) ) {
-			return;
-		}
-		$revId = $revision->getId();
-		if ( !$this->canAccessPrimary ) {
-			// A GET request; the hook might be called for diagnostic purposes, e.g. via
-			// CirrusSearch\Api\QueryBuildDocument, but not for anything important.
-			return;
-		}
-
-		// The hook is called after edits, but also on purges or edits to transcluded content,
-		// so we mustn't delete recommendations that are still valid. Checking whether there is any
-		// recommendation stored for the current revision should do the trick.
-		//
-		// Both revision IDs might be incorrect due to replication lag but usually it won't
-		// matter. If $page is being edited, the cache has already been refreshed and $revId
-		// is correct, so we are guaranteed to end up on the delete branch. If this is a purge
-		// or other re-rendering-related update, and the page has been edited very recently,
-		// and it already has a recommendation (so the real recommendation revision is larger
-		// than what we see), we need to avoid erroneously deleting the recommendation - since
-		// new recommendations are added to the search index asynchronously, it would result
-		// in the DB and search index getting out of sync.
-		$linkRecommendation = $this->linkRecommendationStore->getByLinkTarget( $page->getTitle(),
-			IDBAccessObject::READ_NORMAL, true );
-		if ( $linkRecommendation && $linkRecommendation->getRevisionId() < $revId ) {
-			$linkRecommendation = $this->linkRecommendationStore->getByLinkTarget( $page->getTitle(),
-				IDBAccessObject::READ_LATEST, true );
-		}
-		if ( $linkRecommendation && $linkRecommendation->getRevisionId() < $revId ) {
-			$fields[WeightedTagsHooks::FIELD_NAME][] = LinkRecommendationTaskTypeHandler::WEIGHTED_TAG_PREFIX
-				. '/' . CirrusIndexField::MULTILIST_DELETE_GROUPING;
-			try {
-				$this->linkRecommendationHelper->deleteLinkRecommendation(
-					$page->getTitle()->toPageIdentity(), false );
-			} catch ( DBReadOnlyError $e ) {
-				// Leaving a dangling DB row behind doesn't cause any problems so just ignore this.
-			}
-		}
-	}
-
-	private function clearLinkRecommendationRecordForPage( WikiPage $wikiPage ): void {
-		try {
-			$this->linkRecommendationHelper->deleteLinkRecommendation(
-				$wikiPage->getTitle()->toPageIdentity(), true, true );
-		} catch ( DBReadOnlyError $e ) {
-			// Leaving a dangling DB row behind doesn't cause any problems so just ignore this.
 		}
 	}
 
@@ -1245,6 +1037,18 @@ class HomepageHooks implements
 	 *   - on error: [ '_error' => error message in wikitext format ]
 	 */
 	public static function getTaskTypesJson( RL\Context $context ) {
+		// Do not attempt to load task types when SE is disabled, should not be necessary if
+		// client does not request them but currently they are a dependency of many GE resource loader
+		// modules defined in extension.json.
+		if ( !GrowthExperimentsServices::wrap( MediaWikiServices::getInstance() )
+			->getFeatureManager()
+			->isNewcomerTasksAvailable()
+		) {
+			return [
+				'_error' => 'Task types are unavailable because Suggested edits is not enabled, ' .
+					'see GEHomepageSuggestedEditsEnabled.',
+			];
+		}
 		// Based on user variant settings, some task types might need to be hidden for the user,
 		// but we can't access user identity here, so we return all tasks. User-specific filtering
 		// will be done on the client side in TaskTypeAbFilter.
@@ -1275,7 +1079,7 @@ class HomepageHooks implements
 	 */
 	public static function getDefaultTaskTypesJson( RL\Context $context ) {
 		// Like with getTaskTypesJson, we ignore user-specific filtering here.
-		return SuggestedEdits::DEFAULT_TASK_TYPES;
+		return SuggestedEdits::getDefaultTaskTypes( $context->getResourceLoader()->getConfig() );
 	}
 
 	/**
@@ -1283,29 +1087,22 @@ class HomepageHooks implements
 	 * Some UI elements will be disabled if this returns an empty array.
 	 * @param RL\Context $context
 	 * @return array
-	 *   - on success: [ topic id => topic data, ... ]; see Topic::toArray for data format.
+	 *   - [ topic id => topic data, ... ]; see Topic::toArray for data format.
 	 *     Note that the messages in the task data are plaintext and it is the caller's
 	 *     responsibility to escape them.
-	 *   - on error: [ '_error' => error message in wikitext format ]
 	 */
 	public static function getTopicsJson( RL\Context $context ) {
-		$configurationLoader = self::getConfigurationLoaderForResourceLoader( $context );
-		$topics = $configurationLoader->loadTopics();
-		if ( $topics instanceof StatusValue ) {
-			$errorMessages = array_map(
-				static fn ( $spec ) => $context->msg( $spec )->parse(),
-				$topics->getMessages()
-			);
-			return [
-				'_error' => $errorMessages[0],
-			];
-		} else {
-			$topicsData = [];
-			foreach ( $topics as $topic ) {
-				$topicsData[$topic->getId()] = $topic->getViewData( $context );
-			}
-			return $topicsData;
+		$growthServices = GrowthExperimentsServices::wrap( MediaWikiServices::getInstance() );
+		$registry = $growthServices->getTopicRegistry();
+		if ( $registry instanceof WikimediaTopicRegistry ) {
+			$registry->setMessageLocalizer( $context );
 		}
+		$topics = $registry->getTopics();
+		$topicsData = [];
+		foreach ( $topics as $topic ) {
+			$topicsData[$topic->getId()] = $topic->getViewData( $context );
+		}
+		return $topicsData;
 	}
 
 	/**
@@ -1332,16 +1129,19 @@ class HomepageHooks implements
 		// frontend code's responsibility (handled in TaskTypeAbFilter).
 		return [
 			'GESearchTaskSuggesterDefaultLimit' => SearchTaskSuggester::DEFAULT_LIMIT,
+			'GEApiQueryGrowthTasksLookaheadSize' =>
+				$config->get( 'GEApiQueryGrowthTasksLookaheadSize' ),
 			'GERestbaseUrl' => Util::getRestbaseUrl( $config ),
 			'GENewcomerTasksRemoteArticleOrigin' => $config->get( 'GENewcomerTasksRemoteArticleOrigin' ),
 			'GEHomepageSuggestedEditsIntroLinks' => self::getGrowthWikiConfig()
 				->get( 'GEHomepageSuggestedEditsIntroLinks' ),
-			'GENewcomerTasksTopicFiltersPref' => SuggestedEdits::getTopicFiltersPref( $config ),
+			'GENewcomerTasksTopicFiltersPref' => SuggestedEdits::TOPICS_ORES_PREF,
 			'GELinkRecommendationsEnabled' => $config->get( 'GENewcomerTasksLinkRecommendationsEnabled' )
 				&& $config->get( 'GELinkRecommendationsFrontendEnabled' ),
 			'GEImageRecommendationsEnabled' => $config->get( 'GENewcomerTasksImageRecommendationsEnabled' ),
 			'GENewcomerTasksSectionImageRecommendationsEnabled' =>
 				$config->get( 'GENewcomerTasksSectionImageRecommendationsEnabled' ),
+			'GEReviseToneSuggestedEditEnabled' => $config->get( 'GEReviseToneSuggestedEditEnabled' ),
 		];
 	}
 
@@ -1361,10 +1161,6 @@ class HomepageHooks implements
 		return $growthServices->getNewcomerTasksConfigurationLoader();
 	}
 
-	/**
-	 * @param User $user
-	 * @return bool
-	 */
 	private function userHasPersonalToolsPrefEnabled( User $user ): bool {
 		return $user->isNamed() &&
 			$this->userOptionsLookup->getBoolOption( $user, self::HOMEPAGE_PREF_PT_LINK );
@@ -1431,7 +1227,7 @@ class HomepageHooks implements
 			$messageParamsStr = $messageParts[ 1 ] ?? '';
 			$comment = wfMessage( $messageKey )
 				->numParams( ...explode( '|', $messageParamsStr ) )
-				->parse();
+				->escaped();
 		}
 	}
 
@@ -1471,6 +1267,11 @@ class HomepageHooks implements
 	public static function onCirrusSearchAddQueryFeatures( SearchConfig $config, array &$extraFeatures ) {
 		$mwServices = MediaWikiServices::getInstance();
 		$growthServices = GrowthExperimentsServices::wrap( $mwServices );
+		// Avoid accessing Suggested Edits configuration when the feature is disabled (T369312)
+		if ( !$growthServices->getFeatureManager()->isNewcomerTasksAvailable() ) {
+			return;
+		}
+		$growthServices = GrowthExperimentsServices::wrap( $mwServices );
 		$configurationLoader = $growthServices->getNewcomerTasksConfigurationLoader();
 		$taskTypes = $configurationLoader->getTaskTypes();
 		$infoboxTemplates = $configurationLoader->loadInfoboxTemplates();
@@ -1478,37 +1279,15 @@ class HomepageHooks implements
 		if ( $infoboxTemplates instanceof StatusValue ) {
 			$infoboxTemplates = $growthServices->getGrowthWikiConfig()->get( 'GEInfoboxTemplates' );
 		}
-		$infoboxTemplatesTest = $growthServices->getGrowthWikiConfig()->get( 'GEInfoboxTemplatesTest' );
 		$templateCollectionFeature = new TemplateCollectionFeature(
 			'infobox', $infoboxTemplates, $mwServices->getTitleFactory()
 		);
-		if ( $infoboxTemplatesTest ) {
-			$templateCollectionFeature->addCollection( 'infoboxtest', $infoboxTemplatesTest );
-		}
 		foreach ( $taskTypes as $taskType ) {
 			if ( $taskType instanceof TemplateBasedTaskType ) {
 				$templateCollectionFeature->addCollection( $taskType->getId(), $taskType->getTemplates() );
 			}
 		}
 		$extraFeatures[] = $templateCollectionFeature;
-
-		// FIXME T301030 remove when campaign is over
-		$extraFeatures[] = new GrowthArticleTopicFeature();
-	}
-
-	/** @inheritDoc */
-	public function onPageSaveComplete( $wikiPage, $user, $summary, $flags, $revisionRecord, $editResult ): void {
-		if (
-			$this->config->get( 'GENewcomerTasksLinkRecommendationsEnabled' ) &&
-			$this->config->get( 'GETempLinkRecommendationSwitchTagClearHook' ) &&
-			$wikiPage->getNamespace() === NS_MAIN
-		) {
-			$this->clearLinkRecommendationRecordForPage( $wikiPage );
-		}
-
-		if ( $editResult->isRevert() ) {
-			$this->trackRevertedNewcomerTaskEdit( $editResult );
-		}
 	}
 
 	/** @inheritDoc */
@@ -1533,9 +1312,11 @@ class HomepageHooks implements
 		}
 		if ( SuggestedEdits::isActivated( $context->getUser(), $this->userOptionsLookup ) ) {
 			$taskTypeId = $pluginData['taskType'];
+			$wasTaskSurfaced = $pluginData['surfaced'] ?? false;
 			$tags = $this->newcomerTasksChangeTagsManager->getTags(
 				$taskTypeId,
-				$recentChange->getPerformerIdentity()
+				$recentChange->getPerformerIdentity(),
+				$wasTaskSurfaced
 			);
 			if ( $tags->isGood() ) {
 				$recentChange->addTags( $tags->getValue() );
@@ -1563,18 +1344,22 @@ class HomepageHooks implements
 					$linkRecommendationTaskType->getUnderlinkedWeight(),
 					$linkRecommendationTaskType->getUnderlinkedMinLength()
 				);
-				return false;
+			} else {
+				// Link recommendations don't exist on this wiki. It might be nice if underlinked was
+				// a conditionally registered rescore profile, it would give a nice error message about
+				// it not being a valid api parameter, but this also works.
+				// The expectation is that this is being invoked by a user who saw the rescore profile
+				// available in the list of valid api parameters and is simply trying it out.
+				$builder = new BoostedQueriesFunction( [ new MatchNone() ], [ 0 ] );
 			}
-			// Not doing anything will result in a Cirrus error about a non-existent function type,
-			// which seems like a reasonable way to handle the case of using underlinked weighting
-			// on a wiki with no link recommendation task type.
+			return false;
 		}
 	}
 
 	/** @inheritDoc */
 	public function onContributeCards( array &$cards ): void {
 		$userIdentity = $this->userIdentity ?? RequestContext::getMain()->getUser();
-		if ( !$this->isHomepageEnabledGloballyAndForUser( $userIdentity ) ) {
+		if ( !$this->shouldShowSuggestedEdits( $userIdentity ) ) {
 			return;
 		}
 		$messageLocalizer = $this->messageLocalizer ?? RequestContext::getMain();
@@ -1592,7 +1377,7 @@ class HomepageHooks implements
 					'namespace' => NS_SPECIAL,
 					// on mobile, avoids the flash of Special:Homepage before routing to the
 					// Suggested Edits overlay. On desktop, has no effect.
-					'overlay' => 1
+					'overlay' => 1,
 				] ) ),
 				$messageLocalizer->msg( 'growthexperiments-homepage-special-contribute-cta' )->text(),
 			)
@@ -1631,44 +1416,19 @@ class HomepageHooks implements
 		$this->userIdentity = $userIdentity;
 	}
 
-	private function trackRevertedNewcomerTaskEdit( EditResult $editResult ): void {
-		$revId = $editResult->getNewestRevertedRevisionId();
-		if ( !$revId ) {
-			return;
-		}
-		$tags = MediaWikiServices::getInstance()->getChangeTagsStore()->getTags(
-			$this->lb->getConnection( DB_REPLICA ),
-			null,
-			$revId
-		);
-		$growthTasksChangeTags = array_merge(
-			TemplateBasedTaskTypeHandler::NEWCOMER_TASK_TEMPLATE_BASED_ALL_CHANGE_TAGS,
-			[
-				LinkRecommendationTaskTypeHandler::CHANGE_TAG,
-				ImageRecommendationTaskTypeHandler::CHANGE_TAG,
-				SectionImageRecommendationTaskTypeHandler::CHANGE_TAG,
-			]
-		);
-		foreach ( $tags as $tag ) {
-			// We can use more precise tags, skip this generic one applied to all suggested edits.
-			if ( $tag === TaskTypeHandler::NEWCOMER_TASK_TAG ||
-				// ...but make sure the tag is one we care about tracking.
-				!in_array( $tag, $growthTasksChangeTags ) ) {
-				continue;
-			}
-			// HACK: craft the task type ID from the change tag. We should probably add a method to
-			// TaskTypeHandlerRegistry to get a TaskType from a change tag.
-			$taskType = str_replace( 'newcomer task ', '', $tag );
-			if ( $tag === LinkRecommendationTaskTypeHandler::CHANGE_TAG ) {
-				$taskType = LinkRecommendationTaskTypeHandler::TASK_TYPE_ID;
-			} elseif ( $tag === ImageRecommendationTaskTypeHandler::CHANGE_TAG ) {
-				$taskType = ImageRecommendationTaskTypeHandler::TASK_TYPE_ID;
-			} elseif ( $tag === SectionImageRecommendationTaskTypeHandler::CHANGE_TAG ) {
-				$taskType = SectionImageRecommendationTaskTypeHandler::TASK_TYPE_ID;
-			}
-			$this->perDbNameStatsdDataFactory->increment(
-				sprintf( 'GrowthExperiments.NewcomerTask.Reverted.%s', $taskType )
-			);
-		}
+	/**
+	 * Determine if the Suggested Edits contribute card and links should be shown.
+	 *
+	 * The card and links should only be displayed when:
+	 * 1. Homepage is enabled for the user
+	 * 2. Suggested Edits module is enabled on the wiki
+	 *
+	 * @param UserIdentity $user The user to check
+	 * @return bool True if the SE contribute card should be shown, false otherwise
+	 */
+	private function shouldShowSuggestedEdits( UserIdentity $user ): bool {
+		return $this->isHomepageEnabledForUser( $user )
+			&& SuggestedEdits::isEnabledForAnyone( $this->config );
 	}
+
 }

@@ -11,6 +11,7 @@ use GrowthExperiments\UserImpact\RefreshUserImpactJob;
 use GrowthExperiments\UserImpact\UserImpactLookup;
 use GrowthExperiments\UserImpact\UserImpactStore;
 use MediaWiki\JobQueue\JobQueueGroupFactory;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\Maintenance\Maintenance;
 use MediaWiki\User\ActorStore;
 use MediaWiki\User\UserFactory;
@@ -18,11 +19,13 @@ use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserSelectQueryBuilder;
 use Wikimedia\Rdbms\SelectQueryBuilder;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 class RefreshUserImpactData extends Maintenance {
 
@@ -98,12 +101,13 @@ class RefreshUserImpactData extends Maintenance {
 						$usersText = implode( ', ', array_keys( $users ) );
 						$this->output( " ... enqueueing refreshUserImpactJob for users $usersText\n" );
 					}
-					$this->jobQueueGroupFactory->makeJobQueueGroup()->lazyPush(
-						new RefreshUserImpactJob( [
+					$this->jobQueueGroupFactory->makeJobQueueGroup()->lazyPush( new JobSpecification(
+						RefreshUserImpactJob::JOB_NAME,
+						[
 							'impactDataBatch' => $users,
 							'staleBefore' => $this->ignoreAfter,
-						] )
-					);
+						]
+					) );
 					$users = [];
 				}
 			} else {
@@ -241,5 +245,7 @@ class RefreshUserImpactData extends Maintenance {
 
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = RefreshUserImpactData::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

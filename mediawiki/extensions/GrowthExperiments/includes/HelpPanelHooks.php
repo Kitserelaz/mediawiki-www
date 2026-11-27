@@ -5,16 +5,15 @@ namespace GrowthExperiments;
 use GrowthExperiments\Config\GrowthConfigLoaderStaticTrait;
 use GrowthExperiments\HelpPanel\QuestionPoster\HelpdeskQuestionPoster;
 use GrowthExperiments\HomepageModules\Mentorship;
-use GrowthExperiments\HomepageModules\SuggestedEdits;
 use GrowthExperiments\MentorDashboard\MentorTools\MentorStatusManager;
-use GrowthExperiments\Mentorship\MentorManager;
+use GrowthExperiments\Mentorship\IMentorManager;
 use MediaWiki\Auth\Hook\LocalUserCreatedHook;
 use MediaWiki\Cache\GenderCache;
 use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
 use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
 use MediaWiki\Config\Config;
-use MediaWiki\Context\RequestContext;
 use MediaWiki\Language\Language;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
@@ -24,7 +23,6 @@ use MediaWiki\User\Hook\UserGetDefaultOptionsHook;
 use MediaWiki\User\Options\UserOptionsManager;
 use MediaWiki\User\User;
 use MediaWiki\User\UserEditTracker;
-use MessageLocalizer;
 
 class HelpPanelHooks implements
 	GetPreferencesHook,
@@ -44,25 +42,16 @@ class HelpPanelHooks implements
 	private GenderCache $genderCache;
 	private UserEditTracker $userEditTracker;
 	private UserOptionsManager $userOptionsManager;
-	private MentorManager $mentorManager;
+	private IMentorManager $mentorManager;
 	private MentorStatusManager $mentorStatusManager;
 
-	/**
-	 * @param Config $config
-	 * @param Config $wikiConfig
-	 * @param GenderCache $genderCache
-	 * @param UserEditTracker $userEditTracker
-	 * @param UserOptionsManager $userOptionsManager
-	 * @param MentorManager $mentorManager
-	 * @param MentorStatusManager $mentorStatusManager
-	 */
 	public function __construct(
 		Config $config,
 		Config $wikiConfig,
 		GenderCache $genderCache,
 		UserEditTracker $userEditTracker,
 		UserOptionsManager $userOptionsManager,
-		MentorManager $mentorManager,
+		IMentorManager $mentorManager,
 		MentorStatusManager $mentorStatusManager
 	) {
 		$this->config = $config;
@@ -81,20 +70,7 @@ class HelpPanelHooks implements
 	 * @param array &$preferences
 	 */
 	public function onGetPreferences( $user, &$preferences ) {
-		if ( HelpPanel::isHelpPanelEnabled() ) {
-			$preferences[HelpdeskQuestionPoster::QUESTION_PREF] = [
-				'type' => 'api',
-			];
-		}
-
-		// FIXME: Guidance doesn't need an opt-in anymore, let's remove this.
-		if ( SuggestedEdits::isGuidanceEnabledForAnyone( RequestContext::getMain() )
-			&& $this->config->get( 'GENewcomerTasksGuidanceRequiresOptIn' )
-		) {
-			$preferences[SuggestedEdits::GUIDANCE_ENABLED_PREF] = [
-				'type' => 'api',
-			];
-		}
+		$preferences[HelpdeskQuestionPoster::QUESTION_PREF] = [ 'type' => 'api' ];
 	}
 
 	/**
@@ -103,11 +79,9 @@ class HelpPanelHooks implements
 	 * @param array &$defaultOptions
 	 */
 	public function onUserGetDefaultOptions( &$defaultOptions ) {
-		if ( HelpPanel::isHelpPanelEnabled() ) {
-			$defaultOptions += [
-				self::HELP_PANEL_PREFERENCES_TOGGLE => false
-			];
-		}
+		$defaultOptions += [
+			self::HELP_PANEL_PREFERENCES_TOGGLE => false,
+		];
 	}
 
 	/** @inheritDoc */
@@ -117,22 +91,12 @@ class HelpPanelHooks implements
 	): void {
 		$keysToExclude = array_merge( $keysToExclude, [
 			HelpdeskQuestionPoster::QUESTION_PREF,
-			SuggestedEdits::GUIDANCE_ENABLED_PREF,
 		] );
 	}
 
 	/** @inheritDoc */
 	public function onLocalUserCreated( $user, $autocreated ) {
 		if ( $user->isTemp() ) {
-			return;
-		}
-		if ( !HelpPanel::isHelpPanelEnabled() ) {
-			return;
-		}
-
-		$growthOptInOptOutOverride = HomepageHooks::getGrowthFeaturesOptInOptOutOverride();
-		if ( $growthOptInOptOutOverride === HomepageHooks::GROWTH_FORCE_OPTOUT ) {
-			// User opted-out from Growth features, short-circuit
 			return;
 		}
 
@@ -146,10 +110,7 @@ class HelpPanelHooks implements
 		}
 
 		$enablePercentage = $this->config->get( 'GEHelpPanelNewAccountEnablePercentage' );
-		if (
-			$growthOptInOptOutOverride === HomepageHooks::GROWTH_FORCE_OPTIN ||
-			( !$autocreated && rand( 0, 99 ) < $enablePercentage )
-		) {
+		if ( !$autocreated && rand( 0, 99 ) < $enablePercentage ) {
 			$this->userOptionsManager->setOption( $user, self::HELP_PANEL_PREFERENCES_TOGGLE, 1 );
 		}
 	}
@@ -165,32 +126,25 @@ class HelpPanelHooks implements
 
 		if ( $definitelyShow ) {
 			$out->enableOOUI();
-			$out->addModuleStyles( 'ext.growthExperiments.cssCustomProperties' );
 			$out->addModuleStyles( 'ext.growthExperiments.HelpPanelCta.styles' );
 			$out->addModuleStyles( 'ext.growthExperiments.icons' );
 			$out->addModules( 'ext.growthExperiments.HelpPanel' );
 
-			$out->addHTML( HelpPanel::getHelpPanelCtaButton() );
+			$out->addHTML( HelpPanel::getHelpPanelCtaButton( $this->wikiConfig )->toString() );
 		}
 
-		if ( SuggestedEdits::isGuidanceEnabled( $out->getContext() ) ) {
-			// Note: wgGELinkRecommendationsFrontendEnabled reflects the configuration flag.
-			// Checking whether Add Link has been disabled in community configuration is the
-			// frontend code's responsibility.
-			$out->addJsConfigVars( [
-				'wgGENewcomerTasksGuidanceEnabled' => true,
-				'wgGEAskQuestionEnabled' => HelpPanel::getHelpDeskTitle( $this->wikiConfig ) !== null,
-				'wgGELinkRecommendationsFrontendEnabled' =>
-					$out->getConfig()->get( 'GELinkRecommendationsFrontendEnabled' )
-			] );
-		}
+		// Note: wgGELinkRecommendationsFrontendEnabled reflects the configuration flag.
+		// Checking whether Add Link has been disabled in community configuration is the
+		// frontend code's responsibility.
+		$out->addJsConfigVars( [
+			'wgGEAskQuestionEnabled' => HelpPanel::getHelpDeskTitle( $this->wikiConfig ) !== null,
+			'wgGELinkRecommendationsFrontendEnabled' =>
+				$out->getConfig()->get( 'GELinkRecommendationsFrontendEnabled' ),
+		] );
 
 		// If the help panel would be shown but for the value of the 'action' parameter,
 		// add the email config var anyway. We'll need it if the user loads an editor via JS.
-		// Also set wgGEHelpPanelEnabled to let our JS modules know it's safe to display the help panel.
 		$out->addJsConfigVars( [
-				// We know the help panel is enabled, otherwise we wouldn't get here
-				'wgGEHelpPanelEnabled' => true,
 				'wgGEHelpPanelMentorData' => $this->getMentorData(
 					$this->wikiConfig,
 					$out->getUser(),
@@ -204,7 +158,7 @@ class HelpPanelHooks implements
 					$this->wikiConfig->get( 'GEHelpPanelAskMentor' ) &&
 					$this->mentorManager->getMentorshipStateForUser(
 						$out->getUser()
-					) === MentorManager::MENTORSHIP_ENABLED &&
+					) === IMentorManager::MENTORSHIP_ENABLED &&
 					$this->mentorManager->getEffectiveMentorForUserSafe( $out->getUser() ) !== null,
 			] + HelpPanel::getUserEmailConfigVars( $out->getUser() ) );
 
@@ -237,31 +191,20 @@ class HelpPanelHooks implements
 			'GEHelpPanelSuggestedEditsPreferredEditor' => self::getPreferredEditor( $context, $config ),
 			'GEHelpPanelHelpDeskTitle' => $helpdeskTitle ? $helpdeskTitle->getPrefixedText() : null,
 			'GEAskHelpCopyrightWarning' => $copyrightWarningMessage->exists() ?
-				$copyrightWarningMessage->parse() : ''
+				$copyrightWarningMessage->parse() : '',
 		];
 	}
 
 	/** @inheritDoc */
 	public function onListDefinedTags( &$tags ) {
-		if ( HelpPanel::isHelpPanelEnabled() ) {
-			$tags[] = HelpPanel::HELPDESK_QUESTION_TAG;
-		}
+		$tags[] = HelpPanel::HELPDESK_QUESTION_TAG;
 	}
 
 	/** @inheritDoc */
 	public function onChangeTagsListActive( &$tags ) {
-		if ( HelpPanel::isHelpPanelEnabled() ) {
-			$tags[] = HelpPanel::HELPDESK_QUESTION_TAG;
-		}
+		$tags[] = HelpPanel::HELPDESK_QUESTION_TAG;
 	}
 
-	/**
-	 * @param Config $wikiConfig
-	 * @param User $user
-	 * @param MessageLocalizer $localizer
-	 * @param Language $language
-	 * @return array
-	 */
 	private function getMentorData(
 		Config $wikiConfig,
 		User $user,
@@ -289,10 +232,13 @@ class HelpPanelHooks implements
 				__METHOD__
 			),
 			'editCount' => $this->userEditTracker->getUserEditCount( $mentor->getUserIdentity() ),
-			'lastActive' => Mentorship::getMentorLastActive( $mentor->getUserIdentity(), $user, $localizer ),
+			'lastActive' => Mentorship::getMentorLastActive(
+				$mentor->getUserIdentity(), $user,
+				$localizer, $this->userEditTracker
+			),
 			'backAt' => $language->date(
 				$this->mentorStatusManager->getMentorBackTimestamp( $mentor->getUserIdentity() ) ?? ''
-			)
+			),
 		];
 	}
 
@@ -305,6 +251,10 @@ class HelpPanelHooks implements
 	 */
 	private static function getPreferredEditor( RL\Context $context, Config $config ): array {
 		$geServices = GrowthExperimentsServices::wrap( MediaWikiServices::getInstance() );
+		// Do not attempt to load task types and compute preferred editor when SE is disabled
+		if ( !$geServices->getFeatureManager()->isNewcomerTasksAvailable() ) {
+			return [];
+		}
 
 		// Hack - RL\Context is not exposed to services initialization
 		$validator = $geServices->getNewcomerTasksConfigurationValidator();

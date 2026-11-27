@@ -5,7 +5,8 @@
 			"Nemoralis",
 			"Serkanland",
 			"Verman1",
-			"Vesely35"
+			"Vesely35",
+			"Wertuose"
 		]
 	},
 	"growthexperiments-help-panel-tog-help-panel": "Redaktor köməkçisi panelini aç",
@@ -16,7 +17,7 @@
 	"growthexperiments-help-panel-editing-help-links-widget-header": "Redaktə etməklə bağlı ən yaxşı yardım səhifələri",
 	"growthexperiments-help-panel-editing-help-links-widget-view-more-link": "Daha çox kömək məqalələrinə bax",
 	"growthexperiments-help-panel-question-widget-header": "Sualını İcma Kömək Masasına göndər",
-	"growthexperiments-help-panel-question-placeholder": "Hərkəsi salamla və sualını {{GENDER:$1|ver}}",
+	"growthexperiments-help-panel-question-placeholder": "Hamını salamla və {{GENDER:$1|sualını}} ver",
 	"growthexperiments-help-panel-back-home": "Geriyə",
 	"growthexperiments-help-panel-close": "Oldu",
 	"growthexperiments-help-panel-home-title": "Redaktə üçün kömək al",
@@ -47,7 +48,7 @@
 	"growthexperiments-help-panel-postedit-trynewtask-subheader-tasktype": "Töhfəniz üçün təşəkkür edirik. Yeni redaktə növünü sınayın: <strong>$1</strong>",
 	"growthexperiments-help-panel-postedit-trynewtask-dontshowagain-checkbox": "Bir daha göstərmə",
 	"growthexperiments-help-panel-postedit-nonsuggested-header": "Tövsiyə olunan redaktəni sınayın",
-	"growthexperiments-help-panel-postedit-nonsuggested-body": "Təklif olunan redaktələr yeni redaktorlara {{SITENAME}} saytının ən yaxşı təcrübələrini öyrənməyə və əsas redaktə bacarıqlarını inkişaf etdirməyə kömək edir.",
+	"growthexperiments-help-panel-postedit-nonsuggested-body": "Təklif olunan redaktələr yeni redaktorlara {{GRAMMAR:yiyəlik|{{SITENAME}}}} ən yaxşı təcrübələrini öyrənməyə və əsas redaktə bacarıqlarını inkişaf etdirməyə kömək edir.",
 	"growthexperiments-help-panel-postedit-nonsuggested-try-button-text": "Tövsiyə olunan redaktələri sınayın",
 	"growthexperiments-help-panel-postedit-nonsuggested-nothanks-button-text": "Xeyr, təşəkkürlər",
 	"growthexperiments-help-panel-questionreview-title": "Kömək masasında soruş",

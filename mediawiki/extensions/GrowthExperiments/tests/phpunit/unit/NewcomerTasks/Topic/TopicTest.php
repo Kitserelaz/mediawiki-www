@@ -4,8 +4,8 @@ namespace GrowthExperiments\Tests\Unit;
 
 use GrowthExperiments\NewcomerTasks\Topic\Topic;
 use MediaWiki\Json\JsonCodec;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWikiUnitTestCase;
-use MessageLocalizer;
 
 /**
  * @covers \GrowthExperiments\NewcomerTasks\Topic\Topic
@@ -16,10 +16,9 @@ class TopicTest extends MediaWikiUnitTestCase {
 		$fakeContext = $this->getMockBuilder( MessageLocalizer::class )
 			->onlyMethods( [ 'msg' ] )
 			->getMockForAbstractClass();
-		$fakeContext->method( 'msg' )->willReturnCallback( function ( $id ) {
-			return $this->getMockMessage( $id );
-		} );
-		/** @var MessageLocalizer $fakeContext */
+		$fakeContext->method( 'msg' )->willReturnCallback(
+			fn ( $k, ...$p ) => $this->getMockMessage( $k, $p )
+		);
 
 		$topic = new Topic( 'foo' );
 		$this->assertSame( 'foo', $topic->getId() );
@@ -49,7 +48,7 @@ class TopicTest extends MediaWikiUnitTestCase {
 		// JsonCodec isn't stable to construct but there is not better way in a unit test.
 		$codec = new JsonCodec();
 		$topic = new Topic( 'foo', 'bar' );
-		$topic2 = $codec->unserialize( $codec->serialize( $topic ) );
+		$topic2 = $codec->deserialize( $codec->serialize( $topic ) );
 		$this->assertEquals( $topic, $topic2 );
 	}
 

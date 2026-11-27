@@ -13,10 +13,11 @@ class EditData {
 	private int $newcomerTaskEditCount;
 	private ?string $lastEditTimestamp;
 	private array $editedArticles;
+	private int $createdArticlesCount;
 
 	/**
-	 * @param int[] $editCountByNamespace Number of edits made by the user per namespace ID.
-	 * @param int[] $editCountByDay Number of article-space edits made by the user
+	 * @param array<int,int> $editCountByNamespace Number of edits made by the user per namespace ID.
+	 * @param array<string,int> $editCountByDay Number of article-space edits made by the user
 	 *   by day. The format matches {@see UserImpact::getEditCountByDay()}.
 	 * @param array<string,int> $editCountByTaskType Number of newcomer task edits per task type
 	 *  {@see UserImpact::getEditCountByTaskType()}.
@@ -27,6 +28,7 @@ class EditData {
 	 * @param array[] $editedArticles List of article-space titles the user has edited, sorted from
 	 *   most recently edited to least recently edited. Keyed by article title (in dbkey format),
 	 *   the value is an array with 'oldestEdit' and 'newestEdit' fields, each with an MW_TS date.
+	 * @param int $createdArticlesCount Count of article-space titles the user has created
 	 */
 	public function __construct(
 		array $editCountByNamespace,
@@ -35,21 +37,22 @@ class EditData {
 		int $revertedEditCount,
 		int $newcomerTaskEditCount,
 		?string $lastEditTimestamp,
-		array $editedArticles
+		array $editedArticles,
+		int $createdArticlesCount = 0
 	) {
 		$this->editCountByNamespace = $editCountByNamespace;
 		$this->editCountByDay = $editCountByDay;
-		$this->editCountByTaskType = $editCountByTaskType;
 		$this->revertedEditCount = $revertedEditCount;
 		$this->newcomerTaskEditCount = $newcomerTaskEditCount;
 		$this->lastEditTimestamp = $lastEditTimestamp;
 		$this->editedArticles = $editedArticles;
 		$this->editCountByTaskType = $editCountByTaskType;
+		$this->createdArticlesCount = $createdArticlesCount;
 	}
 
 	/**
 	 * Number of edits made by the user per namespace.
-	 * @return int[] Namespace ID => edit count.
+	 * @return array<int,int> Namespace ID => edit count.
 	 */
 	public function getEditCountByNamespace(): array {
 		return $this->editCountByNamespace;
@@ -58,7 +61,7 @@ class EditData {
 	/**
 	 * Number of article-space edits made by the user by day.
 	 * Days are interpreted according to the wiki's timezone default offset.
-	 * @return int[] Same as UserImpact::getEditCountByDay().
+	 * @return array<string,int> Same as UserImpact::getEditCountByDay().
 	 * @see $wgLocalTZoffset
 	 */
 	public function getEditCountByDay(): array {
@@ -68,7 +71,6 @@ class EditData {
 	/**
 	 * Number of total edits by the user that got reverted (determined
 	 * by the mw-reverted tag).
-	 * @return int
 	 */
 	public function getRevertedEditCount(): int {
 		return $this->revertedEditCount;
@@ -76,7 +78,6 @@ class EditData {
 
 	/**
 	 * Number of edits with "newcomer task" tag (suggested edits).
-	 * @return int
 	 */
 	public function getNewcomerTaskEditCount(): int {
 		return $this->newcomerTaskEditCount;
@@ -107,6 +108,15 @@ class EditData {
 	 */
 	public function getEditedArticles(): array {
 		return $this->editedArticles;
+	}
+
+	/**
+	 * Count of article-space titles the user has created.
+	 *
+	 * @return int
+	 */
+	public function getCreatedArticlesCount(): int {
+		return $this->createdArticlesCount;
 	}
 
 }

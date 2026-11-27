@@ -12,9 +12,9 @@ use GrowthExperiments\Specials\Forms\ManageMentorsAbstractForm;
 use GrowthExperiments\Specials\Forms\ManageMentorsAddMentor;
 use GrowthExperiments\Specials\Forms\ManageMentorsEditMentor;
 use GrowthExperiments\Specials\Forms\ManageMentorsRemoveMentor;
-use GrowthExperiments\Util;
 use LogicException;
 use MediaWiki\Config\Config;
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\Html\Html;
 use MediaWiki\Linker\Linker;
 use MediaWiki\SpecialPage\SpecialPage;
@@ -23,7 +23,6 @@ use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityLookup;
 use MediaWiki\Utils\MWTimestamp;
 use OOUI\ButtonWidget;
-use PermissionsError;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 class SpecialManageMentors extends SpecialPage {
@@ -36,15 +35,6 @@ class SpecialManageMentors extends SpecialPage {
 	private MentorRemover $mentorRemover;
 	private Config $wikiConfig;
 
-	/**
-	 * @param UserIdentityLookup $userIdentityLookup
-	 * @param UserEditTracker $userEditTracker
-	 * @param MentorProvider $mentorProvider
-	 * @param IMentorWriter $mentorWriter
-	 * @param MentorStatusManager $mentorStatusManager
-	 * @param MentorRemover $mentorRemover
-	 * @param Config $wikiConfig
-	 */
 	public function __construct(
 		UserIdentityLookup $userIdentityLookup,
 		UserEditTracker $userEditTracker,
@@ -77,16 +67,12 @@ class SpecialManageMentors extends SpecialPage {
 		return true;
 	}
 
-	/**
-	 * @return bool
-	 */
 	private function renderInReadOnlyMode(): bool {
 		return $this->including() ?? false;
 	}
 
 	/**
 	 * Can manage mentors?
-	 * @return bool
 	 */
 	private function canManageMentors(): bool {
 		return !$this->renderInReadOnlyMode() &&
@@ -100,15 +86,11 @@ class SpecialManageMentors extends SpecialPage {
 		return $this->msg( 'growthexperiments-manage-mentors-title' );
 	}
 
-	/**
-	 * @param UserIdentity $user
-	 * @return MWTimestamp
-	 */
 	private function getLastActiveTimestamp( UserIdentity $user ): MWTimestamp {
 		return new MWTimestamp( $this->userEditTracker->getLatestEditTimestamp( $user ) );
 	}
 
-	private function makeUserLink( UserIdentity $user ) {
+	private function makeUserLink( UserIdentity $user ): string {
 		return Linker::userLink(
 			$user->getId(),
 			$user->getName()
@@ -154,7 +136,7 @@ class SpecialManageMentors extends SpecialPage {
 					// FIXME use better custom message
 					$this->msg( 'blockedtitle' )->text(),
 					// XXX: is this the maximum on the frontend?
-					PHP_INT_MAX
+					PHP_INT_MAX,
 				];
 			case MentorStatusManager::AWAY_BECAUSE_TIMESTAMP:
 				$ts = $this->mentorStatusManager->getMentorBackTimestamp( $mentor->getUserIdentity() );
@@ -163,7 +145,7 @@ class SpecialManageMentors extends SpecialPage {
 						$this->msg( 'growthexperiments-manage-mentors-status-away-until' )
 							->params( $this->getLanguage()->userDate( $ts, $this->getUser() ) )
 							->text(),
-						(int)ConvertibleTimestamp::convert( TS_UNIX, $ts )
+						(int)ConvertibleTimestamp::convert( TS_UNIX, $ts ),
 					];
 				}
 				// if the reason is a timestamp, but we've got no timestamp, just pretend they are active
@@ -172,18 +154,13 @@ class SpecialManageMentors extends SpecialPage {
 				return [
 					$this->msg( 'growthexperiments-mentor-dashboard-mentor-tools-mentor-status-active' )
 						->text(),
-					-1
+					-1,
 				];
 			default:
 				throw new LogicException( "Reason for absence \"$reason\" is not supported" );
 		}
 	}
 
-	/**
-	 * @param Mentor $mentor
-	 * @param int $i
-	 * @return string
-	 */
 	private function getMentorAsHtmlRow( Mentor $mentor, int $i ): string {
 		[ $weightText, $weightRank ] = $this->formatWeight( $mentor );
 		[ $statusText, $statusRank ] = $this->formatStatus( $mentor );
@@ -206,22 +183,22 @@ class SpecialManageMentors extends SpecialPage {
 			Html::element( 'td', [], $mentor->getIntroText() ),
 		];
 		if ( $this->canManageMentors() ) {
-			$items[] = Html::rawElement( 'td', [], new ButtonWidget( [
+			$items[] = Html::rawElement( 'td', [], ( new ButtonWidget( [
 				'label' => $this->msg( 'growthexperiments-manage-mentors-edit' )->text(),
 				'href' => SpecialPage::getTitleFor(
 					'ManageMentors',
 					'edit-mentor/' . $mentor->getUserIdentity()->getId()
 				)->getLocalURL(),
 				'flags' => [ 'primary', 'progressive' ],
-			] ) );
-			$items[] = Html::rawElement( 'td', [], new ButtonWidget( [
+			] ) )->toString() );
+			$items[] = Html::rawElement( 'td', [], ( new ButtonWidget( [
 				'label' => $this->msg( 'growthexperiments-manage-mentors-remove-mentor' )->text(),
 				'href' => SpecialPage::getTitleFor(
 					'ManageMentors',
 					'remove-mentor/' . $mentor->getUserIdentity()->getId()
 				)->getLocalURL(),
-				'flags' => [ 'primary', 'destructive' ]
-			] ) );
+				'flags' => [ 'primary', 'destructive' ],
+			] ) )->toString() );
 		}
 
 		return Html::rawElement(
@@ -232,24 +209,21 @@ class SpecialManageMentors extends SpecialPage {
 	}
 
 	/**
-	 * @param string[] $mentorNames
+	 * @param UserIdentity[] $mentors
 	 * @return string
 	 */
-	private function getMentorsTableBody( array $mentorNames ): string {
+	private function getMentorsTableBody( array $mentors ): string {
 		// sort mentors alphabetically
-		sort( $mentorNames );
+		usort(
+			$mentors,
+			static fn ( UserIdentity $a, UserIdentity $b ) => $a->getName() <=> $b->getName()
+		);
 
 		$mentorsHtml = [];
 		$i = 1;
-		foreach ( $mentorNames as $mentorName ) {
-			$mentorUser = $this->userIdentityLookup->getUserIdentityByName( $mentorName );
-			if ( !$mentorUser ) {
-				// TODO: Log an error?
-				continue;
-			}
-
+		foreach ( $mentors as $mentor ) {
 			$mentorsHtml[] = $this->getMentorAsHtmlRow(
-				$this->mentorProvider->newMentorFromUserIdentity( $mentorUser ),
+				$this->mentorProvider->newMentorFromUserIdentity( $mentor ),
 				$i
 			);
 			$i++;
@@ -259,11 +233,11 @@ class SpecialManageMentors extends SpecialPage {
 	}
 
 	/**
-	 * @param string[] $mentorNames
+	 * @param UserIdentity[] $mentors
 	 * @return string
 	 */
-	private function getMentorsTable( array $mentorNames ): string {
-		if ( $mentorNames === [] ) {
+	private function getMentorsTable( array $mentors ): string {
+		if ( $mentors === [] ) {
 			return Html::element(
 				'p',
 				[],
@@ -317,7 +291,7 @@ class SpecialManageMentors extends SpecialPage {
 		return Html::rawElement(
 			'table',
 			[
-				'class' => 'wikitable sortable'
+				'class' => 'wikitable sortable',
 			],
 			implode( "\n", [
 				Html::rawElement(
@@ -332,8 +306,8 @@ class SpecialManageMentors extends SpecialPage {
 				Html::rawElement(
 					'tbody',
 					[],
-					$this->getMentorsTableBody( $mentorNames )
-				)
+					$this->getMentorsTableBody( $mentors )
+				),
 			] )
 		);
 	}
@@ -389,7 +363,7 @@ class SpecialManageMentors extends SpecialPage {
 
 		return [
 			$action,
-			$this->userIdentityLookup->getUserIdentityByUserId( $mentorUserId )
+			$this->userIdentityLookup->getUserIdentityByUserId( $mentorUserId ),
 		];
 	}
 
@@ -430,9 +404,8 @@ class SpecialManageMentors extends SpecialPage {
 	 * @return string Display HTML for the warning message.
 	 */
 	private function displayMentorshipWarningMessage(): string {
-		$configPage = Util::useCommunityConfiguration()
-			? SpecialPage::getTitleFor( 'CommunityConfiguration', 'Mentorship' )->getPrefixedText()
-			: SpecialPage::getTitleFor( 'EditGrowthConfig' )->getPrefixedText();
+		$configPage = SpecialPage::getTitleFor( 'CommunityConfiguration', 'Mentorship' )
+			->getPrefixedText();
 
 		return Html::warningBox(
 			$this->msg( 'growthexperiments-mentor-dashboard-mentorship-disabled-with-link' )
@@ -442,9 +415,6 @@ class SpecialManageMentors extends SpecialPage {
 		);
 	}
 
-	/**
-	 * @return string
-	 */
 	private function makePreHTML(): string {
 		if ( $this->including() ) {
 			// included version should only include the table
@@ -474,15 +444,11 @@ class SpecialManageMentors extends SpecialPage {
 					'p',
 					[],
 					$this->msg( 'growthexperiments-manage-mentors-pretext-to-enroll' )->parse()
-				)
+				),
 			] )
 		);
 	}
 
-	/**
-	 * @param string $text
-	 * @return string
-	 */
 	private function makeHeadlineElement( string $text ): string {
 		return Html::element(
 			$this->including() ? 'h3' : 'h2',

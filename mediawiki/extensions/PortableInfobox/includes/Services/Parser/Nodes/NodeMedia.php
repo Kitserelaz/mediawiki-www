@@ -37,10 +37,10 @@ class NodeMedia extends Node {
 
 	public static function getGalleryData( $marker ) {
 		$gallery = PortableInfoboxDataBag::getInstance()->getGallery( $marker );
-		return isset( $gallery ) ? array_map( static function ( $image ) {
+		return $gallery ? array_map( static function ( $image ) {
 			return [
 				'label' => $image[1],
-				'title' => $image[0]
+				'title' => $image[0],
 			];
 		}, $gallery->getimages() ) : [];
 	}
@@ -52,7 +52,7 @@ class NodeMedia extends Node {
 		$libXmlErrorSetting = libxml_use_internal_errors( true );
 
 		// encode for correct load
-		$doc->loadHTML( mb_convert_encoding( $html, 'HTML-ENTITIES', 'UTF-8' ) );
+		$doc->loadHTML( '<?xml encoding="UTF-8">' . $html );
 
 		libxml_clear_errors();
 		libxml_use_internal_errors( $libXmlErrorSetting );
@@ -71,13 +71,11 @@ class NodeMedia extends Node {
 	}
 
 	public function getData() {
-		if ( !isset( $this->data ) ) {
+		if ( $this->data === null ) {
 			$this->data = [];
 
 			// value passed to source parameter (or default)
 			$value = $this->getRawValueWithDefault( $this->xmlNode );
-			$helper = $this->getImageHelper();
-
 			if ( $this->containsTabberOrGallery( $value ) ) {
 				$this->data = $this->getImagesData( $value );
 			} else {
@@ -97,8 +95,8 @@ class NodeMedia extends Node {
 	 * @return bool
 	 */
 	private function containsTabberOrGallery( $str ) {
-		return !empty( self::getMarkers( $str, self::TABBER ) ) ||
-			!empty( self::getMarkers( $str, self::GALLERY ) );
+		return self::getMarkers( $str, self::TABBER ) ||
+			self::getMarkers( $str, self::GALLERY );
 	}
 
 	private function getImagesData( $value ) {
@@ -146,7 +144,7 @@ class NodeMedia extends Node {
 		$titleObj = $title instanceof Title ? $title : $this->getImageAsTitleObject( $title );
 		$fileObj = $helper->getFile( $titleObj );
 
-		if ( !isset( $fileObj ) || !$this->isTypeAllowed( $fileObj->getMediaType() ) ) {
+		if ( !$fileObj || !$this->isTypeAllowed( $fileObj->getMediaType() ) ) {
 			return [];
 		}
 
@@ -164,17 +162,20 @@ class NodeMedia extends Node {
 			'htmlAfter' => null,
 		];
 
-		if ( $titleObj instanceof Title ) {
-			// This call may produce extra HTML from, for example, the PageImages integration
-			$image['htmlAfter'] = $this->getExternalParser()->addImage( $titleObj );
-		}
-
 		if ( $image['isImage'] ) {
 			$image = array_merge( $image, $helper->extendImageData(
 				$fileObj,
 				PortableInfoboxRenderService::DEFAULT_DESKTOP_THUMBNAIL_WIDTH,
 				PortableInfoboxRenderService::DEFAULT_DESKTOP_INFOBOX_WIDTH
 			) );
+		}
+
+		if ( $titleObj instanceof Title ) {
+			// This call may produce extra HTML from, for example, the PageImages integration
+			$image['htmlAfter'] = $this->getExternalParser()->addImage( $titleObj, [
+				'width' => $image['width'] ?? null,
+				'height' => $image['height'] ?? null,
+			] );
 		}
 
 		return $image;
@@ -216,9 +217,7 @@ class NodeMedia extends Node {
 	}
 
 	protected function getImageHelper() {
-		if ( !isset( $this->helper ) ) {
-			$this->helper = new PortableInfoboxImagesHelper();
-		}
+		$this->helper ??= new PortableInfoboxImagesHelper();
 		return $this->helper;
 	}
 
@@ -262,8 +261,7 @@ class NodeMedia extends Node {
 	 */
 	protected function allowImage() {
 		$attr = $this->getXmlAttribute( $this->xmlNode, self::ALLOWIMAGE_ATTR_NAME );
-
-		return !( isset( $attr ) && strtolower( $attr ) === 'false' );
+		return !( $attr && strtolower( $attr ) === 'false' );
 	}
 
 	/**
@@ -271,8 +269,7 @@ class NodeMedia extends Node {
 	 */
 	protected function allowVideo() {
 		$attr = $this->getXmlAttribute( $this->xmlNode, self::ALLOWVIDEO_ATTR_NAME );
-
-		return !( isset( $attr ) && strtolower( $attr ) === 'false' );
+		return !( $attr && strtolower( $attr ) === 'false' );
 	}
 
 	/*
@@ -280,7 +277,6 @@ class NodeMedia extends Node {
 	 */
 	protected function allowAudio() {
 		$attr = $this->getXmlAttribute( $this->xmlNode, self::ALLOWAUDIO_ATTR_NAME );
-
-		return !( isset( $attr ) && strtolower( $attr ) === 'false' );
+		return !( $attr && strtolower( $attr ) === 'false' );
 	}
 }

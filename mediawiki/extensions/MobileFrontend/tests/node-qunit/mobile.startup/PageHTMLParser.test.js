@@ -14,7 +14,6 @@ let fixture,
 /* eslint-disable jsdoc/valid-types */
 /** @type {typeof import('../../../src/mobile.startup/Page')} */ let stubPage;
 /** @type {typeof import('../../../src/mobile.startup/Page')} */ let mobileTocPage;
-/** @type {typeof import('../../../src/mobile.startup/Page')} */ let desktopPage;
 /** @type {typeof import('../../../src/mobile.startup/Page')} */ let sectionPage;
 /* eslint-enable jsdoc/valid-types */
 
@@ -23,7 +22,7 @@ QUnit.module( 'MobileFrontend PageHTMLParser.js', {
 		if ( fixture ) {
 			fixture.remove();
 		}
-		sandbox = sinon.sandbox.create();
+		sandbox = sinon.createSandbox();
 		dom.setUp( sandbox, global );
 		mw.setUp( sandbox, global );
 		mustache.setUp( sandbox, global );
@@ -45,79 +44,91 @@ QUnit.module( 'MobileFrontend PageHTMLParser.js', {
 		);
 		mobileTocPage = new PageHTMLParser(
 			util.parseHTML( PARSER_OUTPUT ).html( `
-				<div class="mf-section-0">
+				<section class="mf-section-0">
 					<div class="ambox">a0</div>
 					<p>lead</p>
+				</section>
+				<div class="mw-heading section-heading">
+					<h2>1</h2>
 				</div>
-				<h2 class="section-heading">1</h2>
-				<div class="mf-section-1">
+				<section class="mf-section-1">
 					<div class="ambox">a1</div>
-					<h3>1.1</h3>
+					<div class="mw-heading">
+						<h3>1.1</h3>
+					</div>
 					<div class="ambox">a1.1</div>
-				</div>
-			` )
-		);
-		desktopPage = new PageHTMLParser(
-			util.parseHTML( PARSER_OUTPUT ).html( `
-				<p>lead</p>
-				<div class="ambox">a0</div>
-				<h2>1</h2>
-				<div class="ambox">a1</div>
-				<h3>1.1</h3>
-				<div class="ambox">a1.1</div>
+				</section>
 			` )
 		);
 		sectionPage = new PageHTMLParser(
 			util.parseHTML( PARSER_OUTPUT ).html( `
-				<div class="mf-section-0">
+				<section class="mf-section-0">
 					<p>lead</p>
 					<div class="ambox">a0</div>
+				</section>
+				<div class="mw-heading section-heading">
+					<h2>1</h2>
 				</div>
-
-				<h2 class="section-heading">1</h2>
-				<div class="mf-section-1">
+				<section class="mf-section-1">
 					<div class="ambox">a1</div>
-
-					<h3>1.1</h3>
+					<div class="mw-heading">
+						<h3>1.1</h3>
+					</div>
 					<div class="ambox">a1.1</div>
 
-					<h4>1.1.1</h4>
+					<div class="mw-heading">
+						<h4>1.1.1</h4>
+					</div>
 					<div class="ambox">a1.1.1</div>
 
-					<h4>1.1.2</h4>
+					<div class="mw-heading">
+						<h4>1.1.2</h4>
+					</div>
 					<div class="ambox">a1.1.2</div>
 
-					<h3>1.2</h3>
+					<div class="mw-heading">
+						<h3>1.2</h3>
+					</div>
 					<div class="ambox">a1.1</div>
+				</secttion>
+
+				<div class="mw-heading section-heading">
+					<h2>2</h2>
 				</div>
-
-				<h2 class="section-heading">2</h2>
-				<div class="mf-section-6"><div class="ambox">a2</div></div>
-
-				<h2 class="section-heading">3</h2>
-				<div class="mf-section-7"><div class="ambox">a3</div></div>
-
-				<h2 class="section-heading">Section with nested Ambox</h2>
-				<div class="mf-section-8">
+				<section class="mf-section-6"><div class="ambox">a2</div></section>
+				<div class="mw-heading section-heading">
+					<h2>3</h2>
+				</div>
+				<section class="mf-section-7">
+					<div class="ambox">a3</div>
+				</section>
+				<div class="mw-heading section-heading">
+					<h2>Section with nested Ambox</h2>
+				</div>
+				<section class="mf-section-8">
 					<div class="ambox">
 						<p>nested-ambox-parent,</p>
 						<div class="ambox">nested-ambox-1,</div>
 						<div class="ambox">nested-ambox-2</div>
 					</div>
-				</div>
+				</section>
 
-				<h2 class="section-heading">Sub-section with nested Ambox</h2>
-				<div class="mf-section-9">
+				<div class="mw-heading section-heading">
+					<h2>Sub-section with nested Ambox</h2>
+				</div>
+				<section class="mf-section-9">
 					<div class="ambox">
 						<p>nested-ambox-parent,</p>
 						<div class="ambox">nested-ambox-1,</div>
 						<div class="ambox">nested-ambox-2</div>
 					</div>
-
-					<h3>subsection heading</h3>
-
-					<h3>Another subsection heading</h3>
-				</div>
+					<div class="mw-heading">
+						<h3>subsection heading</h3>
+					</div>
+					<div class="mw-heading">
+						<h3>Another subsection heading</h3>
+					</div>
+				</section>
 			` ) // end .html()
 		); // end new Page();
 	},
@@ -127,32 +138,13 @@ QUnit.module( 'MobileFrontend PageHTMLParser.js', {
 	}
 } );
 
-QUnit.test( '#findInSectionLead', function ( assert ) {
-	// check desktop page
-	[
-		[ 0, 'a0', 'lead section' ],
-		[ 1, 'a1', 'h2' ],
-		[ 2, 'a1.1', 'h3' ],
-		[ 3, '', 'h4', 'selector does not match', '.foo' ],
-		[ 111, '', 'Non-existent section' ]
-	].forEach( function ( params, i ) {
-		const
-			section = params[0],
-			expect = params[1],
-			test = params[2],
-			selector = params[3] || '.ambox';
-		assert.strictEqual(
-			desktopPage.findChildInSectionLead( section, selector ).text(),
-			expect,
-			'Found correct text in desktop test ' + i + ' case: ' + test
-		);
-	} );
+QUnit.test( '#findInSectionLead', ( assert ) => {
 	// check stub
 	[
 		[ 0, 'a0', 'lead section' ],
 		[ 3, '', 'h4', 'selector does not match', '.foo' ],
 		[ 111, '', 'Non-existent section' ]
-	].forEach( function ( testcase ) {
+	].forEach( ( testcase ) => {
 		assert.strictEqual(
 			stubPage.findChildInSectionLead( testcase[0], testcase[3] || '.ambox' ).text(),
 			testcase[1],
@@ -168,7 +160,7 @@ QUnit.test( '#findInSectionLead', function ( assert ) {
 		[ 3, '', 'h4', 'selector does not match', '.foo' ],
 		[ 7, 'a3', 'h2 later' ],
 		[ 111, '', 'Non-existent section' ]
-	].forEach( function ( testcase ) {
+	].forEach( ( testcase ) => {
 		assert.strictEqual(
 			sectionPage.findChildInSectionLead( testcase[0], testcase[3] || '.ambox' ).text(),
 			testcase[1],
@@ -180,7 +172,7 @@ QUnit.test( '#findInSectionLead', function ( assert ) {
 		[ 1, 'a1', 'h2' ],
 		[ 2, 'a1.1', 'h3' ],
 		[ 111, '', 'Non-existent section' ]
-	].forEach( function ( testcase ) {
+	].forEach( ( testcase ) => {
 		assert.strictEqual(
 			mobileTocPage.findChildInSectionLead( testcase[0], testcase[3] || '.ambox' ).text(),
 			testcase[1],
@@ -191,7 +183,7 @@ QUnit.test( '#findInSectionLead', function ( assert ) {
 	[
 		[ 8, '.ambox', /[\s]*nested-ambox-parent,[\s]*nested-ambox-1,\s*nested-ambox-2[\s]*/, 'Nested elements in section' ],
 		[ 9, '.ambox', /[\s]*nested-ambox-parent,[\s]*nested-ambox-1,[\s]*nested-ambox-2[\s]*/, 'Nested elements in subsection' ]
-	].forEach( function ( testcase ) {
+	].forEach( ( testcase ) => {
 		const result = sectionPage.findChildInSectionLead( testcase[0], testcase[1] );
 		sinon.assert.match(
 			result.not( result.children() ).text(),
@@ -201,7 +193,7 @@ QUnit.test( '#findInSectionLead', function ( assert ) {
 
 } );
 
-QUnit.test( '#getThumbnail', function ( assert ) {
+QUnit.test( '#getThumbnail', ( assert ) => {
 	// Valid anchor.
 	const $container = util.parseHTML( '<div><a href="/wiki/File:Design_portal_logo.jpg" class="image"><span class="lazy-image-placeholder" style="width: 28px;height: 28px;" data-src="//upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Design_portal_logo.jpg/28px-Design_portal_logo.jpg" data-alt="icon" data-width="28" data-height="28" data-class="thumbimage">&nbsp;</span></a></div>' );
 	const parser = new PageHTMLParser( $container );
@@ -216,8 +208,8 @@ QUnit.test( '#getThumbnail', function ( assert ) {
 	assert.notStrictEqual( thumbUseLang, null, 'Thumbnail found if valid.' );
 	assert.strictEqual( thumbUseLang.getFileName(), 'File:Design_portal_logo.jpg', 'Thumbnail found if valid.' );
 
-	// Valid anchor with legacy URL
-	const $containerLegacy = util.parseHTML( '<div><a href="/w/index.php?debug=1&title=File:Design_portal_logo.jpg&uselang=fa" class="image"><span class="lazy-image-placeholder" style="width: 28px;height: 28px;" data-src="//upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Design_portal_logo.jpg/28px-Design_portal_logo.jpg" data-alt="icon" data-width="28" data-height="28" data-class="thumbimage">&nbsp;</span></a></div>' );
+	// Valid anchor with index.php URL
+	const $containerLegacy = util.parseHTML( '<div><a href="/w/index.php?title=File:Design_portal_logo.jpg&uselang=fa" class="image"><span class="lazy-image-placeholder" style="width: 28px;height: 28px;" data-src="//upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Design_portal_logo.jpg/28px-Design_portal_logo.jpg" data-alt="icon" data-width="28" data-height="28" data-class="thumbimage">&nbsp;</span></a></div>' );
 	const parserLegacy = new PageHTMLParser( $containerLegacy );
 	const thumbLegacy = parserLegacy.getThumbnail( $containerLegacy.find( PageHTMLParser.THUMB_SELECTOR ) );
 	assert.notStrictEqual( thumbLegacy, null, 'Thumbnail found if valid.' );
@@ -232,7 +224,7 @@ QUnit.test( '#getThumbnail', function ( assert ) {
 	assert.strictEqual( thumbMetadata, null, 'Thumbnail not found if invalid.' );
 } );
 
-QUnit.test( '#getThumbnails', function ( assert ) {
+QUnit.test( '#getThumbnails', ( assert ) => {
 	let thumbs;
 	const p = new PageHTMLParser(
 		util.parseHTML( '<div><a href="/wiki/File:Cyanolimnas_cerverai_by_Allan_Brooks_cropped.jpg" class="image view-border-box"><img alt="Cyanolimnas cerverai by Allan Brooks cropped.jpg" src="//upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Cyanolimnas_cerverai_by_Allan_Brooks_cropped.jpg/300px-Cyanolimnas_cerverai_by_Allan_Brooks_cropped.jpg" width="300" height="303" data-file-width="454" data-file-height="459"></a></div>' )
@@ -298,13 +290,16 @@ QUnit.test( '#getThumbnails', function ( assert ) {
 		'Thumbnail found if there is a typo.' );
 } );
 
-QUnit.test( '#getLanguages', function ( assert ) {
+QUnit.test( '#getLanguages', ( assert ) => {
 	const html = `<div id="p-lang">
 		<h4>Languages</h4>
 		<section>
 			<ul class="minerva-languages">
 				<li class="interlanguage-link interwiki-fr mw-list-item">
-					<a href="https://fr.wikipedia.org/wiki/Tyrannosaurus" title="Tyrannosaurus – French"
+					<a href="https://fr.wikipedia.org/wiki/Tyrannosaurus"
+						data-title="Tyrannosaurus"
+						data-language-local-name="French"
+						title="Tyrannosaurus – French"
 						lang="fr" hreflang="fr" class="interlanguage-link-target"><span>Français</span></a>
 				</li>
 			</ul>
@@ -322,13 +317,15 @@ QUnit.test( '#getLanguages', function ( assert ) {
 	assert.strictEqual( langs.languages[ 0 ].autonym, 'Français', 'Expected autonym' );
 } );
 
-QUnit.test( '#getLanguages (no hyphen)', function ( assert ) {
+QUnit.test( '#getLanguages (no hyphen)', ( assert ) => {
 	const html = `<div id="p-lang">
 		<h4>Languages</h4>
 		<section>
 			<ul class="minerva-languages">
 				<li class="interlanguage-link interwiki-fr mw-list-item">
-					<a href="https://fr.wikipedia.org/wiki/Tyrannosaurus" title="Tyrannosaurus"
+					<a href="https://fr.wikipedia.org/wiki/Tyrannosaurus"
+						data-title="Tyrannosaurus"
+						title="Tyrannosaurus"
 						lang="fr" hreflang="fr" class="interlanguage-link-target"><span>Français</span></a>
 				</li>
 			</ul>
@@ -346,7 +343,7 @@ QUnit.test( '#getLanguages (no hyphen)', function ( assert ) {
 	assert.strictEqual( langs.languages[ 0 ].langname, 'Français', 'Language falls back to autonym when not available' );
 } );
 
-QUnit.test( '#getLanguages (T349000)', function ( assert ) {
+QUnit.test( '#getLanguages (T349000)', ( assert ) => {
 	const html = `<div id="p-lang">
 		<h4>Languages</h4>
 		<section>
@@ -361,7 +358,11 @@ QUnit.test( '#getLanguages (T349000)', function ( assert ) {
 			  <li class="interlanguage-link "><a href="https://da.wikipedia.org/wiki/Mission:_Impossible_%E2%80%93_Dead_Reckoning_Part_One" title="Mission: Impossible – Dead Reckoning Part One – Danish" lang="da" hreflang="da" class="interlanguage-link-target"><span>Dansk</span></a></li>
 			  <li class="interlanguage-link "><a href="https://de.wikipedia.org/wiki/Mission:_Impossible_%E2%80%93_Dead_Reckoning_Teil_Eins" title="Mission: Impossible – Dead Reckoning Teil Eins – German" lang="de" hreflang="de" class="interlanguage-link-target"><span>Deutsch</span></a></li>
 			  <li class="interlanguage-link "><a href="https://el.wikipedia.org/wiki/%CE%95%CF%80%CE%B9%CE%BA%CE%AF%CE%BD%CE%B4%CF%85%CE%BD%CE%B7_%CE%91%CF%80%CE%BF%CF%83%CF%84%CE%BF%CE%BB%CE%AE:_%CE%98%CE%B1%CE%BD%CE%AC%CF%83%CE%B9%CE%BC%CE%B7_%CE%95%CE%BA%CE%B4%CE%AF%CE%BA%CE%B7%CF%83%CE%B7_%E2%80%93_%CE%9C%CE%AD%CF%81%CE%BF%CF%82_%CE%A0%CF%81%CF%8E%CF%84%CE%BF" title="Επικίνδυνη Αποστολή: Θανάσιμη Εκδίκηση – Μέρος Πρώτο – Greek" lang="el" hreflang="el" class="interlanguage-link-target"><span>Ελληνικά</span></a></li>
-			  <li class="interlanguage-link "><a href="https://en.wikipedia.org/wiki/Mission:_Impossible_%E2%80%93_Dead_Reckoning_Part_One" title="Mission: Impossible – Dead Reckoning Part One – English" lang="en" hreflang="en" class="interlanguage-link-target"><span>English</span></a></li>
+			  <li class="interlanguage-link "><a href="https://en.wikipedia.org/wiki/Mission:_Impossible_%E2%80%93_Dead_Reckoning_Part_One"
+			  	data-title="Mission: Impossible – Dead Reckoning Part One"
+				title="Mission: Impossible – Dead Reckoning Part One – English"
+				lang="en" hreflang="en"
+				class="interlanguage-link-target"><span>English</span></a></li>
 			  <li class="interlanguage-link "><a href="https://es.wikipedia.org/wiki/Misi%C3%B3n_imposible:_sentencia_mortal_-_Parte_1" title="Misión imposible: sentencia mortal - Parte 1 – Spanish" lang="es" hreflang="es" class="interlanguage-link-target"><span>Español</span></a></li>
 			  <li class="interlanguage-link "><a href="https://fa.wikipedia.org/wiki/%D9%85%D8%A3%D9%85%D9%88%D8%B1%DB%8C%D8%AA:_%D8%BA%DB%8C%D8%B1%D9%85%D9%85%DA%A9%D9%86_%E2%80%93_%D8%B1%D9%88%D8%B2%D8%B4%D9%85%D8%A7%D8%B1_%D9%85%D8%B1%DA%AF_%D9%82%D8%B3%D9%85%D8%AA_%D8%A7%D9%88%D9%84" title="مأموریت: غیرممکن – روزشمار مرگ قسمت اول – Persian" lang="fa" hreflang="fa" class="interlanguage-link-target"><span>فارسی</span></a></li>
 			  <li class="interlanguage-link "><a href="https://fi.wikipedia.org/wiki/Mission:_Impossible_%E2%80%93_Dead_Reckoning_Part_One" title="Mission: Impossible – Dead Reckoning Part One – Finnish" lang="fi" hreflang="fi" class="interlanguage-link-target"><span>Suomi</span></a></li>
@@ -403,6 +404,7 @@ QUnit.test( '#getLanguages (T349000)', function ( assert ) {
 	assert.strictEqual( langs.variants.length, 0, 'Expected variants' );
 	assert.strictEqual(
 		langs.languages.filter( ( lang ) => lang.lang === 'en' )[ 0 ].title,
-		'Mission: Impossible – Dead Reckoning Part One', 'Check the English title'
+		'Mission: Impossible – Dead Reckoning Part One',
+		'Check the English title'
 	);
 } );

@@ -2,11 +2,11 @@
 
 namespace GrowthExperiments\MentorDashboard;
 
-use ChangeTags;
 use GrowthExperiments\HomepageModules\Mentorship;
 use GrowthExperiments\MentorDashboard\MenteeOverview\MenteeOverviewDataUpdater;
 use GrowthExperiments\MentorDashboard\MenteeOverview\StarredMenteesStore;
 use GrowthExperiments\MentorDashboard\Modules\MenteeOverview;
+use MediaWiki\ChangeTags\ChangeTags;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
 use MediaWiki\ResourceLoader\Context;
@@ -50,7 +50,7 @@ class MentorDashboardHooks implements
 				'filters' => [
 					'minedits' => 1,
 					'maxedits' => 500,
-				]
+				],
 			] ),
 		];
 	}
@@ -78,8 +78,8 @@ class MentorDashboardHooks implements
 			'reverted' => [ ChangeTags::TAG_REVERTED ],
 			'questions' => [
 				Mentorship::MENTORSHIP_HELPPANEL_QUESTION_TAG,
-				Mentorship::MENTORSHIP_MODULE_QUESTION_TAG
-			]
+				Mentorship::MENTORSHIP_MODULE_QUESTION_TAG,
+			],
 		];
 	}
 }

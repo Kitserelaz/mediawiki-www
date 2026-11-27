@@ -1,19 +1,14 @@
 <?php
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use InvalidArgumentException;
 use MediaWiki\Message\Message;
 
 /**
  * A class with validation state that wraps each accessed value in the JCObjContent::validationData
- * @package JsonConfig
  */
 final class JCValue {
 
-	/** @var int */
-	private $status;
-	/** @var mixed */
-	private $value;
 	/** @var bool|null */
 	private $sameAsDefault = false;
 	/** @var bool|null */
@@ -33,13 +28,10 @@ final class JCValue {
 	/** field was not explicitly tested, but it was listed as a parent of one of the tested fields */
 	public const VISITED = 3;
 
-	/**
-	 * @param int $status
-	 * @param mixed $value
-	 */
-	public function __construct( $status, $value ) {
-		$this->status = $status;
-		$this->value = $value;
+	public function __construct(
+		private int $status,
+		private mixed $value,
+	) {
 	}
 
 	/** @return mixed */
@@ -47,6 +39,10 @@ final class JCValue {
 		return $this->value;
 	}
 
+	/**
+	 * @param mixed $value
+	 * @param int|null $status
+	 */
 	public function setValue( $value, $status = null ) {
 		$this->value = $value;
 		if ( $status !== null ) {
@@ -58,6 +54,10 @@ final class JCValue {
 		}
 	}
 
+	/**
+	 * @param int|null $status
+	 * @return int|null
+	 */
 	public function status( $status = null ) {
 		$val = $this->status;
 		if ( $status !== null ) {
@@ -66,6 +66,10 @@ final class JCValue {
 		return $val;
 	}
 
+	/**
+	 * @param bool|null $sameAsDefault
+	 * @return bool|null
+	 */
 	public function sameAsDefault( $sameAsDefault = null ) {
 		$val = $this->sameAsDefault;
 		if ( $sameAsDefault !== null ) {
@@ -74,6 +78,10 @@ final class JCValue {
 		return $val;
 	}
 
+	/**
+	 * @param bool|null $defaultUsed
+	 * @return bool|null
+	 */
 	public function defaultUsed( $defaultUsed = null ) {
 		$val = $this->defaultUsed;
 		if ( $defaultUsed !== null ) {
@@ -82,10 +90,16 @@ final class JCValue {
 		return $val;
 	}
 
+	/**
+	 * @return bool
+	 */
 	public function isMissing() {
 		return $this->status === self::MISSING;
 	}
 
+	/**
+	 * @return bool
+	 */
 	public function isUnchecked() {
 		return $this->status === self::UNCHECKED;
 	}
@@ -101,13 +115,11 @@ final class JCValue {
 		if ( is_bool( $key ) ) {
 			$this->error = $key;
 		} elseif ( $key !== null ) {
-			$args = func_get_args();
 			if ( is_array( $fieldPath ) ) {
 				// Convert field path to a printable string
-				$args[1] = JCUtils::fieldPathToString( $fieldPath );
+				$fieldPath = JCUtils::fieldPathToString( $fieldPath );
 			}
-			// @phan-suppress-next-line PhanParamTooFewUnpack
-			$this->error = wfMessage( ...$args );
+			$this->error = wfMessage( $key, $fieldPath ?? '', ...$params );
 		}
 		return $this->error;
 	}
@@ -174,3 +186,6 @@ final class JCValue {
 		throw new InvalidArgumentException( 'Type mismatch for field ' . $fld );
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCValue::class, 'JsonConfig\\JCValue' );

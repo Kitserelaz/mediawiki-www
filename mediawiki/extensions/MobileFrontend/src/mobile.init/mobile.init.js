@@ -2,16 +2,13 @@
 // (see https://bugzilla.wikimedia.org/show_bug.cgi?id=44264)
 /**
  * mobileFrontend namespace
+ *
  * @private
  */
 let url;
 
 const
 	toggling = require( './toggling' ),
-	FONT_SIZE_KEY = 'mf-font-size',
-	SECTION_COLLAPSING_TOGGLE = 'mf-expand-sections',
-	storage = mw.storage,
-	api = new mw.Api(),
 	lazyLoadedImages = require( './lazyLoadedImages' ),
 	editor = require( './editor' ),
 	currentPage = require( '../mobile.startup/currentPage' )(),
@@ -59,18 +56,18 @@ function apply2( fn1, fn2 ) {
 
 $window
 	.on( 'resize', apply2(
-		mw.util.debounce( function () {
+		mw.util.debounce( () => {
 			eventBus.emit( 'resize' );
 		}, 100 ),
-		mw.util.throttle( function () {
+		mw.util.throttle( () => {
 			eventBus.emit( 'resize:throttled' );
 		}, 200 )
 	) )
 	.on( 'scroll', apply2(
-		mw.util.debounce( function () {
+		mw.util.debounce( () => {
 			eventBus.emit( 'scroll' );
 		}, 100 ),
-		mw.util.throttle( function () {
+		mw.util.throttle( () => {
 			eventBus.emit( 'scroll:throttled' );
 		}, 200 )
 	) );
@@ -99,34 +96,6 @@ if ( window.console && window.console.log && window.console.log.apply &&
 }
 /* eslint-enable no-console */
 
-// Setup editor, if supported for the current page view
-if ( mw.config.get( 'wgMFIsSupportedEditRequest' ) ) {
-	editor( currentPage, currentPageHTMLParser, skin );
-}
-
-function migrateXLargeToLarge() {
-	if ( document.documentElement.classList.contains( 'mf-font-size-clientpref-xlarge' ) ) {
-		if ( mw.user.isAnon() ) {
-			mw.user.clientPrefs.set( FONT_SIZE_KEY, 'large' );
-		} else {
-			api.saveOption( FONT_SIZE_KEY, 'large' );
-		}
-	}
-}
-
-function migrateLegacyExpandAllSectionsToggle() {
-	const currentValue = mw.storage.get( 'expandSections' );
-	if ( currentValue ) {
-		if ( mw.user.isAnon() ) {
-			mw.user.clientPrefs.set( SECTION_COLLAPSING_TOGGLE, '1' );
-		} else {
-			api.saveOption( SECTION_COLLAPSING_TOGGLE, '1' );
-		}
-		storage.remove( 'expandSections' );
-	}
-}
-
-migrateXLargeToLarge();
-migrateLegacyExpandAllSectionsToggle();
+editor( currentPage, currentPageHTMLParser, skin );
 toggling();
 lazyLoadedImages();

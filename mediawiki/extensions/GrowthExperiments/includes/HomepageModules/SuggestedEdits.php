@@ -2,13 +2,12 @@
 
 namespace GrowthExperiments\HomepageModules;
 
-use GrowthExperiments\ExperimentUserManager;
+use GrowthExperiments\FeatureManager;
 use GrowthExperiments\HomepageModules\SuggestedEditsComponents\CardWrapper;
 use GrowthExperiments\HomepageModules\SuggestedEditsComponents\NavigationWidgetFactory;
 use GrowthExperiments\HomepageModules\SuggestedEditsComponents\TaskExplanationWidget;
 use GrowthExperiments\NewcomerTasks\CampaignConfig;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
-use GrowthExperiments\NewcomerTasks\ConfigurationLoader\PageConfigurationLoader;
 use GrowthExperiments\NewcomerTasks\ImageRecommendationFilter;
 use GrowthExperiments\NewcomerTasks\LinkRecommendationFilter;
 use GrowthExperiments\NewcomerTasks\NewcomerTasksUserOptionsLookup;
@@ -18,31 +17,35 @@ use GrowthExperiments\NewcomerTasks\Task\TaskSetFilters;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\SearchStrategy\SearchStrategy;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\TaskSuggester;
 use GrowthExperiments\NewcomerTasks\TaskType\ImageRecommendationBaseTaskType;
+use GrowthExperiments\NewcomerTasks\TaskType\ReviseToneTaskTypeHandler;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
+use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeManager;
+use GrowthExperiments\NewcomerTasks\Topic\ITopicRegistry;
 use GrowthExperiments\NewcomerTasks\Topic\Topic;
-use GrowthExperiments\Util;
-use Liuggio\StatsdClient\Factory\StatsdDataFactoryInterface;
+use InvalidArgumentException;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Extension\PageViewInfo\PageViewService;
 use MediaWiki\Html\Html;
 use MediaWiki\Logger\LoggerFactory;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\Message\Message;
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\Options\UserOptionsManager;
 use MediaWiki\User\UserIdentity;
+use MediaWiki\WikiMap\WikiMap;
 use OOUI\ButtonGroupWidget;
 use OOUI\ButtonWidget;
-use OOUI\Exception;
 use OOUI\HtmlSnippet;
 use OOUI\IconWidget;
 use OOUI\Tag;
 use RuntimeException;
 use StatusValue;
 use Wikimedia\Message\MessageParam;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * Homepage module that displays a list of recommended tasks.
@@ -58,23 +61,21 @@ class SuggestedEdits extends BaseModule {
 	public const ACTIVATED_PREF = 'growthexperiments-homepage-suggestededits-activated';
 	/** User preference to track that suggested edits were enabled this user automatically on signup. Not used. */
 	public const PREACTIVATED_PREF = 'growthexperiments-homepage-suggestededits-preactivated';
-	/** User preference used to remember the user's topic selection, when using morelike topics. */
-	public const TOPICS_PREF = 'growthexperiments-homepage-se-topic-filters';
 	/** User preference used to remember the user's topic selection, when using ORES topics. */
 	public const TOPICS_ORES_PREF = 'growthexperiments-homepage-se-ores-topic-filters';
 	/** User preference used to remember the user's topic mode selection, when using any type of topics. */
 	public const TOPICS_MATCH_MODE_PREF = 'growthexperiments-homepage-se-topic-filters-mode';
 	/** User preference used to remember the user's task type selection. */
 	public const TASKTYPES_PREF = 'growthexperiments-homepage-se-filters';
-	/** User preference for opting into guidance, when $wgGENewcomerTasksGuidanceRequiresOptIn is true. */
-	public const GUIDANCE_ENABLED_PREF = 'growthexperiments-guidance-enabled';
 	/**
 	 * Default value for TASKTYPES_PREF.
 	 *
 	 * Depending on whether link recommendations are available for the wiki, either 'links' or 'link-recommendation'
 	 * will be shown, see NewcomerTasksUserOptionsLookup::getTaskTypeFilter().
+	 *
+	 * Access this via self::getDefaultTaskTypes
 	 */
-	public const DEFAULT_TASK_TYPES = [ 'copyedit', 'links', 'link-recommendation' ];
+	private const DEFAULT_TASK_TYPES = [ 'copyedit', 'links', 'link-recommendation' ];
 
 	/**
 	 * Used to keep track of the state of user interactions with suggested edits per type per skin.
@@ -92,6 +93,11 @@ class SuggestedEdits extends BaseModule {
 	 * Used to keep track of the whether the user has opted out of seeing Add an Image onboarding
 	 */
 	public const ADD_IMAGE_ONBOARDING_PREF = 'growthexperiments-addimage-onboarding';
+
+	/**
+	 * Used to keep track of the whether the user has opted out of seeing Revise Tone onboarding
+	 */
+	public const REVISE_TONE_ONBOARDING_PREF = 'growthexperiments-revisetone-onboarding';
 
 	/**
 	 * Used to keep track of the whether the user has opted out of seeing onboarding for
@@ -130,7 +136,7 @@ class SuggestedEdits extends BaseModule {
 
 	private ButtonGroupWidget $buttonGroupWidget;
 
-	private UserOptionsLookup $userOptionsLookup;
+	private UserOptionsManager $userOptionsManager;
 
 	private ?NavigationWidgetFactory $navigationWidgetFactory = null;
 
@@ -140,51 +146,67 @@ class SuggestedEdits extends BaseModule {
 
 	private CampaignConfig $campaignConfig;
 
-	private StatsdDataFactoryInterface $perDbNameStatsdDataFactory;
+	private StatsFactory $statsFactory;
+	private ITopicRegistry $topicRegistry;
+	private TaskTypeManager $taskTypeManager;
 
 	/**
 	 * @param IContextSource $context
 	 * @param Config $wikiConfig
 	 * @param CampaignConfig $campaignConfig
-	 * @param ExperimentUserManager $experimentUserManager
+	 * @param FeatureManager $featureManager
 	 * @param PageViewService|null $pageViewService
 	 * @param ConfigurationLoader $configurationLoader
 	 * @param NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup
 	 * @param TaskSuggester $taskSuggester
 	 * @param TitleFactory $titleFactory
 	 * @param ProtectionFilter $protectionFilter
-	 * @param UserOptionsLookup $userOptionsLookup
+	 * @param UserOptionsManager $userOptionsManager
 	 * @param LinkRecommendationFilter $linkRecommendationFilter
 	 * @param ImageRecommendationFilter $imageRecommendationFilter
+	 * @param StatsFactory $statsFactory
+	 * @param ITopicRegistry $topicRegistry
 	 */
 	public function __construct(
 		IContextSource $context,
 		Config $wikiConfig,
 		CampaignConfig $campaignConfig,
-		ExperimentUserManager $experimentUserManager,
+		private readonly FeatureManager $featureManager,
 		?PageViewService $pageViewService,
 		ConfigurationLoader $configurationLoader,
 		NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup,
 		TaskSuggester $taskSuggester,
 		TitleFactory $titleFactory,
 		ProtectionFilter $protectionFilter,
-		UserOptionsLookup $userOptionsLookup,
+		UserOptionsManager $userOptionsManager,
 		LinkRecommendationFilter $linkRecommendationFilter,
 		ImageRecommendationFilter $imageRecommendationFilter,
-		StatsdDataFactoryInterface $perDbNameStatsdDataFactory
+		StatsFactory $statsFactory,
+		ITopicRegistry $topicRegistry,
+		TaskTypeManager $taskTypeManager
 	) {
-		parent::__construct( 'suggested-edits', $context, $wikiConfig, $experimentUserManager );
+		parent::__construct( 'suggested-edits', $context, $wikiConfig );
 		$this->pageViewService = $pageViewService;
 		$this->configurationLoader = $configurationLoader;
 		$this->newcomerTasksUserOptionsLookup = $newcomerTasksUserOptionsLookup;
 		$this->taskSuggester = $taskSuggester;
 		$this->titleFactory = $titleFactory;
 		$this->protectionFilter = $protectionFilter;
-		$this->userOptionsLookup = $userOptionsLookup;
+		$this->userOptionsManager = $userOptionsManager;
 		$this->linkRecommendationFilter = $linkRecommendationFilter;
 		$this->imageRecommendationFilter = $imageRecommendationFilter;
 		$this->campaignConfig = $campaignConfig;
-		$this->perDbNameStatsdDataFactory = $perDbNameStatsdDataFactory;
+		$this->statsFactory = $statsFactory;
+		$this->topicRegistry = $topicRegistry;
+		$this->taskTypeManager = $taskTypeManager;
+	}
+
+	public static function getDefaultTaskTypes( Config $mainConfig ): array {
+		$defaultTasks = self::DEFAULT_TASK_TYPES;
+		if ( $mainConfig->get( 'GEReviseToneSuggestedEditEnabled' ) ) {
+			$defaultTasks[] = ReviseToneTaskTypeHandler::TASK_TYPE_ID;
+		}
+		return $defaultTasks;
 	}
 
 	/** @inheritDoc */
@@ -231,19 +253,10 @@ class SuggestedEdits extends BaseModule {
 		return $config->get( 'GEHomepageSuggestedEditsEnabled' );
 	}
 
-	/**
-	 * Check whether the suggested edits feature is enabled according to the configuration.
-	 * @param Config $config
-	 * @return bool
-	 */
-	public static function isEnabled( Config $config ): bool {
-		return self::isEnabledForAnyone( $config );
-	}
-
 	/** @inheritDoc */
 	public function getCssClasses() {
 		return array_merge( parent::getCssClasses(),
-			$this->userOptionsLookup->getOption( $this->getContext()->getUser(), self::ACTIVATED_PREF ) ?
+			$this->userOptionsManager->getOption( $this->getContext()->getUser(), self::ACTIVATED_PREF ) ?
 				[ 'activated' ] :
 				[ 'unactivated' ]
 		);
@@ -261,8 +274,9 @@ class SuggestedEdits extends BaseModule {
 		IContextSource $context,
 		UserOptionsLookup $userOptionsLookup
 	) {
-		return self::isEnabled( $context->getConfig() ) &&
-			$context->getConfig()->get( 'GEHomepageSuggestedEditsEnableTopics' );
+		return self::isEnabledForAnyone( $context->getConfig() ) &&
+			$context->getConfig()->get( 'GEHomepageSuggestedEditsEnableTopics' ) &&
+			ExtensionRegistry::getInstance()->isLoaded( 'WikimediaMessages' );
 	}
 
 	/**
@@ -282,42 +296,6 @@ class SuggestedEdits extends BaseModule {
 				$context->getUser(),
 				'growth-glam-2022'
 			);
-	}
-
-	/**
-	 * Get the name of the preference to use for storing topic filters.
-	 * @param Config $config
-	 * @return string
-	 */
-	public static function getTopicFiltersPref( Config $config ) {
-		$topicType = $config->get( 'GENewcomerTasksTopicType' );
-		if ( $topicType === PageConfigurationLoader::CONFIGURATION_TYPE_ORES ) {
-			return self::TOPICS_ORES_PREF;
-		}
-		return self::TOPICS_PREF;
-	}
-
-	/**
-	 * Check if guidance feature is enabled for suggested edits.
-	 *
-	 * @param IContextSource $context
-	 * @return bool
-	 */
-	public static function isGuidanceEnabledForAnyone( IContextSource $context ): bool {
-		return $context->getConfig()->get( 'GENewcomerTasksGuidanceEnabled' );
-	}
-
-	/**
-	 * Check if guidance feature is enabled for suggested edits.
-	 *
-	 * @param IContextSource $context
-	 * @return bool
-	 */
-	public static function isGuidanceEnabled( IContextSource $context ): bool {
-		$userOptionsLookup = MediaWikiServices::getInstance()->getUserOptionsLookup();
-		return self::isGuidanceEnabledForAnyone( $context ) && (
-			!$context->getConfig()->get( 'GENewcomerTasksGuidanceRequiresOptIn' ) ||
-			$userOptionsLookup->getBoolOption( $context->getUser(), self::GUIDANCE_ENABLED_PREF ) );
 	}
 
 	/** @inheritDoc */
@@ -343,18 +321,20 @@ class SuggestedEdits extends BaseModule {
 				__METHOD__ . ' called with unexpected status: {status}',
 				[
 					'status' => $status,
-					'exception' => new \RuntimeException
+					'exception' => new \RuntimeException,
 				]
 			);
 
 			return;
 		}
-		$this->perDbNameStatsdDataFactory->increment( implode( '.', [
-			'growthExperiments.suggestedEdits',
-			( $mode === self::RENDER_DESKTOP ? 'desktop' : 'mobile' ),
-			'queue',
-			$status,
-		] ) );
+		$wiki = WikiMap::getCurrentWikiId();
+		$platform = ( $mode === self::RENDER_DESKTOP ? 'desktop' : 'mobile' );
+		$this->statsFactory->withComponent( 'GrowthExperiments' )
+			->getCounter( 'suggested_edits_queue_total' )
+			->setLabel( 'wiki', $wiki )
+			->setLabel( 'platform', $platform )
+			->setLabel( 'status', $status )
+			->increment();
 	}
 
 	/** @inheritDoc */
@@ -384,7 +364,6 @@ class SuggestedEdits extends BaseModule {
 						'qualityGateIds' => $task->getTaskType()->getQualityGateIds(),
 						'qualityGateConfig' => $tasks->getQualityGateConfig(),
 						'title' => $title->getPrefixedText(),
-						'topics' => $task->getTopicScores(),
 						// The front-end code for constructing SuggestedEditCardWidget checks
 						// to see if pageId is set in order to construct a tracking URL.
 						'pageId' => $title->getArticleID(),
@@ -398,6 +377,7 @@ class SuggestedEdits extends BaseModule {
 					}
 					$formattedTasks[] = $taskData;
 				}
+
 				$data['task-queue'] = $formattedTasks;
 				$data['task-preview'] = current( $formattedTasks );
 				$this->trackQueueStatus( $mode, 'ok' );
@@ -407,7 +387,7 @@ class SuggestedEdits extends BaseModule {
 		// When the module is not activated yet, but can be, include module HTML in the
 		// data, for dynamic loading on activation.
 		if ( $this->canRender() &&
-			!self::isActivated( $this->getContext()->getUser(), $this->userOptionsLookup ) &&
+			!self::isActivated( $this->getContext()->getUser(), $this->userOptionsManager ) &&
 			$this->getMode() !== self::RENDER_MOBILE_DETAILS
 		) {
 			$data += [
@@ -436,7 +416,7 @@ class SuggestedEdits extends BaseModule {
 
 	/** @inheritDoc */
 	public function getState() {
-		return self::isActivated( $this->getContext()->getUser(), $this->userOptionsLookup ) ?
+		return self::isActivated( $this->getContext()->getUser(), $this->userOptionsManager ) ?
 			self::MODULE_STATE_ACTIVATED :
 			self::MODULE_STATE_UNACTIVATED;
 	}
@@ -455,7 +435,30 @@ class SuggestedEdits extends BaseModule {
 			$suggesterOptions = [ 'resetCache' => true ];
 			// TODO also reset cache in ImageRecommendationFilter
 		}
-		$taskTypes = $this->newcomerTasksUserOptionsLookup->getTaskTypeFilter( $user );
+		$taskTypes = $this->taskTypeManager->getTaskTypesForUser( $user );
+
+		if (
+			$this->featureManager->shouldShowReviseToneTasksForUser( $user ) &&
+			!$this->userOptionsManager->getOption( $user, 'growthexperiments-revise-tone-treatment-initiated' )
+		) {
+			// TODO: Remove after end of ReviseTone A/B test: T409466
+			$this->userOptionsManager->setOption(
+				$user,
+				'growthexperiments-revise-tone-treatment-initiated',
+				true,
+			);
+			$taskTypes = array_unique( [
+				...$taskTypes,
+				ReviseToneTaskTypeHandler::TASK_TYPE_ID,
+			] );
+			$this->userOptionsManager->setOption(
+				$user,
+				self::TASKTYPES_PREF,
+				json_encode( $taskTypes ),
+			);
+			$this->userOptionsManager->saveOptions( $user );
+		}
+
 		$topics = $this->newcomerTasksUserOptionsLookup->getTopics( $user );
 		$topicsMatchMode = $this->newcomerTasksUserOptionsLookup->getTopicsMatchMode( $user );
 		$taskSetFilters = new TaskSetFilters( $taskTypes, $topics, $topicsMatchMode );
@@ -490,7 +493,7 @@ class SuggestedEdits extends BaseModule {
 
 	/** @inheritDoc */
 	protected function canRender() {
-		return self::isEnabled( $this->getContext()->getConfig() )
+		return self::isEnabledForAnyone( $this->getContext()->getConfig() )
 			&& !$this->configurationLoader->loadTaskTypes() instanceof StatusValue;
 	}
 
@@ -520,7 +523,7 @@ class SuggestedEdits extends BaseModule {
 				->appendContent( $this->getPager() ) .
 			( new CardWrapper(
 				$this->getContext(),
-				self::isTopicMatchingEnabled( $this->getContext(), $this->userOptionsLookup ),
+				self::isTopicMatchingEnabled( $this->getContext(), $this->userOptionsManager ),
 				$topicMatchMode === SearchStrategy::TOPIC_MATCH_MODE_AND,
 				$this->getContext()->getLanguage()->getDir(),
 				$this->getTaskSet(),
@@ -530,7 +533,7 @@ class SuggestedEdits extends BaseModule {
 			( new Tag( 'div' ) )->addClasses( [ 'suggested-edits-task-explanation' ] )
 				->appendContent( ( new TaskExplanationWidget( [
 					'taskSet' => $this->getTaskSet(),
-					'localizer' => $this->getContext()
+					'localizer' => $this->getContext(),
 				] ) ) )
 		);
 	}
@@ -549,8 +552,8 @@ class SuggestedEdits extends BaseModule {
 			->appendContent( [
 				$this->getNavigationWidgetFactory()->getPreviousNextButtonHtml( 'Previous' ),
 				$this->getNavigationWidgetFactory()->getEditButton(),
-				$this->getNavigationWidgetFactory()->getPreviousNextButtonHtml( 'Next' )
-			] );
+				$this->getNavigationWidgetFactory()->getPreviousNextButtonHtml( 'Next' ),
+			] )->toString();
 	}
 
 	/**
@@ -570,7 +573,11 @@ class SuggestedEdits extends BaseModule {
 				// Avoid nesting links, browsers will break markup
 				'button' => new Tag( 'span' ),
 			] );
-			$centeredButton = Html::rawElement( 'div', [ 'class' => 'suggested-edits-preview-footer' ], $button );
+			$centeredButton = Html::rawElement(
+				'div',
+				[ 'class' => 'suggested-edits-preview-footer' ],
+				$button->toString(),
+			);
 			$subheader = Html::rawElement(
 				'div',
 				[ 'class' => 'suggested-edits-preview-pager' ],
@@ -598,10 +605,10 @@ class SuggestedEdits extends BaseModule {
 					Html::element( 'div', [ 'class' => $baseClass . '__subtitle' ], $subtitle )
 				)
 			) . Html::element( 'div', [
-				'class' => $baseClass . '__footer'
+				'class' => $baseClass . '__footer',
 			], $footerText );
 			return Html::rawElement( 'div', [
-				'class' => [ $baseClass ]
+				'class' => [ $baseClass ],
 			], $noTaskPreviewContent );
 		}
 	}
@@ -611,12 +618,11 @@ class SuggestedEdits extends BaseModule {
 	 *
 	 * This function should be kept in sync with
 	 * SuggestedEditsFiltersWidget.prototype.updateButtonLabelAndIcon
-	 * @return ButtonGroupWidget
 	 */
 	private function getFiltersButtonGroupWidget(): ButtonGroupWidget {
 		$buttons = [];
 		$user = $this->getContext()->getUser();
-		if ( self::isTopicMatchingEnabled( $this->getContext(), $this->userOptionsLookup ) ) {
+		if ( self::isTopicMatchingEnabled( $this->getContext(), $this->userOptionsManager ) ) {
 			// topicPreferences will be an empty array if the user had saved topics
 			// in the past, or null if they have never saved topics
 			$topicPreferences = $this->newcomerTasksUserOptionsLookup
@@ -626,7 +632,7 @@ class SuggestedEdits extends BaseModule {
 			if ( $topicPreferences && count( $excludedTopics ) ) {
 				$topicPreferences = array_diff( $topicPreferences, $excludedTopics );
 			}
-			$topicData = $this->configurationLoader->getTopics();
+			$topicData = $this->topicRegistry->getTopicsMap();
 			$topicLabel = '';
 			$addPulsatingDot = false;
 			$topicFilterMode = $this->newcomerTasksUserOptionsLookup->getTopicsMatchMode( $user );
@@ -669,7 +675,7 @@ class SuggestedEdits extends BaseModule {
 				'flags' => $flags,
 				'classes' => [ 'topic-matching', 'topic-filter-button' ],
 				'indicator' => $this->getMode() === self::RENDER_DESKTOP ? null : 'down',
-				'icon' => $topicFilterMode === SearchStrategy::TOPIC_MATCH_MODE_OR ? 'funnel' : 'funnel-add'
+				'icon' => $topicFilterMode === SearchStrategy::TOPIC_MATCH_MODE_OR ? 'funnel' : 'funnel-add',
 			] );
 			if ( $addPulsatingDot ) {
 				$topicFilterButtonWidget->appendContent(
@@ -680,17 +686,17 @@ class SuggestedEdits extends BaseModule {
 		}
 		$difficultyFilterButtonWidget = new ButtonWidget( [
 			'icon' => 'difficulty-outline',
-			'classes' => self::isTopicMatchingEnabled( $this->getContext(), $this->userOptionsLookup ) ?
+			'classes' => self::isTopicMatchingEnabled( $this->getContext(), $this->userOptionsManager ) ?
 				[ 'topic-matching' ] : [ '' ],
 			'label' => $this->getContext()->msg(
 				'growthexperiments-homepage-suggestededits-difficulty-filters-title'
 			)->text(),
-			'indicator' => $this->getMode() === self::RENDER_DESKTOP ? null : 'down'
+			'indicator' => $this->getMode() === self::RENDER_DESKTOP ? null : 'down',
 		] );
 
 		$levels = [];
 		$taskTypeData = $this->configurationLoader->getTaskTypes();
-		foreach ( $this->newcomerTasksUserOptionsLookup->getTaskTypeFilter( $user ) as $taskTypeId ) {
+		foreach ( $this->taskTypeManager->getTaskTypesForUser( $user ) as $taskTypeId ) {
 			/** @var TaskType $taskType */
 			$taskType = $taskTypeData[$taskTypeId] ?? null;
 			if ( $taskType ) {
@@ -714,9 +720,7 @@ class SuggestedEdits extends BaseModule {
 			$label = $this->getContext()->msg(
 				'growthexperiments-homepage-suggestededits-difficulty-filter-label-' . $level
 			);
-			$message = $this->getContext()->msg( $messageKey )
-				->params( $label )
-				->text();
+			$message = $this->getContext()->msg( $messageKey, $label )->text();
 			$difficultyFilterButtonWidget->setLabel( $message );
 			// Icons: difficulty-easy, difficulty-medium, difficulty-hard
 			$difficultyFilterButtonWidget->setIcon( 'difficulty-' . $level );
@@ -728,7 +732,7 @@ class SuggestedEdits extends BaseModule {
 				'growthexperiments-homepage-suggestededits-difficulty-filter-label' :
 				'growthexperiments-homepage-suggestededits-difficulty-filter-label-mobile';
 			$message = $this->getContext()->msg( $messageKey )
-				->params( implode( $this->getContext()->msg( 'comma-separator' ),
+				->params( implode( $this->getContext()->msg( 'comma-separator' )->parse(),
 					$taskTypeMessages ) )
 				->text();
 			$difficultyFilterButtonWidget->setLabel( $message );
@@ -772,6 +776,10 @@ class SuggestedEdits extends BaseModule {
 		$taskTypeIcon = array_key_exists( 'icon', $iconData )
 			? new IconWidget( [ 'icon' => $iconData['icon'] ] )
 			: '';
+		$taskName = Html::rawElement( 'span',
+			[ 'class' => 'mw-ge-small-task-card-tasktype-taskname' ],
+			$task->getTaskType()->getName( $this->getContext() )->parse()
+		);
 		$taskType = Html::rawElement( 'span',
 			[ 'class' => 'mw-ge-small-task-card-tasktype '
 				 // The following classes are used here:
@@ -780,10 +788,7 @@ class SuggestedEdits extends BaseModule {
 				 // * mw-ge-small-task-card-tasktype-difficulty-hard
 				. 'mw-ge-small-task-card-tasktype-difficulty-'
 				. $task->getTaskType()->getDifficulty() ],
-			$taskTypeIcon . $taskIcon . Html::element( 'span',
-				[ 'class' => 'mw-ge-small-task-card-tasktype-taskname' ],
-				$task->getTaskType()->getName( $this->getContext() )
-			) );
+			$taskTypeIcon . $taskIcon . $taskName );
 
 		$glue = Html::element( 'div',
 			[ 'class' => 'mw-ge-small-task-card-glue' ] );
@@ -797,7 +802,7 @@ class SuggestedEdits extends BaseModule {
 		return Html::rawElement( 'div',
 			// only called for mobile views
 			[ 'class' => 'mw-ge-small-task-card mw-ge-small-task-card-mobile '
-				. "mw-ge-small-task-card mw-ge-tasktype-$taskTypeId"
+				. "mw-ge-small-task-card mw-ge-tasktype-$taskTypeId",
 			],
 		$image . $cardTextContainer );
 	}
@@ -823,7 +828,7 @@ class SuggestedEdits extends BaseModule {
 			parent::getModuleStyles(),
 			[
 				'mediawiki.pulsatingdot',
-				'oojs-ui.styles.icons-editing-core'
+				'oojs-ui.styles.icons-editing-core',
 			]
 		);
 	}
@@ -882,23 +887,21 @@ class SuggestedEdits extends BaseModule {
 	protected function getActionData() {
 		$user = $this->getContext()->getUser();
 		$taskSet = $this->getTaskSet();
-		$taskTypes = $topics = null;
+		$topics = null;
 		if ( $taskSet instanceof TaskSet ) {
-			$taskTypes = $taskSet->getFilters()->getTaskTypeFilters();
 			$topics = $taskSet->getFilters()->getTopicFilters();
 			$topicsMatchMode = $taskSet->getFilters()->getTopicFiltersMode();
 		}
 
-		$isMobile = Util::isMobile( $this->getContext()->getOutput()->getSkin() );
-
 		// these will be updated on the client side as needed
 		$data = [
-			'taskTypes' => $taskTypes ?? $this->newcomerTasksUserOptionsLookup->getTaskTypeFilter( $user ),
+			'taskTypes' => $this->taskTypeManager->getTaskTypesForUser( $user ),
+			'unavailableTaskTypes' => $this->taskTypeManager->getUnavailableTaskTypes( $user ),
 			'taskCount' => ( $taskSet instanceof TaskSet ) ? $taskSet->getTotalCount() : 0,
 		];
-		if ( self::isTopicMatchingEnabled( $this->getContext(), $this->userOptionsLookup ) ) {
+		if ( self::isTopicMatchingEnabled( $this->getContext(), $this->userOptionsManager ) ) {
 			$data['topics'] = $topics ?? $this->newcomerTasksUserOptionsLookup->getTopics( $user );
-			if ( $this->isTopicMatchModeEnabled( $this->getContext(), $this->userOptionsLookup ) ) {
+			if ( $this->isTopicMatchModeEnabled( $this->getContext(), $this->userOptionsManager ) ) {
 				$data['topicsMatchMode'] = $topicsMatchMode ??
 					$this->newcomerTasksUserOptionsLookup->getTopicsMatchMode( $user );
 			}
@@ -914,8 +917,8 @@ class SuggestedEdits extends BaseModule {
 		return [
 			'GEHomepageSuggestedEditsEnableTopics' => self::isTopicMatchingEnabled(
 				$this->getContext(),
-				$this->userOptionsLookup
-			)
+				$this->userOptionsManager
+			),
 		];
 	}
 
@@ -924,10 +927,9 @@ class SuggestedEdits extends BaseModule {
 	 *
 	 * This code roughly corresponds to SuggestedEditPagerWidget.prototype.setMessage
 	 *
-	 * @return string
-	 * @throws Exception
+	 * @throws InvalidArgumentException
 	 */
-	private function getPager() {
+	private function getPager(): HtmlSnippet|string {
 		$taskSet = $this->getTaskSet();
 		if ( !$taskSet instanceof TaskSet || !$taskSet->count() ) {
 			return '';
@@ -959,9 +961,6 @@ class SuggestedEdits extends BaseModule {
 		return $redirectParams;
 	}
 
-	/**
-	 * @return NavigationWidgetFactory
-	 */
 	private function getNavigationWidgetFactory(): NavigationWidgetFactory {
 		if ( !$this->navigationWidgetFactory ) {
 			$this->navigationWidgetFactory = new NavigationWidgetFactory(

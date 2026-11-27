@@ -1,41 +1,11 @@
 ( function () {
 
-	// internal methods
-
-	/**
-	 * Update the user preferences
-	 *
-	 * @private
-	 * @param {Object} prefData Updated preferences
-	 * @return {jQuery.Promise}
-	 */
-	function saveOptions( prefData ) {
-		return mw.loader.using( 'mediawiki.api' ).then( () => new mw.Api().saveOptions( prefData ) );
-	}
-
-	/**
-	 * Update the user preferences, reset the task cache and reload the page.
-	 *
-	 * @private
-	 * @param {Object} prefData Updated preferences
-	 * @return {jQuery.Promise}
-	 */
-	function updateTaskPreference( prefData ) {
-		return $.when( saveOptions( prefData ), mw.loader.using( 'mediawiki.util' ) ).then(
-			// Do a cache reset as a variant switch will mess up caching.
-			// FIXME T278123 remove when done.
-			() => $.get( mw.util.getUrl( 'Special:Homepage', { resetTaskCache: 1 } ) )
-		).then( () => {
-			window.location.reload();
-		} );
-	}
-
 	// module exports used in other modules
 
 	/**
 	 * Serialize data for use with action_data event logging property.
 	 *
-	 * @param {Object|string|boolean|number|Array} data
+	 * @param {Object<string,string|number>|string|boolean|number|Array<string|number>} data
 	 * @return {string|*}
 	 */
 	function serializeActionData( data ) {
@@ -60,14 +30,11 @@
 	/**
 	 * Remove a query parameter from the URL, so the user does not see ugly URLs.
 	 *
-	 * @param {Object} url
-	 *  Object created by mw.Uri()
+	 * @param {URL} url - Object created by new URL()
 	 * @param {string|string[]} queryParam
 	 *   The query param(s) to remove from the URL.
-	 * @param {boolean} [useLiteralFragment]
-	 *   Whether to keep the fragment as is (instead of encoding it)
 	 */
-	function removeQueryParam( url, queryParam, useLiteralFragment ) {
+	function removeQueryParam( url, queryParam ) {
 		let queryParams;
 		if ( Array.isArray( queryParam ) ) {
 			queryParams = queryParam;
@@ -78,28 +45,21 @@
 		if ( !queryParams.length ) {
 			return;
 		}
+
 		queryParams.forEach( ( param ) => {
-			delete url.query[ param ];
+			url.searchParams.delete( param );
 		} );
 
 		let newUrl;
-		if ( Object.keys( url.query ).length === 1 && url.query.title ) {
+		if ( url.searchParams.size === 1 && url.searchParams.has( 'title' ) ) {
 			// After removing the param only title remains. Rewrite to a prettier URL.
-			newUrl = mw.util.getUrl( url.query.title );
+			const hash = url.hash;
+			newUrl = mw.util.getUrl( /** @type {string} */ ( url.searchParams.get( 'title' ) + hash ) );
 		} else {
 			newUrl = url;
 		}
 
-		let fragment = '';
-		// mw.uri.toString encodes fragment by default.
-		if ( useLiteralFragment && url.fragment ) {
-			fragment = '#' + url.fragment;
-			newUrl.fragment = '';
-		}
-
-		if ( history.replaceState ) {
-			history.replaceState( history.state, document.title, newUrl.toString() + fragment );
-		}
+		history.replaceState( history.state, document.title, newUrl.toString() );
 	}
 
 	/**
@@ -113,34 +73,89 @@
 			'wikitext',
 			'wikitext-2017',
 			'visualeditor',
-			'other'
-		].indexOf( editor ) >= 0;
+			'other',
+		].includes( editor );
 	}
 
 	/**
 	 * Get the variant the user is assigned to, for A/B testing and gradual rollouts.
 	 *
-	 * @return {string}
+	 * @param {string} experimentName
+	 * @return {string|null}
 	 */
-	function getUserVariant() {
-		let variant = mw.user.options.get( 'growthexperiments-homepage-variant' );
-		if ( variant === null ||
-			mw.config.get( 'wgGEUserVariants' ).indexOf( variant ) === -1
-		) {
-			variant = mw.config.get( 'wgGEDefaultUserVariant' );
+	function getUserVariant( experimentName ) {
+		let assignedGroup = null;
+
+		// Try TestKitchen variant retrieval
+		if ( mw && mw.testKitchen ) {
+			const exp = mw.testKitchen.getExperiment( experimentName );
+			return exp.getAssignedGroup();
 		}
-		return variant;
+		// Try GrowthExperiments static variant retrieval
+		const defaultVariantConfig = mw.config.get( 'wgGEDefaultUserVariant' );
+		if ( defaultVariantConfig ) {
+			if ( typeof defaultVariantConfig === 'string' ) {
+				assignedGroup = defaultVariantConfig;
+			}
+			if ( Array.isArray( defaultVariantConfig ) ) {
+				assignedGroup = defaultVariantConfig[ experimentName ] || null;
+			}
+		}
+		// Mimic mpo behavior from TestKitchen, used for testing in environments without TK
+		const urlOverrideQuery = new URLSearchParams( window.location.search ).get( 'mpo' );
+		const [ overrideExperiment, overrideGroup ] = urlOverrideQuery ? urlOverrideQuery.split( ':' ) : [ null, null ];
+		if ( overrideExperiment === experimentName ) {
+			assignedGroup = overrideGroup;
+		}
+
+		return assignedGroup;
 	}
 
 	/**
-	 * @param {string|string[]} variants
-	 * @return {boolean}
+	 * Max length for user_variant field in legacy HomepageModule schema.
+	 * Format: "exp1:variant1;exp2:variant2".
 	 */
-	function isUserInVariant( variants ) {
-		if ( typeof variants === 'string' ) {
-			variants = [ variants ];
+	const USER_VARIANT_MAX_LENGTH = 512;
+
+	/**
+	 * Get user variant for legacy HomepageModule schema (user_variant field).
+	 *
+	 * The HomepageModule schema requires user_variant to be a string. When the user
+	 * is not enrolled in any experiment (getUserVariant returns null), we use
+	 * 'unsampled'.
+	 *
+	 * Uses all active experiments from TestKitchen when available, formatted as
+	 * "exp1:variant1;exp2:variant2", truncated to USER_VARIANT_MAX_LENGTH if needed.
+	 * When TestKitchen is not available, only uses wgGEDefaultUserVariant when it
+	 * is a string (e.g. $wgGEDefaultUserVariant = 'control').
+	 *
+	 * @return {string} Variant string: 'exp1:variant1;exp2:variant2', 'control',
+	 *   'treatment', 'unsampled', or a value from wgGEDefaultUserVariant
+	 */
+	function getUserVariantForLegacySchema() {
+		const tkConfig = mw.config.get( 'wgTestKitchenUserExperiments' );
+		if ( tkConfig && tkConfig.active_experiments && mw.testKitchen ) {
+			const parts = [];
+			for ( const exp of tkConfig.active_experiments ) {
+				const expName = typeof exp === 'string' ? exp : exp.name;
+				const variant = getUserVariant( expName );
+				if ( typeof variant === 'string' ) {
+					parts.push( expName + ':' + variant );
+				}
+			}
+			if ( parts.length > 0 ) {
+				const result = parts.join( ';' );
+				return result.length <= USER_VARIANT_MAX_LENGTH ?
+					result :
+					result.slice( 0, USER_VARIANT_MAX_LENGTH );
+			}
+			return 'unsampled';
 		}
-		return variants.indexOf( getUserVariant() ) !== -1;
+		const defaultVariantConfig = mw.config.get( 'wgGEDefaultUserVariant' );
+		if ( typeof defaultVariantConfig === 'string' ) {
+			return defaultVariantConfig;
+		}
+		return 'unsampled';
 	}
 
 	/**
@@ -167,12 +182,14 @@
 		if ( source ) {
 			queryParams.source = source;
 		}
+		// @ts-expect-error OO.ui.isMobile() is not yet available in the upstream type definitions
 		if ( OO.ui.isMobile() ) {
 			titleHash = '#/homepage/suggested-edits';
 			queryParams.overlay = 1;
 		}
+		// @ts-expect-error mw.Title.newFromText is not yet available in the upstream type definitions
 		return mw.Title.newFromText(
-			'Special:Homepage' + titleHash
+			'Special:Homepage' + titleHash,
 		).getUrl( queryParams );
 	}
 
@@ -203,52 +220,34 @@
 		return new Intl.Locale( language, languageOptions );
 	}
 
-	// debug / QA helpers exposed via ge.utils
-
 	/**
-	 * Set the variant the user is assigned to, for A/B testing and gradual rollouts.
+	 * Normalize a label for statistics by replacing dots and hyphens with underscores.
 	 *
-	 * @private For debug/QA purposes only.
-	 * @param {string|null} variant The new variant, or null to unset.
-	 * @return {jQuery.Promise}
+	 * @param {string} label The label to normalize.
+	 * @return {string} The normalized label.
 	 */
-	function setUserVariant( variant ) {
-		return updateTaskPreference( {
-			'growthexperiments-homepage-variant': variant
-		} );
-	}
-
-	/**
-	 * Opt the user into growth-glam-2022 campaign
-	 *
-	 * @private For debug/QA purposes only.
-	 * @param {string} id
-	 * @return {jQuery.Promise|undefined}
-	 */
-	function enableCampaign( id ) {
-		return saveOptions( {
-			'growthexperiments-campaign': id
-		} );
+	function normalizeLabelForStats( label ) {
+		if ( !label ) {
+			return label;
+		}
+		return label.replace( /\.|-/g, '_' );
 	}
 
 	// Expose some methods for debugging.
+	// @ts-expect-error for debugging only, should not be used in production
 	window.ge = window.ge || {};
-	ge.utils = {
-		getUserVariant: getUserVariant,
-		setUserVariant: setUserVariant,
-		enableCampaign: enableCampaign
-	};
 
 	module.exports = {
+		normalizeLabelForStats,
 		serializeActionData: serializeActionData,
 		removeQueryParam: removeQueryParam,
 		isValidEditor: isValidEditor,
-		isUserInVariant: isUserInVariant,
 		getUserVariant: getUserVariant,
+		getUserVariantForLegacySchema: getUserVariantForLegacySchema,
 		formatTitle: formatTitle,
 		getSuggestedEditsFeedUrl: getSuggestedEditsFeedUrl,
 		getIntlLocale: getIntlLocale,
-		hasIntl: hasIntl
+		hasIntl: hasIntl,
 	};
 
 }() );

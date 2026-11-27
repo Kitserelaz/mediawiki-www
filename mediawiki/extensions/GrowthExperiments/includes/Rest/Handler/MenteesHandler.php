@@ -6,8 +6,8 @@ use GrowthExperiments\MentorDashboard\MenteeOverview\MenteeOverviewDataFilter;
 use GrowthExperiments\MentorDashboard\MenteeOverview\MenteeOverviewDataProvider;
 use GrowthExperiments\MentorDashboard\MenteeOverview\StarredMenteesStore;
 use GrowthExperiments\Util;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\SimpleHandler;
 use MediaWiki\Title\TitleFactory;
@@ -26,32 +26,14 @@ use Wikimedia\ParamValidator\ParamValidator;
  * mentees. Users who never were a mentor will receive an empty array anyway.
  */
 class MenteesHandler extends SimpleHandler {
-	/** @var MenteeOverviewDataProvider */
-	private $dataProvider;
 
-	/** @var StarredMenteesStore */
-	private $starredMenteesStore;
+	private MenteeOverviewDataProvider $dataProvider;
+	private StarredMenteesStore $starredMenteesStore;
+	private UserFactory $userFactory;
+	private TitleFactory $titleFactory;
+	private TitleParser $titleParser;
+	private LinkBatchFactory $linkBatchFactory;
 
-	/** @var UserFactory */
-	private $userFactory;
-
-	/** @var TitleFactory */
-	private $titleFactory;
-
-	/** @var TitleParser */
-	private $titleParser;
-
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
-
-	/**
-	 * @param MenteeOverviewDataProvider $dataProvider
-	 * @param StarredMenteesStore $starredMenteesStore
-	 * @param UserFactory $userFactory
-	 * @param TitleFactory $titleFactory
-	 * @param TitleParser $titleParser
-	 * @param LinkBatchFactory $linkBatchFactory
-	 */
 	public function __construct(
 		MenteeOverviewDataProvider $dataProvider,
 		StarredMenteesStore $starredMenteesStore,
@@ -120,7 +102,7 @@ class MenteesHandler extends SimpleHandler {
 					throw new HttpException( 'Invalid order', 400 );
 				}
 				$dataFilter->sort( $params['sortby'], $order );
-			} catch ( ParameterAssertionException $e ) {
+			} catch ( ParameterAssertionException ) {
 				throw new HttpException( 'Invalid sortby', 400 );
 			}
 		}
@@ -139,7 +121,7 @@ class MenteesHandler extends SimpleHandler {
 						$nowUnix - (int)MWTimestamp::getInstance(
 							$menteeData['last_active']
 						)->getTimestamp( TS_UNIX )
-					)
+					),
 				];
 			}
 
@@ -149,7 +131,7 @@ class MenteesHandler extends SimpleHandler {
 					'human' => $context->getLanguage()->sprintfDate(
 						'Y-m-d',
 						$menteeData['registration']
-					)
+					),
 				];
 			}
 
@@ -183,7 +165,7 @@ class MenteesHandler extends SimpleHandler {
 			'totalRows' => $dataFilter->getTotalRows(),
 			'assignedMentees' => count( $allData ),
 			'limit' => $limit,
-			'offset' => $offset
+			'offset' => $offset,
 		];
 	}
 

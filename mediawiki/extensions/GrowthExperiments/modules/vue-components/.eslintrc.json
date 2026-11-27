@@ -12,15 +12,14 @@
 		"commonjs": true
 	},
 	"rules": {
-		"max-len": "warn",
-		"compat/compat": "warn"
+		"max-len": "warn"
 	},
 	"overrides": [
 		{
 			"files": "**/*.vue",
 			"extends": [
-				"wikimedia/client-common",
-				"wikimedia/vue3-es6"
+				"wikimedia/client/common",
+				"wikimedia/vue3/es6"
 			],
 			"rules": {
 				"max-len": "off",
@@ -35,7 +34,7 @@
 		{
 			"files": [ "**/*.js" ],
 			"extends": [
-				"wikimedia/client-es6"
+				"wikimedia/client"
 			]
 		},
 		{
@@ -45,6 +44,18 @@
 			},
 			"env": {
 				"jest": true
+			}
+		},
+		{
+			"files": [
+				"**/*.js",
+				"**/*.vue"
+			],
+			"rules": {
+				"comma-dangle": [
+					"error",
+					"always-multiline"
+				]
 			}
 		}
 	]

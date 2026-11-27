@@ -1,41 +1,39 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace GrowthExperiments\Tests\Integration;
 
 use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendation;
 use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationLink;
 use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationMetadata;
 use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationStore;
+use GrowthExperiments\NewcomerTasks\AddLink\NullLinkRecommendation;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Title\TitleValue;
 use MediaWikiIntegrationTestCase;
+use Psr\Log\NullLogger;
 
 /**
- * @coversDefaultClass \GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationStore
+ * @covers \GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationStore
  * @group medium
  * @group Database
  */
 class LinkRecommendationStoreTest extends MediaWikiIntegrationTestCase {
 
-	/**
-	 * @covers ::insert
-	 * @covers ::getByRevId
-	 * @covers ::getByPageId
-	 * @covers ::getByLinkTarget
-	 * @covers ::deleteByPageIds
-	 * @covers ::deleteByLinkTarget
-	 */
-	public function testGrowthexperimentsLinkRecommendationsCrud() {
+	public function testGrowthexperimentsLinkRecommendationsCrud(): void {
 		$store = new LinkRecommendationStore(
+			$this->getServiceContainer()->getConnectionProvider(),
 			$this->getServiceContainer()->getDBLoadBalancer(),
 			$this->getServiceContainer()->getTitleFactory(),
 			$this->getServiceContainer()->getLinkBatchFactory(),
-			$this->getServiceContainer()->getPageStore()
+			$this->getServiceContainer()->getPageStore(),
+			new NullLogger(),
 		);
 
 		$pageIds = [];
 		$revisionIds = [];
-		foreach ( [ 'T1', 'T2', 'T3', 'T4' ] as $titleText ) {
+		foreach ( [ 'T1', 'T2', 'T3', 'T4', 'T5', 'T6' ] as $titleText ) {
 			foreach ( [ 'r1', 'r2', 'r3' ] as $revisionText ) {
 				$status = $this->editPage( $titleText, $revisionText );
 				if ( !$status->isOK() ) {
@@ -66,7 +64,7 @@ class LinkRecommendationStoreTest extends MediaWikiIntegrationTestCase {
 					$i
 				);
 			}
-			$store->insert( new LinkRecommendation(
+			$store->insertExistingLinkRecommendation( new LinkRecommendation(
 				new TitleValue( 0, $titleText ),
 				$pageIds[$titleText],
 				$revisionIds[$titleText][$revisionText],
@@ -78,6 +76,8 @@ class LinkRecommendationStoreTest extends MediaWikiIntegrationTestCase {
 		$insert( 'T2', 'r3' );
 		$insert( 'T4', 'r2' );
 		$insert( 'T4', 'r3' );
+		$store->insertNoLinkRecommendationFound( $pageIds['T5'], $revisionIds['T5']['r3'] );
+		$store->insertNoLinkRecommendationFound( $pageIds['T6'], $revisionIds['T6']['r3'] );
 
 		// get by revision ID
 		$linkRecommendation = $store->getByRevId( $revisionIds['T1']['r2'] );
@@ -91,6 +91,10 @@ class LinkRecommendationStoreTest extends MediaWikiIntegrationTestCase {
 		$this->assertInstanceOf( LinkRecommendationMetadata::class, $linkRecommendation->getMetadata() );
 		$this->assertSame( 'v1', $linkRecommendation->getMetadata()->getApplicationVersion() );
 		$this->assertSame( $timestamp, $linkRecommendation->getMetadata()->getTaskTimestamp() );
+		$this->assertSame(
+			LinkRecommendationStore::RECOMMENDATION_AVAILABLE,
+			$store->getRecommendationStateByRevision( $revisionIds['T2']['r3'] )
+		);
 
 		// get by mismatching revision ID
 		$this->assertNull( $store->getByRevId( $revisionIds['T1']['r3'] ) );
@@ -102,9 +106,21 @@ class LinkRecommendationStoreTest extends MediaWikiIntegrationTestCase {
 		$this->assertSame( $pageIds['T1'], $linkRecommendation->getPageId() );
 		$this->assertSame( 'T1', $linkRecommendation->getTitle()->getDBkey() );
 
-		// page with no recommendations
+		// page with unknown recommendations
 		$this->assertNull( $store->getByRevId( $revisionIds['T3']['r3'] ) );
 		$this->assertNull( $store->getByPageId( $pageIds['T3'] ) );
+		$this->assertSame(
+			LinkRecommendationStore::RECOMMENDATION_UNKNOWN,
+			$store->getRecommendationStateByRevision( $revisionIds['T3']['r3'] )
+		);
+
+		// page with known no recommendations
+		$this->assertNull( $store->getByRevId( $revisionIds['T5']['r3'] ) );
+		$this->assertNull( $store->getByPageId( $pageIds['T5'] ) );
+		$this->assertSame(
+			LinkRecommendationStore::RECOMMENDATION_NOT_AVAILABLE,
+			$store->getRecommendationStateByRevision( $revisionIds['T5']['r3'] )
+		);
 
 		// getting by page returns latest
 		$linkRecommendation = $store->getByPageId( $pageIds['T4'] );
@@ -116,6 +132,22 @@ class LinkRecommendationStoreTest extends MediaWikiIntegrationTestCase {
 		$this->assertInstanceOf( LinkRecommendation::class, $linkRecommendation );
 		$this->assertSame( $revisionIds['T1']['r2'], $linkRecommendation->getRevisionId() );
 
+		$fromPageId = 0;
+		$allExistingRecommendations = $store->getAllExistingRecommendations( 10, $fromPageId );
+		$this->assertCount( 4, $allExistingRecommendations );
+
+		$allPageIds = $store->listPageIds( 10 );
+		$this->assertCount( 3, $allPageIds );
+
+		$fromPageId = 0;
+		$allRecommendationEntries = $store->getAllRecommendationEntries( 10, $fromPageId );
+		$this->assertCount( 6, $allRecommendationEntries );
+		$nullRecommendations = array_filter(
+			$allRecommendationEntries,
+			static fn ( $entry ) => $entry instanceof NullLinkRecommendation
+		);
+		$this->assertCount( 2, $nullRecommendations );
+
 		// deleteByLinkTarget
 		$this->assertFalse( $store->deleteByLinkTarget( new TitleValue( 0, 'T3' ) ) );
 		$this->assertTrue( $store->deleteByLinkTarget( new TitleValue( 0, 'T2' ) ) );
@@ -123,9 +155,12 @@ class LinkRecommendationStoreTest extends MediaWikiIntegrationTestCase {
 		$this->assertNotNull( $store->getByPageId( $pageIds['T1'] ) );
 		$this->assertNotNull( $store->getByPageId( $pageIds['T4'] ) );
 
-		$this->assertSame( 3, $store->deleteByPageIds( [ $pageIds['T1'], $pageIds['T4'] ] ) );
+		$this->assertSame( 4, $store->deleteByPageIds( [ $pageIds['T1'], $pageIds['T4'], $pageIds['T5'] ] ) );
 		$this->assertNull( $store->getByPageId( $pageIds['T1'] ) );
 		$this->assertNull( $store->getByPageId( $pageIds['T4'] ) );
+		$this->assertSame(
+			LinkRecommendationStore::RECOMMENDATION_UNKNOWN,
+			$store->getRecommendationStateByRevision( $revisionIds['T5']['r3'] )
+		);
 	}
-
 }

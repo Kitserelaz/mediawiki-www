@@ -21,9 +21,6 @@ class WelcomeSurveySkipHandler extends Handler {
 	/** @var WelcomeSurveyFactory */
 	private $welcomeSurveyFactory;
 
-	/**
-	 * @param WelcomeSurveyFactory $welcomeSurveyFactory
-	 */
 	public function __construct(
 		WelcomeSurveyFactory $welcomeSurveyFactory
 	) {
@@ -65,7 +62,7 @@ class WelcomeSurveySkipHandler extends Handler {
 	 */
 	public function getSupportedRequestTypes(): array {
 		return [
-			'application/x-www-form-urlencoded'
+			'application/x-www-form-urlencoded',
 		];
 	}
 

@@ -8,11 +8,10 @@ use GrowthExperiments\NewcomerTasks\TaskSuggester\ErrorForwardingTaskSuggester;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\RemoteSearchTaskSuggester;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\RemoteSearchTaskSuggesterFactory;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\SearchStrategy\SearchStrategy;
-use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeHandlerRegistry;
-use GrowthExperiments\NewcomerTasks\Topic\Topic;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Http\HttpRequestFactory;
+use MediaWiki\Page\LinkBatchFactory;
+use MediaWiki\Status\Status;
 use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\UserIdentityValue;
 use StatusValue;
@@ -27,20 +26,25 @@ class RemoteSearchTaskSuggesterFactoryTest extends SearchTaskSuggesterFactoryTes
 
 	/**
 	 * @dataProvider provideCreate
-	 * @param TaskType[]|StatusValue $taskTypes
-	 * @param Topic[]|StatusValue $topics
-	 * @param StatusValue|null $expectedError
 	 */
 	public function testCreate( $taskTypes, $topics, $expectedError ) {
+		if ( $taskTypes === 'error' && $expectedError === 'error' ) {
+			$error = $this->createNoOpMock( Status::class, [ 'getWikiText' ] );
+			$error->method( 'getWikiText' )->willReturn( 'foo' );
+			$taskTypes = $error;
+			$expectedError = $error;
+		}
+
 		$taskSuggesterFactory = new RemoteSearchTaskSuggesterFactory(
 			$this->createMock( TaskTypeHandlerRegistry::class ),
-			$this->getNewcomerTasksConfigurationLoader( $taskTypes, $topics ),
+			$this->getNewcomerTasksConfigurationLoader( $taskTypes ),
 			$this->createNoOpMock( SearchStrategy::class ),
 			$this->createNoOpMock( NewcomerTasksUserOptionsLookup::class ),
 			$this->createNoOpMock( HttpRequestFactory::class ),
 			$this->createNoOpMock( TitleFactory::class ),
 			$this->createNoOpMock( LinkBatchFactory::class ),
-			'https://example.com'
+			'https://example.com',
+			$this->getTopicRegistry( $topics ),
 		);
 		$taskSuggester = $taskSuggesterFactory->create();
 		if ( $expectedError ) {

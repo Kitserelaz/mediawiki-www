@@ -3,7 +3,6 @@
 namespace GrowthExperiments\HomepageModules;
 
 use Exception;
-use GrowthExperiments\ExperimentUserManager;
 use GrowthExperiments\UserDatabaseHelper;
 use GrowthExperiments\UserImpact\ComputedUserImpactLookup;
 use GrowthExperiments\UserImpact\ExpensiveUserImpact;
@@ -33,21 +32,9 @@ class Impact extends BaseModule {
 	private bool $forceShowingForOther = false;
 	private ?array $hasMainspaceEditsCache = null;
 
-	/**
-	 * @param IContextSource $ctx
-	 * @param Config $wikiConfig
-	 * @param ExperimentUserManager $experimentUserManager
-	 * @param UserIdentity $userIdentity
-	 * @param UserImpactStore $userImpactStore
-	 * @param UserImpactFormatter $userImpactFormatter
-	 * @param UserDatabaseHelper $userDatabaseHelper
-	 * @param bool $isSuggestedEditsEnabled
-	 * @param bool $isSuggestedEditsActivated
-	 */
 	public function __construct(
 		IContextSource $ctx,
 		Config $wikiConfig,
-		ExperimentUserManager $experimentUserManager,
 		UserIdentity $userIdentity,
 		UserImpactStore $userImpactStore,
 		UserImpactFormatter $userImpactFormatter,
@@ -55,7 +42,7 @@ class Impact extends BaseModule {
 		bool $isSuggestedEditsEnabled,
 		bool $isSuggestedEditsActivated
 	) {
-		parent::__construct( 'impact', $ctx, $wikiConfig, $experimentUserManager );
+		parent::__construct( 'impact', $ctx, $wikiConfig );
 		$this->userIdentity = $userIdentity;
 		$this->userImpactStore = $userImpactStore;
 		$this->userImpactFormatter = $userImpactFormatter;
@@ -67,24 +54,23 @@ class Impact extends BaseModule {
 	/** @inheritDoc */
 	protected function getJsConfigVars() {
 		return [
-			'GENewImpactRelevantUserName' => $this->userIdentity->getName(),
-			'GENewImpactRelevantUserId' => $this->userIdentity->getId(),
-			'GENewImpactRelevantUserUnactivated' => $this->isUnactivated(),
-			'GENewImpactThirdPersonRender' => $this->shouldShowForOtherUser(),
-			'GENewImpactIsSuggestedEditsEnabledForUser' => $this->isSuggestedEditsEnabledForUser,
-			'GENewImpactIsSuggestedEditsActivatedForUser' => $this->isSuggestedEditsActivatedForUser,
+			'GEImpactRelevantUserName' => $this->userIdentity->getName(),
+			'GEImpactRelevantUserId' => $this->userIdentity->getId(),
+			'GEImpactRelevantUserUnactivated' => $this->isUnactivated(),
+			'GEImpactThirdPersonRender' => $this->shouldShowForOtherUser(),
+			'GEImpactIsSuggestedEditsEnabledForUser' => $this->isSuggestedEditsEnabledForUser,
+			'GEImpactIsSuggestedEditsActivatedForUser' => $this->isSuggestedEditsActivatedForUser,
+			'GEImpactMaxEdits' => $this->getConfig()->get( 'GEUserImpactMaxEdits' ),
+			'GEImpactMaxThanks' => $this->getConfig()->get( 'GEUserImpactMaxThanks' ),
 		];
 	}
 
-	/**
-	 * @return string
-	 */
-	private function getUnactivatedModuleCssClass() {
+	private function getUnactivatedModuleCssClass(): string {
 		// The following classes are used here:
-		// * growthexperiments-homepage-module-new-impact-unactivated-desktop
-		// * growthexperiments-homepage-module-new-impact-unactivated-mobile-details
-		// * growthexperiments-homepage-module-new-impact-unactivated-mobile-overlay
-		// * growthexperiments-homepage-module-new-impact-unactivated-mobile-summary
+		// * growthexperiments-homepage-module-impact-unactivated-desktop
+		// * growthexperiments-homepage-module-impact-unactivated-mobile-details
+		// * growthexperiments-homepage-module-impact-unactivated-mobile-overlay
+		// * growthexperiments-homepage-module-impact-unactivated-mobile-summary
 		return 'growthexperiments-homepage-module-impact-unactivated-' . $this->getMode();
 	}
 
@@ -96,17 +82,11 @@ class Impact extends BaseModule {
 		if ( $this->isUnactivated() ) {
 			$unactivatedClasses[] = $this->getUnactivatedModuleCssClass();
 		}
-		return array_merge(
-			// TODO: When the old impact module is retired, we can remove this additional CSS class.
-			parent::getCssClasses() + [ 'growthexperiments-homepage-module-impact' ],
-			$unactivatedClasses
-		);
+		return array_merge( parent::getCssClasses(), $unactivatedClasses );
 	}
 
 	/**
 	 * Check if the user requesting the data matches the user data is requested
-	 *
-	 * @return bool
 	 */
 	private function isOwnData(): bool {
 		return $this->getContext()->getUser()->equals( $this->userIdentity );
@@ -114,8 +94,6 @@ class Impact extends BaseModule {
 
 	/**
 	 * Check if texts should show first person or third person
-	 *
-	 * @return bool
 	 */
 	private function shouldShowForOtherUser(): bool {
 		return !$this->isOwnData() || $this->forceShowingForOther;
@@ -127,18 +105,15 @@ class Impact extends BaseModule {
 		if ( $this->shouldShowForOtherUser() ) {
 			$headerText = 'growthexperiments-specialimpact-showing-for-other-user';
 		}
-		return $this->getContext()
-			->msg( $headerText )
-			->params( $this->userIdentity->getName() )
-			->text();
+		return $this->getContext()->msg( $headerText, $this->userIdentity->getName() )->text();
 	}
 
 	/** @inheritDoc */
 	protected function getBody() {
 		return Html::rawElement( 'div',
 				[
-					'id' => 'new-impact-vue-root',
-					'class' => 'ext-growthExperiments-new-impact-app-root'
+					'id' => 'impact-vue-root',
+					'class' => 'ext-growthExperiments-impact-app-root',
 				],
 				$this->getBaseMarkup()
 			) .
@@ -152,11 +127,11 @@ class Impact extends BaseModule {
 	protected function getMobileSummaryBody() {
 		return Html::rawElement( 'div',
 				[
-					'id' => 'new-impact-vue-root--mobile',
+					'id' => 'impact-vue-root--mobile',
 					'class' => [
-						'ext-growthExperiments-new-impact-app-root',
-						'ext-growthExperiments-new-impact-app-root--mobile'
-					]
+						'ext-growthExperiments-impact-app-root',
+						'ext-growthExperiments-impact-app-root--mobile',
+					],
 				],
 				$this->getRecentActivityMarkup()
 			) .
@@ -169,13 +144,12 @@ class Impact extends BaseModule {
 	/**
 	 * ScoreCard server markup. A wrapper using only top-level styles from ScoreCard.less.
 	 *
-	 * @param int $index Card index, not relevant at the moment.
 	 * @return string HTML content of a scorecard
 	 * @see modules/vue-components/CScoreCard.{less,vue}
 	 */
-	private function getScoreCardMarkup( int $index ): string {
+	private function getScoreCardMarkup(): string {
 		return Html::rawElement( 'div', [
-			'class' => 'ext-growthExperiments-ScoreCard'
+			'class' => 'ext-growthExperiments-ScoreCard',
 		] );
 	}
 
@@ -188,9 +162,14 @@ class Impact extends BaseModule {
 	private function getScoreCardsMarkup(): string {
 		return Html::rawElement( 'div',
 			[
-				'class' => 'ext-growthExperiments-ScoreCards'
+				'class' => 'ext-growthExperiments-ScoreCards',
 			],
-			implode( '', array_map( [ $this, 'getScoreCardMarkup' ], [ 1, 2, 3, 4 ] ) )
+			implode( '', [
+				$this->getScoreCardMarkup(),
+				$this->getScoreCardMarkup(),
+				$this->getScoreCardMarkup(),
+				$this->getScoreCardMarkup(),
+			] )
 		);
 	}
 
@@ -206,20 +185,20 @@ class Impact extends BaseModule {
 			Html::rawElement( 'div', [
 				'class' => [
 					'ext-growthExperiments-Skeleton',
-					'ext-growthExperiments-Skeleton--darken'
-				]
+					'ext-growthExperiments-Skeleton--darken',
+				],
 			] ) .
 			Html::rawElement( 'div', [
 				'class' => [
 					'ext-growthExperiments-Skeleton',
-					'ext-growthExperiments-Skeleton--double'
-				]
+					'ext-growthExperiments-Skeleton--double',
+				],
 			] ) .
 			Html::rawElement( 'div', [
 				'class' => [
 					'ext-growthExperiments-Skeleton',
-					'ext-growthExperiments-Skeleton--triple'
-				]
+					'ext-growthExperiments-Skeleton--triple',
+				],
 			] )
 		);
 	}
@@ -238,8 +217,8 @@ class Impact extends BaseModule {
 				'class' => [
 					'ext-growthExperiments-ArticleListHeading',
 					'ext-growthExperiments-Skeleton',
-					'ext-growthExperiments-Skeleton--darken'
-				]
+					'ext-growthExperiments-Skeleton--darken',
+				],
 			] ) .
 			implode( "\n", array_map(
 					static function ( $index ) {
@@ -247,23 +226,23 @@ class Impact extends BaseModule {
 						$delay = 400 + ( $index * 200 );
 						return Html::rawElement( 'div', [
 							'class' => [
-								'ext-growthExperiments-ArticleLoading'
-							]
+								'ext-growthExperiments-ArticleLoading',
+							],
 						],
 							Html::rawElement( 'div', [
 								'class' => [
 									'ext-growthExperiments-ArticleLoading__image',
 									'ext-growthExperiments-Skeleton',
-									'ext-growthExperiments-Skeleton--delay-' . $delay
-								]
+									'ext-growthExperiments-Skeleton--delay-' . $delay,
+								],
 							] ) .
 							Html::rawElement( 'div', [
 								'class' => [
 									'ext-growthExperiments-ArticleLoading__text',
 									'ext-growthExperiments-Skeleton',
 									'ext-growthExperiments-Skeleton--darken',
-									'ext-growthExperiments-Skeleton--delay-' . $delay
-								]
+									'ext-growthExperiments-Skeleton--delay-' . $delay,
+								],
 							] )
 						);
 					}, array_keys( array_fill( 0, $numberOfArticles, 1 ) ) )
@@ -281,7 +260,7 @@ class Impact extends BaseModule {
 	private function getBaseMarkup(): string {
 		return Html::rawElement( 'div',
 			[
-				'class' => 'ext-growthExperiments-App--UserImpact'
+				'class' => 'ext-growthExperiments-App--UserImpact',
 			],
 			Html::rawElement( 'div',
 				[
@@ -290,11 +269,11 @@ class Impact extends BaseModule {
 					// * ext-growthExperiments-Layout--mobile-details
 					// * ext-growthExperiments-Layout--mobile-overlay
 					// * ext-growthExperiments-Layout--mobile-summary
-					'class' => 'ext-growthExperiments-Layout--' . $this->getMode()
+					'class' => 'ext-growthExperiments-Layout--' . $this->getMode(),
 				],
 				Html::rawElement( 'div',
 					[
-						'class' => 'ext-growthExperiments-NewImpact'
+						'class' => 'ext-growthExperiments-Impact',
 					],
 					Html::rawElement( 'div',
 						[],
@@ -320,8 +299,6 @@ class Impact extends BaseModule {
 	/**
 	 * Set the relevant user to return data for. This will also force the module to display third person texts even if
 	 * the user requesting it is the same the data is requested
-	 *
-	 * @param UserIdentity $user
 	 */
 	public function setUserDataIsFor( UserIdentity $user ) {
 		$this->userIdentity = $user;
@@ -346,8 +323,6 @@ class Impact extends BaseModule {
 
 	/**
 	 * Check if impact module is unactivated.
-	 *
-	 * @return bool
 	 */
 	private function isUnactivated(): bool {
 		return $this->getState() === self::MODULE_STATE_UNACTIVATED;
@@ -376,7 +351,7 @@ class Impact extends BaseModule {
 	public function getActionData(): array {
 		$userImpact = $this->getUserImpact();
 		$data = [
-			'no_cached_user_impact' => !$userImpact
+			'no_cached_user_impact' => !$userImpact,
 		];
 		if ( $userImpact ) {
 			$formattedUserImpact = $this->getFormattedUserImpact();
@@ -422,7 +397,6 @@ class Impact extends BaseModule {
 		return $this->formattedUserImpact;
 	}
 
-	/** @return bool|null */
 	private function hasMainspaceEdits(): ?bool {
 		// The cache has four states: true/false/null (valid hasMainspaceEdits() return values)
 		// and uninitialized. Use an array hack to differentiate.

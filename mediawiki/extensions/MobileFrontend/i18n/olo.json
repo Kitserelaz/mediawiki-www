@@ -8,8 +8,6 @@
 			"Ruppijeva"
 		]
 	},
-	"mobile-frontend-changeslist-nocomment": "ei yhtehveduo kohenduksis",
-	"mobile-frontend-clear-search": "Tyhjendä",
 	"mobile-frontend-copyright": "Syväindö on käytös licenzien $1 mugah, ei lienne toizin mainittu.",
 	"mobile-frontend-editor-cancel": "Hylgiä",
 	"mobile-frontend-editor-captcha-try-again": "Viäry koudu, opi vie kerdu.",
@@ -34,7 +32,6 @@
 	"mobile-frontend-privacy-link-text": "Luottamusperiuattehet",
 	"mobile-frontend-references-citation": "Citacii",
 	"mobile-frontend-save-settings": "Tallenda",
-	"mobile-frontend-settings-beta": "{{SITENAME}} Beta",
 	"mobile-frontend-terms-text": "Käyttöehtot",
 	"mobile-frontend-view": "Mobiiliversii",
 	"mobile-frontend-view-desktop": "Tiedokonehen ruadostola",
@@ -44,6 +41,5 @@
 	"mobile-frontend-watchlist-filter-all": "Kai",
 	"mobile-frontend-watchlist-filter-articles": "Sivut",
 	"tag-mobile_edit": "Kohendus mobil'nois laittehes",
-	"tag-mobile_web_edit": "Kohendus saitan mobilnoin versien kauti",
-	"mobile-frontend-search-feedback-link-text": "Anna meile työndyö."
+	"tag-mobile_web_edit": "Kohendus saitan mobilnoin versien kauti"
 }

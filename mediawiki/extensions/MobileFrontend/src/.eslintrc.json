@@ -1,7 +1,7 @@
 {
 	"root": true,
 	"extends": [
-		"wikimedia/client-es6",
+		"wikimedia/client",
 		"../.eslintshared.js"
 	],
 	"parserOptions": {
@@ -16,16 +16,13 @@
 	},
 	"rules": {
 		"no-shadow": "warn",
+		"object-shorthand": "warn",
+		"prefer-arrow-callback": "warn",
 		"jsdoc/check-tag-names": "off",
 		"jsdoc/no-undefined-types": "off",
 		"jsdoc/require-returns": "off",
 		"jsdoc/require-property-type": "off",
-		"jsdoc/valid-types": "off"
-	},
-	"settings": {
-		"polyfills": [
-			"URL",
-			"URLSearchParams"
-		]
+		"jsdoc/valid-types": "off",
+		"unicorn/prefer-includes": "warn"
 	}
 }

@@ -6,7 +6,7 @@ use GrowthExperiments\NewcomerTasks\AddImage\ImageRecommendationMetadataProvider
 use GrowthExperiments\NewcomerTasks\AddImage\ImageRecommendationMetadataService;
 use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Language\Language;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Site\Site;
 use MediaWiki\Site\SiteStore;
 use MediaWikiUnitTestCase;
@@ -48,7 +48,7 @@ class ImageRecommendationMetadataProviderTest extends MediaWikiUnitTestCase {
 				'mustRender' => true,
 				'isVectorized' => false,
 				'reason' => 'growthexperiments-addimage-reason-wikipedia-languages',
-				'contentLanguageName' => 'English'
+				'contentLanguageName' => 'English',
 			],
 			$metadata
 		);
@@ -178,7 +178,7 @@ class ImageRecommendationMetadataProviderTest extends MediaWikiUnitTestCase {
 		$metadataService = $this->getMockService(
 			$mockFileMetadata,
 			$this->getImageDescription( [
-				'en' => 'Description'
+				'en' => 'Description',
 			] ) );
 		$siteLookup = $this->createMock( SiteStore::class );
 		$siteLookup->method( 'getSite' )->willReturn( null );
@@ -241,8 +241,8 @@ class ImageRecommendationMetadataProviderTest extends MediaWikiUnitTestCase {
 	private function getImageDescription( array $description = [] ): array {
 		return [
 			'ImageDescription' => [
-				'value' => $description
-			]
+				'value' => $description,
+			],
 		];
 	}
 
@@ -294,7 +294,7 @@ class ImageRecommendationMetadataProviderTest extends MediaWikiUnitTestCase {
 		$languageMap = [
 			'en' => 'English',
 			'cs' => 'Czech',
-			'fr' => 'French'
+			'fr' => 'French',
 		];
 		$languageNameUtils->method( 'getLanguageName' )->willReturnCallback(
 			static function ( $languageCode ) use ( $languageMap ) {
@@ -308,7 +308,7 @@ class ImageRecommendationMetadataProviderTest extends MediaWikiUnitTestCase {
 		return array_replace( [
 			'filename' => $filename,
 			'projects' => [ 'enwiki', 'cswiki' ],
-			'source' => 'wikipedia'
+			'source' => 'wikipedia',
 		], $overrides );
 	}
 

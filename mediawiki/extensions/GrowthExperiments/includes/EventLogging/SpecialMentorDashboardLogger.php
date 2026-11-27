@@ -20,12 +20,6 @@ class SpecialMentorDashboardLogger {
 	private WebRequest $request;
 	private bool $isMobile;
 
-	/**
-	 * @param string $pageviewToken
-	 * @param UserIdentity $user
-	 * @param WebRequest $request
-	 * @param bool $isMobile
-	 */
 	public function __construct(
 		string $pageviewToken,
 		UserIdentity $user,
@@ -38,10 +32,7 @@ class SpecialMentorDashboardLogger {
 		$this->isMobile = $isMobile;
 	}
 
-	/**
-	 * @return void
-	 */
-	public function log() {
+	public function log(): void {
 		$referer = $this->request->getHeader( 'REFERER' );
 		$event = [
 			'$schema' => self::SCHEMA_VERSIONED,

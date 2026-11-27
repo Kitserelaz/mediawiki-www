@@ -8,14 +8,13 @@ use GrowthExperiments\NewcomerTasks\TaskSuggester\ErrorForwardingTaskSuggester;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\LocalSearchTaskSuggester;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\LocalSearchTaskSuggesterFactory;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\SearchStrategy\SearchStrategy;
-use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeHandlerRegistry;
-use GrowthExperiments\NewcomerTasks\Topic\Topic;
-use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\Page\LinkBatchFactory;
+use MediaWiki\Search\SearchEngineFactory;
+use MediaWiki\Status\Status;
 use MediaWiki\User\UserIdentityValue;
-use SearchEngineFactory;
 use StatusValue;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * @covers \GrowthExperiments\NewcomerTasks\TaskSuggester\LocalSearchTaskSuggesterFactory
@@ -27,19 +26,24 @@ class LocalSearchTaskSuggesterFactoryTest extends SearchTaskSuggesterFactoryTest
 
 	/**
 	 * @dataProvider provideCreate
-	 * @param TaskType[]|StatusValue $taskTypes
-	 * @param Topic[]|StatusValue $topics
-	 * @param StatusValue|null $expectedError
 	 */
-	public function testCreate( $taskTypes, $topics, $expectedError ) {
+	public function testCreate( $taskTypes, array $topics, ?string $expectedError ) {
+		if ( $taskTypes === 'error' && $expectedError === 'error' ) {
+			$error = $this->createNoOpMock( Status::class, [ 'getWikiText' ] );
+			$error->method( 'getWikiText' )->willReturn( 'foo' );
+			$taskTypes = $error;
+			$expectedError = $error;
+		}
+
 		$taskSuggesterFactory = new LocalSearchTaskSuggesterFactory(
 			$this->createMock( TaskTypeHandlerRegistry::class ),
-			$this->getNewcomerTasksConfigurationLoader( $taskTypes, $topics ),
+			$this->getNewcomerTasksConfigurationLoader( $taskTypes ),
 			$this->createNoOpMock( SearchStrategy::class ),
 			$this->createNoOpMock( NewcomerTasksUserOptionsLookup::class ),
 			$this->createNoOpMock( SearchEngineFactory::class ),
 			$this->createNoOpMock( LinkBatchFactory::class ),
-			$this->createMock( IBufferingStatsdDataFactory::class )
+			StatsFactory::newNull(),
+			$this->getTopicRegistry( $topics )
 		);
 		$taskSuggester = $taskSuggesterFactory->create();
 		if ( $expectedError ) {

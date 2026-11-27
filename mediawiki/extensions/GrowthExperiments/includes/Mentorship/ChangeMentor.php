@@ -5,9 +5,10 @@ namespace GrowthExperiments\Mentorship;
 use GrowthExperiments\HelpPanel;
 use GrowthExperiments\HomepageHooks;
 use GrowthExperiments\Mentorship\Store\MentorStore;
-use ManualLogEntry;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Extension\Notifications\Model\Event;
+use MediaWiki\Logging\LogPage;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
@@ -23,7 +24,7 @@ class ChangeMentor {
 	private ?UserIdentity $newMentor;
 	private UserIdentity $performer;
 	private LoggerInterface $logger;
-	private MentorManager $mentorManager;
+	private IMentorManager $mentorManager;
 	private MentorStore $mentorStore;
 	private UserFactory $userFactory;
 	private IConnectionProvider $connectionProvider;
@@ -34,7 +35,7 @@ class ChangeMentor {
 	 * @param UserIdentity $performer Performer's user object
 	 * @param LoggerInterface $logger
 	 * @param Mentor|null $mentor Old mentor
-	 * @param MentorManager $mentorManager
+	 * @param IMentorManager $mentorManager
 	 * @param MentorStore $mentorStore
 	 * @param UserFactory $userFactory
 	 * @param IConnectionProvider $connectionProvider
@@ -44,7 +45,7 @@ class ChangeMentor {
 		UserIdentity $performer,
 		LoggerInterface $logger,
 		?Mentor $mentor,
-		MentorManager $mentorManager,
+		IMentorManager $mentorManager,
 		MentorStore $mentorStore,
 		UserFactory $userFactory,
 		IConnectionProvider $connectionProvider
@@ -62,8 +63,6 @@ class ChangeMentor {
 
 	/**
 	 * Was mentee's mentor already changed?
-	 *
-	 * @return bool
 	 */
 	public function wasMentorChanged(): bool {
 		$res = $this->connectionProvider->getReplicaDatabase()->newSelectQueryBuilder()
@@ -72,7 +71,7 @@ class ChangeMentor {
 			->where( [
 				'log_type' => 'growthexperiments',
 				'log_namespace' => NS_USER,
-				'log_title' => Title::makeTitle( NS_USER, $this->mentee->getName() )->getDbKey()
+				'log_title' => Title::makeTitle( NS_USER, $this->mentee->getName() )->getDbKey(),
 			] )
 			->caller( __METHOD__ )
 			->fetchRow();
@@ -108,6 +107,10 @@ class ChangeMentor {
 		$logEntry->setPerformer( $this->performer );
 		$logEntry->setTarget( $this->getMenteeUser()->getUserPage() );
 		$logEntry->setComment( $reason );
+		if ( $this->isHidden( $this->mentor ) ) {
+			// The log params and the reassignment comment hold the name, so it must not be public.
+			$logEntry->setDeleted( LogPage::SUPPRESSED_ACTION | LogPage::DELETED_COMMENT );
+		}
 		if ( $forceBot ) {
 			// Don't spam RecentChanges with bulk changes (T304428)
 			$logEntry->setForceBotFlag( true );
@@ -127,27 +130,29 @@ class ChangeMentor {
 
 	/**
 	 * Verify the mentor change is possible
-	 *
-	 * @return Status
 	 */
 	private function validate(): Status {
 		$this->logger->debug(
 			'Validating mentor change for {mentee} from {oldMentor} to {newMentor}', [
 				'mentee' => $this->mentee,
 				'oldMentor' => $this->mentor,
-				'newMentor' => $this->newMentor
+				'newMentor' => $this->newMentor,
 			] );
 		$status = Status::newGood();
 
-		if ( !$this->getMenteeUser()->isNamed() ) {
+		if ( !$this->getMenteeUser()->isNamed() || $this->getMenteeUser()->isHidden() ) {
 			$this->logger->info(
 				'Mentor change for {mentee} from {oldMentor} to {newMentor}'
 				. ' did not succeed, because the mentee doesn\'t exist', [
 					'mentee' => $this->mentee,
 					'oldMentor' => $this->mentor,
-					'newMentor' => $this->newMentor
+					'newMentor' => $this->newMentor,
 				] );
 			$status->fatal( 'growthexperiments-homepage-claimmentee-no-user' );
+			return $status;
+		}
+		if ( $this->isHidden( $this->newMentor ) ) {
+			$status->fatal( 'noname' );
 			return $status;
 		}
 		if ( $this->mentor && $this->mentor->equals( $this->newMentor ) ) {
@@ -156,7 +161,7 @@ class ChangeMentor {
 				. ' did not succeed, because the old and new mentor are equal', [
 					'mentee' => $this->mentee,
 					'oldMentor' => $this->mentor,
-					'newMentor' => $this->newMentor
+					'newMentor' => $this->newMentor,
 				] );
 			$status->fatal(
 				'growthexperiments-homepage-claimmentee-already-mentor',
@@ -179,15 +184,18 @@ class ChangeMentor {
 			DeferredUpdates::addCallableUpdate( function () use ( $reason ) {
 				$this->logger->debug( 'Notify {mentee} about mentor change done by {performer}', [
 					'mentee' => $this->mentee,
-					'performer' => $this->performer
+					'performer' => $this->performer,
 				] );
+				$extraData = [
+					'mentee' => $this->mentee->getId(),
+				];
+				if ( $this->mentor !== null && !$this->isHidden( $this->mentor ) ) {
+					$extraData['oldMentor'] = $this->mentor->getName();
+				}
 				Event::create( [
 					'type' => 'mentor-changed',
 					'title' => $this->getMenteeUser()->getUserPage(),
-					'extra' => [
-						'mentee' => $this->mentee->getId(),
-						'oldMentor' => $this->mentor->getName(),
-					],
+					'extra' => $extraData,
 					'agent' => $this->newMentor,
 				] );
 
@@ -201,9 +209,9 @@ class ChangeMentor {
 						'title' => $this->getMenteeUser()->getUserPage(),
 						'extra' => [
 							'mentor' => $this->mentor->getId(),
-							'reason' => $reason
+							'reason' => $reason,
 						],
-						'agent' => $this->performer
+						'agent' => $this->performer,
 					] );
 				}
 			} );
@@ -253,7 +261,7 @@ class ChangeMentor {
 	): Status {
 		// Ensure mentor/mentee relationship is dropped if the mentee is opted out from mentorship (T354259)
 		if ( $this->mentorManager->getMentorshipStateForUser( $this->mentee ) ===
-			MentorManager::MENTORSHIP_OPTED_OUT ) {
+			IMentorManager::MENTORSHIP_OPTED_OUT ) {
 			$this->logger->info(
 				'ChangeMentor dropped mentee relationship for {user} '
 				. 'because the user is opted out of mentorship',
@@ -284,11 +292,11 @@ class ChangeMentor {
 		if ( $this->isMentorshipEnabledForUser( $this->mentee ) ) {
 			$mentorshipState = $this->mentorManager->getMentorshipStateForUser( $this->mentee );
 
-			if ( $mentorshipState === MentorManager::MENTORSHIP_ENABLED ) {
+			if ( $mentorshipState === IMentorManager::MENTORSHIP_ENABLED ) {
 				$this->notify( $reason );
 			}
 
-			if ( !$bulkChange && $mentorshipState === MentorManager::MENTORSHIP_DISABLED ) {
+			if ( !$bulkChange && $mentorshipState === IMentorManager::MENTORSHIP_DISABLED ) {
 				// For non-bulk changes when MENTORSHIP_DISABLED (=GrowthExperiments decided not
 				// to include the mentorship module), set the state to MENTORSHIP_ENABLED to ensure
 				// the user can benefit from mentorship (T327206).
@@ -300,12 +308,16 @@ class ChangeMentor {
 
 				$this->mentorManager->setMentorshipStateForUser(
 					$this->mentee,
-					MentorManager::MENTORSHIP_ENABLED
+					IMentorManager::MENTORSHIP_ENABLED
 				);
 			}
 		}
 
 		return $status;
+	}
+
+	private function isHidden( ?UserIdentity $user ): bool {
+		return $user !== null && $this->userFactory->newFromUserIdentity( $user )->isHidden();
 	}
 
 	private function getMenteeUser(): User {

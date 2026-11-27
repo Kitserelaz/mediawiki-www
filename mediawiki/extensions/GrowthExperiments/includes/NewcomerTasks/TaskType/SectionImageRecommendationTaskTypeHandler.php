@@ -1,12 +1,15 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace GrowthExperiments\NewcomerTasks\TaskType;
 
 use GrowthExperiments\NewcomerTasks\AddImage\AddImageSubmissionHandler;
 use InvalidArgumentException;
 use LogicException;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Message\Message;
-use MessageLocalizer;
+use Wikimedia\Message\ListType;
 use Wikimedia\Message\MessageSpecifier;
 
 class SectionImageRecommendationTaskTypeHandler extends ImageRecommendationBaseTaskTypeHandler {
@@ -54,12 +57,12 @@ class SectionImageRecommendationTaskTypeHandler extends ImageRecommendationBaseT
 			throw new LogicException( 'impossible' );
 		}
 		$wrappedReasons = array_map(
-			fn ( $reason ) => "<kbd>$reason</kbd>",
+			static fn ( $reason ) => "<kbd>$reason</kbd>",
 			AddImageSubmissionHandler::REJECTION_REASONS
 		);
 		return $localizer->msg(
 			'apihelp-growthexperiments-structured-task-submit-data-format-section-image-recommendation',
-			Message::listParam( $wrappedReasons, 'comma' ),
+			Message::listParam( $wrappedReasons, ListType::COMMA ),
 			Message::numParam( $taskType->getMinimumCaptionCharacterLength() )
 		);
 	}

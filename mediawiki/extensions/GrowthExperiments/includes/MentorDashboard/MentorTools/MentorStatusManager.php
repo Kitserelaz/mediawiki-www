@@ -2,6 +2,7 @@
 
 namespace GrowthExperiments\MentorDashboard\MentorTools;
 
+use GrowthExperiments\Config\Validation\StatusAwayValidator;
 use MediaWiki\User\Options\UserOptionsManager;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
@@ -15,10 +16,6 @@ use Wikimedia\Rdbms\IDBAccessObject;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 class MentorStatusManager {
-
-	/** @var int Also hardcoded in AwaySettingsDialog.js */
-	private const MAX_BACK_IN_DAYS = 365;
-
 	/** @var string Mentor status */
 	public const STATUS_ACTIVE = 'active';
 	/** @var string Mentor status */
@@ -27,21 +24,15 @@ class MentorStatusManager {
 	/** @var string[] List of MentorStatusManager::STATUS_* constants */
 	public const STATUSES = [
 		self::STATUS_ACTIVE,
-		self::STATUS_AWAY
+		self::STATUS_AWAY,
 	];
 
-	/** @var string */
 	public const AWAY_BECAUSE_TIMESTAMP = 'timestamp';
-	/** @var string */
 	public const AWAY_BECAUSE_BLOCK = 'block';
-	/** @var string */
 	public const AWAY_BECAUSE_LOCK = 'lock';
 
 	/** @var string Preference key to store mentor's away timestamp */
 	public const MENTOR_AWAY_TIMESTAMP_PREF = 'growthexperiments-mentor-away-timestamp';
-
-	/** @var int Number of seconds in a day */
-	private const SECONDS_DAY = 86400;
 
 	/** @var UserOptionsManager */
 	private $userOptionsManager;
@@ -56,12 +47,6 @@ class MentorStatusManager {
 
 	private HashBagOStuff $inprocessCache;
 
-	/**
-	 * @param UserOptionsManager $userOptionsManager
-	 * @param UserIdentityLookup $userIdentityLookup
-	 * @param UserFactory $userFactory
-	 * @param IConnectionProvider $connectionProvider
-	 */
 	public function __construct(
 		UserOptionsManager $userOptionsManager,
 		UserIdentityLookup $userIdentityLookup,
@@ -99,21 +84,14 @@ class MentorStatusManager {
 		}
 	}
 
-	/**
-	 * @param UserIdentity $mentor
-	 * @return string
-	 */
 	private function makeAwayReasonCacheKey( UserIdentity $mentor ): string {
 		return $this->inprocessCache->makeKey(
-			'GrowthExperiments', __CLASS__, 'awayReason',
+			'growthexperiments-mentor-away-reason',
 			$mentor->getId()
 		);
 	}
 
-	/**
-	 * @param UserIdentity $mentor
-	 */
-	private function invalidateAwayReasonCache( UserIdentity $mentor ): void {
+	public function invalidateAwayReasonCache( UserIdentity $mentor ): void {
 		$this->inprocessCache->delete( $this->makeAwayReasonCacheKey( $mentor ) );
 	}
 
@@ -246,7 +224,7 @@ class MentorStatusManager {
 			->where( [
 				'up_property' => self::MENTOR_AWAY_TIMESTAMP_PREF,
 				$db->expr( 'up_value', '!=', null ),
-				$db->expr( 'up_value', '>', $db->timestamp() )
+				$db->expr( 'up_value', '>', $db->timestamp() ),
 			] )
 			->recency( $flags )
 			->caller( __METHOD__ )
@@ -277,7 +255,7 @@ class MentorStatusManager {
 			$mentor,
 			ConvertibleTimestamp::convert(
 				TS_MW,
-				(int)wfTimestamp( TS_UNIX ) + self::SECONDS_DAY * $backInDays
+				(int)wfTimestamp( TS_UNIX ) + StatusAwayValidator::$secondsDay * $backInDays
 			)
 		);
 	}
@@ -298,16 +276,9 @@ class MentorStatusManager {
 			return $canChangeStatus;
 		}
 
-		if (
-			(
-				(int)ConvertibleTimestamp::convert( TS_UNIX, $timestamp ) -
-				(int)ConvertibleTimestamp::now( TS_UNIX )
-			) > self::MAX_BACK_IN_DAYS * self::SECONDS_DAY
-		) {
-			return StatusValue::newFatal(
-				'growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-toohigh',
-				self::MAX_BACK_IN_DAYS
-			);
+		$timestampStatus = StatusAwayValidator::validateTimestamp( $timestamp, $mentor->getId() );
+		if ( !$timestampStatus->isOK() ) {
+			return $timestampStatus;
 		}
 
 		$this->userOptionsManager->setOption(

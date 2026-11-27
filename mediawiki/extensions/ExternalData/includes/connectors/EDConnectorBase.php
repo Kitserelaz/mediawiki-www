@@ -5,7 +5,7 @@
  * @author Alexander Mashin
  *
  */
-use ExternalData\Presets\Base;
+use ExternalData\Presets\Base as PresetBase;
 use ExternalData\Presets\Media;
 use MediaWiki\Title\Title;
 
@@ -13,7 +13,8 @@ abstract class EDConnectorBase {
 	use EDParsesParams; // Needs paramToArray().
 
 	/** @const string[] ID_PARAMS An array of name of params that will serve as data sources' names. */
-	private const ID_PARAMS = [ 'url', 'db', 'server', 'domain', 'program', 'file', 'directory', 'source', '*' ];
+	private const ID_PARAMS
+		= [ 'url', 'db', 'server', 'domain', 'program', 'file', 'directory', 'source', 'text', '*' ];
 	/** @const string ID_PARAM What the specific parameter identifying the connection is called. */
 	protected const ID_PARAM = 'source';
 	/** @const string[] URL_PARAMS An array of name of params that will serve as data sources' names for URLs. */
@@ -76,6 +77,14 @@ abstract class EDConnectorBase {
 	 * @param Title $title A Title object.
 	 */
 	protected function __construct( array &$args, Title $title ) {
+		// Check for deprecation.
+		global $wgExternalDataDisabledClasses;
+		$class = static::class;
+		$reason = $wgExternalDataDisabledClasses[$class] ?? null;
+		if ( $reason ) {
+			$this->error( 'externaldata-disabled', $class, $reason );
+		}
+
 		// Bring keys to lowercase:
 		$args = self::paramToArray( $args, true );
 
@@ -194,6 +203,40 @@ abstract class EDConnectorBase {
 	}
 
 	/**
+	 * Override user-supplied settings with wiki-wide.
+	 * @param array $wiki_wide
+	 * @param array $supplemented
+	 * @return array
+	 */
+	protected static function applyWikiWideSettings( array $wiki_wide, array $supplemented ): array {
+		// Force supplemented param name to the same case as the wiki-wide param.
+		// Map for wiki-wide params: 'lowercase' => 'OriginalCase'.
+		$wiki_wide_keys = array_keys( $wiki_wide );
+		$wiki_wide_map = array_combine( array_map( 'strtolower', $wiki_wide_keys ), $wiki_wide_keys );
+		// Map for supplemented params: 'OriginalCase' => 'LowerCase'.
+		$supplemented_keys = array_keys( $supplemented );
+		$supplemented_map = array_combine( $supplemented_keys, array_map( 'strtolower', $supplemented_keys ) );
+
+		foreach ( $supplemented_map as $supplemented_original => $lower ) {
+			if (
+				isset( $wiki_wide_map[$lower] ) &&
+				( $wiki_wide_original = $wiki_wide_map[$lower] ) !== $supplemented_original
+			) {
+				$supplemented[$wiki_wide_original] = $supplemented[$supplemented_original];
+				unset( $supplemented[$supplemented_original] );
+			}
+		}
+		foreach ( $wiki_wide as $param => $value ) {
+			if ( $value !== null ) {
+				$supplemented[$param] = $value;
+			} else {
+				unset( $supplemented[$param] );
+			}
+		}
+		return $supplemented;
+	}
+
+	/**
 	 * Add new values.
 	 *
 	 * @param array|null $values A new set of columns.
@@ -272,9 +315,9 @@ abstract class EDConnectorBase {
 	 * @param array $args Its parameters.
 	 * @param Title $title A title object.
 	 *
-	 * @return EDConnectorBase An EDConnector* object.
+	 * @return self An EDConnector* object.
 	 */
-	public static function getConnector( ?string $name, array $args, Title $title ): EDConnectorBase {
+	public static function getConnector( ?string $name, array $args, Title $title ): self {
 		$supplemented = self::supplementParams( $args, $title );
 		$class = self::getConnectorClass( $name, $supplemented );
 		// Instantiate the connector. If $class is empty, either this extension or $wgExternalDataConnectors is broken.
@@ -307,9 +350,11 @@ abstract class EDConnectorBase {
 			}
 		}
 
+		$preset_groups = PresetBase::presetGroups();
 		// Load chosen presets and merge them with overrides.
 		foreach ( $sources as $source => &$settings ) {
 			if ( is_array( $settings ) ) {
+				// $wgExternalData['source'] = [ 'preset' => 'media', /* overrides */ ];
 				if ( isset( $settings['preset'] ) ) {
 					$settings = array_replace_recursive(
 						call_user_func(
@@ -320,15 +365,17 @@ abstract class EDConnectorBase {
 					);
 					unset( $settings['preset'] );
 				}
-			} elseif ( is_string( $settings ) && in_array( ucfirst( $settings ), [ 'Test', 'Reference', 'Media' ] ) ) {
+			} elseif ( is_string( $settings ) && in_array( ucfirst( $settings ), $preset_groups ) ) {
+				// $wgExternalData['source'] = 'media';
 				$settings = call_user_func( [ 'ExternalData\\Presets\\' . ucfirst( $settings ), 'source' ], $source );
 			}
 		}
 
 		// Load presets wholesale.
-		foreach ( [ 'test', 'reference', 'media' ] as $group ) {
-			if ( ( $sources["load $group presets"] ?? false ) || ( $sources['load all presets'] ?? false ) ) {
-				$presets = call_user_func( [ 'ExternalData\\Presets\\' . ucfirst( $group ), 'sources' ] );
+		foreach ( $preset_groups as $group ) {
+			$mode = ( $sources["load $group presets"] ?? false ) ?: ( $sources['load all presets'] ?? false );
+			if ( $mode ) {
+				$presets = call_user_func( [ 'ExternalData\\Presets\\' . ucfirst( $group ), 'sources' ], $mode );
 				$sources = array_replace_recursive( $presets, $sources );
 			}
 			unset( $sources["load $group presets"] );
@@ -393,7 +440,7 @@ abstract class EDConnectorBase {
 	 */
 	private function validateParams( array $parameters, array $filters ): array {
 		// Validate parameters.
-		foreach ( $parameters as $key => $value ) {
+		foreach ( $parameters as $key => &$value ) {
 			if ( !isset( $filters[$key] ) ) {
 				continue;
 			}
@@ -496,12 +543,10 @@ abstract class EDConnectorBase {
 				$supplemented['host'] = $supplemented['components']['host'];
 			}
 			// Second-level domain is likely to be both a throttle key and an index to find a throttle key or interval.
-			// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset text saying why it was suppressed
 			if ( isset( $supplemented['host'] ) ) {
 				if ( preg_match( '/(?<=^|\.)\w+\.\w+$/', $supplemented['host'], $matches ) ) {
 					$supplemented['2nd_lvl_domain'] = $matches[0];
 				} else {
-					// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset text saying why it was suppressed
 					$supplemented['2nd_lvl_domain'] = $supplemented['host'];
 				}
 			}
@@ -521,8 +566,8 @@ abstract class EDConnectorBase {
 		foreach ( $fields as $field ) {
 			if ( isset( $supplemented[$field] ) ) {
 				$id = $supplemented[$field];
-				if ( isset( self::$sources[$id] ) ) {
-					foreach ( self::$sources[$id] as $param => $value ) {
+				if ( isset( static::$sources[$id] ) ) {
+					foreach ( static::$sources[$id] as $param => $value ) {
 						if ( !isset( $wiki_wide[$param] ) ) { // more specific setting override less specific.
 							$wiki_wide[$param] = $value;
 						}
@@ -540,9 +585,7 @@ abstract class EDConnectorBase {
 		$wiki_wide = self::substitute( $wiki_wide, self::forStrtr( $supplemented ) );
 
 		// Apply wiki-wide settings. They override user-provided ones.
-		foreach ( $wiki_wide as $param => $value ) {
-			$supplemented[$param] = $value;
-		}
+		$supplemented = self::applyWikiWideSettings( $wiki_wide, $supplemented );
 
 		return $supplemented;
 	}
@@ -696,7 +739,7 @@ abstract class EDConnectorBase {
 	 * Create a parser function implementing a tag.
 	 * @param array $config
 	 * @return callable
-	 * @throws Exception
+	 * @throws RuntimeException
 	 */
 	private static function tagFunction( array $config ): callable {
 		return static function (
@@ -714,23 +757,15 @@ abstract class EDConnectorBase {
 			$params['data'] ??= "$id=__text";
 			$params['format'] = 'text';
 			$title = method_exists( $parser, 'getPage' ) ? $parser->getPage() : $parser->getTitle();
-			if ( !$title ) {
-				throw new MWException( 'No Title object.' ); // unreachable. Just to make the IDE shut up.
-			}
-			$params = self::supplementParams( $params, $title );
-			if ( $title ) {
-				// @phan-suppress-next-line SecurityCheck-ReDoS
-				$connector = self::getConnector( 'get_external_data', $params, $title );
-				if ( !$connector->errors() ) {
-					if ( $connector->run() ) {
-						$values = $connector->result();
-						// @todo: other markerTypes?
-						return [ $values[$id][0], 'markerType' => 'nowiki' ];
-					}
+			$connector = self::getConnector( 'get_external_data', $params, $title );
+			if ( !$connector->errors() ) {
+				if ( $connector->run() ) {
+					$values = $connector->result();
+					// @todo: other markerTypes?
+					return [ $values[$id][0], 'markerType' => 'nowiki' ];
 				}
-				return EDParserFunctions::formatErrorMessages( $connector->errors() );
 			}
-			return false;
+			return EDParserFunctions::formatErrorMessages( $connector->errors() );
 		};
 	}
 
@@ -777,9 +812,10 @@ abstract class EDConnectorBase {
 	 * Validate XML.
 	 * @param string $xml
 	 * @return bool
+	 * @deprecated
 	 */
 	public static function validateXml( string $xml ): bool {
-		return Base::validateXml( $xml );
+		return PresetBase::validateXml( $xml );
 	}
 
 	/**
@@ -787,17 +823,18 @@ abstract class EDConnectorBase {
 	 * @param string|array $json
 	 * @param array $params
 	 * @return bool
+	 * @deprecated
 	 */
 	public static function validateJson( $json, array $params ): bool {
-		return Base::validateJsonOrYaml( $json, $params );
+		return PresetBase::validateJsonOrYaml( $json, $params );
 	}
 
 	/**
 	 * Convert [[wikilinks]] to dot links, including images and CSS.
-	 *
 	 * @param string $dot Text to add wikilinks in dot format.
 	 * @param array $params
 	 * @return string dot with links.
+	 * @deprecated
 	 */
 	public static function wikilinks4dot( string $dot, array $params ): string {
 		return Media::wikilinks4dot( $dot, $params );
@@ -805,9 +842,9 @@ abstract class EDConnectorBase {
 
 	/**
 	 * Convert [[wikilinks]] to UML links.
-	 *
 	 * @param string $uml Text to add wikilinks in UML format.
 	 * @return string dot with links.
+	 * @deprecated
 	 */
 	public static function wikilinks4uml( string $uml ): string {
 		return Media::wikilinks4uml( $uml );
@@ -816,6 +853,7 @@ abstract class EDConnectorBase {
 	/**
 	 * @param string $script
 	 * @return string
+	 * @deprecated
 	 */
 	public static function maskWikilinks( string $script ): string {
 		return Media::maskWikilinks( $script );
@@ -824,6 +862,7 @@ abstract class EDConnectorBase {
 	/**
 	 * @param string $masked
 	 * @return string
+	 * @deprecated
 	 */
 	public static function unmaskWikilinks( string $masked ): string {
 		return Media::unmaskWikilinks( $masked );
@@ -835,6 +874,7 @@ abstract class EDConnectorBase {
 	 * @param string $xml XML to extract SVG from.
 	 * @param array $params
 	 * @return string The stripped SVG.
+	 * @deprecated
 	 */
 	public static function innerXML( string $xml, array $params ): string {
 		return Media::innerXml( $xml, $params );
@@ -844,6 +884,7 @@ abstract class EDConnectorBase {
 	 * Strips log messages before and after SVG that could not be stripped otherwise.
 	 * @param string $input
 	 * @return string
+	 * @deprecated
 	 */
 	public static function onlySvg( string $input ): string {
 		return Media::onlySvg( $input );
@@ -853,6 +894,7 @@ abstract class EDConnectorBase {
 	 * Replace local image paths with URLs in SVG.
 	 * @param string $svg SVG to process
 	 * @return string Prcessed SVG
+	 * @deprecated
 	 */
 	public static function filepathToUrl( string $svg ): string {
 		return Media::filepathToUrl( $svg );
@@ -863,6 +905,7 @@ abstract class EDConnectorBase {
 	 * @param string $svg
 	 * @param array $params
 	 * @return string
+	 * @deprecated
 	 */
 	public static function sizeSVG( string $svg, array $params ): string {
 		return Media::sizeSVG( $svg, $params );
@@ -872,6 +915,7 @@ abstract class EDConnectorBase {
 	 * Convert [[…]] in SVG <text> into <a>.
 	 * @param string $svg
 	 * @return string
+	 * @deprecated
 	 */
 	public static function wikilinksInSvg( string $svg ): string {
 		return Media::wikilinksInSvg( $svg );
@@ -882,6 +926,7 @@ abstract class EDConnectorBase {
 	 * @param string $svg
 	 * @param array $params
 	 * @return string
+	 * @deprecated
 	 */
 	public static function jsLinks( string $svg, array $params ): string {
 		return Media::jsLinksInSvg( $svg, $params );
@@ -892,7 +937,8 @@ abstract class EDConnectorBase {
 	 * @param array|string $json
 	 * @param array $params
 	 * @return string
-	 * @throws MWException
+	 * @throws RuntimeException
+	 * @deprecated
 	 */
 	public static function inject3d( $json, array $params ): string {
 		return Media::inject3d( $json, $params );
@@ -904,6 +950,7 @@ abstract class EDConnectorBase {
 	 * @param array $params Parameters passed to Vega engine, including the source JSON.
 	 * @param string $json Vega JSON config.
 	 * @return string HTML code containing the animated Vega with SVG fallback.
+	 * @deprecated
 	 */
 	public static function animateVega( string $svg, array $params, string $json ): string {
 		return Media::animateChart( $svg, $params, $json );
@@ -915,6 +962,7 @@ abstract class EDConnectorBase {
 	 * @param array $params Parameters passed to ECharts engine, including the source JSON.
 	 * @param string $json ECharts JSON config.
 	 * @return string HTML code containing the animated ECharts with SVG fallback.
+	 * @deprecated
 	 */
 	public static function animateEcharts( string $svg, array $params, string $json ): string {
 		return Media::animateEcharts( $svg, $params, $json );
@@ -924,6 +972,7 @@ abstract class EDConnectorBase {
 	 * Screen colons in wikilinks in a Mermaid diagram.
 	 * @param string $mmd
 	 * @return string
+	 * @deprecated
 	 */
 	public static function screenColons( string $mmd ): string {
 		return Media::screenColons( $mmd );
@@ -933,6 +982,7 @@ abstract class EDConnectorBase {
 	 * Convert wikilinks in XML to proper hyperlinks.
 	 * @param string $xml
 	 * @return string
+	 * @deprecated
 	 */
 	public static function wikiLinksInXml( string $xml ): string {
 		return Media::wikiLinksInXml( $xml );
@@ -944,6 +994,7 @@ abstract class EDConnectorBase {
 	 * @param array $params Parameters to <mermaid> tag including the Mermaid source code.
 	 * @param string $mmd Mermaid source code.
 	 * @return string The original SVG plus Mermaid source code with scripts to activate it.
+	 * @deprecated
 	 */
 	public static function animateMermaid( string $svg, array $params, string $mmd ): string {
 		return Media::animateChart( $svg, $params, $mmd );

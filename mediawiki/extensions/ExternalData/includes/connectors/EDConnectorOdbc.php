@@ -7,9 +7,7 @@ use MediaWiki\Title\Title;
  * for an ODBC connection.
  *
  * @author Alexander Mashin
- *
  */
-
 class EDConnectorOdbc extends EDConnectorComposed {
 	/** @const array ILLEGAL Strings disallowed anywhere in the query. */
 	protected const ILLEGAL = [
@@ -254,6 +252,7 @@ class EDConnectorOdbc extends EDConnectorComposed {
 		} finally {
 			self::stopThrowingWarnings();
 		}
+		// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 		if ( !$rowset ) {
 			$this->error( 'externaldata-db-invalid-query', $query );
 			return null;

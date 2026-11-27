@@ -50,7 +50,10 @@
 		},
 		"CustomDomains": {
 			"class": "WikiOasis\\WikiOasisMagic\\SpecialCustomDomains",
-			"services": [ "CreateWikiDatabaseUtils", "SkyWikiCustomDomains" ]
+			"services": [
+				"CreateWikiDatabaseUtils",
+				"SkyWikiCustomDomains"
+			]
 		},
 		"ChangeDomain": {
 			"class": "WikiOasis\\WikiOasisMagic\\SpecialChangeDomain",
@@ -58,9 +61,17 @@
 				"CreateWikiDatabaseUtils",
 				"RemoteWikiFactory"
 			]
+		},
+		"Upgrade": {
+			"class": "WikiOasis\\WikiOasisMagic\\SpecialUpgrade",
+			"services": [
+				"RemoteWikiFactory"
+			]
 		}
 	},
-	"ServiceWiringFiles": [ "includes/CustomDomainServices.php" ],
+	"ServiceWiringFiles": [
+		"includes/CustomDomainServices.php"
+	],
 	"APIModules": {
 		"skywikisubdomain": {
 			"class": "WikiOasis\\WikiOasisMagic\\ApiSubdomain",
@@ -72,18 +83,32 @@
 	},
 	"ResourceModules": {
 		"ext.skywiki.creationProgress": {
-			"scripts": [ "resources/creationProgress.js" ],
-			"messages": [ "createnewwiki-progress-delayed", "createnewwiki-progress-unavailable" ]
+			"scripts": [
+				"resources/creationProgress.js"
+			],
+			"messages": [
+				"createnewwiki-progress-delayed",
+				"createnewwiki-progress-unavailable"
+			]
 		},
 		"ext.skywiki.customDomains.styles": {
-			"styles": [ "resources/customDomains.css" ]
+			"styles": [
+				"resources/customDomains.css"
+			]
 		},
 		"ext.skywiki.createWikiForm.styles": {
-			"styles": [ "resources/createWikiForm.css" ]
+			"styles": [
+				"resources/createWikiForm.css"
+			]
 		},
 		"ext.skywiki.wikiCategoryIcon": {
-			"scripts": [ "resources/wikiCategoryIcon.js" ],
-			"dependencies": [ "oojs-ui-widgets", "ext.fontawesome.fas" ]
+			"scripts": [
+				"resources/wikiCategoryIcon.js"
+			],
+			"dependencies": [
+				"oojs-ui-widgets",
+				"ext.fontawesome.fas"
+			]
 		},
 		"ext.skywiki.createNewWiki": {
 			"scripts": [
@@ -109,11 +134,14 @@
 		"remoteExtPath": "SkyWikiMagic"
 	},
 	"AvailableRights": [
-		"createnewwiki"
+		"createnewwiki",
+		"upgrade-mediawiki"
 	],
 	"Hooks": {
 		"LoadExtensionSchemaUpdates": "CustomDomainSchema",
-		"CreateWikiTables": "CustomDomainSchema",
+		"CreateWikiTables": {
+			"handler": "Main"
+		},
 		"MediaWikiPerformAction": "CustomDomainRedirect",
 		"ParserFirstCallInit": "CreateWikiForm",
 		"AuthChangeFormFields": {
@@ -129,9 +157,6 @@
 			"handler": "Main"
 		},
 		"CreateWikiStatePrivate": {
-			"handler": "Main"
-		},
-		"CreateWikiTables": {
 			"handler": "Main"
 		},
 		"GetLocalURL::Internal": {
@@ -157,6 +182,9 @@
 		},
 		"TitleReadWhitelist": {
 			"handler": "Main"
+		},
+		"ManageWikiCoreAddFormFields": {
+			"handler": "ManageWikiCategoryLabels"
 		}
 	},
 	"HookHandlers": {
@@ -168,7 +196,9 @@
 		},
 		"CreateWikiForm": {
 			"class": "WikiOasis\\WikiOasisMagic\\HookHandlers\\CreateWikiForm",
-			"services": [ "CreateWikiDatabaseUtils" ]
+			"services": [
+				"CreateWikiDatabaseUtils"
+			]
 		},
 		"RegistrationHeader": {
 			"class": "WikiOasis\\WikiOasisMagic\\HookHandlers\\RegistrationHeader"
@@ -182,6 +212,9 @@
 				"DBLoadBalancerFactory",
 				"HttpRequestFactory"
 			]
+		},
+		"ManageWikiCategoryLabels": {
+			"class": "WikiOasis\\WikiOasisMagic\\HookHandlers\\ManageWikiCategoryLabels"
 		}
 	},
 	"config": {

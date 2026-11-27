@@ -1,6 +1,6 @@
 <?php
 
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LuaError;
@@ -8,6 +8,7 @@ use MediaWiki\MediaWikiServices;
 
 class JCLuaLibrary extends LibraryBase {
 
+	/** @inheritDoc */
 	public function register() {
 		$functions = [ 'get' => [ $this, 'get' ] ];
 		$moduleFileName = __DIR__ . DIRECTORY_SEPARATOR . 'JCLuaLibrary.lua';
@@ -46,13 +47,6 @@ class JCLuaLibrary extends LibraryBase {
 		if ( $content === null ) {
 			$this->incrementExpensiveFunctionCount();
 			$content = JCSingleton::getContent( $jct );
-
-			$prop = 'jsonconfig_getdata';
-			$output = $this->getParser()->getOutput();
-			$prevValue = (int)( $output->getPageProperty( $prop ) ?? 0 );
-			$output->setNumericPageProperty( $prop, 1 + $prevValue );
-			// Transition to a tracking category
-			$this->getParser()->addTrackingCategory( 'jsonconfig-use-category' );
 		}
 
 		if ( !$content ) {
@@ -62,7 +56,7 @@ class JCLuaLibrary extends LibraryBase {
 				$result = $content->getData();
 			} else {
 				/** @var JCDataContent $content */
-				// @phan-suppress-next-line PhanUndeclaredMethod
+				'@phan-var JCDataContent $content';
 				$result = $content->getLocalizedData( $language );
 			}
 			// Always re-index tabular data
@@ -70,6 +64,9 @@ class JCLuaLibrary extends LibraryBase {
 				self::reindexTabularData( $result );
 			}
 		}
+
+		$output = $this->getParser()->getOutput();
+		JCSingleton::recordJsonLink( $output, $jct );
 
 		return [ self::objectToArray( $result ) ];
 	}
@@ -82,13 +79,14 @@ class JCLuaLibrary extends LibraryBase {
 	 *
 	 * @param mixed $v
 	 * @return mixed
+	 * @internal
 	 */
-	private static function objectToArray( $v ) {
+	public static function objectToArray( $v ) {
 		if ( is_object( $v ) ) {
 			$v = get_object_vars( $v );
 		}
 		if ( is_array( $v ) ) {
-			$v = array_map( [ self::class, 'objectToArray' ], $v );
+			$v = array_map( self::objectToArray( ... ), $v );
 		}
 		return $v;
 	}
@@ -98,21 +96,26 @@ class JCLuaLibrary extends LibraryBase {
 	 * @param \stdClass $data
 	 */
 	public static function reindexTabularData( $data ) {
-		$columnCount = count( $data->schema->fields );
-		$rowCount = count( $data->data );
+		$fields = $data->schema->fields ?? [];
+		$rowData = $data->data ?? [];
+		$columnCount = count( $fields );
+		$rowCount = count( $rowData );
 		if ( $columnCount > 0 ) {
 			$rowIndexes = range( 1, $columnCount );
-			$data->schema->fields = array_combine( $rowIndexes, $data->schema->fields );
+			$data->schema->fields = array_combine( $rowIndexes, $fields );
 			if ( $rowCount > 0 ) {
 				$data->data =
 					array_combine( range( 1, $rowCount ),
 						array_map( static function ( $row ) use ( $rowIndexes ) {
 							return array_combine( $rowIndexes, $row );
-						}, $data->data ) );
+						}, $rowData ) );
 			}
 		} elseif ( $rowCount > 0 ) {
 			// Weird, but legal
-			$data->data = array_combine( range( 1, $rowCount ), $data->data );
+			$data->data = array_combine( range( 1, $rowCount ), $rowData );
 		}
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCLuaLibrary::class, 'JsonConfig\\JCLuaLibrary' );

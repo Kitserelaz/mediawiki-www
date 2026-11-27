@@ -2,18 +2,16 @@
 	"@metadata": {
 		"authors": [
 			"Ananth subray",
+			"Anzx",
 			"Kamalaksha",
 			"M G Harish",
 			"Nayvik",
 			"Omshivaprakash",
 			"VASANTH S.N.",
 			"Vikashegde",
-			"ಮಲ್ನಾಡಾಚ್ ಕೊಂಕ್ಣೊ",
-			"Anzx"
+			"ಮಲ್ನಾಡಾಚ್ ಕೊಂಕ್ಣೊ"
 		]
 	},
-	"mobile-frontend-changeslist-nocomment": "ಸಂಪಾದನೆಯ ಸಾರಾಂಶವಿಲ್ಲ",
-	"mobile-frontend-clear-search": "ಅಳಿಸಿ",
 	"mobile-frontend-copyright": "ವಿಶೇಷವಾಗಿ ಟಿಪ್ಪಣಿ ಮಾಡದಿದ್ದ ಹೊರತು ಪಠ್ಯ \"$1\" ರಡಿ ಲಭ್ಯವಿದೆ.",
 	"mobile-frontend-desc": "ಮೊಬೈಲ್ ಮುನ್ನೆಲೆ",
 	"mobile-frontend-editor-anonwarning": "<strong>ಎಚ್ಚರಿಕೆ :</strong> ನೀವು ಲಾಗ್ ಇನ್ ಆಗಿಲ್ಲ. ನೀವು ಯಾವುದೇ ಸಂಪಾದನೆ ಮಾಡಿದರೆ ನಿಮ್ಮ ಐಪಿ ವಿಳಾಸವು ಸಾರ್ವಜನಿಕವಾಗಿ ಕಾಣುತ್ತದೆ. ನೀವು <strong>ಲಾಗ್ ಇನ್</strong> ಆದರೆ, ಅಥವಾ <strong>ಖಾತೆ ರಚಿಸಿದರೆ</strong>, ನಿಮ್ಮ ಸಂಪಾದನೆಗಳನ್ನು ನಿಮ್ಮ ಬಳಕೆದಾರ ಹೆಸರಿಗೆ ಕೊಡಲಾಗುವುದು, ಇನ್ನಿತರ ಅನುಕೂಲಗಳೊಂದಿಗೆ.",
@@ -45,14 +43,11 @@
 	"mobile-frontend-media-details": "ವಿವರಗಳು",
 	"mobile-frontend-media-license-link": "ಪರವಾನಗಿ ಮಾಹಿತಿ",
 	"mobile-frontend-missing-image": "ಚಿತ್ರ",
-	"mobile-frontend-opt-in-explain": "ಬೀಟಾವನ್ನು ಸೇರುವುದರಿಂದ, ದೋಷಗಳು ಮತ್ತು ವಿವಾದಾಂಶಗಳ ಅಪಾಯದೊಂದಿಗೆ, ನೀವು ಪ್ರಾಯೋಗಿಕ ವೈಶಿಷ್ಟ್ಯಗಳನ್ನು ಪಡೆಯುವಿರಿ.",
 	"mobile-frontend-overlay-close": "ಮುಚ್ಚಿ",
 	"mobile-frontend-privacy-link-text": "ಗೋಪ್ಯತೆ",
 	"mobile-frontend-requires-title": "ಪುಟ ಲಭ್ಯವಿಲ್ಲ",
 	"mobile-frontend-save-settings": "ಉಳಿಸಿ",
-	"mobile-frontend-search-no-results": "ಈ ಶೀರ್ಷಿಕೆಯ ಯಾವುದೇ ಪುಟವಿಲ್ಲ.",
 	"mobile-frontend-settings-tagline": "ಓದುವ ಪ್ರಾಶಸ್ತ್ಯಗಳು",
-	"mobile-frontend-settings-beta": "{{SITENAME}} βeta",
 	"mobile-frontend-terms-text": "ಬಳಕೆಯ ನಿಬಂಧನೆಗಳು",
 	"mobile-frontend-view": "ಮೊಬೈಲ್ ವೀಕ್ಷಣೆ",
 	"mobile-frontend-view-desktop": "ಡೆಸ್ಕ್‌ಟಾಪ್",
@@ -68,6 +63,5 @@
 	"tag-mobile_edit-description": "ಮೊಬೈಲಿನಿಂದ ಮಾಡಿದ ಸಂಪಾದನೆ (ವೆಬ್ ಅಥವಾ ಆ್ಯಪ್)",
 	"tag-advanced_mobile_edit": "ಮುಂದುವರೆದ ಮೊಬೈಲ್ ಸಂಪಾದನೆ",
 	"tag-mobile_web_edit": "ಮೊಬೈಲ್ ವೆಬ್ ಸಂಪಾದನೆ",
-	"mobile-frontend-search-feedback-link-text": "ನಮಗೆ ನಿಮ್ಮ ಪ್ರತಿಕ್ರಿಯೆ ಕೊಡಿ.",
 	"prefs-mobile": "ಮೊಬೈಲ್ ಪ್ರಾಶಸ್ತ್ಯಗಳು"
 }

@@ -2,6 +2,7 @@
 
 namespace GrowthExperiments\Api;
 
+use GrowthExperiments\FeatureManager;
 use GrowthExperiments\NewcomerTasks\AddImage\ImageRecommendation;
 use GrowthExperiments\NewcomerTasks\AddImage\ImageRecommendationProvider;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
@@ -36,28 +37,23 @@ class ApiQueryImageSuggestionData extends ApiQueryBase {
 	private ConfigurationLoader $configurationLoader;
 	private Config $config;
 	private TitleFactory $titleFactory;
+	private FeatureManager $featureManager;
 
-	/**
-	 * @param ApiQuery $mainModule
-	 * @param string $moduleName
-	 * @param ImageRecommendationProvider $imageRecommendationProvider
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param Config $config
-	 * @param TitleFactory $titleFactory
-	 */
 	public function __construct(
 		ApiQuery $mainModule,
-		$moduleName,
+		string $moduleName,
 		ImageRecommendationProvider $imageRecommendationProvider,
 		ConfigurationLoader $configurationLoader,
 		Config $config,
-		TitleFactory $titleFactory
+		TitleFactory $titleFactory,
+		FeatureManager $featureManager
 	) {
 		parent::__construct( $mainModule, $moduleName, 'gisd' );
 		$this->imageRecommendationProvider = $imageRecommendationProvider;
 		$this->configurationLoader = $configurationLoader;
 		$this->config = $config;
 		$this->titleFactory = $titleFactory;
+		$this->featureManager = $featureManager;
 
 		$this->setLogger( LoggerFactory::getInstance( 'GrowthExperiments' ) );
 	}
@@ -72,6 +68,11 @@ class ApiQueryImageSuggestionData extends ApiQueryBase {
 		if ( $user->pingLimiter( 'growthexperiments-apiqueryimagesuggestiondata' ) ) {
 			$this->dieWithError( 'apierror-ratelimited' );
 		}
+
+		if ( !$this->featureManager->isNewcomerTasksAvailable() ) {
+			$this->dieWithError( [ 'apierror-moduledisabled', 'Suggested edits' ] );
+		}
+
 		$params = $this->extractRequestParams();
 		// This API is used by external clients for their own structured task workflows so
 		// include disabled task types.
@@ -81,10 +82,9 @@ class ApiQueryImageSuggestionData extends ApiQueryBase {
 
 		if ( $taskType === null ) {
 			$this->logger->warning(
-				'Task type {tasktype} was not found in {configpage}',
+				'Task type {tasktype} was not found in configuration',
 				[
 					'tasktype' => $params['tasktype'],
-					'configpage' => $this->getConfig()->get( 'GENewcomerTasksConfigTitle' ),
 				]
 			);
 			$this->dieWithError(

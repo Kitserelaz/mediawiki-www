@@ -23,11 +23,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 	public function testGetSuggestionDataFromApiResponse( array $apiResponse, array $expectedResult ) {
 		$taskType = new ImageRecommendationTaskType( 'image-recommendation', TaskType::DIFFICULTY_EASY );
 		$globalIdGenerator = $this->createMock( GlobalIdGenerator::class );
-		$globalIdGenerator->method( 'getTimestampFromUUIDv1' )->willReturnCallback(
-			static function ( $id ) {
-				return $id;
-			}
-		);
+		$globalIdGenerator->method( 'getTimestampFromUUIDv1' )->willReturnArgument( 0 );
 		$apiHandler = new ProductionImageRecommendationApiHandler(
 			$this->createMock( HttpRequestFactory::class ),
 			'https://example.com',
@@ -51,7 +47,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 				'confidence' => 90,
 				'found_on' => [ 'enwiki', 'dewiki' ],
 				'kind' => [
-					'istype-lead-image'
+					'istype-lead-image',
 				],
 				'origin_wiki' => 'commonswiki',
 				'page_rev' => 17463093,
@@ -66,7 +62,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 				'confidence' => 80,
 				'found_on' => [ 'enwiki' ],
 				'kind' => [
-					'istype-commons-category'
+					'istype-commons-category',
 				],
 				'origin_wiki' => 'commonswiki',
 				'page_rev' => 17463093,
@@ -81,7 +77,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 				'confidence' => 50,
 				'found_on' => [],
 				'kind' => [
-					'istype-commons-category'
+					'istype-commons-category',
 				],
 				'origin_wiki' => 'commonswiki',
 				'page_rev' => 17463093,
@@ -96,7 +92,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 				'confidence' => 40,
 				'found_on' => null,
 				'kind' => [
-					'istype-commons-category'
+					'istype-commons-category',
 				],
 				'origin_wiki' => 'commonswiki',
 				'page_rev' => 17463093,
@@ -132,7 +128,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 						'confidence' => 80,
 						'found_on' => [ 'eswiki' ],
 						'kind' => [
-							'istype-lead-image'
+							'istype-lead-image',
 						],
 						'origin_wiki' => 'commonswiki',
 						'page_rev' => 17463093,
@@ -147,7 +143,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 						'confidence' => 90,
 						'found_on' => [ 'eswiki' ],
 						'kind' => [
-							'istype-lead-image'
+							'istype-lead-image',
 						],
 						'origin_wiki' => 'commonswiki',
 						'page_rev' => 17463093,
@@ -173,7 +169,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 						'confidence' => 80,
 						'found_on' => [ 'eswiki' ],
 						'kind' => [
-							'istype-lead-image'
+							'istype-lead-image',
 						],
 						'origin_wiki' => 'commonswiki',
 						'page_rev' => 17463093,
@@ -188,7 +184,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 						'confidence' => 80,
 						'found_on' => [ 'eswiki' ],
 						'kind' => [
-							'istype-lead-image'
+							'istype-lead-image',
 						],
 						'origin_wiki' => 'commonswiki',
 						'page_rev' => 17463093,
@@ -211,7 +207,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 						'confidence' => 90,
 						'found_on' => [ 'eswiki' ],
 						'kind' => [
-							'istype-lead-image'
+							'istype-lead-image',
 						],
 						'origin_wiki' => 'commonswiki',
 						'page_rev' => 17463093,
@@ -226,7 +222,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 						'confidence' => 80,
 						'found_on' => [ 'eswiki' ],
 						'kind' => [
-							'istype-lead-image'
+							'istype-lead-image',
 						],
 						'origin_wiki' => 'commonswiki',
 						'page_rev' => 17463093,
@@ -241,7 +237,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 						'confidence' => 90,
 						'found_on' => [ 'eswiki' ],
 						'kind' => [
-							'istype-lead-image'
+							'istype-lead-image',
 						],
 						'origin_wiki' => 'commonswiki',
 						'page_rev' => 17463093,
@@ -292,7 +288,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 					new ImageRecommendationData(
 						null, 'wikidata', '', '1'
 					),
-				]
+				],
 			],
 			'multiple kinds' => [
 				[ 'rows' => [ [
@@ -305,7 +301,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 					'kind' => [
 						'istype-wikidata-image',
 						'istype-lead-image',
-						'istype-commons-category'
+						'istype-commons-category',
 					],
 					'origin_wiki' => 'commonswiki',
 					'page_rev' => 17463093,
@@ -371,7 +367,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 					'confidence' => 90,
 					'found_on' => [ 'enwiki', 'dewiki' ],
 					'kind' => [
-						'istype-lead-image'
+						'istype-lead-image',
 					],
 					'origin_wiki' => 'commonswiki',
 					'page_rev' => 17463093,
@@ -390,11 +386,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 	public function testGetSuggestionDataFromApiResponse_section( array $apiResponse, array $expectedResult ) {
 		$taskType = new ImageRecommendationTaskType( 'section-image-recommendation', TaskType::DIFFICULTY_EASY );
 		$globalIdGenerator = $this->createMock( GlobalIdGenerator::class );
-		$globalIdGenerator->method( 'getTimestampFromUUIDv1' )->willReturnCallback(
-			static function ( $id ) {
-				return $id;
-			}
-		);
+		$globalIdGenerator->method( 'getTimestampFromUUIDv1' )->willReturnArgument( 0 );
 		$apiHandler = new ProductionImageRecommendationApiHandler(
 			$this->createMock( HttpRequestFactory::class ),
 			'https://example.com',
@@ -441,7 +433,7 @@ class ProductionImageRecommendationApiHandlerTest extends MediaWikiUnitTestCase 
 					'found_on' => [ 'enwiki', 'cswiki' ],
 					'kind' => [
 						'istype-section-topics',
-						'istype-section-alignment'
+						'istype-section-alignment',
 					],
 					'origin_wiki' => 'wikidatawiki',
 					'page_rev' => 17463093,

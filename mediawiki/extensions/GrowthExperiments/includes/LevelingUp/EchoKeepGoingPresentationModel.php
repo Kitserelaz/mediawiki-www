@@ -2,22 +2,15 @@
 
 namespace GrowthExperiments\LevelingUp;
 
-use MediaWiki\Extension\Notifications\Formatters\EchoEventPresentationModel;
-
 /**
- * Echo notification for "Keep going" (T328288)
+ * Echo notification for "Keep going" notification (second version, T400118). Event type
+ * name is: "keep-going-exploring"
  */
-class EchoKeepGoingPresentationModel extends EchoEventPresentationModel {
-
-	/** @inheritDoc */
-	public function getIconType() {
-		return 'growthexperiments-keep-going';
-	}
+class EchoKeepGoingPresentationModel extends EchoKeepGoingBasePresentationModel {
 
 	/** @inheritDoc */
 	public function getHeaderMessage() {
-		return $this->getMessageWithAgent( 'growthexperiments-levelingup-keepgoing-notification-header' )
-			->params( $this->event->getExtra()['suggestededitcount'] );
+		return $this->getMessageWithAgent( 'growthexperiments-levelingup-keepgoing-exploring-notification-header' );
 	}
 
 	/** @inheritDoc */
@@ -30,23 +23,9 @@ class EchoKeepGoingPresentationModel extends EchoEventPresentationModel {
 		return [ [
 			'url' => $this->getSpecialHomepageUrl( 'keep-going-secondary-link' ),
 			'label' => $this->getMessageWithAgent(
-				'growthexperiments-levelingup-keepgoing-notification-call-to-action-label'
-			),
-			'icon' => 'edit'
+				'growthexperiments-levelingup-keepgoing-exploring-notification-call-to-action-label'
+			)->text(),
+			'icon' => 'edit',
 		] ];
-	}
-
-	/** @inheritDoc */
-	public function getPrimaryLink() {
-		return [
-			'url' => $this->getSpecialHomepageUrl( 'keep-going-primary-link-' . $this->getDistributionType() ),
-			'label' => $this->msg( 'growthexperiments-levelingup-keepgoing-notification-call-to-action-label' )->text()
-		];
-	}
-
-	private function getSpecialHomepageUrl( string $source ): string {
-		$title = $this->event->getTitle();
-		$title->setFragment( '#/homepage/suggested-edits' );
-		return $title->getCanonicalURL( [ 'source' => $source ] );
 	}
 }

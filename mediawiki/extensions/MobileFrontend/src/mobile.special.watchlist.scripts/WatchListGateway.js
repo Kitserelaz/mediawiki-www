@@ -1,65 +1,65 @@
 const
-	pageJSONParser = require( '../mobile.startup/page/pageJSONParser' ),
+	pageJSONParser = require( './pageJSONParser' ),
 	util = require( '../mobile.startup/util' ),
-	extendSearchParams = require( '../mobile.startup/extendSearchParams' );
+	extendSearchParams = require( './extendSearchParams' );
 
 /**
  * API for interacting with watchlist.
- *
- * @param {mw.Api} api
- * @param {string} lastTitle of page listed in Watchlist to be used as a continuation parameter
- * @private
  */
-function WatchListGateway( api, lastTitle ) {
-	this.api = api;
-	// Try to keep it in sync with SpecialMobileEditWatchlist::LIMIT (php)
-	this.limit = 50;
+class WatchListGateway {
+	/**
+	 * @param {mw.Api} api
+	 * @param {string} lastTitle of page listed in Watchlist to be used as a continuation parameter
+	 * @private
+	 */
+	constructor( api, lastTitle ) {
+		this.api = api;
+		// Try to keep it in sync with SpecialMobileEditWatchlist::LIMIT (php)
+		this.limit = 50;
 
-	if ( lastTitle ) {
-		this.continueParams = {
-			continue: 'gwrcontinue||',
-			gwrcontinue: '0|' + lastTitle.replace( / /g, '_' )
-		};
-		this.shouldSkipFirstTitle = true;
-	} else {
-		this.continueParams = {
-			continue: ''
-		};
-		this.shouldSkipFirstTitle = false;
+		if ( lastTitle ) {
+			this.continueParams = {
+				continue: 'gwrcontinue||',
+				gwrcontinue: '0|' + lastTitle.replace( / /g, '_' )
+			};
+			this.shouldSkipFirstTitle = true;
+		} else {
+			this.continueParams = {
+				continue: ''
+			};
+			this.shouldSkipFirstTitle = false;
+		}
+
+		this.canContinue = true;
 	}
 
-	this.canContinue = true;
-}
-
-WatchListGateway.prototype = {
 	/**
 	 * Load the list of items on the watchlist
 	 *
 	 * @return {jQuery.Deferred}
 	 */
-	loadWatchlist: function () {
-		const self = this,
-			params = extendSearchParams( 'watchlist', {
-				prop: [ 'info', 'revisions' ],
-				rvprop: 'timestamp|user',
-				generator: 'watchlistraw',
-				gwrnamespace: '0',
-				gwrlimit: this.limit
-			}, this.continueParams );
+	loadWatchlist() {
+		const params = extendSearchParams( 'watchlist', {
+			prop: [ 'info', 'revisions' ],
+			rvprop: 'timestamp|user',
+			generator: 'watchlistraw',
+			gwrnamespace: '0',
+			gwrlimit: this.limit
+		}, this.continueParams );
 
 		if ( this.canContinue === false ) {
 			return util.Deferred().resolve( [] );
 		}
-		return this.api.get( params ).then( function ( data ) {
+		return this.api.get( params ).then( ( data ) => {
 			if ( data.continue !== undefined ) {
-				self.continueParams = data.continue;
+				this.continueParams = data.continue;
 			} else {
-				self.canContinue = false;
+				this.canContinue = false;
 			}
 
-			return self.parseData( data );
+			return this.parseData( data );
 		} );
-	},
+	}
 
 	/**
 	 * Parse api response data into pagelist item format
@@ -67,7 +67,7 @@ WatchListGateway.prototype = {
 	 * @param {Object[]} data
 	 * @return {Page[]}
 	 */
-	parseData: function ( data ) {
+	parseData( data ) {
 		let pages;
 
 		if ( !data.query || !data.query.pages ) {
@@ -78,9 +78,7 @@ WatchListGateway.prototype = {
 
 		// Sort results alphabetically (the api map doesn't have any order). The
 		// watchlist is ordered alphabetically right now.
-		pages.sort( function ( p1, p2 ) {
-			return p1.title === p2.title ? 0 : ( p1.title < p2.title ? -1 : 1 );
-		} );
+		pages.sort( ( p1, p2 ) => p1.title === p2.title ? 0 : ( p1.title < p2.title ? -1 : 1 ) );
 
 		// If we requested from the last item of the previous page, we shall
 		// remove the first result (to avoid it being repeated)
@@ -92,7 +90,6 @@ WatchListGateway.prototype = {
 		// Transform the items to a sensible format
 		return pages.map( pageJSONParser.parse );
 	}
-
-};
+}
 
 module.exports = WatchListGateway;

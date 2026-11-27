@@ -116,5 +116,6 @@ return (object) array(
      'maxTasksPerDay' => 25,
      'underlinkedWeight' => 0.5,
      'minimumLinkScore' => 0.6,
+     'maximumEditsTaskIsAvailable' => 'no',
   ),
 );

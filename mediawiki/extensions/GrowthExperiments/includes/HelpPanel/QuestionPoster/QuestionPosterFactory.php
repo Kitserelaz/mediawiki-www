@@ -2,14 +2,16 @@
 
 namespace GrowthExperiments\HelpPanel\QuestionPoster;
 
-use GrowthExperiments\Mentorship\MentorManager;
+use GrowthExperiments\MentorDashboard\MentorTools\MentorStatusManager;
+use GrowthExperiments\Mentorship\IMentorManager;
+use GrowthExperiments\Mentorship\UserNotMentoredException;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Exception\UserNotLoggedIn;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Title\TitleFactory;
-use UserNotLoggedIn;
 use Wikimedia\Assert\Assert;
-use Wikimedia\Stats\PrefixingStatsdDataFactoryProxy;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * Factory class for selecting the right question poster based on where the questions should go
@@ -27,54 +29,47 @@ class QuestionPosterFactory {
 	/** The question is sent to the talk page of the asking user's mentor. */
 	public const TARGET_MENTOR_TALK = 'mentor talk page';
 
-	/** @var WikiPageFactory */
-	private $wikiPageFactory;
-
-	/** @var TitleFactory */
-	private $titleFactory;
-
-	/** @var MentorManager */
-	private $mentorManager;
-
-	/** @var PermissionManager */
-	private $permissionManager;
-
-	/** @var bool */
-	private $helpDeskPostOnTop;
-
-	/** @var PrefixingStatsdDataFactoryProxy */
-	private $perDbNameStatsdDataFactory;
+	private WikiPageFactory $wikiPageFactory;
+	private TitleFactory $titleFactory;
+	private IMentorManager $mentorManager;
+	private PermissionManager $permissionManager;
+	private bool $helpDeskPostOnTop;
+	private StatsFactory $statsFactory;
 
 	private bool $confirmEditInstalled;
 	private bool $flowInstalled;
+	private MentorStatusManager $mentorStatusManager;
 
 	/**
 	 * @param WikiPageFactory $wikiPageFactory
 	 * @param TitleFactory $titleFactory
-	 * @param MentorManager $mentorManager
+	 * @param IMentorManager $mentorManager
+	 * @param MentorStatusManager $mentorStatusManager
 	 * @param PermissionManager $permissionManager
 	 * @param bool $helpDeskPostOnTop Whether to post on top of the help desk
 	 *   (as opposed to the bottom). Only affects wikitext pages.
-	 * @param PrefixingStatsdDataFactoryProxy $perDbNameStatsdDataFactory
+	 * @param statsFactory $statsFactory
 	 * @param bool $confirmEditInstalled
 	 * @param bool $flowInstalled
 	 */
 	public function __construct(
 		WikiPageFactory $wikiPageFactory,
 		TitleFactory $titleFactory,
-		MentorManager $mentorManager,
+		IMentorManager $mentorManager,
+		MentorStatusManager $mentorStatusManager,
 		PermissionManager $permissionManager,
 		bool $helpDeskPostOnTop,
-		PrefixingStatsdDataFactoryProxy $perDbNameStatsdDataFactory,
+		StatsFactory $statsFactory,
 		bool $confirmEditInstalled,
 		bool $flowInstalled
 	) {
 		$this->wikiPageFactory = $wikiPageFactory;
 		$this->titleFactory = $titleFactory;
 		$this->mentorManager = $mentorManager;
+		$this->mentorStatusManager = $mentorStatusManager;
 		$this->permissionManager = $permissionManager;
 		$this->helpDeskPostOnTop = $helpDeskPostOnTop;
-		$this->perDbNameStatsdDataFactory = $perDbNameStatsdDataFactory;
+		$this->statsFactory = $statsFactory;
 		$this->confirmEditInstalled = $confirmEditInstalled;
 		$this->flowInstalled = $flowInstalled;
 	}
@@ -87,6 +82,7 @@ class QuestionPosterFactory {
 	 * @param string $relevantTitle Title of the page the question is about, if any.
 	 * @return QuestionPoster
 	 * @throws UserNotLoggedIn
+	 * @throws UserNotMentoredException
 	 */
 	public function getQuestionPoster(
 		string $source,
@@ -107,7 +103,7 @@ class QuestionPosterFactory {
 				$this->wikiPageFactory,
 				$this->titleFactory,
 				$this->permissionManager,
-				$this->perDbNameStatsdDataFactory,
+				$this->statsFactory,
 				$this->confirmEditInstalled,
 				$this->flowInstalled,
 				$context,
@@ -121,8 +117,9 @@ class QuestionPosterFactory {
 				$this->wikiPageFactory,
 				$this->titleFactory,
 				$this->mentorManager,
+				$this->mentorStatusManager,
 				$this->permissionManager,
-				$this->perDbNameStatsdDataFactory,
+				$this->statsFactory,
 				$this->confirmEditInstalled,
 				$this->flowInstalled,
 				$context,
@@ -134,8 +131,9 @@ class QuestionPosterFactory {
 				$this->wikiPageFactory,
 				$this->titleFactory,
 				$this->mentorManager,
+				$this->mentorStatusManager,
 				$this->permissionManager,
-				$this->perDbNameStatsdDataFactory,
+				$this->statsFactory,
 				$this->confirmEditInstalled,
 				$this->flowInstalled,
 				$context,

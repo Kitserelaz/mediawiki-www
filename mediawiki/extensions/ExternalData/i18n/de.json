@@ -12,8 +12,8 @@
 			"Umherirrender"
 		]
 	},
-	"getdata": "Daten holen",
 	"externaldata-desc": "Ermöglicht das Abrufen strukturierter Daten von externen URLs, Datenbanken und anderen Quellen",
+	"externaldata-disabled": "Die Klasse <code>$1</code> ist deaktiviert: $2. Um sie zu aktivieren, muss ein Wiki-Administrator diese Klasse aus der Konfigurationseinstellung <code>$wgExternalDataDisabledClasses</code> entfernen.",
 	"externaldata-no-param-specified": "Fehler: Kein Parameter „$1“ angegeben.",
 	"externaldata-param-type-error": "Fehler: Parameter $1 muss vom Typ $2 sein.",
 	"externaldata-processing-exception": "Beim Ausführen des Präprozessors oder Postprozessors ist eine Ausnahme aufgetreten: $1",
@@ -51,7 +51,7 @@
 	"externaldata-url-hooks-aborted": "Der Hook „$1“ ist abgebrochen und hat Fehler zurückgegeben: $2",
 	"externaldata-url-not-fetched": "Fehler beim Abrufen von Daten von URL $1: $2.",
 	"externaldata-url-unknown-error": "Unbekannter Fehler beim Abrufen von Daten von URL $1.",
-	"externaldata-url-not-allowed": "Die URL $1 ist in diesem Wiki nicht erlaubt.",
+	"externaldata-url-not-allowed": "Die URL $1 ist in diesem Wiki nicht erlaubt; du musst diese oder deren Domain zu <code>$wgExternalDataAllowedSources</code> hinzufügen.",
 	"externaldata-caught-exception-soap": "Ausnahme $1 beim Erstellen des SOAP-Clients abgefangen.",
 	"externaldata-parsing-html-failed": "HTML konnte nicht geparst werden:\n $1",
 	"externaldata-caught-exception-parsing-html": "Ausnahme beim Parsen von HTML abgefangen. Die Fehlermeldung lautet „$1“.",
@@ -73,6 +73,5 @@
 	"external-data-archive-could-not-extract": "Fehler: Datei <code>$2</code> konnte nicht aus $1-Archiv extrahiert werden ($3)",
 	"externaldata-no-local-variable": "Fehler: Es wurde keine lokale Variable „$1“ gesetzt.",
 	"externaldata-no-template": "Fehler: keine Vorlage angegeben.",
-	"externaldata-no-loop-body": "Fehler: Kein Schleifenkörper als erster oder zweiter Parameter gesetzt.",
-	"externaldata-getdata-badurl": "Du musst einen Seitennamen in der URL angeben. Die URL muss wie folgt aussehen: „{{#Special:GetData}}/Page_name“."
+	"externaldata-no-loop-body": "Fehler: Kein Schleifenkörper als erster oder zweiter Parameter gesetzt."
 }

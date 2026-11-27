@@ -1,7 +1,7 @@
 <?php
 
 use MediaWiki\MediaWikiServices;
-use Wikimedia\AtEase\AtEase;
+use MediaWiki\Title\Title;
 
 class CommentFunctions {
 	/**
@@ -173,16 +173,8 @@ class CommentFunctions {
 			return Status::newGood();
 		}
 
-		if ( class_exists( MediaWiki\Extension\AbuseFilter\AbuseFilterServices::class ) ) {
-			// post-1.35
-			$gen = MediaWiki\Extension\AbuseFilter\AbuseFilterServices::getVariableGeneratorFactory()->newGenerator();
-			$runnerFactory = MediaWiki\Extension\AbuseFilter\AbuseFilterServices::getFilterRunnerFactory();
-		} else {
-			// 1.35 only
-			$gen = new MediaWiki\Extension\AbuseFilter\VariableGenerator\VariableGenerator(
-				new AbuseFilterVariableHolder()
-			);
-		}
+		$gen = MediaWiki\Extension\AbuseFilter\AbuseFilterServices::getVariableGeneratorFactory()->newGenerator();
+		$runnerFactory = MediaWiki\Extension\AbuseFilter\AbuseFilterServices::getFilterRunnerFactory();
 
 		$vars = $gen->addUserVars( $user )
 			->addTitleVars( $title, 'page' )
@@ -193,17 +185,12 @@ class CommentFunctions {
 		$vars->setVar( 'new_wikitext', $text );
 		$vars->setLazyLoadVar( 'new_size', 'length', [ 'length-var' => 'new_wikitext' ] );
 
-		if ( class_exists( MediaWiki\Extension\AbuseFilter\FilterRunnerFactory::class ) ) {
-			$status = $runnerFactory->newRunner(
-				$user,
-				$title,
-				$vars,
-				$wgCommentsAbuseFilterGroup
-			)->run();
-		} else {
-			// 1.35 only
-			$status = ( new AbuseFilterRunner( $user, $title, $vars, $wgCommentsAbuseFilterGroup ) )->run();
-		}
+		$status = $runnerFactory->newRunner(
+			$user,
+			$title,
+			$vars,
+			$wgCommentsAbuseFilterGroup
+		)->run();
 
 		return $status;
 	}
@@ -217,9 +204,8 @@ class CommentFunctions {
 	public static function blockUser( $blocker, $blocked ) {
 		$dbw = Comment::getDBHandle( 'write' );
 
-		AtEase::suppressWarnings(); // E_STRICT bitching
-		$date = date( 'Y-m-d H:i:s' );
-		AtEase::restoreWarnings();
+		// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+		$date = @date( 'Y-m-d H:i:s' );
 		$dbw->insert(
 			'Comments_block',
 			[
@@ -246,8 +232,9 @@ class CommentFunctions {
 			[ 'cb_actor' => $user->getActorId() ],
 			__METHOD__
 		);
+		$userFactory = MediaWikiServices::getInstance()->getUserFactory();
 		foreach ( $res as $row ) {
-			$blocked = User::newFromActorId( $row->cb_actor_blocked );
+			$blocked = $userFactory->newFromActorId( $row->cb_actor_blocked );
 			if ( $blocked ) {
 				$blockList[] = $blocked->getName();
 			}

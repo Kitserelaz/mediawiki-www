@@ -1,5 +1,7 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace GrowthExperiments\NewcomerTasks\TaskType;
 
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationValidator;
@@ -7,9 +9,9 @@ use GrowthExperiments\NewcomerTasks\SubmissionHandler;
 use GrowthExperiments\NewcomerTasks\Task\Task;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\SearchStrategy\SearchQuery;
 use MediaWiki\Linker\LinkTarget;
+use MediaWiki\Search\SearchResult;
 use MediaWiki\Title\MalformedTitleException;
 use MediaWiki\Title\TitleParser;
-use SearchResult;
 use StatusValue;
 
 /**
@@ -27,15 +29,10 @@ abstract class TaskTypeHandler {
 	 */
 	public const NEWCOMER_TASK_TAG = 'newcomer task';
 
-	/** @var ConfigurationValidator */
-	protected $configurationValidator;
-	/** @var TitleParser */
-	private $titleParser;
+	protected readonly ConfigurationValidator $configurationValidator;
 
-	/**
-	 * @param ConfigurationValidator $configurationValidator
-	 * @param TitleParser $titleParser
-	 */
+	private readonly TitleParser $titleParser;
+
 	public function __construct( ConfigurationValidator $configurationValidator, TitleParser $titleParser ) {
 		$this->configurationValidator = $configurationValidator;
 		$this->titleParser = $titleParser;
@@ -48,9 +45,6 @@ abstract class TaskTypeHandler {
 	 */
 	abstract public function getId(): string;
 
-	/**
-	 * @return SubmissionHandler
-	 */
 	abstract public function getSubmissionHandler(): SubmissionHandler;
 
 	/**
@@ -62,52 +56,21 @@ abstract class TaskTypeHandler {
 	 */
 	public function validateTaskTypeConfiguration( string $taskTypeId, array $config ): StatusValue {
 		$status = StatusValue::newGood();
-		$status->merge( $this->configurationValidator->validateIdentifier( $taskTypeId ) );
 
-		$groupFieldStatus = $this->configurationValidator->validateRequiredField( 'group',
-			$config, $taskTypeId );
-		$status->merge( $groupFieldStatus );
-		if ( $groupFieldStatus->isOK() &&
-			 !in_array( $config['group'], TaskType::DIFFICULTY_CLASSES, true )
-		) {
-			$status->fatal( 'growthexperiments-homepage-suggestededits-config-invalidgroup',
-				$config['group'], $taskTypeId );
+		if ( !isset( $config['excludedTemplates'] ) ) {
+			$config['excludedTemplates'] = [];
 		}
-
-		if ( $status->isOK() ) {
-			if ( !isset( $config['excludedTemplates'] ) ) {
-				$config['excludedTemplates'] = [];
-			}
-			$status->merge(
-				$this->configurationValidator->validateFieldIsArray( 'excludedTemplates', $config, $taskTypeId )
-			);
-			if ( $status->isOK() ) {
-				foreach ( $config['excludedTemplates'] as $template ) {
-					$this->validateTemplate( $template, $taskTypeId, $status );
-				}
-			}
+		foreach ( $config['excludedTemplates'] as $template ) {
+			$this->validateTemplate( $template, $taskTypeId, $status );
 		}
 
 		if ( $status->isOK() ) {
 			if ( !isset( $config['excludedCategories'] ) ) {
 				$config['excludedCategories'] = [];
 			}
-			$status->merge(
-				$this->configurationValidator->validateFieldIsArray( 'excludedCategories', $config, $taskTypeId )
-			);
-			if ( $status->isOK() ) {
-				foreach ( $config['excludedCategories'] as $category ) {
-					$this->validateCategory( $category, $taskTypeId, $status );
-				}
+			foreach ( $config['excludedCategories'] as $category ) {
+				$this->validateCategory( $category, $taskTypeId, $status );
 			}
-		}
-
-		// Link recommendation specific.
-		// FIXME: would be nice to define this and other type definitions in the task type.
-		if ( $status->isOK() && isset( $config['excludedSections'] ) ) {
-			$status->merge(
-				$this->configurationValidator->validateFieldIsArray( 'excludedSections', $config, $taskTypeId )
-			);
 		}
 
 		return $status;
@@ -115,13 +78,8 @@ abstract class TaskTypeHandler {
 
 	/**
 	 * Attempt to parse a template title, return a failed status value on MalformedTitleException.
-	 *
-	 * @param mixed $template
-	 * @param string $taskTypeId
-	 * @param StatusValue $status
-	 * @return StatusValue
 	 */
-	protected function validateTemplate( $template, string $taskTypeId, StatusValue $status ): StatusValue {
+	protected function validateTemplate( mixed $template, string $taskTypeId, StatusValue $status ): StatusValue {
 		if ( !is_string( $template ) ) {
 			if ( !is_scalar( $template ) ) {
 				$template = '[' . gettype( $template ) . ']';
@@ -131,7 +89,7 @@ abstract class TaskTypeHandler {
 		}
 		try {
 			$this->titleParser->parseTitle( $template, NS_TEMPLATE );
-		} catch ( MalformedTitleException $e ) {
+		} catch ( MalformedTitleException ) {
 			$status->fatal( 'growthexperiments-homepage-suggestededits-config-invalidtemplatetitle',
 				$template, $taskTypeId );
 		}
@@ -140,13 +98,8 @@ abstract class TaskTypeHandler {
 
 	/**
 	 * Attempt to parse a category title, return a failed status value on MalformedTitleException.
-	 *
-	 * @param mixed $category
-	 * @param string $taskTypeId
-	 * @param StatusValue $status
-	 * @return StatusValue
 	 */
-	protected function validateCategory( $category, string $taskTypeId, StatusValue $status ): StatusValue {
+	protected function validateCategory( mixed $category, string $taskTypeId, StatusValue $status ): StatusValue {
 		if ( !is_string( $category ) ) {
 			if ( !is_scalar( $category ) ) {
 				$category = '[' . gettype( $category ) . ']';
@@ -156,7 +109,7 @@ abstract class TaskTypeHandler {
 		}
 		try {
 			$this->titleParser->parseTitle( $category, NS_CATEGORY );
-		} catch ( MalformedTitleException $e ) {
+		} catch ( MalformedTitleException ) {
 			$status->fatal( 'growthexperiments-homepage-suggestededits-config-invalidcategorytitle',
 				$category, $taskTypeId );
 		}
@@ -193,9 +146,6 @@ abstract class TaskTypeHandler {
 	 * Get a CirrusSearch search term corresponding to this task.
 	 *
 	 * Task types extending this one must call this parent method to get exclusion search strings.
-	 *
-	 * @param TaskType $taskType
-	 * @return string
 	 */
 	public function getSearchTerm( TaskType $taskType ): string {
 		$searchTerm = '';
@@ -212,23 +162,12 @@ abstract class TaskTypeHandler {
 		return $searchTerm;
 	}
 
-	/**
-	 * @param SearchQuery $query
-	 * @param SearchResult $match
-	 * @return Task
-	 */
 	public function createTaskFromSearchResult( SearchQuery $query, SearchResult $match ): Task {
 		$taskType = $query->getTaskType();
-		$topic = $query->getTopic();
+		$topics = $query->getTopics();
 		$task = new Task( $taskType, $match->getTitle() );
-		if ( $topic ) {
-			$score = 0;
-			// CirrusSearch and our custom FauxSearchResultWithScore have this.
-			if ( method_exists( $match, 'getScore' ) ) {
-				// @phan-suppress-next-line PhanUndeclaredMethod
-				$score = $match->getScore();
-			}
-			$task->setTopics( [ $topic ], [ $topic->getId() => $score ] );
+		if ( $topics ) {
+			$task->setTopics( $topics );
 		}
 
 		return $task;
@@ -239,19 +178,12 @@ abstract class TaskTypeHandler {
 	 * @param string|null $taskType
 	 * @return string[]
 	 */
-	public function getChangeTags( ?string $taskType = null ): array {
-		return [ self::NEWCOMER_TASK_TAG ];
-	}
+	abstract public function getChangeTags( ?string $taskType = null ): array;
 
 	/**
 	 * Get the task type ID based on the change tag associated with it.
-	 *
-	 * @param string $changeTagName
-	 * @return string|null
 	 */
-	public function getTaskTypeIdByChangeTagName( string $changeTagName ): ?string {
-		return null;
-	}
+	abstract public function getTaskTypeIdByChangeTagName( string $changeTagName ): ?string;
 
 	/**
 	 * @param array $config

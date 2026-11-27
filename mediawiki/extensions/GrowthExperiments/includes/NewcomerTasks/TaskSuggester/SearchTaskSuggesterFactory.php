@@ -6,7 +6,7 @@ use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
 use GrowthExperiments\NewcomerTasks\NewcomerTasksUserOptionsLookup;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\SearchStrategy\SearchStrategy;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeHandlerRegistry;
-use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\Page\LinkBatchFactory;
 use Psr\Log\NullLogger;
 
 abstract class SearchTaskSuggesterFactory extends TaskSuggesterFactory {
@@ -26,13 +26,6 @@ abstract class SearchTaskSuggesterFactory extends TaskSuggesterFactory {
 	/** @var LinkBatchFactory */
 	protected $linkBatchFactory;
 
-	/**
-	 * @param TaskTypeHandlerRegistry $taskTypeHandlerRegistry
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param SearchStrategy $searchStrategy
-	 * @param NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup
-	 * @param LinkBatchFactory $linkBatchFactory
-	 */
 	public function __construct(
 		TaskTypeHandlerRegistry $taskTypeHandlerRegistry,
 		ConfigurationLoader $configurationLoader,

@@ -13,13 +13,13 @@
 			context: 'postedit',
 			previousEditorInterface: suggestedEditSession.editorInterface,
 			sessionId: suggestedEditSession.clickId,
-			isSuggestedTask: suggestedEditSession.active
+			isSuggestedTask: suggestedEditSession.active,
 		} ),
 		tryNewTaskHelpPanelLogger = new HelpPanelLogger( {
 			context: 'postedit-trynewtask',
 			previousEditorInterface: suggestedEditSession.editorInterface,
 			sessionId: suggestedEditSession.clickId,
-			isSuggestedTask: suggestedEditSession.active
+			isSuggestedTask: suggestedEditSession.active,
 		} ),
 		rootStore = require( 'ext.growthExperiments.DataStore' ),
 		CONSTANTS = rootStore.CONSTANTS,
@@ -59,7 +59,7 @@
 		} else {
 			drawer.openWithIntroContent();
 		}
-		drawer.opened.done( () => {
+		drawer.opened.then( () => {
 			// Hide the drawer if the user opens the editor again.
 			// HACK ignore memorized previous ve.activationComplete events.
 			suppressClose = true;
@@ -71,7 +71,7 @@
 			}
 			suppressClose = false;
 		} );
-		drawer.closed.done( () => {
+		drawer.closed.then( () => {
 			if ( OO.ui.isMobile() ) {
 				mw.hook( 'mobileFrontend.editorOpened' ).remove( closeDrawer );
 			} else {
@@ -82,7 +82,7 @@
 		} );
 		return {
 			openPromise: drawer.opened,
-			closePromise: drawer.closed
+			closePromise: drawer.closed,
 		};
 	}
 
@@ -121,7 +121,7 @@
 			helpPanelLogger: postEditPanelHelpPanelLogger,
 			imageRecommendationDailyTasksExceeded: imageRecommendationDailyTasksExceeded,
 			sectionImageRecommendationDailyTasksExceeded: sectionImageRecommendationDailyTasksExceeded,
-			linkRecommendationDailyTasksExceeded: linkRecommendationDailyTasksExceeded
+			linkRecommendationDailyTasksExceeded: linkRecommendationDailyTasksExceeded,
 		} );
 
 		const displayPanelPromises = displayPanel( postEditPanel, postEditPanelHelpPanelLogger, showToast );
@@ -129,7 +129,7 @@
 		return {
 			panel: postEditPanel,
 			openPromise: displayPanelPromises.openPromise,
-			closePromise: displayPanelPromises.closePromise
+			closePromise: displayPanelPromises.closePromise,
 		};
 	}
 
@@ -154,7 +154,7 @@
 		setupPanel: function ( nextSuggestedTaskType, showToast ) {
 			const fetchTasksConfig = {
 					excludePageId: mw.config.get( 'wgArticleId' ),
-					excludeExceededQuotaTaskTypes: true
+					excludeExceededQuotaTaskTypes: true,
 				},
 				logPanelImpression = function ( panel, errorMessage ) {
 					return panel.logImpression.bind( panel, {
@@ -162,7 +162,7 @@
 						errorMessage: errorMessage,
 						userTaskTypes: filtersStore.getSelectedTaskTypes(),
 						userTopics: filtersStore.getSelectedTopics(),
-						newcomerTaskToken: suggestedEditSession.newcomerTaskToken
+						newcomerTaskToken: suggestedEditSession.newcomerTaskToken,
 					} );
 				};
 
@@ -176,10 +176,10 @@
 					mw.log.error( errorMessage );
 					mw.errorLogger.logError( new Error( errorMessage ), 'error.growthexperiments' );
 				}
-				setupResult.openPromise.done( logPanelImpression( setupResult.panel, errorMessage ) );
+				setupResult.openPromise.then( logPanelImpression( setupResult.panel, errorMessage ) );
 			} );
 			setupResult = setup( showToast );
-			setupResult.openPromise.done( logPanelImpression( setupResult.panel ) );
+			setupResult.openPromise.then( logPanelImpression( setupResult.panel ) );
 			return setupResult;
 		},
 		/**
@@ -202,35 +202,35 @@
 				// A next suggested task type is available for the user
 				suggestedEditSession.nextSuggestedTaskType &&
 				// The user hasn't opted out of seeing the prompt for this task type
-				tryNewTaskOptOuts.indexOf( suggestedEditSession.taskType ) === -1
+				!tryNewTaskOptOuts.includes( suggestedEditSession.taskType )
 			) {
 				const tryNewTaskPanel = new TryNewTaskPanel( {
 					nextSuggestedTaskType: suggestedEditSession.nextSuggestedTaskType,
 					activeTaskType: suggestedEditSession.taskType,
 					helpPanelLogger: tryNewTaskHelpPanelLogger,
-					tryNewTaskOptOuts: tryNewTaskOptOuts
+					tryNewTaskOptOuts: tryNewTaskOptOuts,
 				} );
 				const displayPanelPromises = displayPanel( tryNewTaskPanel, tryNewTaskHelpPanelLogger, true );
-				displayPanelPromises.openPromise.done( () => {
+				displayPanelPromises.openPromise.then( () => {
 					tryNewTaskPanel.logImpression( {
 						// Increment the count for the task type, because the try new task panel
 						// is triggered at GELevelingUpManagerTaskTypeCountThresholdMultiple - 1,
 						// so when this code runs, the suggestedEditSession's edit count reflects
 						// the edit count just before the edit was saved.
-						'edit-count-for-task-type': suggestedEditSession.editCountByTaskType[ suggestedEditSession.taskType ] + 1
+						'edit-count-for-task-type': suggestedEditSession.editCountByTaskType[ suggestedEditSession.taskType ] + 1,
 					} );
 				} );
 				return displayPanelPromises.closePromise.then( ( closeData ) => ( {
 					accepted: typeof closeData === 'string',
 					closeData: closeData,
-					shown: true
+					shown: true,
 				} ) );
 			}
 
 			return $.Deferred().resolve( {
 				accepted: false,
-				shown: false
+				shown: false,
 			} );
-		}
+		},
 	};
 }() );

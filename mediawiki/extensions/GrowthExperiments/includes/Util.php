@@ -7,25 +7,27 @@ use MediaWiki\Api\ApiRawMessage;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Exception\MWExceptionHandler;
 use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Minerva\Skins\SkinMinerva;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Parser\Sanitizer;
-use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\Skin\Skin;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\User;
+use MediaWiki\Utils\MWCryptRand;
 use MediaWiki\Utils\UrlUtils;
-use MWExceptionHandler;
+use MediaWiki\WikiMap\WikiMap;
 use Psr\Log\LogLevel;
 use RuntimeException;
-use Skin;
 use StatusValue;
 use Throwable;
 use Traversable;
@@ -72,12 +74,7 @@ class Util {
 			( $newEmail ? Sanitizer::validateEmail( $newEmail ) : true );
 	}
 
-	/**
-	 * @param IContextSource $contextSource
-	 * @param int $elapsedTime
-	 * @return string
-	 */
-	public static function getRelativeTime( IContextSource $contextSource, $elapsedTime ) {
+	public static function getRelativeTime( IContextSource $contextSource, int $elapsedTime ): string {
 		return $contextSource->getLanguage()->formatDuration(
 			$elapsedTime,
 			self::getIntervals( $elapsedTime )
@@ -172,10 +169,16 @@ class Util {
 	 * @see ::STATSD_INCREMENTABLE_ERROR_MESSAGES
 	 */
 	public static function logStatus( StatusValue $status ) {
-		$statsdDataFactory = MediaWikiServices::getInstance()->getPerDbNameStatsdDataFactory();
+		$statsFactory = MediaWikiServices::getInstance()->getStatsFactory();
 		foreach ( self::STATSD_INCREMENTABLE_ERROR_MESSAGES as $type => $message ) {
 			if ( $status->hasMessage( $message ) ) {
-				$statsdDataFactory->increment( "GrowthExperiments.$type.$message" );
+				$wiki = WikiMap::getCurrentWikiId();
+				$statsFactory->withComponent( 'GrowthExperiments' )
+					->getCounter( 'growthexperiments_errors' )
+					->setLabel( 'type', $type )
+					->setLabel( 'message', $message )
+					->setLabel( 'wiki', $wiki )
+					->increment();
 				break;
 			}
 		}
@@ -320,7 +323,8 @@ class Util {
 	public static function getIteratorFromTraversable( Traversable $t ) {
 		while ( !( $t instanceof Iterator ) ) {
 			// There are only two traversables, Iterator and IteratorAggregate
-			/** @var \IteratorAggregate $t */'@phan-var \IteratorAggregate $t';
+			/** @var \IteratorAggregate $t */
+			'@phan-var \IteratorAggregate $t';
 			$t = $t->getIterator();
 		}
 		// @phan-suppress-next-line PhanTypeMismatchReturnSuperType
@@ -334,40 +338,14 @@ class Util {
 	 * @return string
 	 */
 	public static function getRestbaseUrl( Config $config ) {
-		$url = $config->get( 'GERestbaseUrl' );
-		if ( $url === false ) {
-			$url = $config->get( 'Server' ) . '/api/rest_v1';
-		}
-		return $url;
-	}
-
-	/**
-	 * Check whether link recommendations are enabled.
-	 * @note While T278123 is in effect, link recommendations can be enabled per-user, and
-	 *   most callers should use NewcomerTasksUserOptionsLookup::areLinkRecommendationsEnabled().
-	 * @param IContextSource $contextSource
-	 * @return bool
-	 */
-	public static function areLinkRecommendationsEnabled( IContextSource $contextSource ): bool {
-		return (bool)$contextSource->getConfig()->get( 'GENewcomerTasksLinkRecommendationsEnabled' );
+		return $config->get( 'GERestbaseUrl' ) ?:
+			$config->get( MainConfigNames::Server ) . '/api/rest_v1';
 	}
 
 	/**
 	 * Generate a 32 character random token for analytics purposes
-	 * @return string
 	 */
 	public static function generateRandomToken(): string {
-		return \Wikimedia\base_convert( \MWCryptRand::generateHex( 40 ), 16, 32, 32 );
-	}
-
-	/**
-	 * Should CommunityConfiguration be used?
-	 *
-	 * @return bool
-	 */
-	public static function useCommunityConfiguration(): bool {
-		return ExtensionRegistry::getInstance()->isLoaded( 'CommunityConfiguration' ) &&
-			GrowthExperimentsServices::wrap( MediaWikiServices::getInstance() )
-				->getGrowthConfig()->get( 'GEUseCommunityConfigurationExtension' );
+		return \Wikimedia\base_convert( MWCryptRand::generateHex( 40 ), 16, 32, 32 );
 	}
 }

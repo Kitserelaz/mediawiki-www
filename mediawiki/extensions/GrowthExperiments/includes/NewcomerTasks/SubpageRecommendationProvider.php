@@ -59,10 +59,6 @@ abstract class SubpageRecommendationProvider implements RecommendationProvider {
 		array $suggestionFilters = []
 	);
 
-	/**
-	 * @param WikiPageFactory $wikiPageFactory
-	 * @param RecommendationProvider $fallbackRecommendationProvider
-	 */
 	public function __construct(
 		WikiPageFactory $wikiPageFactory,
 		RecommendationProvider $fallbackRecommendationProvider
@@ -140,7 +136,7 @@ abstract class SubpageRecommendationProvider implements RecommendationProvider {
 		// This is for development, so we want to ignore $wgNamespacesWithSubpages.
 		$titleText = $title->getText();
 		$titleParts = explode( '/', $titleText );
-		$subpage = end( $titleParts );
+		$subpage = array_last( $titleParts );
 		if ( $subpage === static::$subpageName . '.json' && $subpage !== $titleText ) {
 			$model = CONTENT_MODEL_JSON;
 		}

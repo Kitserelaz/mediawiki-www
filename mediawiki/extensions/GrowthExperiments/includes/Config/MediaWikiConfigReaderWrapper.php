@@ -4,6 +4,7 @@ namespace GrowthExperiments\Config;
 
 use MediaWiki\Config\Config;
 use MediaWiki\Extension\CommunityConfiguration\Access\MediaWikiConfigReader;
+use MediaWiki\Extension\CommunityConfiguration\Access\MediaWikiConfigRouter;
 
 /**
  * Wrapper around MediaWikiConfigReader from CommunityConfiguration, in order
@@ -22,46 +23,28 @@ class MediaWikiConfigReaderWrapper implements Config {
 		'help-desk-page' => false,
 	];
 
-	private Config $mediawikiConfigReader;
+	private MediaWikiConfigRouter $mediawikiConfigRouter;
 
-	private Config $mainConfig;
-
-	/**
-	 * @param Config $mediawikiConfigReader
-	 * @param Config $mainConfig
-	 */
 	public function __construct(
-		Config $mediawikiConfigReader,
-		Config $mainConfig
+		MediaWikiConfigRouter $mediaWikiConfigRouter
 	) {
-		$this->mediawikiConfigReader = $mediawikiConfigReader;
-		$this->mainConfig = $mainConfig;
+		$this->mediawikiConfigRouter = $mediaWikiConfigRouter;
 	}
 
-	/**
-	 * @param string $name
-	 * @return mixed
-	 */
+	/** @inheritDoc */
 	public function get( $name ) {
-		$value = $this->mediawikiConfigReader->get( $name );
+		$value = $this->mediawikiConfigRouter->get( $name );
 		if ( $name === 'GEHelpPanelHelpDeskPostOnTop' ) {
 			$value = self::MAP_POST_ON_TOP_VALUES[$value];
 		}
 		if ( $name === 'GEHelpPanelAskMentor' ) {
 			$value = self::MAP_ASK_MENTOR_VALUES[$value];
 		}
-		if ( $name === 'GELevelingUpKeepGoingNotificationThresholds' ) {
-			$thresholds = $this->mainConfig->get( 'GELevelingUpKeepGoingNotificationThresholds' );
-			$value = [ $thresholds[ 0 ], $value ];
-		}
 		return $value;
 	}
 
-	/**
-	 * @param string $name
-	 * @return bool
-	 */
+	/** @inheritDoc */
 	public function has( $name ): bool {
-		return $this->mediawikiConfigReader->has( $name );
+		return $this->mediawikiConfigRouter->has( $name );
 	}
 }

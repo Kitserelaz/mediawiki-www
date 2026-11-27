@@ -16,7 +16,7 @@ function RecommendedLinkToolbarDialogDesktop() {
 	this.logger = new LinkSuggestionInteractionLogger( {
 		/* eslint-disable camelcase */
 		is_mobile: false,
-		active_interface: 'recommendedlinktoolbar_dialog'
+		active_interface: 'recommendedlinktoolbar_dialog',
 		/* eslint-enable camelcase */
 	} );
 	/** @property {mw.libs.ge.MinimizedToolbarDialogButton|null} toolbarDialogButton */
@@ -33,7 +33,6 @@ RecommendedLinkToolbarDialogDesktop.static.position = 'inline';
  */
 RecommendedLinkToolbarDialogDesktop.prototype.initialize = function () {
 	RecommendedLinkToolbarDialogDesktop.super.prototype.initialize.call( this );
-	this.$body.append( this.$buttons );
 	this.$anchor = $( '<div>' ).addClass( 'mw-ge-recommendedLinkToolbarDialog-desktop-anchor' );
 	this.$element.prepend( this.$anchor );
 };
@@ -43,6 +42,7 @@ RecommendedLinkToolbarDialogDesktop.prototype.initialize = function () {
  */
 RecommendedLinkToolbarDialogDesktop.prototype.afterSetupProcess = function () {
 	RecommendedLinkToolbarDialogDesktop.super.prototype.afterSetupProcess.call( this );
+	this.$body.append( this.$buttons );
 	this.isRtl = this.surface.getDir() === 'rtl';
 	this.setupMinification();
 	this.moveDialogToSurfaceView();
@@ -56,7 +56,7 @@ RecommendedLinkToolbarDialogDesktop.prototype.afterSetupProcess = function () {
 	}.bind( this );
 	ceSurface.$documentNode.on( 'keydown', this.documentNodeKeydownHandler );
 	$( window ).on( 'resize',
-		OO.ui.debounce( this.updatePosition.bind( this ), 250 )
+		OO.ui.debounce( this.updatePosition.bind( this ), 250 ),
 	);
 };
 
@@ -84,7 +84,7 @@ RecommendedLinkToolbarDialogDesktop.prototype.updatePosition = function () {
 		annotationWidth = $annotationView.outerWidth(),
 		elementWidth = Math.max( this.$element.width(), 400 ),
 		newPosition = {
-			top: annotationOffset.top - surfaceOffset.top + 30
+			top: annotationOffset.top - surfaceOffset.top + 30,
 		},
 		positionName = this.isRtl ? 'right' : 'left';
 	let isStartAnchored = true;
@@ -131,10 +131,10 @@ RecommendedLinkToolbarDialogDesktop.prototype.teardown = function () {
  * @return {jQuery.Promise} Promise which resolves when the transition is complete
  */
 RecommendedLinkToolbarDialogDesktop.prototype.fadeOut = function () {
-	const promise = $.Deferred();
-	this.$element.on( 'transitionend', promise.resolve );
+	const deferred = $.Deferred();
+	this.$element.on( 'transitionend', deferred.resolve );
 	this.$element.addClass( 'fade-out' );
-	return promise;
+	return deferred.promise();
 };
 
 /**
@@ -143,39 +143,35 @@ RecommendedLinkToolbarDialogDesktop.prototype.fadeOut = function () {
  * @return {jQuery.Promise} Promise which resolves when the transition is complete
  */
 RecommendedLinkToolbarDialogDesktop.prototype.fadeIn = function () {
-	const promise = $.Deferred();
-	this.$element.on( 'transitionend', promise.resolve );
+	const deferred = $.Deferred();
+	this.$element.on( 'transitionend', deferred.resolve );
 	this.$element.removeClass( 'fade-out' );
-	return promise;
+	return deferred.promise();
 };
 
 /**
  * @inheritdoc
  */
-RecommendedLinkToolbarDialogDesktop.prototype.showFirstRecommendation = function () {
-	const promise = $.Deferred(),
-		annotationView = this.getAnnotationViewAtIndex( 0 );
-	if ( !annotationView ) {
-		this.toggle( false );
-		return promise.reject();
-	}
+RecommendedLinkToolbarDialog.prototype.beforeShowFirstRecommendation = function () {
 	this.fadeOut();
-	this.scrollToAnnotationView( annotationView ).always( () => {
-		this.showRecommendationAtIndex( 0 );
-		this.fadeIn().then( promise.resolve );
-	} );
-	return promise;
+};
+
+/**
+ * @inheritdoc
+ */
+RecommendedLinkToolbarDialogDesktop.prototype.afterShowFirstRecommendation = function () {
+	return this.fadeIn();
 };
 
 /**
  * @inheritdoc
  */
 RecommendedLinkToolbarDialogDesktop.prototype.showRecommendationAtIndex = function (
-	index, manualFocus
+	index, manualFocus,
 ) {
 	const updateContent = function () {
 		RecommendedLinkToolbarDialogDesktop.super.prototype.showRecommendationAtIndex.call(
-			this, index, manualFocus
+			this, index, manualFocus,
 		);
 	}.bind( this );
 
@@ -203,17 +199,18 @@ RecommendedLinkToolbarDialogDesktop.prototype.setupMinification = function () {
 	this.closeButton = new OO.ui.ButtonWidget( {
 		classes: [ 'mw-ge-recommendedLinkToolbarDialog-desktop-closeButton' ],
 		framed: false,
-		icon: 'close'
+		icon: 'close',
 	} );
 	this.closeButton.connect( this, { click: 'onCloseButtonClicked' } );
 	this.$head.append( this.closeButton.$element );
 
 	this.toolbarDialogButton = new MinimizedToolbarDialogButton( {
-		label: mw.message( 'growthexperiments-addlink-context-button-show-suggestion' ).text()
+		label: mw.message( 'growthexperiments-addlink-context-button-show-suggestion' ).text(),
 	} );
 	this.toolbarDialogButton.on( 'click', this.onToolbarDialogButtonClicked.bind( this ) );
-	this.surface.getGlobalOverlay().$element
-		.append( this.toolbarDialogButton.$element );
+	const minimizedButtonLocationDock = mw.util.addPortletLink( 'p-dock-bottom', '#', '' );
+	const $minimizedButtonLocation = $( minimizedButtonLocationDock ).html( '' );
+	this.toolbarDialogButton.$element.appendTo( $minimizedButtonLocation );
 };
 
 /**
@@ -229,14 +226,14 @@ RecommendedLinkToolbarDialogDesktop.prototype.setupMinification = function () {
  */
 RecommendedLinkToolbarDialogDesktop.prototype.toggleDialogVisibility = function (
 	isVisible,
-	disableTransition
+	disableTransition,
 ) {
 	const $dialog = this.$element;
 	let transformVal = 'none';
 
 	$dialog.toggleClass(
 		'mw-ge-recommendedLinkToolbarDialog-desktop--no-transition',
-		!!disableTransition
+		!!disableTransition,
 	);
 	if ( !isVisible ) {
 		// Minimize the dialog into the robot button
@@ -276,13 +273,13 @@ RecommendedLinkToolbarDialog.prototype.onToolbarDialogButtonClicked = function (
 		'reopen_dialog_click',
 		{},
 		// eslint-disable-next-line camelcase
-		{ active_interface: 'machinesuggestions_mode' }
+		{ active_interface: 'machinesuggestions_mode' },
 	);
 	this.scrollToAnnotationView( this.getAnnotationViewAtIndex( this.currentIndex ) ).then(
 		() => {
 			this.toggleDialogVisibility( true );
 			this.logger.log( 'impression', this.getSuggestionLogActionData() );
-		}
+		},
 	);
 };
 

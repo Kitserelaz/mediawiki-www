@@ -25,8 +25,8 @@ module.exports = ( function () {
 		return $( '<div>' ).addClass( 'mw-ge-machine-suggestions-mode-title' ).append( [
 			config.includeIcon ? new OO.ui.IconWidget( { icon: 'robot' } ).$element : '',
 			$( '<span>' ).addClass( 'mw-ge-machine-suggestions-mode-title-text' ).text(
-				mw.message( 'growthexperiments-structuredtask-ve-machine-suggestions-mode-title' ).text()
-			)
+				mw.message( 'growthexperiments-structuredtask-ve-machine-suggestions-mode-title' ).text(),
+			),
 		] );
 	}
 
@@ -44,7 +44,7 @@ module.exports = ( function () {
 			title: mw.message( 'growthexperiments-structuredtask-editmode-selection-label' ).text(),
 			label: mw.message( 'growthexperiments-structuredtask-editmode-selection-label' ).text(),
 			invisibleLabel: true,
-			include: editModeToolNames
+			include: editModeToolNames,
 		};
 		if ( !OO.ui.isMobile() ) {
 			editModeToolGroup.align = 'after';
@@ -68,45 +68,6 @@ module.exports = ( function () {
 	}
 
 	/**
-	 * Return an array of tools for machine suggestions mode on mobile
-	 *
-	 * @param {Object[]} currentTools Existing VE tools
-	 * @return {Object[]}
-	 */
-	function getMobileTools( currentTools ) {
-		const activeTools = currentTools.filter( ( tool ) => [ 'save', 'back' ].indexOf( tool.name ) !== -1 );
-		activeTools.push(
-			{
-				name: 'machineSuggestionsPlaceholder',
-				include: [ 'machineSuggestionsPlaceholder' ]
-			},
-			getEditModeToolGroup()
-		);
-		return activeTools;
-	}
-
-	/**
-	 * Return an array of action groups for machine suggestions mode
-	 *
-	 * @param {Object[]} currentGroups Existing VE action groups
-	 * @return {Object[]}
-	 */
-	function getToolbarGroups( currentGroups ) {
-		const activeGroups = currentGroups.filter( ( tool ) => tool.align !== 'after' ||
-				[ 'editMode', 'back' ].indexOf( tool.name ) !== -1 );
-		const saveGroup = {
-			name: 'save',
-			type: 'bar',
-			include: [ 'machineSuggestionsSave' ]
-		};
-		if ( !OO.ui.isMobile() ) {
-			saveGroup.align = 'after';
-		}
-		activeGroups.push( saveGroup );
-		return updateEditModeTool( activeGroups );
-	}
-
-	/**
 	 * Add click event listener on editMode toolbar group
 	 *
 	 * @param {jQuery} $toolbar Toolbar element
@@ -119,7 +80,7 @@ module.exports = ( function () {
 					'editmode_click',
 					'',
 					// eslint-disable-next-line camelcase
-					{ active_interface: 'machinesuggestions_mode' }
+					{ active_interface: 'machinesuggestions_mode' },
 				);
 			} );
 		}
@@ -185,8 +146,6 @@ module.exports = ( function () {
 	return {
 		canAddToolbarTitle: canAddToolbarTitle,
 		getTitleElement: getTitleElement,
-		getMobileTools: getMobileTools,
-		getToolbarGroups: getToolbarGroups,
 		getEditModeToolNames: function () {
 			return editModeToolNames;
 		},
@@ -197,7 +156,7 @@ module.exports = ( function () {
 		enableVirtualKeyboard: enableVirtualKeyboard,
 		addSaveHook: addSaveHook,
 		disableSurfacePaste: disableSurfacePaste,
-		enableSurfacePaste: enableSurfacePaste
+		enableSurfacePaste: enableSurfacePaste,
 	};
 
 }() );

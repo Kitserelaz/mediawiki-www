@@ -10,7 +10,6 @@ const
 	srcMapExt = '.map.json',
 	ENTRIES = {
 		startup: 'mobile.startup',
-		editor: 'mobile.editor.overlay',
 		languages: 'mobile.languages.structured',
 		mediaViewer: 'mobile.mediaViewer',
 		mobileInit: 'mobile.init',
@@ -52,7 +51,6 @@ module.exports = ( env, argv ) => ( {
 		// If we utilize webpack lazy loading instead of resource loader lazy
 		// loading, we won't be required to explicitly create this new chunk and
 		// this can be removed.
-		[ENTRIES.editor]: './src/mobile.editor.overlay/mobile.editor.overlay.js',
 		[ENTRIES.languages]: './src/mobile.languages.structured/mobile.languages.structured.js',
 		[ENTRIES.mediaViewer]: './src/mobile.mediaViewer/mobile.mediaViewer.js',
 		// all mobile skins,
@@ -68,20 +66,6 @@ module.exports = ( env, argv ) => ( {
 			// This avoids leaking unnecessary code into the webpack test build
 			'./mockMediaWiki': path.resolve( __dirname, 'tests/node-qunit/utils/blank.js' )
 		}
-	},
-	module: {
-		rules: [ {
-			test: /\.js$/,
-			exclude: /node_modules/,
-			use: {
-				loader: 'babel-loader',
-				options: {
-					// Beware of https://github.com/babel/babel-loader/issues/690. Changes to browsers require
-					// manual invalidation.
-					cacheDirectory: true
-				}
-			}
-		} ]
 	},
 	optimization: {
 		// Don't produce production output when a build error occurs.
@@ -149,7 +133,9 @@ module.exports = ( env, argv ) => ( {
 		}
 	},
 
+	target: 'browserslist',
 	output: {
+
 		// Specify the destination of all build products.
 		path: distDir,
 

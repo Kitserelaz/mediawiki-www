@@ -15,10 +15,7 @@
 		},
 		{
 			"files": [
-				"**/*.ts"
-			],
-			"extends": [
-				"@wmde/wikimedia-typescript"
+				"**/*.js"
 			],
 			"rules": {
 				"comma-dangle": [

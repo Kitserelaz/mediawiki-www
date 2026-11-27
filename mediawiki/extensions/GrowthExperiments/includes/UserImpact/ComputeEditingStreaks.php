@@ -8,7 +8,7 @@ use DateTime;
 use DateTimeInterface;
 use Exception;
 
-/*
+/**
  * Utility class for processing "Editing streaks", which are consecutive days when a user made edits.
  *
  * The minimum unit for an editing streak is a single day. So if a user has made a single edit, the editing streak
@@ -21,7 +21,7 @@ class ComputeEditingStreaks {
 	 * EditingStreak objects. An "editing streak" consists of a date range (minimum unit is one day) with a start and
 	 * end date, and a total edit count number for that streak.
 	 *
-	 * @param array $editCountByDay @see UserImpact::getEditCountByDay()
+	 * @param array $editCountByDay See {@link UserImpact::getEditCountByDay}
 	 * @return EditingStreak[]
 	 * @throws Exception
 	 */
@@ -41,7 +41,7 @@ class ComputeEditingStreaks {
 		foreach ( $editCountByDay as $dateStringIndex => $editCountForDate ) {
 			try {
 				$currentRowDateTime = new DateTime( $dateStringIndex );
-			} catch ( \Exception $exception ) {
+			} catch ( \Exception ) {
 				// silently discard row if date is invalid.
 				continue;
 			}
@@ -102,11 +102,16 @@ class ComputeEditingStreaks {
 	public static function getLongestEditingStreak(
 		array $editCountByDay
 	): EditingStreak {
-		$editingStreaks = self::getEditingStreaks( $editCountByDay );
-		usort( $editingStreaks, static function ( EditingStreak $a, EditingStreak $b ) {
-			return $a->getStreakNumberOfDays() < $b->getStreakNumberOfDays() ? 1 : -1;
-		} );
-		return reset( $editingStreaks );
+		$longestStreak = null;
+		$longestDuration = 0;
+		foreach ( self::getEditingStreaks( $editCountByDay ) as $streak ) {
+			$duration = $streak->getStreakNumberOfDays();
+			if ( !$longestStreak || $duration > $longestDuration ) {
+				$longestStreak = $streak;
+				$longestDuration = $duration;
+			}
+		}
+		return $longestStreak;
 	}
 
 	/**

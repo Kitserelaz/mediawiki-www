@@ -2,17 +2,30 @@
 
 namespace GrowthExperiments\Config\Schemas;
 
+use GrowthExperiments\Config\Schemas\Converters\SuggestedEditsSchemaConverter_2_0_0;
 use GrowthExperiments\NewcomerTasks\TaskType\ImageRecommendationTaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\LinkRecommendationTaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\SectionImageRecommendationTaskType;
+use MediaWiki\Extension\CommunityConfiguration\Controls\PageTitlesControl;
 use MediaWiki\Extension\CommunityConfiguration\Schema\JsonSchema;
 use MediaWiki\Extension\CommunityConfiguration\Schemas\MediaWiki\MediaWikiDefinitions;
 
 // phpcs:disable Generic.NamingConventions.UpperCaseConstantName.ClassConstantNotUpperCase
 class SuggestedEditsSchema extends JsonSchema {
+	public const VERSION = '2.0.0';
+	public const SCHEMA_PREVIOUS_VERSION = '1.0.0';
+	public const SCHEMA_CONVERTER = SuggestedEditsSchemaConverter_2_0_0::class;
 
+	public const MAX_INFOBOX_TEMPLATES = 800;
 	public const GEInfoboxTemplates = [
-		self::REF => [ 'class' => MediaWikiDefinitions::class, 'field' => 'PageTitles' ],
+		self::TYPE => self::TYPE_ARRAY,
+		self::ITEMS => [
+			self::TYPE => self::TYPE_STRING,
+			self::DEFAULT => '',
+		],
+		self::DEFAULT => [],
+		'control' => PageTitlesControl::class,
+		self::MAX_ITEMS => self::MAX_INFOBOX_TEMPLATES,
 	];
 
 	// ***** TEMPLATE BASED TASKS *****
@@ -141,6 +154,11 @@ class SuggestedEditsSchema extends JsonSchema {
 				],
 				self::MINIMUM => 0,
 				self::MAXIMUM => 1,
+			],
+			'maximumEditsTaskIsAvailable' => [
+				self::TYPE => self::TYPE_STRING,
+				self::DEFAULT => 'no',
+				self::ENUM => [ 'no', '5', '20', '50', '75', '150' ],
 			],
 		],
 	];

@@ -1,6 +1,8 @@
 <?php
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\SpecialPage\IncludableSpecialPage;
+use MediaWiki\Title\Title;
 use Wikimedia\Rdbms\Database;
 
 /**
@@ -10,6 +12,10 @@ use Wikimedia\Rdbms\Database;
  * {{Special:TopRatings/Adventure Games/0/10}} will show 10 ratings where the
  * pages are in the "Adventure Games" category and the pages are in the main
  * (0) namespace.
+ *
+ * To flip the sort order (i.e. show the pages w/ the _lowest_ ratings):
+ * {{Special:TopRatings/Adventure Games/0/10/ASC}}
+ * (Only ASC for ascending and DESC for descending are supported, obviously.)
  *
  * @file
  * @ingroup Extensions
@@ -36,19 +42,22 @@ class SpecialTopRatings extends IncludableSpecialPage {
 		$out = $this->getOutput();
 		$user = $this->getUser();
 
-		$categoryName = $namespace = '';
+		$categoryName = '';
+		$namespace = null;
+		$sort = 'DESC';
 
 		// Parse the parameters passed to the special page
 		// Make sure that the limit parameter passed to the special page is
 		// an integer and that it's less than 100 (performance!)
-		if ( isset( $par ) && is_numeric( $par ) && $par < 100 ) {
+		if ( $par !== null && is_numeric( $par ) && $par < 100 ) {
 			$limit = intval( $par );
-		} elseif ( isset( $par ) && !is_numeric( $par ) ) {
+		} elseif ( $par !== null && !is_numeric( $par ) ) {
 			// $par is a string...assume that we can explode() it
 			$exploded = explode( '/', $par );
 			$categoryName = $exploded[0];
 			$namespace = ( isset( $exploded[1] ) ? intval( $exploded[1] ) : $namespace );
-			$limit = ( isset( $exploded[2] ) ? intval( $exploded[2] ) : 50 );
+			$limit = intval( $exploded[2] ?? 50 );
+			$sort = ( isset( $exploded[3] ) && $exploded[3] === 'ASC' ? 'ASC' : 'DESC' );
 		} else {
 			$limit = 50;
 		}
@@ -63,7 +72,7 @@ class SpecialTopRatings extends IncludableSpecialPage {
 
 		$output = '';
 
-		$ratings = self::getTopRatings( $limit, $categoryName, $namespace );
+		$ratings = self::getTopRatings( $limit, $categoryName, $namespace, $sort );
 
 		// If we have some ratings, start building HTML output
 		if ( $ratings ) {
@@ -156,33 +165,47 @@ class SpecialTopRatings extends IncludableSpecialPage {
 	 *
 	 * @param int $limit LIMIT for the SQL query (get this many records)
 	 * @param string $categoryName Category name, if any; if this contains spaces they are replaced with underscores
-	 * @param int $namespace Namespace index, if fetching pages from a non-NS_MAIN NS
+	 * @param int|null $namespace Namespace index, if fetching pages from a non-NS_MAIN NS
+	 * @param string $sortOrder Sorting order for the SQL query, either DESC (default) or ASC
 	 * @return array Array of page ID => total votes mappings
 	 */
-	public static function getTopRatings( $limit = 10, $categoryName = '', $namespace = 0 ) {
+	public static function getTopRatings( $limit = 10, $categoryName = '', $namespace = 0, $sortOrder = 'DESC' ) {
 		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
 		$ratings = [];
 		$joinConds = [];
-		$whatToSelect = [ 'DISTINCT vote_page_id', 'SUM(vote_value) AS vote_value_sum' ];
+		$whatToSelect = [ 'vote_page_id', 'SUM(vote_value) AS vote_value_sum' ];
 
 		// By default we have no category and no namespace
 		$tables = [ 'Vote' ];
 		$where = [ 'vote_page_id <> 0' ];
 
-		if ( $categoryName && $namespace !== null ) {
-			$tables = [ 'Vote', 'page', 'categorylinks', 'linktarget' ];
+		// Check for null because 0 is a totally valid NS
+		if ( $categoryName !== '' && $namespace !== null ) {
+			$tables = [ 'Vote', 'page', 'categorylinks' ];
 			$where = [
 				'vote_page_id <> 0',
-				'lt_title' => str_replace( ' ', '_', $categoryName ),
-				'lt_namespace' => NS_CATEGORY,
 				'page_namespace' => $namespace
 			];
 			$joinConds = [
 				'categorylinks' => [ 'INNER JOIN', 'cl_from = page_id' ],
-				'linktarget' => [ 'INNER JOIN', 'cl_target_id = lt_id' ],
 				'page' => [ 'INNER JOIN', 'page_id = vote_page_id' ]
 			];
+			if ( version_compare( MW_VERSION, '1.45', '>=' ) ) {
+				// 1.45+
+				$tables[] = 'linktarget';
+				$where['lt_namespace'] = NS_CATEGORY;
+				$where['lt_title'] = str_replace( ' ', '_', $categoryName );
+				$joinConds['linktarget'] = [ 'INNER JOIN', 'cl_target_id = lt_id' ];
+			} else {
+				// < 1.45
+				$where['cl_to'] = str_replace( ' ', '_', $categoryName );
+			}
 		}
+
+		// We're not passing in $sortOrder as-is to reduce code reviewer anxiety
+		// and to increase overall sanity because no-one likes an SQL injection
+		// vector :)
+		$sortString = $sortOrder === 'DESC' ? 'DESC' : 'ASC';
 
 		// Perform the SQL query with the given conditions; the basic idea is
 		// that we get $limit (however, 100 or less) unique page IDs from the
@@ -195,7 +218,11 @@ class SpecialTopRatings extends IncludableSpecialPage {
 			$whatToSelect,
 			$where,
 			__METHOD__,
-			[ 'GROUP BY' => 'vote_page_id', 'LIMIT' => intval( $limit ) ],
+			[
+				'GROUP BY' => 'vote_page_id',
+				'ORDER BY' => "vote_value_sum $sortString",
+				'LIMIT' => intval( $limit )
+			],
 			$joinConds
 		);
 

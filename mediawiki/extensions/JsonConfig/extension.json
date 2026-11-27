@@ -10,7 +10,7 @@
 	"type": "other",
 	"license-name": "GPL-2.0-or-later",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"namespaces": [
 		{
@@ -45,19 +45,35 @@
 		]
 	},
 	"ExtensionMessagesFiles": {
+		"JsonConfigAliases": "JsonConfig.aliases.php",
 		"JsonConfigNamespaces": "JsonConfig.namespaces.php"
 	},
-	"TrackingCategories": [
-		"jsonconfig-use-category"
-	],
 	"AutoloadNamespaces": {
-		"JsonConfig\\": "includes/"
+		"JsonConfig\\": "includes/",
+		"MediaWiki\\Extension\\JsonConfig\\": "includes/"
+	},
+	"TestAutoloadNamespaces": {
+		"MediaWiki\\Extension\\JsonConfig\\Tests\\": "tests/phpunit/"
 	},
 	"TestAutoloadClasses": {
-		"JsonConfig\\Tests\\ObjContent": "tests/phpunit/unit/ObjContent.php"
+		"MediaWiki\\Extension\\JsonConfig\\Tests\\ObjContent": "tests/phpunit/unit/ObjContent.php"
+	},
+	"JobClasses": {
+		"globalJsonLinksCachePurge": {
+			"class": "MediaWiki\\Extension\\JsonConfig\\GlobalJsonLinksCachePurgeJob",
+			"services": [
+				"JsonConfig.GlobalJsonLinks",
+				"JobQueueGroupFactory"
+			]
+		}
 	},
 	"APIModules": {
-		"jsonconfig": "JsonConfig\\JCApi"
+		"jsonconfig": {
+			"class": "MediaWiki\\Extension\\JsonConfig\\JCApi",
+			"services": [
+				"NamespaceInfo"
+			]
+		}
 	},
 	"ResourceModules": {
 		"ext.jsonConfig": {
@@ -86,12 +102,12 @@
 				"jsonconfig-edit-dialog-error",
 				"jsonconfig-edit-dialog-error-data-invalid",
 				"jsonconfig-edit-dialog-error-data-missing",
-				"jsonconfig-edit-dialog-error-data-too-large",
 				"jsonconfig-edit-dialog-error-field-name-missing",
 				"jsonconfig-edit-dialog-error-field-type-invalid",
 				"jsonconfig-edit-dialog-error-fields-missing",
 				"jsonconfig-edit-dialog-error-schema-missing",
-				"jsonconfig-edit-dialog-title"
+				"jsonconfig-edit-dialog-title",
+				"jsonconfig-edit-dialog-warning-data-large"
 			]
 		}
 	},
@@ -103,9 +119,11 @@
 		"ApiMain::moduleManager": "main",
 		"ArticleDeleteComplete": "main",
 		"ArticleUndelete": "main",
+		"ArticleViewFooter": "globaljsonlinks",
 		"BeforePageDisplay": "main",
 		"CanonicalNamespaces": "main",
 		"CodeEditorGetPageLanguage": "codeeditor",
+		"CodeMirrorGetMode": "codemirror",
 		"ContentHandlerDefaultModelFor": "main",
 		"ContentHandlerForModelID": "main",
 		"GetContentModels": "main",
@@ -119,30 +137,64 @@
 		"SkinCopyrightFooterMessage": "main",
 		"TitleGetEditNotices": "main",
 		"PageMoveComplete": "main",
-		"getUserPermissionsErrors": "main"
+		"getUserPermissionsErrors": "main",
+		"LoadExtensionSchemaUpdates": "schema",
+		"LinksUpdateComplete": "globaljsonlinks"
 	},
 	"HookHandlers": {
 		"main": {
-			"class": "JsonConfig\\JCHooks",
+			"class": "MediaWiki\\Extension\\JsonConfig\\JCHooks",
+			"services": [
+				"JsonConfig.ApiUtils",
+				"MainConfig",
+				"ContentHandlerFactory",
+				"JobQueueGroupFactory"
+			]
+		},
+		"globaljsonlinks": {
+			"class": "MediaWiki\\Extension\\JsonConfig\\GJLHooks",
+			"services": [
+				"MainConfig",
+				"NamespaceInfo",
+				"JsonConfig.GlobalJsonLinks"
+			]
+		},
+		"codeeditor": {
+			"class": "MediaWiki\\Extension\\JsonConfig\\CodeEditorHooks",
 			"services": [
 				"MainConfig",
 				"ContentHandlerFactory"
 			]
 		},
-		"codeeditor": {
-			"class": "JsonConfig\\CodeEditorHooks",
+		"codemirror": {
+			"class": "MediaWiki\\Extension\\JsonConfig\\CodeMirrorHooks",
 			"services": [
 				"MainConfig",
 				"ContentHandlerFactory"
 			]
 		},
 		"scribunto": {
-			"class": "JsonConfig\\ScribuntoHooks",
+			"class": "MediaWiki\\Extension\\JsonConfig\\ScribuntoHooks",
 			"services": [
 				"MainConfig"
 			]
+		},
+		"schema": {
+			"class": "MediaWiki\\Extension\\JsonConfig\\SchemaHooks"
 		}
 	},
+	"SpecialPages": {
+		"GlobalJsonLinks": {
+			"class": "MediaWiki\\Extension\\JsonConfig\\SpecialGlobalJsonLinks",
+			"services": [
+				"JsonConfig.GlobalJsonLinks",
+				"SearchEngineFactory"
+			]
+		}
+	},
+	"ServiceWiringFiles": [
+		"includes/ServiceWiring.php"
+	],
 	"config": {
 		"JsonConfigs": {
 			"merge_strategy": "array_replace_recursive",
@@ -185,7 +237,28 @@
 		},
 		"JsonConfigUseGUI": {
 			"value": true
+		},
+		"TrackGlobalJsonLinks": {
+			"value": true
+		},
+		"TrackGlobalJsonLinksNamespaces": {
+			"value": true
+		},
+		"JsonConfigTransformsEnabled": {
+			"value": false,
+			"description": "Enable use of Lua transforms on Data: page loaders through JCContentLoader and action=jsontransform. Requires Scribunto and $wgJsonConfigEnableLuaSupport to function."
+		},
+		"JsonConfigUseCodeEditor": {
+			"value": true,
+			"description": "Use CodeEditor for editing JsonConfig pages."
+		},
+		"JsonConfigUseCodeMirror": {
+			"value": false,
+			"description": "Use CodeMirror for editing JsonConfig pages."
 		}
 	},
+	"DatabaseVirtualDomains": [
+		"virtual-globaljsonlinks"
+	],
 	"manifest_version": 2
 }

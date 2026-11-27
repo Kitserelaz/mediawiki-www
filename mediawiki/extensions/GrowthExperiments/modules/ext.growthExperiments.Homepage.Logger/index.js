@@ -12,19 +12,19 @@
 	const Utils = require( '../utils/Utils.js' );
 
 	/**
-	 * @param {boolean} enabled
 	 * @param {string} homepagePageviewToken
+	 * @param {boolean} disabled
 	 * @class mw.libs.ge.HomepageModuleLogger
 	 * @constructor
 	 */
-	function HomepageModuleLogger( enabled, homepagePageviewToken ) {
-		this.enabled = enabled;
+	function HomepageModuleLogger( homepagePageviewToken, disabled = false ) {
+		this.disabled = disabled;
 		this.userId = mw.user.getId();
 		this.userEditCount = mw.config.get( 'wgUserEditCount' ) || 0;
 		this.isMobile = mw.config.get( 'homepagemobile' ) || false;
 		this.homepagePageviewToken = homepagePageviewToken;
 		this.exclusions = {
-			start: [ 'impression' ]
+			start: [ 'impression' ],
 		};
 	}
 
@@ -37,18 +37,17 @@
 	 * @param {Object} [extraData] Additional data related to the action or the state of the module
 	 */
 	HomepageModuleLogger.prototype.log = function ( module, mode, action, extraData ) {
-		if ( !this.enabled ) {
+		if ( this.disabled ) {
 			return;
 		}
-
-		if ( this.exclusions[ module ] && this.exclusions[ module ].indexOf( action ) !== -1 ) {
+		if ( this.exclusions[ module ] && this.exclusions[ module ].includes( action ) ) {
 			return;
 		}
 
 		const data = Object.assign(
 			{},
 			mw.config.get( 'wgGEHomepageModuleActionData-' + module ),
-			extraData || {}
+			extraData || {},
 		);
 
 		const event = {
@@ -57,11 +56,11 @@
 			action_data: Utils.serializeActionData( data ),
 			user_id: this.userId,
 			user_editcount: this.userEditCount,
-			user_variant: Utils.getUserVariant(),
+			user_variant: Utils.getUserVariantForLegacySchema(),
 			module: module,
 			is_mobile: this.isMobile,
 			mode: mode,
-			homepage_pageview_token: this.homepagePageviewToken
+			homepage_pageview_token: this.homepagePageviewToken,
 			/* eslint-enable camelcase */
 		};
 		const state = mw.config.get( 'wgGEHomepageModuleState-' + module );

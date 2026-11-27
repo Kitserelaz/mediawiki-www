@@ -4,8 +4,8 @@
 			"Bjankuloski06"
 		]
 	},
-	"getdata": "Земи податоци",
 	"externaldata-desc": "Овозможува добивање структурирани податоци од надворешни URL-адреси, бази на податоци и други извори",
+	"externaldata-disabled": "Класата <code>$1</code> е оневозможена: $2. За да ја овозможите ќе треба администратор да ја отстрани оваа класа од поставката <code>$wgExternalDataDisabledClasses</code>.",
 	"externaldata-no-param-specified": "Грешка: Го немате укажано параметарот „$1“.",
 	"externaldata-param-type-error": "Грешка: Параметарот $1 мора да биде од видот $2.",
 	"externaldata-processing-exception": "Се јави исклучок при работата на предобработувачот или пообработувачот: $1",
@@ -27,7 +27,7 @@
 	"externaldata-db-unknown-database": "Грешка: Не можев да ја изберам базата укажана со назнаката $1.",
 	"externaldata-db-no-return-values": "Грешка: Нема назначено повратни вредности.",
 	"externaldata-db-invalid-query": "Барањето $1 е неважечко ($2).",
-	"externaldata-db-too-many-joins": "Бројто на JOIN-услови (сега $1) не смее да го надминува бројот на табели ($2)",
+	"externaldata-db-too-many-joins": "Бројот на JOIN-услови (сега $1) не смее да го надминува бројот на табели ($2)",
 	"externaldata-db-invalid-join": "Неважечки JOIN-услов $1: секој дел мора да го содржи знакот „=“.",
 	"externaldata-db-empty-rowset": "Барањето $1 не даде ниеден ред.",
 	"externaldata-db-prepared-not-specified": "Укажете (query=), кој од подготвените искази да се користи за базата со назнака $1.",
@@ -65,6 +65,5 @@
 	"external-data-archive-could-not-extract": "Грешка: не можев да ја извлечам податотеката <code>$2</code> од $1-архивот ($3)",
 	"externaldata-no-local-variable": "Грешка: нема укажано месна променлива „$1“.",
 	"externaldata-no-template": "Грешка: нема укажано параметар.",
-	"externaldata-no-loop-body": "Грешка: нема зададено тело на јамката како прв или втор параметар.",
-	"externaldata-getdata-badurl": "Мора да укажете име на страница во URL-адресата. URL-адресата треба да гласи нешто како „{{#Special:GetData}}/Page_name“."
+	"externaldata-no-loop-body": "Грешка: нема зададено тело на јамката како прв или втор параметар."
 }

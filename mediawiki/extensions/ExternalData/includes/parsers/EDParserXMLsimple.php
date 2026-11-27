@@ -5,7 +5,6 @@
  * @author Yaron Koren
  * @author Alexander Mashin
  */
-
 class EDParserXMLsimple extends EDParserXML {
 	/** @var array $xmlValues Stores XML values between calls. */
 	private static $xmlValues = [];
@@ -57,7 +56,10 @@ class EDParserXMLsimple extends EDParserXML {
 				(string)xml_get_current_line_number( $xml_parser )
 			);
 		}
-		xml_parser_free( $xml_parser );
+		if ( PHP_VERSION_ID < 80000 ) {
+			// phpcs:ignore MediaWiki.Usage.ForbiddenFunctions.xml_parser_free
+			xml_parser_free( $xml_parser );
+		}
 		// Save the whole XML tree for Lua.
 		self::$xmlValues['__xml'] = [ self::$xmlValues ];
 
@@ -71,7 +73,7 @@ class EDParserXMLsimple extends EDParserXML {
 	 * @param resource $parser XML parser created by xml_parser_create();
 	 * @param string $name
 	 * @param array $attrs
-	 *
+	 * @suppress PhanUnusedPrivateMethodParameter
 	 */
 	private static function startElement( $parser, $name, array $attrs ) {
 		// Set to all lowercase to avoid casing issues.
@@ -89,10 +91,9 @@ class EDParserXMLsimple extends EDParserXML {
 	}
 
 	/**
-	 *
 	 * @param resource $parser XML parser created by xml_parser_create();
 	 * @param string $name
-	 *
+	 * @suppress PhanUnusedPrivateMethodParameter
 	 */
 	private static function endElement( $parser, $name ) {
 		if ( !array_key_exists( self::$currentXMLTag, self::$xmlValues ) ) {
@@ -112,6 +113,7 @@ class EDParserXMLsimple extends EDParserXML {
 	 *
 	 * @param resource $parser XML parser created by xml_parser_create();
 	 * @param string $content A chunk of XML tag inner content.
+	 * @suppress PhanUnusedPrivateMethodParameter
 	 */
 	private static function getContent( $parser, $content ) {
 		// Replace ampersands, to avoid the XML getting split up

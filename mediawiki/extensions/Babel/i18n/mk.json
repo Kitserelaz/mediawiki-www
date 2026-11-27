@@ -11,8 +11,8 @@
 	"babel-url": "Project:Вавилон",
 	"babel-footer-url": ":Category:Вавилон - Корисници по јазик",
 	"babel-autocreate-reason": "Автоматско создавање на [[$1|Вавилон]] категорија",
-	"babel-autocreate-text-levels": "Корисниците во оваа категорија навеле дека имаат $1 ниво на познавање на $2 јазик.",
-	"babel-autocreate-text-main": "Корисниците во категоријава укажуваат познавање на јазикот „$1“.",
+	"babel-autocreate-text-levels": "Корисниците во оваа категорија навеле дека имаат $1 ниво на познавање на $2 јазик.\n$4",
+	"babel-autocreate-text-main": "Корисниците во категоријава укажуваат познавање на јазикот „$1“.\n$3",
 	"babel-autocreate-user": "Вавилон - Автосоздавање",
 	"babel-0": "Овој корисник [[$1|не]] разбира [[$2|$3]] (или разбира со значајни потешкотии).",
 	"babel-1": "Овој корисник разбира [[$2|$3]] на [[$1|основно]] ниво.",
@@ -48,7 +48,5 @@
 	"communityconfiguration-babel-babelmaincategory-help-text": "Го прифаќа истиот формат како „Имиња на категории по јазично ниво“ погоре.",
 	"communityconfiguration-babel-babeluseuserlanguage-control-label": "Користи кориснички јазик",
 	"communityconfiguration-babel-babeluseuserlanguage-help-text": "Дали да се користи јазикот на корисничкиот посредник за порака во заглавието и подножјето. Ако е „false“ (по основно), тоа ќе биде јазикот на содржината на страницата. Ова е бидејќи јазикот на корисничкиот посредник може да го расцепи расчленувачкиот меѓусклад.",
-	"communityconfiguration-babel-babelcategorizenamespaces-label": "Во кои именски простори да се стават категориите за Вавилон",
-	"communityconfiguration-babel-babelcategorizenamespaces-help-text": "Оставете празно за сите именски простори.",
 	"communityconfiguration-babel-babelautocreate-control-label": "Автоматски создај категории за Вавилон"
 }

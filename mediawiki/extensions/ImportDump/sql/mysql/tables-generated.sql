@@ -11,16 +11,28 @@ CREATE TABLE /*_*/import_requests (
   request_reason BLOB NOT NULL,
   request_status ENUM(
     'complete', 'declined', 'failed',
-    'inprogress', 'pending', 'starting'
+    'inprogress', 'partial', 'pending',
+    'starting', 'verifying'
   ) NOT NULL,
+  request_stage VARCHAR(32) DEFAULT NULL,
+  request_history ENUM('full', 'partial', 'unknown') DEFAULT NULL,
+  request_requirements BLOB DEFAULT NULL,
+  request_skipped MEDIUMBLOB DEFAULT NULL,
+  request_file_count INT UNSIGNED DEFAULT NULL,
+  request_file_size BIGINT UNSIGNED DEFAULT NULL,
+  request_type ENUM('images', 'xml') DEFAULT 'xml' NOT NULL,
+  request_linked_id BIGINT UNSIGNED DEFAULT NULL,
   request_locked TINYINT UNSIGNED DEFAULT 0 NOT NULL,
   request_private TINYINT UNSIGNED DEFAULT 0 NOT NULL,
+  request_overwrite TINYINT UNSIGNED DEFAULT 0 NOT NULL,
+  request_skip_dupes TINYINT UNSIGNED DEFAULT 1 NOT NULL,
   INDEX request_actor_timestamp (
     request_actor, request_timestamp
   ),
   INDEX request_timestamp (request_timestamp),
   INDEX request_target (request_target),
   INDEX request_status (request_status),
+  INDEX request_linked_id (request_linked_id),
   PRIMARY KEY(request_id)
 ) /*$wgDBTableOptions*/;
 
@@ -34,4 +46,13 @@ CREATE TABLE /*_*/import_request_comments (
   INDEX request_id (request_id),
   INDEX request_comment_timestamp (request_comment_timestamp),
   PRIMARY KEY(request_comment_id)
+) /*$wgDBTableOptions*/;
+
+
+CREATE TABLE /*_*/import_request_handlers (
+  request_id BIGINT UNSIGNED NOT NULL,
+  request_handler_actor BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY(
+    request_id, request_handler_actor
+  )
 ) /*$wgDBTableOptions*/;

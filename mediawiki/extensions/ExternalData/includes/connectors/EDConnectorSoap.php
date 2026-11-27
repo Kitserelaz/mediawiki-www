@@ -7,7 +7,6 @@ use MediaWiki\Title\Title;
  *
  * @author Yaron Koren
  * @author Alexander Mashin
- *
  */
 class EDConnectorSoap extends EDConnectorHttp {
 	/** @var bool $keepExternalVarsCase External variables' case ought to be preserved. */
@@ -65,20 +64,15 @@ class EDConnectorSoap extends EDConnectorHttp {
 		// We do not want to repeat error messages self::$tries times.
 		static $log_errors_client = true;
 		static $log_errors_request = true;
-		// Suppress warnings.
-		self::suppressWarnings();
 		try {
-			// @phan-suppress-next-line PhanUndeclaredClassMethod Optional extension
-			$client = new SoapClient( $url, $this->options );
+			// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+			$client = @new SoapClient( $url, $this->options );
 		} catch ( Exception $e ) {
 			if ( $log_errors_client ) {
 				$this->error( 'externaldata-caught-exception-soap', $e->getMessage() );
 			}
 			$log_errors_client = false; // once is enough.
 			return null;
-		} finally {
-			// Restore warnings.
-			self::restoreWarnings();
 		}
 		$request = $this->requestName;
 		try {
@@ -91,7 +85,6 @@ class EDConnectorSoap extends EDConnectorHttp {
 			return null;
 		}
 		if ( $result ) {
-			// @phan-suppress-next-line PhanUndeclaredClassMethod Optional extension
 			$this->headers = self::headers( $client->__getLastResponseHeaders() );
 			$response = $this->responseName;
 			return $result->$response;

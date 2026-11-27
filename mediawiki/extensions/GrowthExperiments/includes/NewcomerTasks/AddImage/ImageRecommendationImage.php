@@ -68,11 +68,9 @@ class ImageRecommendationImage implements JsonSerializable {
 	/**
 	 * Create an ImageRecommendationImage object from an array representation.
 	 * This is the inverse of toArray().
-	 * @param array $imageData
-	 * @return ImageRecommendationImage
 	 */
-	public static function fromArray( array $imageData ): ImageRecommendationImage {
-		return new ImageRecommendationImage(
+	public static function fromArray( array $imageData ): self {
+		return new self(
 			new TitleValue( NS_FILE, $imageData['image'] ),
 			$imageData['source'],
 			$imageData['projects'] ?? [],
@@ -112,7 +110,6 @@ class ImageRecommendationImage implements JsonSerializable {
 
 	/**
 	 * Get the recommended image.
-	 * @return LinkTarget
 	 */
 	public function getImageTitle(): LinkTarget {
 		return $this->imageTitle;
@@ -153,9 +150,6 @@ class ImageRecommendationImage implements JsonSerializable {
 		return $this->sectionTitle;
 	}
 
-	/**
-	 * @return array
-	 */
 	public function toArray(): array {
 		$filename = $this->imageTitle->getDBkey();
 		return [

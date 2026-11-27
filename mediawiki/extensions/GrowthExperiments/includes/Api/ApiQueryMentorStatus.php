@@ -9,21 +9,12 @@ use MediaWiki\Api\ApiQueryBase;
 
 class ApiQueryMentorStatus extends ApiQueryBase {
 
-	/** @var MentorProvider */
-	private $mentorProvider;
+	private MentorProvider $mentorProvider;
+	private MentorStatusManager $mentorStatusManager;
 
-	/** @var MentorStatusManager */
-	private $mentorStatusManager;
-
-	/**
-	 * @param ApiQuery $mainModule
-	 * @param string $moduleName
-	 * @param MentorProvider $mentorProvider
-	 * @param MentorStatusManager $mentorStatusManager
-	 */
 	public function __construct(
 		ApiQuery $mainModule,
-		$moduleName,
+		string $moduleName,
 		MentorProvider $mentorProvider,
 		MentorStatusManager $mentorStatusManager
 	) {
@@ -37,15 +28,12 @@ class ApiQueryMentorStatus extends ApiQueryBase {
 	 * @inheritDoc
 	 */
 	public function execute() {
-		if (
-			!$this->getConfig()->get( 'GEMentorDashboardEnabled' ) ||
-			!$this->mentorProvider->isMentor( $this->getUser() )
-		) {
+		if ( !$this->mentorProvider->isMentor( $this->getUser() ) ) {
 			$this->dieWithError( [ 'apierror-permissiondenied-generic' ] );
 		}
 
 		$this->getResult()->addValue( null, $this->getModuleName(), [
-			'mentorstatus' => $this->mentorStatusManager->getMentorStatus( $this->getUser() )
+			'mentorstatus' => $this->mentorStatusManager->getMentorStatus( $this->getUser() ),
 		] );
 	}
 }

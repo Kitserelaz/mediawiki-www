@@ -18,10 +18,6 @@ class MenteeOverviewDataFilterTest extends MediaWikiUnitTestCase {
 	/** @var array|null */
 	private static $testingData = null;
 
-	/**
-	 * @param int $secondsAgo
-	 * @return string
-	 */
 	private static function getLastActive( int $secondsAgo ): string {
 		return ConvertibleTimestamp::convert(
 			TS_MW,
@@ -99,11 +95,11 @@ class MenteeOverviewDataFilterTest extends MediaWikiUnitTestCase {
 		return [
 			[
 				[],
-				300
+				300,
 			],
 			[
 				self::getTestingDataForUsernames( 'Baz' ),
-				50
+				50,
 			],
 		];
 	}
@@ -128,12 +124,12 @@ class MenteeOverviewDataFilterTest extends MediaWikiUnitTestCase {
 		return [
 			[
 				[],
-				1
+				1,
 			],
 			[
 				self::getTestingDataForUsernames( 'Foo' ),
-				30
-			]
+				30,
+			],
 		];
 	}
 
@@ -162,17 +158,17 @@ class MenteeOverviewDataFilterTest extends MediaWikiUnitTestCase {
 			[
 				self::getTestingDataForUsernames( [ 'Foo', 'Bar', 'Baz' ] ),
 				MenteeOverviewDataFilter::SORT_BY_EDITCOUNT,
-				MenteeOverviewDataFilter::SORT_ORDER_ASCENDING
+				MenteeOverviewDataFilter::SORT_ORDER_ASCENDING,
 			],
 			[
 				self::getTestingDataForUsernames( [ 'Baz', 'Bar', 'Foo' ] ),
 				MenteeOverviewDataFilter::SORT_BY_EDITCOUNT,
-				MenteeOverviewDataFilter::SORT_ORDER_DESCENDING
+				MenteeOverviewDataFilter::SORT_ORDER_DESCENDING,
 			],
 			[
 				self::getTestingDataForUsernames( [ 'Bar', 'Baz', 'Foo' ] ),
 				MenteeOverviewDataFilter::SORT_BY_QUESTIONS,
-				MenteeOverviewDataFilter::SORT_ORDER_ASCENDING
+				MenteeOverviewDataFilter::SORT_ORDER_ASCENDING,
 			],
 		];
 	}

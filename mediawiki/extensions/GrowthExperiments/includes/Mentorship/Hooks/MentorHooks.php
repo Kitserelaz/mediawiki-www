@@ -5,8 +5,8 @@ namespace GrowthExperiments\Mentorship\Hooks;
 use GrowthExperiments\MentorDashboard\PersonalizedPraise\EchoNewPraiseworthyMenteesPresentationModel;
 use GrowthExperiments\Mentorship\EchoMenteeClaimPresentationModel;
 use GrowthExperiments\Mentorship\EchoMentorChangePresentationModel;
-use GrowthExperiments\Mentorship\MentorManager;
-use GrowthExperiments\Mentorship\Provider\AbstractStructuredMentorWriter;
+use GrowthExperiments\Mentorship\IMentorManager;
+use GrowthExperiments\Mentorship\Provider\CommunityStructuredMentorWriter;
 use GrowthExperiments\Mentorship\Provider\MentorProvider;
 use GrowthExperiments\Mentorship\Store\MentorStore;
 use GrowthExperiments\Util;
@@ -16,16 +16,18 @@ use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
 use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\RequestContext;
-use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Extension\Notifications\AttributeManager;
 use MediaWiki\Extension\Notifications\UserLocator;
 use MediaWiki\Hook\FormatAutocommentsHook;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Permissions\Hook\UserGetRightsHook;
+use MediaWiki\RenameUser\Hook\RenameUserCompleteHook;
 use MediaWiki\SpecialPage\Hook\AuthChangeFormFieldsHook;
-use MediaWiki\Storage\Hook\PageSaveCompleteHook;
+use MediaWiki\Specials\Hook\BlockIpCompleteHook;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityLookup;
+use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 use Throwable;
 use Wikimedia\LightweightObjectStore\ExpirationAwareness;
@@ -34,47 +36,40 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
 class MentorHooks implements
 	LocalUserCreatedHook,
 	AuthChangeFormFieldsHook,
-	PageSaveCompleteHook,
 	ListDefinedTagsHook,
 	ChangeTagsListActiveHook,
 	FormatAutocommentsHook,
 	UserGetRightsHook,
-	BeforePageDisplayHook
+	BeforePageDisplayHook,
+	BlockIpCompleteHook,
+	RenameUserCompleteHook
 {
 
-	private Config $config;
 	private Config $wikiConfig;
 	private UserIdentityLookup $userIdentityLookup;
 	private GenderCache $genderCache;
-	private MentorManager $mentorManager;
+	private IMentorManager $mentorManager;
 	private MentorProvider $mentorProvider;
 	private MentorStore $mentorStore;
+	private LoggerInterface $logger;
 
-	/**
-	 * @param Config $config
-	 * @param Config $wikiConfig
-	 * @param UserIdentityLookup $userIdentityLookup
-	 * @param GenderCache $genderCache
-	 * @param MentorManager $mentorManager
-	 * @param MentorProvider $mentorProvider
-	 * @param MentorStore $mentorStore
-	 */
 	public function __construct(
-		Config $config,
 		Config $wikiConfig,
 		UserIdentityLookup $userIdentityLookup,
 		GenderCache $genderCache,
-		MentorManager $mentorManager,
+		IMentorManager $mentorManager,
 		MentorProvider $mentorProvider,
 		MentorStore $mentorStore
 	) {
-		$this->config = $config;
 		$this->wikiConfig = $wikiConfig;
 		$this->userIdentityLookup = $userIdentityLookup;
 		$this->genderCache = $genderCache;
 		$this->mentorManager = $mentorManager;
 		$this->mentorProvider = $mentorProvider;
 		$this->mentorStore = $mentorStore;
+
+		// TODO: This is not a service (yet), but should be
+		$this->logger = LoggerFactory::getInstance( 'GrowthExperiments' );
 	}
 
 	/**
@@ -98,8 +93,8 @@ class MentorHooks implements
 			'presentation-model' => EchoMentorChangePresentationModel::class,
 			AttributeManager::ATTR_LOCATORS => [
 				[
-					[ UserLocator::class, 'locateFromEventExtra' ],
-					[ 'mentee' ]
+					UserLocator::locateFromEventExtra( ... ),
+					[ 'mentee' ],
 				],
 			],
 		];
@@ -110,10 +105,10 @@ class MentorHooks implements
 			'presentation-model' => EchoMenteeClaimPresentationModel::class,
 			AttributeManager::ATTR_LOCATORS => [
 				[
-					[ UserLocator::class, 'locateFromEventExtra' ],
-					[ 'mentor' ]
-				]
-			]
+					UserLocator::locateFromEventExtra( ... ),
+					[ 'mentor' ],
+				],
+			],
 		];
 		$notifications['new-praiseworthy-mentees'] = [
 			'category' => 'ge-mentorship',
@@ -121,20 +116,18 @@ class MentorHooks implements
 			'section' => 'message',
 			'canNotifyAgent' => true,
 			'presentation-model' => EchoNewPraiseworthyMenteesPresentationModel::class,
-			AttributeManager::ATTR_LOCATORS => [
-				UserLocator::class . '::locateEventAgent'
-			]
+			AttributeManager::ATTR_LOCATORS => [ UserLocator::locateEventAgent( ... ) ],
 		];
 
 		$icons['growthexperiments-mentor'] = [
 			'path' => [
 				'ltr' => 'GrowthExperiments/images/mentor-ltr.svg',
-				'rtl' => 'GrowthExperiments/images/mentor-rtl.svg'
-			]
+				'rtl' => 'GrowthExperiments/images/mentor-rtl.svg',
+			],
 		];
 		// T332732: In he, the mentor icon should be displayed in LTR
 		$icons['growthexperiments-mentor-ltr'] = [
-			'path' => 'GrowthExperiments/images/mentor-ltr.svg'
+			'path' => 'GrowthExperiments/images/mentor-ltr.svg',
 		];
 	}
 
@@ -186,7 +179,7 @@ class MentorHooks implements
 				MentorStore::ROLE_PRIMARY
 			);
 			// Select a random backup mentor
-			$this->mentorManager->getMentorForUser( $user, MentorStore::ROLE_BACKUP );
+			$this->mentorManager->getMentorForUserSafe( $user, MentorStore::ROLE_BACKUP );
 			return true;
 		}
 		return false;
@@ -206,8 +199,8 @@ class MentorHooks implements
 
 				// Select a primary & backup mentor. FIXME Not really necessary, but avoids a
 				// change in functionality after introducing MentorManager, making debugging easier.
-				$this->mentorManager->getMentorForUser( $user, MentorStore::ROLE_PRIMARY );
-				$this->mentorManager->getMentorForUser( $user, MentorStore::ROLE_BACKUP );
+				$this->mentorManager->getMentorForUserSafe( $user, MentorStore::ROLE_PRIMARY );
+				$this->mentorManager->getMentorForUserSafe( $user, MentorStore::ROLE_BACKUP );
 			} catch ( Throwable $throwable ) {
 				Util::logException( $throwable, [
 					'user' => $user->getId(),
@@ -225,7 +218,7 @@ class MentorHooks implements
 	public function onAuthChangeFormFields( $requests, $fieldInfo, &$formDescriptor, $action ) {
 		$forceMentor = RequestContext::getMain()->getRequest()
 			->getVal( 'forceMentor', '' );
-		if ( $forceMentor !== null ) {
+		if ( $forceMentor !== '' ) {
 			$formDescriptor['forceMentor'] = [
 				'type' => 'hidden',
 				'name' => 'forceMentor',
@@ -237,39 +230,15 @@ class MentorHooks implements
 	/**
 	 * @inheritDoc
 	 */
-	public function onPageSaveComplete(
-		$wikiPage, $user, $summary, $flags, $revisionRecord, $editResult
-	) {
-		DeferredUpdates::addCallableUpdate( function () use ( $wikiPage ) {
-			$title = $wikiPage->getTitle();
-
-			$sourceTitles = $this->mentorProvider->getSourceTitles();
-			foreach ( $sourceTitles as $sourceTitle ) {
-				if ( $sourceTitle->equals( $title ) ) {
-					$this->mentorProvider->invalidateCache();
-					break;
-				}
-			}
-		} );
-		DeferredUpdates::addCallableUpdate( function () use ( $user ) {
-			if ( $this->mentorStore->isMentee( $user ) ) {
-				$this->mentorStore->markMenteeAsActive( $user );
-			}
-		} );
-	}
-
-	/**
-	 * @inheritDoc
-	 */
 	public function onListDefinedTags( &$tags ) {
-		$tags[] = AbstractStructuredMentorWriter::CHANGE_TAG;
+		$tags[] = CommunityStructuredMentorWriter::CHANGE_TAG;
 	}
 
 	/**
 	 * @inheritDoc
 	 */
 	public function onChangeTagsListActive( &$tags ) {
-		$tags[] = AbstractStructuredMentorWriter::CHANGE_TAG;
+		$tags[] = CommunityStructuredMentorWriter::CHANGE_TAG;
 	}
 
 	/**
@@ -282,7 +251,7 @@ class MentorHooks implements
 			'growthexperiments-mentorship-enrollasmentor-summary',
 		];
 		if ( in_array( $auto, $noParamMessageKeys ) ) {
-			$comment = wfMessage( $auto )->text();
+			$comment = wfMessage( $auto )->escaped();
 		}
 
 		$mentorChangeMessageKeys = [
@@ -306,7 +275,7 @@ class MentorHooks implements
 			$comment = wfMessage( $messageKey )
 				->params( ...explode( '|', $messageParts[1] ) )
 				->inContentLanguage()
-				->parse();
+				->escaped();
 		}
 	}
 
@@ -351,6 +320,54 @@ class MentorHooks implements
 				}
 			}
 			$out->addJsConfigVars( $jsConfigVars );
+		}
+	}
+
+	/** @inheritDoc */
+	public function onBlockIpComplete( $block, $user, $priorBlock ) {
+		if (
+			// Non-users cannot be mentored
+			$block->getType() !== $block::TYPE_USER ||
+			// Temporary blocks should not reset mentorship
+			!$block->isIndefinite()
+		) {
+			return;
+		}
+
+		// Ensure a valid $target is present
+		$target = $block->getTargetUserIdentity();
+		if ( !$target ) {
+			throw new \LogicException(
+				'Block #' . $block->getId() . ' is TYPE_USER, but has no target identity'
+			);
+		}
+
+		if ( $this->mentorStore->isMentee( $target ) ) {
+			$this->logger->info( 'Dropping mentor/mentee relationship for {user}, indefinitely blocked', [
+				'user' => $target,
+			] );
+			$this->mentorStore->dropMenteeRelationship( $target );
+		}
+	}
+
+	/**
+	 * Handle user renames to invalidate mentor caches
+	 *
+	 * @param int $uid User ID that was renamed
+	 * @param string $oldName Previous username
+	 * @param string $newName New username
+	 */
+	public function onRenameUserComplete( $uid, $oldName, $newName ): void {
+		$user = $this->userIdentityLookup->getUserIdentityByUserId( $uid );
+		if ( $user === null ) {
+			return;
+		}
+		$mentors = $this->mentorProvider->getMentors();
+		foreach ( $mentors as $mentor ) {
+			if ( $mentor->getName() === $oldName ) {
+				$this->mentorProvider->invalidateMentorsCache();
+				break;
+			}
 		}
 	}
 }

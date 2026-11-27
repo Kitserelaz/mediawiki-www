@@ -395,6 +395,45 @@ class ApiQueryGlobalBlocksTest extends ApiQueryTestBase {
 		);
 	}
 
+	/** @dataProvider provideExecuteShowsHiddenUsernameOnlyWithHideuser */
+	public function testExecuteShowsHiddenUsernameOnlyWithHideuser(
+		array $performerRights,
+		bool $usernameVisible
+	): void {
+		$target = $this->getMutableTestUser()->getUser();
+		$globalBlockStatus = GlobalBlockingServices::wrap( $this->getServiceContainer() )->getGlobalBlockManager()
+			->block( $target->getName(), 'global block on the test user', 'infinity', static::$testPerformer );
+		$this->assertStatusGood( $globalBlockStatus );
+		$hideUserBlockStatus = $this->getServiceContainer()->getBlockUserFactory()
+			->newBlockUser(
+				$target, $this->getTestUser( [ 'sysop', 'suppress' ] )->getUser(), 'infinity',
+				'block to hide the test user', [ 'isHideUser' => true ]
+			)->placeBlock();
+		$this->assertStatusGood( $hideUserBlockStatus );
+
+		[ $result ] = $this->doApiRequest(
+			[
+				'action' => 'query', 'list' => 'globalblocks',
+				'bgids' => $globalBlockStatus->getValue()['id'], 'bgprop' => 'target',
+			],
+			performer: $this->mockRegisteredAuthorityWithPermissions( $performerRights )
+		);
+
+		$block = $result['query']['globalblocks'][0];
+		if ( $usernameVisible ) {
+			$this->assertSame( $target->getName(), $block['target'], 'Hidden target should be shown with hideuser' );
+		} else {
+			$this->assertArrayNotHasKey( 'target', $block, 'Hidden target should be omitted without hideuser' );
+		}
+	}
+
+	public static function provideExecuteShowsHiddenUsernameOnlyWithHideuser(): array {
+		return [
+			'Authority lacks hideuser' => [ 'performerRights' => [], 'usernameVisible' => false ],
+			'Authority has hideuser' => [ 'performerRights' => [ 'hideuser' ], 'usernameVisible' => true ],
+		];
+	}
+
 	public function testExecuteWithAddressesParamWithInvalidUser() {
 		[ $result ] = $this->doApiRequest( [
 			'action' => 'query', 'list' => 'globalblocks', 'bgaddresses' => 'Template:Test#test',
@@ -403,6 +442,34 @@ class ApiQueryGlobalBlocksTest extends ApiQueryTestBase {
 		$this->assertArrayHasKey( 'globalblocks', $result['query'] );
 		// Assert that no global blocks are found for an invalid username target.
 		$this->assertCount( 0, $result['query']['globalblocks'] );
+	}
+
+	/** @dataProvider provideExecuteWithLocalStatusProp */
+	public function testExecuteWithLocalStatusProp( bool $applyGlobalBlocks, array $expectedLocalStatuses ): void {
+		$this->overrideConfigValue( 'ApplyGlobalBlocks', $applyGlobalBlocks );
+		[ $result ] = $this->doApiRequest( [
+			'action' => 'query',
+			'list' => 'globalblocks',
+			'bgip' => '127.0.0.1',
+			'bgprop' => 'localstatus|target',
+		] );
+		$this->assertSame(
+			$expectedLocalStatuses,
+			array_column( $result['query']['globalblocks'], 'localstatus', 'target' )
+		);
+	}
+
+	public static function provideExecuteWithLocalStatusProp(): array {
+		return [
+			'Global blocks apply on this wiki' => [
+				'applyGlobalBlocks' => true,
+				'expectedLocalStatuses' => [ '127.0.0.1' => 'disabled', '127.0.0.0/24' => 'enabled' ],
+			],
+			'Global blocks do not apply on this wiki' => [
+				'applyGlobalBlocks' => false,
+				'expectedLocalStatuses' => [ '127.0.0.1' => 'disabled', '127.0.0.0/24' => 'disabled' ],
+			],
+		];
 	}
 
 	public function testGetExamplesMessages() {
@@ -416,7 +483,8 @@ class ApiQueryGlobalBlocksTest extends ApiQueryTestBase {
 			$query, 'globalblock',
 			$this->getServiceContainer()->getCentralIdLookup(),
 			$globalBlockingServices->getGlobalBlockLookup(),
-			$globalBlockingServices->getGlobalBlockingConnectionProvider()
+			$globalBlockingServices->getGlobalBlockLocalStatusLookup(),
+			$globalBlockingServices->getGlobalBlockingUserVisibilityLookup()
 		);
 		$apiQueryGlobalBlocksModule = TestingAccessWrapper::newFromObject( $apiQueryGlobalBlocksModule );
 		$examplesMessages = $apiQueryGlobalBlocksModule->getExamplesMessages();
@@ -457,6 +525,11 @@ class ApiQueryGlobalBlocksTest extends ApiQueryTestBase {
 		// Insert some single IP blocks
 		ConvertibleTimestamp::setFakeTime( '20230205060711' );
 		$globalBlockManager->block( '127.0.0.1', 'test3', '20240605060708', $testPerformer, [ 'anon-only' ] );
+		$globalBlockingServices->getGlobalBlockLocalStatusManager()->locallyDisableBlock(
+			'127.0.0.1',
+			'Test local disable',
+			$testPerformer
+		);
 		ConvertibleTimestamp::setFakeTime( '20230205060712' );
 		$globalBlockManager->block( '77.8.9.10', 'test4', '20240405060708', $testPerformer );
 		// Insert a IP block that should not be displayed in the results ever because it is expired

@@ -3,20 +3,19 @@
 namespace GrowthExperiments\NewcomerTasks\TaskType;
 
 use GrowthExperiments\NewcomerTasks\TaskSuggester\QualityGateDecorator;
-use MediaWiki\Json\JsonUnserializable;
-use MediaWiki\Json\JsonUnserializableTrait;
-use MediaWiki\Json\JsonUnserializer;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Message\Message;
 use MediaWiki\Title\TitleValue;
-use MessageLocalizer;
+use Wikimedia\JsonCodec\JsonCodecable;
+use Wikimedia\JsonCodec\JsonCodecableTrait;
 
 /**
  * Describes a type of suggested edit.
  */
-class TaskType implements JsonUnserializable {
+class TaskType implements JsonCodecable {
 
-	use JsonUnserializableTrait;
+	use JsonCodecableTrait;
 
 	public const DIFFICULTY_EASY = 'easy';
 	public const DIFFICULTY_MEDIUM = 'medium';
@@ -24,7 +23,7 @@ class TaskType implements JsonUnserializable {
 	public const DIFFICULTY_NUMERIC = [
 		1 => self::DIFFICULTY_EASY,
 		2 => self::DIFFICULTY_MEDIUM,
-		3 => self::DIFFICULTY_HARD
+		3 => self::DIFFICULTY_HARD,
 	];
 
 	public const DIFFICULTY_CLASSES = [
@@ -192,20 +191,19 @@ class TaskType implements JsonUnserializable {
 			'difficulty' => $this->getDifficulty(),
 			'messages' => [
 				'name' => $this->getName( $messageLocalizer )->text(),
-				'description' => $this->getDescription( $messageLocalizer )->text(),
+				'description' => $this->getDescription( $messageLocalizer )->parse(),
 				'shortdescription' => $this->getShortDescription( $messageLocalizer )->text(),
 				'label' => $this->getLabel( $messageLocalizer )->text(),
 				'timeestimate' => $this->getTimeEstimate( $messageLocalizer )->text(),
 			],
 			'learnMoreLink' => $this->getLearnMoreLink(),
-			'iconData' => $this->getIconData()
+			'iconData' => $this->getIconData(),
 		];
 		return $viewData;
 	}
 
 	/**
 	 * Get icon data that should be shown for the task type
-	 * @return array
 	 */
 	public function getIconData(): array {
 		if ( static::IS_MACHINE_SUGGESTION ) {
@@ -215,37 +213,37 @@ class TaskType implements JsonUnserializable {
 				// * robot-task-type-medium
 				'icon' => 'robot-task-type-' . $this->getDifficulty(),
 				'filterIcon' => 'robot',
-				'descriptionMessageKey' => 'growthexperiments-homepage-suggestededits-tasktype-machine-description'
+				'descriptionMessageKey' => 'growthexperiments-homepage-suggestededits-tasktype-machine-description',
 			];
 		}
 		return [];
 	}
 
 	/** @inheritDoc */
-	protected function toJsonArray(): array {
+	public function toJsonArray(): array {
 		return [
 			'id' => $this->getId(),
 			'difficulty' => $this->getDifficulty(),
 			'extraData' => [ 'learnMoreLink' => $this->getLearnMoreLink() ],
 			'handlerId' => $this->getHandlerId(),
 			'iconData' => $this->getIconData(),
-			'excludedTemplates' => array_map( static function ( LinkTarget $excludedTemplate ) {
-				return [ $excludedTemplate->getNamespace(), $excludedTemplate->getDBkey() ];
-			}, $this->getExcludedTemplates() ),
-			'excludedCategories' => array_map( static function ( LinkTarget $excludedCategory ) {
-				return [ $excludedCategory->getNamespace(), $excludedCategory->getDBkey() ];
-			}, $this->getExcludedCategories() )
+			'excludedTemplates' => self::linkTargetToJsonArray(
+				$this->getExcludedTemplates()
+			),
+			'excludedCategories' => self::linkTargetToJsonArray(
+				$this->getExcludedCategories()
+			),
 		];
 	}
 
 	/** @inheritDoc */
-	public static function newFromJsonArray( JsonUnserializer $unserializer, array $json ) {
-		$excludedTemplates = array_map( static function ( array $excludedTemplate ) {
-			return new TitleValue( $excludedTemplate[0], $excludedTemplate[1] );
-		}, $json['excludedTemplates'] ?? [] );
-		$excludedCategories = array_map( static function ( array $excludedCategory ) {
-			return new TitleValue( $excludedCategory[0], $excludedCategory[1] );
-		}, $json['excludedCategories'] ?? [] );
+	public static function newFromJsonArray( array $json ): self {
+		$excludedTemplates = self::newTitleValuesFromJsonArray(
+			$json['excludedTemplates'] ?? []
+		);
+		$excludedCategories = self::newTitleValuesFromJsonArray(
+			$json['excludedCategories'] ?? []
+		);
 		$taskType = new static(
 			$json['id'], $json['difficulty'], $json['extraData'], $excludedTemplates, $excludedCategories
 		);
@@ -254,13 +252,37 @@ class TaskType implements JsonUnserializable {
 	}
 
 	/**
+	 * Helper function: return an array of TitleValues from a JSON-serialized
+	 * array.
+	 * @param list<array{0:string,1:string}> $json
+	 * @return list<TitleValue>
+	 */
+	protected static function newTitleValuesFromJsonArray( array $json ): array {
+		return array_map( static function ( array $titlePart ) {
+			return new TitleValue( $titlePart[0], $titlePart[1] );
+		}, $json );
+	}
+
+	/**
+	 * Helper function: map an array of LinkTargets to a JSON-serializable
+	 * array.
+	 * @param list<LinkTarget> $targets
+	 * @return list<array{0:string,1:string}>
+	 */
+	protected static function linkTargetToJsonArray( array $targets ): array {
+		return array_map( static function ( LinkTarget $target ) {
+			return [ $target->getNamespace(), $target->getDBkey() ];
+		}, $targets );
+	}
+
+	/**
 	 * @param array $config
 	 * @return TitleValue[]
 	 */
 	public static function getExcludedTemplatesTitleValues( array $config ): array {
-		return array_map( static function ( array $excludedTemplate ) {
-			return new TitleValue( $excludedTemplate[0], $excludedTemplate[1] );
-		}, $config['excludedTemplates'] ?? [] );
+		return self::newTitleValuesFromJsonArray(
+			$config['excludedTemplates'] ?? []
+		);
 	}
 
 	/**
@@ -268,14 +290,17 @@ class TaskType implements JsonUnserializable {
 	 * @return TitleValue[]
 	 */
 	public static function getExcludedCategoriesTitleValues( array $config ): array {
-		return array_map( static function ( array $excludedCategory ) {
-			return new TitleValue( $excludedCategory[0], $excludedCategory[1] );
-		}, $config['excludedCategories'] ?? [] );
+		return self::newTitleValuesFromJsonArray(
+			$config['excludedCategories'] ?? []
+		);
+	}
+
+	public function shouldShowHelpPanelQuickTips(): bool {
+		return true;
 	}
 
 	/**
 	 * Whether the corresponding article for the task type should be opened in edit mode
-	 * @return bool
 	 */
 	public function shouldOpenInEditMode(): bool {
 		return false;
@@ -283,7 +308,6 @@ class TaskType implements JsonUnserializable {
 
 	/**
 	 * Get the default edit section for the task type
-	 * @return string
 	 */
 	public function getDefaultEditSection(): string {
 		return '';
@@ -291,8 +315,6 @@ class TaskType implements JsonUnserializable {
 
 	/**
 	 * Get CSS classes to add to the small task card image element.
-	 *
-	 * @return array
 	 */
 	public function getSmallTaskCardImageCssClasses(): array {
 		return [ 'mw-ge-small-task-card-image-skeleton' ];
@@ -310,8 +332,6 @@ class TaskType implements JsonUnserializable {
 
 	/**
 	 * Return the filters to apply to the recommendation
-	 *
-	 * @return array
 	 */
 	public function getSuggestionFilters(): array {
 		return [];

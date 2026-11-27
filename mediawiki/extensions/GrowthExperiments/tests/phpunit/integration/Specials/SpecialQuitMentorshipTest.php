@@ -2,14 +2,13 @@
 
 namespace GrowthExperiments\Tests\Integration;
 
-use ErrorPageError;
 use GrowthExperiments\GrowthExperimentsServices;
 use GrowthExperiments\Mentorship\Store\MentorStore;
 use GrowthExperiments\Specials\SpecialQuitMentorship;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Request\FauxResponse;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use MediaWiki\User\User;
-use SpecialPageTestBase;
 
 /**
  * @coversDefaultClass \GrowthExperiments\Specials\SpecialQuitMentorship
@@ -52,19 +51,6 @@ class SpecialQuitMentorshipTest extends SpecialPageTestBase {
 	}
 
 	/**
-	 * @covers ::requireMentorDashboardEnabled
-	 * @covers ::isEnabled
-	 * @covers ::execute
-	 */
-	public function testDashboardDisabled() {
-		$this->expectException( ErrorPageError::class );
-		$this->expectExceptionMessage( 'growthexperiments-quit-mentorship-disabled' );
-
-		$this->overrideConfigValue( 'GEMentorDashboardEnabled', false );
-		$this->executeSpecialPage();
-	}
-
-	/**
 	 * @covers ::preHtml
 	 * @covers ::alterForm
 	 * @dataProvider provideHasMentees
@@ -84,7 +70,7 @@ class SpecialQuitMentorshipTest extends SpecialPageTestBase {
 		}
 
 		/** @var string $html */
-		[ $html, ] = $this->executeSpecialPage( '', null, null, $mentorUser );
+		[ $html ] = $this->executeSpecialPage( '', null, null, $mentorUser );
 		$this->assertStringContainsString(
 			'growthexperiments-quit-mentorship-reassign-mentees-confirm',
 			$html
@@ -119,7 +105,7 @@ class SpecialQuitMentorshipTest extends SpecialPageTestBase {
 		$this->assertTrue( $mentorProvider->isMentor( $otherMentor ) );
 
 		$request = new FauxRequest( [
-			'wpreason' => 'foo bar'
+			'wpreason' => 'foo bar',
 		], true );
 		$request->response()->header( 'Status: 200 OK', true, 200 );
 

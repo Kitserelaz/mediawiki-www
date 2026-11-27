@@ -5,7 +5,6 @@
  * @author Yaron Koren
  * @author Alexander Mashin
  */
-
 class EDParserCSV extends EDParserBase {
 	/** @const string NAME The name of this format. */
 	public const NAME = 'CSV';
@@ -39,7 +38,6 @@ class EDParserCSV extends EDParserBase {
 	 * Constructor.
 	 *
 	 * @param array $params A named array of parameters passed from parser or Lua function.
-	 *
 	 */
 	public function __construct( array $params ) {
 		parent::__construct( $params );

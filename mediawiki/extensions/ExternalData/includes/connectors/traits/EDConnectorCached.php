@@ -1,6 +1,9 @@
 <?php
 
 use MediaWiki\MediaWikiServices;
+use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\IMaintainableDatabase;
+use Wikimedia\Rdbms\IReadableDatabase;
 
 /**
  * A trait to be used by cached connectors.
@@ -10,7 +13,6 @@ use MediaWiki\MediaWikiServices;
  *
  * @author Alexander Mashin
  * @author Yaron Koren
- *
  */
 trait EDConnectorCached {
 	use EDParsesParams;
@@ -18,10 +20,8 @@ trait EDConnectorCached {
 	// Cache variables.
 	/** @var bool $cacheIsUp Is the cache set up? */
 	private static $cacheIsUp;
-	/** @var \Wikimedia\Rdbms\Database $primaryDB Connection to primary database. */
-	private static $primaryDB;
-	/** @var \Wikimedia\Rdbms\Database $replicaDB Connection to primary database. */
-	private static $replicaDB;
+	private static IDatabase $primaryDB;
+	private static IReadableDatabase $replicaDB;
 	/** @var string|null $cacheTable Cache table name. */
 	private static $cacheTable;
 	/** @var int Number of seconds before cache expires. */
@@ -36,24 +36,29 @@ trait EDConnectorCached {
 	private $cacheFresh;
 	/** @var int Timestamp of when the result was fetched. */
 	private $time;
+	/** @var int $cacheSize Maximum cache size in bytes. 0 for no limit. */
+	private static $cacheSize = 0;
 
 	/**
 	 * Setup cache. Call from the constructor.
 	 * @param int $seconds Cache for so many seconds.
 	 * @param bool $stale Allow using stale cache.
 	 */
-	private function setupCache( $seconds, $stale ) {
+	private function setupCache( int $seconds, bool $stale ) {
 		// Take into account the obsolete setting $edgCacheTable.
 		$cache_table = self::setting( 'CacheTable' ) ?: 'ed_url_cache';
+		self::$cacheSize = self::setting( 'CacheSize' ) ?: 0;
 		self::$cacheIsUp = (bool)$cache_table;
 		self::$cacheTable = $cache_table;
 		$this->cacheExpires = $seconds;
 		$this->allowStaleCache = $stale;
 		if ( self::$cacheIsUp ) {
-			$lb = MediaWikiServices::getInstance()->getDBLoadBalancer();
-			self::$primaryDB = $lb->getConnection( DB_PRIMARY );
-			self::$replicaDB = $lb->getConnection( DB_REPLICA );
-			if ( !self::$replicaDB->tableExists( self::$cacheTable, __METHOD__ ) ) {
+			$dbProvider = MediaWikiServices::getInstance()->getConnectionProvider();
+			self::$primaryDB = $dbProvider->getPrimaryDatabase();
+			self::$replicaDB = $dbProvider->getReplicaDatabase();
+			if ( self::$replicaDB instanceof IMaintainableDatabase &&
+				!self::$replicaDB->tableExists( self::$cacheTable, __METHOD__ )
+			) {
 				self::$cacheIsUp = false;
 			}
 		}
@@ -81,7 +86,6 @@ trait EDConnectorCached {
 
 		// If there is no fresh cache, try to get from the web.
 		$this->cached = (bool)$cached;
-		// @phan-suppress-next-line PhanSuspiciousValueComparison WTF?
 		if ( !self::$cacheIsUp || !$this->cached || !$this->cacheFresh || $this->cacheExpires === 0 ) {
 			$result = $func( ...$args ); // actually call the function.
 			if ( $result ) {
@@ -116,7 +120,7 @@ trait EDConnectorCached {
 	 * @param string $key The key to hash.
 	 * @return string The hashed key.
 	 */
-	private static function hash( $key ) {
+	private static function hash( string $key ): string {
 		return strlen( $key ) > 254 ? hash( 'fnv1a64', $key ) : $key;
 	}
 
@@ -127,7 +131,7 @@ trait EDConnectorCached {
 	 * @param string $key Cache key.
 	 * @return string|null The cached value; null if none.
 	 */
-	private function cached( $key ) {
+	private function cached( string $key ): ?string {
 		// Check the cache (only the first 254 chars of the url).
 		$row = self::$replicaDB->selectRow(
 			self::$cacheTable,
@@ -151,19 +155,41 @@ trait EDConnectorCached {
 	 * @param string $contents Text to be cached.
 	 * @param bool $old_cache True, if there was an old cache.
 	 */
-	private function cache( $key, $contents, $old_cache ) {
+	private function cache( string $key, string $contents, bool $old_cache ) {
 		// Update cache, if possible and required.
 		if ( self::$cacheIsUp && $this->cacheExpires !== 0 ) {
 			$hashed_key = self::hash( $key );
 			// Delete the old entry, if one exists.
 			// @todo: Upsert?
 			if ( $old_cache ) {
-				self::$primaryDB->delete( self::$cacheTable, [ 'url' => $hashed_key ] );
+				self::$primaryDB->delete( self::$cacheTable, [ 'url' => $hashed_key ], __METHOD__ );
+			}
+			// Purge old cache beyond size limit, if any:
+			if ( self::$cacheSize ) {
+
+				$row = self::$replicaDB->selectRow(
+					'information_schema.TABLES',
+					[ 'data_length', 'index_length', 'data_free', 'avg_row_length' ],
+					[ 'table_schema' => self::$replicaDB->getDBname(), 'table_name' => self::$cacheTable ],
+					__METHOD__
+				);
+				if ( $row ) {
+					$excess = $row->data_length + $row->index_length - $row->data_free + strlen( $contents )
+							- self::$cacheSize;
+					if ( $excess > 0 ) {
+						self::$primaryDB->query( sprintf(
+							'DELETE FROM %s ORDER BY req_time ASC LIMIT %d;',
+							self::$cacheTable,
+							(int)( $row->avg_row_length > 0 ? $excess / $row->avg_row_length : 0 )
+						), __METHOD__ );
+					}
+				}
 			}
 			// Insert contents into the cache table.
 			self::$primaryDB->insert(
 				self::$cacheTable,
-				[ 'url' => $hashed_key, 'result' => $contents, 'req_time' => time() ]
+				[ 'url' => $hashed_key, 'result' => $contents, 'req_time' => time() ],
+				__METHOD__
 			);
 		}
 	}

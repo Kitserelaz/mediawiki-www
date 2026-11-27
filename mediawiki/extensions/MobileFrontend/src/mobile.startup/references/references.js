@@ -64,7 +64,7 @@ function referenceDrawer( props ) {
 				showCollapseIcon: false,
 				className: 'drawer position-fixed text references-drawer',
 				events: {
-					'click sup a': function ( ev ) {
+					'click sup a': ( ev ) => {
 						// Stop default scroll to hash fragment behaviour.
 						ev.preventDefault();
 					},
@@ -81,8 +81,7 @@ function referenceDrawer( props ) {
 							} ).$el,
 							util.parseHTML( '<span>' ).addClass( 'references-drawer__title' ).text( mw.msg( 'mobile-frontend-references-citation' ) ),
 							icons.cancel( 'gray', {
-								isSmall: true,
-								additionalClassNames: 'mf-button-flush-right'
+								isSmall: true
 							} ).$el
 						] ),
 

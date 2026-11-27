@@ -1,41 +1,65 @@
 <?php
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use MediaWiki\Api\ApiBase;
+use MediaWiki\Api\ApiMain;
 use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\Title\NamespaceInfo;
+use stdClass;
 use Wikimedia\ParamValidator\ParamValidator;
 
 /**
- * Allows JsonConfig to be manipulated via API
+ * Allows JsonConfig to be manipulated via the action API.
  */
 class JCApi extends ApiBase {
 
-	private static function addStatusConf( $conf ) {
+	public function __construct(
+		ApiMain $mainModule,
+		string $moduleName,
+		private readonly NamespaceInfo $namespaceInfo,
+	) {
+		parent::__construct( $mainModule, $moduleName );
+	}
+
+	/**
+	 * @param stdClass $conf
+	 * @return array
+	 */
+	private function addStatusConf( $conf ) {
 		// explicitly list values to avoid accidental exposure of private data
 		$res = [
 			'model' => $conf->model,
 			'namespace' => $conf->namespace,
-			'nsName' => $conf->nsName,
-			'nsTalk' => isset( $conf->nsTalk ) && $conf->nsTalk ? $conf->nsTalk : 'default',
+			'nsName' => $conf->nsName ?? $this->namespaceInfo->getCanonicalName( $conf->namespace ),
+			'nsTalk' => ( $conf->nsTalk ?? '' ) ?: 'default',
 			'isLocal' => $conf->isLocal,
 			'cacheExp' => $conf->cacheExp,
 			'cacheKey' => $conf->cacheKey,
 			'flaggedRevs' => $conf->flaggedRevs,
 		];
-		if ( isset( $conf->remote ) ) {
+		$remote = $conf->remote ?? null;
+		if ( $remote ) {
 			$res['remote'] = [
-				'url' => $conf->remote->url,
-				'username' => $conf->remote->username !== '', // true or false
-				'password' => $conf->remote->password !== '', // true or false
+				'url' => $remote->url,
+				'username' => $remote->username !== '', // true or false
+				'password' => $remote->password !== '', // true or false
 			];
 		}
-		if ( isset( $conf->store ) ) {
+		$store = $conf->store ?? null;
+		if ( $store === false ) {
 			// when store equals to false it's a flag to indicate content is stored externaly
 			$res['store'] = [
-				'cacheNewValue' => $conf->store ? $conf->store->cacheNewValue : null,
-				'notifyUrl' => $conf->store ? $conf->store->notifyUrl : null,
-				'notifyUsername' => $conf->store ? $conf->store->notifyUsername !== '' : false,
-				'notifyPassword' => $conf->store ? $conf->store->notifyPassword !== '' : false,
+				'cacheNewValue' => null,
+				'notifyUrl' => null,
+				'notifyUsername' => false,
+				'notifyPassword' => false,
+			];
+		} elseif ( $store ) {
+			$res['store'] = [
+				'cacheNewValue' => $store->cacheNewValue,
+				'notifyUrl' => $store->notifyUrl,
+				'notifyUsername' => $store->notifyUsername !== '',
+				'notifyPassword' => $store->notifyPassword !== '',
 			];
 		}
 		return $res;
@@ -49,7 +73,8 @@ class JCApi extends ApiBase {
 
 		switch ( $command ) {
 			case 'status':
-				$this->getMain()->setCacheMaxAge( 1 * 30 ); // seconds
+				// maxage: in seconds
+				$this->getMain()->setCacheMaxAge( 30 );
 				$this->getMain()->setCacheMode( 'public' );
 
 				$result->addValue(
@@ -63,7 +88,7 @@ class JCApi extends ApiBase {
 				foreach ( JCSingleton::getTitleMap() as $ns => $confs ) {
 					$vals = [];
 					foreach ( $confs as $conf ) {
-						$vals[] = self::addStatusConf( $conf );
+						$vals[] = $this->addStatusConf( $conf );
 					}
 					$data[$ns] = $vals;
 				}
@@ -80,7 +105,8 @@ class JCApi extends ApiBase {
 				// Currently, that action is not used because in production store->notifyUrl is null
 				// Can MW API allow both for the same action, or should it be a separate action?
 
-				$this->getMain()->setCacheMaxAge( 1 ); // seconds
+				// maxage: in seconds
+				$this->getMain()->setCacheMaxAge( 1 );
 				$this->getMain()->setCacheMode( 'private' );
 				if ( !$this->getUser()->isAllowed( 'jsonconfig-flush' ) ) {
 					// Sigh. Can't use $this->checkUserRightsAny() because
@@ -112,27 +138,9 @@ class JCApi extends ApiBase {
 					$this->dieWithError( 'apierror-jsonconfig-badtitle', 'badparam-titles' );
 				}
 
-				if ( isset( $params['content'] ) && $params['content'] !== '' ) {
-					if ( $command !== 'reload ' ) {
-						$this->dieWithError(
-							[
-								'apierror-invalidparammix-mustusewith',
-								'content',
-								'command=reload'
-							],
-							'badparam-content'
-						);
-					}
-					$content = JCSingleton::parseContent( $jct, $params['content'], true );
-				} else {
-					$content = false;
-				}
-
-				$jc = new JCCache( $jct, $content );
+				$jc = new JCCache( $jct );
 				if ( $command === 'reset' ) {
-					$jc->resetCache( false ); // clear cache
-				} elseif ( $content ) {
-					$jc->resetCache( true ); // set new value in cache
+					$jc->resetCache(); // clear cache
 				} else {
 					$jc->get(); // gets content from the default source and cache
 				}
@@ -141,6 +149,7 @@ class JCApi extends ApiBase {
 		}
 	}
 
+	/** @inheritDoc */
 	public function getAllowedParams() {
 		return [
 			'command' => [
@@ -156,7 +165,6 @@ class JCApi extends ApiBase {
 				ParamValidator::PARAM_TYPE => 'integer',
 			],
 			'title' => '',
-			'content' => '',
 		];
 	}
 
@@ -175,3 +183,6 @@ class JCApi extends ApiBase {
 		];
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCApi::class, 'JsonConfig\\JCApi' );

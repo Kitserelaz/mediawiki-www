@@ -36,6 +36,9 @@
 	"ExtensionFunctions": [
 		"Miraheze\\MirahezeMagic\\HookHandlers\\NoFollow::registerHooks"
 	],
+	"DatabaseVirtualDomains": [
+		"virtual-echo-shared"
+	],
 	"LogActionsHandlers": {
 		"vanishuser/*": "MediaWiki\\Logging\\LogFormatter"
 	},
@@ -121,10 +124,19 @@
 		"GlobalUserPageWikis": {
 			"handler": "GlobalUserPage"
 		},
+		"ImportDumpGetTargetState": {
+			"handler": "ImportDump"
+		},
 		"ImportDumpJobAfterImport": {
 			"handler": "ImportDump"
 		},
 		"ImportDumpJobGetFile": {
+			"handler": "ImportDump"
+		},
+		"ImportDumpRequestStatusUpdate": {
+			"handler": "ImportDump"
+		},
+		"ImportImagesJobGetFiles": {
 			"handler": "ImportDump"
 		},
 		"ManageWikiCoreAddFormFields": {
@@ -132,6 +144,9 @@
 		},
 		"ManageWikiCoreFormSubmission": {
 			"handler": "ManageWiki"
+		},
+		"MediaWikiServices": {
+			"handler": "Specials"
 		},
 		"MessageCacheFetchOverrides": {
 			"handler": "Main"
@@ -210,7 +225,9 @@
 			"factory": "Miraheze\\MirahezeMagic\\HookHandlers\\ImportDump::factory",
 			"services": [
 				"MainConfig",
-				"ConnectionProvider"
+				"ManageWikiDataStoreFactory",
+				"ConnectionProvider",
+				"ManageWikiModuleFactory"
 			]
 		},
 		"Main": {

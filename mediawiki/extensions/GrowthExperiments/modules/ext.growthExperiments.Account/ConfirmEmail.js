@@ -6,6 +6,11 @@
 		 * hide the warning if the user doesn't provide an email address
 		 */
 		maybeShowWarning: function () {
+
+			if ( mw.config.get( 'GECreateAccountExperimentV1' ) ) {
+				// T415659
+				return;
+			}
 			mw.hook( 'htmlform.enhance' ).add( ( $root ) => {
 				const $emailInput = $root.find( '#wpEmail' );
 				$emailInput
@@ -13,7 +18,7 @@
 						let $warningBox = $emailInput.next( '.ext-growthExperiments-message--warning' );
 						if ( $warningBox.length === 0 ) {
 							const warning = mw.util.messageBox(
-								mw.msg( 'growthexperiments-confirmemail-emailwarning' ), 'warning'
+								mw.msg( 'growthexperiments-confirmemail-emailwarning' ), 'warning',
 							);
 							warning.classList.add( 'ext-growthExperiments-message--warning' );
 							$warningBox = $( warning ).hide();
@@ -32,6 +37,6 @@
 						}
 					} );
 			} );
-		}
+		},
 	};
 }() );

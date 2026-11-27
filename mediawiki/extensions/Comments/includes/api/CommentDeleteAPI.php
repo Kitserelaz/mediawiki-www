@@ -1,6 +1,8 @@
 <?php
 
-class CommentDeleteAPI extends ApiBase {
+use Wikimedia\ParamValidator\ParamValidator;
+
+class CommentDeleteAPI extends MediaWiki\Api\ApiBase {
 
 	public function execute() {
 		$user = $this->getUser();
@@ -15,14 +17,13 @@ class CommentDeleteAPI extends ApiBase {
 		// Blocked users cannot delete comments, and neither can unprivileged ones.
 		if ( $user->getBlock() && !$userCheck ) {
 			$this->dieBlocked( $user->getBlock() );
-		} elseif ( $user->isBlockedGlobally() && !$userCheck ) {
-			$this->dieBlocked( $user->getGlobalBlock() );
 		}
 
 		$comment->delete();
 
 		$result = $this->getResult();
 		$result->addValue( $this->getModuleName(), 'ok', 'ok' );
+
 		return true;
 	}
 
@@ -37,8 +38,8 @@ class CommentDeleteAPI extends ApiBase {
 	public function getAllowedParams() {
 		return [
 			'commentID' => [
-				ApiBase::PARAM_REQUIRED => true,
-				ApiBase::PARAM_TYPE => 'integer'
+				ParamValidator::PARAM_REQUIRED => true,
+				ParamValidator::PARAM_TYPE => 'integer'
 			]
 		];
 	}

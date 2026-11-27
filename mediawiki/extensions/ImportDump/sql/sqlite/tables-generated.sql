@@ -10,8 +10,18 @@ CREATE TABLE /*_*/import_requests (
   request_target VARCHAR(64) NOT NULL,
   request_reason BLOB NOT NULL,
   request_status TEXT NOT NULL,
+  request_stage VARCHAR(32) DEFAULT NULL,
+  request_history TEXT DEFAULT NULL,
+  request_requirements BLOB DEFAULT NULL,
+  request_skipped BLOB DEFAULT NULL,
+  request_file_count INTEGER UNSIGNED DEFAULT NULL,
+  request_file_size BIGINT UNSIGNED DEFAULT NULL,
+  request_type TEXT DEFAULT 'xml' NOT NULL,
+  request_linked_id BIGINT UNSIGNED DEFAULT NULL,
   request_locked SMALLINT UNSIGNED DEFAULT 0 NOT NULL,
-  request_private SMALLINT UNSIGNED DEFAULT 0 NOT NULL
+  request_private SMALLINT UNSIGNED DEFAULT 0 NOT NULL,
+  request_overwrite SMALLINT UNSIGNED DEFAULT 0 NOT NULL,
+  request_skip_dupes SMALLINT UNSIGNED DEFAULT 1 NOT NULL
 );
 
 CREATE INDEX request_actor_timestamp ON /*_*/import_requests (
@@ -23,6 +33,8 @@ CREATE INDEX request_timestamp ON /*_*/import_requests (request_timestamp);
 CREATE INDEX request_target ON /*_*/import_requests (request_target);
 
 CREATE INDEX request_status ON /*_*/import_requests (request_status);
+
+CREATE INDEX request_linked_id ON /*_*/import_requests (request_linked_id);
 
 
 CREATE TABLE /*_*/import_request_comments (
@@ -36,3 +48,12 @@ CREATE TABLE /*_*/import_request_comments (
 CREATE INDEX request_id ON /*_*/import_request_comments (request_id);
 
 CREATE INDEX request_comment_timestamp ON /*_*/import_request_comments (request_comment_timestamp);
+
+
+CREATE TABLE /*_*/import_request_handlers (
+  request_id BIGINT UNSIGNED NOT NULL,
+  request_handler_actor BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY(
+    request_id, request_handler_actor
+  )
+);

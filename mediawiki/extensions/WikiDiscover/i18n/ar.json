@@ -2,6 +2,7 @@
 	"@metadata": {
 		"authors": [
 			"Meno25",
+			"Mohammed Qays",
 			"ديفيد",
 			"محمد أحمد عبد الفتاح"
 		]
@@ -15,6 +16,7 @@
 	"apihelp-query+wikidiscover-param-state": "قم بالتصفية حسب حالة إنشاء الويكي المعرفة للويكي.",
 	"apihelp-query+wikidiscover-param-wikis": "احصل على قائمة من الويكيات المحددة.",
 	"apihelp-query+wikidiscover-summary": "الحصول على قائمة الويكيات في مزرعة الويكي إنشاء ويكي.",
+	"inactivityexemptwikis": "مواقع ويكي معفاة من عدم النشاط",
 	"randomwiki": "إعادة التوجيه إلى ويكي عشوائي",
 	"randomwiki-header": "اختر الفئة واللغة أدناه وعند الإرسال، سيتم إعادة توجيهك إلى ويكي عشوائي يلبي المعايير المحددة.",
 	"randomwiki-parameters": "حدد المعلمات",
@@ -22,10 +24,16 @@
 	"wikidiscover-desc": "يسمح [[Special:WikiDiscover|باكتشاف ويكيات]] في مزرعة ويكي مع [[Special:CreateWiki|إنشاء ويكي]].",
 	"wikidiscover-header": "اختر المعلمات الخاصة ببحثك",
 	"wikidiscover-header-info": "يمكنك البحث عن الويكيات عبر هذه المزرعة عن طريق تحديد معلمات مثل اللغة والمزيد.",
+	"wikidiscover-inactivityexempt-actor-unknown": "مجهول",
+	"wikidiscover-inactivityexempt-disabled": "خاصية عدم النشاط غير مفعلة في مزرعة الويكي هذه.",
+	"wikidiscover-inactivityexempt-header": "تصفية مواقع الويكي المعفاة",
+	"wikidiscover-inactivityexempt-header-info": "مُنحت مواقع الويكي المدرجة أدناه استثناءً من [[Dormancy Policy]].",
+	"wikidiscover-inactivityexempt-table-actor": "الإعفاء الممنوح من",
+	"wikidiscover-inactivityexempt-table-reason": "سبب الإعفاء",
 	"wikidiscover-label-active": "نشيط",
 	"wikidiscover-label-any": "(أي)",
 	"wikidiscover-label-closed": "مغلق",
-	"wikidiscover-label-deleted": "تم الحذف",
+	"wikidiscover-label-deleted": "حُذفت",
 	"wikidiscover-label-description": "وصف مختصر",
 	"wikidiscover-label-inactive": "غير نشط",
 	"wikidiscover-label-locked": "مغلق",

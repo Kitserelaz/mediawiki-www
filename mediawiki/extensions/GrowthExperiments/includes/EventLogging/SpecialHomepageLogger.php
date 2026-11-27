@@ -3,9 +3,9 @@
 namespace GrowthExperiments\EventLogging;
 
 use GrowthExperiments\HomepageModules\Impact;
-use GrowthExperiments\HomepageModules\StartEmail;
 use MediaWiki\Extension\EventLogging\EventLogging;
 use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Request\WebRequest;
 use MediaWiki\User\User;
 
@@ -55,10 +55,21 @@ class SpecialHomepageLogger {
 		$this->isMobile = $isMobile;
 	}
 
+	private function getEmailState(): string {
+		if ( $this->user->isEmailConfirmed() ) {
+			return 'confirmed';
+		} elseif ( $this->user->getEmail() ) {
+			return 'unconfirmed';
+		} else {
+			return 'noemail';
+		}
+	}
+
 	/**
 	 * Log an event to HomepageVisit.
 	 */
 	public function log() {
+		$services = MediaWikiServices::getInstance();
 		$event = [];
 		$event['is_mobile'] = $this->isMobile;
 		$referer = $this->request->getHeader( 'REFERER' );
@@ -74,7 +85,7 @@ class SpecialHomepageLogger {
 		}
 		$event['referer_action'] = 'view';
 		if ( $referer ) {
-			$referer = wfParseUrl( $referer );
+			$referer = $services->getUrlUtils()->parse( $referer );
 			if ( isset( $referer['query'] ) ) {
 				$referer_query = wfCgiToArray( $referer['query'] );
 				if ( isset( $referer_query['action'] ) ) {
@@ -103,16 +114,7 @@ class SpecialHomepageLogger {
 				->error( 'Could not set HomepageVisit.impact_module_state schema field' );
 		}
 
-		/** @var StartEmail $startEmailModule */
-		$startEmailModule = $this->modules['startemail'] ?? false;
-		if ( $startEmailModule ) {
-			$event['start_email_state'] = $startEmailModule->getState();
-		} else {
-			// Should not happen; it is a required schema field.
-			LoggerFactory::getInstance( 'GrowthExperiments' )
-				->error( 'Could not set HomepageVisit.start_email_state schema field' );
-		}
-
+		$event['start_email_state'] = $this->getEmailState();
 		$event['homepage_pageview_token'] = $this->pageviewToken;
 
 		// This has been migrated to an Event Platform schema; schema revision is no longer used

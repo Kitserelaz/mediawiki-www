@@ -9,7 +9,6 @@ use MediaWiki\Title\Title;
  * @author Alexander Mashin
  * @author Yaron Koren
  * @author Zoran Dori (kizule)
- *
  */
 abstract class EDConnectorHttp extends EDConnectorBase {
 	use EDConnectorParsable; // needs parser.
@@ -61,12 +60,12 @@ abstract class EDConnectorHttp extends EDConnectorBase {
 		// HTTP options.
 		$this->options = $args['options'] ?? [];
 		global $wgHTTPTimeout;
-		$this->options['HTTPTimeout'] = $this->options['HTTPTimeout'] ?? $wgHTTPTimeout;
+		$this->options['HTTPTimeout'] ??= $wgHTTPTimeout;
 		global $wgHTTPConnectTimeout;
-		$this->options['HTTPConnectTimeout'] = $this->options['HTTPConnectTimeout'] ?? $wgHTTPConnectTimeout;
+		$this->options['HTTPConnectTimeout'] ??= $wgHTTPConnectTimeout;
 		if ( isset( $args['allow ssl'] ) ) {
-			$this->options['sslVerifyCert'] = $this->options['sslVerifyCert'] ?? false;
-			$this->options['followRedirects'] = $this->options['followRedirects'] ?? false;
+			$this->options['sslVerifyCert'] ??= false;
+			$this->options['followRedirects'] ??= false;
 		}
 
 		// Throttling.
@@ -195,20 +194,21 @@ abstract class EDConnectorHttp extends EDConnectorBase {
 	 *
 	 * @todo Rethink.
 	 */
-	private static function isURLAllowed( string $url, $allowed ) {
+	private static function isURLAllowed( string $url, $allowed ): bool {
 		// this code is based on Parser::maybeMakeExternalImage().
 		if ( !$allowed ) {
-			return true;
+			// URL must be contained in the whitelist.
+			return false;
 		}
 		if ( is_array( $allowed ) ) {
 			foreach ( $allowed as $match ) {
-				if ( strpos( $url, $match ) === 0 ) {
+				if ( str_starts_with( $url, $match ) ) {
 					return true;
 				}
 			}
 			return false;
 		} else {
-			return strpos( $url, $allowed ) === 0;
+			return $allowed === '*' || str_starts_with( $url, $allowed );
 		}
 	}
 

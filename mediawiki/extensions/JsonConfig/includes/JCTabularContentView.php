@@ -1,6 +1,6 @@
 <?php
 
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
@@ -10,7 +10,6 @@ use MediaWiki\Parser\ParserOutput;
 
 /**
  * This class is used in case when there is no custom view defined for JCContent object
- * @package JsonConfig
  */
 class JCTabularContentView extends JCContentView {
 
@@ -200,6 +199,15 @@ class JCTabularContentView extends JCContentView {
         ]
     },
 
+    // Optional array of categories for the Tabular data page.
+    "mediawikiCategories": [
+    	{
+    		"name": "ExampleCategory",
+    		// Optional sort key
+    		"sort": "ExampleSortKey"
+    	}
+    ],
+
     // array of data, with each row being an array of values
     "data": [
         [ 42, "peace" ]
@@ -208,3 +216,6 @@ class JCTabularContentView extends JCContentView {
 EOT;
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCTabularContentView::class, 'JsonConfig\\JCTabularContentView' );

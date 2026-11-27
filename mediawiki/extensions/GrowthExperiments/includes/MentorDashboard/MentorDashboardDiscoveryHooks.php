@@ -3,9 +3,8 @@
 namespace GrowthExperiments\MentorDashboard;
 
 use GrowthExperiments\Mentorship\Provider\MentorProvider;
-use MediaWiki\Config\Config;
-use MediaWiki\Hook\SkinTemplateNavigation__UniversalHook;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
+use MediaWiki\Skin\Hook\SkinTemplateNavigation__UniversalHook;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\User;
@@ -14,21 +13,13 @@ class MentorDashboardDiscoveryHooks implements SkinTemplateNavigation__Universal
 
 	public const MENTOR_DASHBOARD_SEEN_PREF = 'growthexperiments-mentor-dashboard-seen';
 
-	private Config $config;
 	private MentorProvider $mentorProvider;
 	private UserOptionsLookup $userOptionsLookup;
 
-	/**
-	 * @param Config $config
-	 * @param MentorProvider $mentorProvider
-	 * @param UserOptionsLookup $userOptionsLookup
-	 */
 	public function __construct(
-		Config $config,
 		MentorProvider $mentorProvider,
 		UserOptionsLookup $userOptionsLookup
 	) {
-		$this->config = $config;
 		$this->mentorProvider = $mentorProvider;
 		$this->userOptionsLookup = $userOptionsLookup;
 	}
@@ -40,9 +31,7 @@ class MentorDashboardDiscoveryHooks implements SkinTemplateNavigation__Universal
 	 * @return bool
 	 */
 	private function isDiscoveryEnabled( User $user ): bool {
-		return $this->config->get( 'GEMentorDashboardEnabled' ) &&
-			$user->isNamed() &&
-			$this->mentorProvider->isMentor( $user );
+		return $user->isNamed() && $this->mentorProvider->isMentor( $user );
 	}
 
 	/**

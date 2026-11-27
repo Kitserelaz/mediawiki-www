@@ -12,6 +12,7 @@ use MediaWikiIntegrationTestCase;
  * @covers \GrowthExperiments\NewcomerTasks\TaskType\TaskTypeHandlerRegistry
  * @covers \GrowthExperiments\NewcomerTasks\TaskType\LinkRecommendationTaskTypeHandler
  * @covers \GrowthExperiments\NewcomerTasks\TaskType\ImageRecommendationTaskTypeHandler
+ * @covers \GrowthExperiments\NewcomerTasks\TaskType\ReviseToneTaskTypeHandler
  * @covers \GrowthExperiments\NewcomerTasks\TaskType\TemplateBasedTaskTypeHandler
  */
 class TaskTypeHandlerRegistryTest extends MediaWikiIntegrationTestCase {
@@ -50,7 +51,7 @@ class TaskTypeHandlerRegistryTest extends MediaWikiIntegrationTestCase {
 			[
 				'foo',
 				null,
-			]
+			],
 		];
 	}
 
@@ -67,7 +68,8 @@ class TaskTypeHandlerRegistryTest extends MediaWikiIntegrationTestCase {
 				$growthServices->getNewcomerTasksConfigurationValidator(),
 				$services->getTitleParser(),
 				$growthServices->getLinkRecommendationProvider(),
-				$growthServices->getAddLinkSubmissionHandler()
+				$growthServices->getAddLinkSubmissionHandler(),
+				$growthServices->getGrowthConfig()
 			);
 		} elseif ( $expectedTaskTypeId === 'image-recommendation' ) {
 			$taskTypeHandler = new ImageRecommendationTaskTypeHandler(
@@ -101,7 +103,7 @@ class TaskTypeHandlerRegistryTest extends MediaWikiIntegrationTestCase {
 				'newcomer task image suggestion',
 				'"foo" is not a valid change tag name for ' .
 				ImageRecommendationTaskTypeHandler::class,
-			]
+			],
 		];
 	}
 
@@ -119,6 +121,7 @@ class TaskTypeHandlerRegistryTest extends MediaWikiIntegrationTestCase {
 			'newcomer task update',
 			'newcomer task expand',
 			'newcomer task links',
+			'newcomer task revise tone',
 		], $changeTags );
 	}
 

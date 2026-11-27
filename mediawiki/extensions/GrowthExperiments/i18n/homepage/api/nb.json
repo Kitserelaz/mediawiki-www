@@ -22,5 +22,9 @@
 	"apihelp-growthinvalidateimagerecommendation-param-title": "Tittelen på artikkelen bildeforslagsoppgaven gjelder",
 	"apihelp-growthinvalidateimagerecommendation-param-filename": "Filnavnet for bildeforslag uten prefiks, f.eks. <kbd>Foo.jpg</kbd>",
 	"apihelp-growthinvalidateimagerecommendation-param-sectiontitle": "Tittelen til seksjonen bildeforslaget gjelder, f.eks. <kbd>Historie</kbd>.",
-	"apihelp-growthinvalidateimagerecommendation-param-sectionnumber": "Den 1-baserte indeksen til seksjonen bildeforslaget gjelder, f.eks. <kbd>3</kbd>"
+	"apihelp-growthinvalidateimagerecommendation-param-sectionnumber": "Den 1-baserte indeksen til seksjonen bildeforslaget gjelder, f.eks. <kbd>3</kbd>",
+	"apihelp-query+linkrecommendations-summary": "Hent lenkeforslag for en spesifikk side",
+	"apihelp-query+linkrecommendations-example-1": "Hent lenkeforslag for siden med ID 123",
+	"apihelp-query+linkrecommendations-example-2": "Hent opp til 5 lenkeforslag for siden med ID 456",
+	"apihelp-query+linkrecommendations-param-pageid": "Side-ID-en det skal hentes lenkeforslag for."
 }

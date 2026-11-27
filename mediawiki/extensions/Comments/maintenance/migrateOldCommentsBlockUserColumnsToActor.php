@@ -17,7 +17,7 @@ require_once "$IP/maintenance/Maintenance.php";
  *
  * @since January 2020
  */
-class MigrateOldCommentsBlockUserColumnsToActor extends LoggedUpdateMaintenance {
+class MigrateOldCommentsBlockUserColumnsToActor extends MediaWiki\Maintenance\LoggedUpdateMaintenance {
 	public function __construct() {
 		parent::__construct();
 		$this->addDescription( 'Migrates data from old _user_name/_user_id columns in the Comments_block table ' .
@@ -102,14 +102,13 @@ class MigrateOldCommentsBlockUserColumnsToActor extends LoggedUpdateMaintenance 
 			__METHOD__,
 			[ 'DISTINCT' ]
 		);
+
+		$services = MediaWikiServices::getInstance();
+		$userFactory = $services->getUserFactory();
+
 		foreach ( $res as $row ) {
-			$user = User::newFromAnyId( $row->cb_user_id, $row->cb_user_name, null );
-			if ( interface_exists( '\MediaWiki\User\ActorNormalization' ) ) {
-				// MW 1.36+
-				$actorId = MediaWikiServices::getInstance()->getActorNormalization()->acquireActorId( $user, $dbw );
-			} else {
-				$actorId = $user->getActorId( $dbw );
-			}
+			$user = $userFactory->newFromAnyId( $row->cb_user_id, $row->cb_user_name, null );
+			$actorId = $services->getActorNormalization()->acquireActorId( $user, $dbw );
 			$dbw->update(
 				'Comments_block',
 				[
@@ -132,14 +131,10 @@ class MigrateOldCommentsBlockUserColumnsToActor extends LoggedUpdateMaintenance 
 			__METHOD__,
 			[ 'DISTINCT' ]
 		);
+
 		foreach ( $res as $row ) {
-			$user = User::newFromAnyId( $row->cb_user_id_blocked, $row->cb_user_name_blocked, null );
-			if ( interface_exists( '\MediaWiki\User\ActorNormalization' ) ) {
-				// MW 1.36+
-				$actorId = MediaWikiServices::getInstance()->getActorNormalization()->acquireActorId( $user, $dbw );
-			} else {
-				$actorId = $user->getActorId( $dbw );
-			}
+			$user = $userFactory->newFromAnyId( $row->cb_user_id_blocked, $row->cb_user_name_blocked, null );
+			$actorId = $services->getActorNormalization()->acquireActorId( $user, $dbw );
 			$dbw->update(
 				'Comments_block',
 				[

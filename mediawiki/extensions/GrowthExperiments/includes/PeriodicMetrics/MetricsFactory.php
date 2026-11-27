@@ -5,70 +5,43 @@ namespace GrowthExperiments\PeriodicMetrics;
 use GrowthExperiments\Mentorship\Provider\MentorProvider;
 use InvalidArgumentException;
 use MediaWiki\User\UserEditTracker;
-use MediaWiki\User\UserIdentityLookup;
-use Wikimedia\Rdbms\LoadBalancer;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 class MetricsFactory {
 
-	/** @var string[] */
+	/** @var class-string<IMetric>[] */
 	public const METRICS = [
 		AutoAssignedMentorsMetric::class,
 		InactiveMentorsMetric::class,
 		NewcomersByMentorMetric::class,
 	];
 
-	/** @var LoadBalancer */
-	private $loadBalancer;
-
-	/** @var UserEditTracker */
-	private $userEditTracker;
-
-	/** @var UserIdentityLookup */
-	private $userIdentityLookup;
-
-	/** @var MentorProvider */
-	private $mentorProvider;
-
-	/**
-	 * @param LoadBalancer $loadBalancer
-	 * @param UserEditTracker $userEditTracker
-	 * @param UserIdentityLookup $userIdentityLookup
-	 * @param MentorProvider $mentorProvider
-	 */
 	public function __construct(
-		LoadBalancer $loadBalancer,
-		UserEditTracker $userEditTracker,
-		UserIdentityLookup $userIdentityLookup,
-		MentorProvider $mentorProvider
+		private readonly IConnectionProvider $dbProvider,
+		private readonly UserEditTracker $userEditTracker,
+		private readonly MentorProvider $mentorProvider,
 	) {
-		$this->loadBalancer = $loadBalancer;
-		$this->userEditTracker = $userEditTracker;
-		$this->userIdentityLookup = $userIdentityLookup;
-		$this->mentorProvider = $mentorProvider;
 	}
 
 	/**
-	 * @param string $className
+	 * @param class-string<IMetric> $className
 	 * @return IMetric
 	 * @throws InvalidArgumentException if metric class name is not supported
 	 */
 	public function newMetric( string $className ): IMetric {
-		switch ( $className ) {
-			case AutoAssignedMentorsMetric::class:
-				return new AutoAssignedMentorsMetric( $this->mentorProvider );
-			case InactiveMentorsMetric::class:
-				return new InactiveMentorsMetric(
-					$this->userEditTracker,
-					$this->userIdentityLookup,
-					$this->mentorProvider
-				);
-			case NewcomersByMentorMetric::class:
-				return new NewcomersByMentorMetric(
-					$this,
-					$this->loadBalancer->getConnection( DB_REPLICA )
-				);
-			default:
-				throw new InvalidArgumentException( 'Unsupported metric class name' );
-		}
+		return match ( $className ) {
+			AutoAssignedMentorsMetric::class => new AutoAssignedMentorsMetric(
+				$this->mentorProvider
+			),
+			InactiveMentorsMetric::class => new InactiveMentorsMetric(
+				$this->userEditTracker,
+				$this->mentorProvider
+			),
+			NewcomersByMentorMetric::class => new NewcomersByMentorMetric(
+				$this,
+				$this->dbProvider->getReplicaDatabase()
+			),
+			default => throw new InvalidArgumentException( 'Unsupported metric class name' )
+		};
 	}
 }

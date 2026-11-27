@@ -21,10 +21,6 @@ class EventGateImageSuggestionFeedbackUpdater {
 	private EventBusFactory $eventBusFactory;
 	private WikiPageFactory $wikiPageFactory;
 
-	/**
-	 * @param EventBusFactory $eventBusFactory
-	 * @param WikiPageFactory $wikiPageFactory
-	 */
 	public function __construct( EventBusFactory $eventBusFactory, WikiPageFactory $wikiPageFactory ) {
 		$this->eventBusFactory = $eventBusFactory;
 		$this->wikiPageFactory = $wikiPageFactory;
@@ -63,7 +59,7 @@ class EventGateImageSuggestionFeedbackUpdater {
 			'is_accepted' => $accepted === true,
 			'is_rejected' => $accepted === false,
 			'dt' => MWTimestamp::now( TS_ISO_8601 ),
-			'origin_wiki' => 'commonswiki'
+			'origin_wiki' => 'commonswiki',
 		];
 		if ( $rejectionReasons ) {
 			$attrs['rejection_reasons'] = $rejectionReasons;
@@ -80,7 +76,7 @@ class EventGateImageSuggestionFeedbackUpdater {
 			self::STREAM,
 			$attrs
 		);
-		DeferredUpdates::addCallableUpdate( fn () => $eventBus->send( [ $event ] ) );
+		DeferredUpdates::addCallableUpdate( static fn () => $eventBus->send( [ $event ] ) );
 	}
 
 }

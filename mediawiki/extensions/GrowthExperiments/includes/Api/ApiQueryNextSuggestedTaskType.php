@@ -2,8 +2,10 @@
 
 namespace GrowthExperiments\Api;
 
+use GrowthExperiments\FeatureManager;
 use GrowthExperiments\LevelingUp\LevelingUpManager;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
+use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeManager;
 use GrowthExperiments\UserImpact\UserImpactLookup;
 use MediaWiki\Api\ApiQuery;
 use MediaWiki\Api\ApiQueryBase;
@@ -18,25 +20,24 @@ class ApiQueryNextSuggestedTaskType extends ApiQueryBase {
 	private LevelingUpManager $levelingUpManager;
 	private ConfigurationLoader $configurationLoader;
 	private UserImpactLookup $userImpactLookup;
+	private TaskTypeManager $taskTypeManager;
+	private FeatureManager $featureManager;
 
-	/**
-	 * @param ApiQuery $queryModule
-	 * @param string $moduleName
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param LevelingUpManager $levelingUpManager
-	 * @param UserImpactLookup $userImpactLookup
-	 */
 	public function __construct(
 		ApiQuery $queryModule,
-		$moduleName,
+		string $moduleName,
 		ConfigurationLoader $configurationLoader,
 		LevelingUpManager $levelingUpManager,
-		UserImpactLookup $userImpactLookup
+		UserImpactLookup $userImpactLookup,
+		TaskTypeManager $taskTypeManager,
+		FeatureManager $featureManager
 	) {
 		parent::__construct( $queryModule, $moduleName, 'gnstt' );
 		$this->levelingUpManager = $levelingUpManager;
 		$this->configurationLoader = $configurationLoader;
 		$this->userImpactLookup = $userImpactLookup;
+		$this->taskTypeManager = $taskTypeManager;
+		$this->featureManager = $featureManager;
 	}
 
 	/**
@@ -46,6 +47,9 @@ class ApiQueryNextSuggestedTaskType extends ApiQueryBase {
 		if ( !$this->getUser()->isNamed() ) {
 			$this->dieWithError( 'apierror-mustbeloggedin-generic' );
 		}
+		if ( !$this->featureManager->isNewcomerTasksAvailable() ) {
+			$this->dieWithError( [ 'apierror-moduledisabled', 'Suggested edits' ] );
+		}
 		$params = $this->extractRequestParams();
 		$this->getResult()->addValue(
 			'query',
@@ -53,7 +57,8 @@ class ApiQueryNextSuggestedTaskType extends ApiQueryBase {
 			$this->levelingUpManager->suggestNewTaskTypeForUser(
 				$this->getUser(),
 				$params['activetasktype'],
-				true
+				true,
+				$this->taskTypeManager->getAvailableTaskTypesOnNextEdit( $this->getUser() )
 			)
 		);
 		$userImpact = $this->userImpactLookup->getUserImpact( $this->getUser() );
@@ -89,12 +94,15 @@ class ApiQueryNextSuggestedTaskType extends ApiQueryBase {
 	 * @inheritDoc
 	 */
 	public function getAllowedParams() {
-		$taskTypes = $this->configurationLoader->getTaskTypes();
+		$taskTypes = $this->featureManager->isNewcomerTasksAvailable()
+			? $this->configurationLoader->getTaskTypes()
+			: [];
+
 		return [
 			'activetasktype' => [
 				ParamValidator::PARAM_TYPE => array_keys( $taskTypes ),
-				ParamValidator::PARAM_REQUIRED => true,
-			]
+				ParamValidator::PARAM_REQUIRED => $this->featureManager->isNewcomerTasksAvailable(),
+			],
 		];
 	}
 }

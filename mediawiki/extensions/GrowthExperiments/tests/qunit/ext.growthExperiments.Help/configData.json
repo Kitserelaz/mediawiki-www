@@ -15,5 +15,14 @@
 		4,
 		12
 	],
-	"GEHelpPanelSuggestedEditsPreferredEditor": "visualeditor"
+	"GEHelpPanelSuggestedEditsPreferredEditor": {
+		"copyedit": "visualeditor",
+		"expand": "visualeditor",
+		"links": "visualeditor",
+		"references": "visualeditor",
+		"update": "visualeditor",
+		"image-recommendation": "machineSuggestions",
+		"section-image-recommendation": "machineSuggestions",
+		"link-recommendation": "machineSuggestions"
+	}
 }

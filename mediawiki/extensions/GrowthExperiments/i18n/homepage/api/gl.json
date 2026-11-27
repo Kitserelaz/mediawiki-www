@@ -23,5 +23,9 @@
 	"apihelp-growthinvalidateimagerecommendation-param-title": "Título do artigo para o cal é a tarefa de recomendación de imaxes",
 	"apihelp-growthinvalidateimagerecommendation-param-filename": "O nome de ficheiro sen prefixo para a recomendación de imaxe; por exemplo, <kbd>Foo.jpg</kbd>",
 	"apihelp-growthinvalidateimagerecommendation-param-sectiontitle": "O título da sección para a que se recomenda a imaxe; por exemplo, <kbd>History</kbd>",
-	"apihelp-growthinvalidateimagerecommendation-param-sectionnumber": "O índice de base 1 da sección para a que se recomenda a imaxe; por exemplo, <kbd>3</kbd>"
+	"apihelp-growthinvalidateimagerecommendation-param-sectionnumber": "O índice de base 1 da sección para a que se recomenda a imaxe; por exemplo, <kbd>3</kbd>",
+	"apihelp-query+linkrecommendations-summary": "Recuperar as recomendacións de ligazóns para unha páxina específica",
+	"apihelp-query+linkrecommendations-example-1": "Obter as recomendacións de ligazóns para a páxina co identificador 123",
+	"apihelp-query+linkrecommendations-example-2": "Obter ata 5 recomendacións de ligazóns para a páxina co identificador 456",
+	"apihelp-query+linkrecommendations-param-pageid": "O identificador de páxina para o que recuperar as recomendacións de ligazóns."
 }

@@ -1,11 +1,13 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace GrowthExperiments\NewcomerTasks\AddLink;
 
 use GrowthExperiments\NewcomerTasks\TaskType\LinkRecommendationTaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Linker\LinkTarget;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Title\MalformedTitleException;
 use MediaWiki\Title\TitleFactory;
 use StatusValue;
@@ -16,20 +18,15 @@ use StatusValue;
  */
 class PruningLinkRecommendationProvider implements LinkRecommendationProvider {
 
-	/** @var TitleFactory */
-	private $titleFactory;
+	private TitleFactory $titleFactory;
 
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
+	private LinkBatchFactory $linkBatchFactory;
 
-	/** @var LinkRecommendationStore */
-	private $linkRecommendationStore;
+	private LinkRecommendationStore $linkRecommendationStore;
 
-	/** @var LinkRecommendationProvider */
-	private $innerProvider;
+	private LinkRecommendationProvider $innerProvider;
 
-	/** @var bool */
-	private $pruneRedLinks;
+	private bool $pruneRedLinks;
 
 	/**
 	 * @param TitleFactory $titleFactory
@@ -59,9 +56,20 @@ class PruningLinkRecommendationProvider implements LinkRecommendationProvider {
 	 * @throws MalformedTitleException
 	 */
 	public function get( LinkTarget $title, TaskType $taskType ) {
+		$status = $this->getDetailed( $title, $taskType );
+		if ( $status->isGood() ) {
+			return $status->getValue();
+		}
+		return $status;
+	}
+
+	/**
+	 * @throws MalformedTitleException
+	 */
+	public function getDetailed( LinkTarget $title, TaskType $taskType ): LinkRecommendationEvalStatus {
 		$recommendation = $this->innerProvider->get( $title, $taskType );
 		if ( $recommendation instanceof StatusValue ) {
-			return $recommendation;
+			return LinkRecommendationEvalStatus::newGood()->merge( $recommendation );
 		}
 
 		return $this->pruneLinkRecommendation( $recommendation );
@@ -70,11 +78,10 @@ class PruningLinkRecommendationProvider implements LinkRecommendationProvider {
 	/**
 	 * Remove exclusion-listed links and optionally red links from a LinkRecommendation.
 	 * Returns a warning status when all links have been removed.
-	 * @param LinkRecommendation $linkRecommendation
-	 * @return LinkRecommendation|StatusValue
+	 *
 	 * @throws MalformedTitleException
 	 */
-	private function pruneLinkRecommendation( LinkRecommendation $linkRecommendation ) {
+	private function pruneLinkRecommendation( LinkRecommendation $linkRecommendation ): LinkRecommendationEvalStatus {
 		$excludedLinkIds = $this->linkRecommendationStore->getExcludedLinkIds(
 			$linkRecommendation->getPageId(),
 			LinkRecommendationTaskType::REJECTION_EXCLUSION_LIMIT
@@ -87,27 +94,47 @@ class PruningLinkRecommendationProvider implements LinkRecommendationProvider {
 				$linkRecommendation->getLinks()
 			)
 		)->execute();
-		$goodLinks = array_filter( $linkRecommendation->getLinks(),
-			function ( LinkRecommendationLink $link ) use ( $excludedLinkIds ) {
+		$prunedRedLinksCounter = 0;
+		$prunedExcludedLinksCounter = 0;
+		$goodLinks = array_filter(
+			$linkRecommendation->getLinks(),
+			function ( LinkRecommendationLink $link ) use (
+				$excludedLinkIds,
+				&$prunedRedLinksCounter,
+				&$prunedExcludedLinksCounter
+			) {
 				$pageId = $this->titleFactory->newFromTextThrow( $link->getLinkTarget() )->getArticleID();
 				if ( $this->pruneRedLinks && !$pageId ) {
+					$prunedRedLinksCounter++;
 					return false;
 				}
-				return !in_array( $pageId, $excludedLinkIds );
-			} );
+				if ( in_array( $pageId, $excludedLinkIds ) ) {
+					$prunedExcludedLinksCounter++;
+					return false;
+				}
+				return true;
+			}
+		);
+		$returnStatus = LinkRecommendationEvalStatus::newGood();
+		$returnStatus->setNumberOfPrunedRedLinks( $prunedRedLinksCounter );
+		$returnStatus->setNumberOfPrunedExcludedLinks( $prunedExcludedLinksCounter );
 
 		if ( !$goodLinks ) {
+			$returnStatus->setNotGoodCause( LinkRecommendationEvalStatus::NOT_GOOD_CAUSE_ALL_RECOMMENDATIONS_PRUNED );
 			// Message used for debugging, keep it in English to reduce translator burden.
-			return StatusValue::newGood()->warning( 'rawmessage',
+			return $returnStatus->warning( 'rawmessage',
 				'All of the links in the recommendation have been pruned' );
 		}
 		// In most cases we could just return the original object; opt for consistency instead.
-		return new LinkRecommendation(
-			$linkRecommendation->getTitle(),
-			$linkRecommendation->getPageId(),
-			$linkRecommendation->getRevisionId(),
-			$goodLinks,
-			$linkRecommendation->getMetadata()
+		return $returnStatus->setResult(
+			true,
+			new LinkRecommendation(
+				$linkRecommendation->getTitle(),
+				$linkRecommendation->getPageId(),
+				$linkRecommendation->getRevisionId(),
+				$goodLinks,
+				$linkRecommendation->getMetadata()
+			)
 		);
 	}
 

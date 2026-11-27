@@ -3,17 +3,14 @@
 		"authors": [
 			"Evannak",
 			"គីមស៊្រុន",
-			"វ័ណថារិទ្ធ"
+			"វ័ណថារិទ្ធ",
+			"MeahNunh"
 		]
 	},
 	"abusefilter-edit-builder-vars-user-mobile": "ថាតើអ្នកប្រើប្រាស់ម្នាក់កំពុងកែប្រែតាមអន្តរមុខចល័តឬអត់",
 	"mobile-frontend-account-create-captcha-placeholder": "បញ្ចូល​លេខកូដបញ្ជាក់",
-	"mobile-frontend-changeslist-nocomment": "គ្មាន​ចំណារពន្យល់ការកែប្រែ",
-	"mobile-frontend-clear-search": "ជម្រះ",
 	"mobile-frontend-copyright": "ខ្លឹមសារអត្ថបទប្រើប្រាស់បានក្រោមអាជ្ញាបណ្ឌ$1 លើកលែងតែមានបញ្ជាក់ផ្សេងពីនោះ។",
 	"mobile-frontend-desc": "ឧបករណ៍ចល័ត",
-	"mobile-frontend-edit-login-action": "<strong>សូមជួយកែលម្អ{{SITENAME}}។ </strong><br />សូមកត់ឈ្មោះចូលដើម្បីកែប្រែ។",
-	"mobile-frontend-edit-signup-action": "<strong>សូមជួយកែលម្អ{{SITENAME}}។ </strong><br />សូមចុះឈ្មោះចូលដើម្បីកែប្រែ។",
 	"mobile-frontend-editor-anon": "កែប្រែដោយមិនបាច់កត់ឈ្មោះចូល",
 	"mobile-frontend-editor-anonwarning": "<strong>ប្រយ័ត្ន ៖</strong> អ្នកមិនបានកត់ឈ្មោះចូល​ទេ។ អាសយដ្ឋានIPរបស់អ្នក​នឹងត្រូវបង្ហាញជាសាធារណៈបើសិនជាអ្នកធ្វើកំណែប្រែណាមួយ។ បើសិនជាអ្នក <strong>កត់ឈ្មោះចូល</strong> ឬ <strong>បង្កើតគណនី</strong> នោះការកែប្រែរបស់អ្នកនឹងត្រូវភ្ចាប់ជាមួយអត្តនាមរបស់អ្នកផង និងមានផលប្រយោជន៍ផ្សេងទៀតផង។",
 	"mobile-frontend-editor-blocked-drawer-action-login": "កត់ឈ្មោះចូល",
@@ -96,17 +93,14 @@
 	"mobile-frontend-media-load-fail-message": "មានបញ្ហាក្នុងការផ្ទុករូបភាពនេះ។",
 	"mobile-frontend-media-load-fail-retry": "ផ្ទុកឡើងវិញ",
 	"mobile-frontend-missing-image": "រូបភាព",
-	"mobile-frontend-opt-in-explain": "ដោយ​ចូលរួម​កម្មវិធី​បេតា អ្នក​នឹងមាន​លទ្ធភាព​ប្រើ​មុខងា​រដែល​កំពុង​ស្ថិតនៅក្រោម​ការពិសោធន៍​នៅឡើយ ដែល​អាចធ្វើ​អោយ​អ្នកប្រឈមមុខ​នឹង​បញ្ហា​តូចតាច​មួយចំនួន។",
 	"mobile-frontend-overlay-close": "បិទ",
 	"mobile-frontend-privacy-link-text": "ភាព​ឯកជន",
 	"mobile-frontend-save-settings": "រក្សា​ទុក​",
-	"mobile-frontend-search-no-results": "គ្មានទំព័រដែលមានចំណងជើងនេះទេ។",
 	"mobile-frontend-settings-tagline": "ចំណង់ចំណូលចិត្តអំណាន",
-	"mobile-frontend-settings-beta": "{{SITENAME}}បេតា",
 	"mobile-frontend-settings-save": "កាត់កំណត់ត្រូវបានរក្សាទុក។",
 	"mobile-frontend-terms-text": "លក្ខខណ្ឌប្រើប្រាស់",
 	"mobile-frontend-view": "អានលើឧបករណ៍ចល័ត",
-	"mobile-frontend-view-desktop": "អានលើកុំព្យូទ័រ",
+	"mobile-frontend-view-desktop": "ទិដ្ឋភាពជាកុំព្យូទ័រ",
 	"mobile-frontend-watchlist-a-z-empty-howto-alt": "ចុចលើសញ្ញាផ្កាយ",
 	"mobile-frontend-watchlist-back-home": "ត្រឡប់​ទៅ​ទំព័រដើម",
 	"mobile-frontend-watchlist-cta-button-login": "កត់ឈ្មោះចូល",
@@ -123,9 +117,5 @@
 	"tag-mobile_web_edit": "កំណែប្រែពីអ៊ីនធើណិតចល័ត",
 	"tag-mobile_web_edit-description": "ការ​កែ​ប្រែ​ធ្វើ​ពីវិបសាយចល័ត",
 	"mobile-frontend-loading-message": "កំពុង​ផ្ទុក…",
-	"mobile-frontend-mobile-option-MFEnableFontChanger": "ទំហំអក្សរ",
-	"mobile-frontend-mobile-option-MFEnableFontChanger-description": "ចាត់ចែងទំហំអក្សរសម្រាប់អាន",
-	"mobile-frontend-amc-outreach-no-thanks": "ទេ, អរគុណហើយ",
-	"mobile-frontend-beta-only": "មុខងារពិសេសសម្រាប់តែមុខងារបេតា",
 	"mobile-frontend-console-recruit": "ស្វែងយល់បន្ថែមអំពីវិធីដែលយើងខ្ញុំស្ថាបនាវិបសាយចល័ត @ https://www.mediawiki.org/wiki/Special:MyLanguage/Extension:MobileFrontend"
 }

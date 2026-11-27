@@ -4,10 +4,11 @@ namespace GrowthExperiments\NewcomerTasks\AddImage;
 
 use InvalidArgumentException;
 use MediaWiki\Context\DerivativeContext;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\Message\Message;
 use MediaWiki\Site\SiteLookup;
 use StatusValue;
+use Wikimedia\Message\ListType;
 
 class ImageRecommendationMetadataProvider {
 
@@ -99,7 +100,7 @@ class ImageRecommendationMetadataProvider {
 			}
 			// None of the languages are relevant to the user, we can't really rank them.
 			// Just pick the first one.
-			return $value ? reset( $value ) : null;
+			return array_first( $value );
 		}
 		return null;
 	}
@@ -204,7 +205,7 @@ class ImageRecommendationMetadataProvider {
 				'growthexperiments-addimage-reason-wikipedia-languages-others'
 			)->numParams( $otherLanguagesCount )->text();
 		}
-		return Message::listParam( $shownLanguages, 'text' );
+		return Message::listParam( $shownLanguages, ListType::AND );
 	}
 
 	/**
@@ -293,8 +294,6 @@ class ImageRecommendationMetadataProvider {
 
 	/**
 	 * Get the name of the content language localized in the user's language
-	 *
-	 * @return string
 	 */
 	private function getLocalizedContentLanguage(): string {
 		$inLanguage = $this->localizer->getLanguage()->getCode();

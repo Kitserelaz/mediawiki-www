@@ -1,131 +1,191 @@
-const EditorOverlayBase = require( './EditorOverlayBase' ),
-	util = require( '../mobile.startup/util' ),
-	icons = require( '../mobile.startup/icons' ),
-	Section = require( '../mobile.startup/Section' ),
-	saveFailureMessage = require( './saveFailureMessage' ),
-	EditorGateway = require( './EditorGateway' ),
-	fakeToolbar = require( '../mobile.init/fakeToolbar' ),
-	MessageBox = require( '../mobile.startup/MessageBox' ),
-	mfExtend = require( '../mobile.startup/mfExtend' ),
-	setPreferredEditor = require( './setPreferredEditor' ),
-	VisualEditorOverlay = require( './VisualEditorOverlay' ),
-	currentPage = require( '../mobile.startup/currentPage' );
+const mobile = require( 'mobile.startup' ),
+	EditorOverlayBase = require( './EditorOverlayBase.js' ),
+	util = mobile.util,
+	spinner = mobile.spinner,
+	Section = mobile.class.Section,
+	saveFailureMessage = require( './saveFailureMessage.js' ),
+	EditorGateway = require( './EditorGateway.js' ),
+	MessageBox = mobile.class.MessageBox,
+	setPreferredEditor = require( './setPreferredEditor.js' ),
+	VisualEditorOverlay = require( './VisualEditorOverlay.js' ),
+	SourceEditorSaveEventHookPayload = require( './SourceEditorSaveEventHookPayload.js' ),
+	currentPage = mobile.currentPage,
+	CAPTCHA_PANEL = 'captcha-panel';
+
+/**
+ * @ignore
+ * @typedef {Object} SaveFailureCaptcha
+ * @property {string} type Captcha type identifier (e.g. 'hcaptcha')
+ * @property {string} mime MIME type of the captcha
+ * @property {string} key Site key for rendering the captcha widget
+ * @property {string|null} error Error code from the last captcha attempt
+ */
+
+/**
+ * @ignore
+ * @typedef {Object} SaveFailureData
+ * @property {{ captcha: SaveFailureCaptcha, result: string }} [edit]
+ * @property {Array<{ code: string }>} [errors]
+ */
 
 /**
  * Overlay that shows an editor
  *
- * @class SourceEditorOverlay
  * @uses Section
  * @uses EditorGateway
  * @uses VisualEditorOverlay
- * @extends EditorOverlayBase
  * @private
- *
- * @param {Object} options Configuration options
- * @param {jQuery.Promise} [dataPromise] Optional promise for loading content
  */
-function SourceEditorOverlay( options, dataPromise ) {
-	this.isFirefox = /firefox/i.test( window.navigator.userAgent );
-	this.gateway = new EditorGateway( {
-		api: options.api,
-		title: options.title,
-		sectionId: options.sectionId,
-		oldId: options.oldId,
-		fromModified: !!dataPromise,
-		preload: options.preload,
-		preloadparams: options.preloadparams,
-		editintro: options.editintro
-	} );
-	this.readOnly = !!options.oldId; // If old revision, readOnly mode
-	this.dataPromise = dataPromise || this.gateway.getContent();
-	this.currentPage = currentPage();
-	if ( this.currentPage.isVEVisualAvailable() ) {
-		options.editSwitcher = true;
+class SourceEditorOverlay extends EditorOverlayBase {
+	/**
+	 * @param {Object} options Configuration options
+	 * @param {jQuery.Promise} [dataPromise] Optional promise for loading content
+	 */
+	constructor( options, dataPromise ) {
+		super(
+			util.extend( true,
+				{ events: { 'input .wikitext-editor': 'onInputWikitextEditor' } },
+				options,
+				{ dataPromise }
+			)
+		);
 	}
-	if ( this.readOnly ) {
-		options.readOnly = true;
-		options.editingMsg = mw.msg( 'mobile-frontend-editor-viewing-source-page', options.title );
-	} else {
-		options.editingMsg = mw.msg( 'mobile-frontend-editor-editing-page', options.title );
-	}
-	options.previewingMsg = mw.msg( 'mobile-frontend-editor-previewing-page', options.title );
-	EditorOverlayBase.call(
-		this,
-		util.extend( true,
-			{ events: { 'input .wikitext-editor': 'onInputWikitextEditor' } },
-			options
-		)
-	);
-}
 
-mfExtend( SourceEditorOverlay, EditorOverlayBase, {
+	initialize( options ) {
+		this.isFirefox = /firefox/i.test( window.navigator.userAgent );
+		this.gateway = new EditorGateway( {
+			api: options.api,
+			title: options.title,
+			sectionId: options.sectionId,
+			oldId: options.oldId,
+			fromModified: !!options.dataPromise,
+			preload: options.preload,
+			preloadparams: options.preloadparams,
+			editintro: options.editintro
+		} );
+		this.readOnly = !!options.oldId; // If old revision, readOnly mode
+		this.dataPromise = options.dataPromise || this.gateway.getContent();
+		this.currentPage = currentPage();
+		if ( this.currentPage.isVEVisualAvailable() ) {
+			options.editSwitcher = true;
+		}
+		if ( this.readOnly ) {
+			options.readOnly = true;
+			options.editingMsg = mw.message( 'mobile-frontend-editor-viewing-source-page', options.title ).parse();
+		} else {
+			options.editingMsg = mw.message( 'mobile-frontend-editor-editing-page', options.title ).parse();
+		}
+		options.previewingMsg = mw.message( 'mobile-frontend-editor-previewing-page', options.title ).parse();
+		this.sectionLine = '';
+
+		// If there are additional modules registered by other extensions, let
+		// them load before calling the base initialization procedure. Otherwise,
+		// call the base initialization procedure immediately (i.e. synchronously),
+		// since that is required for QUnit tests to work.
+		if ( this._hasAdditionalModules() ) {
+			this._loadAdditionalModules().then(
+				() => super.initialize( options )
+			);
+		} else {
+			super.initialize( options );
+		}
+	}
+
+	get editor() {
+		return 'wikitext';
+	}
+
 	/**
 	 * @inheritdoc
-	 * @memberof SourceEditorOverlay
-	 * @instance
 	 */
-	templatePartials: util.extend( {}, EditorOverlayBase.prototype.templatePartials, {
-		content: util.template( `
-<div lang="{{contentLang}}" dir="{{contentDir}}" class="editor-container content">
-	<textarea class="wikitext-editor" id="wikitext-editor" cols="40" rows="10" placeholder="{{placeholder}}"></textarea>
-	<div class="preview collapsible-headings-expanded mw-body-content"></div>
-</div>
-		` )
-	} ),
-	/**
-	 * @memberof SourceEditorOverlay
-	 * @instance
-	 */
-	editor: 'wikitext',
-	/**
-	 * @memberof SourceEditorOverlay
-	 * @instance
-	 */
-	sectionLine: '',
+	get templatePartials() {
+		return util.extend(
+			{},
+			super.templatePartials, {
+				content: util.template( `
+		<div lang="{{contentLang}}" dir="{{contentDir}}" class="editor-container content">
+			<textarea class="wikitext-editor" id="wikitext-editor" cols="40" rows="10" placeholder="{{placeholder}}"></textarea>
+			<div class="preview collapsible-headings-expanded mw-body-content"></div>
+		</div>
+				` )
+			}
+		);
+	}
 
 	/**
 	 * @inheritdoc
-	 * @memberof SourceEditorOverlay
-	 * @instance
 	 */
-	show: function () {
-		EditorOverlayBase.prototype.show.apply( this, arguments );
+	get defaults() {
+		let defaults = util.extend( {}, super.defaults );
+
+		const hookCallData = {
+			currentPage: this.currentPage,
+			readOnly: this.readOnly,
+			defaults,
+
+			/**
+			 * Allows hook handlers to change the default values returned by this
+			 * getter that are then used by templates, allowing to pass additional
+			 * data to templates set by other hooks triggered by this class.
+			 *
+			 * @param {Object} newDefaults New template code
+			 */
+			setDefaults: ( newDefaults ) => {
+				defaults = newDefaults;
+			}
+		};
+
+		mw.hook( 'mobileFrontend.sourceEditor.getDefaultOptions' )
+			.fire( hookCallData );
+
+		return defaults;
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	show() {
+		super.show();
 		// Ensure we do this after showing the overlay, otherwise it doesn't work.
 		this._resizeEditor();
-	},
+	}
+
 	/**
 	 * Wikitext Editor input handler
 	 *
-	 * @memberof SourceEditorOverlay
-	 * @instance
 	 */
-	onInputWikitextEditor: function () {
+	onInputWikitextEditor() {
 		this.gateway.setContent( this.$el.find( '.wikitext-editor' ).val() );
 		this.$el.find( '.continue, .submit' ).prop( 'disabled', false );
-	},
-	/**
-	 * @inheritdoc
-	 * @memberof SourceEditorOverlay
-	 * @instance
-	 */
-	onClickBack: function () {
-		EditorOverlayBase.prototype.onClickBack.apply( this, arguments );
-		this._hidePreview();
-	},
-	/**
-	 * @inheritdoc
-	 * @memberof SourceEditorOverlay
-	 * @instance
-	 */
-	postRender: function () {
-		const self = this;
+	}
 
+	/**
+	 * @inheritdoc
+	 */
+	onClickBack() {
+		super.onClickBack();
+		this._hidePreview();
+	}
+
+	preRender() {
+		super.preRender();
+
+		mw.hook( 'mobileFrontend.sourceEditor.preRenderFinished' ).fire( {
+			currentPage: this.currentPage,
+			readOnly: this.readOnly
+		} );
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	postRender() {
 		// log edit attempt
 		this.log( { action: 'ready' } );
 		this.log( { action: 'loaded' } );
 
 		if ( this.currentPage.isVEVisualAvailable() ) {
-			mw.loader.using( 'ext.visualEditor.switching' ).then( function () {
+			mw.loader.using( 'ext.visualEditor.switching' ).then( () => {
 				const toolFactory = new OO.ui.ToolFactory(),
 					toolGroupFactory = new OO.ui.ToolGroupFactory();
 
@@ -135,13 +195,13 @@ mfExtend( SourceEditorOverlay, EditorOverlayBase, {
 					classes: [ 'editor-switcher' ]
 				} );
 
-				switchToolbar.on( 'switchEditor', function ( mode ) {
+				switchToolbar.on( 'switchEditor', ( mode ) => {
 					if ( mode === 'visual' ) {
-						if ( !self.gateway.hasChanged ) {
-							self._switchToVisualEditor();
+						if ( !this.gateway.hasChanged ) {
+							this._switchToVisualEditor();
 						} else {
 							// Pass wikitext if there are changes.
-							self._switchToVisualEditor( self.gateway.content );
+							this._switchToVisualEditor( this.gateway.content );
 						}
 					}
 				} );
@@ -156,15 +216,15 @@ mfExtend( SourceEditorOverlay, EditorOverlayBase, {
 					}
 				] );
 
-				self.$el.find( '.switcher-container' ).html( switchToolbar.$element );
+				this.$el.find( '.switcher-container' ).html( switchToolbar.$element );
 				switchToolbar.emit( 'updateState' );
 			} );
 		}
 
-		EditorOverlayBase.prototype.postRender.apply( this );
+		super.postRender();
 
 		// This spinner is still used when displaying save/preview panel
-		this.$el.find( '.overlay-content' ).append( icons.spinner().$el );
+		this.$el.find( '.overlay-content' ).append( spinner().$el );
 		this.hideSpinner();
 
 		this.$preview = this.$el.find( '.preview' );
@@ -184,13 +244,13 @@ mfExtend( SourceEditorOverlay, EditorOverlayBase, {
 		}
 
 		this.$content
-			.on( 'input', this._resizeEditor.bind( this ) )
-			.one( 'input', function () {
-				self.log( { action: 'firstChange' } );
+			.on( 'input', () => this._resizeEditor() )
+			.one( 'input', () => {
+				this.log( { action: 'firstChange' } );
 			} );
 
 		if ( this.isFirefox ) {
-			this.$content.on( 'mousedown', function () {
+			this.$content.on( 'mousedown', () => {
 				// Support: Firefox Mobile
 				// Firefox scrolls back to the top of the page *every time*
 				// you tap on the textarea. This makes things slightly
@@ -205,7 +265,7 @@ mfExtend( SourceEditorOverlay, EditorOverlayBase, {
 					docEl.scrollTop = scrollTop;
 				}
 				window.addEventListener( 'scroll', blockScroll );
-				setTimeout( function () {
+				setTimeout( () => {
 					window.removeEventListener( 'scroll', blockScroll );
 				}, 1000 );
 			} );
@@ -223,36 +283,36 @@ mfExtend( SourceEditorOverlay, EditorOverlayBase, {
 		);
 
 		this._loadContent();
-	},
+
+		mw.hook( 'mobileFrontend.sourceEditor.postRenderFinished' ).fire( {
+			currentPage: this.currentPage,
+			readOnly: this.readOnly
+		} );
+	}
 
 	/**
 	 * Handles click on "Edit without login" in anonymous editing warning.
 	 *
-	 * @memberof SourceEditorOverlay
-	 * @instance
 	 * @private
 	 */
-	onClickAnonymous: function () {
+	onClickAnonymous() {
 		this.$anonWarning.hide();
 		this.$anonTalkWarning.hide();
 		// reenable "Next" button
 		this.$anonHiddenButtons.show();
 		this.$content.show();
 		this._resizeEditor();
-	},
+	}
 
 	/**
 	 * Prepares the preview interface and reveals the save screen of the overlay
 	 *
 	 * @inheritdoc
-	 * @memberof SourceEditorOverlay
-	 * @instance
 	 */
-	onStageChanges: function () {
-		const self = this,
-			params = {
-				text: this.getContent()
-			};
+	onStageChanges() {
+		const params = {
+			text: this.getContent()
+		};
 
 		this.scrollTop = util.getDocument().find( 'body' ).scrollTop();
 		this.$content.hide();
@@ -262,46 +322,44 @@ mfExtend( SourceEditorOverlay, EditorOverlayBase, {
 			params.mainpage = 1; // Setting it to 0 will have the same effect
 		}
 
-		function hideSpinnerAndShowPreview() {
-			self.hideSpinner();
-			self.$preview.show();
-			mw.hook( 'wikipage.content' ).fire( self.$preview );
-		}
+		const hideSpinnerAndShowPreview = () => {
+			this.hideSpinner();
+			this.$preview.show();
+			mw.hook( 'wikipage.content' ).fire( this.$preview );
+		};
 
-		this.gateway.getPreview( params ).then( function ( result ) {
+		this.gateway.getPreview( params ).then( ( result ) => {
 			const parsedText = result.text,
 				parsedSectionLine = result.line;
 
-			self.sectionId = result.id;
+			this.sectionId = result.id;
 			// On desktop edit summaries strip tags. Mimic this behavior on mobile devices
-			self.sectionLine = self.parseHTML( '<div>' ).html( parsedSectionLine ).text();
+			this.sectionLine = this.parseHTML( '<div>' ).html( parsedSectionLine ).text();
 			new Section( {
-				el: self.$preview,
+				el: this.$preview,
 				text: parsedText
 			} ).$el.find( 'a' ).on( 'click', false );
 
 			hideSpinnerAndShowPreview();
-		}, function () {
-			self.$preview.replaceWith(
+		}, () => {
+			this.$preview.replaceWith(
 				new MessageBox( {
 					type: 'error',
-					msg: mw.msg( 'mobile-frontend-editor-error-preview' )
+					msg: mw.message( 'mobile-frontend-editor-error-preview' ).escaped()
 				} ).$el
 			);
 			hideSpinnerAndShowPreview();
 		} );
 
-		EditorOverlayBase.prototype.onStageChanges.apply( this, arguments );
-	},
+		super.onStageChanges();
+	}
 
 	/**
 	 * Hides the preview and reverts back to initial screen.
 	 *
-	 * @memberof SourceEditorOverlay
-	 * @instance
 	 * @private
 	 */
-	_hidePreview: function () {
+	_hidePreview() {
 		this.gateway.abortPreview();
 		this.hideSpinner();
 		// FIXME: Don't rely on internals - we re-render template instead.
@@ -311,15 +369,13 @@ mfExtend( SourceEditorOverlay, EditorOverlayBase, {
 		this.$content.show();
 		window.scrollTo( 0, this.scrollTop );
 		this.showHidden( '.initial-header' );
-	},
+	}
 
 	/**
 	 * Resize the editor textarea, maintaining scroll position in iOS
 	 *
-	 * @memberof SourceEditorOverlay
-	 * @instance
 	 */
-	_resizeEditor: function () {
+	_resizeEditor() {
 		let scrollTop, container, $scrollContainer;
 
 		if ( !this.$scrollContainer ) {
@@ -344,89 +400,94 @@ mfExtend( SourceEditorOverlay, EditorOverlayBase, {
 				.css( 'height', ( this.$content.prop( 'scrollHeight' ) + 2 ) + 'px' );
 			$scrollContainer.scrollTop( scrollTop );
 		}
-	},
+	}
 
 	/**
 	 * Set content to the user input field.
 	 *
-	 * @memberof SourceEditorOverlay
-	 * @instance
 	 * @param {string} content The content to set.
 	 */
-	setContent: function ( content ) {
+	setContent( content ) {
 		this.$content
 			.show()
 			.val( content );
 		this._resizeEditor();
-	},
+	}
 
 	/**
 	 * Returns the content of the user input field.
 	 *
-	 * @memberof SourceEditorOverlay
-	 * @instance
 	 * @return {string}
 	 */
-	getContent: function () {
+	getContent() {
 		return this.$content.val();
-	},
+	}
 
 	/**
 	 * Requests content from the API and reveals it in UI.
 	 *
-	 * @memberof SourceEditorOverlay
-	 * @instance
 	 * @private
 	 */
-	_loadContent: function () {
-		const self = this;
-
+	_loadContent() {
 		this.$content.hide();
 
 		this.getLoadingPromise()
-			.then( function ( result ) {
+			.then( ( result ) => {
 				const content = result.text;
 
-				self.setContent( content );
+				this.setContent( content );
 
 				// If the loaded content is not the default content, enable the save button
-				if ( self.hasChanged() ) {
-					self.$el.find( '.continue, .submit' ).prop( 'disabled', false );
+				if ( this.hasChanged() ) {
+					this.$el.find( '.continue, .submit' ).prop( 'disabled', false );
 				}
 
-				const options = self.options;
+				const options = this.options;
 				const showAnonWarning = options.isAnon && !options.switched;
 
-				if ( showAnonWarning ) {
-					self.$anonWarning = self.createAnonWarning( options );
-					self.$anonTalkWarning = self.createAnonTalkWarning();
-					self.$el.find( '.editor-container' ).append( [ self.$anonTalkWarning, self.$anonWarning ] );
-					self.$content.hide();
+				const renderWarnings = () => {
+					this.$anonTalkWarning = this.createAnonTalkWarning();
+					this.$el.find( '.editor-container' ).append( [ this.$anonTalkWarning, this.$anonWarning ] );
+					this.$content.hide();
 					// the user has to click login, signup or edit without login,
 					// disable "Next" button on top right
-					self.$anonHiddenButtons = self.$el.find( '.overlay-header .continue' ).hide();
+					this.$anonHiddenButtons = this.$el.find( '.overlay-header .continue' ).hide();
+				};
+
+				if ( showAnonWarning ) {
+					mw.loader.using( 'ext.testKitchen' ).then( () => {
+						const experiment = mw.testKitchen.compat.getExperiment(
+							'growthexperiments-editattempt-anonwarning'
+						);
+						if ( experiment.isAssignedGroup( 'treatment' ) ) {
+							this.$anonWarning = this.createAnonWarningSoft( options );
+						} else {
+							this.$anonWarning = this.createAnonWarning( options );
+						}
+						renderWarnings();
+					}, () => {
+						this.$anonWarning = this.createAnonWarning( options );
+						renderWarnings();
+					} );
 				}
 
-				if ( self.gateway.fromModified ) {
+				if ( this.gateway.fromModified ) {
 					// Trigger intial EditorGateway#setContent and update save button
-					self.onInputWikitextEditor();
+					this.onInputWikitextEditor();
 				}
 
-				self.showEditNotices();
+				this.showEditNotices();
 			} );
-	},
+	}
 
 	/**
 	 * Loads a {VisualEditorOverlay} and replaces the existing SourceEditorOverlay with it
 	 * based on the current option values.
 	 *
-	 * @memberof SourceEditorOverlay
-	 * @instance
 	 * @private
 	 * @param {string} [wikitext] Wikitext to pass to VE
 	 */
-	_switchToVisualEditor: function ( wikitext ) {
-		const self = this;
+	_switchToVisualEditor( wikitext ) {
 		this.log( {
 			action: 'abort',
 			type: 'switchnochange',
@@ -442,15 +503,15 @@ mfExtend( SourceEditorOverlay, EditorOverlayBase, {
 
 		this.$el.addClass( 'switching' );
 		this.$el.find( '.overlay-header-container' ).hide();
-		this.$el.append( fakeToolbar() );
+		this.$el.append( this.fakeToolbar() );
 		this.$content.prop( 'readonly', true );
 
-		mw.loader.using( 'ext.visualEditor.targetLoader' ).then( function () {
+		mw.loader.using( 'ext.visualEditor.targetLoader' ).then( () => {
 			mw.libs.ve.targetLoader.addPlugin( 'ext.visualEditor.mobileArticleTarget' );
 			return mw.libs.ve.targetLoader.loadModules( 'visual' );
 		} ).then(
-			function () {
-				const options = self.getOptionsForSwitch();
+			() => {
+				const options = this.getOptionsForSwitch();
 				options.SourceEditorOverlay = SourceEditorOverlay;
 				if ( wikitext ) {
 					options.dataPromise = mw.libs.ve.targetLoader.requestPageData( 'visual', mw.config.get( 'wgRelevantPageName' ), {
@@ -458,58 +519,92 @@ mfExtend( SourceEditorOverlay, EditorOverlayBase, {
 						oldId: options.oldId || mw.config.get( 'wgRevisionId' ),
 						targetName: 'mobile',
 						modified: true,
-						wikitext: wikitext
+						wikitext
 					} );
 				} else {
 					delete options.dataPromise;
 				}
 
 				const newOverlay = new VisualEditorOverlay( options );
-				newOverlay.getLoadingPromise().then( function () {
-					self.switching = true;
-					self.overlayManager.replaceCurrent( newOverlay );
-					self.switching = false;
+				newOverlay.getLoadingPromise().then( () => {
+					this.switching = true;
+					this.overlayManager.replaceCurrent( newOverlay );
+					this.switching = false;
 				} );
 			},
-			function () {
-				self.$el.removeClass( 'switching' );
-				self.$el.find( '.overlay-header-container' ).show();
-				self.$el.find( '.ve-mobile-fakeToolbar-container' ).remove();
-				self.$content.prop( 'readonly', false );
+			() => {
+				this.$el.removeClass( 'switching' );
+				this.$el.find( '.overlay-header-container' ).show();
+				this.$el.find( '.ve-mobile-fakeToolbar-container' ).remove();
+				this.$content.prop( 'readonly', false );
 				// FIXME: We should show an error notification, but right now toast
 				// notifications are not dismissible when shown within the editor.
 			}
 		);
-	},
+	}
 
 	/**
 	 * Get the current edit summary.
 	 *
-	 * @memberof SourceEditorOverlay
 	 * @return {string}
 	 */
-	getEditSummary: function () {
+	getEditSummary() {
 		return this.summaryTextArea.getValue();
-	},
+	}
+
+	/**
+	 * Extends the parent method in order to allow extensions to include
+	 * additional HTML code or replace the default HTML provided by the
+	 * MobileFrontend for the save panel.
+	 *
+	 * @returns {string}
+	 */
+	getSavePanelTemplateSource() {
+		const setter = this._getTemplateSetterForHook(
+			super.getSavePanelTemplateSource()
+		);
+
+		mw.hook( 'mobileFrontend.sourceEditor.getSavePanelTemplateSource' )
+			.fire( setter.hookCallData );
+
+		return setter.getTemplate();
+	}
+
+	/**
+	 * Extends the HTML provided by the parent class in order to *not* include
+	 * the default captcha code in case hCaptcha is enabled (since hCaptcha is
+	 * rendered within the Edit Summary step).
+	 *
+	 * @returns {string}
+	 */
+	getCaptchaPanelTemplateSource() {
+		const setter = this._getTemplateSetterForHook(
+			super.getCaptchaPanelTemplateSource()
+		);
+
+		mw.hook( 'mobileFrontend.sourceEditor.getCaptchaPanelTemplateSource' )
+			.fire( setter.hookCallData );
+
+		return setter.getTemplate();
+	}
 
 	/**
 	 * Executed when the editor clicks the save/publish button. Handles logging and submitting
 	 * the save action to the editor API.
 	 *
 	 * @inheritdoc
-	 * @memberof SourceEditorOverlay
-	 * @instance
 	 */
-	onSaveBegin: function () {
-		const self = this,
-			options = {
-				summary: this.getEditSummary()
-			};
+	onSaveBegin() {
+		const options = {
+			summary: this.getEditSummary()
+		};
 
-		if ( self.sectionLine !== '' ) {
-			options.summary = '/* ' + self.sectionLine + ' */' + options.summary;
+		if ( this.sectionNumber === '0' ) {
+			options.summary = '/* */ ' + options.summary;
+		} else if ( this.sectionLine !== '' ) {
+			options.summary = '/* ' + this.sectionLine + ' */ ' + options.summary;
 		}
-		EditorOverlayBase.prototype.onSaveBegin.apply( this, arguments );
+		super.onSaveBegin();
 		if ( this.confirmAborted ) {
 			return;
 		}
@@ -518,11 +613,41 @@ mfExtend( SourceEditorOverlay, EditorOverlayBase, {
 			options.captchaWord = this.$el.find( '.captcha-word' ).val();
 		}
 
+		const payload = new SourceEditorSaveEventHookPayload(
+			this.currentPage,
+			this.readOnly,
+			options,
+			this._performSaveRequest.bind( this )
+		);
+
+		mw.hook( 'mobileFrontend.sourceEditor.saveBegin' ).fire( payload );
+
+		if ( payload.isStopped() ) {
+			return;
+		}
+
+		this._performSaveRequest( payload.options );
+	}
+
+	/**
+	 * Performs an API request to save the new content.
+	 *
+	 * @param {Object} options Configuration options for the API request
+	 * @returns {void}
+	 * @private
+	 */
+	_performSaveRequest( options ) {
 		this.showHidden( '.saving-header' );
 
+		// Set a default value in the request for the editor interface
+		// used unless the caller provided its own value.
+		if ( !Object.keys( options ).includes( 'editorinterface' ) ) {
+			options.editorinterface = 'MobileFrontend-SourceEditor';
+		}
+
 		this.gateway.save( options )
-			.then( function ( newRevId, redirectUrl, tempUserCreated ) {
-				const title = self.options.title;
+			.then( ( newRevId, redirectUrl, tempUserCreated ) => {
+				const title = this.options.title;
 				// Special case behaviour of main page
 				if ( mw.config.get( 'wgIsMainPage' ) && !redirectUrl ) {
 					// FIXME: Blocked on T189173
@@ -531,28 +656,27 @@ mfExtend( SourceEditorOverlay, EditorOverlayBase, {
 					return;
 				}
 
-				self.onSaveComplete( newRevId, redirectUrl, tempUserCreated );
+				this.onSaveComplete( newRevId, redirectUrl, tempUserCreated );
 
 				if ( redirectUrl && tempUserCreated ) {
 					// eslint-disable-next-line no-restricted-properties
 					window.location.href = redirectUrl;
 				}
-			}, function ( data ) {
-				self.onSaveFailure( data );
+			}, ( data ) => {
+				this.onSaveFailure( data, options );
 			} );
-	},
+	}
 
 	/**
 	 * @inheritdoc
-	 * @memberof SourceEditorOverlay
-	 * @instance
 	 * @param {number|null} newRevId ID of the newly created revision, or null if it was a
 	 * null edit.
 	 * @param {string} [redirectUrl] URL to redirect to, if different than the current URL.
 	 * @param {boolean} [tempUserCreated] Whether a temporary user was created
 	 */
-	onSaveComplete: function ( newRevId, redirectUrl ) {
-		EditorOverlayBase.prototype.onSaveComplete.apply( this, arguments );
+	onSaveComplete( newRevId, redirectUrl, tempUserCreated ) {
+		super.onSaveComplete( newRevId, redirectUrl, tempUserCreated );
+		mw.hook( 'mobileFrontend.sourceEditor.saveComplete' ).fire( newRevId );
 
 		// The parent class changes the location hash in a setTimeout, so wait
 		// for that to happen before reloading.
@@ -575,41 +699,37 @@ mfExtend( SourceEditorOverlay, EditorOverlayBase, {
 				window.location.reload();
 			}
 		} );
-	},
+	}
 
 	/**
 	 * @inheritdoc
-	 * @memberof SourceEditorOverlay
-	 * @instance
 	 */
-	showSaveCompleteMsg: function ( action, tempUserCreated ) {
-		__non_webpack_require__( 'mediawiki.action.view.postEdit' ).fireHookOnPageReload( action, tempUserCreated );
-	},
+	showSaveCompleteMsg( action, tempUserCreated ) {
+		mw.config.set( 'wgPostEdit', action );
+		require( 'mediawiki.action.view.postEdit' ).fireHookOnPageReload( action, tempUserCreated );
+	}
 
 	/**
 	 * Executed when page save fails. Handles error display and bookkeeping,
 	 * passes logging duties to the parent.
 	 *
 	 * @inheritdoc
-	 * @memberof SourceEditorOverlay
-	 * @instance
+	 *
+	 * @param {SaveFailureData} data Data returned from the failed save API request
+	 * @param {Object} saveOptions Options for the save request that failed
 	 */
-	onSaveFailure: function ( data ) {
-		let msg, noRetry;
-
+	onSaveFailure( data, saveOptions ) {
 		if ( data.edit && data.edit.captcha ) {
 			this.captchaId = data.edit.captcha.id;
-			this.handleCaptcha( data.edit.captcha );
+			this.handleCaptcha( data.edit.captcha, saveOptions );
 		} else {
-			msg = saveFailureMessage( data );
+			const msg = saveFailureMessage( data );
 			this.reportError( msg );
 			this.showHidden( '.save-header, .save-panel' );
 
 			// Some errors may be temporary, but for others we know for sure that the save will
 			// never succeed, so don't confuse the user by giving them the option to retry.
-			noRetry = data.errors && data.errors.some( function ( error ) {
-				return error.code === 'abusefilter-disallowed';
-			} );
+			const noRetry = data.errors && data.errors.some( ( error ) => error.code === 'abusefilter-disallowed' );
 
 			if ( noRetry ) {
 				// disable continue and save buttons, reenabled when user changes content
@@ -617,19 +737,166 @@ mfExtend( SourceEditorOverlay, EditorOverlayBase, {
 			}
 		}
 
-		EditorOverlayBase.prototype.onSaveFailure.apply( this, arguments );
-	},
+		super.onSaveFailure( data, saveOptions );
+	}
+
+	/**
+	 * @inheritdoc
+	 */
+	handleCaptcha( details, saveOptions ) {
+		// This is called from onSaveFailure if the backend response is asking
+		// to solve a captcha before saving the edit.
+		const payload = new SourceEditorSaveEventHookPayload(
+			this.currentPage,
+			this.readOnly,
+			details,
+			( resumeArgs ) => {
+				this.captchaWord = resumeArgs.captchaWord;
+				this._performSaveRequest( Object.assign( {}, saveOptions, {
+					captchaWord: resumeArgs.captchaWord,
+					isRespondingToForcedCaptcha: true
+				} ) );
+			}
+		);
+
+		if ( this._runHandleCaptchaHook( payload, details ) ) {
+			// No extension requested to stop handling the edit, so we defer
+			// handling the captcha to the parent class.
+			super.handleCaptcha( details, saveOptions );
+		}
+	}
 
 	/**
 	 * Checks whether the existing content has changed.
 	 *
-	 * @memberof SourceEditorOverlay
-	 * @instance
 	 * @return {boolean}
 	 */
-	hasChanged: function () {
+	hasChanged() {
 		return this.gateway.hasChanged;
 	}
-} );
+
+	/**
+	 * @param {string} defaultTemplate
+	 * @private
+	 */
+	_getTemplateSetterForHook( defaultTemplate ) {
+		let template = defaultTemplate;
+
+		const hookCallData = {
+			currentPage: this.currentPage,
+			readOnly: this.readOnly,
+
+			/**
+			 * Allows hook handlers to change the template returned by getter
+			 * method by either appending new code or replacing the default code
+			 * as well as any code that was previously set by other hook
+			 * handlers.
+			 *
+			 * @param {string} newTemplate New template code
+			 * @param {bool} append If true, appends code to the current template.
+			 */
+			setTemplate: ( newTemplate, append = true ) => {
+				if ( append ) {
+					template += newTemplate;
+				} else {
+					template = newTemplate;
+				}
+			}
+		};
+
+		return {
+			getTemplate: () => template,
+			hookCallData
+		};
+	}
+
+	/**
+	 * @returns {boolean}
+	 * @private
+	 */
+	_hasAdditionalModules() {
+		const requiredModules = mw.config.get(
+			'wgMobileFrontendSourceEditorInitializeModules',
+			[]
+		);
+
+		return Array.isArray( requiredModules ) &&
+			requiredModules.length > 0;
+	}
+
+	/**
+	 * @returns {void}
+	 * @private
+	 */
+	_loadAdditionalModules() {
+		const requiredModules = mw.config.get(
+			'wgMobileFrontendSourceEditorInitializeModules',
+			[]
+		);
+
+		const dependencies = [];
+		if ( Array.isArray( requiredModules ) ) {
+			for ( const moduleName of requiredModules ) {
+				if ( mw.loader.getState( moduleName ) === null ) {
+					// Skip modules that are not known by the resource loader
+					continue;
+				}
+
+				dependencies.push( mw.loader.using( moduleName ) );
+			}
+		}
+
+		return Promise.all( dependencies );
+	}
+
+	/**
+	 * Fires the handleCaptcha hook. Returns true if no handler stopped the flow
+	 * (meaning the caller should fall back to default captcha handling).
+	 *
+	 * @param {SourceEditorSaveEventHookPayload} payload
+	 * @param {Object} details
+	 * @returns {boolean}
+	 * @private
+	 */
+	_runHandleCaptchaHook( payload, details ) {
+		mw.hook( 'mobileFrontend.sourceEditor.handleCaptcha' ).fire( payload, details, this.$el );
+
+		if ( !payload.isStopped() ) {
+			return true;
+		}
+
+		this._applyCaptchaPanelFromPayload( payload );
+		return false;
+	}
+
+	/**
+	 * Renders a custom captcha panel template from the hook payload (if any)
+	 * and runs its post-render callback.
+	 *
+	 * @param {SourceEditorSaveEventHookPayload} payload
+	 * @private
+	 */
+	_applyCaptchaPanelFromPayload( payload ) {
+		const newTemplateCode = payload.getTemplate( CAPTCHA_PANEL );
+
+		if ( newTemplateCode ) {
+			const $captchaPanel = this.$el.find( '.overlay-content .panels .captcha-panel' );
+			$captchaPanel.removeClass( 'hidden' );
+			$captchaPanel.html(
+				util.template( newTemplateCode ).render(
+					payload.getTemplateArgs( CAPTCHA_PANEL )
+				)
+			);
+		}
+
+		// Run any callback provided by extensions. This is typically used in
+		// order to run code that requires to first update the captcha-panel
+		// with a new template provided through the hook payload.
+		const afterRender = payload.getTemplateRenderedCallback( CAPTCHA_PANEL );
+		if ( afterRender ) {
+			afterRender();
+		}
+	}
+}
 
 module.exports = SourceEditorOverlay;

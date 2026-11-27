@@ -4,20 +4,25 @@ namespace GrowthExperiments\Maintenance;
 
 use GrowthExperiments\WelcomeSurvey;
 use MediaWiki\Maintenance\Maintenance;
-use MediaWiki\User\User;
+use MediaWiki\User\Options\UserOptionsManager;
+use MediaWiki\User\UserIdentityLookup;
 use MediaWiki\Utils\MWTimestamp;
-use Wikimedia\Rdbms\IDBAccessObject;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 /**
  * Delete welcome surveys older than a cutoff date.
  */
 class DeleteOldSurveys extends Maintenance {
+
+	private UserOptionsManager $userOptionsManager;
+	private UserIdentityLookup $userIdentityLookup;
 
 	public function __construct() {
 		parent::__construct();
@@ -31,8 +36,15 @@ class DeleteOldSurveys extends Maintenance {
 		$this->setBatchSize( 1000 );
 	}
 
+	private function initServices(): void {
+		$this->userOptionsManager = $this->getServiceContainer()->getUserOptionsManager();
+		$this->userIdentityLookup = $this->getServiceContainer()->getUserIdentityLookup();
+	}
+
 	/** @inheritDoc */
 	public function execute() {
+		$this->initServices();
+
 		$cutoffDays = (int)$this->getOption( 'cutoff' );
 		$dryRun = $this->hasOption( 'dry-run' );
 		$verbose = $this->hasOption( 'verbose' );
@@ -53,7 +65,6 @@ class DeleteOldSurveys extends Maintenance {
 		$dbw = $this->getPrimaryDB();
 		$fromUserId = 0;
 		$break = false;
-		$userOptionsManager = $this->getServiceContainer()->getUserOptionsManager();
 		do {
 			$res = $dbr->newSelectQueryBuilder()
 				->select( [ 'user_id', 'up_value', 'user_registration' ] )
@@ -61,7 +72,7 @@ class DeleteOldSurveys extends Maintenance {
 				->join( 'user', null, [ 'user_id = up_user' ] )
 				->where( [
 					'up_property' => WelcomeSurvey::SURVEY_PROP,
-					$dbr->expr( 'user_id', '>', $fromUserId )
+					$dbr->expr( 'user_id', '>', $fromUserId ),
 				] )
 				->orderBy( 'user_id ASC' )
 				->limit( $this->mBatchSize )
@@ -98,18 +109,23 @@ class DeleteOldSurveys extends Maintenance {
 					$ids[] = $row->user_id;
 				}
 			}
-			foreach ( $ids as $id ) {
-				if ( !$dryRun ) {
-					$this->beginTransaction( $dbw, __METHOD__ );
-					$user = User::newFromId( $id );
-					$user->load( IDBAccessObject::READ_EXCLUSIVE );
-					// Setting an option to null will assign it the default value, which in turn
-					// will delete it (meaning we won't have to reprocess this row on the next run).
-					$userOptionsManager->setOption( $user, WelcomeSurvey::SURVEY_PROP, null );
-					$user->saveSettings();
-					$this->commitTransaction( $dbw, __METHOD__ );
+
+			// UserIdentityLookup fails if $ids is empty, run it only when needed
+			if ( $ids !== [] ) {
+				$users = $this->userIdentityLookup->newSelectQueryBuilder()
+					->whereUserIds( $ids )
+					->fetchUserIdentities();
+				foreach ( $users as $user ) {
+					if ( !$dryRun ) {
+						$this->beginTransaction( $dbw, __METHOD__ );
+						// Setting an option to null will assign it the default value, which in turn
+						// will delete it (meaning we won't have to reprocess this row on the next run).
+						$this->userOptionsManager->setOption( $user, WelcomeSurvey::SURVEY_PROP, null );
+						$this->userOptionsManager->saveOptions( $user );
+						$this->commitTransaction( $dbw, __METHOD__ );
+					}
+					$deletedCount++;
 				}
-				$deletedCount++;
 			}
 			$this->output( "Processed users up to ID $fromUserId\n" );
 		} while ( !$break && $res->numRows() === $this->mBatchSize );
@@ -118,5 +134,7 @@ class DeleteOldSurveys extends Maintenance {
 
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = DeleteOldSurveys::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

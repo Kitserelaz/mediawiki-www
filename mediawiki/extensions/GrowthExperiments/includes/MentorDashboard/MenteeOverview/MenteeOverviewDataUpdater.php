@@ -1,5 +1,7 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace GrowthExperiments\MentorDashboard\MenteeOverview;
 
 use GrowthExperiments\Mentorship\Store\MentorStore;
@@ -24,17 +26,9 @@ class MenteeOverviewDataUpdater {
 	private UserOptionsManager $userOptionsManager;
 	private LBFactory $lbFactory;
 	private ILoadBalancer $growthLoadBalancer;
-	private int $batchSize = 200;
+	private int $batchSize = 100;
 	private array $mentorProfilingInfo = [];
 
-	/**
-	 * @param UncachedMenteeOverviewDataProvider $uncachedMenteeOverviewDataProvider
-	 * @param MenteeOverviewDataProvider $menteeOverviewDataProvider
-	 * @param MentorStore $mentorStore
-	 * @param UserOptionsManager $userOptionsManager
-	 * @param LBFactory $lbFactory
-	 * @param ILoadBalancer $growthLoadBalancer
-	 */
 	public function __construct(
 		UncachedMenteeOverviewDataProvider $uncachedMenteeOverviewDataProvider,
 		MenteeOverviewDataProvider $menteeOverviewDataProvider,
@@ -44,6 +38,7 @@ class MenteeOverviewDataUpdater {
 		ILoadBalancer $growthLoadBalancer
 	) {
 		$this->uncachedMenteeOverviewDataProvider = $uncachedMenteeOverviewDataProvider;
+		$this->uncachedMenteeOverviewDataProvider->setBatchSize( $this->batchSize );
 		$this->menteeOverviewDataProvider = $menteeOverviewDataProvider;
 		$this->mentorStore = $mentorStore;
 		$this->userOptionsManager = $userOptionsManager;
@@ -51,16 +46,11 @@ class MenteeOverviewDataUpdater {
 		$this->growthLoadBalancer = $growthLoadBalancer;
 	}
 
-	/**
-	 * @param int $batchSize
-	 */
-	public function setBatchSize( int $batchSize ) {
+	public function setBatchSize( int $batchSize ): void {
 		$this->batchSize = $batchSize;
+		$this->uncachedMenteeOverviewDataProvider->setBatchSize( $this->batchSize );
 	}
 
-	/**
-	 * @return array
-	 */
 	public function getMentorProfilingInfo(): array {
 		return $this->mentorProfilingInfo;
 	}
@@ -93,7 +83,7 @@ class MenteeOverviewDataUpdater {
 					->insertInto( 'growthexperiments_mentee_data' )
 					->row( [
 						'mentee_id' => $menteeId,
-						'mentee_data' => $encodedData
+						'mentee_data' => $encodedData,
 					] )
 					->caller( __METHOD__ )
 					->execute();
@@ -121,19 +111,14 @@ class MenteeOverviewDataUpdater {
 
 		// Delete all mentees of $mentor we did not update
 		$menteeIdsToDelete = array_diff(
-			array_map(
-				static function ( $mentee ) {
-					return $mentee->getId();
-				},
-				$mentees
-			),
+			array_map( static fn ( UserIdentity $user ) => $user->getId(), $mentees ),
 			$updatedMenteeIds
 		);
 		if ( $menteeIdsToDelete !== [] ) {
 			$dbw->newDeleteQueryBuilder()
 				->deleteFrom( 'growthexperiments_mentee_data' )
 				->where( [
-					'mentee_id' => $menteeIdsToDelete
+					'mentee_id' => $menteeIdsToDelete,
 				] )
 				->caller( __METHOD__ )
 				->execute();

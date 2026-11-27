@@ -18,9 +18,10 @@ use MediaWiki\Status\Status;
 use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityUtils;
+use MediaWiki\WikiMap\WikiMap;
 use OutOfBoundsException;
 use UnexpectedValueException;
-use Wikimedia\Stats\PrefixingStatsdDataFactoryProxy;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * Hook handlers for hooks defined in VisualEditor.
@@ -34,35 +35,24 @@ class VisualEditorHooks implements
 	/** Prefix used for the VisualEditor API's plugin parameter. */
 	public const PLUGIN_PREFIX = 'ge-task-';
 
-	/** @var TitleFactory */
-	private $titleFactory;
-	/** @var ConfigurationLoader */
-	private $configurationLoader;
-	/** @var TaskTypeHandlerRegistry */
-	private $taskTypeHandlerRegistry;
-	/** @var PrefixingStatsdDataFactoryProxy */
-	private $perDbNameStatsdDataFactory;
-	/** @var UserIdentityUtils */
-	private $userIdentityUtils;
+	private TitleFactory $titleFactory;
+	private ConfigurationLoader $configurationLoader;
+	private TaskTypeHandlerRegistry $taskTypeHandlerRegistry;
 
-	/**
-	 * @param TitleFactory $titleFactory
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param TaskTypeHandlerRegistry $taskTypeHandlerRegistry
-	 * @param PrefixingStatsdDataFactoryProxy $perDbNameStatsdDataFactory
-	 * @param UserIdentityUtils $userIdentityUtils
-	 */
+	private StatsFactory $statsFactory;
+	private UserIdentityUtils $userIdentityUtils;
+
 	public function __construct(
 		TitleFactory $titleFactory,
 		ConfigurationLoader $configurationLoader,
 		TaskTypeHandlerRegistry $taskTypeHandlerRegistry,
-		PrefixingStatsdDataFactoryProxy $perDbNameStatsdDataFactory,
+		StatsFactory $statsFactory,
 		UserIdentityUtils $userIdentityUtils
 	) {
 		$this->titleFactory = $titleFactory;
 		$this->configurationLoader = $configurationLoader;
 		$this->taskTypeHandlerRegistry = $taskTypeHandlerRegistry;
-		$this->perDbNameStatsdDataFactory = $perDbNameStatsdDataFactory;
+		$this->statsFactory = $statsFactory;
 		$this->userIdentityUtils = $userIdentityUtils;
 	}
 
@@ -151,9 +141,12 @@ class VisualEditorHooks implements
 			$apiResponse['gelogid'] = $status->getValue()['logId'] ?? null;
 			$apiResponse['gewarnings'][] = $status->getValue()['warnings'] ?? '';
 			if ( $newRevId ) {
-				$this->perDbNameStatsdDataFactory->increment(
-					'GrowthExperiments.NewcomerTask.' . $taskType->getId() . '.Save'
-				);
+				$wiki = WikiMap::getCurrentWikiId();
+				$this->statsFactory->withComponent( 'GrowthExperiments' )
+					->getCounter( 'newcomer_task_save_total' )
+					->setLabel( 'wiki', $wiki )
+					->setLabel( 'task_type_id', $taskType->getId() )
+					->increment();
 			}
 		} else {
 			// FIXME expose error formatter to hook so this can be handled better
@@ -167,7 +160,7 @@ class VisualEditorHooks implements
 	public function onAPIGetAllowedParams( $module, &$params, $flags ) {
 		if ( $module instanceof ApiVisualEditorEdit
 			&& ( $flags & ApiBase::GET_VALUES_FOR_HELP )
-			&& SuggestedEdits::isEnabled( $module->getContext()->getConfig() )
+			&& SuggestedEdits::isEnabledForAnyone( $module->getContext()->getConfig() )
 		) {
 			$taskTypes = $this->configurationLoader->getTaskTypes();
 			foreach ( $taskTypes as $taskTypeId => $taskType ) {
@@ -205,7 +198,7 @@ class VisualEditorHooks implements
 				$data = json_decode( $data, true ) ?? [];
 				try {
 					$taskTypeHandler = $this->taskTypeHandlerRegistry->getByTaskType( $taskType );
-				} catch ( OutOfBoundsException $e ) {
+				} catch ( OutOfBoundsException ) {
 					// Probably some sort of hand-crafted fake API request. Ignore it.
 					continue;
 				}

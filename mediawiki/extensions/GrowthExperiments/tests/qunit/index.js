@@ -4,6 +4,7 @@ QUnit.dump.maxDepth = 999;
 
 require( './utils/Utils.test.js' );
 require( './ext.growthExperiments.Homepage.Logger/index.test.js' );
+require( './ext.growthExperiments.Homepage.Logger/useInstrument.test.js' );
 require( './ext.growthExperiments.Homepage.mobile/SuggestedEditsMobileSummary.test.js' );
 require( './ext.growthExperiments.Help/HelpPanelLogger.test.js' );
 require( './ext.growthExperiments.Help/HelpPanelProcessDialog.test.js' );
@@ -24,4 +25,4 @@ require( './ext.growthExperiments.DataStore/GrowthTasksApi.test.js' );
 require( './ext.growthExperiments.DataStore/FiltersStore.test.js' );
 require( './ext.growthExperiments.DataStore/NewcomerTasksStore.test.js' );
 require( './ui-components/CollapsibleDrawer.test.js' );
-require( './ui-components/SelectWithTextInputWidget.test.js' );
+require( './ui-components/AdaptiveSelectWidget.test.js' );

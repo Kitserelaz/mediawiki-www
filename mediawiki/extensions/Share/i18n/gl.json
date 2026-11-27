@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"Toliño"
+		]
+	},
+	"share": "Compartir",
+	"share-desc": "Engade un trebello na barra lateral que permite aos usuarios compartir facilmente artigos wiki en plataformas de redes sociais",
+	"share-header": "Compartir isto",
+	"share-email": "Compartir por correo electrónico",
+	"share-facebook": "Compartir en Facebook",
+	"share-linkedin": "Compartir en LinkedIn",
+	"share-pinterest": "Compartir en Pinterest",
+	"share-reddit": "Compartir en Reddit",
+	"share-telegram": "Compartir en Telegram",
+	"share-tumblr": "Compartir en Tumblr",
+	"share-twitter": "Compartir en Twitter",
+	"share-vk": "Compartir en VK",
+	"share-weibo": "Compartir en Weibo",
+	"share-whatsapp": "Compartir en WhatsApp",
+	"share-preftoggle": "Queres desactivar a visualización das ligazóns para compartir na barra lateral?",
+	"right-viewsharelinks": "Ver o trebello para compartir na barra lateral",
+	"action-viewsharelinks": "ver o trebello para compartir na barra lateral"
+}

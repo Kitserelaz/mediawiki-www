@@ -68,7 +68,7 @@ DMRecommendedLinkAnnotation.prototype.getComparableObject = function () {
 	return {
 		type: this.getType(),
 		normalizedTitle: this.getAttribute( 'normalizedTitle' ),
-		accepted: this.isAccepted()
+		accepted: this.isAccepted(),
 	};
 };
 
@@ -86,10 +86,6 @@ DMRecommendedLinkAnnotation.prototype.isUndecided = function () {
 
 DMRecommendedLinkAnnotation.prototype.getRejectionReason = function () {
 	return this.getAttribute( 'rejectionReason' );
-};
-
-DMRecommendedLinkAnnotation.prototype.getOtherRejectionReason = function () {
-	return this.getAttribute( 'otherRejectionReason' );
 };
 
 /**

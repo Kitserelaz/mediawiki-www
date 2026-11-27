@@ -2,8 +2,7 @@
 
 namespace GrowthExperiments\NewcomerTasks\TaskType;
 
-use MediaWiki\Json\JsonUnserializer;
-use MessageLocalizer;
+use MediaWiki\Language\MessageLocalizer;
 use Wikimedia\LightweightObjectStore\ExpirationAwareness;
 
 class LinkRecommendationTaskType extends TaskType {
@@ -32,6 +31,8 @@ class LinkRecommendationTaskType extends TaskType {
 	public const FIELD_UNDERLINKED_WEIGHT = 'underlinkedWeight';
 	/** @see :getUnderlinkedMinLength */
 	public const FIELD_UNDERLINKED_MIN_LENGTH = 'underlinkedMinLength';
+	/** @see :getMaximumEditsTaskIsAvailable */
+	public const FIELD_MAX_EDITS_TASK_AVAILABLE = 'maximumEditsTaskIsAvailable';
 
 	/** Exclude a (task page, target page) pair from future tasks after this many rejections. */
 	public const REJECTION_EXCLUSION_LIMIT = 2;
@@ -49,35 +50,26 @@ class LinkRecommendationTaskType extends TaskType {
 		self::FIELD_EXCLUDED_SECTIONS => [],
 		self::FIELD_UNDERLINKED_WEIGHT => 0.5,
 		self::FIELD_UNDERLINKED_MIN_LENGTH => 300,
+		self::FIELD_MAX_EDITS_TASK_AVAILABLE => null,
 	];
 
 	/** @inheritDoc */
 	protected const IS_MACHINE_SUGGESTION = true;
 
-	/** @var int */
-	protected $minimumTasksPerTopic;
-	/** @var int */
-	protected $minimumLinksPerTask;
-	/** @var float */
-	protected $minimumLinkScore;
-	/** @var int */
-	protected $maximumLinksPerTask;
-	/** @var int */
-	protected $maximumLinksToShowPerTask;
-	/** @var int */
-	protected $minimumTimeSinceLastEdit;
-	/** @var int */
-	protected $minimumWordCount;
-	/** @var int */
-	protected $maximumWordCount;
-	/** @var int */
-	protected $maxTasksPerDay;
+	protected int $minimumTasksPerTopic;
+	protected int $minimumLinksPerTask;
+	protected float $minimumLinkScore;
+	protected int $maximumLinksPerTask;
+	protected int $maximumLinksToShowPerTask;
+	protected int $minimumTimeSinceLastEdit;
+	protected int $minimumWordCount;
+	protected int $maximumWordCount;
+	protected int $maxTasksPerDay;
 	/** @var string[] */
 	protected $excludedSections;
-	/** @var float */
-	protected $underlinkedWeight;
-	/** @var int */
-	protected $underlinkedMinLength;
+	protected float $underlinkedWeight;
+	protected int $underlinkedMinLength;
+	protected ?int $maximumEditsTaskIsAvailable;
 
 	/**
 	 * @inheritDoc
@@ -105,14 +97,13 @@ class LinkRecommendationTaskType extends TaskType {
 		$this->excludedSections = $settings[self::FIELD_EXCLUDED_SECTIONS];
 		$this->underlinkedWeight = $settings[self::FIELD_UNDERLINKED_WEIGHT];
 		$this->underlinkedMinLength = $settings[self::FIELD_UNDERLINKED_MIN_LENGTH];
+		$this->maximumEditsTaskIsAvailable = $settings[self::FIELD_MAX_EDITS_TASK_AVAILABLE];
 	}
 
 	/**
 	 * Try to have at least this many link recommendations prepared for each ORES topic.
 	 * Recommendations are filled up every hour to this level.
-	 * Note: these are individual ORES topics, not the combined Growth topics defined via
-	 * $wgGENewcomerTasksOresTopicConfigTitle.
-	 * @return int
+	 * Note: these are individual ORES topics, not the combined Growth topics defined in WikimediaTopicRegistry
 	 */
 	public function getMinimumTasksPerTopic(): int {
 		return $this->minimumTasksPerTopic;
@@ -120,7 +111,6 @@ class LinkRecommendationTaskType extends TaskType {
 
 	/**
 	 * Each recommendation must contain at least this many suggested links.
-	 * @return int
 	 */
 	public function getMinimumLinksPerTask(): int {
 		return $this->minimumLinksPerTask;
@@ -128,7 +118,6 @@ class LinkRecommendationTaskType extends TaskType {
 
 	/**
 	 * Required confidence score for each link.
-	 * @return float
 	 */
 	public function getMinimumLinkScore(): float {
 		return $this->minimumLinkScore;
@@ -151,12 +140,11 @@ class LinkRecommendationTaskType extends TaskType {
 	 * @return int
 	 */
 	public function getMaximumLinksToShowPerTask(): int {
-		return (int)$this->maximumLinksToShowPerTask;
+		return $this->maximumLinksToShowPerTask;
 	}
 
 	/**
 	 * At least this much time (in seconds) needs to have passed since the article was last edited.
-	 * @return int
 	 */
 	public function getMinimumTimeSinceLastEdit(): int {
 		return $this->minimumTimeSinceLastEdit;
@@ -165,7 +153,6 @@ class LinkRecommendationTaskType extends TaskType {
 	/**
 	 * Only use articles with this at least many words for link recommendations.
 	 * (The word count will be some naive wikitext-based estimation.)
-	 * @return int
 	 */
 	public function getMinimumWordCount(): int {
 		return $this->minimumWordCount;
@@ -174,7 +161,6 @@ class LinkRecommendationTaskType extends TaskType {
 	/**
 	 * Only use articles with this at most many words for link recommendations.
 	 * (The word count will be some naive wikitext-based estimation.)
-	 * @return int
 	 */
 	public function getMaximumWordCount(): int {
 		return $this->maximumWordCount;
@@ -182,8 +168,6 @@ class LinkRecommendationTaskType extends TaskType {
 
 	/**
 	 * The maximum number of image recommendation tasks that a user can perform each calendar day.
-	 *
-	 * @return int
 	 */
 	public function getMaxTasksPerDay(): int {
 		return $this->maxTasksPerDay;
@@ -202,7 +186,6 @@ class LinkRecommendationTaskType extends TaskType {
 	 * Weight of the underlinkedness metric (vs. a random factor) in sorting.
 	 * Higher is less random. E.g. a weight of 0.25 means the scoring function will be
 	 * 0.25 * <underlinkedness> + 0.75 * random(0,1).
-	 * @return float
 	 */
 	public function getUnderlinkedWeight(): float {
 		return $this->underlinkedWeight;
@@ -212,10 +195,18 @@ class LinkRecommendationTaskType extends TaskType {
 	 * Minimum length above which an article can be considered underlinked.
 	 * If the article size is smaller than this, its underlinkedness score will be 0.
 	 * FIXME is this useful given that we already have a min words limit?
-	 * @return int
 	 */
 	public function getUnderlinkedMinLength(): int {
 		return $this->underlinkedMinLength;
+	}
+
+	/**
+	 * The maximum number of edits after which the "Add a link" task will be disabled for a user.
+	 *
+	 * @return ?int
+	 */
+	public function getMaximumEditsTaskIsAvailable(): ?int {
+		return $this->maximumEditsTaskIsAvailable;
 	}
 
 	/** @inheritDoc */
@@ -233,15 +224,36 @@ class LinkRecommendationTaskType extends TaskType {
 		return [ 'dailyLimit' ];
 	}
 
+	/**
+	 * Text to display when the task is unavailable for a user (has reached the maximum of
+	 * edits community configured)
+	 * @param MessageLocalizer $messageLocalizer
+	 * @return ?string
+	 */
+	private function getUnavailableText( MessageLocalizer $messageLocalizer ): ?string {
+		if ( $this->getMaximumEditsTaskIsAvailable() ) {
+			return $messageLocalizer->msg(
+				'growthexperiments-homepage-suggestededits-addlink-unavailable-text',
+				// @phan-suppress-next-line PhanTypeMismatchArgumentNullable Validated by if above
+				$this->getMaximumEditsTaskIsAvailable()
+			)->text();
+		}
+		return null;
+	}
+
 	/** @inheritDoc */
 	public function getViewData( MessageLocalizer $messageLocalizer ): array {
 		return parent::getViewData( $messageLocalizer ) + [
-			self::FIELD_MAX_LINKS_TO_SHOW_PER_TASK => $this->getMaximumLinksToShowPerTask()
+			self::FIELD_MAX_LINKS_TO_SHOW_PER_TASK => $this->getMaximumLinksToShowPerTask(),
+			self::FIELD_MAX_EDITS_TASK_AVAILABLE => $this->getMaximumEditsTaskIsAvailable(),
+			'extraMessages' => [
+				'unavailable' => $this->getUnavailableText( $messageLocalizer ),
+			],
 		];
 	}
 
 	/** @inheritDoc */
-	protected function toJsonArray(): array {
+	public function toJsonArray(): array {
 		return parent::toJsonArray() + [
 				'settings' => [
 					'minimumTasksPerTopic' => $this->minimumTasksPerTopic,
@@ -255,13 +267,14 @@ class LinkRecommendationTaskType extends TaskType {
 					'maxTasksPerDay' => $this->maxTasksPerDay,
 					'underlinkedWeight' => $this->underlinkedWeight,
 					'underlinkedMinLength' => $this->underlinkedMinLength,
+					'maximumEditsTaskIsAvailable' => $this->maximumEditsTaskIsAvailable,
 				],
 			];
 	}
 
 	/** @inheritDoc */
-	public static function newFromJsonArray( JsonUnserializer $unserializer, array $json ) {
-		$taskType = new LinkRecommendationTaskType(
+	public static function newFromJsonArray( array $json ): self {
+		$taskType = new static(
 			$json['id'],
 			$json['difficulty'],
 			$json['settings'],

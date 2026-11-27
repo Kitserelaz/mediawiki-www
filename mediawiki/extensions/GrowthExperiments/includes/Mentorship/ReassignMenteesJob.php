@@ -2,14 +2,11 @@
 
 namespace GrowthExperiments\Mentorship;
 
-use GenericParameterJob;
-use GrowthExperiments\GrowthExperimentsServices;
 use GrowthExperiments\Mentorship\Store\MentorStore;
-use Job;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\JobQueue\Job;
 use MediaWiki\Logger\LoggerFactory;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\User\UserIdentityLookup;
 use Psr\Log\LoggerInterface;
 
@@ -20,7 +17,7 @@ use Psr\Log\LoggerInterface;
  *  - mentorId: user ID of the mentor to process
  *  - reassignMessageKey: Message to store in logs as well as in notifications to mentees
  */
-class ReassignMenteesJob extends Job implements GenericParameterJob {
+class ReassignMenteesJob extends Job {
 
 	public const JOB_NAME = 'reassignMenteesJob';
 
@@ -30,19 +27,21 @@ class ReassignMenteesJob extends Job implements GenericParameterJob {
 	private ReassignMenteesFactory $reassignMenteesFactory;
 	private LoggerInterface $logger;
 
-	/**
-	 * @inheritDoc
-	 */
-	public function __construct( $params = null ) {
+	public function __construct(
+		array $params,
+		Config $config,
+		UserIdentityLookup $userIdentityLookup,
+		MentorStore $mentorStore,
+		ReassignMenteesFactory $reassignMenteesFactory
+	) {
 		parent::__construct( self::JOB_NAME, $params );
 
-		// init services
-		$services = MediaWikiServices::getInstance();
-		$geServices = GrowthExperimentsServices::wrap( $services );
-		$this->config = $services->getMainConfig();
-		$this->userIdentityLookup = $services->getUserIdentityLookup();
-		$this->mentorStore = $geServices->getMentorStore();
-		$this->reassignMenteesFactory = $geServices->getReassignMenteesFactory();
+		$this->config = $config;
+		$this->userIdentityLookup = $userIdentityLookup;
+		$this->mentorStore = $mentorStore;
+		$this->reassignMenteesFactory = $reassignMenteesFactory;
+
+		// TODO: this is not a service yet, but should be
 		$this->logger = LoggerFactory::getInstance( 'GrowthExperiments' );
 	}
 
@@ -103,23 +102,33 @@ class ReassignMenteesJob extends Job implements GenericParameterJob {
 			$this->params['reassignMessageKey'],
 			...$this->params['reassignMessageAdditionalParams']
 		);
-		$this->logger->info( 'ReassignMenteesJob finished reassignment with {status} status', [
-			'status' => $status,
-		] );
+		$this->logger->info(
+			'ReassignMenteesJob finished reassignment for {mentor} with {status} status',
+			[
+				'status' => var_export( $status, true ),
+				'mentor' => $mentor->getName(),
+			]
+		);
 
 		if ( $status ) {
 			if ( $this->mentorStore->hasAnyMentees( $mentor, MentorStore::ROLE_PRIMARY ) ) {
-				$this->logger->info( 'ReassignMenteesJob did not reassign all mentees, scheduling new job', [
-					'mentor' => $mentor->getName(),
-				] );
+				$this->logger->info(
+					'ReassignMenteesJob did not reassign all mentees for {mentor}, scheduling new job',
+					[
+						'mentor' => $mentor->getName(),
+					]
+				);
 				$reassignMentees->scheduleReassignMenteesJob(
 					$this->params['reassignMessageKey'],
 					...$this->params['reassignMessageAdditionalParams']
 				);
 			} else {
-				$this->logger->info( 'ReassignMenteesJob finished reassigning all mentees', [
-					'mentor' => $mentor->getName(),
-				] );
+				$this->logger->info(
+					'ReassignMenteesJob finished reassigning all mentees for {mentor}',
+					[
+						'mentor' => $mentor->getName(),
+					]
+				);
 			}
 		}
 

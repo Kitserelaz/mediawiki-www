@@ -6,9 +6,8 @@ use Exception;
 
 class NodeUnimplemented extends Node {
 
-	public function getData() {
-		// @phan-suppress-previous-line PhanPluginNeverReturnMethod LSP violation.
-
+	/** @throws UnimplementedNodeException */
+	public function getData(): never {
 		throw new UnimplementedNodeException( $this->getType() );
 	}
 }

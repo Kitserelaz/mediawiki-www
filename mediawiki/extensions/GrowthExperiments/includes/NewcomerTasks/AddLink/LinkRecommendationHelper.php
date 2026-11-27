@@ -2,6 +2,7 @@
 
 namespace GrowthExperiments\NewcomerTasks\AddLink;
 
+use CirrusSearch\WeightedTagsUpdater;
 use GrowthExperiments\ErrorException;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
 use GrowthExperiments\NewcomerTasks\TaskType\LinkRecommendationTaskType;
@@ -12,6 +13,7 @@ use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Page\ProperPageIdentity;
 use StatusValue;
+use Wikimedia\Assert\Assert;
 use Wikimedia\Rdbms\IDBAccessObject;
 
 /**
@@ -28,27 +30,18 @@ class LinkRecommendationHelper {
 	/** @var LinkRecommendationStore */
 	private $linkRecommendationStore;
 
-	/**
-	 * @var callable returning {@link \CirrusSearch\WeightedTagsUpdater}
-	 */
-	private $weightedTagsUpdaterProvider;
+	private ?WeightedTagsUpdater $weightedTagsUpdater;
 
-	/**
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param LinkRecommendationProvider $linkRecommendationProvider
-	 * @param LinkRecommendationStore $linkRecommendationStore
-	 * @param callable(): \CirrusSearch\WeightedTagsUpdater $weightedTagsUpdaterProvider
-	 */
 	public function __construct(
 		ConfigurationLoader $configurationLoader,
 		LinkRecommendationProvider $linkRecommendationProvider,
 		LinkRecommendationStore $linkRecommendationStore,
-		callable $weightedTagsUpdaterProvider
+		?WeightedTagsUpdater $weightedTagsUpdaterProvider
 	) {
 		$this->configurationLoader = $configurationLoader;
 		$this->linkRecommendationProvider = $linkRecommendationProvider;
 		$this->linkRecommendationStore = $linkRecommendationStore;
-		$this->weightedTagsUpdaterProvider = $weightedTagsUpdaterProvider;
+		$this->weightedTagsUpdater = $weightedTagsUpdaterProvider;
 	}
 
 	/**
@@ -93,20 +86,20 @@ class LinkRecommendationHelper {
 			} );
 		}
 		if ( $deleteFromSearchIndex ) {
+			Assert::invariant(
+				$this->weightedTagsUpdater !== null,
+				'CirrusSearch is required if Link Recommendations are enabled'
+			);
 			DeferredUpdates::addCallableUpdate( function () use ( $pageIdentity, $allowJoiningSearchIndexDeletes ) {
-				( $this->weightedTagsUpdaterProvider )()->resetWeightedTags(
+				$this->weightedTagsUpdater->resetWeightedTags(
 					$pageIdentity,
 					[ LinkRecommendationTaskTypeHandler::WEIGHTED_TAG_PREFIX ],
-					$allowJoiningSearchIndexDeletes ? 'revision' : null
+					$allowJoiningSearchIndexDeletes ? 'revision' : null,
 				);
 			} );
 		}
 	}
 
-	/**
-	 * @param string $errorMessage
-	 * @return ErrorException
-	 */
 	private function configError( string $errorMessage ): ErrorException {
 		Util::logException( new WikiConfigException( $errorMessage ) );
 		return new ErrorException( StatusValue::newFatal( 'rawmessage', $errorMessage ) );

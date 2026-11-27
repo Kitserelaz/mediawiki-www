@@ -1,8 +1,6 @@
 <?php
 
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use MediaWiki\Api\ApiModuleManager;
 use MediaWiki\Api\Hook\ApiMain__moduleManagerHook;
@@ -15,25 +13,29 @@ use MediaWiki\Content\IContentHandlerFactory;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\EditPage\EditPage;
 use MediaWiki\Hook\AlternateEditHook;
-use MediaWiki\Hook\CanonicalNamespacesHook;
 use MediaWiki\Hook\EditFilterMergedContentHook;
 use MediaWiki\Hook\EditPage__showEditForm_initialHook;
 use MediaWiki\Hook\EditPageCopyrightWarningHook;
 use MediaWiki\Hook\MovePageIsValidMoveHook;
 use MediaWiki\Hook\PageMoveCompleteHook;
-use MediaWiki\Hook\SkinCopyrightFooterMessageHook;
 use MediaWiki\Hook\TitleGetEditNoticesHook;
 use MediaWiki\Html\Html;
+use MediaWiki\JobQueue\JobQueueGroupFactory;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\Message\Message;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Page\Hook\ArticleDeleteCompleteHook;
 use MediaWiki\Page\Hook\ArticleUndeleteHook;
+use MediaWiki\Page\WikiPage;
 use MediaWiki\Permissions\Hook\GetUserPermissionsErrorsHook;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Revision\Hook\ContentHandlerDefaultModelForHook;
+use MediaWiki\Skin\Hook\SkinCopyrightFooterMessageHook;
+use MediaWiki\Skin\Skin;
 use MediaWiki\Status\Status;
 use MediaWiki\Storage\Hook\PageSaveCompleteHook;
+use MediaWiki\Title\Hook\CanonicalNamespacesHook;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use Wikimedia\Message\MessageSpecifier;
@@ -41,7 +43,6 @@ use Wikimedia\Message\MessageSpecifier;
 /**
  * Hook handlers for JsonConfig extension.
  *
- * @file
  * @ingroup Extensions
  * @ingroup JsonConfig
  * @license GPL-2.0-or-later
@@ -66,19 +67,16 @@ class JCHooks implements
 	PageMoveCompleteHook,
 	GetUserPermissionsErrorsHook
 {
-	private Config $config;
-	private IContentHandlerFactory $contentHandlerFactory;
-
 	public function __construct(
-		Config $config,
-		IContentHandlerFactory $contentHandlerFactory
+		private readonly JCApiUtils $apiUtils,
+		private readonly Config $config,
+		private readonly IContentHandlerFactory $contentHandlerFactory,
+		private readonly JobQueueGroupFactory $jobQueueGroupFactory,
 	) {
-		$this->config = $config;
-		$this->contentHandlerFactory = $contentHandlerFactory;
 	}
 
 	/**
-	 * Only register NS_CONFIG if running on the MediaWiki instance which houses
+	 * Only register NS_CONFIG if running on the MediaWiki instance that houses
 	 * the JSON configs (i.e. META)
 	 * @param array &$namespaces
 	 */
@@ -101,7 +99,7 @@ class JCHooks implements
 				$key = array_search( $name, $namespaces );
 				if ( $key !== false ) {
 					wfLogWarning( "JsonConfig: Invalid \$wgJsonConfigs: Namespace $ns => '$name' " .
-						"has identical name with the namespace #$key" );
+						"has an identical name with the namespace #$key" );
 				} else {
 					$namespaces[$ns] = $name;
 				}
@@ -220,9 +218,7 @@ class JCHooks implements
 		if ( $content instanceof JCContent ) {
 			$status->merge( $content->getStatus() );
 			if ( !$status->isGood() ) {
-				// @todo Use $status->setOK() instead after this extension
-				// do not support mediawiki version 1.36 and before
-				$status->setResult( false, $status->getValue() ?: EditPage::AS_HOOK_ERROR_EXPECTED );
+				$status->setOK( false );
 				return false;
 			}
 		}
@@ -230,15 +226,15 @@ class JCHooks implements
 	}
 
 	/**
-	 * Get the license code for the title or false otherwise.
-	 * license code is identifier from https://spdx.org/licenses/
+	 * Get the license code for the title or return false otherwise.
+	 * license code is an identifier from https://spdx.org/licenses/
 	 *
 	 * @param JCTitle $jct
 	 * @return bool|string Returns licence code string, or false if license is unknown
 	 */
 	private static function getTitleLicenseCode( JCTitle $jct ) {
 		$jctContent = JCSingleton::getContent( $jct );
-		if ( $jctContent && $jctContent instanceof JCDataContent ) {
+		if ( $jctContent && $jctContent instanceof JCDataContent && $jctContent->isValid() ) {
 			$license = $jctContent->getLicenseObject();
 			if ( $license ) {
 				return $license['code'];
@@ -264,7 +260,7 @@ class JCHooks implements
 					$msg = [ 'jsonconfig-license-copyrightwarning', $code ];
 				} else {
 					$requireLicense = $jct->getConfig()->license ?? false;
-					// Check if page has license field to apply only if it is required
+					// Check if the page has a license field to apply only if it is required
 					// https://phabricator.wikimedia.org/T203173
 					if ( $requireLicense ) {
 						$msg = [ 'jsonconfig-license-copyrightwarning-license-unset' ];
@@ -292,7 +288,7 @@ class JCHooks implements
 					$noticeText = wfMessage( 'jsonconfig-license-notice', $code )->parse();
 					$iconCodes = '';
 					if ( preg_match_all( "/[a-z][a-z0-9]+/i", $code, $subcodes ) ) {
-						// Flip order due to dom ordering of the floating elements
+						// Flip order due to the DOM ordering of the floating elements
 						foreach ( array_reverse( $subcodes[0] ) as $c => $match ) {
 							// Used classes:
 							// * mw-jsonconfig-editnotice-icon-BY
@@ -319,7 +315,7 @@ class JCHooks implements
 						$iconCodes . $noticeText . $noticeFooter
 					);
 				} else {
-					// Check if page has license field to apply notice msgs only when license is required
+					// Check if page has a license field to apply notice msgs only when license is required
 					// https://phabricator.wikimedia.org/T203173
 					$requireLicense = $jct->getConfig()->license ?? false;
 					if ( $requireLicense ) {
@@ -357,7 +353,7 @@ class JCHooks implements
 	/**
 	 * Adds CSS for pretty-printing configuration on NS_CONFIG pages.
 	 * @param OutputPage $out
-	 * @param \Skin $skin
+	 * @param Skin $skin
 	 */
 	public function onBeforePageDisplay(
 		/** @noinspection PhpUnusedParameterInspection */ $out, $skin
@@ -378,6 +374,7 @@ class JCHooks implements
 		}
 	}
 
+	/** @inheritDoc */
 	public function onMovePageIsValidMove(
 		$oldTitle, $newTitle, $status
 	) {
@@ -403,16 +400,21 @@ class JCHooks implements
 
 	/**
 	 * Conditionally load API module 'jsondata' depending on whether or not
-	 * this wiki stores any jsonconfig data
+	 * this wiki stores any JSON config data
 	 *
 	 * @param ApiModuleManager $moduleManager Module manager instance
 	 */
 	public function onApiMain__moduleManager( $moduleManager ) {
-		if ( $moduleManager->getConfig()->get( 'JsonConfigEnableLuaSupport' ) ) {
+		$config = $moduleManager->getConfig();
+		if ( $config->get( 'JsonConfigEnableLuaSupport' ) ) {
 			$moduleManager->addModule( 'jsondata', 'action', JCDataApi::class );
+			if ( $config->get( 'JsonConfigTransformsEnabled' ) ) {
+				$moduleManager->addModule( 'jsontransform', 'action', JCTransformApi::class );
+			}
 		}
 	}
 
+	/** @inheritDoc */
 	public function onPageSaveComplete(
 		/** @noinspection PhpUnusedParameterInspection */
 		$wikiPage, $user, $summary, $flags, $revisionRecord, $editResult
@@ -420,6 +422,7 @@ class JCHooks implements
 		return $this->onArticleChangeComplete( $wikiPage );
 	}
 
+	/** @inheritDoc */
 	public function onArticleDeleteComplete(
 		/** @noinspection PhpUnusedParameterInspection */
 		$article, $user, $reason, $id, $content, $logEntry, $archivedRevisionCount
@@ -427,6 +430,7 @@ class JCHooks implements
 		return $this->onArticleChangeComplete( $article );
 	}
 
+	/** @inheritDoc */
 	public function onArticleUndelete(
 		/** @noinspection PhpUnusedParameterInspection */
 		$title, $created, $comment, $oldPageId, $restoredPages
@@ -434,6 +438,7 @@ class JCHooks implements
 		return $this->onArticleChangeComplete( $title );
 	}
 
+	/** @inheritDoc */
 	public function onPageMoveComplete(
 		/** @noinspection PhpUnusedParameterInspection */
 		$title, $newTitle, $user, $pageid, $redirid, $reason, $revisionRecord
@@ -445,8 +450,8 @@ class JCHooks implements
 	}
 
 	/**
-	 * Prohibit creation of the pages that are part of our namespaces but have not been explicitly
-	 * allowed.
+	 * Prohibit the creation of the pages that are part of our namespaces
+	 * but have not been explicitly allowed.
 	 * @param Title $title
 	 * @param User $user
 	 * @param string $action
@@ -463,7 +468,7 @@ class JCHooks implements
 
 		if ( $action === 'create' && JCSingleton::parseTitle( $title ) === null ) {
 			// prohibit creation of the pages for the namespace that we handle,
-			// if the title is not matching declared rules
+			// if the title does not match declared rules
 			$result = 'jsonconfig-blocked-page-creation';
 			return false;
 		}
@@ -471,32 +476,28 @@ class JCHooks implements
 	}
 
 	/**
-	 * @param \WikiPage|Title $value
-	 * @param JCContent|null $content
+	 * @param WikiPage|Title $value
 	 * @return bool
 	 */
-	private function onArticleChangeComplete( $value, $content = null ) {
+	private function onArticleChangeComplete( $value ) {
 		if ( !self::jsonConfigIsStorage( $this->config ) ) {
 			return true;
 		}
 
-		if ( $value && ( !$content || $content instanceof JCContent ) ) {
+		if ( $value ) {
 			if ( method_exists( $value, 'getTitle' ) ) {
 				$value = $value->getTitle();
 			}
 			$jct = JCSingleton::parseTitle( $value );
 			if ( $jct && $jct->getConfig()->store ) {
-				$store = new JCCache( $jct, $content );
+				$store = new JCCache( $jct );
 				$store->resetCache();
 
 				// Handle remote site notification
 				$store = $jct->getConfig()->store;
-				// @phan-suppress-next-line PhanTypeExpectedObjectPropAccess
 				if ( $store->notifyUrl ) {
 					$req =
-						// @phan-suppress-next-line PhanTypeExpectedObjectPropAccess
-						JCUtils::initApiRequestObj( $store->notifyUrl, $store->notifyUsername,
-							// @phan-suppress-next-line PhanTypeExpectedObjectPropAccess
+						$this->apiUtils->initApiRequestObj( $store->notifyUrl, $store->notifyUsername,
 							$store->notifyPassword );
 					if ( $req ) {
 						$query = [
@@ -505,9 +506,21 @@ class JCHooks implements
 							'command' => 'reload',
 							'title' => $jct->getNamespace() . ':' . $jct->getDBkey(),
 						];
-						JCUtils::callApi( $req, $query, 'notify remote JsonConfig client' );
+						$this->apiUtils->callApi( $req, $query, 'notify remote JsonConfig client' );
 					}
 				}
+
+				// Handle notification of other wikis via job queue on dependency changes
+				// Peer wikis must be configured via $wgLocalDatabases etc.
+				$jobSpec = new JobSpecification(
+					'globalJsonLinksCachePurge',
+					[
+						'namespace' => $value->getNamespace(),
+						'title' => $value->getDBkey(),
+					],
+					[ 'removeDuplicates' => true ]
+				);
+				$this->jobQueueGroupFactory->makeJobQueueGroup()->push( $jobSpec );
 			}
 		}
 		return true;
@@ -539,3 +552,6 @@ class JCHooks implements
 		return $isStorage;
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCHooks::class, 'JsonConfig\\JCHooks' );

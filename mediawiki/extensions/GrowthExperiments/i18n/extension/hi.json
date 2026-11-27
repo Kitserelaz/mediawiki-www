@@ -1,9 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
-			"Abijeet Patro"
+			"Abijeet Patro",
+			"Saurmandal"
 		]
 	},
+	"growthexperiments-edit-config-feedback-cta": "प्रतिक्रिया दें",
 	"growthexperiments-edit-config-mentorship-enabled-true": "हाँ",
 	"growthexperiments-edit-config-mentorship-enabled-false": "नहीं",
 	"communityconfiguration-communityupdates-gehomepagecommunityupdatesthumbnailfile-label": "चित्र",
@@ -13,5 +15,7 @@
 	"communityconfiguration-growthsuggestededits-update-disabled-control-label": "कार्य अक्षम है।",
 	"communityconfiguration-growthsuggestededits-expand-disabled-control-label": "कार्य अक्षम है।",
 	"communityconfiguration-growthsuggestededits-image_recommendation-disabled-control-label": "कार्य अक्षम है।",
-	"communityconfiguration-growthsuggestededits-section_image_recommendation-disabled-control-label": "कार्य अक्षम है।"
+	"communityconfiguration-growthsuggestededits-section_image_recommendation-disabled-control-label": "कार्य अक्षम है।",
+	"communityconfiguration-growthsuggestededits-link_recommendation-maximumeditstaskisavailable-option-no-label": "नहीं",
+	"growthexperiments-addlink-done-button": "पूर्ण हुआ"
 }

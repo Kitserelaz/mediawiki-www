@@ -1,6 +1,6 @@
 /**
  * Own attributes:
- * - recommendation: {@see mw.libs.ge.dm.Recommendation}
+ * - recommendation: {@link mw.libs.ge.dm.Recommendation}
  * - recommendationIndex: {number} Zero-based index of the selected image suggestion.
  *
  * @class mw.libs.ge.dm.RecommendedImageNode
@@ -22,7 +22,7 @@ DMRecommendedImageNode.static.matchFunction = function ( element ) {
 	// already in the article will be a match candidate. Additional class name check ensures that
 	// existing images in the article don't get treated as a suggested image.
 	const hasImage = ve.dm.BlockImageNode.static.matchFunction( element );
-	return hasImage && element.classList.indexOf( 'mw-ge-recommendedImage' ) !== -1;
+	return hasImage && element.classList.includes( 'mw-ge-recommendedImage' );
 };
 
 module.exports = DMRecommendedImageNode;

@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"Meno25"
+		]
+	},
+	"share": "مشاركة",
+	"share-desc": "يضيف شريطًا جانبيًا يسمح للمستخدمين بمشاركة مقالات الويكي بسهولة على منصات الوسائط الاجتماعية",
+	"share-header": "شارك هذا",
+	"share-email": "المشاركة عبر البريد الإلكتروني",
+	"share-facebook": "شارك على الفيسبوك",
+	"share-linkedin": "شارك على LinkedIn",
+	"share-pinterest": "شارك على بينتريست",
+	"share-reddit": "شارك على Reddit",
+	"share-telegram": "شارك على تيليجرام",
+	"share-tumblr": "شارك على Tumblr",
+	"share-twitter": "شارك على تويتر",
+	"share-vk": "شارك على VK",
+	"share-weibo": "شارك على ويبو",
+	"share-whatsapp": "شارك على واتساب",
+	"share-preftoggle": "تعطيل عرض روابط المشاركة في الشريط الجانبي؟",
+	"right-viewsharelinks": "عرض مشاركة الشريط الجانبي",
+	"action-viewsharelinks": "عرض مشاركة الشريط الجانبي"
+}

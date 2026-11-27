@@ -8,13 +8,14 @@ const
 let mobileoptions, sandbox;
 QUnit.module( 'mobile.special.mobileoptions.scripts', {
 	beforeEach: function () {
-		sandbox = sinon.sandbox.create();
+		sandbox = sinon.createSandbox();
 		dom.setUp( sandbox, global );
 		jQuery.setUp( sandbox, global );
 		oo.setUp( sandbox, global );
 		mediaWiki.setUp( sandbox, global );
 		mw.requestIdleCallback = ( callback ) => callback();
 		mw.message = () => ( {
+			parse: () => 'parsed:msg',
 			text: () => 'msg',
 			exists: () => true
 		} );
@@ -55,24 +56,22 @@ QUnit.module( 'mobile.special.mobileoptions.scripts', {
 	}
 } );
 
-QUnit.test( 'addClientPreferencesToForm (named user)', function ( assert ) {
-	return new Promise( ( resolve ) => {
-		mw.user.isNamed = () => true;
-		const callback = () => {
-			assert.strictEqual( document.documentElement.classList.contains( 'favenum-clientpref-2' ), false, 'was toggled off' );
-			resolve();
-		};
+QUnit.test( 'addClientPreferencesToForm (named user)', ( assert ) => new Promise( ( resolve ) => {
+	mw.user.isNamed = () => true;
+	const callback = () => {
+		assert.strictEqual( document.documentElement.classList.contains( 'favenum-clientpref-2' ), false, 'was toggled off' );
+		resolve();
+	};
 		// Must be in the DOM and have an ID for this to work.
-		const $form = $( '<form id="testcaseClientprefs">' ).appendTo( document.body );
-		document.documentElement.classList.add( 'favenum-clientpref-2' );
-		mobileoptions.test.addClientPreferencesToForm( $form, {
-			favenum: {
-				callback,
-				options: [ 1, 2, 3 ],
-				preferenceKey: 'favoriteNumber'
-			}
-		} ).then( ( cp ) => {
-			cp.querySelector( 'input' ).dispatchEvent( new Event( 'change' ) );
-		} );
+	const $form = $( '<form id="testcaseClientprefs">' ).appendTo( document.body );
+	document.documentElement.classList.add( 'favenum-clientpref-2' );
+	mobileoptions.test.addClientPreferencesToForm( $form, {
+		favenum: {
+			callback,
+			options: [ 1, 2, 3 ],
+			preferenceKey: 'favoriteNumber'
+		}
+	} ).then( ( cp ) => {
+		cp.querySelector( 'input' ).dispatchEvent( new Event( 'change' ) );
 	} );
-} );
+} ) );

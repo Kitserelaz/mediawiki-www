@@ -13,7 +13,7 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "parserhook",
 	"requires": {
-		"MediaWiki": ">= 1.41.0"
+		"MediaWiki": ">= 1.45.0"
 	},
 	"attributes": {
 		"CommunityConfiguration": {
@@ -45,15 +45,11 @@
 	"ExtensionMessagesFiles": {
 		"BabelMagic": "Babel.i18n.magic.php"
 	},
-	"AutoloadClasses": {
-		"Babel": "includes/Babel.php",
-		"MediaWiki\\Babel\\Babel": "includes/Babel.php"
-	},
 	"AutoloadNamespaces": {
 		"MediaWiki\\Babel\\": "includes/"
 	},
 	"TestAutoloadClasses": {
-		"MediaWiki\\Extension\\CommunityConfiguration\\Tests\\SchemaProviderTestCase": "../CommunityConfiguration/tests/phpunit/integration/SchemaProviderTestCase.php"
+		"MediaWiki\\Babel\\Maintenance\\MigrateConfigToCommunity": "maintenance/migrateConfigToCommunity.php"
 	},
 	"APIMetaModules": {
 		"babel": {
@@ -65,7 +61,7 @@
 	},
 	"ResourceModules": {
 		"ext.babel": {
-			"styles": "resources/ext.babel.css"
+			"styles": "resources/ext.babel.less"
 		}
 	},
 	"ResourceFileModulePaths": {
@@ -135,9 +131,6 @@
 			"value": true
 		}
 	},
-	"TrackingCategories": [
-		"babel-template-params-category"
-	],
 	"ServiceWiringFiles": [
 		"ServiceWiring.php"
 	],

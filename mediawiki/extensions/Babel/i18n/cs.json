@@ -9,7 +9,9 @@
 			"Matěj Grabovský",
 			"Matěj Suchánek",
 			"Mormegil",
-			"Mr. Richard Bolla"
+			"Mr. Richard Bolla",
+			"Polda18",
+			"WikipedistaOndra"
 		]
 	},
 	"babel": "Babylon – informace o&nbsp;{{GENDER:$1|uživateli|uživatelce|uživateli}}",
@@ -17,8 +19,8 @@
 	"babel-url": "Project:Babylon",
 	"babel-footer-url": ":Kategorie:Babylon – Uživatelé podle jazyka",
 	"babel-autocreate-reason": "Automatické založení stránky kategorie pro [[$1|Babylon]]",
-	"babel-autocreate-text-levels": "Uživatelé v této kategorii označili svou úroveň znalostí jazyka $2 jako $1.",
-	"babel-autocreate-text-main": "Uživatelé v této kategorii se přihlásili ke znalosti jazyka $1.",
+	"babel-autocreate-text-levels": "Uživatelé v této kategorii označili svou úroveň znalostí jazyka $2 jako $1.\n$4",
+	"babel-autocreate-text-main": "Uživatelé v této kategorii se přihlásili ke znalosti jazyka $1.\n$3",
 	"babel-0": "{{GENDER:$4|Tento uživatel|Tato uživatelka|Tento uživatel}} [[$1|nerozumí]] [[$2|$3]] (nebo rozumí se značnými problémy).",
 	"babel-1": "{{GENDER:$4|Tento uživatel|Tato uživatelka}} má [[$1|základní]] znalosti [[$2|{{GRAMMAR:2sg|$3}}]].",
 	"babel-2": "{{GENDER:$4|Tento uživatel|Tato uživatelka}} má znalosti [[$2|{{GRAMMAR:2sg|$3}}]] na [[$1|středně pokročilé]] úrovni.",
@@ -35,5 +37,18 @@
 	"babel-N-n": "{{GENDER:$4|Tento uživatel|Tato uživatelka}} je [[$1|{{GENDER:$4|rodilý|rodilá}} mluvčí]] [[$2|češtiny]].",
 	"babel-footer": "Uživatelé podle jazyka",
 	"babel-template-params-category": "Stránky používající babel s pojmenovanými parametry",
-	"babel-template-params-category-desc": "Tato stránka předává do funkce parseru #babel parametr jméno=hodnota. Chování takových parametrů [[phab:T327847|se může v blízké budoucnosti změnit]]."
+	"babel-template-params-category-desc": "Tato stránka předává do funkce parseru #babel parametr jméno=hodnota. Chování takových parametrů [[phab:T327847|se může v blízké budoucnosti změnit]].",
+	"communityconfiguration-babel-title": "Babel",
+	"communityconfiguration-babel-description": "Přizpůsobte si kategorie generované funkcí parseru #babel.",
+	"communityconfiguration-babel-babelcategorynames-label": "Názvy kategorií podle jazykové úrovně",
+	"communityconfiguration-babel-babelcategorynames-0-label": "Úroveň 0",
+	"communityconfiguration-babel-babelcategorynames-1-label": "Úroveň 1",
+	"communityconfiguration-babel-babelcategorynames-2-label": "Úroveň 2",
+	"communityconfiguration-babel-babelcategorynames-3-label": "Úroveň 3",
+	"communityconfiguration-babel-babelcategorynames-4-label": "Úroveň 4",
+	"communityconfiguration-babel-babelcategorynames-5-label": "Úroveň 5",
+	"communityconfiguration-babel-babelcategorynames-n-label": "Úroveň N",
+	"communityconfiguration-babel-babelmaincategory-label": "Hlavní kategorie",
+	"communityconfiguration-babel-babeluseuserlanguage-control-label": "Použít jazyk uživatele",
+	"communityconfiguration-babel-babelautocreate-control-label": "Automaticky vytvářet kategorie Babel"
 }

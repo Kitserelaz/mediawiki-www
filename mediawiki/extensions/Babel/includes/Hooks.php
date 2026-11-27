@@ -13,12 +13,12 @@ use MediaWiki\Config\Config;
 use MediaWiki\Deferred\LinksUpdate\LinksUpdate;
 use MediaWiki\Hook\LinksUpdateHook;
 use MediaWiki\Hook\ParserFirstCallInitHook;
+use MediaWiki\Parser\Parser;
 use MediaWiki\User\CentralId\CentralIdLookupFactory;
 use MediaWiki\User\Hook\UserGetReservedNamesHook;
 use MediaWiki\User\UserIdentityLookup;
 use MediaWiki\WikiMap\WikiMap;
-use Parser;
-use WANObjectCache;
+use Wikimedia\ObjectCache\WANObjectCache;
 
 /**
  * Hook handler functions for Babel extension.
@@ -29,21 +29,12 @@ class Hooks implements
 	UserGetReservedNamesHook
 {
 
-	private Config $config;
-	private UserIdentityLookup $userIdentityLookup;
-	private CentralIdLookupFactory $centralIdLookupFactory;
-	private WANObjectCache $mainWANObjectCache;
-
 	public function __construct(
-		Config $config,
-		UserIdentityLookup $userIdentityLookup,
-		CentralIdLookupFactory $centralIdLookupFactory,
-		WANObjectCache $mainWANObjectCache
+		private readonly Config $config,
+		private readonly UserIdentityLookup $userIdentityLookup,
+		private readonly CentralIdLookupFactory $centralIdLookupFactory,
+		private readonly WANObjectCache $mainWANObjectCache,
 	) {
-		$this->config = $config;
-		$this->userIdentityLookup = $userIdentityLookup;
-		$this->centralIdLookupFactory = $centralIdLookupFactory;
-		$this->mainWANObjectCache = $mainWANObjectCache;
 	}
 
 	/**
@@ -52,7 +43,7 @@ class Hooks implements
 	 * @param Parser $parser
 	 */
 	public function onParserFirstCallInit( $parser ): void {
-		$parser->setFunctionHook( 'babel', [ Babel::class, 'Render' ] );
+		$parser->setFunctionHook( 'babel', [ Babel::class, 'render' ] );
 	}
 
 	/**

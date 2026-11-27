@@ -43,13 +43,13 @@ function SuggestedEditsModule( config, logger, rootStore ) {
 	this.filters = new FiltersButtonGroupWidget( {
 		topicMatching: this.filtersStore.topicsEnabled,
 		useTopicMatchMode: this.filtersStore.shouldUseTopicMatchMode,
-		mode: this.mode
+		mode: this.mode,
 	}, logger, rootStore )
 		.connect( this, {
 			search: 'fetchTasksAndUpdateView',
 			done: 'filterSelection',
 			cancel: 'restoreState',
-			open: 'onFilterOpen'
+			open: 'onFilterOpen',
 		} );
 	this.newcomerTaskLogger = new NewcomerTaskLogger();
 
@@ -81,7 +81,7 @@ function SuggestedEditsModule( config, logger, rootStore ) {
 	const cardWrapperSelector = '.suggested-edits-card-wrapper',
 		$cardWrapperElement = $( cardWrapperSelector );
 	this.setupQualityGateClickHandling(
-		$cardWrapperElement
+		$cardWrapperElement,
 	);
 	const $previous = $navContainer.find( '.suggested-edits-previous' );
 	const $next = $navContainer.find( '.suggested-edits-next' );
@@ -152,7 +152,7 @@ SuggestedEditsModule.prototype.restoreState = function () {
 /**
  * User has clicked "Done" in the dialog after selecting filters.
  *
- * @param {jQuery.Deferred} [filtersDialogProcess] Promise from the filters ProcessDialog to
+ * @param {jQuery.Deferred} [filtersDialogDeferred] Deferred from the filters ProcessDialog to
  * resolve when the tasks are fetched or reject if the request failed. This is used to show the
  * loading state in the filters dialog.
  *
@@ -160,19 +160,16 @@ SuggestedEditsModule.prototype.restoreState = function () {
  * show the task count when the filter dialog is open. When that's the case, we should use the task
  * queue from the store to avoid making two API calls for the same filters.
  */
-SuggestedEditsModule.prototype.filterSelection = function ( filtersDialogProcess ) {
+SuggestedEditsModule.prototype.filterSelection = function ( filtersDialogDeferred ) {
 	this.isFirstRender = true;
 	this.onFilterClose();
 	const apiPromise = this.tasksStore.fetchTasks( 'suggestedEditsModule.filterSelection' );
-	apiPromise.then( () => {
-		if ( filtersDialogProcess ) {
-			filtersDialogProcess.resolve();
-		}
-	} );
 
-	if ( filtersDialogProcess ) {
-		apiPromise.fail( () => {
-			filtersDialogProcess.reject();
+	if ( filtersDialogDeferred ) {
+		apiPromise.then( () => {
+			filtersDialogDeferred.resolve();
+		}, () => {
+			filtersDialogDeferred.reject();
 		} );
 	}
 };
@@ -188,7 +185,7 @@ SuggestedEditsModule.prototype.fetchTasksAndUpdateView = function () {
 		this.logger.log( 'suggested-edits', this.mode, 'se-fetch-tasks' );
 		return $.Deferred().resolve().promise();
 	} ).catch( ( message ) => {
-		if ( message === null ) {
+		if ( message === 'abort' ) {
 			// XHR abort, not a real error
 			return;
 		}
@@ -261,8 +258,8 @@ SuggestedEditsModule.prototype.updateExtraDataForCurrentCard = function () {
 	this.currentCard = new EditCardWidget(
 		Object.assign(
 			{ extraDataLoaded: true, qualityGateConfig: this.tasksStore.getQualityGateConfig() },
-			this.tasksStore.getCurrentTask()
-		)
+			this.tasksStore.getCurrentTask(),
+		),
 	);
 	this.updateCardElement();
 };
@@ -271,20 +268,18 @@ SuggestedEditsModule.prototype.updateExtraDataForCurrentCard = function () {
  * Update TaskExplanationWidget for the current task
  */
 SuggestedEditsModule.prototype.updateTaskExplanationWidget = function () {
-	const explanationSelector = '.suggested-edits-task-explanation',
-		$explanationElement = $( explanationSelector ),
+	// eslint-disable-next-line no-jquery/no-global-selector
+	const $explanationElement = $( '.suggested-edits-task-explanation' ),
 		currentTask = this.tasksStore.getCurrentTask();
 	if ( currentTask ) {
 		$explanationElement.empty().append(
 			new TaskExplanationWidget( {
 				taskType: currentTask.tasktype,
-				mode: this.mode
-			}, this.logger, ALL_TASK_TYPES ).$element
+				mode: this.mode,
+			}, this.logger, ALL_TASK_TYPES ).$element,
 		);
-		$explanationElement.toggle( true );
-	} else {
-		$explanationElement.toggle( false );
 	}
+	$explanationElement.toggle( !!currentTask );
 };
 
 /**
@@ -352,7 +347,7 @@ SuggestedEditsModule.prototype.showCard = function ( card ) {
 		this.currentCard = new NoResultsWidget( {
 			topicMatching: this.filtersStore.topicsEnabled,
 			topicMatchModeIsAND: this.filtersStore.topicsMatchMode === TOPIC_MATCH_MODES.AND,
-			setMatchModeOr: this.setMatchModeAndSave.bind( this, TOPIC_MATCH_MODES.OR )
+			setMatchModeOr: this.setMatchModeAndSave.bind( this, TOPIC_MATCH_MODES.OR ),
 		} );
 	} else if ( !this.tasksStore.getCurrentTask() ) {
 		this.logger.log( 'suggested-edits', this.mode, 'se-task-pseudo-impression',
@@ -360,7 +355,7 @@ SuggestedEditsModule.prototype.showCard = function ( card ) {
 		this.currentCard = new EndOfQueueWidget( { topicMatching: this.filtersStore.topicsEnabled } );
 	} else {
 		this.currentCard = new EditCardWidget(
-			Object.assign( { qualityGateConfig: this.tasksStore.getQualityGateConfig() }, this.tasksStore.getCurrentTask() )
+			Object.assign( { qualityGateConfig: this.tasksStore.getQualityGateConfig() }, this.tasksStore.getCurrentTask() ),
 		);
 	}
 	if ( this.currentCard instanceof EditCardWidget ) {
@@ -369,7 +364,7 @@ SuggestedEditsModule.prototype.showCard = function ( card ) {
 			'suggested-edits',
 			this.mode,
 			'se-task-impression',
-			{ newcomerTaskToken: this.tasksStore.getNewcomerTaskToken() }
+			{ newcomerTaskToken: this.tasksStore.getNewcomerTaskToken() },
 		);
 	}
 	this.updateCardElement( OO.ui.isMobile() ).then( this.updateControls.bind( this ) );
@@ -381,7 +376,7 @@ SuggestedEditsModule.prototype.showCard = function ( card ) {
 	this.setEditWidgetDisabled( false );
 
 	return this.tasksStore.fetchExtraDataForCurrentTask().then(
-		this.updateExtraDataForCurrentCard.bind( this )
+		this.updateExtraDataForCurrentCard.bind( this ),
 	);
 };
 
@@ -396,14 +391,14 @@ SuggestedEditsModule.prototype.animateCard = function ( $cardElement, $cardWrapp
 	const isGoingBack = this.isGoingBack,
 		$fakeCard = $cardElement.clone(),
 		$overlayContent = this.config.$container.find( '.overlay-content' ),
-		promise = $.Deferred();
+		deferred = $.Deferred();
 
 	// Prevent scrolling while animation is in progress
 	$overlayContent.addClass( 'is-swiping' );
 
 	// A copy of the current card will be animated out.
 	$fakeCard.addClass( [
-		'suggested-edits-card-fake'
+		'suggested-edits-card-fake',
 	] ).removeClass( 'suggested-edits-card' );
 	$cardWrapper.append( $fakeCard );
 	// The current card is positioned off screen so it can be animated in.
@@ -412,7 +407,7 @@ SuggestedEditsModule.prototype.animateCard = function ( $cardElement, $cardWrapp
 	const onTransitionEnd = function () {
 		$fakeCard.remove();
 		$cardElement.off( 'transitionend transitioncancel', onTransitionEnd );
-		promise.resolve();
+		deferred.resolve();
 	};
 
 	// A delay is added to make sure the fake card is shown and the real card is off screen.
@@ -424,7 +419,7 @@ SuggestedEditsModule.prototype.animateCard = function ( $cardElement, $cardWrapp
 		$overlayContent.removeClass( 'is-swiping' );
 	}, 100 );
 
-	return promise;
+	return deferred.promise();
 };
 
 /**
@@ -438,7 +433,7 @@ SuggestedEditsModule.prototype.updateCardElement = function ( shouldAnimateEditC
 		$cardElement = $( cardSelector ),
 		$cardWrapper = $cardElement.closest( '.suggested-edits-card-wrapper' ),
 		isShowingEditCardWidget = this.currentCard instanceof EditCardWidget,
-		promise = $.Deferred(),
+		deferred = $.Deferred(),
 		canAnimate = shouldAnimateEditCard &&
 			isShowingEditCardWidget &&
 			!this.isFirstRender &&
@@ -446,12 +441,12 @@ SuggestedEditsModule.prototype.updateCardElement = function ( shouldAnimateEditC
 
 	if ( canAnimate ) {
 		this.animateCard( $cardElement, $cardWrapper ).then( () => {
-			promise.resolve();
+			deferred.resolve();
 		} );
 	} else {
 		this.isFirstRender = false;
 		$cardElement.empty().append( this.currentCard.$element );
-		promise.resolve();
+		deferred.resolve();
 	}
 
 	this.isShowingPseudoCard = !isShowingEditCardWidget;
@@ -459,11 +454,12 @@ SuggestedEditsModule.prototype.updateCardElement = function ( shouldAnimateEditC
 		.toggleClass( 'pseudo-card', !isShowingEditCardWidget )
 		.toggleClass( 'pseudo-card-eoq', this.currentCard instanceof EndOfQueueWidget );
 	this.setupClickLogging();
+	this.carryOverMpoQueryParameter();
 	if ( isShowingEditCardWidget ) {
 		this.setupEditTypeTracking();
 
 	}
-	return promise;
+	return deferred.promise();
 };
 
 /**
@@ -474,12 +470,12 @@ SuggestedEditsModule.prototype.setupSwipeNavigation = function () {
 		updateBodyClass = function ( isSwipeNavigationEnabled ) {
 			$( document.body ).toggleClass(
 				'growthexperiments--suggestededits-swipe-navigation-enabled',
-				isSwipeNavigationEnabled
+				isSwipeNavigationEnabled,
 			);
 		};
 	this.swipeCard = new SwipePane( this.config.$element, {
 		isRtl: document.documentElement.dir === 'rtl',
-		isHorizontal: true
+		isHorizontal: true,
 	} );
 	this.swipeCard.setToStartHandler( () => {
 		this.onNextCard( true );
@@ -517,20 +513,40 @@ SuggestedEditsModule.prototype.logEditTaskClick = function ( action ) {
 };
 
 /**
+ * The `mpo` query parameter is used for overriding the group of Test Kitchen A/B experiments
+ *
+ * It needs to persist so that the override is still active when the user arrives at the article
+ *
+ * See also https://wikitech.wikimedia.org/wiki/Test_Kitchen/Overriding_experiment_enrollment
+ */
+SuggestedEditsModule.prototype.carryOverMpoQueryParameter = function () {
+	const $link = this.currentCard.$element.find( '.se-card-content' );
+	if ( $link.attr( 'href' ) ) {
+		const url = new URL( $link.attr( 'href' ), window.location.origin );
+		const existingHomepageSearchParams = new URLSearchParams( window.location.search );
+		if ( existingHomepageSearchParams.has( 'mpo' ) ) {
+			url.searchParams.set( 'mpo', existingHomepageSearchParams.get( 'mpo' ) );
+		}
+		$link.attr( 'href', url.toString() );
+	}
+};
+
+/**
  * Log click events on the task card (ie. the user visiting the task page) and pass
  * tracking data so events on the task page can be connected.
  * this.currentCard is expected to contain a valid EditCardWidget.
  */
 SuggestedEditsModule.prototype.setupClickLogging = function () {
-	const $link = this.currentCard.$element.find( '.se-card-content' ),
-		clickId = mw.config.get( 'wgGEHomepagePageviewToken' ),
-		newUrl = $link.attr( 'href' ) ?
-			new mw.Uri( $link.attr( 'href' ) ).extend( {
-				geclickid: clickId,
-				genewcomertasktoken: this.tasksStore.getNewcomerTaskToken(),
-				gesuggestededit: 1
-			} ).toString() :
-			'';
+	const $link = this.currentCard.$element.find( '.se-card-content' );
+	const clickId = mw.config.get( 'wgGEHomepagePageviewToken' );
+	let newUrl = '';
+	if ( $link.attr( 'href' ) ) {
+		const url = new URL( $link.attr( 'href' ), window.location.origin );
+		url.searchParams.set( 'geclickid', clickId );
+		url.searchParams.set( 'genewcomertasktoken', this.tasksStore.getNewcomerTaskToken() );
+		url.searchParams.set( 'gesuggestededit', '1' );
+		newUrl = url.toString();
+	}
 	$link
 		.attr( 'href', newUrl )
 		.on( 'click', () => {
@@ -545,11 +561,13 @@ SuggestedEditsModule.prototype.setupClickLogging = function () {
  * Rewrite the link to contain the task type ID, for later user in guidance.
  */
 SuggestedEditsModule.prototype.setupEditTypeTracking = function () {
-	const $link = this.currentCard.$element.find( '.se-card-content' ),
-		newUrl = $link.attr( 'href' ) ?
-			new mw.Uri( $link.attr( 'href' ) )
-				.extend( { getasktype: this.currentCard.getTaskType() } ).toString() :
-			'';
+	const $link = this.currentCard.$element.find( '.se-card-content' );
+	let newUrl = '';
+	if ( $link.attr( 'href' ) ) {
+		const url = new URL( $link.attr( 'href' ), window.location.origin );
+		url.searchParams.set( 'getasktype', this.currentCard.getTaskType() );
+		newUrl = url.toString();
+	}
 	$link.attr( 'href', newUrl );
 	if ( this.editWidget ) {
 		this.editWidget.setHref( newUrl );
@@ -571,25 +589,25 @@ SuggestedEditsModule.prototype.setupQualityGateClickHandling = function ( $eleme
 				loggers: {
 					'image-recommendation': new ImageSuggestionInteractionLogger( {
 						is_mobile: OO.ui.isMobile(),
-						active_interface: 'qualitygate_dialog'
+						active_interface: 'qualitygate_dialog',
 					} ),
 					'section-image-recommendation': new ImageSuggestionInteractionLogger( {
 						is_mobile: OO.ui.isMobile(),
-						active_interface: 'qualitygate_dialog'
+						active_interface: 'qualitygate_dialog',
 					} ),
 					'link-recommendation': new LinkSuggestionInteractionLogger( {
 						is_mobile: OO.ui.isMobile(),
-						active_interface: 'qualitygate_dialog'
-					} )
+						active_interface: 'qualitygate_dialog',
+					} ),
 				},
 				loggerMetadataOverrides: {
 					newcomer_task_token: this.currentCard.data.token,
 					homepage_pageview_token: mw.config.get(
-						'wgGEHomepagePageviewToken'
+						'wgGEHomepagePageviewToken',
 					),
 					page_id: this.currentCard.getPageId(),
-					page_title: this.currentCard.getDbKey()
-				}
+					page_title: this.currentCard.getDbKey(),
+				},
 				/* eslint-enable camelcase */
 			} );
 			return qualityGate.checkAll( this.currentCard.data.tasktype );
@@ -607,7 +625,7 @@ SuggestedEditsModule.prototype.setupEditWidget = function ( $container ) {
 		icon: 'edit',
 		label: mw.message( 'growthexperiments-homepage-suggestededits-edit-card' ).text(),
 		flags: [ 'primary', 'progressive' ],
-		classes: [ 'suggested-edits-footer-navigation-edit-button' ]
+		classes: [ 'suggested-edits-footer-navigation-edit-button' ],
 	} );
 	const $editButton = $container.find( '.suggested-edits-footer-navigation-edit-button' );
 	$editButton.empty().append( this.editWidget.$element );

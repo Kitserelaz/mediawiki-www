@@ -2,34 +2,20 @@
 
 namespace GrowthExperiments\HelpPanel\Tips;
 
-use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
 use LogicException;
-use MessageLocalizer;
+use MediaWiki\Language\MessageLocalizer;
 
 class TipLoader {
-
-	/**
-	 * @var ConfigurationLoader
-	 */
-	private $configurationLoader;
 
 	private const DEFAULT_EDITOR = 'visualeditor';
 
 	private const DEFAULT_SKIN = 'vector';
-	/**
-	 * @var MessageLocalizer
-	 */
-	private $messageLocalizer;
+	private MessageLocalizer $messageLocalizer;
 
-	/**
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param MessageLocalizer $messageLocalizer
-	 */
 	public function __construct(
-		ConfigurationLoader $configurationLoader, MessageLocalizer $messageLocalizer
+		MessageLocalizer $messageLocalizer
 	) {
-		$this->configurationLoader = $configurationLoader;
 		$this->messageLocalizer = $messageLocalizer;
 	}
 
@@ -62,10 +48,6 @@ class TipLoader {
 		}, $tipTree->getStepNames() ) );
 	}
 
-	/**
-	 * @param array $taskTypes
-	 * @return array
-	 */
 	private function buildExtraData( array $taskTypes ): array {
 		return array_map( static function ( TaskType $taskType ) {
 			return [ 'learnMoreLink' => $taskType->getLearnMoreLink() ];
@@ -206,14 +188,6 @@ class TipLoader {
 		return $msg->isDisabled() ? '' : $msg->getKey();
 	}
 
-	/**
-	 * @param string $skinName
-	 * @param string $editor
-	 * @param string $taskTypeId
-	 * @param string $tipTypeId
-	 * @param string $step
-	 * @return string
-	 */
 	private function buildMessageKey(
 		string $skinName, string $editor, string $taskTypeId, string $tipTypeId, string $step
 	): string {

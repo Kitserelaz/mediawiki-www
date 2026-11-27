@@ -19,7 +19,6 @@ use MediaWiki\User\UserIdentity;
 
 /**
  * A TaskSuggester decorator that injects data for task type "quality gates" into a TaskSet.
- *
  */
 class QualityGateDecorator implements TaskSuggester {
 
@@ -47,14 +46,6 @@ class QualityGateDecorator implements TaskSuggester {
 	/** @var CampaignConfig */
 	private $campaignConfig;
 
-	/**
-	 * @param TaskSuggester $taskSuggester
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param ImageRecommendationSubmissionLogFactory $imageRecommendationSubmissionLogFactory
-	 * @param SectionImageRecommendationSubmissionLogFactory $sectionImageRecommendationSubmissionLogFactory
-	 * @param LinkRecommendationSubmissionLogFactory $linkRecommendationSubmissionLogFactory
-	 * @param CampaignConfig $campaignConfig
-	 */
 	public function __construct(
 		TaskSuggester $taskSuggester,
 		ConfigurationLoader $configurationLoader,
@@ -115,7 +106,7 @@ class QualityGateDecorator implements TaskSuggester {
 							$user,
 							$linkRecommendationTaskType
 						),
-						'dailyCount' => $this->getLinkRecommendationTasksDoneByUserForCurrentDay( $user )
+						'dailyCount' => $this->getLinkRecommendationTasksDoneByUserForCurrentDay( $user ),
 					] );
 			}
 		}
@@ -147,10 +138,6 @@ class QualityGateDecorator implements TaskSuggester {
 			>= $imageRecommendationTaskType->getMaxTasksPerDay();
 	}
 
-	/**
-	 * @param UserIdentity $user
-	 * @return int
-	 */
 	private function getImageRecommendationTasksDoneByUserForCurrentDay(
 		UserIdentity $user
 	): int {
@@ -181,10 +168,6 @@ class QualityGateDecorator implements TaskSuggester {
 			>= $linkRecommendationTaskType->getMaxTasksPerDay();
 	}
 
-	/**
-	 * @param UserIdentity $user
-	 * @return int
-	 */
 	private function getLinkRecommendationTasksDoneByUserForCurrentDay(
 		UserIdentity $user
 	): int {
@@ -215,10 +198,6 @@ class QualityGateDecorator implements TaskSuggester {
 			>= $sectionImageRecommendationTaskType->getMaxTasksPerDay();
 	}
 
-	/**
-	 * @param UserIdentity $user
-	 * @return int
-	 */
 	private function getSectionImageRecommendationTasksDoneByUserForCurrentDay(
 		UserIdentity $user
 	): int {

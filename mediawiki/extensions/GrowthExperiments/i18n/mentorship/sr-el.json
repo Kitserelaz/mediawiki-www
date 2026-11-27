@@ -4,7 +4,6 @@
 	},
 	"growthexperiments-mentor-dashboard-title": "Mentorska tabla",
 	"growthexperiments-mentor-dashboard-pt-link": "Mentorska tabla",
-	"growthexperiments-mentor-dashboard-disabled": "Mentorska kontrolna tabla nije omogućena na ovom projektu.",
 	"growthexperiments-mentor-dashboard-must-be-mentor": "Da biste uključili mentorsku kontrolnu tablu, {{GENDER:|morate}} se najpre [[$1|prijaviti za mentora]].",
 	"growthexperiments-mentor-dashboard-misconfigured-missing-list": "Pre upotrebe mentorske kontrolne table treba podesiti spisak mentora. Radi toga se administrator može koristiti stranicom [[Special:EditGrowthConfig]].",
 	"growthexperiments-mentor-dashboard-mentee-overview-headline": "{{GENDER:|Vaše}} novajlije",
@@ -182,5 +181,6 @@
 	"growthexperiments-mentorship-enrollasmentor-form-message-help": "Predstavljanje sebe kao {{GENDER:|mentora|mentorku}}. Ne više od 240 karaktera i bez vikiteksta!",
 	"growthexperiments-mentorship-enrollasmentor-enroll": "Upiši me",
 	"growthexperiments-mentorship-enrollasmentor-success": "Sada ste {{GENDER:|mentor|mentorka}}. Nastavite na [[Special:MentorDashboard|mentorsku tablu]] sada.",
-	"growthexperiments-mentorship-enrollasmentor-summary": "Dodao sebe kao mentora"
+	"growthexperiments-mentorship-enrollasmentor-summary": "Dodao sebe kao mentora",
+	"tag-mentor_list_change": "Promenjen spisak mentora"
 }

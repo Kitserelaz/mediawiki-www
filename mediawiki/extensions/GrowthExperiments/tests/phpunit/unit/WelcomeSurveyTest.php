@@ -6,7 +6,7 @@ use GrowthExperiments\WelcomeSurvey;
 use MediaWiki\Config\HashConfig;
 use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Context\RequestContext;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\User\Options\UserOptionsManager;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
@@ -183,12 +183,12 @@ class WelcomeSurveyTest extends MediaWikiUnitTestCase {
 		static $counter = 1;
 		/** @var User|MockObject $mockUser */
 		$mockUser = $this->createNoOpMock( User::class,
-			[ 'getName', 'getRegistration', 'getInstanceForUpdate' ] );
+			[ 'getName', 'getRegistration', 'getInstanceFromPrimary' ] );
 		$mockUser->method( 'getName' )->willReturn( 'TestUser' . $counter++ );
 		$mockUser->method( 'getRegistration' )->willReturnCallback( static function () use ( $registrationDate ) {
 			return wfTimestampOrNull( TS_MW, $registrationDate );
 		} );
-		$mockUser->method( 'getInstanceForUpdate' )->willReturnSelf();
+		$mockUser->method( 'getInstanceFromPrimary' )->willReturnSelf();
 		return $mockUser;
 	}
 

@@ -3,15 +3,17 @@
 namespace GrowthExperiments\Tests\Integration;
 
 use GrowthExperiments\GrowthExperimentsServices;
+use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
 use MediaWiki\Extension\CommunityConfiguration\Tests\SchemaProviderTestCase;
+use MediaWiki\MediaWikiServices;
 use MockMessageLocalizer;
 use StatusValue;
+use Wikimedia\JsonCodec\Hint;
 
 /**
  * @covers \GrowthExperiments\NewcomerTasks\ConfigurationLoader\CommunityConfigurationLoader
- *
- * Conceptually, it especially covers @see \GrowthExperiments\Config\Schemas\SuggestedEditsSchema,
- * but that class does not contain any executable code.
+ * @covers \GrowthExperiments\Config\Schemas\SuggestedEditsSchema
+ * @covers \GrowthExperiments\Config\Providers\SuggestedEditsConfigProvider
  *
  * @group Database
  */
@@ -29,11 +31,14 @@ class SuggestedEditsSchemaTest extends SchemaProviderTestCase {
 		parent::setUp();
 
 		$this->overrideConfigValue( 'GEHomepageSuggestedEditsEnabled', true );
+		$this->overrideConfigValue( 'GEReviseToneSuggestedEditEnabled', true );
 	}
 
 	public function testDefaultTaskTypesDataWithEmptyConfig(): void {
 		$this->overrideConfigValues( [
-			'GEUseCommunityConfigurationExtension' => true,
+			'GEReviseToneSuggestedEditEnabled' => true,
+			'GEReviseToneExcludedTemplates' => [],
+			'GEReviseToneExcludedCategories' => [],
 			'GENewcomerTasksLinkRecommendationsEnabled' => true,
 			'GENewcomerTasksImageRecommendationsEnabled' => true,
 			'GENewcomerTasksSectionImageRecommendationsEnabled' => true,
@@ -59,6 +64,7 @@ class SuggestedEditsSchemaTest extends SchemaProviderTestCase {
 			);
 		}
 
+		$jsonCodec = MediaWikiServices::getInstance()->getJsonCodec();
 		$this->assertEquals( [
 			[
 				'id' => 'copyedit',
@@ -142,7 +148,7 @@ class SuggestedEditsSchemaTest extends SchemaProviderTestCase {
 					'maxTasksPerDay' => 25,
 					'minimumCaptionCharacterLength' => 5,
 					'minimumImageSize' => [
-						'width' => 100
+						'width' => 100,
 					],
 				],
 			],
@@ -165,7 +171,7 @@ class SuggestedEditsSchemaTest extends SchemaProviderTestCase {
 					'maxTasksPerDay' => 25,
 					'minimumCaptionCharacterLength' => 5,
 					'minimumImageSize' => [
-						'width' => 100
+						'width' => 100,
 					],
 				],
 			],
@@ -196,14 +202,35 @@ class SuggestedEditsSchemaTest extends SchemaProviderTestCase {
 					'maxTasksPerDay' => 25,
 					'underlinkedWeight' => 0.5,
 					'underlinkedMinLength' => 300,
+					'maximumEditsTaskIsAvailable' => null,
 				],
 			],
-		], array_map( static fn ( $taskType ) => $taskType->jsonSerialize(), $taskTypes ) );
+			[
+				'id' => 'revise-tone',
+				'difficulty' => 'easy',
+				'extraData' => [
+					'learnMoreLink' => '',
+				],
+				'handlerId' => 'revise-tone',
+				'iconData' => [
+					'icon' => 'robot-task-type-easy',
+					'filterIcon' => 'robot',
+					'descriptionMessageKey' => 'growthexperiments-homepage-suggestededits-tasktype-machine-description',
+				],
+				'excludedTemplates' => [],
+				'excludedCategories' => [],
+				'_type_' => 'GrowthExperiments\NewcomerTasks\TaskType\ReviseToneTaskType',
+			],
+		], self::removeComplexMarkers( $jsonCodec->toJsonArray(
+			$taskTypes, Hint::build( TaskType::class, Hint::LIST )
+		) ) );
 	}
 
 	public function testDefaultTaskTypesDataWithPartialConfig(): void {
 		$this->overrideConfigValues( [
-			'GEUseCommunityConfigurationExtension' => true,
+			'GEReviseToneSuggestedEditEnabled' => true,
+			'GEReviseToneExcludedTemplates' => [ 'Foo' ],
+			'GEReviseToneExcludedCategories' => [ 'Bar' ],
 			'GENewcomerTasksLinkRecommendationsEnabled' => true,
 			'GENewcomerTasksImageRecommendationsEnabled' => true,
 			'GENewcomerTasksSectionImageRecommendationsEnabled' => true,
@@ -253,6 +280,7 @@ JSON;
 			);
 		}
 
+		$jsonCodec = MediaWikiServices::getInstance()->getJsonCodec();
 		$this->assertEquals( [
 			[
 				'id' => 'copyedit',
@@ -323,7 +351,7 @@ JSON;
 					'maxTasksPerDay' => 25,
 					'minimumCaptionCharacterLength' => 5,
 					'minimumImageSize' => [
-						'width' => 100
+						'width' => 100,
 					],
 				],
 			],
@@ -346,7 +374,7 @@ JSON;
 					'maxTasksPerDay' => 25,
 					'minimumCaptionCharacterLength' => 5,
 					'minimumImageSize' => [
-						'width' => 100
+						'width' => 100,
 					],
 				],
 			],
@@ -377,8 +405,41 @@ JSON;
 					'maxTasksPerDay' => 25,
 					'underlinkedWeight' => 0.5,
 					'underlinkedMinLength' => 300,
+					'maximumEditsTaskIsAvailable' => null,
 				],
 			],
-		], array_values( array_map( static fn ( $taskType ) => $taskType->jsonSerialize(), $taskTypes ) ) );
+			[
+				'id' => 'revise-tone',
+				'difficulty' => 'easy',
+				'extraData' => [
+					'learnMoreLink' => '',
+				],
+				'handlerId' => 'revise-tone',
+				'iconData' => [
+					'icon' => 'robot-task-type-easy',
+					'filterIcon' => 'robot',
+					'descriptionMessageKey' => 'growthexperiments-homepage-suggestededits-tasktype-machine-description',
+				],
+				'excludedTemplates' => [ [ 10, 'Foo' ] ],
+				'excludedCategories' => [ [ 14, 'Bar' ] ],
+				'_type_' => 'GrowthExperiments\NewcomerTasks\TaskType\ReviseToneTaskType',
+			],
+		], self::removeComplexMarkers( $jsonCodec->toJsonArray(
+			array_values( $taskTypes ), Hint::build( TaskType::class, Hint::LIST )
+		) ) );
+	}
+
+	private static function removeComplexMarkers( array $json ) {
+		// Workaround T367584 so the test doesn't break when JsonCodec
+		// stops adding _complex_ fields in for backward compatibility.
+		if ( isset( $json['_complex_'] ) ) {
+			unset( $json['_complex_'] );
+			foreach ( $json as $key => &$value ) {
+				if ( is_array( $value ) ) {
+					$value = self::removeComplexMarkers( $value );
+				}
+			}
+		}
+		return $json;
 	}
 }

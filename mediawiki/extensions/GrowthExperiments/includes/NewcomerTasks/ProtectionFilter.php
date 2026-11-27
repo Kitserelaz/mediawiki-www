@@ -3,7 +3,7 @@
 namespace GrowthExperiments\NewcomerTasks;
 
 use GrowthExperiments\NewcomerTasks\Task\TaskSet;
-use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Title\TitleFactory;
 use Wikimedia\Rdbms\IConnectionProvider;
 
@@ -20,11 +20,6 @@ class ProtectionFilter extends AbstractTaskSetFilter implements TaskSetFilter {
 
 	private IConnectionProvider $connectionProvider;
 
-	/**
-	 * @param TitleFactory $titleFactory
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param IConnectionProvider $connectionProvider
-	 */
 	public function __construct(
 		TitleFactory $titleFactory,
 		LinkBatchFactory $linkBatchFactory,
@@ -49,8 +44,10 @@ class ProtectionFilter extends AbstractTaskSetFilter implements TaskSetFilter {
 		$validTasks = [];
 
 		foreach ( $taskSet as $task ) {
-			$title = $this->titleFactory->newFromLinkTarget( $task->getTitle() );
-			$validTasks[ $title->getArticleID() ] = $task;
+			$articleId = $this->titleFactory->newFromLinkTarget( $task->getTitle() )->getArticleID();
+			if ( $articleId ) {
+				$validTasks[ $articleId ] = $task;
+			}
 		}
 		// Do a single batch query instead of several individual queries with RestrictionStore.
 		// In the longer run, adding batch querying to RestrictionStore itself would be nice.
@@ -61,7 +58,7 @@ class ProtectionFilter extends AbstractTaskSetFilter implements TaskSetFilter {
 				->from( 'page_restrictions' )
 				->where( [
 					'pr_page' => array_keys( $validTasks ),
-					'pr_type' => 'edit'
+					'pr_type' => 'edit',
 				] )
 				->caller( __METHOD__ )
 				->fetchResultSet();

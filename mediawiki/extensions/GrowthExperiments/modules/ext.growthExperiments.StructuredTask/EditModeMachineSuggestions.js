@@ -28,7 +28,7 @@ EditModeMachineSuggestions.prototype.switch = function () {
 		'editmode_select',
 		/* eslint-disable camelcase */
 		{ selected_mode: editMode.toLowerCase() },
-		{ active_interface: 'machinesuggestions_mode' }
+		{ active_interface: 'machinesuggestions_mode' },
 		/* eslint-enable camelcase */
 	);
 	if ( this.toolbar.getTarget().getSurface().getMode() === editMode ) {
@@ -42,7 +42,7 @@ EditModeMachineSuggestions.prototype.switch = function () {
  */
 EditModeMachineSuggestions.prototype.onUpdateState = function () {
 	EditModeMachineSuggestions.super.prototype.onUpdateState.apply( this, arguments );
-	this.setActive( !new mw.Uri().query.hideMachineSuggestions );
+	this.setActive( !new URL( window.location.href ).searchParams.has( 'hideMachineSuggestions' ) );
 };
 
 module.exports = EditModeMachineSuggestions;

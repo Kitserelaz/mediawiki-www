@@ -27,7 +27,6 @@ const { cdxIconExpand, cdxIconCollapse } = require( '../../../vue-components/ico
 const MenteeFiltersForm = require( './MenteeFiltersForm.vue' );
 // @vue/component
 module.exports = exports = {
-	compatConfig: { MODE: 3 },
 	compilerOptions: { whitespace: 'condense' },
 	components: {
 		CdxButton,
@@ -104,7 +103,7 @@ module.exports = exports = {
 	&__form {
 		width: 320px;
 		position: absolute;
-		z-index: 1;
+		z-index: @z-index-above-content;
 		top: 2px;
 		.popover-base();
 	}

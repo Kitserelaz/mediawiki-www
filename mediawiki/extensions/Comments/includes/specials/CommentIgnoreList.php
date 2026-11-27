@@ -2,16 +2,27 @@
 /**
  * A special page for displaying the list of users whose comments you're
  * ignoring.
+ *
  * @file
  * @ingroup Extensions
  */
+
+use MediaWiki\Html\Html;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\User\User;
+use MediaWiki\User\UserFactory;
+
 class CommentIgnoreList extends SpecialPage {
+	private UserFactory $userFactory;
 
 	/**
 	 * Constructor -- set up the new special page
 	 */
-	public function __construct() {
+	public function __construct(
+		UserFactory $userFactory
+	) {
 		parent::__construct( 'CommentIgnoreList' );
+		$this->userFactory = $userFactory;
 	}
 
 	public function doesWrites() {
@@ -73,7 +84,7 @@ class CommentIgnoreList extends SpecialPage {
 				}
 
 				$user_name = htmlspecialchars_decode( $user_name );
-				$blockedUser = User::newFromName( $user_name );
+				$blockedUser = $this->userFactory->newFromName( $user_name );
 
 				if ( $blockedUser instanceof User ) {
 					CommentFunctions::deleteBlock( $user, $blockedUser );
@@ -116,7 +127,7 @@ class CommentIgnoreList extends SpecialPage {
 		if ( $res->numRows() > 0 ) {
 			$out = '<ul>';
 			foreach ( $res as $row ) {
-				$user = User::newFromActorId( $row->cb_actor_blocked );
+				$user = $this->userFactory->newFromActorId( $row->cb_actor_blocked );
 				if ( !$user ) {
 					continue;
 				}
@@ -132,7 +143,7 @@ class CommentIgnoreList extends SpecialPage {
 			$out .= '</ul>';
 		} else {
 			$out = '<div class="comment_blocked_user">' .
-				$this->msg( 'comments-ignore-no-users' )->text() . '</div>';
+				$this->msg( 'comments-ignore-no-users' )->escaped() . '</div>';
 		}
 		return $out;
 	}
@@ -152,8 +163,8 @@ class CommentIgnoreList extends SpecialPage {
 				<form action="" method="post" name="comment_block">' .
 					Html::hidden( 'user', $user_name ) . "\n" .
 					Html::hidden( 'token', $this->getUser()->getEditToken() ) . "\n" .
-					'<input type="submit" class="site-button" value="' . $this->msg( 'comments-ignore-unblock' )->text() . '"  />
-					<input type="button" class="site-button" value="' . $this->msg( 'comments-ignore-cancel' )->text() . '" onclick="history.go(-1)" />
+					'<input type="submit" class="site-button" value="' . $this->msg( 'comments-ignore-unblock' )->escaped() . '"  />
+					<input type="button" class="site-button" value="' . $this->msg( 'comments-ignore-cancel' )->escaped() . '" onclick="history.go(-1)" />
 				</form>
 			</div>';
 		return $out;

@@ -14,7 +14,6 @@ use MediaWiki\Rest\SimpleHandler;
 use MediaWiki\Rest\TokenAwareHandlerTrait;
 use MediaWiki\Rest\Validator\Validator;
 use MediaWiki\Revision\RevisionLookup;
-use MediaWiki\Status\Status;
 use MediaWiki\Title\TitleFactory;
 use Wikimedia\Message\MessageValue;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -31,12 +30,6 @@ class AddImageFeedbackHandler extends SimpleHandler {
 	private ConfigurationLoader $configurationLoader;
 	private AddImageSubmissionHandler $addImageSubmissionHandler;
 
-	/**
-	 * @param TitleFactory $titleFactory
-	 * @param RevisionLookup $revisionLookup
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param AddImageSubmissionHandler $addImageSubmissionHandler
-	 */
 	public function __construct(
 		TitleFactory $titleFactory,
 		RevisionLookup $revisionLookup,
@@ -49,22 +42,24 @@ class AddImageFeedbackHandler extends SimpleHandler {
 		$this->addImageSubmissionHandler = $addImageSubmissionHandler;
 	}
 
+	/** @inheritDoc */
 	public function run() {
 		$authority = $this->getAuthority();
 		$user = $authority->getUser();
 		$title = $this->titleFactory->newFromLinkTarget( $this->getValidatedParams()['title'] );
 		$data = $this->getValidatedBody() ?? [];
 		$editRevId = $data['editRevId'];
+		$accepted = $data['accepted'];
 
 		if ( !$authority->isNamed() ) {
 			throw $this->makeException( 'rest-permission-denied-anon', [], 401 );
 		}
-		if ( $data['accepted'] && !$editRevId ) {
+		if ( $accepted && !$editRevId ) {
 			throw $this->makeException( 'growthexperiments-addimage-feedback-accepted-editrevid' );
-		} elseif ( !$data['accepted'] && $editRevId ) {
+		} elseif ( !$accepted && $editRevId ) {
 			throw $this->makeException( 'growthexperiments-addimage-feedback-rejected-editrevid' );
 		}
-		if ( $data['accepted'] && ( $data['caption'] ?? null ) === null ) {
+		if ( $accepted && ( $data['caption'] ?? null ) === null ) {
 			throw $this->makeException( 'growthexperiments-addimage-feedback-accepted-caption' );
 		}
 
@@ -108,10 +103,11 @@ class AddImageFeedbackHandler extends SimpleHandler {
 		}
 		if ( !$status->isGood() ) {
 			Util::logStatus( $status );
-			// There isn't any good way to convert a Message into a MessageValue.
-			$errorKey = ( new ApiMessage( Status::wrap( $status )->getMessage() ) )->getApiCode();
-			throw new HttpException(
-				Status::wrap( $status )->getMessage( false, false, 'en' )->text(),
+			// This assumes that there's no more than one message in the status object
+			$msg = $status->getMessages()[0];
+			$errorKey = ( new ApiMessage( $msg ) )->getApiCode();
+			throw new LocalizedHttpException(
+				MessageValue::newFromSpecifier( $msg ),
 				$status->isOK() ? 400 : 500,
 				[ 'errorKey' => $errorKey ]
 			);
@@ -129,7 +125,7 @@ class AddImageFeedbackHandler extends SimpleHandler {
 				ParamValidator::PARAM_REQUIRED => true,
 				TitleDef::PARAM_RETURN_OBJECT => true,
 				TitleDef::PARAM_MUST_EXIST => true,
-			]
+			],
 		];
 	}
 
@@ -174,7 +170,7 @@ class AddImageFeedbackHandler extends SimpleHandler {
 				self::PARAM_SOURCE => 'body',
 				ParamValidator::PARAM_TYPE => 'integer',
 				ParamValidator::PARAM_REQUIRED => false,
-			]
+			],
 		] + $this->getTokenParamDefinition();
 	}
 
@@ -186,7 +182,7 @@ class AddImageFeedbackHandler extends SimpleHandler {
 		$this->validateToken();
 	}
 
-	private function makeException( string $messageKey, array $params = [], int $errorCode = 400 ) {
+	private function makeException( string $messageKey, array $params = [], int $errorCode = 400 ): HttpException {
 		return new LocalizedHttpException( new MessageValue( $messageKey, $params ), $errorCode );
 	}
 

@@ -1,4 +1,4 @@
-let addLinkModules, addImageModules, addSectionImageModules;
+let addLinkModules, addImageModules, addSectionImageModules, reviseToneModules;
 
 function addLink() {
 	if ( !addLinkModules ) {
@@ -12,7 +12,7 @@ function addLink() {
 			RecommendedLinkToolbarDialog: require( './addlink/RecommendedLinkToolbarDialog.js' ),
 			RecommendedLinkRejectionDialog: require( './addlink/RecommendedLinkRejectionDialog.js' ),
 			AddLinkSaveDialog: require( './addlink/AddLinkSaveDialog.js' ),
-			LinkSuggestionInteractionLogger: require( './addlink/LinkSuggestionInteractionLogger.js' )
+			LinkSuggestionInteractionLogger: require( './addlink/LinkSuggestionInteractionLogger.js' ),
 		};
 	}
 	return addLinkModules;
@@ -26,7 +26,7 @@ function addImage() {
 			RecommendedImageToolbarDialog: require( './addimage/RecommendedImageToolbarDialog.js' ),
 			AddImageSaveDialog: require( './addimage/AddImageSaveDialog.js' ),
 			ImageSuggestionInteractionLogger: require( './addimage/ImageSuggestionInteractionLogger.js' ),
-			AddImageUtils: require( './addimage/AddImageUtils.js' )
+			AddImageUtils: require( './addimage/AddImageUtils.js' ),
 		};
 	}
 	return addImageModules;
@@ -40,10 +40,19 @@ function addSectionImage() {
 			RecommendedSectionImageToolbarDialog: require( './addsectionimage/RecommendedSectionImageToolbarDialog.js' ),
 			AddSectionImageSaveDialog: require( './addimage/AddImageSaveDialog.js' ),
 			ImageSuggestionInteractionLogger: require( './addimage/ImageSuggestionInteractionLogger.js' ),
-			AddImageUtils: require( './addimage/AddImageUtils.js' )
+			AddImageUtils: require( './addimage/AddImageUtils.js' ),
 		};
 	}
 	return addSectionImageModules;
+}
+
+function reviseTone() {
+	if ( !reviseToneModules ) {
+		reviseToneModules = {
+			ReviseToneInitializer: require( './revisetone/ReviseToneInitializer.js' ),
+		};
+	}
+	return reviseToneModules;
 }
 
 module.exports = {
@@ -58,5 +67,6 @@ module.exports = {
 	// Lazy-load files specific to a task type.
 	addLink: addLink,
 	addImage: addImage,
-	addSectionImage: addSectionImage
+	addSectionImage: addSectionImage,
+	reviseTone,
 };

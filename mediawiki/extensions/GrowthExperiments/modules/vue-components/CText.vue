@@ -13,24 +13,23 @@ const { ref, inject } = require( 'vue' );
 
 // @vue/component
 module.exports = exports = {
-	compatConfig: { MODE: 3 },
 	compilerOptions: { whitespace: 'condense' },
 	props: {
 		as: {
 			type: String,
-			default: 'div'
+			default: 'div',
 		},
 		size: {
 			type: [ String, Array ],
-			default: null
+			default: null,
 		},
 		color: {
 			type: String,
-			default: null
+			default: null,
 		},
 		weight: {
 			type: String,
-			default: null
+			default: null,
 		},
 		/**
 		 * An array of mode names. The index of each mode
@@ -44,9 +43,9 @@ module.exports = exports = {
 			default: () => ( [
 				'desktop',
 				'overlay',
-				'overlay-summary'
-			] )
-		}
+				'overlay-summary',
+			] ),
+		},
 	},
 	setup( props ) {
 		const extraClasses = [];
@@ -73,50 +72,47 @@ module.exports = exports = {
 		}
 
 		return {
-			extraClasses
+			extraClasses,
 		};
-	}
+	},
 };
 </script>
 
 <style lang="less">
 @import 'mediawiki.skin.variables.less';
-/// Typographic scale
-// TODO match WIP line height spec from Codex https://www.figma.com/file/X8pKlndyPaqZg4I3GubQs6/Typography
-@font-size-80: 0.75em; // 12px
-@font-size-90: 0.875em; // 14px
-@font-size-100: 1em; // 16px
-@font-size-110: 1.125em; // 18px
-@font-size-125: 1.25em; // 20px
-@font-size-150: 1.5em; // 24px
-@font-size-175: 1.75em; // 28px
 
 .ext-growthExperiments-CText {
-	font-size: @font-size-100;
+	font-size: @font-size-medium;
 	font-weight: @font-weight-normal;
 
 	&--size-xs {
-		font-size: @font-size-80;
+		font-size: @font-size-x-small;
+		line-height: @line-height-x-small;
 	}
 
 	&--size-sm {
-		font-size: @font-size-90;
+		font-size: @font-size-small;
+		line-height: @line-height-small;
 	}
 
 	&--size-md {
-		font-size: @font-size-110;
+		font-size: @font-size-medium;
+		line-height: @line-height-medium;
 	}
 
 	&--size-lg {
-		font-size: @font-size-125;
+		font-size: @font-size-large;
+		line-height: @line-height-large;
 	}
 
 	&--size-xl {
-		font-size: @font-size-150;
+		font-size: @font-size-x-large;
+		line-height: @line-height-x-large;
 	}
 
 	&--size-xxl {
-		font-size: @font-size-175;
+		font-size: @font-size-xx-large;
+		line-height: @line-height-xx-large;
 	}
 
 	&--color-subtle {

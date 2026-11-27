@@ -7,7 +7,6 @@
 	},
 	"growthexperiments-mentor-dashboard-title": "Taolenn-stur ar mentor",
 	"growthexperiments-mentor-dashboard-pt-link": "Taolenn-stur ar mentor",
-	"growthexperiments-mentor-dashboard-disabled": "N'eo ket gweredekaet taolenn-stur ar mentor er wiki-mañ.",
 	"growthexperiments-mentor-dashboard-must-be-mentor": "Evit gweredekaat taolenn-stur ar mentor e {{GENDER:|rankit}} [[$1|lakaat oc’h anv evel mentor]] da gentañ.",
 	"growthexperiments-mentor-dashboard-misconfigured-missing-list": "A-raok ma c'hallfe bezañ implijet taolenn-stur ar mentor e ranker kefluniañ roll ar mentored da gentañ. Gallout a ra ur merour ober gant [[Special:EditGrowthConfig]] evit se.",
 	"growthexperiments-mentor-dashboard-mentee-overview-headline": "{{GENDER:|Ho}} teskarded",
@@ -53,7 +52,7 @@
 	"growthexperiments-mentor-dashboard-mentee-overview-empty-screen-filters-text": "Kemmit {{GENDER:|ho}} siloù evit kavout deskarded.",
 	"growthexperiments-mentor-dashboard-mentee-overview-recent-edits-headline": "Kemmoù diwezhañ degaset gant {{GENDER:|ho}} deskarded",
 	"growthexperiments-mentor-dashboard-mentee-overview-recent-edits-text": "Gallout a {{GENDER:|rit}} gwelet ar c'hemmoù bet degaset gant {{GENDER:|ho}} holl zeskarded en ur weladenniñ ar [$1 gwel silet eus ar c'hemmoù diwezhañ]-mañ.",
-	"growthexperiments-mentor-dashboard-mentee-overview-error-title": "Ur fazi dianav ez eus bet o kargañ roll an deskarded",
+	"growthexperiments-mentor-dashboard-mentee-overview-error-title": "Ur fazi dianav zo bet o kargañ roll an deskarded",
 	"growthexperiments-mentor-dashboard-mentee-overview-error-notification": "C’hoarvezet ez eus bet ur fazi dianav. Klaskit en-dro diwezhatoc’h mar plij.",
 	"growthexperiments-mentor-dashboard-resources-link-manage-mentors": "Merañ ar ventored",
 	"growthexperiments-mentor-dashboard-resources-link-view-mentor-list": "Gwelet roll ar ventored",
@@ -101,6 +100,6 @@
 	"growthexperiments-manage-mentors-remove-mentor-reason": "Abeg evit dilemel ar mentor",
 	"growthexperiments-manage-mentors-remove-mentor-success": "{{GENDER:$1|Implijer|Implijerez}} [[User:$1|$1]] n'eo ket ken ur {{GENDER:$1|mentor|ventorez}}.",
 	"growthexperiments-manage-mentors-return-back": "Gallout a rit [[Special:ManageMentors|distreiñ]] da roll ar ventored.",
-	"tag-mentor list change": "Kemm roll ar ventored",
+	"tag-mentor_list_change": "Kemm roll ar ventored",
 	"growthexperiments-mentor-dashboard-mentorship-disabled-with-link": "Diweredekaet eo ar ventorelezh evit ar mare. Ar verourien a c'hall gweredekaat ar ventorelezh dre [[$1]]."
 }

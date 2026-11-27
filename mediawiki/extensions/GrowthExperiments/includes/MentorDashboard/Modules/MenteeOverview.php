@@ -2,13 +2,21 @@
 
 namespace GrowthExperiments\MentorDashboard\Modules;
 
+use GrowthExperiments\MentorDashboard\MenteeOverview\MenteeOverviewDataUpdater;
+use GrowthExperiments\Util;
+use MediaWiki\Context\IContextSource;
 use MediaWiki\Html\Html;
 use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\User\Options\UserOptionsLookup;
 
 class MenteeOverview extends BaseModule {
 
 	/** @var string Option name to store user presets. This is client-side hardcoded. */
 	public const PRESETS_PREF = 'growthexperiments-mentee-overview-presets';
+
+	public function __construct( IContextSource $ctx, private readonly UserOptionsLookup $userOptions ) {
+		parent::__construct( 'mentee-overview', $ctx );
+	}
 
 	/**
 	 * @inheritDoc
@@ -21,7 +29,19 @@ class MenteeOverview extends BaseModule {
 	 * @inheritDoc
 	 */
 	protected function getSubheaderText() {
-		return $this->msg( 'growthexperiments-mentor-dashboard-mentee-overview-intro' )->text();
+		$user = $this->getContext()->getUser();
+		$lastUpdate = $this->userOptions->getOption( $user, MenteeOverviewDataUpdater::LAST_UPDATE_PREFERENCE );
+		$lastUpdateTimeStamp = wfTimestamp( TS_UNIX, $lastUpdate );
+
+		if ( $lastUpdateTimeStamp ) {
+			$elapsedTime = (int)wfTimestamp() - (int)$lastUpdateTimeStamp;
+			if ( $elapsedTime > 0 ) {
+				$timeSinceLastUpdate = Util::getRelativeTime( $this->getContext(), $elapsedTime );
+				return $this->msg( 'growthexperiments-mentor-dashboard-mentee-overview-info-updated',
+					$timeSinceLastUpdate )->text();
+			}
+		}
+		return '';
 	}
 
 	/**
@@ -38,11 +58,11 @@ class MenteeOverview extends BaseModule {
 		return Html::rawElement(
 			'div',
 			[
-				'class' => 'growthexperiments-mentor-dashboard-module-mentee-overview-container'
+				'class' => 'growthexperiments-mentor-dashboard-module-mentee-overview-container',
 			],
 			implode( "\n", [
 				$this->getClientSideBody(),
-				$this->getRecentEditsByMenteesBody()
+				$this->getRecentEditsByMenteesBody(),
 			] )
 		);
 	}
@@ -52,16 +72,13 @@ class MenteeOverview extends BaseModule {
 	 *
 	 * Should only have a no-js-fallback in it, to display meaningful
 	 * information for no-JS clients.
-	 *
-	 *
-	 * @return string
 	 */
 	protected function getClientSideBody(): string {
 		return Html::rawElement(
 			'div',
 			[
 				'id' => 'vue-root',
-				'class' => 'growthexperiments-mentor-dashboard-module-mentee-overview-content'
+				'class' => 'growthexperiments-mentor-dashboard-module-mentee-overview-content',
 			],
 			Html::element(
 				'p',
@@ -71,14 +88,11 @@ class MenteeOverview extends BaseModule {
 		);
 	}
 
-	/**
-	 * @return string
-	 */
 	private function getRecentEditsByMenteesBody(): string {
 		return Html::rawElement(
 			'div',
 			[
-				'class' => 'growthexperiments-mentor-dashboard-module-mentee-overview-recent-by-mentees'
+				'class' => 'growthexperiments-mentor-dashboard-module-mentee-overview-recent-by-mentees',
 			],
 			implode( "\n", [
 				Html::element(
@@ -95,7 +109,7 @@ class MenteeOverview extends BaseModule {
 							'mentorship' => 'all',
 						] ) )
 						->parse()
-				)
+				),
 			] )
 		);
 	}

@@ -6,10 +6,8 @@ use GrowthExperiments\NewcomerTasks\TaskType\LinkRecommendationTaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeHandlerRegistry;
 use GrowthExperiments\NewcomerTasks\Topic\CampaignTopic;
-use GrowthExperiments\NewcomerTasks\Topic\MorelikeBasedTopic;
 use GrowthExperiments\NewcomerTasks\Topic\OresBasedTopic;
 use GrowthExperiments\NewcomerTasks\Topic\Topic;
-use MediaWiki\Linker\LinkTarget;
 use Wikimedia\Assert\Assert;
 
 /**
@@ -22,15 +20,12 @@ class SearchStrategy {
 	public const TOPIC_MATCH_MODE_AND = 'AND';
 	public const TOPIC_MATCH_MODES = [
 		self::TOPIC_MATCH_MODE_OR,
-		self::TOPIC_MATCH_MODE_AND
+		self::TOPIC_MATCH_MODE_AND,
 	];
 
 	/** @var TaskTypeHandlerRegistry */
 	private $taskTypeHandlerRegistry;
 
-	/**
-	 * @param TaskTypeHandlerRegistry $taskTypeHandlerRegistry
-	 */
 	public function __construct(
 		TaskTypeHandlerRegistry $taskTypeHandlerRegistry
 	) {
@@ -60,46 +55,33 @@ class SearchStrategy {
 		//   runs into query length limits (T242560)
 		// Empty topic array means doing a single search with no topic filter
 		$topics = $topics ?: [ null ];
+		$allTopicsAreOres = $this->isOresTopicSet( $topics );
 		foreach ( $taskTypes as $taskType ) {
 			$typeTerm = $this->taskTypeHandlerRegistry->getByTaskType( $taskType )
 				->getSearchTerm( $taskType );
 			$pageIdTerm = $pageIds ? $this->getPageIdTerm( $pageIds ) : null;
 			$excludedPageIdTerm = $excludePageIds ? $this->getExcludedPageIdTerm( $excludePageIds ) : null;
 			if ( $topicsFilterMode === self::TOPIC_MATCH_MODE_AND ) {
-				$allTopicsAreOres = true;
-				$topicTerms = [];
-				foreach ( $topics as $topic ) {
-					$topicTerms[] = $this->getTopicTerm( $topic );
-					$allTopicsAreOres = $allTopicsAreOres && $topic instanceof OresBasedTopic;
-				}
-				$topicTerm = implode( ' ', array_filter( $topicTerms ) );
-				$queryString = implode( ' ', array_filter( [ $typeTerm, $topicTerm,
-					$pageIdTerm, $excludedPageIdTerm ] ) );
-
-				$queryId = $taskType->getId() . ':multiple-topics';
-				$query = new SearchQuery( $queryId, $queryString, $taskType, $topics[0] );
-				// don't randomize if we use topic matching with the morelike backend, which itself
-				// is a kind of sorting. Topic matching with the ORES backend already uses
-				// thresholds per topic so applying a random sort should be safe.
-				if ( $allTopicsAreOres ) {
-					$query->setSort( 'random' );
-				}
-				$queries[$queryId] = $query;
+				$query = $this->getMultiTopicIntersectionQuery(
+					$topics, $typeTerm, $pageIdTerm, $excludedPageIdTerm, $taskType
+				);
+				$query->setSort( 'random' );
+				$queries[$query->getId()] = $query;
 			} else {
-				foreach ( $topics as $topic ) {
-					$topicTerm = $this->getTopicTerm( $topic );
-					$queryString = implode( ' ', array_filter( [ $typeTerm, $topicTerm,
-						$pageIdTerm, $excludedPageIdTerm ] ) );
-
-					$queryId = $taskType->getId() . ':' . ( $topic ? $topic->getId() : '-' );
-					$query = new SearchQuery( $queryId, $queryString, $taskType, $topic );
-					// don't randomize if we use topic matching with the morelike backend, which itself
-					// is a kind of sorting. Topic matching with the ORES backend already uses
-					// thresholds per topic so applying a random sort should be safe.
-					if ( !$topic || $topic instanceof OresBasedTopic ) {
+				if ( $allTopicsAreOres ) {
+					$query = $this->getMultiTopicUnionQuery(
+						$topics, $typeTerm, $pageIdTerm, $excludedPageIdTerm, $taskType
+					);
+					$query->setSort( 'random' );
+					$queries[$query->getId()] = $query;
+				} else {
+					foreach ( $topics as $topic ) {
+						$query = $this->getPerTopicQuery(
+							$topic, $typeTerm, $pageIdTerm, $excludedPageIdTerm, $taskType
+						);
 						$query->setSort( 'random' );
+						$queries[$query->getId()] = $query;
 					}
-					$queries[$queryId] = $query;
 				}
 			}
 			if (
@@ -126,16 +108,13 @@ class SearchStrategy {
 	 */
 	protected function validateParams( array $taskTypes, array $topics ) {
 		Assert::parameterElementType( TaskType::class, $taskTypes, '$taskTypes' );
-		Assert::parameterElementType( [ OresBasedTopic::class, MorelikeBasedTopic::class,
-			CampaignTopic::class ], $topics, '$topics' );
+		Assert::parameterElementType( [ OresBasedTopic::class, CampaignTopic::class ], $topics, '$topics' );
 	}
 
-	/**
-	 * @param LinkTarget[] $templates
-	 * @return string|null
-	 */
-	protected function getTemplateTerm( array $templates ) {
-		return 'hastemplate:' . $this->escapeSearchTitleList( $templates );
+	private function isOresTopicSet( array $topics ): bool {
+		return array_reduce( $topics, static function ( $allAreOres, $topic ) {
+			return $allAreOres && $topic instanceof OresBasedTopic;
+		}, true );
 	}
 
 	/**
@@ -146,8 +125,6 @@ class SearchStrategy {
 		$topicTerm = null;
 		if ( $topic instanceof OresBasedTopic ) {
 			$topicTerm = $this->getOresBasedTopicTerm( [ $topic ] );
-		} elseif ( $topic instanceof MorelikeBasedTopic ) {
-			$topicTerm = $this->getMorelikeBasedTopicTerm( [ $topic ] );
 		} elseif ( $topic instanceof CampaignTopic ) {
 			$topicTerm = $topic->getSearchExpression();
 		}
@@ -155,17 +132,32 @@ class SearchStrategy {
 	}
 
 	/**
-	 * @param array $pageIds
-	 * @return string
+	 * @param Topic[] $topics
+	 * @return string|null
 	 */
-	private function getPageIdTerm( array $pageIds ) {
+	protected function getTopicsTerms( array $topics ): ?string {
+		$topicsByType = [ [], [] ];
+		foreach ( $topics as $topic ) {
+			if ( $topic instanceof OresBasedTopic ) {
+				array_push( $topicsByType[0], $topic );
+			} elseif ( $topic instanceof CampaignTopic ) {
+				array_push( $topicsByType[1], $topic->getSearchExpression() );
+			}
+		}
+		$terms = [];
+		if ( count( $topicsByType[0] ) > 0 ) {
+			array_push( $terms, $this->getOresBasedTopicTerm( $topicsByType[0] ) );
+		}
+		if ( count( $topicsByType[1] ) > 0 ) {
+			array_push( $terms, implode( ' ', $topicsByType[1] ) );
+		}
+		return implode( ' ', $terms );
+	}
+
+	private function getPageIdTerm( array $pageIds ): string {
 		return 'pageid:' . implode( '|', $pageIds );
 	}
 
-	/**
-	 * @param array $pageIds
-	 * @return string
-	 */
 	private function getExcludedPageIdTerm( array $pageIds ): string {
 		return '-pageid:' . implode( '|', $pageIds );
 	}
@@ -179,31 +171,6 @@ class SearchStrategy {
 			static function ( array $carry, OresBasedTopic $topic ) {
 				return array_merge( $carry, $topic->getOresTopics() );
 			}, [] ) );
-	}
-
-	/**
-	 * @param MorelikeBasedTopic[] $topics
-	 * @return string
-	 * @see https://www.mediawiki.org/wiki/Help:CirrusSearch#Morelike
-	 * @see https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-mlt-query.html
-	 */
-	protected function getMorelikeBasedTopicTerm( array $topics ) {
-		return 'morelikethis:' . $this->escapeSearchTitleList(
-			array_reduce( $topics, static function ( array $carry, MorelikeBasedTopic $topic ) {
-				return array_merge( $carry, $topic->getReferencePages() );
-			}, [] ) );
-	}
-
-	/**
-	 * Turns an array of pages into a CirrusSearch keyword value (pipe-separated, escaped).
-	 * Namespaces are omitted entirely.
-	 * @param LinkTarget[] $titles
-	 * @return string
-	 */
-	protected function escapeSearchTitleList( array $titles ) {
-		return '"' . implode( '|', array_map( static function ( LinkTarget $title ) {
-			return str_replace( [ '"', '?' ], [ '\"', '\?' ], $title->getDBkey() );
-		}, $titles ) ) . '"';
 	}
 
 	/**
@@ -222,6 +189,59 @@ class SearchStrategy {
 			$shuffled[$key] = $queries[$key];
 		}
 		return $shuffled;
+	}
+
+	/**
+	 * Get a query for multiple topics intersection
+	 */
+	private function getMultiTopicIntersectionQuery(
+		array $topics,
+		string $typeTerm,
+		?string $pageIdTerm,
+		?string $excludedPageIdTerm,
+		TaskType $taskType
+	): SearchQuery {
+		$topicTerms = [];
+		foreach ( $topics as $topic ) {
+			$topicTerms[] = $this->getTopicTerm( $topic );
+		}
+		$topicTerm = implode( ' ', array_filter( $topicTerms ) );
+		$queryString = implode( ' ', array_filter( [ $typeTerm, $topicTerm,
+			$pageIdTerm, $excludedPageIdTerm ] ) );
+
+		$queryId = $taskType->getId() . ':multiple-topics-intersection';
+		return new SearchQuery( $queryId, $queryString, $taskType, $topics );
+	}
+
+	/**
+	 * Get a query for a single topic
+	 */
+	private function getPerTopicQuery(
+		?Topic $topic, string $typeTerm, ?string $pageIdTerm, ?string $excludedPageIdTerm, TaskType $taskType
+	): SearchQuery {
+		$topicTerm = $this->getTopicTerm( $topic );
+		$queryString = implode( ' ', array_filter( [ $typeTerm, $topicTerm,
+			$pageIdTerm, $excludedPageIdTerm ] ) );
+
+		$queryId = $taskType->getId() . ':' . ( $topic ? $topic->getId() : '-' );
+		return new SearchQuery( $queryId, $queryString, $taskType, [ $topic ] );
+	}
+
+	/**
+	 * Get a query for multiple topics union
+	 */
+	private function getMultiTopicUnionQuery(
+		array $topics, string $typeTerm, ?string $pageIdTerm, ?string $excludedPageIdTerm, TaskType $taskType
+	): SearchQuery {
+		$topicTerm = '';
+		if ( $topics[0] !== null ) {
+			$topicTerm = $this->getTopicsTerms( $topics );
+		}
+		$queryString = implode( ' ', array_filter( [ $typeTerm, $topicTerm,
+			$pageIdTerm, $excludedPageIdTerm ] ) );
+
+		$queryId = $taskType->getId() . ':multiple-topics-union';
+		return new SearchQuery( $queryId, $queryString, $taskType, $topics );
 	}
 
 }

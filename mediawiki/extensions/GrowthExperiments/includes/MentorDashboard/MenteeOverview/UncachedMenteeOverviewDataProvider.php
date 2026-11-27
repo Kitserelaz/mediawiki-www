@@ -1,12 +1,14 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace GrowthExperiments\MentorDashboard\MenteeOverview;
 
-use ChangeTags;
 use GrowthExperiments\HomepageHooks;
 use GrowthExperiments\HomepageModules\Mentorship;
-use GrowthExperiments\Mentorship\MentorPageMentorManager;
+use GrowthExperiments\Mentorship\MentorManager;
 use GrowthExperiments\Mentorship\Store\MentorStore;
+use MediaWiki\ChangeTags\ChangeTags;
 use MediaWiki\Extension\CentralAuth\CentralAuthServices;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Storage\NameTableAccessException;
@@ -15,11 +17,11 @@ use MediaWiki\User\ActorMigration;
 use MediaWiki\User\TempUser\TempUserConfig;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityLookup;
-use Psr\Log\LoggerAwareTrait;
-use Psr\Log\NullLogger;
+use Psr\Log\LoggerInterface;
 use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IExpression;
 use Wikimedia\Rdbms\IReadableDatabase;
+use Wikimedia\Rdbms\IResultWrapper;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
@@ -29,10 +31,10 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  * scripts or jobs.
  */
 class UncachedMenteeOverviewDataProvider implements MenteeOverviewDataProvider {
-	use LoggerAwareTrait;
 
 	/** @var int Number of seconds in a day */
 	private const SECONDS_DAY = 86400;
+	private int $batchSize = 100;
 
 	private MentorStore $mentorStore;
 
@@ -45,8 +47,10 @@ class UncachedMenteeOverviewDataProvider implements MenteeOverviewDataProvider {
 
 	private IConnectionProvider $mainConnProvider;
 
+	private LoggerInterface $logger;
+
 	/** @var array Cache used by getLastEditTimestampForUsers */
-	private $lastTimestampCache = [];
+	private array $lastTimestampCache = [];
 
 	/**
 	 * @var array Profiling information
@@ -54,32 +58,28 @@ class UncachedMenteeOverviewDataProvider implements MenteeOverviewDataProvider {
 	 * Stored by storeProfilingData, can be printed from
 	 * updateMenteeData.php maintenance script.
 	 */
-	private $profilingInfo = [];
+	private array $profilingInfo = [];
 
-	/**
-	 * @param MentorStore $mentorStore
-	 * @param NameTableStore $changeTagDefStore
-	 * @param ActorMigration $actorMigration
-	 * @param UserIdentityLookup $userIdentityLookup
-	 * @param TempUserConfig $tempUserConfig
-	 * @param IConnectionProvider $mainConnProvider
-	 */
 	public function __construct(
 		MentorStore $mentorStore,
 		NameTableStore $changeTagDefStore,
 		ActorMigration $actorMigration,
 		UserIdentityLookup $userIdentityLookup,
 		TempUserConfig $tempUserConfig,
-		IConnectionProvider $mainConnProvider
+		IConnectionProvider $mainConnProvider,
+		LoggerInterface $logger
 	) {
-		$this->setLogger( new NullLogger() );
-
 		$this->mentorStore = $mentorStore;
 		$this->changeTagDefStore = $changeTagDefStore;
 		$this->actorMigration = $actorMigration;
 		$this->userIdentityLookup = $userIdentityLookup;
 		$this->tempUserConfig = $tempUserConfig;
 		$this->mainConnProvider = $mainConnProvider;
+		$this->logger = $logger;
+	}
+
+	public function setBatchSize( int $batchSize ): void {
+		$this->batchSize = $batchSize;
 	}
 
 	private function getReadConnection(): IReadableDatabase {
@@ -104,10 +104,6 @@ class UncachedMenteeOverviewDataProvider implements MenteeOverviewDataProvider {
 		return $this->profilingInfo;
 	}
 
-	/**
-	 * @param string $section
-	 * @param float $seconds
-	 */
 	private function storeProfilingData( string $section, float $seconds ): void {
 		$this->profilingInfo[$section] = $seconds;
 	}
@@ -117,9 +113,7 @@ class UncachedMenteeOverviewDataProvider implements MenteeOverviewDataProvider {
 	 * @return int[]
 	 */
 	private function getIds( array $users ): array {
-		return array_map( static function ( $user ) {
-			return $user->getId();
-		}, $users );
+		return array_map( static fn ( UserIdentity $user ) => $user->getId(), $users );
 	}
 
 	/**
@@ -157,12 +151,10 @@ class UncachedMenteeOverviewDataProvider implements MenteeOverviewDataProvider {
 
 		$userIdentities = CentralAuthServices::getGlobalUserSelectQueryBuilderFactory()
 			->newGlobalUserSelectQueryBuilder()
-			->whereUserNames( array_map( static function ( UserIdentity $user ) {
-				return $user->getName();
-			}, $mentees ) )
+			->whereUserNames( array_map( static fn ( UserIdentity $user ) => $user->getName(), $mentees ) )
 			->whereLocked( true )
 			->caller( __METHOD__ )
-			->fetchLocalUserIdentitites();
+			->fetchLocalUserIdentities();
 
 		return array_map( static function ( UserIdentity $user ) {
 			return $user->getId();
@@ -196,92 +188,18 @@ class UncachedMenteeOverviewDataProvider implements MenteeOverviewDataProvider {
 			return [];
 		}
 
-		$dbr = $this->getReadConnection();
-
-		$queryBuilder = $dbr->newSelectQueryBuilder()
-			->select( [
-				'user_id',
-				'has_edits' => 'user_editcount > 0'
-			] )
-			->from( 'user' )
-			->where( [
-				// filter to mentees only
-				'user_id' => $menteeIds,
-
-				// ensure mentees have homepage enabled
-				'user_id IN (' . $dbr->newSelectQueryBuilder()
-					->select( 'up_user' )
-					->from( 'user_properties' )
-					->where( [
-						'up_property' => HomepageHooks::HOMEPAGE_PREF_ENABLE,
-						'up_value' => '1',
-					] )
-					->getSQL() .
-				')',
-
-				// ensure mentees do not have mentorship disabled
-				'user_id NOT IN (' . $dbr->newSelectQueryBuilder()
-					->select( 'up_user' )
-					->from( 'user_properties' )
-					->where( [
-						'up_property' => MentorPageMentorManager::MENTORSHIP_ENABLED_PREF,
-						// sanity check, should never match (1 is the default value)
-						$dbr->expr( 'up_value', '!=', '1' ),
-					] )
-					->getSQL() .
-				')',
-
-				// user is not a bot,
-				'user_id NOT IN (' . $dbr->newSelectQueryBuilder()
-					->select( 'ug_user' )
-					->from( 'user_groups' )
-					->where( [ 'ug_group' => 'bot' ] )
-					->getSQL() .
-				')',
-
-				// only users who either made an edit or registered less than 2 weeks ago
-				$dbr->expr( 'user_editcount', '>', 0 )
-					->or( 'user_registration', '>', $dbr->timestamp(
-						(int)wfTimestamp( TS_UNIX ) - 2 * 7 * self::SECONDS_DAY
-					) ),
-			] )
-			->caller( __METHOD__ );
-
-		// Exclude users which are indefinitely blocked
-		$queryBuilder->andWhere(
-			'user_id NOT IN (' . $dbr->newSelectQueryBuilder()
-				->select( 'bt_user' )
-				->from( 'block' )
-				->join( 'block_target', null, [
-					'bt_id=bl_target'
-				] )
-				->where( [
-					'bl_expiry' => $dbr->getInfinity(),
-					// not an IP block
-					$dbr->expr( 'bt_user', '!=', null )
-				] )
-				->getSQL() .
-			')'
-		);
-
-		// exclude temporary accounts, if enabled (T341389)
-		if ( $this->tempUserConfig->isKnown() ) {
-			foreach ( $this->tempUserConfig->getMatchPatterns() as $pattern ) {
-				$queryBuilder->andWhere(
-					$dbr->expr( 'user_name', IExpression::NOT_LIKE, $pattern->toLikeValue( $dbr ) )
-				);
-			}
-		}
-
-		$res = $queryBuilder->fetchResultSet();
-
+		$menteeIdBatches = array_chunk( $menteeIds, $this->batchSize );
 		$editingUsers = [];
 		$notEditingUsers = [];
-		foreach ( $res as $row ) {
-			if ( $row->has_edits ) {
-				$editingUsers[] = (int)$row->user_id;
-			} else {
-				$notEditingUsers[] = (int)$row->user_id;
+		foreach ( $menteeIdBatches as $menteeIdBatch ) {
+			$res = $this->filterMenteeBatch( $menteeIdBatch );
+
+			foreach ( $res as $row ) {
+				if ( $row->has_edits ) {
+					$editingUsers[] = (int)$row->user_id;
+				} else {
+					$notEditingUsers[] = (int)$row->user_id;
+				}
 			}
 		}
 
@@ -303,7 +221,7 @@ class UncachedMenteeOverviewDataProvider implements MenteeOverviewDataProvider {
 		$rows = $this->getReadConnection()->newSelectQueryBuilder()
 			->select( [
 				'actor_user',
-				'last_edit' => 'MAX(rev_timestamp)'
+				'last_edit' => 'MAX(rev_timestamp)',
 			] )
 			->from( 'revision' )
 			->join( 'actor', null, 'rev_actor = actor_id' )
@@ -407,7 +325,7 @@ class UncachedMenteeOverviewDataProvider implements MenteeOverviewDataProvider {
 					__METHOD__ . ': Registration and last_edit timestamps not found for user ID {userId}',
 					[
 						'userId' => $userId,
-						'exception' => new \RuntimeException
+						'exception' => new \RuntimeException,
 					]
 				);
 			}
@@ -461,7 +379,7 @@ class UncachedMenteeOverviewDataProvider implements MenteeOverviewDataProvider {
 		$res = $this->getTaggedEditsForUsers(
 			[
 				Mentorship::MENTORSHIP_HELPPANEL_QUESTION_TAG,
-				Mentorship::MENTORSHIP_MODULE_QUESTION_TAG
+				Mentorship::MENTORSHIP_MODULE_QUESTION_TAG,
 			],
 			$userIds
 		);
@@ -474,12 +392,12 @@ class UncachedMenteeOverviewDataProvider implements MenteeOverviewDataProvider {
 	 * @param int[] $userIds
 	 * @return int[]
 	 */
-	private function getTaggedEditsForUsers( array $tags, array $userIds ) {
+	private function getTaggedEditsForUsers( array $tags, array $userIds ): array {
 		$tagIds = [];
 		foreach ( $tags as $tag ) {
 			try {
 				$tagIds[] = $this->changeTagDefStore->getId( $tag );
-			} catch ( NameTableAccessException $e ) {
+			} catch ( NameTableAccessException ) {
 				// Skip non-existing tags gracefully
 			}
 		}
@@ -492,14 +410,14 @@ class UncachedMenteeOverviewDataProvider implements MenteeOverviewDataProvider {
 		$taggedEditsSubquery = $dbr->newSelectQueryBuilder()
 			->select( [
 				'rev_user' => $queryInfo['fields']['rev_user'],
-				'ct_rev_id'
+				'ct_rev_id',
 			] )
 			->from( 'change_tag' )
 			->join( 'revision', null, 'rev_id=ct_rev_id' )
 			->tables( $queryInfo['tables'] )
 			->where( [
 				'actor_user' => $userIds,
-				'ct_tag_id' => $tagIds
+				'ct_tag_id' => $tagIds,
 			] )
 			->joinConds( $queryInfo['joins'] )
 			->caller( __METHOD__ );
@@ -577,7 +495,7 @@ class UncachedMenteeOverviewDataProvider implements MenteeOverviewDataProvider {
 				'log_type' => 'block',
 				'log_action' => 'block',
 				'log_namespace' => NS_USER,
-				'log_title' => $userNamesAsStrings
+				'log_title' => $userNamesAsStrings,
 			] )
 			->groupBy( 'log_title' )
 			->caller( __METHOD__ )
@@ -620,5 +538,112 @@ class UncachedMenteeOverviewDataProvider implements MenteeOverviewDataProvider {
 		$this->storeProfilingData( 'editcount', microtime( true ) - $startTime );
 
 		return $res;
+	}
+
+	/**
+	 * @param int[] $menteeIds
+	 * @return IResultWrapper|array
+	 */
+	public function filterMenteeBatch( array $menteeIds ) {
+		$dbr = $this->getReadConnection();
+
+		$menteeIds = $dbr->newSelectQueryBuilder()
+			->select( 'up_user' )
+			->from( 'user_properties' )
+			->where( [
+				'up_property' => HomepageHooks::HOMEPAGE_PREF_ENABLE,
+				'up_value' => '1',
+				'up_user' => $menteeIds,
+			] )
+			->caller( __METHOD__ )
+			->fetchFieldValues();
+		if ( $menteeIds === [] ) {
+			return [];
+		}
+
+		$menteeIdsWithMentorshipDisabled = $dbr->newSelectQueryBuilder()
+			->select( 'up_user' )
+			->from( 'user_properties' )
+			->where( [
+				'up_property' => MentorManager::MENTORSHIP_ENABLED_PREF,
+				// sanity check, should never match (1 is the default value)
+				$dbr->expr( 'up_value', '!=', '1' ),
+				'up_user' => $menteeIds,
+			] )
+			->caller( __METHOD__ )
+			->fetchFieldValues();
+		$menteeIds = array_diff(
+			$menteeIds,
+			$menteeIdsWithMentorshipDisabled,
+		);
+		if ( $menteeIds === [] ) {
+			return [];
+		}
+
+		$menteeIdsWithBotGroup = $dbr->newSelectQueryBuilder()
+			->select( 'ug_user' )
+			->from( 'user_groups' )
+			->where( [
+				'ug_group' => 'bot',
+				'ug_user' => $menteeIds,
+			] )
+			->caller( __METHOD__ )
+			->fetchFieldValues();
+		$menteeIds = array_diff(
+			$menteeIds,
+			$menteeIdsWithBotGroup,
+		);
+		if ( $menteeIds === [] ) {
+			return [];
+		}
+
+		$menteeIdsWithInfinityBlock = $dbr->newSelectQueryBuilder()
+			->select( 'bt_user' )
+			->from( 'block' )
+			->join( 'block_target', null, [
+				'bt_id=bl_target',
+			] )
+			->where( [
+				'bt_user' => $menteeIds,
+				'bl_expiry' => $dbr->getInfinity(),
+			] )
+			->caller( __METHOD__ )
+			->fetchFieldValues();
+		$menteeIds = array_diff(
+			$menteeIds,
+			$menteeIdsWithInfinityBlock,
+		);
+		if ( $menteeIds === [] ) {
+			return [];
+		}
+
+		$queryBuilder = $dbr->newSelectQueryBuilder()
+			->select( [
+				'user_id',
+				'has_edits' => 'user_editcount > 0',
+			] )
+			->from( 'user' )
+			->where( [
+				// filter to mentees only
+				'user_id' => $menteeIds,
+
+				// only users who either made an edit or registered less than 2 weeks ago
+				$dbr->expr( 'user_editcount', '>', 0 )
+					->or( 'user_registration', '>', $dbr->timestamp(
+						(int)wfTimestamp( TS_UNIX ) - 2 * 7 * self::SECONDS_DAY
+					) ),
+			] )
+			->caller( __METHOD__ );
+
+		// exclude temporary accounts, if enabled (T341389)
+		if ( $this->tempUserConfig->isKnown() ) {
+			foreach ( $this->tempUserConfig->getMatchPatterns() as $pattern ) {
+				$queryBuilder->andWhere(
+					$dbr->expr( 'user_name', IExpression::NOT_LIKE, $pattern->toLikeValue( $dbr ) )
+				);
+			}
+		}
+
+		return $queryBuilder->fetchResultSet();
 	}
 }

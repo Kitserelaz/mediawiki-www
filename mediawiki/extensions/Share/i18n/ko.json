@@ -1,10 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
-			"Ykhwong"
+			"Ykhwong",
+			"Tensama0415"
 		]
 	},
 	"share": "공유",
+	"share-desc": "사용자가 소셜 미디어 플랫폼에서 위키 문서를 쉽게 공유할 수 있도록 사이드바 포틀릿을 추가합니다",
 	"share-header": "이것을 공유합니다",
 	"share-email": "이메일을 통해 공유",
 	"share-facebook": "페이스북에 공유",
@@ -16,5 +18,8 @@
 	"share-twitter": "트위터에 공유",
 	"share-vk": "VK에 공유",
 	"share-weibo": "웨이보에 공유",
-	"share-whatsapp": "왓츠앱에 공유"
+	"share-whatsapp": "왓츠앱에 공유",
+	"share-preftoggle": "사이드바에 공유 링크 표시를 비활성화하시겠습니까?",
+	"right-viewsharelinks": "사이드바 공유 포틀릿 보기",
+	"action-viewsharelinks": "사이드바 공유 포틀릿 보기"
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace GrowthExperiments\Maintenance;
 
 use GrowthExperiments\GrowthExperimentsServices;
@@ -8,6 +10,7 @@ use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationHelper;
 use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationLink;
 use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationStore;
 use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationUpdater;
+use GrowthExperiments\NewcomerTasks\AddLink\NullLinkRecommendation;
 use GrowthExperiments\WikiConfigException;
 use LogicException;
 use MediaWiki\Config\Config;
@@ -18,6 +21,7 @@ use MediaWiki\Title\TitleFactory;
 use UnexpectedValueException;
 use Wikimedia\Rdbms\DBReadOnlyError;
 
+// @codeCoverageIgnoreStart
 $path = dirname( dirname( dirname( __DIR__ ) ) );
 
 if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
@@ -25,6 +29,7 @@ if ( getenv( 'MW_INSTALL_PATH' ) !== false ) {
 }
 
 require_once $path . '/maintenance/Maintenance.php';
+// @codeCoverageIgnoreEnd
 
 /**
  * Iterate through the growthexperiments_link_recommendations table and regenerate the ones which
@@ -34,23 +39,14 @@ require_once $path . '/maintenance/Maintenance.php';
  */
 class RevalidateLinkRecommendations extends Maintenance {
 
-	/** @var TitleFactory */
-	private $titleFactory;
-
-	/** @var LinkRecommendationStore */
-	private $linkRecommendationStore;
-
-	/** @var LinkRecommendationHelper */
-	private $linkRecommendationHelper;
-
-	/** @var LinkRecommendationUpdater */
-	private $linkRecommendationUpdater;
-
-	/** @var Config */
-	private $growthConfig;
+	private TitleFactory $titleFactory;
+	private LinkRecommendationStore $linkRecommendationStore;
+	private LinkRecommendationHelper $linkRecommendationHelper;
+	private LinkRecommendationUpdater $linkRecommendationUpdater;
+	private Config $growthConfig;
 
 	/** @var string[] */
-	private $allowedChecksums;
+	private array $allowedChecksums = [];
 
 	private ?int $olderThanTimestamp = null;
 
@@ -71,12 +67,18 @@ class RevalidateLinkRecommendations extends Maintenance {
 			. 'a lower score than this one.', false, true );
 		$this->addOption( 'limit', 'Limit the number of changes.', false, true );
 		$this->addOption( 'force', 'Store the new recommendation even if it fails quality criteria.' );
+
+		$this->addOption(
+			'deleteNullRecommendations',
+			// phpcs:ignore Generic.Files.LineLength.TooLong
+			'Delete the data about which pages have no valid recommendations. Use when the configuration has become more permissive.'
+		);
 		$this->addOption( 'dry-run', 'Do not actually make any changes.' );
 		$this->addOption( 'verbose', 'Show debug output.' );
 		$this->setBatchSize( 500 );
 	}
 
-	public function checkRequiredExtensions() {
+	public function checkRequiredExtensions(): void {
 		// Hack: must be early enough for requireExtension to work but late enough for config
 		// to be available.
 		$growthServices = GrowthExperimentsServices::wrap( $this->getServiceContainer() );
@@ -88,7 +90,7 @@ class RevalidateLinkRecommendations extends Maintenance {
 		parent::checkRequiredExtensions();
 	}
 
-	public function execute() {
+	public function execute(): void {
 		$this->initGrowthConfig();
 		if ( !$this->growthConfig->get( 'GENewcomerTasksLinkRecommendationsEnabled' ) ) {
 			$this->output( "Disabled\n" );
@@ -99,19 +101,45 @@ class RevalidateLinkRecommendations extends Maintenance {
 		}
 		$this->initServices();
 
+		$isDeleteNullRecommendationsEnabled = $this->getOption( 'deleteNullRecommendations' );
+		$isDryRun = (bool)$this->getOption( 'dry-run' );
+
 		$this->output( "Revalidating link recommendations:\n" );
 
-		$replaced = $discarded = 0;
+		$replaced = $discarded = $nullRecommendationsDeleted = 0;
 		$fromPageId = (int)$this->getOption( 'fromPageId', 0 );
 		while ( $fromPageId !== false ) {
 			$this->output( "  fetching task batch starting with page $fromPageId\n" );
-			$linkRecommendations = $this->linkRecommendationStore->getAllRecommendations(
-				$this->getBatchSize(), $fromPageId );
+			if ( $isDeleteNullRecommendationsEnabled ) {
+				$linkRecommendations = $this->linkRecommendationStore->getAllRecommendationEntries(
+					$this->getBatchSize(),
+					$fromPageId,
+				);
+			} else {
+				$linkRecommendations = $this->linkRecommendationStore->getAllExistingRecommendations(
+					$this->getBatchSize(),
+					$fromPageId
+				);
+			}
 			foreach ( $linkRecommendations as $linkRecommendation ) {
+				if ( $replaced + $discarded + $nullRecommendationsDeleted == $this->getOption( 'limit', -1 ) ) {
+					$this->verboseLog( "Limit reached, aborting.\n" );
+					break 2;
+				}
+				if ( $linkRecommendation instanceof NullLinkRecommendation ) {
+					if ( !$isDeleteNullRecommendationsEnabled ) {
+						throw new LogicException(
+							'NullLinkRecommendation encountered but deleteNullRecommendations is not enabled'
+						);
+					}
+					$this->handleNullRecommendation( $linkRecommendation, $isDryRun );
+					$nullRecommendationsDeleted += 1;
+					continue;
+				}
 				if ( !$this->validateRecommendation( $linkRecommendation ) ) {
 					$this->verboseLog( '  ' . $this->getTitle( $linkRecommendation )->getPrefixedText()
 						. ' is outdated, regenerating... ' );
-					if ( $this->getOption( 'dry-run' ) ) {
+					if ( $isDryRun ) {
 						$replaced++;
 						$this->verboseLog( "(dry-run)\n" );
 					} else {
@@ -121,14 +149,12 @@ class RevalidateLinkRecommendations extends Maintenance {
 						$replaced += $status->isOK() ? 1 : 0;
 						$discarded += $status->isOK() ? 0 : 1;
 					}
-					if ( $replaced + $discarded == $this->getOption( 'limit', -1 ) ) {
-						$this->verboseLog( "Limit reached, aborting.\n" );
-						break 2;
-					}
 				}
 			}
 		}
-		$this->output( "Done; replaced $replaced, discarded $discarded\n" );
+		$this->output(
+			"Done; replaced $replaced, discarded $discarded, null recommendations deleted $nullRecommendationsDeleted\n"
+		);
 	}
 
 	protected function initGrowthConfig(): void {
@@ -152,8 +178,6 @@ class RevalidateLinkRecommendations extends Maintenance {
 
 	/**
 	 * Check whether the recommendation still meets our standards.
-	 * @param LinkRecommendation $linkRecommendation
-	 * @return bool
 	 */
 	private function validateRecommendation( LinkRecommendation $linkRecommendation ): bool {
 		if ( $this->hasOption( 'all' ) ) {
@@ -192,24 +216,24 @@ class RevalidateLinkRecommendations extends Maintenance {
 
 	/**
 	 * Discard the existing recommendation and try to fetch a new one.
-	 * @param LinkRecommendation $linkRecommendation
-	 * @return Status
 	 */
 	private function regenerateRecommendation( LinkRecommendation $linkRecommendation ): Status {
 		$title = $this->titleFactory->newFromLinkTarget( $linkRecommendation->getTitle() );
-		// Deleting from the search index is instantaneous, adding to the search index takes a few
-		// hours, so in theory the script could deplete the existing pool temporarily. In practice
-		// fetching a new candidate takes about a second, so the script shouldn't progess fast
-		// enough for that to be a problem.
+		// Deletion and addition from/to the search index should be instantaneous (subject to the
+		// Search's SLO).
 		$this->linkRecommendationHelper->deleteLinkRecommendation( $title->toPageIdentity(), true );
 		try {
 			$force = $this->hasOption( 'force' );
-			return Status::wrap( $this->linkRecommendationUpdater->processCandidate( $title, $force ) );
-		} catch ( DBReadOnlyError $e ) {
+			return Status::wrap( $this->linkRecommendationUpdater->processCandidate(
+				$title->toPageIdentity(),
+				$force
+			) );
+		} catch ( DBReadOnlyError ) {
 			$this->fatalError( 'DB is readonly, aborting' );
 		} catch ( WikiConfigException $e ) {
 			$this->fatalError( $e->getMessage() );
 		}
+		// @phan-suppress-next-line PhanPluginUnreachableCode
 		throw new LogicException( 'Cannot reach here' );
 	}
 
@@ -251,7 +275,6 @@ class RevalidateLinkRecommendations extends Maintenance {
 
 	/**
 	 * Helper method to handle caching/fetching of the older than timestamp
-	 * @return int
 	 */
 	private function getOlderThanTimestamp(): int {
 		if ( !$this->olderThanTimestamp ) {
@@ -267,7 +290,23 @@ class RevalidateLinkRecommendations extends Maintenance {
 		return $this->olderThanTimestamp;
 	}
 
+	private function handleNullRecommendation( NullLinkRecommendation $nullLinkRecommendation, bool $isDryRun ): void {
+		$this->verboseLog(
+			'  deleting null recommendation for page ID ' . $nullLinkRecommendation->getPageId() . '... '
+		);
+
+		if ( $isDryRun ) {
+			$this->verboseLog( "(dry-run)\n" );
+			return;
+		}
+
+		$this->linkRecommendationStore->deleteByPageIds( [ $nullLinkRecommendation->getPageId() ] );
+		$this->verboseLog( "done.\n" );
+	}
+
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = RevalidateLinkRecommendations::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

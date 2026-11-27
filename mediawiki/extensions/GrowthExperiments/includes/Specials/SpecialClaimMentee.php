@@ -4,16 +4,13 @@ namespace GrowthExperiments\Specials;
 
 use GrowthExperiments\Mentorship\ChangeMentorFactory;
 use GrowthExperiments\Mentorship\Provider\MentorProvider;
-use MediaWiki\Config\Config;
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\Html\Html;
-use MediaWiki\Linker\Linker;
-use MediaWiki\Logger\LoggerFactory;
+use MediaWiki\Linker\UserLinkRenderer;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\FormSpecialPage;
 use MediaWiki\Status\Status;
 use MediaWiki\User\User;
-use MediaWiki\User\UserIdentity;
-use PermissionsError;
 
 class SpecialClaimMentee extends FormSpecialPage {
 
@@ -23,23 +20,18 @@ class SpecialClaimMentee extends FormSpecialPage {
 	private ?User $newMentor;
 	private MentorProvider $mentorProvider;
 	private ChangeMentorFactory $changeMentorFactory;
-	private Config $wikiConfig;
+	private UserLinkRenderer $userLinkRenderer;
 
-	/**
-	 * @param MentorProvider $mentorProvider
-	 * @param ChangeMentorFactory $changeMentorFactory
-	 * @param Config $wikiConfig
-	 */
 	public function __construct(
 		MentorProvider $mentorProvider,
 		ChangeMentorFactory $changeMentorFactory,
-		Config $wikiConfig
+		UserLinkRenderer $userLinkRenderer,
 	) {
 		parent::__construct( 'ClaimMentee' );
 
 		$this->mentorProvider = $mentorProvider;
 		$this->changeMentorFactory = $changeMentorFactory;
-		$this->wikiConfig = $wikiConfig;
+		$this->userLinkRenderer = $userLinkRenderer;
 	}
 
 	/** @inheritDoc */
@@ -47,6 +39,7 @@ class SpecialClaimMentee extends FormSpecialPage {
 		return 'growth-tools';
 	}
 
+	/** @inheritDoc */
 	public function doesWrites() {
 		return true;
 	}
@@ -58,6 +51,7 @@ class SpecialClaimMentee extends FormSpecialPage {
 		return $this->msg( 'growthexperiments-homepage-claimmentee-title' );
 	}
 
+	/** @inheritDoc */
 	protected function preHtml() {
 		return Html::element(
 			'p',
@@ -123,13 +117,14 @@ class SpecialClaimMentee extends FormSpecialPage {
 				'label-message' => 'growthexperiments-homepage-claimmentee-mentee',
 				'type'          => 'usersmultiselect',
 				'exists'        => true,
-				'required'      => true
+				'required'      => true,
+				'excludetemp'   => true,
 			],
 			'reason' => [
 				'label-message' => 'growthexperiments-homepage-claimmentee-reason',
 				'type'          => 'text',
 			],
-			'stage' => [ 'type' => 'hidden', 'default' => 2 ]
+			'stage' => [ 'type' => 'hidden', 'default' => 2 ],
 		];
 		$stage = $req->getInt( 'wpstage', 1 );
 		$this->setMentees( $req->getVal( 'wpmentees', '' ) );
@@ -144,9 +139,7 @@ class SpecialClaimMentee extends FormSpecialPage {
 		return $fields;
 	}
 
-	/**
-	 * @return string
-	 */
+	/** @inheritDoc */
 	protected function getDisplayFormat() {
 		return 'ooui';
 	}
@@ -165,7 +158,6 @@ class SpecialClaimMentee extends FormSpecialPage {
 		$this->newMentor = $this->getUser();
 
 		$status = Status::newGood();
-		$logger = LoggerFactory::getInstance( 'GrowthExperiments' );
 		foreach ( $this->mentees as $mentee ) {
 			$changementor = $this->changeMentorFactory->newChangeMentor(
 				$mentee,
@@ -179,8 +171,8 @@ class SpecialClaimMentee extends FormSpecialPage {
 			) {
 				return Status::newFatal(
 					'growthexperiments-homepage-claimmentee-alreadychanged',
-					$mentee,
-					$this->newMentor
+					$mentee->getName(),
+					$this->newMentor?->getName(),
 				);
 			}
 
@@ -195,16 +187,16 @@ class SpecialClaimMentee extends FormSpecialPage {
 	}
 
 	public function onSuccess() {
-		$mentees = array_map( static function ( UserIdentity $user ) {
-			return Linker::userLink( $user->getId(), $user->getName() );
-		}, $this->mentees );
-
-		$language = $this->getLanguage();
+		$menteeLinks = [];
+		$context = $this->getContext();
+		foreach ( $this->mentees as $user ) {
+			$menteeLinks[] = Message::rawParam( $this->userLinkRenderer->userLink( $user, $context ) );
+		}
 
 		$this->getOutput()->addWikiMsg(
 			'growthexperiments-homepage-claimmentee-success',
-			Message::rawParam( $language->listToText( $mentees ) ),
-			$language->formatNum( count( $mentees ) ),
+			Message::listParam( $menteeLinks ),
+			Message::numParam( count( $menteeLinks ) ),
 			$this->getUser()->getName(),
 			$this->newMentor->getName(),
 			Message::rawParam( $this->getLinkRenderer()->makeLink(
@@ -224,7 +216,7 @@ class SpecialClaimMentee extends FormSpecialPage {
 		}
 	}
 
-	private function validateMentees() {
+	private function validateMentees(): bool {
 		foreach ( $this->mentees as $mentee ) {
 			if ( !( $mentee instanceof User && $mentee->isNamed() ) ) {
 				return false;

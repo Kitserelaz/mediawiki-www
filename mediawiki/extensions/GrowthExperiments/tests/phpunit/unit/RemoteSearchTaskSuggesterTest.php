@@ -14,14 +14,15 @@ use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeHandlerRegistry;
 use GrowthExperiments\NewcomerTasks\TaskType\TemplateBasedTaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\TemplateBasedTaskTypeHandler;
 use GrowthExperiments\NewcomerTasks\TemplateBasedTaskSubmissionHandler;
-use GrowthExperiments\NewcomerTasks\Topic\MorelikeBasedTopic;
+use GrowthExperiments\NewcomerTasks\Topic\OresBasedTopic;
 use GrowthExperiments\NewcomerTasks\Topic\Topic;
 use GrowthExperiments\Tests\InvokedBetween;
 use GrowthExperiments\Util;
 use MediaWiki\Api\ApiRawMessage;
-use MediaWiki\Cache\LinkBatch;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Http\HttpRequestFactory;
+use MediaWiki\Http\MWHttpRequest;
+use MediaWiki\Page\LinkBatch;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Status\Status;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
@@ -29,7 +30,6 @@ use MediaWiki\Title\TitleParser;
 use MediaWiki\Title\TitleValue;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiUnitTestCase;
-use MWHttpRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use StatusValue;
 
@@ -46,8 +46,8 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 
 	/**
 	 * @dataProvider provideSuggest
-	 * @param array[] $taskTypeSpec All configured task types on the server. See getTaskTypes().
-	 * @param array[] $topicSpec All configured topics on the server. See getTopics().
+	 * @param array[] $taskTypes All configured task types on the server. See getTaskTypes().
+	 * @param array[] $topics All configured topics on the server. See getTopics().
 	 * @param array $requests [ [ 'params' => [...], 'response' => ... ], ... ] where params is
 	 *   a list of asserted query parameters (null means asserted to be not present), response is
 	 *   JSON data (in PHP form) or a StatusValue with errors
@@ -56,11 +56,11 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 	 * @param TaskSet|StatusValue $expectedTaskSet
 	 */
 	public function testSuggest(
-		$taskTypeSpec, $topicSpec, $requests, $taskSetFilters, $limit, $expectedTaskSet
+		$taskTypes, $topics, $requests, $taskSetFilters, $limit, $expectedTaskSet
 	) {
 		$user = new UserIdentityValue( 1, 'Foo' );
-		$taskTypes = self::getTaskTypes( $taskTypeSpec );
-		$topics = self::getTopics( $topicSpec );
+		$taskTypes = self::getTaskTypes( $taskTypes );
+		$topics = self::getTopics( $topics );
 
 		$taskTypeHandlerRegistry = $this->getMockTaskTypeHandlerRegistry();
 		$searchStrategy = $this->getMockSearchStrategy( $taskTypeHandlerRegistry );
@@ -90,11 +90,9 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 	}
 
 	public static function provideSuggest() {
-		$makeTask = static function ( TaskType $taskType, string $titleText, array $topicScores = [] ) {
+		$makeTask = static function ( TaskType $taskType, string $titleText, array $topics = [] ) {
 			$task = new Task( $taskType, new TitleValue( NS_MAIN, $titleText ) );
-			$task->setTopics( array_map( static function ( string $topicId ) {
-				return new Topic( $topicId );
-			}, array_keys( $topicScores ) ), $topicScores );
+			$task->setTopics( array_map( static fn ( string $id ) => new Topic( $id ), array_keys( $topics ) ) );
 			return $task;
 		};
 
@@ -104,8 +102,8 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 			'success' => [
 				// all configured task types on the server (see getTaskTypes() for format)
 				'taskTypes' => [ 'copyedit' => [ 'Copy-1', 'Copy-2' ] ],
-				// all configured topics on the server (see getTopics() for format)
-				'topics' => [ 'art' => [ 'Music', 'Painting' ], 'science' => [ 'Physics', 'Biology' ] ],
+				// all configured topics on the server (topic => ores topics)
+				'topics' => [ 'art' => [ 'visual-arts' ], 'science' => [ 'stem' ] ],
 				// expectations + response for each request the suggester should make
 				'requests' => [
 					[
@@ -141,7 +139,7 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 			],
 			'multiple queries' => [
 				'taskTypes' => [ 'copyedit' => [ 'Copy-1', 'Copy-2' ], 'link' => [ 'Link-1' ] ],
-				'topics' => [ 'art' => [ 'Music', 'Painting' ], 'science' => [ 'Physics', 'Biology' ] ],
+				'topics' => [ 'art' => [ 'visual-arts' ], 'science' => [ 'stem' ] ],
 				'requests' => [
 					[
 						'params' => [
@@ -189,7 +187,7 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 			],
 			'limit' => [
 				'taskTypes' => [ 'copyedit' => [ 'Copy-1', 'Copy-2' ], 'link' => [ 'Link-1' ] ],
-				'topics' => [ 'art' => [ 'Music', 'Painting' ], 'science' => [ 'Physics', 'Biology' ] ],
+				'topics' => [ 'art' => [ 'visual-arts' ], 'science' => [ 'stem' ] ],
 				'requests' => [
 					[
 						'params' => [
@@ -235,7 +233,7 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 			],
 			'task type filter' => [
 				'taskTypes' => [ 'copyedit' => [ 'Copy-1', 'Copy-2' ], 'link' => [ 'Link-1' ] ],
-				'topics' => [ 'art' => [ 'Music', 'Painting' ], 'science' => [ 'Physics', 'Biology' ] ],
+				'topics' => [ 'art' => [ 'visual-arts' ], 'science' => [ 'stem' ] ],
 				'requests' => [
 					[
 						'params' => [
@@ -261,41 +259,27 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 			],
 			'topic filter' => [
 				'taskTypes' => [ 'copyedit' => [ 'Copy-1', 'Copy-2' ], 'link' => [ 'Link-1' ] ],
-				'topics' => [ 'art' => [ 'Music', 'Painting' ], 'science' => [ 'Physics', 'Biology' ] ],
+				'topics' => [ 'art' => [ 'visual-arts' ], 'science' => [ 'stem' ] ],
 				'requests' => [
 					[
 						'params' => [
-							'srsearch' => 'hastemplate:"Copy-1|Copy-2" morelikethis:"Music|Painting"',
+							'srsearch' => 'hastemplate:"Copy-1|Copy-2" articletopic:visual-arts|stem',
 						],
 						'response' => [
 							'query' => [
 								'search' => [
 									[ 'ns' => 0, 'title' => 'Foo' ],
-								],
-								'searchinfo' => [
-									'totalhits' => 70,
-								],
-							],
-						],
-					],
-					[
-						'params' => [
-							'srsearch' => 'hastemplate:"Copy-1|Copy-2" morelikethis:"Physics|Biology"',
-						],
-						'response' => [
-							'query' => [
-								'search' => [
 									[ 'ns' => 0, 'title' => 'Bar' ],
 								],
 								'searchinfo' => [
-									'totalhits' => 30,
+									'totalhits' => 100,
 								],
 							],
 						],
 					],
 					[
 						'params' => [
-							'srsearch' => 'hastemplate:"Link-1" morelikethis:"Music|Painting"',
+							'srsearch' => 'hastemplate:"Link-1" articletopic:visual-arts|stem',
 						],
 						'response' => [
 							'query' => [
@@ -309,37 +293,24 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 							],
 						],
 					],
-					[
-						'params' => [
-							'srsearch' => 'hastemplate:"Link-1" morelikethis:"Physics|Biology"',
-						],
-						'response' => [
-							'query' => [
-								'search' => [],
-								'searchinfo' => [
-									'totalhits' => 0,
-								],
-							],
-						],
-					],
 				],
 				'taskSetFilters' => new TaskSetFilters( [], [ 'art', 'science' ] ),
 				'limit' => null,
 				'expectedTaskSet' => new TaskSet( [
 					// scores are faked for now, so they are just ( 100 / position in response )
-					$makeTask( $copyedit, 'Foo', [ 'art' => 100, ] ),
-					$makeTask( $copyedit, 'Bar', [ 'science' => 100, ] ),
+					$makeTask( $copyedit, 'Foo', [ 'art' => 100 ] ),
+					$makeTask( $copyedit, 'Bar', [ 'science' => 100 ] ),
 					$makeTask( $link, 'Baz', [ 'art' => 100 ] ),
 					$makeTask( $link, 'Boom', [ 'art' => 50 ] ),
 				], 150, 0, new TaskSetFilters() ),
 			],
 			'dedupe' => [
 				'taskTypes' => [ 'copyedit' => [ 'Copy-1' ], 'link' => [ 'Link-1' ] ],
-				'topics' => [ 'art' => [ 'Music' ], 'science' => [ 'Physics' ] ],
+				'topics' => [ 'art' => [ 'visual-arts' ], 'science' => [ 'stem' ] ],
 				'requests' => [
 					[
 						'params' => [
-							'srsearch' => 'hastemplate:"Copy-1" morelikethis:"Music"',
+							'srsearch' => 'hastemplate:"Copy-1" articletopic:visual-arts|stem',
 						],
 						'response' => [
 							'query' => [
@@ -347,59 +318,29 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 									[ 'ns' => 0, 'title' => 'T1' ],
 									[ 'ns' => 0, 'title' => 'T2' ],
 									[ 'ns' => 0, 'title' => 'T3' ],
+									[ 'ns' => 0, 'title' => 'T4' ],
 								],
 								'searchinfo' => [
-									'totalhits' => 25,
+									'totalhits' => 50,
 								],
 							],
 						],
 					],
 					[
 						'params' => [
-							'srsearch' => 'hastemplate:"Copy-1" morelikethis:"Physics"',
+							'srsearch' => 'hastemplate:"Link-1" articletopic:visual-arts|stem',
 						],
 						'response' => [
 							'query' => [
 								'search' => [
 									[ 'ns' => 0, 'title' => 'T1' ],
-									[ 'ns' => 0, 'title' => 'T4' ],
-								],
-								'searchinfo' => [
-									'totalhits' => 25,
-								],
-							],
-						],
-					],
-					[
-						'params' => [
-							'srsearch' => 'hastemplate:"Link-1" morelikethis:"Music"',
-						],
-						'response' => [
-							'query' => [
-								'search' => [
 									[ 'ns' => 0, 'title' => 'T2' ],
 									[ 'ns' => 0, 'title' => 'T4' ],
-									[ 'ns' => 0, 'title' => 'T5' ],
-								],
-								'searchinfo' => [
-									'totalhits' => 25,
-								],
-							],
-						],
-					],
-					[
-						'params' => [
-							'srsearch' => 'hastemplate:"Link-1" morelikethis:"Physics"',
-						],
-						'response' => [
-							'query' => [
-								'search' => [
-									[ 'ns' => 0, 'title' => 'T1' ],
 									[ 'ns' => 0, 'title' => 'T5' ],
 									[ 'ns' => 0, 'title' => 'T6' ],
 								],
 								'searchinfo' => [
-									'totalhits' => 25,
+									'totalhits' => 50,
 								],
 							],
 						],
@@ -408,17 +349,17 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 				'taskSetFilters' => new TaskSetFilters( [], [ 'art', 'science' ] ),
 				'limit' => null,
 				'expectedTaskSet' => new TaskSet( [
-					$makeTask( $copyedit, 'T1', [ 'art' => 100, ] ),
-					$makeTask( $copyedit, 'T2', [ 'art' => 100 / 2, ] ),
-					$makeTask( $copyedit, 'T3', [ 'art' => 100 / 3, ] ),
-					$makeTask( $copyedit, 'T4', [ 'science' => 100 / 2, ] ),
-					$makeTask( $link, 'T5', [ 'art' => 100 / 3 ] ),
-					$makeTask( $link, 'T6', [ 'science' => 100 / 3 ] ),
+					$makeTask( $copyedit, 'T1', [ 'art' ] ),
+					$makeTask( $copyedit, 'T2', [ 'art' ] ),
+					$makeTask( $copyedit, 'T3', [ 'art' ] ),
+					$makeTask( $copyedit, 'T4', [ 'science' ] ),
+					$makeTask( $link, 'T5', [ 'art' ] ),
+					$makeTask( $link, 'T6', [ 'science' ] ),
 				], 100, 0, new TaskSetFilters() ),
 			],
 			'http error' => [
 				'taskTypes' => [ 'copyedit' => [ 'Copy-1', 'Copy-2' ] ],
-				'topics' => [ 'art' => [ 'Music', 'Painting' ], 'science' => [ 'Physics', 'Biology' ] ],
+				'topics' => [ 'art' => [ 'visual-arts' ], 'science' => [ 'stem' ] ],
 				'requests' => [
 					[
 						'params' => [],
@@ -431,7 +372,7 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 			],
 			'api error' => [
 				'taskTypes' => [ 'copyedit' => [ 'Copy-1', 'Copy-2' ] ],
-				'topics' => [ 'art' => [ 'Music', 'Painting' ], 'science' => [ 'Physics', 'Biology' ] ],
+				'topics' => [ 'art' => [ 'visual-arts' ], 'science' => [ 'stem' ] ],
 				'requests' => [
 					[
 						'params' => [],
@@ -451,8 +392,8 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 
 	/**
 	 * @dataProvider provideFilter
-	 * @param array[] $taskTypeSpec All configured task types on the server. See getTaskTypes().
-	 * @param array[] $topicSpec All configured topics on the server. See getTopics().
+	 * @param array[] $taskTypes All configured task types on the server. See getTaskTypes().
+	 * @param array[] $topics All configured topics on the server. See getTopics().
 	 * @param TaskSet $taskSet
 	 * @param array $pageIds Page IDs returned by the LinkBatch
 	 * @param array $requests [ [ 'params' => [...], 'response' => ... ], ... ] where params is
@@ -461,16 +402,16 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 	 * @param TaskSet|StatusValue $expectedTaskSet
 	 */
 	public function testFilter(
-		array $taskTypeSpec,
-		array $topicSpec,
+		array $taskTypes,
+		array $topics,
 		TaskSet $taskSet,
 		array $pageIds,
 		array $requests,
 		$expectedTaskSet
 	) {
 		$user = new UserIdentityValue( 1, 'Foo' );
-		$taskTypes = self::getTaskTypes( $taskTypeSpec );
-		$topics = self::getTopics( $topicSpec );
+		$taskTypes = self::getTaskTypes( $taskTypes );
+		$topics = self::getTopics( $topics );
 
 		$taskTypeHandlerRegistry = $this->getMockTaskTypeHandlerRegistry();
 		$searchStrategy = $this->getMockSearchStrategy( $taskTypeHandlerRegistry );
@@ -501,7 +442,6 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 				$this->assertSame( $expectedTask->getTitle()->getDBkey(),
 					$filteredTask->getTitle()->getDBkey() );
 				$this->assertEquals( $expectedTask->getTopics(), $filteredTask->getTopics() );
-				$this->assertSame( $expectedTask->getTopicScores(), $filteredTask->getTopicScores() );
 			}
 		}
 	}
@@ -514,7 +454,7 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 				'taskSet' => new TaskSet( [
 					self::getTask( [ 'type1' => [ 'MaintTempl' ] ], 'Page1' ),
 				], 100, 0, new TaskSetFilters( [ 'type1' ], [] ) ),
-				'pageids' => [ 1 ],
+				'pageIds' => [ 1 ],
 				'requests' => [ [
 					'params' => [
 						'srsearch' => 'hastemplate:"MaintTempl" pageid:1',
@@ -540,7 +480,7 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 				'taskSet' => new TaskSet( [
 					self::getTask( [ 'type1' => [ 'MaintTempl' ] ], 'Page1' ),
 				], 100, 0, new TaskSetFilters( [ 'type1' ], [] ) ),
-				'pageids' => [ 1 ],
+				'pageIds' => [ 1 ],
 				'requests' => [ [
 					'params' => [
 						'srsearch' => 'hastemplate:"MaintTempl" pageid:1',
@@ -564,7 +504,7 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 					self::getTask( [ 'type1' => [ 'MaintTempl' ] ], 'Page1',
 						[ 'topic1' => [ 'foo' ] ], [ 'topic1' => 0.8 ] ),
 				], 100, 0, new TaskSetFilters( [ 'type1' ], [ 'topic1' ] ) ),
-				'pageids' => [ 1 ],
+				'pageIds' => [ 1 ],
 				'requests' => [ [
 					'params' => [
 						'srsearch' => 'hastemplate:"MaintTempl" pageid:1',
@@ -591,7 +531,7 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 				'taskSet' => new TaskSet( [
 					self::getTask( [ 'type1' => [ 'MaintTempl' ] ], 'Page1' ),
 				], 100, 0, new TaskSetFilters( [ 'type1' ], [] ) ),
-				'pageids' => [ 1 ],
+				'pageIds' => [ 1 ],
 				'requests' => [ [
 					'params' => [],
 					'response' => [
@@ -609,14 +549,13 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 	 * @param array[] $taskTypeSpec Task type of the task. See getTaskTypes(); should have a single type.
 	 * @param string $title Task page title (assumed to be in the mainspace).
 	 * @param array[] $topicSpec Topics of the task. See getTopics().
-	 * @param float[] $topicScores Topic ID => score.
 	 * @return Task
 	 */
-	private static function getTask( $taskTypeSpec, $title, $topicSpec = [], $topicScores = [] ) {
+	private static function getTask( $taskTypeSpec, $title, $topicSpec = [] ) {
 		$taskTypes = self::getTaskTypes( $taskTypeSpec );
 		$topics = self::getTopics( $topicSpec );
 		$task = new Task( $taskTypes[0], new TitleValue( NS_MAIN, $title ) );
-		$task->setTopics( $topics, $topicScores );
+		$task->setTopics( $topics );
 		return $task;
 	}
 
@@ -756,17 +695,13 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 	}
 
 	/**
-	 * @param array[] $spec [ topic id => [ title, ... ], ... ]
-	 * @return MorelikeBasedTopic[]
+	 * @param array[] $spec [ topic id => [ ores topic id, ... ], ... ]
+	 * @return OresBasedTopic[]
 	 */
 	private static function getTopics( array $spec ) {
 		$topics = [];
-		foreach ( $spec as $topicId => $titleNames ) {
-			$titleValues = [];
-			foreach ( $titleNames as $titleName ) {
-				$titleValues[] = new TitleValue( NS_MAIN, $titleName );
-			}
-			$topics[] = new MorelikeBasedTopic( $topicId, $titleValues );
+		foreach ( $spec as $topicId => $oresTopics ) {
+			$topics[] = new OresBasedTopic( $topicId, null, $oresTopics );
 		}
 		return $topics;
 	}
@@ -787,7 +722,6 @@ class RemoteSearchTaskSuggesterTest extends MediaWikiUnitTestCase {
 				'taskType' => $task->getTaskType()->getId(),
 				'titleNs' => $task->getTitle()->getNamespace(),
 				'titleDbkey' => $task->getTitle()->getDBkey(),
-				'topics' => $task->getTopicScores(),
 			];
 			return $taskData;
 		}, iterator_to_array( Util::getIteratorFromTraversable( $taskSet ) ) );

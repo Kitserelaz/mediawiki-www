@@ -1,5 +1,7 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace GrowthExperiments\NewcomerTasks\AddImage;
 
 use GrowthExperiments\GrowthExperimentsServices;
@@ -30,18 +32,10 @@ class SubpageImageRecommendationProvider
 	implements ImageRecommendationProvider
 {
 
-	/** @var ImageRecommendationMetadataProvider */
-	private $metadataProvider;
+	private ImageRecommendationMetadataProvider $metadataProvider;
 
-	/** @var ImageRecommendationApiHandler */
-	private $apiHandler;
+	private ImageRecommendationApiHandler $apiHandler;
 
-	/**
-	 * @param WikiPageFactory $wikiPageFactory
-	 * @param RecommendationProvider $fallbackRecommendationProvider
-	 * @param ImageRecommendationMetadataProvider $metadataProvider
-	 * @param ImageRecommendationApiHandler $imageRecommendationApiHandler
-	 */
 	public function __construct(
 		WikiPageFactory $wikiPageFactory,
 		RecommendationProvider $fallbackRecommendationProvider,
@@ -76,7 +70,8 @@ class SubpageImageRecommendationProvider
 		array $suggestionFilters = []
 	) {
 		Assert::parameterType( ImageRecommendationBaseTaskType::class, $taskType, '$taskType' );
-		'@phan-var ImageRecommendationBaseTaskType $taskType';/** @var ImageRecommendationBaseTaskType $taskType */
+		'@phan-var ImageRecommendationBaseTaskType $taskType';
+		/** @var ImageRecommendationBaseTaskType $taskType */
 
 		if ( isset( $data['pages'] ) || isset( $data['rows'] ) || isset( $data['query']['pages'] ) ) {
 			// This is the format used by the Image Suggestions API. It is not really useful
@@ -96,25 +91,30 @@ class SubpageImageRecommendationProvider
 	}
 
 	/** @inheritDoc */
-	public static function onMediaWikiServices( MediaWikiServices $services ) {
+	public static function onMediaWikiServices( MediaWikiServices $services ): void {
 		$growthServices = GrowthExperimentsServices::wrap( $services );
 		$services->addServiceManipulator( static::$serviceName,
 			static function (
 				RecommendationProvider $recommendationProvider,
 				MediaWikiServices $services
-			) use ( $growthServices ) {
-				return new static(
+			) use ( $growthServices ): ImageRecommendationProvider {
+				$subpageProvider = new static(
 					$services->getWikiPageFactory(),
 					$recommendationProvider,
 					new StaticImageRecommendationMetadataProvider(
 						$growthServices->getImageRecommendationMetadataService(),
-						$services->getContentLanguage()->getCode(),
+						$services->getContentLanguageCode()->toString(),
 						$services->getContentLanguage()->getFallbackLanguages(),
 						$services->getLanguageNameUtils(),
 						new DerivativeContext( RequestContext::getMain() ),
 						$services->getSiteStore()
 					),
 					$growthServices->getImageRecommendationApiHandler()
+				);
+				return new CacheBackedImageRecommendationProvider(
+					$services->getMainWANObjectCache(),
+					$subpageProvider,
+					$services->getStatsFactory()
 				);
 			}
 		);

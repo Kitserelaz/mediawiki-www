@@ -1,14 +1,13 @@
 <?php
 
-namespace JsonConfig\Tests;
+namespace MediaWiki\Extension\JsonConfig\Tests;
 
-use JsonConfig\JCMapDataContent;
 use LogicException;
+use MediaWiki\Extension\JsonConfig\JCMapDataContent;
 use MediaWiki\MainConfigNames;
 use MediaWikiIntegrationTestCase;
 
 /**
- * @group JsonConfig
  * @covers \JsonConfig\JCMapDataContent
  * @group Database
  */
@@ -24,6 +23,8 @@ class JCMapDataContentTest extends MediaWikiIntegrationTestCase {
 		}';
 
 	protected function setUp(): void {
+		$this->markTestSkippedIfExtensionNotLoaded( 'Kartographer' );
+		parent::setUp();
 		$this->overrideConfigValue( 'KartographerMapServer', 'https://maps.wikimedia.org' );
 	}
 
@@ -166,5 +167,52 @@ class JCMapDataContentTest extends MediaWikiIntegrationTestCase {
 				}'
 			],
 		];
+	}
+
+	public function testDataWithValidCategories() {
+		$jsonData = '{
+			"description": {
+				"en": "[[Do not parse]]"
+			},
+			"license": "CC0-1.0",
+			"zoom": 0,
+			"latitude": 0,
+			"longitude": 0,
+			"mediawikiCategories": [
+				{
+					"name": "TestCategory",
+					"sort": "SortTest"
+				}
+			],
+			"data": {
+				"type": "FeatureCollection",
+				"features": [
+					{
+						"type": "Feature",
+						"geometry": {
+							"type": "Point",
+							"coordinates": [110.0, 20.1]
+						},
+						"properties": {
+							"title": "Sample Location",
+							"description": "Sample Description"
+						}
+					}
+				]
+			}
+		}';
+
+		$content = new JCMapDataContent( $jsonData, 'some model', true );
+		$isValid = $content->isValid();
+
+		$this->assertTrue( $isValid );
+
+		$localized = $content->getLocalizedData(
+			$this->getServiceContainer()->getLanguageFactory()->getLanguage( 'en' )
+		);
+
+		$this->assertCount( 1, $localized->mediawikiCategories );
+		$this->assertSame( 'TestCategory', $localized->mediawikiCategories[0]->name );
+		$this->assertSame( 'SortTest', $localized->mediawikiCategories[0]->sort );
 	}
 }

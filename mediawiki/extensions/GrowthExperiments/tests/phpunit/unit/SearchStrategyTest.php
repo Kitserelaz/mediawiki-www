@@ -12,7 +12,6 @@ use GrowthExperiments\NewcomerTasks\TaskType\TemplateBasedTaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\TemplateBasedTaskTypeHandler;
 use GrowthExperiments\NewcomerTasks\TemplateBasedTaskSubmissionHandler;
 use GrowthExperiments\NewcomerTasks\Topic\CampaignTopic;
-use GrowthExperiments\NewcomerTasks\Topic\MorelikeBasedTopic;
 use GrowthExperiments\NewcomerTasks\Topic\OresBasedTopic;
 use MediaWiki\Title\TitleParser;
 use MediaWiki\Title\TitleValue;
@@ -27,18 +26,10 @@ class SearchStrategyTest extends MediaWikiUnitTestCase {
 	public function testGetQueries() {
 		$taskType = new TemplateBasedTaskType( 'copyedit', TaskType::DIFFICULTY_EASY,
 			[], [ new TitleValue( NS_TEMPLATE, 'Copyedit' ) ], [ new TitleValue( NS_TEMPLATE, 'DontCopyedit' ) ] );
-		$morelikeTopic1 = new MorelikeBasedTopic( 'art', [
-			new TitleValue( NS_MAIN, 'Picasso' ),
-			new TitleValue( NS_MAIN, 'Watercolor' ),
-		] );
-		$morelikeTopic2 = new MorelikeBasedTopic( 'science', [
-			new TitleValue( NS_MAIN, 'Einstein' ),
-			new TitleValue( NS_MAIN, 'Physics' ),
-		] );
 		$oresTopic1 = new OresBasedTopic( 'art', 'culture', [ 'painting', 'drawing' ] );
 		$oresTopic2 = new OresBasedTopic( 'science', 'stem', [ 'physics', 'biology' ] );
 		$campaignTopic1 = new CampaignTopic( 'biology', 'hastemplate:Taxobox' );
-		$campaignTopic2 = new CampaignTopic( 'argentina', 'morelike:Argentina' );
+		$campaignTopic2 = new CampaignTopic( 'argentina', 'hastemplate:Argentina' );
 
 		$taskTypeHandlerRegistry = $this->createMock( TaskTypeHandlerRegistry::class );
 		$taskTypeHandler = $this->createMock( TaskTypeHandler::class );
@@ -48,33 +39,21 @@ class SearchStrategyTest extends MediaWikiUnitTestCase {
 
 		$searchStrategy = new SearchStrategy( $taskTypeHandlerRegistry );
 
-		$morelikeQueries = $searchStrategy->getQueries( [ $taskType ],
-			[ $morelikeTopic1, $morelikeTopic2 ] );
-		$this->assertCount( 2, $morelikeQueries );
-
-		$this->assertTopicsInQueries( $morelikeQueries, [ 'art', 'science' ] );
-		$this->assertTaskTypeInQueries( $morelikeQueries, [ 'copyedit' ] );
-
-		$this->assertQueryStrings( $morelikeQueries, [
-			'hastemplate:"Copyedit" -hastemplate:"DontCopyedit" morelikethis:"Picasso|Watercolor"',
-			'hastemplate:"Copyedit" -hastemplate:"DontCopyedit" morelikethis:"Einstein|Physics"' ] );
-
 		$oresQueries = $searchStrategy->getQueries( [ $taskType ], [ $oresTopic1, $oresTopic2 ], [] );
-		$this->assertCount( 2, $oresQueries );
+		$this->assertCount( 1, $oresQueries );
 		$this->assertTaskTypeInQueries( $oresQueries, [ 'copyedit' ] );
-		$this->assertTopicsInQueries( $oresQueries, [ 'art', 'science' ] );
+		$this->assertTopicsInMultiTopicQueries( $oresQueries, [ 'art', 'science' ] );
 		$this->assertQueryStrings( $oresQueries, [
-			'hastemplate:"Copyedit" -hastemplate:"DontCopyedit" articletopic:painting|drawing',
-			'hastemplate:"Copyedit" -hastemplate:"DontCopyedit" articletopic:physics|biology'
+			'hastemplate:"Copyedit" -hastemplate:"DontCopyedit" articletopic:painting|drawing|physics|biology',
 		] );
 
 		$restrictedQueries = $searchStrategy->getQueries( [ $taskType ],
 			[ $oresTopic1, $oresTopic2 ], [ 1, 2, 3 ] );
-		$this->assertCount( 2, $restrictedQueries );
-		$this->assertTopicsInQueries( $restrictedQueries, [ 'art', 'science' ] );
+		$this->assertCount( 1, $restrictedQueries );
+		$this->assertTopicsInMultiTopicQueries( $restrictedQueries, [ 'art', 'science' ] );
 		$this->assertQueryStrings( $restrictedQueries, [
-			'hastemplate:"Copyedit" -hastemplate:"DontCopyedit" articletopic:painting|drawing pageid:1|2|3',
-			'hastemplate:"Copyedit" -hastemplate:"DontCopyedit" articletopic:physics|biology pageid:1|2|3'
+			'hastemplate:"Copyedit" -hastemplate:"DontCopyedit" articletopic:painting|drawing|physics|biology ' .
+			'pageid:1|2|3',
 		] );
 
 		$searchExpressionBasedTopicQueries = $searchStrategy->getQueries( [ $taskType ],
@@ -84,7 +63,7 @@ class SearchStrategyTest extends MediaWikiUnitTestCase {
 		$this->assertTopicsInQueries( $searchExpressionBasedTopicQueries, [ 'biology', 'argentina' ] );
 		$this->assertQueryStrings( $searchExpressionBasedTopicQueries, [
 			'hastemplate:"Copyedit" -hastemplate:"DontCopyedit" hastemplate:Taxobox',
-			'hastemplate:"Copyedit" -hastemplate:"DontCopyedit" morelike:Argentina',
+			'hastemplate:"Copyedit" -hastemplate:"DontCopyedit" hastemplate:Argentina',
 		] );
 	}
 
@@ -170,27 +149,34 @@ class SearchStrategyTest extends MediaWikiUnitTestCase {
 	private function assertTopicsInQueries( $queries, $topicIds ) {
 		[ $query1, $query2 ] = array_values( $queries );
 		foreach ( $topicIds as $id ) {
-			if ( $query1->getTopic()->getId() === $id ) {
-				$this->assertSame( $query1->getTopic()->getId(), $id );
-			} elseif ( $query2->getTopic()->getId() === $id ) {
-				$this->assertSame( $query2->getTopic()->getId(), $id );
+			if ( $query1->getTopics()[0]->getId() === $id ) {
+				$this->assertSame( $query1->getTopics()[0]->getId(), $id );
+			} elseif ( $query2->getTopics()[0]->getId() === $id ) {
+				$this->assertSame( $query2->getTopics()[0]->getId(), $id );
 			} else {
 				$this->fail( "$id not found in query." );
 			}
 		}
 	}
 
-	private function assertTaskTypeInQueries( $queries, $taskTypes ) {
-		[ $query1, $query2 ] = array_values( $queries );
-		foreach ( $taskTypes as $id ) {
-			if ( $query1->getTaskType()->getId() === $id ) {
-				$this->assertSame( $query1->getTaskType()->getId(), $id );
-			} elseif ( $query2->getTaskType()->getId() === $id ) {
-				$this->assertSame( $query2->getTaskType()->getId(), $id );
-			} else {
-				$this->fail( "$id not found in query." );
-			}
+	private function assertTopicsInMultiTopicQueries( $queries, $topicIds ) {
+		foreach ( $queries as $query ) {
+			$actualTopicIds = array_reduce( array_values( $query->getTopics() ), static function ( $acc, $topic ) {
+				$acc[] = $topic->getId();
+				return $acc;
+			}, [] );
+			$diff = array_diff( $actualTopicIds, $topicIds );
+			$this->assertSame( [], $diff );
 		}
+	}
+
+	private function assertTaskTypeInQueries( $queries, $taskTypes ) {
+		$actualTaskTypesIds = array_reduce( array_values( $queries ), static function ( $acc, $query ) {
+			$acc[] = $query->getTaskType()->getId();
+			return $acc;
+		}, [] );
+		$diff = array_diff( $actualTaskTypesIds, $taskTypes );
+		$this->assertSame( [], $diff );
 	}
 
 	/**

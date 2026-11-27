@@ -2,6 +2,7 @@
 
 namespace GrowthExperiments\Api;
 
+use GrowthExperiments\FeatureManager;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
 use GrowthExperiments\NewcomerTasks\ImageRecommendationFilter;
 use GrowthExperiments\NewcomerTasks\LinkRecommendationFilter;
@@ -12,12 +13,14 @@ use GrowthExperiments\NewcomerTasks\TaskSuggester\NewcomerTasksCacheRefreshJob;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\SearchStrategy\SearchStrategy;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\TaskSuggesterFactory;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
+use GrowthExperiments\NewcomerTasks\Topic\ITopicRegistry;
 use GrowthExperiments\NewcomerTasks\Topic\Topic;
-use JobQueueGroup;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiPageSet;
 use MediaWiki\Api\ApiQuery;
 use MediaWiki\Api\ApiQueryGeneratorBase;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\Title\Title;
 use StatusValue;
 use Wikimedia\ParamValidator\ParamValidator;
@@ -35,26 +38,20 @@ class ApiQueryGrowthTasks extends ApiQueryGeneratorBase {
 	private ImageRecommendationFilter $imageRecommendationFilter;
 	private ProtectionFilter $protectionFilter;
 	private JobQueueGroup $jobQueueGroup;
+	private ITopicRegistry $topicRegistry;
+	private FeatureManager $featureManager;
 
-	/**
-	 * @param ApiQuery $queryModule
-	 * @param string $moduleName
-	 * @param JobQueueGroup $jobQueueGroup
-	 * @param TaskSuggesterFactory $taskSuggesterFactory
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param LinkRecommendationFilter $linkRecommendationFilter
-	 * @param ImageRecommendationFilter $imageRecommendationFilter
-	 * @param ProtectionFilter $protectionFilter
-	 */
 	public function __construct(
 		ApiQuery $queryModule,
-		$moduleName,
+		string $moduleName,
 		JobQueueGroup $jobQueueGroup,
 		TaskSuggesterFactory $taskSuggesterFactory,
 		ConfigurationLoader $configurationLoader,
 		LinkRecommendationFilter $linkRecommendationFilter,
 		ImageRecommendationFilter $imageRecommendationFilter,
-		ProtectionFilter $protectionFilter
+		ProtectionFilter $protectionFilter,
+		ITopicRegistry $topicRegistry,
+		FeatureManager $featureManager
 	) {
 		parent::__construct( $queryModule, $moduleName, 'gt' );
 		$this->taskSuggesterFactory = $taskSuggesterFactory;
@@ -63,6 +60,8 @@ class ApiQueryGrowthTasks extends ApiQueryGeneratorBase {
 		$this->imageRecommendationFilter = $imageRecommendationFilter;
 		$this->protectionFilter = $protectionFilter;
 		$this->jobQueueGroup = $jobQueueGroup;
+		$this->topicRegistry = $topicRegistry;
+		$this->featureManager = $featureManager;
 	}
 
 	/** @inheritDoc */
@@ -75,10 +74,7 @@ class ApiQueryGrowthTasks extends ApiQueryGeneratorBase {
 		$this->run( $resultPageSet );
 	}
 
-	/**
-	 * @param ApiPageSet|null $resultPageSet
-	 */
-	protected function run( ?ApiPageSet $resultPageSet = null ) {
+	protected function run( ?ApiPageSet $resultPageSet = null ): void {
 		$user = $this->getUser();
 		if ( !$user->isNamed() ) {
 			$this->dieWithError( 'apierror-mustbeloggedin-generic' );
@@ -134,15 +130,8 @@ class ApiQueryGrowthTasks extends ApiQueryGeneratorBase {
 				'order' => $i,
 				'qualityGateIds' => $task->getTaskType()->getQualityGateIds(),
 				'qualityGateConfig' => $tasks->getQualityGateConfig(),
-				'token' => $task->getToken()
+				'token' => $task->getToken(),
 			];
-			if ( $task->getTopics() ) {
-				foreach ( $task->getTopicScores() as $id => $score ) {
-					// Handling associative arrays is annoying in JS; return the data as
-					// a list of (topic ID, score) pairs instead.
-					$extraData['topics'][] = [ $id, $score ];
-				}
-			}
 
 			if ( $resultPageSet ) {
 				$titles[] = $title;
@@ -185,9 +174,18 @@ class ApiQueryGrowthTasks extends ApiQueryGeneratorBase {
 			// page IDs. This makes the API endpoint behave in the same way as SuggestedEdits.php on
 			// Special:Homepage. If we don't do this, then repeat queries to this API endpoint with the same user
 			// ID and without `pageids` set will result in returning the same cached task set.
+			if ( !$user->isNamed() ) {
+				\MediaWiki\Logger\LoggerFactory::getInstance( 'GrowthExperiments' )->error(
+					'Scheduling NewcomerTasksCacheRefreshJob for non-named user',
+					[
+						'userId' => $user->getId(),
+						'exception' => new \RuntimeException( 'T419172' ),
+					]
+				);
+			}
 			$this->jobQueueGroup->lazyPush(
-				new NewcomerTasksCacheRefreshJob( [
-					'userId' => $user->getId()
+				new JobSpecification( NewcomerTasksCacheRefreshJob::JOB_NAME, [
+					'userId' => $user->getId(),
 				] )
 			);
 		}
@@ -200,7 +198,7 @@ class ApiQueryGrowthTasks extends ApiQueryGeneratorBase {
 
 	/** @inheritDoc */
 	protected function getAllowedParams() {
-		$taskTypes = $this->configurationLoader->getTaskTypes();
+		$taskTypes = $this->getTaskTypes();
 		$topics = $this->getTopics();
 		// Ensure valid values, tasks/topics might be empty during tests.
 		$taskLimit = max( count( $taskTypes ), 1 );
@@ -250,18 +248,15 @@ class ApiQueryGrowthTasks extends ApiQueryGeneratorBase {
 				ParamValidator::PARAM_ISMULTI => true,
 				ParamValidator::PARAM_ISMULTI_LIMIT1 => 1000,
 				ParamValidator::PARAM_ISMULTI_LIMIT2 => 1000,
-			]
+			],
 		];
 	}
 
 	/**
 	 * @return Topic[] Array of topic id => topic
 	 */
-	protected function getTopics() {
-		$topics = $this->configurationLoader->loadTopics();
-		if ( $topics instanceof StatusValue ) {
-			return [];
-		}
+	protected function getTopics(): array {
+		$topics = $this->topicRegistry->getTopics();
 		return array_combine( array_map( static function ( Topic $topic ) {
 			return $topic->getId();
 		}, $topics ), $topics ) ?: [];
@@ -280,6 +275,17 @@ class ApiQueryGrowthTasks extends ApiQueryGeneratorBase {
 	/** @inheritDoc */
 	public function getHelpUrls() {
 		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/Extension:GrowthExperiments#API';
+	}
+
+	/**
+	 * @return TaskType[]
+	 */
+	private function getTaskTypes(): array {
+		// Prevent calls to suggested edits config when feature is disabled, (T369312)
+		if ( !$this->featureManager->isNewcomerTasksAvailable() ) {
+			return [];
+		}
+		return $this->configurationLoader->getTaskTypes();
 	}
 
 }

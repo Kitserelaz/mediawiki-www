@@ -2,116 +2,303 @@
 
 namespace GrowthExperiments\Mentorship;
 
+use GrowthExperiments\MentorDashboard\MentorTools\MentorStatusManager;
+use GrowthExperiments\Mentorship\Provider\MentorProvider;
 use GrowthExperiments\Mentorship\Store\MentorStore;
-use GrowthExperiments\WikiConfigException;
 use InvalidArgumentException;
+use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\Options\UserOptionsManager;
+use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
-use Wikimedia\LightweightObjectStore\ExpirationAwareness;
+use MediaWiki\User\UserIdentityUtils;
+use Psr\Log\LoggerInterface;
+use Wikimedia\Rdbms\DBReadOnlyError;
 
-/**
- * A service for handling mentors.
- */
-abstract class MentorManager implements ExpirationAwareness {
+class MentorManager implements IMentorManager {
 
-	/** @var int */
-	public const MENTORSHIP_DISABLED = 0;
-	/** @var int */
-	public const MENTORSHIP_ENABLED = 1;
-	/** @var int */
-	public const MENTORSHIP_OPTED_OUT = 2;
-
-	/** @var int[] */
-	protected const MENTORSHIP_STATES = [
-		self::MENTORSHIP_DISABLED,
-		self::MENTORSHIP_ENABLED,
-		self::MENTORSHIP_OPTED_OUT
-	];
+	public const MENTORSHIP_ENABLED_PREF = 'growthexperiments-homepage-mentorship-enabled';
 
 	/**
-	 * Get the mentor assigned to this user, if it exists.
-	 * @param UserIdentity $user
-	 * @param string $role MentorStore::ROLE_* constant
-	 * @return Mentor|null
+	 * @var int Value used in user options to explicitly enable mentorship (after previously
+	 * being in a different mentorship state). This is important to tell apart users who never
+	 * changed their mentorship state and users who returned to enabled explicitly.
+	 *
+	 * NOTE: The value should be set in a way that does not conflict with
+	 * IMentorManager::MENTORSHIP_ states. Hopefully, 50 is high enough.
 	 */
-	abstract public function getMentorForUserIfExists(
+	private const MENTORSHIP_ENABLED_EXPLICITLY = 50;
+
+	public function __construct(
+		private MentorStore $mentorStore,
+		private MentorStatusManager $mentorStatusManager,
+		private MentorProvider $mentorProvider,
+		private UserFactory $userFactory,
+		private UserIdentityUtils $userIdentityUtils,
+		private UserOptionsLookup $userOptionsLookup,
+		private UserOptionsManager $userOptionsManager,
+		private LoggerInterface $logger,
+	) {
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function isUserIneligibleForMentorship( UserIdentity $user ): bool {
+		$block = $this->userFactory->newFromUserIdentity( $user )->getBlock();
+		return $this->getMentorshipStateForUser( $user ) === self::MENTORSHIP_OPTED_OUT ||
+			( $block && $block->isIndefinite() );
+	}
+
+	private function getMentorUserIdentityIfExists(
 		UserIdentity $user,
 		string $role = MentorStore::ROLE_PRIMARY
-	): ?Mentor;
+	): ?UserIdentity {
+		$mentorUser = $this->mentorStore->loadMentorUser( $user, $role );
 
-	/**
-	 * Get the mentor assigned to this user.
-	 * If the user did not have a mentor before, this will assign one on the fly.
-	 * @param UserIdentity $user
-	 * @param string $role MentorStore::ROLE_* constant
-	 * @return Mentor
-	 * @throws WikiConfigException If it is not possible to obtain a mentor due to misconfiguration.
-	 */
-	abstract public function getMentorForUser(
+		if ( $this->isUserIneligibleForMentorship( $user ) ) {
+			if ( $mentorUser ) {
+				// User is ineligible for mentorship, but has a mentor anyway. Clean up the
+				// invalid relationship. This is necessary to ensure falsy relationships are not
+				// included in dumps etc.
+				$this->mentorStore->dropMenteeRelationship( $user );
+			}
+
+			// Regardless of what is in the database, the user should not have any mentor (T351415)
+			return null;
+		}
+
+		if ( $mentorUser && $role === MentorStore::ROLE_BACKUP ) {
+			// Only use the saved backup mentor if they're still eligible to be a backup mentor.
+			// Ignore the current backup mentor relationship if any of the following applies:
+			//     a) the backup mentor is away
+			//     b) the backup mentor is no longer a mentor
+			if (
+				$this->mentorStatusManager->getMentorStatus( $mentorUser ) === MentorStatusManager::STATUS_AWAY ||
+				!$this->mentorProvider->isMentor( $mentorUser )
+			) {
+				// Drop the relationship. We do not need to remember the user and exclude later
+				// in getRandomAutoAssignedMentorForUserAndRole – that method will ensure only an
+				// eligible backup user is generated.
+				$mentorUser = null;
+			}
+		}
+
+		return $mentorUser;
+	}
+
+	/** @inheritDoc */
+	public function getMentorForUserIfExists(
 		UserIdentity $user,
 		string $role = MentorStore::ROLE_PRIMARY
-	): Mentor;
+	): ?Mentor {
+		$mentorUser = $this->getMentorUserIdentityIfExists( $user, $role );
+		if ( !$mentorUser ) {
+			return null;
+		}
+
+		return $this->mentorProvider->newMentorFromUserIdentity( $mentorUser, $user );
+	}
 
 	/**
-	 * Get the mentor assigned to this user. Suppress configuration errors and return null
-	 * if a mentor cannot be assigned.
-	 * @param UserIdentity $user
-	 * @param string $role MentorStore::ROLE_* constant
-	 * @return Mentor|null
-	 */
-	abstract public function getMentorForUserSafe(
-		UserIdentity $user,
-		string $role = MentorStore::ROLE_PRIMARY
-	): ?Mentor;
-
-	/**
-	 * Get the effective mentor assigned to this user.
+	 * Wrapper for getRandomAutoAssignedMentor
 	 *
-	 * This returns the primary mentor if they're active, otherwise,
-	 * it returns the backup mentor.
+	 * In addition to getRandomAutoAssignedMentor, this is mentor role-aware,
+	 * and automatically excludes the primary mentor if generating a mentor
+	 * for a non-primary role.
 	 *
-	 * @param UserIdentity $menteeUser
-	 * @return Mentor
-	 * @throws WikiConfigException If it is not possible to obtain a mentor due to misconfiguration.
-	 */
-	abstract public function getEffectiveMentorForUser( UserIdentity $menteeUser ): Mentor;
-
-	/**
-	 * Get the effective mentor assigned to this user, suppressing configuration errors.
-	 *
-	 * This returns the primary mentor if they're active, otherwise,
-	 * it returns the backup mentor.
-	 *
-	 * @param UserIdentity $menteeUser
-	 * @return Mentor|null
-	 */
-	abstract public function getEffectiveMentorForUserSafe( UserIdentity $menteeUser ): ?Mentor;
-
-	/**
-	 * Checks state of mentorship for an user
-	 *
-	 * @param UserIdentity $user
-	 * @return int One of MentorManager::MENTORSHIP_*
-	 */
-	abstract public function getMentorshipStateForUser( UserIdentity $user ): int;
-
-	/**
-	 * Set state of mentorship for an user
-	 *
-	 * @param UserIdentity $user
-	 * @param int $state One of MentorManager::MENTORSHIP_*
-	 * @throws InvalidArgumentException In case of invalid $state
-	 */
-	abstract public function setMentorshipStateForUser( UserIdentity $user, int $state ): void;
-
-	/**
-	 * Randomly selects a mentor from the available mentors.
+	 * If $role is ROLE_BACKUP, it also makes sure to not generate a mentor that's away.
 	 *
 	 * @param UserIdentity $mentee
-	 * @param UserIdentity[] $excluded A list of users who should not be selected.
-	 * @return UserIdentity|null The selected mentor; null if none available.
-	 * @throws WikiConfigException If the mentor list is invalid.
+	 * @param string $role One of MentorStore::ROLE_* roles
+	 * @return UserIdentity|null Mentor that can be assigned to the mentee
 	 */
-	abstract public function getRandomAutoAssignedMentor(
+	private function getRandomAutoAssignedMentorForUserAndRole(
+		UserIdentity $mentee,
+		string $role
+	): ?UserIdentity {
+		if ( $this->isUserIneligibleForMentorship( $mentee ) ) {
+			// Do not assign any mentors for ineligible users
+			return null;
+		}
+
+		$excludedUsers = [];
+		if ( $role !== MentorStore::ROLE_PRIMARY ) {
+			$primaryMentor = $this->mentorStore->loadMentorUser(
+				$mentee,
+				MentorStore::ROLE_PRIMARY
+			);
+			if ( $primaryMentor ) {
+				$excludedUsers[] = $primaryMentor;
+			}
+		}
+
+		return $this->getRandomAutoAssignedMentor( $mentee, $excludedUsers );
+	}
+
+	/** @inheritDoc */
+	public function getMentorForUserSafe(
+		UserIdentity $user,
+		string $role = MentorStore::ROLE_PRIMARY
+	): ?Mentor {
+		try {
+			$mentorUser = $this->getMentorUserIdentityIfExists( $user, $role );
+
+			if ( !$mentorUser ) {
+				$mentorUser = $this->getRandomAutoAssignedMentorForUserAndRole( $user, $role );
+				if ( $mentorUser ) {
+					$this->mentorStore->setMentorForUser( $user, $mentorUser, $role );
+				}
+			}
+
+			if ( $mentorUser ) {
+				$mentorUser = $this->mentorProvider->newMentorFromUserIdentity( $mentorUser, $user );
+			}
+			return $mentorUser;
+		} catch ( DBReadOnlyError ) {
+			// Just pretend the user doesn't have a mentor. It will be set later, and often
+			// this call is made in the context of something not specifically mentorship-
+			// related, such as the homepage, so it's better than erroring out.
+		}
+		return null;
+	}
+
+	/** @inheritDoc */
+	public function getEffectiveMentorForUserSafe( UserIdentity $menteeUser ): ?Mentor {
+		$primaryMentor = $this->getMentorForUserSafe( $menteeUser, MentorStore::ROLE_PRIMARY );
+		if ( $primaryMentor === null ) {
+			// If primary mentor cannot be assigned, there's zero chance to successfully assign any
+			// mentor.
+			return null;
+		}
+
+		if ( $this->mentorStatusManager->getMentorStatus( $primaryMentor->getUserIdentity() ) ===
+			MentorStatusManager::STATUS_ACTIVE ) {
+			return $primaryMentor;
+		} else {
+			return $this->getMentorForUserSafe( $menteeUser, MentorStore::ROLE_BACKUP );
+		}
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function getRandomAutoAssignedMentor(
 		UserIdentity $mentee, array $excluded = []
-	): ?UserIdentity;
+	): ?UserIdentity {
+		$excluded = array_merge(
+			$excluded,
+			$this->mentorStatusManager->getAwayMentors()
+		);
+		$autoAssignedMentors = $this->mentorProvider->getWeightedAutoAssignedMentors();
+		if ( count( $autoAssignedMentors ) === 0 ) {
+			$this->logger->debug(
+				'Mentorship: No mentor available for user {user}',
+				[
+					'user' => $mentee->getName(),
+				]
+			);
+			return null;
+		}
+		$autoAssignedMentors = array_diff( $autoAssignedMentors, $excluded );
+		if ( count( $autoAssignedMentors ) === 0 ) {
+			$this->logger->debug(
+				'Mentorship: No mentor available for {user} but excluded users',
+				[
+					'user' => $mentee->getName(),
+				]
+			);
+			return null;
+		}
+		$autoAssignedMentors = array_values( array_diff( $autoAssignedMentors, [ $mentee ] ) );
+		if ( count( $autoAssignedMentors ) === 0 ) {
+			$this->logger->debug(
+				'Mentorship: No mentor available for {user} but themselves',
+				[
+					'user' => $mentee->getName(),
+				]
+			);
+			return null;
+		}
+
+		return $autoAssignedMentors[ rand( 0, count( $autoAssignedMentors ) - 1 ) ];
+	}
+
+	private function getMentorshipStateForUserInternal( UserIdentity $user ): int {
+		if ( !$this->userIdentityUtils->isNamed( $user ) ) {
+			// only named users can have mentorship
+			$this->logger->warning(
+				__METHOD__ . ' was asked to return mentorship state for a non-named user {user}',
+				[
+					'user' => $user->getName(),
+					'impact' => 'Pretending the status is MENTORSHIP_DISABLED',
+					'exception' => new \RuntimeException,
+				]
+			);
+			return self::MENTORSHIP_DISABLED;
+		}
+
+		$state = $this->userOptionsLookup->getIntOption( $user, self::MENTORSHIP_ENABLED_PREF );
+		if (
+			$state !== self::MENTORSHIP_ENABLED_EXPLICITLY &&
+			!in_array( $state, self::MENTORSHIP_STATES )
+		) {
+			// default to MENTORSHIP_DISABLED and log an error
+			$this->logger->error(
+				'User {user} has invalid value of {property} user property',
+				[
+					'user' => $user->getName(),
+					'property' => self::MENTORSHIP_ENABLED_PREF,
+					'impact' => 'defaulting to MENTORSHIP_DISABLED',
+				]
+			);
+			return self::MENTORSHIP_DISABLED;
+		}
+		return $state;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function getMentorshipStateForUser( UserIdentity $user ): int {
+		$state = $this->getMentorshipStateForUserInternal( $user );
+		if ( $state === self::MENTORSHIP_ENABLED_EXPLICITLY ) {
+			return self::MENTORSHIP_ENABLED;
+		}
+		return $state;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function didUserExplicitlyOptIntoMentorship( UserIdentity $user ): bool {
+		$state = $this->getMentorshipStateForUserInternal( $user );
+		return $state === self::MENTORSHIP_ENABLED_EXPLICITLY;
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function setMentorshipStateForUser( UserIdentity $user, int $state ): void {
+		if ( !in_array( $state, self::MENTORSHIP_STATES ) ) {
+			throw new InvalidArgumentException(
+				'Invalid value of $state passed to ' . __METHOD__
+			);
+		}
+
+		$this->userOptionsManager->setOption(
+			$user,
+			self::MENTORSHIP_ENABLED_PREF,
+			$state === self::MENTORSHIP_ENABLED ? self::MENTORSHIP_ENABLED_EXPLICITLY : $state
+		);
+		$this->userOptionsManager->saveOptions( $user );
+
+		if ( $state === self::MENTORSHIP_OPTED_OUT ) {
+			// user opted out, drop mentor/mentee relationship
+			$this->mentorStore->dropMenteeRelationship( $user );
+		} elseif ( $state === self::MENTORSHIP_ENABLED ) {
+			// The user has opted-in to mentorship. Calling getMentorForUserSafe will
+			// persist the newly assigned mentor(s) in the MentorStore.
+			$this->getMentorForUserSafe( $user );
+		}
+	}
 }

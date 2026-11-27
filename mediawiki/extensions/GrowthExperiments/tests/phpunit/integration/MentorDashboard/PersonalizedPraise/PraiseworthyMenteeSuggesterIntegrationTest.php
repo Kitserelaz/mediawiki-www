@@ -1,10 +1,15 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace GrowthExperiments\Tests\Integration;
 
 use GrowthExperiments\GrowthExperimentsServices;
 use GrowthExperiments\HomepageHooks;
 use GrowthExperiments\Mentorship\Store\MentorStore;
+use GrowthExperiments\UserImpact\RefreshUserImpactJob;
+use MediaWiki\Extension\CommunityConfiguration\Tests\CommunityConfigurationTestHelpers;
+use MediaWiki\Http\MWHttpRequest;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\Permissions\Authority;
 use MediaWiki\Title\Title;
@@ -12,20 +17,18 @@ use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
 use MediaWikiIntegrationTestCase;
 use MockHttpTrait;
-use MWHttpRequest;
 use StatusValue;
 
 /**
  * @group Database
  * @group medium
- * @coversDefaultClass \GrowthExperiments\MentorDashboard\PersonalizedPraise\PraiseworthyMenteeSuggester
+ * @covers \GrowthExperiments\MentorDashboard\PersonalizedPraise\PraiseworthyMenteeSuggester
  */
 class PraiseworthyMenteeSuggesterIntegrationTest extends MediaWikiIntegrationTestCase {
 	use MockHttpTrait;
+	use CommunityConfigurationTestHelpers;
 
 	/**
-	 * @param UserIdentity $mentor
-	 * @param int $numOfMentees
 	 * @return User[]
 	 */
 	private function getNMentees( UserIdentity $mentor, int $numOfMentees ): array {
@@ -61,7 +64,7 @@ class PraiseworthyMenteeSuggesterIntegrationTest extends MediaWikiIntegrationTes
 		}
 	}
 
-	private function mockPageviews() {
+	private function mockPageviews(): void {
 		$mwHttpRequest = $this->createMock( MWHttpRequest::class );
 		$mwHttpRequest->method( 'execute' )
 			->willReturn( new StatusValue() );
@@ -70,22 +73,23 @@ class PraiseworthyMenteeSuggesterIntegrationTest extends MediaWikiIntegrationTes
 		$this->installMockHttp( $mwHttpRequest );
 	}
 
-	/**
-	 * @covers ::getPraiseworthyMenteesForMentorUncached
-	 */
-	public function testGetPraiseworthyMenteesForMentor() {
+	public function testGetPraiseworthyMenteesForMentor(): void {
+		$this->markTestSkippedIfExtensionNotLoaded( 'PageViewInfo' );
 		$minEdits = 2;
 		$this->mockPageviews();
 		$this->overrideConfigValues( [
 			'GEPersonalizedPraiseBackendEnabled' => true,
-			'GEPersonalizedPraiseMinEdits' => $minEdits,
 		] );
+		$this->overrideProviderConfig( [
+			'GEPersonalizedPraiseMinEdits' => $minEdits,
+		], 'Mentorship' );
 
 		$mentor = $this->getTestSysop()->getUserIdentity();
 		[ $praiseworthyMentee, $otherMentee ] = $this->getNMentees( $mentor, 2 );
 
 		$this->makeNEdits( $praiseworthyMentee, $minEdits );
 		$this->makeNEdits( $otherMentee, $minEdits - 1 );
+		$this->runJobs( runOptions: [ 'type' => RefreshUserImpactJob::JOB_NAME ] );
 
 		$suggester = GrowthExperimentsServices::wrap( $this->getServiceContainer() )
 			->getPraiseworthyMenteeSuggester();

@@ -11,7 +11,7 @@ use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\FormSpecialPage;
 use MediaWiki\SpecialPage\SpecialPage;
 use Miraheze\CreateWiki\ConfigNames;
-use Miraheze\CreateWiki\Helpers\WikiCategoryLabels;
+use WikiOasis\WikiOasisMagic\Helpers\WikiCategoryLabels;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\WikiManagerFactory;
 use Miraheze\CreateWiki\Services\CreateWikiValidator;

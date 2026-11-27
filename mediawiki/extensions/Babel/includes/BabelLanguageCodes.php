@@ -11,8 +11,8 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Babel;
 
-use LanguageCode;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageCode;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\MediaWikiServices;
 
 /**
@@ -40,7 +40,7 @@ class BabelLanguageCodes {
 			// If so, return the internal MediaWiki code.
 			$mapping = LanguageCode::getNonstandardLanguageCodeMapping();
 			foreach ( $mapping as $mwCode => $bcp47code ) {
-				// Careful, because the nonstandardlanguagecodemapping
+				// Careful, because the non-standard language code mapping
 				// also maps deprecated codes to bcp-47 equivalents; we
 				// don't want to return a deprecated code.
 				self::$mapToMediaWikiCodeCache[ strtolower( $bcp47code ) ] =
@@ -64,10 +64,10 @@ class BabelLanguageCodes {
 	 * internal Babel language codes (preferring ISO 639-1 over ISO 639-3) map.
 	 *
 	 * @param string $code Code to try and get a "better" code for.
-	 * @return string|bool Mediawiki-internal language code, or false
+	 * @return string|null Mediawiki-internal language code, or null
 	 *   for invalid language code.
 	 */
-	public static function getCode( string $code ) {
+	public static function getCode( string $code ): ?string {
 		// Map BCP 47 codes and/or deprecated codes to internal MediaWiki codes
 		$mediawiki = self::mapToMediaWikiCode( $code );
 		if ( $mediawiki !== false ) {
@@ -86,7 +86,7 @@ class BabelLanguageCodes {
 			$isoCodes = require __DIR__ . '/../codes.php';
 		}
 
-		return $isoCodes[$code] ?? false;
+		return $isoCodes[$code] ?? null;
 	}
 
 	/**
@@ -102,7 +102,7 @@ class BabelLanguageCodes {
 	public static function getName( string $code, ?string $language = null ) {
 		// Get correct code, even though it should already be correct.
 		$code = self::getCode( $code );
-		if ( $code === false ) {
+		if ( $code === null ) {
 			return false;
 		}
 		$code = strtolower( $code );
@@ -126,7 +126,7 @@ class BabelLanguageCodes {
 	 * Return an appropriate category name, given a MediaWiki-internal
 	 * language code.  MediaWiki-internal codes are all-lowercase, but
 	 * historically our category codes have been partially uppercase
-	 * in the style of BCP 47.  Eventually we should probably use true
+	 * in the style of BCP 47. Eventually, we should probably use true
 	 * BCP 47 for category names, but historically we've had internal
 	 * codes like `simple` which we don't want to rename to `en-simple`
 	 * quite yet.

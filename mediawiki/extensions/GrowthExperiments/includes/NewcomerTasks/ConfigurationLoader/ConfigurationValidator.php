@@ -3,12 +3,8 @@
 namespace GrowthExperiments\NewcomerTasks\ConfigurationLoader;
 
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
-use GrowthExperiments\NewcomerTasks\Topic\Topic;
-use MediaWiki\Collation\CollationFactory;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Message\Message;
-use MediaWiki\Title\MalformedTitleException;
-use MediaWiki\Title\TitleParser;
-use MessageLocalizer;
 use StatusValue;
 
 /**
@@ -19,25 +15,10 @@ class ConfigurationValidator {
 	/** @var MessageLocalizer */
 	private $messageLocalizer;
 
-	/** @var CollationFactory */
-	private $collationFactory;
-
-	/** @var TitleParser */
-	private $titleParser;
-
-	/**
-	 * @param MessageLocalizer $messageLocalizer
-	 * @param CollationFactory $collationFactory
-	 * @param TitleParser $titleParser
-	 */
 	public function __construct(
-		MessageLocalizer $messageLocalizer,
-		CollationFactory $collationFactory,
-		TitleParser $titleParser
+		MessageLocalizer $messageLocalizer
 	) {
 		$this->messageLocalizer = $messageLocalizer;
-		$this->collationFactory = $collationFactory;
-		$this->titleParser = $titleParser;
 	}
 
 	/**
@@ -55,53 +36,6 @@ class ConfigurationValidator {
 	 */
 	public function setMessageLocalizer( MessageLocalizer $messageLocalizer ): void {
 		$this->messageLocalizer = $messageLocalizer;
-	}
-
-	/**
-	 * Validate a task or topic ID
-	 * @param string $id
-	 * @return StatusValue
-	 */
-	public function validateIdentifier( $id ) {
-		return preg_match( '/^[a-z\d\-]+$/', $id )
-			? StatusValue::newGood()
-			: StatusValue::newFatal( 'growthexperiments-homepage-suggestededits-config-invalidid', $id );
-	}
-
-	/**
-	 * @param mixed $title Page title. Must be a string (but at the PHP level we need to allow
-	 *   any type, so we can handle errors via status objects).
-	 * @return StatusValue
-	 */
-	public function validateTitle( $title ) {
-		if ( !is_string( $title ) ) {
-			if ( !is_scalar( $title ) ) {
-				$title = '[' . gettype( $title ) . ']';
-			}
-			return StatusValue::newFatal( 'growthexperiments-homepage-suggestededits-config-invalidtitle',
-				$title );
-		}
-		try {
-			$this->titleParser->parseTitle( $title );
-		} catch ( MalformedTitleException $e ) {
-			return StatusValue::newFatal( 'growthexperiments-homepage-suggestededits-config-invalidtitle',
-				$title );
-		}
-		return StatusValue::newGood();
-	}
-
-	/**
-	 * Verify that a required field is present.
-	 * @param string $field Configuration field name
-	 * @param array $config Configuration
-	 * @param string $taskTypeId Task type ID, for better error reporting
-	 * @return StatusValue
-	 */
-	public function validateRequiredField( $field, $config, $taskTypeId ) {
-		return isset( $config[$field] )
-			? StatusValue::newGood()
-			: StatusValue::newFatal( 'growthexperiments-homepage-suggestededits-config-missingfield',
-				$field, $taskTypeId );
 	}
 
 	/**
@@ -128,27 +62,6 @@ class ConfigurationValidator {
 				$field, $taskTypeId, $min );
 		}
 		return StatusValue::newGood();
-	}
-
-	/**
-	 * Verify that a field exists and is a non-associative array.
-	 *
-	 * @param string $field Configuration field name
-	 * @param array $config Configuration
-	 * @param string $taskTypeId Task type ID, for better error reporting.
-	 * @return StatusValue
-	 */
-	public function validateFieldIsArray( string $field, array $config, string $taskTypeId ): StatusValue {
-		$status = StatusValue::newGood();
-		$status->merge( $this->validateRequiredField( $field, $config, $taskTypeId ) );
-		if ( $status->isOK() ) {
-			if ( !is_array( $config[$field] ) || array_values( $config[$field] ) !== $config[$field] ) {
-				$status->fatal(
-					'growthexperiments-homepage-suggestededits-config-fieldarray', $taskTypeId, $field
-				);
-			}
-		}
-		return $status;
 	}
 
 	/**
@@ -196,48 +109,7 @@ class ConfigurationValidator {
 			$taskType->getName( $this->messageLocalizer ),
 			$taskType->getDescription( $this->messageLocalizer ),
 			$taskType->getShortDescription( $this->messageLocalizer ),
-			$taskType->getTimeEstimate( $this->messageLocalizer )
+			$taskType->getTimeEstimate( $this->messageLocalizer ),
 		], $taskType->getId() );
 	}
-
-	/**
-	 * Ensure that all messages used by the topic exist.
-	 * @param Topic $topic
-	 * @return StatusValue
-	 */
-	public function validateTopicMessages( Topic $topic ) {
-		$messages = [ $topic->getName( $this->messageLocalizer ) ];
-		if ( $topic->getGroupId() ) {
-			$messages[] = $topic->getGroupName( $this->messageLocalizer );
-		}
-		return $this->validateMessages( $messages, $topic->getId() );
-	}
-
-	/**
-	 * Sorts topics in-place, based on the group configuration and alphabetically within that.
-	 * @param Topic[] &$topics
-	 * @param string[] $groups
-	 */
-	public function sortTopics( array &$topics, $groups ) {
-		if ( !$topics ) {
-			return;
-		}
-
-		$collation = $this->collationFactory->getCategoryCollation();
-
-		usort( $topics, function ( Topic $left, Topic $right ) use ( $groups, $collation ) {
-			$leftGroup = $left->getGroupId();
-			$rightGroup = $right->getGroupId();
-			if ( $leftGroup !== $rightGroup ) {
-				return array_search( $leftGroup, $groups, true ) - array_search( $rightGroup, $groups, true );
-			}
-
-			$leftSortKey = $collation->getSortKey(
-				$left->getName( $this->messageLocalizer )->text() );
-			$rightSortKey = $collation->getSortKey(
-				$right->getName( $this->messageLocalizer )->text() );
-			return strcmp( $leftSortKey, $rightSortKey );
-		} );
-	}
-
 }

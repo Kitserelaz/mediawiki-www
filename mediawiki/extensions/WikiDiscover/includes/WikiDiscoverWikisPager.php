@@ -7,7 +7,6 @@ use MediaWiki\Html\Html;
 use MediaWiki\Languages\LanguageNameUtils;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Pager\TablePager;
-use Miraheze\CreateWiki\Helpers\WikiCategoryLabels;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\CreateWikiValidator;
 use Miraheze\CreateWiki\Services\RemoteWikiFactory;
@@ -58,12 +57,13 @@ class WikiDiscoverWikisPager extends TablePager {
 	}
 
 	/** @inheritDoc */
-	public function formatValue( $name, $value ): string {
+	public function formatValue( $field, $value ): string {
 		$row = $this->getCurrentRow();
+		$value ??= '';
 
-		switch ( $name ) {
+		switch ( $field ) {
 			case 'wiki_dbname':
-				$url = $row->wiki_url ?: $this->validator->getValidUrl( $row->wiki_dbname );
+				$url = $row->wiki_url ?: $this->validator->getValidUrl( $value );
 				$name = $row->wiki_sitename;
 				$formatted = Html::element( 'a', [ 'href' => $url ], $name );
 				break;
@@ -83,7 +83,7 @@ class WikiDiscoverWikisPager extends TablePager {
 				};
 				break;
 			case 'wiki_private':
-				if ( $row->wiki_private ) {
+				if ( (bool)$value ) {
 					$formatted = $this->msg( 'wikidiscover-label-private' )->escaped();
 				} else {
 					$formatted = $this->msg( 'wikidiscover-label-public' )->escaped();
@@ -91,15 +91,11 @@ class WikiDiscoverWikisPager extends TablePager {
 				break;
 			case 'wiki_category':
 				$wikiCategories = array_flip( $this->getConfig()->get( 'CreateWikiCategories' ) );
-				$formatted = $this->escape( WikiCategoryLabels::getLabel(
-					$this->getContext(),
-					$row->wiki_category,
-					$wikiCategories[$row->wiki_category] ?? $row->wiki_category
-				) );
+				$formatted = $this->escape( $wikiCategories[$value] ?? $value );
 				break;
 			case 'wiki_creation':
 				$formatted = $this->escape( $this->getLanguage()->userTimeAndDate(
-					$row->wiki_creation, $this->getUser()
+					$value, $this->getUser()
 				) );
 				break;
 			case 'wiki_description':
@@ -108,8 +104,7 @@ class WikiDiscoverWikisPager extends TablePager {
 				$formatted = $this->escape( $value );
 				break;
 			default:
-				$formatted = $this->escape( "Unable to format $name" );
-				break;
+				$formatted = $this->escape( "Unable to format $field" );
 		}
 
 		return $formatted;
@@ -119,7 +114,7 @@ class WikiDiscoverWikisPager extends TablePager {
 	 * Safely HTML-escapes $value
 	 */
 	private function escape( string $value ): string {
-		return htmlspecialchars( $value, ENT_QUOTES, 'UTF-8', false );
+		return htmlspecialchars( $value, ENT_QUOTES );
 	}
 
 	/** @inheritDoc */

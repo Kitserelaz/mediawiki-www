@@ -3,9 +3,7 @@
  * Class for exceptions thrown by EDParser* methods and intercepted by EDConnectors* constructors.
  *
  * @author Alexander Mashin
- *
  */
-
 class EDParserException extends Exception {
 	/** @var string MW message code. */
 	private $msgCode;

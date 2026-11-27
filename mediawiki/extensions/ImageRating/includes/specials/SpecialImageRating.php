@@ -1,6 +1,9 @@
 <?php
 
 use MediaWiki\MediaWikiServices;
+use MediaWiki\SiteStats\SiteStats;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Title\Title;
 
 /**
  * ImageRating extension - allows categorizing and rating images via a new
@@ -32,10 +35,10 @@ class ImageRating extends SpecialPage {
 	 * Returns the name that goes in the \<h1\> in the special page itself, and
 	 * also the name that will be listed in Special:SpecialPages
 	 *
-	 * @return string
+	 * @return Message
 	 */
 	public function getDescription() {
-		return $this->msg( 'imagerating-ratetitle' )->plain();
+		return $this->msg( 'imagerating-ratetitle' );
 	}
 
 	/**
@@ -105,9 +108,10 @@ class ImageRating extends SpecialPage {
 		$options['OFFSET'] = $offset;
 
 		// Database calls
-		$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
+		$services = MediaWikiServices::getInstance();
+		$dbr = $services->getDBLoadBalancer()->getConnection( DB_REPLICA );
 
-		if ( $category ) {
+		if ( $category !== null ) {
 			$ctgTitle = Title::newFromText( $this->msg( 'imagerating-category', trim( $category ) )->inContentLanguage()->parse() );
 			$ctgKey = $lang->uc( $ctgTitle->getDBkey() );
 			$tables[] = 'categorylinks';
@@ -125,14 +129,15 @@ class ImageRating extends SpecialPage {
 					[
 						'page_id', 'page_title',
 						'AVG(vote_value) AS vote_avg',
-						"(SELECT COUNT(*) FROM {$dbr->tableName( 'Vote' )} WHERE vote_page_id = page_id) AS vote_count",
+						'COUNT(vote_id) AS vote_count',
 					],
-					[ 'page_namespace' => NS_FILE, 'page_id = vote_page_id' ] + $where,
+					[ 'page_namespace' => NS_FILE ] + $where,
 					__METHOD__,
 					[
+						'GROUP BY' => 'page_id, page_title',
 						'ORDER BY' => 'vote_avg DESC, vote_count DESC'
 					] + $options,
-					$joinConds
+					[ 'Vote' => [ 'INNER JOIN', 'page_id = vote_page_id' ] ] + $joinConds
 				);
 				$row_count = $dbr->selectRow(
 					array_merge( [ 'page', 'Vote' ], $tables ),
@@ -143,10 +148,10 @@ class ImageRating extends SpecialPage {
 					[ 'Vote' => [ 'INNER JOIN', 'page_id = vote_page_id' ] ] + $joinConds
 				);
 				$total = $row_count->total_ratings;
-				if ( isset( $category ) && $category ) {
-					$out->setPageTitle( $this->msg( 'imagerating-best-heading-param', $category ) );
+				if ( $category !== null ) {
+					$out->setPageTitleMsg( $this->msg( 'imagerating-best-heading-param', $category ) );
 				} else {
-					$out->setPageTitle( $this->msg( 'imagerating-best-heading' ) );
+					$out->setPageTitleMsg( $this->msg( 'imagerating-best-heading' ) );
 				}
 				break;
 
@@ -156,11 +161,12 @@ class ImageRating extends SpecialPage {
 					[
 						'page_id', 'page_title',
 						'AVG(vote_value) AS vote_avg',
-						"(SELECT COUNT(*) FROM {$dbr->tableName( 'Vote' )} WHERE vote_page_id = page_id) AS vote_count",
+						'COUNT(vote_id) AS vote_count',
 					],
 					[ 'page_namespace' => NS_FILE ] + $where,
 					__METHOD__,
 					[
+						'GROUP BY' => 'page_id, page_title',
 						'ORDER BY' => 'page_id DESC, vote_avg DESC, vote_count DESC',
 						// the HAVING condition can't be in the WHERE clause
 						'HAVING' => 'vote_count > 1'
@@ -178,10 +184,10 @@ class ImageRating extends SpecialPage {
 					] + $joinConds
 				);
 				$total = $row_count->total_ratings;
-				if ( isset( $category ) && $category ) {
-					$out->setPageTitle( $this->msg( 'imagerating-popular-heading-param', $category ) );
+				if ( $category !== null ) {
+					$out->setPageTitleMsg( $this->msg( 'imagerating-popular-heading-param', $category ) );
 				} else {
-					$out->setPageTitle( $this->msg( 'imagerating-popular-heading' ) );
+					$out->setPageTitleMsg( $this->msg( 'imagerating-popular-heading' ) );
 				}
 				break;
 
@@ -190,7 +196,7 @@ class ImageRating extends SpecialPage {
 				$res = $dbr->select(
 					array_merge( [ 'page', 'Vote' ], $tables ),
 					[ 'page_id', 'page_title', 'COUNT(vote_value)', 'AVG(vote_value) AS vote_avg' ],
-					[ 'page_namespace' => NS_FILE, 'vote_page_id = page_id' ] + $where,
+					[ 'page_namespace' => NS_FILE ] + $where,
 					__METHOD__,
 					[
 						/*
@@ -205,10 +211,10 @@ class ImageRating extends SpecialPage {
 					] + $joinConds
 				);
 				$total = SiteStats::images();
-				if ( isset( $category ) && $category ) {
-					$out->setPageTitle( $this->msg( 'imagerating-new-heading-param', $category ) );
+				if ( $category !== null ) {
+					$out->setPageTitleMsg( $this->msg( 'imagerating-new-heading-param', $category ) );
 				} else {
-					$out->setPageTitle( $this->msg( 'imagerating-new-heading' ) );
+					$out->setPageTitleMsg( $this->msg( 'imagerating-new-heading' ) );
 				}
 				break;
 		}
@@ -219,7 +225,7 @@ class ImageRating extends SpecialPage {
 		$pageTitle = $this->getPageTitle();
 
 		// Build navigation
-		if ( isset( $category ) && $category ) {
+		if ( $category !== null ) {
 			$menu = [
 				$this->msg( 'imagerating-new-heading-param', $category )->parse() => 'new',
 				$this->msg( 'imagerating-popular-heading-param', $category )->parse() => 'popular',
@@ -242,7 +248,7 @@ class ImageRating extends SpecialPage {
 					$pageTitle,
 					new HtmlArmor( $title ),
 					[],
-					[ 'type' => $qs ] + ( ( $category ) ? [ 'category' => $category ] : [] )
+					[ 'type' => $qs ] + ( ( $category !== null ) ? [ 'category' => $category ] : [] )
 				) . '<p>';
 			} else {
 				$output .= "<p><b>{$title}</b></p>";
@@ -259,7 +265,7 @@ class ImageRating extends SpecialPage {
 
 		$output .= '<div class="image-ratings">';
 
-		$cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
+		$cache = $services->getMainWANObjectCache();
 		/*
 		// set up cache
 		$width = 250;
@@ -274,7 +280,7 @@ class ImageRating extends SpecialPage {
 			// Only check images that are less than 30 days old
 			$time = wfTimestamp( TS_MW, time() - ( 60 * 60 * 24 * 30 ) );
 
-			$dbr = MediaWikiServices::getInstance()->getDBLoadBalancer()->getConnection( DB_REPLICA );
+			$dbr = $services->getDBLoadBalancer()->getConnection( DB_REPLICA );
 			$row = $dbr->selectRow(
 				array_merge( [ 'Vote', 'image', 'page' ], $tables ),
 				[
@@ -388,7 +394,7 @@ class ImageRating extends SpecialPage {
 			$output .= $this->msg( 'imagerating-empty' )->parse();
 			$renderPagination = false;
 		} else {
-			$repoGroup = MediaWikiServices::getInstance()->getRepoGroup();
+			$repoGroup = $services->getRepoGroup();
 			$renderPagination = true;
 			foreach ( $imageList as $image ) {
 				$image_path = $image['page_title'];

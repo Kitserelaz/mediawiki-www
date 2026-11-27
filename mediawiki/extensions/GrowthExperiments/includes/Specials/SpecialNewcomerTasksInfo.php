@@ -2,21 +2,23 @@
 
 namespace GrowthExperiments\Specials;
 
+use GrowthExperiments\FeatureManager;
 use GrowthExperiments\NewcomerTasks\NewcomerTasksInfo;
 use MediaWiki\SpecialPage\SpecialPage;
 use OOUI\Tag;
 
 class SpecialNewcomerTasksInfo extends SpecialPage {
 
-	/** @var NewcomerTasksInfo */
-	private $cachedSuggestionsInfo;
+	private NewcomerTasksInfo $cachedSuggestionsInfo;
+	private FeatureManager $featureManager;
 
-	/**
-	 * @param NewcomerTasksInfo $cachedSuggestionsInfo
-	 */
-	public function __construct( NewcomerTasksInfo $cachedSuggestionsInfo ) {
+	public function __construct(
+		NewcomerTasksInfo $cachedSuggestionsInfo,
+		FeatureManager $featureManager
+	) {
 		parent::__construct( 'NewcomerTasksInfo' );
 		$this->cachedSuggestionsInfo = $cachedSuggestionsInfo;
+		$this->featureManager = $featureManager;
 	}
 
 	/** @inheritDoc */
@@ -28,14 +30,19 @@ class SpecialNewcomerTasksInfo extends SpecialPage {
 	public function execute( $subPage ) {
 		parent::execute( $subPage );
 		$this->addHelpLink( 'mw:Growth/Personalized_first_day/Newcomer_tasks' );
-		$info = $this->cachedSuggestionsInfo->getInfo();
 		$out = $this->getOutput();
+		if ( !$this->featureManager->isNewcomerTasksAvailable() ) {
+			$out->addWikiMsg( 'newcomertasksinfo-not-available' );
+			return;
+		}
+		$info = $this->cachedSuggestionsInfo->getInfo();
 		$out->addWikiMsg( 'newcomertasksinfo-config-form-info' );
 		if ( !isset( $info['tasks'] ) || !isset( $info[ 'topics' ] ) ) {
 			$out->addHTML(
 				( new Tag( 'p' ) )
 					->addClasses( [ 'error' ] )
 					->appendContent( $out->msg( 'newcomertasksinfo-no-data' )->text() )
+					->toString(),
 			);
 			return;
 		}
@@ -73,12 +80,12 @@ class SpecialNewcomerTasksInfo extends SpecialPage {
 			) )
 			->appendContent( ( new Tag( 'tbody' ) )->appendContent( $taskTypeTableRows ) );
 
-		$out->addHTML( $taskTypeTable );
+		$out->addHTML( $taskTypeTable->toString() );
 
 		$topicsTableHeaders = [
-			( new Tag( 'th' ) )->appendContent( $out->msg( 'newcomertasksinfo-table-header-topic-type' )->text() )
+			( new Tag( 'th' ) )->appendContent( $out->msg( 'newcomertasksinfo-table-header-topic-type' )->text() ),
 		];
-		foreach ( array_keys( $info['tasks'] ) as $taskTypeId ) {
+		foreach ( $info['tasks'] as $taskTypeId => $_ ) {
 			$topicsTableHeaders[] = ( new Tag( 'th' ) )->appendContent( $taskTypeId );
 		}
 		$topicsTableHeaders[] = ( new Tag( 'th' ) )->appendContent(
@@ -88,9 +95,9 @@ class SpecialNewcomerTasksInfo extends SpecialPage {
 		$topicsTableRows = [];
 		foreach ( $info['topics'] as $topicId => $topicData ) {
 			$topicsTableRowData = [
-				( new Tag( 'td' ) )->appendContent( ( new Tag( 'code' ) )->appendContent( $topicId ) )
+				( new Tag( 'td' ) )->appendContent( ( new Tag( 'code' ) )->appendContent( $topicId ) ),
 			];
-			foreach ( array_keys( $info['tasks'] ) as $taskTypeId ) {
+			foreach ( $info['tasks'] as $taskTypeId => $_ ) {
 				$topicsTableRowData[] = ( new Tag( 'td' ) )->appendContent(
 					$out->msg( 'newcomertasksinfo-task-count' )
 					->numParams( $topicData['tasks'][$taskTypeId] )
@@ -112,6 +119,6 @@ class SpecialNewcomerTasksInfo extends SpecialPage {
 			) )
 			->appendContent( ( new Tag( 'tbody' ) )->appendContent( $topicsTableRows ) );
 
-		$out->addHTML( $topicsTable );
+		$out->addHTML( $topicsTable->toString() );
 	}
 }

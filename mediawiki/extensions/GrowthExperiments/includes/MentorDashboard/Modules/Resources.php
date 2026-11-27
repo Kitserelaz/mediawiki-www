@@ -2,7 +2,6 @@
 
 namespace GrowthExperiments\MentorDashboard\Modules;
 
-use GrowthExperiments\Mentorship\Provider\MentorProvider;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Html\Html;
 use MediaWiki\Linker\LinkRenderer;
@@ -11,34 +10,18 @@ use MediaWiki\Title\MalformedTitleException;
 use MediaWiki\Title\TitleParser;
 
 class Resources extends BaseModule {
-	/** @var TitleParser */
-	private $titleParser;
+	private TitleParser $titleParser;
+	private LinkRenderer $linkRenderer;
 
-	/** @var LinkRenderer */
-	private $linkRenderer;
-
-	/** @var MentorProvider */
-	private $mentorProvider;
-
-	/**
-	 * @param string $name
-	 * @param IContextSource $ctx
-	 * @param TitleParser $titleParser
-	 * @param LinkRenderer $linkRenderer
-	 * @param MentorProvider $mentorProvider
-	 */
 	public function __construct(
-		$name,
 		IContextSource $ctx,
 		TitleParser $titleParser,
-		LinkRenderer $linkRenderer,
-		MentorProvider $mentorProvider
+		LinkRenderer $linkRenderer
 	) {
-		parent::__construct( $name, $ctx );
+		parent::__construct( 'resources', $ctx );
 
 		$this->titleParser = $titleParser;
 		$this->linkRenderer = $linkRenderer;
-		$this->mentorProvider = $mentorProvider;
 	}
 
 	/**
@@ -87,7 +70,7 @@ class Resources extends BaseModule {
 			$this->formatLink(
 				'mw:Special:MyLanguage/Growth',
 				$this->msg( 'growthexperiments-mentor-dashboard-resources-link-tools' )->text()
-			)
+			),
 		];
 
 		return Html::rawElement(
@@ -105,7 +88,7 @@ class Resources extends BaseModule {
 	private function formatLink( string $targetText, string $text ): ?string {
 		try {
 			$target = $this->titleParser->parseTitle( $targetText );
-		} catch ( MalformedTitleException $e ) {
+		} catch ( MalformedTitleException ) {
 			return null;
 		}
 

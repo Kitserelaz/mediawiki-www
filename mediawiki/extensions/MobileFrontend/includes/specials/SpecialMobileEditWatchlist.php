@@ -1,11 +1,14 @@
 <?php
 
+use MediaWiki\FileRepo\RepoGroup;
+use MediaWiki\HookContainer\HookContainer;
 use MediaWiki\Html\Html;
-use MediaWiki\Language\Language;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Specials\SpecialEditWatchlist;
 use MediaWiki\Title\Title;
+use MediaWiki\Watchlist\WatchedItemStoreInterface;
 use MobileFrontend\Hooks\HookRunner;
 use MobileFrontend\Models\MobileCollection;
 use MobileFrontend\Models\MobilePage;
@@ -22,20 +25,38 @@ class SpecialMobileEditWatchlist extends SpecialEditWatchlist {
 	private const LIMIT = 50;
 
 	/** @var string The name of the title to begin listing the watchlist from */
-	protected $offsetTitle;
+	protected readonly string $offsetTitle;
 
-	public function __construct() {
+	public function __construct(
+		private readonly HookContainer $hookContainer,
+		private readonly RepoGroup $repoGroup,
+		WatchedItemStoreInterface $watchedItemStore,
+	) {
 		$req = $this->getRequest();
 		$this->offsetTitle = $req->getVal( 'from', '' );
-		$watchStoreItem = MediaWikiServices::getInstance()->getWatchedItemStore();
-		parent::__construct( $watchStoreItem );
+		parent::__construct( $watchedItemStore );
 	}
 
 	/**
-	 * Renders the subheader.
+	 * Get a paged list of titles on a user's watchlist, excluding talk pages,
+	 * and return as a two-dimensional array with namespace and title.
+	 *
+	 * @return array
 	 */
-	protected function outputSubtitle(): void {
-		$user = $this->getUser();
+	protected function getWatchlistInfo(): array {
+		$titles = [];
+		$lb = $this->linkBatchFactory->newLinkBatch();
+
+		$this->pager->doQuery();
+		$watchedItems = $this->pager->getOrderedResult();
+
+		foreach ( $watchedItems as $item ) {
+			$titles[$item->wl_namespace][$item->wl_title] = $item->expiry;
+			$lb->add( $item->wl_namespace, $item->wl_title );
+		}
+
+		$lb->execute();
+		return $titles;
 	}
 
 	/**
@@ -137,34 +158,27 @@ class SpecialMobileEditWatchlist extends SpecialEditWatchlist {
 	/**
 	 * Get the HTML needed to show if a user doesn't watch any page, show information
 	 * how to watch pages where no pages have been watched.
-	 * @param bool $feed Render as feed (true) or list (false) view?
-	 * @param Language $lang The language of the current mode
 	 * @return string
 	 */
-	public static function getEmptyListHtml( $feed, $lang ) {
-		$dir = $lang->isRTL() ? 'rtl' : 'ltr';
+	private function getEmptyListHtml() {
+		$dir = $this->getLanguage()->isRTL() ? 'rtl' : 'ltr';
 
-		$config = MediaWikiServices::getInstance()->getService( 'MobileFrontend.Config' );
-		$imgUrl = $config->get( 'ExtensionAssetsPath' ) .
+		$imgUrl = $this->getConfig()->get( MainConfigNames::ExtensionAssetsPath ) .
 			"/MobileFrontend/images/emptywatchlist-page-actions-$dir.png";
 
-		if ( $feed ) {
-			$msg = Html::element( 'p', [], wfMessage( 'mobile-frontend-watchlist-feed-empty' )->plain() );
-		} else {
-			$msg = Html::element( 'p', [],
-				wfMessage( 'mobile-frontend-watchlist-a-z-empty-howto' )->plain()
-			);
-			$msg .= Html::element( 'img', [
-				'src' => $imgUrl,
-				'alt' => wfMessage( 'mobile-frontend-watchlist-a-z-empty-howto-alt' )->plain(),
-			] );
-		}
+		$msg = Html::element( 'p', [],
+			$this->msg( 'mobile-frontend-watchlist-a-z-empty-howto' )->plain()
+		);
+		$msg .= Html::element( 'img', [
+			'src' => $imgUrl,
+			'alt' => $this->msg( 'mobile-frontend-watchlist-a-z-empty-howto-alt' )->plain(),
+		] );
 
 		return Html::openElement( 'div', [ 'class' => 'info empty-page' ] ) .
 			$msg .
 			Html::element( 'a',
 				[ 'class' => 'button', 'href' => Title::newMainPage()->getLocalURL() ],
-				wfMessage( 'mobile-frontend-watchlist-back-home' )->plain()
+				$this->msg( 'mobile-frontend-watchlist-back-home' )->plain()
 			) .
 			Html::closeElement( 'div' );
 	}
@@ -211,8 +225,7 @@ class SpecialMobileEditWatchlist extends SpecialEditWatchlist {
 
 		// Begin rendering of watchlist.
 		$watchlist = [ $ns => $allPages ];
-		$services = MediaWikiServices::getInstance();
-		( new HookRunner( $services->getHookContainer() ) )
+		( new HookRunner( $this->hookContainer ) )
 			->onSpecialMobileEditWatchlist__images(
 				$this->getContext(), $watchlist, $images
 			);
@@ -220,12 +233,11 @@ class SpecialMobileEditWatchlist extends SpecialEditWatchlist {
 		// create list of pages
 		$mobilePages = new MobileCollection();
 		$pageKeys = array_keys( $watchlist[$ns] );
-		$repoGroup = $services->getRepoGroup();
 		foreach ( $pageKeys as $dbkey ) {
 			if ( isset( $images[$ns][$dbkey] ) ) {
 				$page = new MobilePage(
 					Title::makeTitleSafe( $ns, $dbkey ),
-					$repoGroup->findFile( $images[$ns][$dbkey] )
+					$this->repoGroup->findFile( $images[$ns][$dbkey] )
 				);
 			} else {
 				$page = new MobilePage( Title::makeTitleSafe( $ns, $dbkey ) );
@@ -234,7 +246,7 @@ class SpecialMobileEditWatchlist extends SpecialEditWatchlist {
 		}
 
 		if ( $mobilePages->isEmpty() ) {
-			$html = self::getEmptyListHtml( false, $this->getLanguage() );
+			$html = $this->getEmptyListHtml();
 		} else {
 			$html = $this->getViewHtml( $mobilePages );
 		}
@@ -249,14 +261,28 @@ class SpecialMobileEditWatchlist extends SpecialEditWatchlist {
 				$this->msg( 'mobile-frontend-watchlist-more' )->text() );
 		}
 		$out = $this->getOutput();
+
+		$config = $out->getConfig();
+		$searchParams = $config->get( 'MFSearchAPIParams' );
+		$mfScriptPath = $config->get( 'MFScriptPath' );
+		$pageProps = $config->get( 'MFQueryPropModules' );
+		// Avoid API warnings and allow integration with optional extensions.
+		if ( $mfScriptPath || ExtensionRegistry::getInstance()->isLoaded( 'PageImages' ) ) {
+			$pageProps[] = 'pageimages';
+			$searchParams = array_merge_recursive( $searchParams, [
+				'piprop' => 'thumbnail',
+				'pithumbsize' => MobilePage::SMALL_IMAGE_WIDTH,
+				'pilimit' => 50,
+			] );
+		}
+
+		$out->addJSConfigVars( [
+			'wgMFScriptPath' => $mfScriptPath,
+			'wgMFSearchAPIParams' => $searchParams,
+			'wgMFQueryPropModules' => $pageProps,
+		] );
 		$out->addHTML( $html );
 		$out->addModules( 'mobile.special.watchlist.scripts' );
-		$out->addModuleStyles(
-			[
-				'mobile.pagelist.styles',
-				'mobile.pagesummary.styles'
-			]
-		);
 	}
 
 	/**

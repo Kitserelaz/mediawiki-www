@@ -8,12 +8,11 @@
 		"symfony/css-selector": "~5.1"
 	},
 	"require-dev": {
-		"mediawiki/mediawiki-codesniffer": "45.0.0",
-		"mediawiki/mediawiki-phan-config": "0.15.1",
-		"mediawiki/minus-x": "1.1.3",
+		"mediawiki/mediawiki-codesniffer": "52.0.0",
+		"mediawiki/mediawiki-phan-config": "0.20.0",
+		"mediawiki/minus-x": "2.0.1",
 		"php-parallel-lint/php-console-highlighter": "1.0.0",
-		"php-parallel-lint/php-parallel-lint": "1.4.0",
-		"roave/security-advisories": "dev-latest"
+		"php-parallel-lint/php-parallel-lint": "1.4.0"
 	},
 	"suggest": {
 		"ext-ldap": "*",
@@ -32,8 +31,7 @@
 		"test": [
 			"parallel-lint . --exclude node_modules --exclude vendor",
 			"@phpcs",
-			"minus-x check .",
-			"@phan"
+			"minus-x check ."
 		],
 		"cover": "phpunit --coverage-html coverage",
 		"fix": [
@@ -49,6 +47,9 @@
 		"allow-plugins": {
 			"composer/installers": true,
 			"dealerdirect/phpcodesniffer-composer-installer": true
+		},
+		"audit": {
+			"block-insecure": false
 		}
 	}
 }

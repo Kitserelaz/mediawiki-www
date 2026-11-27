@@ -8,10 +8,11 @@ describe( 'POST and GET requests to /growthexperiments/v0/user-impact/{user}', (
 
 	function getExpectedResponse() {
 		return {
-			'@version': 10,
+			'@version': 12,
 			userId: 1,
 			userName: 'Admin',
 			receivedThanksCount: 10,
+			givenThanksCount: 5,
 			recentEditsWithoutPageviews: [],
 			editCountByNamespace: [
 				2
@@ -29,6 +30,7 @@ describe( 'POST and GET requests to /growthexperiments/v0/user-impact/{user}', (
 			lastEditTimestamp: 1661385600,
 			longestEditingStreak: '',
 			totalEditsCount: 2,
+			totalArticlesCreatedCount: 0,
 			dailyTotalViews: {
 				'2022-08-24': 1000,
 				'2022-08-25': 2000
@@ -63,9 +65,9 @@ describe( 'POST and GET requests to /growthexperiments/v0/user-impact/{user}', (
 		const { body: sourceBody } = await client.get( encodeURIComponent( '#1' ) );
 		const expectedResponse = getExpectedResponse();
 		// These vary based on the current date, and probably not worth asserting anything about.
-		delete sourceBody.topViewedArticles.Foo.pageviewsUrl;
-		delete sourceBody.topViewedArticles.Bar.pageviewsUrl;
-		delete sourceBody.generatedAt;
+		delete sourceBody?.topViewedArticles?.Foo?.pageviewsUrl;
+		delete sourceBody?.topViewedArticles?.Bar?.pageviewsUrl;
+		delete sourceBody?.generatedAt;
 		assert.deepEqual( sourceBody, expectedResponse );
 	} );
 
@@ -73,9 +75,9 @@ describe( 'POST and GET requests to /growthexperiments/v0/user-impact/{user}', (
 		const { body: sourceBody } = await client.post( encodeURIComponent( '#1' ) );
 		const expectedResponse = getExpectedResponse();
 		// These vary based on the current date, and probably not worth asserting anything about.
-		delete sourceBody.topViewedArticles.Foo.pageviewsUrl;
-		delete sourceBody.topViewedArticles.Bar.pageviewsUrl;
-		delete sourceBody.generatedAt;
+		delete sourceBody?.topViewedArticles?.Foo?.pageviewsUrl;
+		delete sourceBody?.topViewedArticles?.Bar?.pageviewsUrl;
+		delete sourceBody?.generatedAt;
 		assert.deepEqual( sourceBody, expectedResponse );
 	} );
 

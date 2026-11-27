@@ -1,6 +1,11 @@
 [
 	{
 		"resourceModule": "ext.growthExperiments.SuggestedEditSession",
-		"maxSize": "4.5 kB"
+		"maxSize": "4.8 kB"
+	},
+	{
+		"@note": "Temporary instrumentation only",
+		"resourceModule": "ext.growthExperiments.NotificationsTracking",
+		"maxSize": null
 	}
 ]

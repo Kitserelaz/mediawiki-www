@@ -4,6 +4,7 @@ namespace GrowthExperiments\HomepageModules\SuggestedEditsComponents;
 
 use GrowthExperiments\NewcomerTasks\Task\Task;
 use GrowthExperiments\NewcomerTasks\Task\TaskSet;
+use MediaWiki\Language\MessageLocalizer;
 use OOUI\ButtonWidget;
 use OOUI\HtmlSnippet;
 use OOUI\Tag;
@@ -13,7 +14,7 @@ class NavigationWidgetFactory {
 	/** @var TaskSet|\StatusValue */
 	private $taskSet;
 
-	/** @var \MessageLocalizer */
+	/** @var MessageLocalizer */
 	private $messageLocalizer;
 
 	/** @var Task */
@@ -26,11 +27,11 @@ class NavigationWidgetFactory {
 	 * NavigationWidgetFactory constructor.
 	 * Generate navigation elements for SuggestedEdits module
 	 *
-	 * @param \MessageLocalizer $messageLocalizer
+	 * @param MessageLocalizer $messageLocalizer
 	 * @param TaskSet|\StatusValue $taskSet
 	 */
 	public function __construct(
-		\MessageLocalizer $messageLocalizer, $taskSet
+		MessageLocalizer $messageLocalizer, $taskSet
 	) {
 		$this->messageLocalizer = $messageLocalizer;
 		$this->taskSet = $taskSet;
@@ -43,7 +44,6 @@ class NavigationWidgetFactory {
 	 *
 	 * @param string $direction Should be one of "Previous" or "Next" (case sensitive)
 	 * @return Tag
-	 * @throws \OOUI\Exception
 	 */
 	public function getPreviousNextButtonHtml( string $direction ): Tag {
 		// The following classes are used here:
@@ -59,14 +59,12 @@ class NavigationWidgetFactory {
 				'message' => $this->messageLocalizer->msg(
 					'growthexperiments-homepage-suggestededits-' . strtolower( $direction ) . '-card'
 				)->text(),
-				'hidden' => !$this->task || $this->error
+				'hidden' => !$this->task || $this->error,
 			] ) )->toString() ) );
 	}
 
 	/**
 	 * Return edit button
-	 *
-	 * @return ButtonWidget
 	 */
 	public function getEditButton(): ButtonWidget {
 		return new ButtonWidget( [
@@ -75,7 +73,7 @@ class NavigationWidgetFactory {
 				'growthexperiments-homepage-suggestededits-edit-card'
 			)->text(),
 			'flags' => [ 'primary', 'progressive' ],
-			'classes' => [ 'suggested-edits-footer-navigation-edit-button' ]
+			'classes' => [ 'suggested-edits-footer-navigation-edit-button' ],
 		] );
 	}
 }

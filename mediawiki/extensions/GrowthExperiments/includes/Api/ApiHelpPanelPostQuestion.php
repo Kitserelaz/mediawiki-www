@@ -4,10 +4,11 @@ namespace GrowthExperiments\Api;
 
 use GrowthExperiments\HelpPanel\QuestionPoster\QuestionPoster;
 use GrowthExperiments\HelpPanel\QuestionPoster\QuestionPosterFactory;
+use GrowthExperiments\Mentorship\UserNotMentoredException;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiUsageException;
-use UserNotLoggedIn;
+use MediaWiki\Exception\UserNotLoggedIn;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\ParamValidator\TypeDef\StringDef;
 
@@ -31,20 +32,11 @@ class ApiHelpPanelPostQuestion extends ApiBase {
 		'homepage-mentorship' =>
 			[ QuestionPosterFactory::SOURCE_MENTORSHIP_MODULE, QuestionPosterFactory::TARGET_MENTOR_TALK ],
 	];
+	private QuestionPosterFactory $questionPosterFactory;
 
-	/**
-	 * @var QuestionPosterFactory
-	 */
-	private $questionPosterFactory;
-
-	/**
-	 * @param ApiMain $mainModule
-	 * @param string $moduleName
-	 * @param QuestionPosterFactory $questionPosterFactory
-	 */
 	public function __construct(
 		ApiMain $mainModule,
-		$moduleName,
+		string $moduleName,
 		QuestionPosterFactory $questionPosterFactory
 	) {
 		parent::__construct( $mainModule, $moduleName );
@@ -79,7 +71,7 @@ class ApiHelpPanelPostQuestion extends ApiBase {
 			'revision' => $questionPoster->getRevisionId(),
 			'isfirstedit' => (int)$questionPoster->isFirstEdit(),
 			'viewquestionurl' => $questionPoster->getResultUrl(),
-			'source' => $params[self::API_PARAM_SOURCE]
+			'source' => $params[self::API_PARAM_SOURCE],
 		];
 
 		$this->getResult()->addValue( null, $this->getModuleName(), $result );
@@ -102,9 +94,18 @@ class ApiHelpPanelPostQuestion extends ApiBase {
 				$body,
 				$relevantTitle ?? ''
 			);
-		} catch ( UserNotLoggedIn $e ) {
-			throw ApiUsageException::newWithMessage( $this,
-				'apierror-mustbeloggedin-helppanelquestionposter', 'notloggedin' );
+		} catch ( UserNotMentoredException ) {
+			throw ApiUsageException::newWithMessage(
+				$this,
+				'apierror-mustbementored-mentorshipmodulequestionposter',
+				'notmentored'
+			);
+		} catch ( UserNotLoggedIn ) {
+			throw ApiUsageException::newWithMessage(
+				$this,
+				'apierror-mustbeloggedin-helppanelquestionposter',
+				'notloggedin'
+			);
 		}
 	}
 

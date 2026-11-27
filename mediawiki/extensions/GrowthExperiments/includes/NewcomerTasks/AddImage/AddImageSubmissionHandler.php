@@ -2,6 +2,7 @@
 
 namespace GrowthExperiments\NewcomerTasks\AddImage;
 
+use CirrusSearch\WeightedTagsUpdater;
 use GrowthExperiments\NewcomerTasks\AbstractSubmissionHandler;
 use GrowthExperiments\NewcomerTasks\AddImage\EventBus\EventGateImageSuggestionFeedbackUpdater;
 use GrowthExperiments\NewcomerTasks\ImageRecommendationFilter;
@@ -16,14 +17,15 @@ use GrowthExperiments\NewcomerTasks\TaskType\ImageRecommendationTaskTypeHandler;
 use GrowthExperiments\NewcomerTasks\TaskType\SectionImageRecommendationTaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\SectionImageRecommendationTaskTypeHandler;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
-use ManualLogEntry;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Message\Message;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityUtils;
 use StatusValue;
 use Wikimedia\Assert\Assert;
+use Wikimedia\Message\ListType;
 use Wikimedia\ObjectCache\WANObjectCache;
 
 /**
@@ -44,7 +46,7 @@ class AddImageSubmissionHandler extends AbstractSubmissionHandler implements Sub
 		'lowquality',
 		'unfamiliar',
 		'foreignlanguage',
-		'other'
+		'other',
 	];
 	/**
 	 * Rejection reasons which means the user is undecided (as opposed thinking the image is bad).
@@ -57,10 +59,7 @@ class AddImageSubmissionHandler extends AbstractSubmissionHandler implements Sub
 		SectionImageRecommendationTaskTypeHandler::TASK_TYPE_ID => 'addsectionimage',
 	];
 
-	/**
-	 * @var callable returning {@link \CirrusSearch\WeightedTagsUpdater}
-	 */
-	private $weightedTagsUpdaterProvider;
+	private ?WeightedTagsUpdater $weightedTagsUpdater;
 	private TaskSuggesterFactory $taskSuggesterFactory;
 	private NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup;
 	private WANObjectCache $cache;
@@ -68,23 +67,15 @@ class AddImageSubmissionHandler extends AbstractSubmissionHandler implements Sub
 
 	private ?EventGateImageSuggestionFeedbackUpdater $eventGateImageFeedbackUpdater;
 
-	/**
-	 * @param callable(): \CirrusSearch\WeightedTagsUpdater $weightedTagsUpdaterProvider
-	 * @param TaskSuggesterFactory $taskSuggesterFactory
-	 * @param NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup
-	 * @param WANObjectCache $cache
-	 * @param UserIdentityUtils $userIdentityUtils
-	 * @param EventGateImageSuggestionFeedbackUpdater|null $eventGateImageFeedbackUpdater
-	 */
 	public function __construct(
-		callable $weightedTagsUpdaterProvider,
+		?WeightedTagsUpdater $weightedTagsUpdater,
 		TaskSuggesterFactory $taskSuggesterFactory,
 		NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup,
 		WANObjectCache $cache,
 		UserIdentityUtils $userIdentityUtils,
 		?EventGateImageSuggestionFeedbackUpdater $eventGateImageFeedbackUpdater
 	) {
-		$this->weightedTagsUpdaterProvider = $weightedTagsUpdaterProvider;
+		$this->weightedTagsUpdater = $weightedTagsUpdater;
 		$this->taskSuggesterFactory = $taskSuggesterFactory;
 		$this->newcomerTasksUserOptionsLookup = $newcomerTasksUserOptionsLookup;
 		$this->cache = $cache;
@@ -97,7 +88,8 @@ class AddImageSubmissionHandler extends AbstractSubmissionHandler implements Sub
 		TaskType $taskType, ProperPageIdentity $page, UserIdentity $user, ?int $baseRevId, array $data
 	): StatusValue {
 		Assert::parameterType( ImageRecommendationBaseTaskType::class, $taskType, '$taskType' );
-		'@phan-var ImageRecommendationBaseTaskType $taskType';/** @var ImageRecommendationBaseTaskType $taskType */
+		'@phan-var ImageRecommendationBaseTaskType $taskType';
+		/** @var ImageRecommendationBaseTaskType $taskType */
 
 		$userErrorMessage = self::getUserErrorMessage( $this->userIdentityUtils, $user );
 		if ( $userErrorMessage ) {
@@ -112,7 +104,8 @@ class AddImageSubmissionHandler extends AbstractSubmissionHandler implements Sub
 		TaskType $taskType, ProperPageIdentity $page, UserIdentity $user, ?int $baseRevId, ?int $editRevId, array $data
 	): StatusValue {
 		Assert::parameterType( ImageRecommendationBaseTaskType::class, $taskType, '$taskType' );
-		'@phan-var ImageRecommendationBaseTaskType $taskType';/** @var ImageRecommendationBaseTaskType $taskType */
+		'@phan-var ImageRecommendationBaseTaskType $taskType';
+		/** @var ImageRecommendationBaseTaskType $taskType */
 
 		$status = $this->parseData( $taskType, $data );
 		if ( !$status->isGood() ) {
@@ -232,13 +225,13 @@ class AddImageSubmissionHandler extends AbstractSubmissionHandler implements Sub
 				return StatusValue::newGood()->error(
 					'apierror-growthexperiments-addimage-handler-reason-invaliditem',
 					'[' . gettype( $reason ) . ']',
-					Message::listParam( self::REJECTION_REASONS, 'comma' )
+					Message::listParam( self::REJECTION_REASONS, ListType::COMMA )
 				);
 			} elseif ( !in_array( $reason, self::REJECTION_REASONS, true ) ) {
 				return StatusValue::newGood()->error(
 					'apierror-growthexperiments-addimage-handler-reason-invaliditem',
 					$reason,
-					Message::listParam( self::REJECTION_REASONS, 'comma' )
+					Message::listParam( self::REJECTION_REASONS, ListType::COMMA )
 				);
 			}
 		}
@@ -335,15 +328,19 @@ class AddImageSubmissionHandler extends AbstractSubmissionHandler implements Sub
 		?int $sectionNumber,
 		array $rejectionReasons = []
 	) {
+		Assert::invariant(
+			$this->weightedTagsUpdater !== null,
+			'CirrusSearch is required if (Section-) Image Recommendations are enabled'
+		);
 		if ( $taskType->getId() === ImageRecommendationTaskTypeHandler::TASK_TYPE_ID ) {
-			( $this->weightedTagsUpdaterProvider )()->resetWeightedTags(
+			$this->weightedTagsUpdater->resetWeightedTags(
 				$page, [ ImageRecommendationTaskTypeHandler::WEIGHTED_TAG_PREFIX ]
 			);
 		} elseif ( $taskType->getId() === SectionImageRecommendationTaskTypeHandler::TASK_TYPE_ID ) {
-			( $this->weightedTagsUpdaterProvider )()->resetWeightedTags(
+			$this->weightedTagsUpdater->resetWeightedTags(
 				$page, [
 					SectionImageRecommendationTaskTypeHandler::WEIGHTED_TAG_PREFIX,
-					ImageRecommendationTaskTypeHandler::WEIGHTED_TAG_PREFIX
+					ImageRecommendationTaskTypeHandler::WEIGHTED_TAG_PREFIX,
 				]
 			);
 		}

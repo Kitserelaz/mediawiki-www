@@ -31,7 +31,7 @@ module.exports = function editorLoadingOverlay( afterShow, afterHide, loadBasicE
 			className: 'overlay overlay-loading',
 			noHeader: true,
 			isBorderBox: false,
-			onBeforeExit: function ( exit ) {
+			onBeforeExit: ( exit ) => {
 				exit();
 				afterHide();
 				if ( timeout ) {
@@ -41,8 +41,8 @@ module.exports = function editorLoadingOverlay( afterShow, afterHide, loadBasicE
 		} ),
 		logFeatureUse = function ( feature, action ) {
 			mw.track( 'visualEditorFeatureUse', {
-				feature: feature,
-				action: action,
+				feature,
+				action,
 				// eslint-disable-next-line camelcase
 				editor_interface: 'visualeditor'
 			} );
@@ -63,12 +63,12 @@ module.exports = function editorLoadingOverlay( afterShow, afterHide, loadBasicE
 			)
 		);
 
-		timeout = setTimeout( function () {
+		timeout = setTimeout( () => {
 			$loadBasicWrapper.addClass( 've-loadbasiceditor-shown' );
 			logFeatureUse( 'mobileVisualFallback', 'context-show' );
 		}, 3000 );
 
-		loadBasicButton.$el.on( 'click', function () {
+		loadBasicButton.$el.on( 'click', () => {
 			$loadBasicWrapper.removeClass( 've-loadbasiceditor-shown' );
 			logFeatureUse( 'mobileVisualFallback', 'fallback-confirm' );
 			loadBasicEditor();
@@ -77,9 +77,9 @@ module.exports = function editorLoadingOverlay( afterShow, afterHide, loadBasicE
 
 	// Animate the toolbar sliding into place.
 	$fakeToolbar.addClass( 'toolbar-hidden' );
-	setTimeout( function () {
+	setTimeout( () => {
 		$fakeToolbar.addClass( 'toolbar-shown' );
-		setTimeout( function () {
+		setTimeout( () => {
 			$fakeToolbar.addClass( 'toolbar-shown-done' );
 		}, 250 );
 	} );

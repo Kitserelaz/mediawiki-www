@@ -12,7 +12,7 @@ use MobileFrontend\Devices\DeviceProperties;
  * @group MobileFrontend
  */
 class DeviceDetectorServiceTest extends \MediaWikiUnitTestCase {
-	private FauxRequest $request;
+	private readonly FauxRequest $request;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -22,10 +22,10 @@ class DeviceDetectorServiceTest extends \MediaWikiUnitTestCase {
 
 	/**
 	 * Creates a list of child device detectors from a list of results, which are
-	 * then used to create an instance of `CompositeDeviceDetector`.
+	 * then used to create an instance of DeviceDetectorService.
 	 *
-	 * @param array $results
-	 * @return CompositeDeviceDetector
+	 * @param array<?DeviceProperties> $results
+	 * @return DeviceDetectorService
 	 */
 	private function createDetector( array $results ) {
 		$childFactory = static function ( $result ) {
@@ -81,11 +81,10 @@ class DeviceDetectorServiceTest extends \MediaWikiUnitTestCase {
 }
 
 class StubDeviceDetector implements DeviceDetector {
-	/** @var DeviceProperties|null */
-	private $result;
 
-	public function __construct( $result ) {
-		$this->result = $result;
+	public function __construct(
+		private readonly ?DeviceProperties $result,
+	) {
 	}
 
 	public function detectDeviceProperties( WebRequest $request, array $server ) {

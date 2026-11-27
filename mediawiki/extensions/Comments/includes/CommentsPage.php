@@ -1,6 +1,10 @@
 <?php
 
+use MediaWiki\Context\ContextSource;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Html\Html;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\Title;
 
 /**
  * Class for Comments methods that are not specific to one comments,
@@ -25,7 +29,7 @@ class CommentsPage extends ContextSource {
 	public $limit = 50;
 
 	/**
-	 * @TODO document
+	 * @todo document
 	 *
 	 * @var int
 	 */
@@ -63,7 +67,7 @@ class CommentsPage extends ContextSource {
 	public $allowMinus = true;
 
 	/**
-	 * @TODO document
+	 * @todo document
 	 *
 	 * @var string
 	 */
@@ -170,7 +174,7 @@ class CommentsPage extends ContextSource {
 		$comments = [];
 
 		// Try to fetch page comments from cache first
-		$cache = ObjectCache::getInstance( CACHE_ANYTHING );
+		$cache = MediaWikiServices::getInstance()->getObjectCacheFactory()->getInstance( CACHE_ANYTHING );
 		$cacheKey = $cache->makeKey(
 			'comments',
 			$this->id,
@@ -447,17 +451,17 @@ class CommentsPage extends ContextSource {
 				<form name="ChangeOrder" action="">
 					<select name="TheOrder">
 						<option value="0">' .
-			wfMessage( 'comments-sort-by-date' )->plain() .
+			wfMessage( 'comments-sort-by-date' )->escaped() .
 			'</option>
 						<option value="1">' .
-			wfMessage( 'comments-sort-by-score' )->plain() .
+			wfMessage( 'comments-sort-by-score' )->escaped() .
 			'</option>
 					</select>
 				</form>
 			</div>
 			<div id="spy" class="c-spy">
 				<a href="javascript:void(0)">' .
-			wfMessage( 'comments-auto-refresher-enable' )->plain() .
+			wfMessage( 'comments-auto-refresher-enable' )->escaped() .
 			'</a>
 			</div>
 			<div class="visualClear"></div>
@@ -490,22 +494,19 @@ class CommentsPage extends ContextSource {
 		$userContext = $context->getUser();
 		$language = $context->getLanguage();
 		$ip = $context->getRequest()->getIP();
+		$errorFormatter = MediaWikiServices::getInstance()->getBlockErrorFormatter();
 
 		// Check users block status
 		if ( $user->getBlock() ) {
-			$output .= MediaWikiServices::getInstance()->getBlockErrorFormatter()
+			$output .= $errorFormatter
 				->getMessage( $user->getBlock(), $userContext, $language, $ip )
-				->parse();
-		} elseif ( $user->isBlockedGlobally() ) {
-			$output .= MediaWikiServices::getInstance()->getBlockErrorFormatter()
-				->getMessage( $user->getGlobalBlock(), $userContext, $language, $ip )
 				->parse();
 		} elseif ( !$this->getUser()->isAllowed( 'comment' ) ) {
 			// 'comment' user right is required to add new comments
 			$output .= wfMessage( 'comments-not-allowed' )->parse();
 			$output .= '<input type="hidden" name="lastCommentId" value="' . $this->getLatestCommentID() . '" />' . "\n";
 		} else {
-			$output .= '<div class="c-form-title">' . wfMessage( 'comments-submit' )->plain() . '</div>' . "\n";
+			$output .= '<div class="c-form-title">' . wfMessage( 'comments-submit' )->escaped() . '</div>' . "\n";
 			$output .= '<div id="replyto" class="c-form-reply-to"></div>' . "\n";
 			// Show a message to anons, prompting them to register or log in
 			if ( !$user->isRegistered() ) {
@@ -538,7 +539,7 @@ class CommentsPage extends ContextSource {
 	 */
 	public function clearCommentListCache() {
 		wfDebug( "Clearing comments for page {$this->id} from cache\n" );
-		$cache = ObjectCache::getInstance( CACHE_ANYTHING );
+		$cache = MediaWikiServices::getInstance()->getObjectCacheFactory()->getInstance( CACHE_ANYTHING );
 		// Delete all possible keys for the page
 		// @TODO: this duplicates values returned by getSort()
 		$sorts = [ 'comment_score DESC', 'timestamp DESC', 'timestamp ASC' ];
@@ -586,7 +587,7 @@ class CommentsPage extends ContextSource {
 			'vote2' => 'Comments_Vote',
 		];
 		$fields = [
-			'Comment_IP', 'Comment_Text', 'Comment_actor',
+			'Comment_Text', 'Comment_actor',
 			'Comment_Date', 'Comment_Date AS timestamp',
 			'CommentID', 'Comment_Parent_ID',
 			// @todo FIXME: this and the stats_total_points are buggy on PostgreSQL
@@ -609,12 +610,13 @@ class CommentsPage extends ContextSource {
 			// For total vote count
 			'vote2' => [ 'LEFT JOIN', 'vote2.Comment_Vote_ID = CommentID' ]
 		];
-		$params = [ 'GROUP BY' => 'CommentID, current_vote' ];
+		$params = [ 'GROUP BY' =>
+			'CommentID, Comment_Text, Comment_actor, Comment_Date, Comment_Parent_ID, current_vote' ];
 
 		// If SocialProfile is installed, query the user_stats table too.
 		if (
 			class_exists( 'UserProfile' ) &&
-			$dbr->tableExists( 'user_stats' )
+			$dbr->tableExists( 'user_stats', __METHOD__ )
 		) {
 			$tables[] = 'user_stats';
 			$fields[] = 'stats_total_points';
@@ -652,7 +654,6 @@ class CommentsPage extends ContextSource {
 			}
 			$data = [
 				'Comment_actor' => $row->Comment_actor,
-				'Comment_IP' => $row->Comment_IP,
 				'Comment_Text' => $row->Comment_Text,
 				'Comment_Date' => $row->Comment_Date,
 				'Comment_user_points' => ( isset( $row->stats_total_points ) ? number_format( $row->stats_total_points ) : 0 ),

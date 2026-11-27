@@ -5,7 +5,6 @@
  * @author Yaron Koren
  * @author Alexander Mashin
  */
-
 class EDParserJSONwithJSONPath extends EDParserJSON {
 	/** @var bool $keepExternalVarsCase Whether external variables' names are case-sensitive for this format. */
 	public $keepExternalVarsCase = true;
@@ -14,7 +13,6 @@ class EDParserJSONwithJSONPath extends EDParserJSON {
 	 * Constructor.
 	 *
 	 * @param array $params A named array of parameters passed from parser or Lua function.
-	 *
 	 */
 	public function __construct( array $params ) {
 		parent::__construct( $params );

@@ -34,7 +34,7 @@ class UserImpactFormatterTest extends MediaWikiUnitTestCase {
 			];
 		};
 		$pageViewUrl = static function ( string $title, ?string $endDate = null ) {
-			$endDate = $endDate ?? '2022-08-25';
+			$endDate ??= '2022-08-25';
 			$url = "https://pageviews.wmcloud.org/?project=enwiki&userlang=en"
 				. "&start=2022-08-24&end=$endDate&pages=$title";
 			return [ 'pageviewsUrl' => $url ];
@@ -61,6 +61,7 @@ class UserImpactFormatterTest extends MediaWikiUnitTestCase {
 		$userImpact = new ExpensiveUserImpact(
 			UserIdentityValue::newRegistered( 1, 'User1' ),
 			10,
+			5,
 			[ NS_MAIN => 100, NS_TALK => 10, NS_USER_TALK => 15 ],
 			[ '2022-08-24' => 10, '2022-08-25' => 20 ],
 			[ 'copyedit' => 10, 'link-recommendation' => 100 ],
@@ -70,6 +71,7 @@ class UserImpactFormatterTest extends MediaWikiUnitTestCase {
 			$dailyTotalViews,
 			$dailyArticleViews,
 			new EditingStreak(),
+			0,
 			null
 		);
 
@@ -133,6 +135,7 @@ class UserImpactFormatterTest extends MediaWikiUnitTestCase {
 		$userImpact = new ExpensiveUserImpact(
 			UserIdentityValue::newRegistered( 1, 'User1' ),
 			10,
+			5,
 			[ NS_MAIN => 100, NS_TALK => 10, NS_USER_TALK => 15 ],
 			[ '2022-08-14' => 10, '2022-08-15' => 20 ],
 			[ 'copyedit' => 10, 'link-recommendation' => 100 ],
@@ -142,6 +145,7 @@ class UserImpactFormatterTest extends MediaWikiUnitTestCase {
 			$dailyTotalViews,
 			$dailyArticleViews,
 			new EditingStreak(),
+			0,
 			null
 		);
 

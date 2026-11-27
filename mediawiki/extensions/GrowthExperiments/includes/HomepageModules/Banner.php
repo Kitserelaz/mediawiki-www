@@ -2,7 +2,6 @@
 
 namespace GrowthExperiments\HomepageModules;
 
-use GrowthExperiments\ExperimentUserManager;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Html\Html;
@@ -22,7 +21,7 @@ class Banner extends BaseModule {
 	/** @inheritDoc */
 	protected static $supportedModes = [
 		self::RENDER_DESKTOP,
-		self::RENDER_MOBILE_SUMMARY
+		self::RENDER_MOBILE_SUMMARY,
 		// RENDER_MOBILE_DETAILS is not supported
 	];
 
@@ -38,10 +37,9 @@ class Banner extends BaseModule {
 	/** @inheritDoc */
 	public function __construct(
 		IContextSource $context,
-		Config $wikiConfig,
-		ExperimentUserManager $experimentUserManager
+		Config $wikiConfig
 	) {
-		parent::__construct( 'banner', $context, $wikiConfig, $experimentUserManager );
+		parent::__construct( 'banner', $context, $wikiConfig );
 	}
 
 	/** @inheritDoc */

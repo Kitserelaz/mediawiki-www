@@ -1,34 +1,38 @@
 <template>
 	<section class="ext-growthExperiments-MenteeOverview">
-		<div class="ext-growthExperiments-MenteeOverview__info-box-wrapper">
-			<c-popover
-				class="ext-growthExperiments-MenteeOverview__info-box"
-				:title="$i18n( 'growthexperiments-mentor-dashboard-mentee-overview-info-headline' ).text()"
-				title-class="ext-growthExperiments-MenteeOverview__info-box__title"
+		<cdx-toggle-button
+			ref="infoToggleButton"
+			v-model="showPopover"
+			:aria-label="$i18n( 'growthexperiments-mentor-dashboard-mentee-overview-info-icon-label' ).text()"
+			:quiet="true"
+			class="ext-growthExperiments-MenteeOverview__info-button"
+		>
+			<cdx-icon
 				:icon="cdxIconInfo"
-				:icon-label="$i18n( 'growthexperiments-mentor-dashboard-mentee-overview-info-icon-label' ).text()"
-				:close-icon="cdxIconClose"
-				:close-icon-label="$i18n( 'growthexperiments-info-tooltip-close-label' ).text()"
-			>
-				<template #trigger="{ onClick }">
-					<cdx-button
-						weight="quiet"
-						class="ext-growthExperiments-MenteeOverview__info-button"
-						:aria-label="$i18n( 'growthexperiments-mentor-dashboard-mentee-overview-info-icon-label' ).text()"
-						@click="onClick"
-					>
-						<cdx-icon :icon="cdxIconInfo"></cdx-icon>
-					</cdx-button>
-				</template>
-				<template #content>
-					<div class="ext-growthExperiments-MenteeOverview__info-content">
-						<p v-i18n-html="'growthexperiments-mentor-dashboard-mentee-overview-info-text'">
-						</p>
-						<legend-box v-if="legendItems.length" :items="legendItems"></legend-box>
-					</div>
-				</template>
-			</c-popover>
-		</div>
+			></cdx-icon>
+		</cdx-toggle-button>
+		<!--
+			CdxPopover uses the floating-ui library in a way that causes infinite recursion when
+			mounted in JSDOM. Shallow rendering the component in turn fails if an anchor reference
+			is provided, because vue-test-utils is unable to stringify the HTML element held within
+			the ref. Work around the situation by using shallow rendering in tests and use a well-known
+			window name to avoid passing the anchor in this case.
+		-->
+		<cdx-popover
+			v-model:open="showPopover"
+			:anchor="windowName !== 'MenteeOverviewJestTests' ? infoToggleButton : null"
+			placement="bottom-start"
+			:render-in-place="true"
+			:title="$i18n( 'growthexperiments-mentor-dashboard-mentee-overview-info-headline' ).text()"
+			:use-close-button="true"
+			:icon="cdxIconInfo"
+		>
+			<div class="ext-growthExperiments-MenteeOverview__info-content">
+				<p v-i18n-html="'growthexperiments-mentor-dashboard-mentee-overview-info-text'">
+				</p>
+				<legend-box v-if="legendItems.length" :items="legendItems"></legend-box>
+			</div>
+		</cdx-popover>
 		<div class="ext-growthExperiments-MenteeOverview__actions">
 			<mentee-filters
 				:data="filters"
@@ -78,14 +82,14 @@
 </template>
 
 <script>
-const { CdxIcon, CdxButton } = require( '@wikimedia/codex' );
+const { ref } = require( 'vue' );
+const { CdxIcon, CdxToggleButton, CdxPopover } = require( '@wikimedia/codex' );
 const DataTable = require( '../DataTable/DataTable.vue' );
 const MenteeSearch = require( './MenteeSearch.vue' );
 const MenteeFilters = require( './MenteeFilters.vue' );
 const NoResults = require( './NoResults.vue' );
-const CPopover = require( '../../../vue-components/CPopover.vue' );
 const LegendBox = require( './LegendBox.vue' );
-const { cdxIconError, cdxIconClock, cdxIconInfo, cdxIconClose } = require( '../../../vue-components/icons.json' );
+const { cdxIconError, cdxIconClock, cdxIconInfo } = require( '../../../vue-components/icons.json' );
 const apiClient = require( '../../store/MenteeOverviewApi.js' );
 
 const MENTEES_TABLE_COLUMNS = [
@@ -168,28 +172,28 @@ const MENTEES_TABLE_COLUMNS = [
 	}
 ];
 
-// Uses the following message keys:
-// growthexperiments-info-tooltip-close-label
 // @vue/component
 module.exports = exports = {
-	compatConfig: { MODE: 3 },
 	compilerOptions: { whitespace: 'condense' },
 	components: {
 		CdxIcon,
-		CdxButton,
 		DataTable,
 		MenteeFilters,
 		MenteeSearch,
 		NoResults,
-		CPopover,
-		LegendBox
+		LegendBox,
+		CdxToggleButton,
+		CdxPopover
 	},
 	setup() {
+		const showPopover = ref( false );
+		const infoToggleButton = ref( null );
 		return {
+			showPopover,
+			infoToggleButton,
 			cdxIconError,
 			cdxIconClock,
-			cdxIconInfo,
-			cdxIconClose
+			cdxIconInfo
 		};
 	},
 	data() {
@@ -213,6 +217,9 @@ module.exports = exports = {
 		};
 	},
 	computed: {
+		windowName() {
+			return window.name;
+		},
 		// TODO: use mapGetters ( with namespace ), cannot use spread operator?
 		currentPage() {
 			return this.$store.getters[ 'mentees/currentPage' ];
@@ -320,30 +327,13 @@ module.exports = exports = {
 .ext-growthExperiments-MenteeOverview {
 	container-type: inline-size;
 
-	&__info-box {
-		// HACK Since the module heading is rendered in the server,
-		// aproximately align the "i" icon with the heading text
-		// in the vertical axis and to the right hand padding.
-		position: absolute;
-		top: @spacing-50 * -9;
-		right: @spacing-50 * -1;
-
-		/* stylelint-disable-next-line selector-class-pattern */
-		.skin-minerva & {
-			top: @spacing-50 * -15;
-		}
-
-		&-wrapper {
-			position: relative;
-		}
-
-		&__title {
-			font-weight: @font-weight-bold;
-		}
-	}
-
 	&__info-button {
-		.codex-icon-only-button( @color-subtle, 24px);
+		.codex-icon-only-button(@color-subtle, 24px);
+		margin-top: @spacing-50;
+		margin-right: @spacing-50;
+		position: absolute;
+		top: 0;
+		right: 0;
 	}
 
 	&__info-content {
@@ -353,11 +343,15 @@ module.exports = exports = {
 	&__actions {
 		display: flex;
 		justify-content: space-between;
-		padding: 8px 0;
+		align-items: center;
+		align-self: stretch;
+		gap: @spacing-75;
+		padding: @spacing-50 0 @spacing-75 0;
 
 		&__search {
 			display: flex;
 			justify-content: flex-end;
+			max-width: @size-1600;
 		}
 	}
 
@@ -369,4 +363,28 @@ module.exports = exports = {
 		padding: 93px 40px 151px;
 	}
 }
+
+/* stylelint-disable-next-line selector-class-pattern */
+.skin-minerva {
+	.ext-growthExperiments-MenteeOverview {
+		// Override Minerva's default top margin for `.content table` elements
+		table {
+			margin-top: 0;
+		}
+
+		&__actions {
+			.ext-growthExperiments-MenteeFilters {
+				display: flex;
+				flex-direction: column;
+				align-items: flex-start;
+			}
+
+			&__search {
+				align-items: center;
+				flex: 1 0 0;
+			}
+		}
+	}
+}
+
 </style>

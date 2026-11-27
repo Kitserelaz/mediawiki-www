@@ -48,17 +48,12 @@ class TaskTypeHandlerRegistry {
 		return $this->handlers[$handlerId] ?? $this->createHandler( $handlerId );
 	}
 
-	/**
-	 * @param TaskType $taskType
-	 * @return TaskTypeHandler
-	 */
 	public function getByTaskType( TaskType $taskType ): TaskTypeHandler {
 		return $this->get( $taskType->getHandlerId() );
 	}
 
 	/**
 	 * Returns a list of all handle TaskTypeHandler IDs that would be accepted by get().
-	 * @return array
 	 */
 	public function getKnownIds(): array {
 		$knownIds = array_keys( $this->handlerSpecifications );
@@ -99,8 +94,9 @@ class TaskTypeHandlerRegistry {
 	 * @return string[]
 	 */
 	public function getUniqueChangeTags(): array {
-		return array_values( array_filter(
-			$this->getChangeTags(), fn ( $changeTagName ) => $changeTagName !== TaskTypeHandler::NEWCOMER_TASK_TAG
+		return array_values( array_diff(
+			$this->getChangeTags(),
+			[ TaskTypeHandler::NEWCOMER_TASK_TAG ]
 		) );
 	}
 
@@ -142,7 +138,8 @@ class TaskTypeHandlerRegistry {
 			'assertClass' => TaskTypeHandler::class,
 			'allowCallable' => true,
 		] );
-		/** @var TaskTypeHandler $handler */'@phan-var TaskTypeHandler $handler';
+		/** @var TaskTypeHandler $handler */
+		'@phan-var TaskTypeHandler $handler';
 		$this->handlers[$handlerId] = $handler;
 		return $handler;
 	}

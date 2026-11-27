@@ -43,6 +43,11 @@ AddLinkArticleTarget.prototype.beforeLoadSuccess = function ( response ) {
 	const data = response.visualeditor || response.visualeditoredit;
 	const doc = ve.createDocumentFromHtml( data.content );
 	const addlinkData = suggestedEditSession.taskData;
+	const recommendationId = new URL( window.location ).searchParams.get( 'gerecommendationid' );
+	if ( recommendationId ) {
+		// Since there's no UI support for a single link recommendation, create an array of one element
+		addlinkData.links = [ suggestedEditSession.taskData.links[ recommendationId ] ];
+	}
 	// TODO start loading this earlier (T267691)
 	this.annotateSuggestions( doc, addlinkData.links );
 	data.content = '<!doctype html>' + ve.properOuterHtml( doc.documentElement );
@@ -72,7 +77,7 @@ AddLinkArticleTarget.prototype.afterStructuredTaskSurfaceReady = function () {
 	} else {
 		// On desktop, the recommendation is selected after onboarding has been completed
 		mw.hook( 'growthExperiments.structuredTask.onboardingCompleted' ).add(
-			this.selectFirstRecommendation.bind( this )
+			this.selectFirstRecommendation.bind( this ),
 		);
 		mw.hook( 'growthExperiments.structuredTask.showOnboardingIfNeeded' ).fire();
 	}
@@ -140,8 +145,8 @@ AddLinkArticleTarget.prototype.findRecommendationFragments = function () {
 			recommendationWikitextOffset: recommendationWikitextOffset,
 			fragment: surfaceModel.getLinearFragment( new ve.Range(
 				recommendationRanges[ recommendationWikitextOffset ][ 0 ],
-				recommendationRanges[ recommendationWikitextOffset ][ 1 ]
-			) )
+				recommendationRanges[ recommendationWikitextOffset ][ 1 ],
+			) ),
 		} ) );
 };
 
@@ -211,7 +216,7 @@ AddLinkArticleTarget.prototype.annotateSuggestions = function ( doc, suggestions
 		if ( !phraseMap[ suggestions[ i ].link_text ] ) {
 			phraseMap[ suggestions[ i ].link_text ] = {
 				occurrencesSeen: 0,
-				suggestions: {}
+				suggestions: {},
 			};
 		}
 		phrase = phraseMap[ suggestions[ i ].link_text ];
@@ -248,7 +253,7 @@ AddLinkArticleTarget.prototype.annotateSuggestions = function ( doc, suggestions
 				annotations.push( {
 					postText: postText,
 					linkText: linkText,
-					suggestion: suggestion
+					suggestion: suggestion,
 				} );
 				// In the next iteration of the loop, search postText for any additional phrase
 				// matches, and reset regex.lastIndex accordingly
@@ -289,7 +294,7 @@ AddLinkArticleTarget.prototype.annotateSuggestions = function ( doc, suggestions
 				phraseMap[ phraseItem ].occurrencesSeen + ') in document.' );
 		} );
 		mw.errorLogger.logError( new Error(
-			'Unable to find ' + phraseMapKeys.length + ' link recommendation phrase item(s) in document.'
+			'Unable to find ' + phraseMapKeys.length + ' link recommendation phrase item(s) in document.',
 		), 'error.growthexperiments' );
 	}
 
@@ -297,9 +302,9 @@ AddLinkArticleTarget.prototype.annotateSuggestions = function ( doc, suggestions
 		/* eslint-disable camelcase */
 		number_phrases_found: suggestions.length - phraseMapKeys.length,
 		number_phrases_expected: suggestions.length,
-		number_phrases_shown: numberOfLinksShown
+		number_phrases_shown: numberOfLinksShown,
 	}, {
-		active_interface: 'machinesuggestions_mode'
+		active_interface: 'machinesuggestions_mode',
 		/* eslint-enable camelcase */
 	} );
 };
@@ -316,10 +321,6 @@ AddLinkArticleTarget.prototype.annotateSuggestions = function ( doc, suggestions
  * @return {TreeWalker}
  */
 AddLinkArticleTarget.prototype.getTreeWalker = function ( doc ) {
-	function startsWith( str, prefix ) {
-		return str && str.slice( 0, prefix.length ) === prefix;
-	}
-
 	return doc.createTreeWalker(
 		doc.body,
 		// eslint-disable-next-line no-bitwise
@@ -333,11 +334,11 @@ AddLinkArticleTarget.prototype.getTreeWalker = function ( doc ) {
 			// https://www.mediawiki.org/wiki/Specs/HTML/2.2.0
 			if (
 				// transcluded content, media, most other things
-				startsWith( node.getAttribute( 'typeof' ), 'mw:' ) ||
+				( node.getAttribute( 'typeof' ) || '' ).startsWith( 'mw:' ) ||
 				// links and link-like things
-				startsWith( node.getAttribute( 'rel' ), 'mw:' ) ||
+				( node.getAttribute( 'rel' ) || '' ).startsWith( 'mw:' ) ||
 				// metadata (though it has no content so doesn't really matter)
-				startsWith( node.getAttribute( 'property' ), 'mw:' ) ||
+				( node.getAttribute( 'property' ) || '' ).startsWith( 'mw:' ) ||
 				// part of a transcluded DOM forest such as a template with multiple
 				// top-level nodes; typeof is only present on the first node
 				node.getAttribute( 'about' ) ||
@@ -345,7 +346,7 @@ AddLinkArticleTarget.prototype.getTreeWalker = function ( doc ) {
 				// OL/UL are absent because of the weird way mwparserfromhell (the parser used
 				// by the link recommendation service) handles them, see
 				// https://github.com/earwig/mwparserfromhell/issues/46
-				[ 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'TABLE', 'B', 'I', 'BLOCKQUOTE' ].indexOf( node.tagName ) !== -1
+				[ 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'TABLE', 'B', 'I', 'BLOCKQUOTE' ].includes( node.tagName )
 			) {
 				return NodeFilter.FILTER_REJECT;
 			}
@@ -353,7 +354,7 @@ AddLinkArticleTarget.prototype.getTreeWalker = function ( doc ) {
 			// An element we did not exclude above, probably <p> or <section>. SKIP means do
 			// not return it (we only want to return text nodes), but descend into it.
 			return NodeFilter.FILTER_SKIP;
-		} }
+		} },
 	);
 };
 
@@ -414,21 +415,20 @@ AddLinkArticleTarget.prototype.save = function ( doc, options, isRetry ) {
 			skippedTargets.push( state.title );
 		}
 	} );
+
+	const surfaced = new URL( window.location ).searchParams.get( 'surfaced' ) === '1';
 	// This data will be processed in VisualEditorHooks::onVisualEditorApiVisualEditorEditPostSave
 	options[ 'data-ge-task-link-recommendation' ] = JSON.stringify( {
 		taskType: 'link-recommendation',
 		acceptedTargets: acceptedTargets,
 		rejectedTargets: rejectedTargets,
-		skippedTargets: skippedTargets
+		skippedTargets: skippedTargets,
+		surfaced: surfaced,
 	} );
 	options.plugins = 'ge-task-link-recommendation';
-	return this.constructor.super.prototype.save.call( this, doc, options, isRetry )
-		.done( () => {
-			const hasAccepts = annotationStates.some( ( state ) => state.accepted );
-			if ( !hasAccepts ) {
-				this.madeNullEdit = true;
-			}
-		} );
+	const hasAccepts = annotationStates.some( ( state ) => state.accepted );
+	this.madeNullEdit = !hasAccepts;
+	return this.constructor.super.prototype.save.call( this, doc, options, isRetry );
 };
 
 /** @inheritDoc **/
@@ -449,14 +449,14 @@ AddLinkArticleTarget.prototype.saveErrorHookAborted = function ( data ) {
 	}
 	this.logger.log( 'impression', {}, {
 		// eslint-disable-next-line camelcase
-		active_interface: 'outdatedsuggestions_dialog'
+		active_interface: 'outdatedsuggestions_dialog',
 	} );
 	this.getSurface().getDialogs().currentWindow.close();
 	window.onbeforeunload = null;
 	$( window ).off( 'beforeunload' );
 	OO.ui.alert( mw.message( 'growthexperiments-addlink-suggestions-outdated' ).text(), {
-		actions: [ { action: 'accept', label: mw.message( 'growthexperiments-structuredtask-no-suggestions-found-dialog-button' ).text(), flags: 'primary' } ]
-	} ).done( () => {
+		actions: [ { action: 'accept', label: mw.message( 'growthexperiments-structuredtask-no-suggestions-found-dialog-button' ).text(), flags: 'primary' } ],
+	} ).then( () => {
 		window.location.href = mw.Title.newFromText( 'Special:Homepage' ).getUrl();
 	} );
 };
@@ -494,7 +494,7 @@ AddLinkArticleTarget.prototype.getAnnotationStates = function () {
 		const state = {
 			title: annotation.getDisplayTitle(),
 			text: annotation.getOriginalDomElements( annotation.getStore() )
-				.map( ( element ) => element.textContent ).join( '' )
+				.map( ( element ) => element.textContent ).join( '' ),
 		};
 		if ( annotation.isAccepted() ) {
 			state.accepted = true;

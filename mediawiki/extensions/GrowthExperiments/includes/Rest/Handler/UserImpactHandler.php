@@ -8,15 +8,16 @@ use GrowthExperiments\UserImpact\RefreshUserImpactJob;
 use GrowthExperiments\UserImpact\UserImpactFormatter;
 use GrowthExperiments\UserImpact\UserImpactLookup;
 use GrowthExperiments\UserImpact\UserImpactStore;
-use JobQueueGroup;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\ParamValidator\TypeDef\UserDef;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\SimpleHandler;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
 use Wikimedia\ParamValidator\ParamValidator;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * Handler for POST and GET requests /growthexperiments/v0/user-impact/{user} endpoint.
@@ -29,30 +30,22 @@ class UserImpactHandler extends SimpleHandler {
 	private UserImpactStore $userImpactStore;
 	private UserImpactLookup $userImpactLookup;
 	private UserImpactFormatter $userImpactFormatter;
-	private IBufferingStatsdDataFactory $statsdDataFactory;
+	private StatsFactory $statsFactory;
 	private JobQueueGroup $jobQueueGroup;
 	private UserFactory $userFactory;
 
-	/**
-	 * @param UserImpactStore $userImpactStore
-	 * @param UserImpactLookup $userImpactLookup
-	 * @param UserImpactFormatter $userImpactFormatter
-	 * @param IBufferingStatsdDataFactory $statsdDataFactory
-	 * @param JobQueueGroup $jobQueueGroup
-	 * @param UserFactory $userFactory
-	 */
 	public function __construct(
 		UserImpactStore $userImpactStore,
 		UserImpactLookup $userImpactLookup,
 		UserImpactFormatter $userImpactFormatter,
-		IBufferingStatsdDataFactory $statsdDataFactory,
+		StatsFactory $statsFactory,
 		JobQueueGroup $jobQueueGroup,
 		UserFactory $userFactory
 	) {
 		$this->userImpactStore = $userImpactStore;
 		$this->userImpactLookup = $userImpactLookup;
 		$this->userImpactFormatter = $userImpactFormatter;
-		$this->statsdDataFactory = $statsdDataFactory;
+		$this->statsFactory = $statsFactory;
 		$this->jobQueueGroup = $jobQueueGroup;
 		$this->userFactory = $userFactory;
 	}
@@ -64,6 +57,13 @@ class UserImpactHandler extends SimpleHandler {
 	 * @throws Exception
 	 */
 	public function run( UserIdentity $user ) {
+		// Same rule as Special:Impact: a hidden user's impact data is only for viewers with hideuser.
+		if (
+			$this->userFactory->newFromUserIdentity( $user )->isHidden() &&
+			!$this->getAuthority()->isAllowed( 'hideuser' )
+		) {
+			throw new HttpException( 'Impact data not found for user', 404 );
+		}
 		$start = microtime( true );
 		$userImpact = $this->getUserImpact( $user );
 		$validParams = $this->getValidatedParams();
@@ -72,9 +72,12 @@ class UserImpactHandler extends SimpleHandler {
 			$pageviewsUrlDisplayLanguageCode = $validParams[ 'lang' ];
 		}
 		$formattedJsonData = $this->userImpactFormatter->format( $userImpact, $pageviewsUrlDisplayLanguageCode );
-		$this->statsdDataFactory->timing(
-			'timing.growthExperiments.UserImpactHandler.run', microtime( true ) - $start
-		);
+
+		$runTimeInSeconds = microtime( true ) - $start;
+		$this->statsFactory->withComponent( 'GrowthExperiments' )
+			->getTiming( 'user_impact_handler_run_seconds' )
+			->observeSeconds( $runTimeInSeconds );
+
 		return $formattedJsonData;
 	}
 
@@ -90,33 +93,44 @@ class UserImpactHandler extends SimpleHandler {
 			$cachedUserImpact = $this->userImpactStore->getExpensiveUserImpact( $user );
 		}
 		if ( $cachedUserImpact ) {
-			$this->statsdDataFactory->increment( 'GrowthExperiments.UserImpactHandler.Cache.Hit' );
+			$this->statsFactory->withComponent( 'GrowthExperiments' )
+				->getCounter( 'user_impact_handler_cache_total' )
+				->setLabel( 'status', 'hit' )
+				->increment();
 		}
 
 		if ( $cachedUserImpact && $cachedUserImpact->isPageViewDataStale() ) {
 			// Page view data is stale; we will attempt to recalculate it.
 			$userImpact = null;
-			$this->statsdDataFactory->increment( 'GrowthExperiments.UserImpactHandler.Cache.HitStalePageViewData' );
+			$this->statsFactory->withComponent( 'GrowthExperiments' )
+				->getCounter( 'user_impact_handler_cache_total' )
+				->setLabel( 'status', 'hit_stale' )
+				->increment();
 		} else {
 			$userImpact = $cachedUserImpact;
 		}
 
 		if ( !$userImpact ) {
-			$this->statsdDataFactory->increment( 'GrowthExperiments.UserImpactHandler.Cache.Miss' );
+			$this->statsFactory->withComponent( 'GrowthExperiments' )
+				->getCounter( 'user_impact_handler_cache_total' )
+				->setLabel( 'status', 'miss' )
+				->increment();
 			// Rate limit check.
 			$performingUser = $this->userFactory->newFromUserIdentity( $this->getAuthority()->getUser() );
 			if ( $performingUser->pingLimiter( 'growthexperimentsuserimpacthandler' ) ) {
 				if ( $cachedUserImpact ) {
-					$this->statsdDataFactory->increment(
-						'GrowthExperiments.UserImpactHandler.PingLimiterTripped.StaleImpactData'
-					);
+					$this->statsFactory->withComponent( 'GrowthExperiments' )
+						->getCounter( 'user_impact_handler_ping_limiter_total' )
+						->setLabel( 'status', 'stale_data' )
+						->increment();
 					// Performing user is over the rate limit for requesting data for other users, but we have stale
 					// data so just return that, rather than nothing.
 					return $cachedUserImpact;
 				} else {
-					$this->statsdDataFactory->increment(
-						'GrowthExperiments.UserImpactHandler.PingLimiterTripped.NoData'
-					);
+					$this->statsFactory->withComponent( 'GrowthExperiments' )
+						->getCounter( 'user_impact_handler_ping_limiter_total' )
+						->setLabel( 'status', 'no_data' )
+						->increment();
 					throw new HttpException( 'Too many requests to refresh user impact data', 429 );
 				}
 			}
@@ -129,11 +143,9 @@ class UserImpactHandler extends SimpleHandler {
 			// on GET. So if a client is using a GET request, use the job queue, but otherwise (e.g. on
 			// Special:Homepage) we'll use a POST request and save using a deferred update.
 			if ( $this->getRequest()->getMethod() === 'GET' ) {
-				$this->jobQueueGroup->lazyPush(
-					new RefreshUserImpactJob( [
-						'impactDataBatch' => [ $user->getId() => json_encode( $userImpact ) ],
-					] )
-				);
+				$this->jobQueueGroup->lazyPush( new JobSpecification( RefreshUserImpactJob::JOB_NAME, [
+					'impactDataBatch' => [ $user->getId() => null ],
+				] ) );
 			} else {
 				DeferredUpdates::addCallableUpdate( function () use ( $userImpact ) {
 					$this->userImpactStore->setUserImpact( $userImpact );

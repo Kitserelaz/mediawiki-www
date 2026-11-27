@@ -19,9 +19,6 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  */
 class MentorStatusManagerTest extends MediaWikiUnitTestCase {
 
-	/**
-	 * @return UserIdentity
-	 */
 	private function getTestMentor(): UserIdentity {
 		return new UserIdentityValue(
 			123,
@@ -29,10 +26,6 @@ class MentorStatusManagerTest extends MediaWikiUnitTestCase {
 		);
 	}
 
-	/**
-	 * @param bool $userIsBlocked
-	 * @return UserFactory
-	 */
 	private function getMockUserFactory( bool $userIsBlocked = false ): UserFactory {
 		$userIdentity = $this->getTestMentor();
 		$user = $this->createMock( User::class );

@@ -4,13 +4,13 @@
 			"IJzeren Jan"
 		]
 	},
-	"babel": "Jezyčne sposobnosti koristnika",
+	"babel": "Jezyčne sposobnosti {{GENDER:$1|koristnika|koristnice}} (Babel)",
 	"babel-desc": "Doda funkciju parsera <code>#babel</code>, ktora pozvaljaje avtomatično stvorjenje ramok s informacijeju o jezyčnyh sposobnostah koristnika s možnostju vključenja vlastnyh šablonov",
 	"babel-url": "Project:Babilon",
 	"babel-footer-url": ":Kategorija:Babilon – Koristniki po jezyku",
 	"babel-autocreate-reason": "Avtomatično stvorjenje stranice dlja kategorije [[$1|Babilon]]",
-	"babel-autocreate-text-levels": "Koristniki v tutoj kategoriji ukazyvajut, že znajut jezyk $2 na uravnju $1.",
-	"babel-autocreate-text-main": "Koristniki v tutoj kategoriji ukazyvajut, že znajut jezyk $1.",
+	"babel-autocreate-text-levels": "Koristniki v tutoj kategoriji ukazyvajut, že znajut jezyk $2 na uravnju $1. \n$4",
+	"babel-autocreate-text-main": "Koristniki v tutoj kategoriji ukazyvajut, že znajut jezyk $1.\n$3",
 	"babel-0": "{{GENDER:$4|Tutoj koristnik|Tuta koristnica}} [[$1|ne znaje]] ili ledva razuměje [[$2|$3]].",
 	"babel-1": "{{GENDER:$4|Tutoj koristnik|Tuta koristnica}} znaje [[$2|$3]] na [[$1|osnovnom]] uravnju.",
 	"babel-2": "{{GENDER:$4|Tutoj koristnik|Tuta koristnica}} znaje [[$2|$3]] na [[$1|srědnjem]] uravnju.",

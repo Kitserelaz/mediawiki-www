@@ -4,12 +4,12 @@
 			"Alesaru",
 			"NGC 54",
 			"Paloi Sciurala",
-			"Strainu"
+			"Strainu",
+			"Vellion Eagle"
 		]
 	},
 	"growthexperiments-mentor-dashboard-title": "Pagina mentorului",
 	"growthexperiments-mentor-dashboard-pt-link": "Pagina mentorului",
-	"growthexperiments-mentor-dashboard-disabled": "Pagina mentorului nu este activată la acest wiki.",
 	"growthexperiments-mentor-dashboard-must-be-mentor": "Pentru a activa pagina mentorului, {{GENDER:|trebuie}} mai întâi să [[$1|vă înscrieți ca mentor]].",
 	"growthexperiments-mentor-dashboard-misconfigured-missing-list": "Înainte ca pagina mentorului să poată fi folosită, trebuia mai întâi să fie configurată lista mentorilor. Un administrator poate utiliza [[Special:EditGrowthConfig]] pentru acest lucru.",
 	"growthexperiments-mentor-dashboard-mentee-overview-headline": "Ucenicii {{GENDER:|dvs.}}",
@@ -58,7 +58,7 @@
 	"growthexperiments-mentor-dashboard-resources-headline": "Resurse",
 	"growthexperiments-mentor-dashboard-resources-link-manage-mentors": "Administrare mentori",
 	"growthexperiments-mentor-dashboard-resources-link-view-mentor-list": "Vezi lista mentorilor",
-	"growthexperiments-mentor-dashboard-resources-link-how-to-introduce": "Cum să vă introduceți ca mentor",
+	"growthexperiments-mentor-dashboard-resources-link-how-to-introduce": "Cum să vă prezentați ca mentor",
 	"growthexperiments-mentor-dashboard-resources-link-claim-mentee": "Cum să revendicați un ucenic",
 	"growthexperiments-mentor-dashboard-resources-link-tools": "Unelte Growth",
 	"growthexperiments-mentor-dashboard-mentor-tools-headline": "Setări",
@@ -213,7 +213,7 @@
 	"growthexperiments-manage-mentors-return-back": "Vă puteți [[Special:ManageMentors|întoarce]] la lista mentorilor.",
 	"growthexperiments-manage-mentors-summary-add-admin-no-reason": "Se adaugă $1 ca mentor",
 	"growthexperiments-manage-mentors-summary-add-admin-with-reason": "Adaug pe $1 ca mentor: $2",
-	"growthexperiments-manage-mentors-summary-add-self-no-reason": "Mă adaug ca mentore ca mentor",
+	"growthexperiments-manage-mentors-summary-add-self-no-reason": "Mă adaug ca mentor",
 	"growthexperiments-manage-mentors-summary-add-self-with-reason": "Mă adaug ca mentor: $2",
 	"growthexperiments-manage-mentors-summary-change-admin-no-reason": "Schimb opțiunile de mentorat ale lui $1",
 	"growthexperiments-manage-mentors-summary-change-admin-with-reason": "Modificarea opțiunilor de mentorat pentru $1: $2",
@@ -231,6 +231,6 @@
 	"growthexperiments-mentorship-enrollasmentor-success": "Sunteți acum {{GENDER:|înscris|înscrisă}} ca mentor. Acum {{GENDER:|puteți}} merge la [[Special:MentorDashboard|pagina mentorului]].",
 	"growthexperiments-mentorship-enrollasmentor-summary": "Mă adaug ca mentor",
 	"growthexperiments-mentorship-enrollasmentor-error-not-autoeligible": "Numai utilizatorii cu cel puțin $1 {{PLURAL:$1|editare|editări}} și $2 {{PLURAL:$2|zi|zile}} de prezență se pot înscrie ca mentori.",
-	"tag-mentor list change": "Schimbare la lista mentorilor",
-	"tag-mentor list change-description": "Etichetă aplicată editărilor făcute listei structurate de mentori via GrowthExperiments"
+	"tag-mentor_list_change": "Schimbare la lista mentorilor",
+	"tag-mentor_list_change-description": "Etichetă aplicată editărilor făcute listei structurate de mentori via GrowthExperiments"
 }

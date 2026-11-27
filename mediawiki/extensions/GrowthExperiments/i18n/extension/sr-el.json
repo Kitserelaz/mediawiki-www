@@ -70,6 +70,7 @@
 	"communityconfiguration-mentorship-gementorshipminimumeditcount-label": "Minimalni broj izmena koji korisnik mora imati da bi bio mentor",
 	"communityconfiguration-mentorship-gepersonalizedpraiseminedits-label": "Minimalan broj izmena koje novajlija treba da ima da bi bio pohvaljen",
 	"communityconfiguration-growthhomepage-title": "Početna stranica za novajlije",
+	"communityconfiguration-growthhomepage-gelevelingupkeepgoingnotificationthresholdsmaximum-label": "Podstrek",
 	"communityconfiguration-growthsuggestededits-title": "Predložene izmene",
 	"communityconfiguration-growthsuggestededits-copyedit-label": "Lektura",
 	"communityconfiguration-growthsuggestededits-copyedit-disabled-control-label": "Zadatak je onemogućen.",

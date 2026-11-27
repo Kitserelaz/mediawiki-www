@@ -55,7 +55,7 @@ class ApiDeleteDumps extends ApiBase {
 		$dbw = $this->connectionProvider->getPrimaryDatabase();
 
 		$row = $dbw->newSelectQueryBuilder()
-			->select( [ 'dumps_filename', 'dumps_status' ] )
+			->select( 'dumps_filename' )
 			->from( 'data_dump' )
 			->where( [ 'dumps_filename' => $fileName ] )
 			->caller( __METHOD__ )
@@ -63,7 +63,7 @@ class ApiDeleteDumps extends ApiBase {
 
 		if ( !$row ) {
 			$this->dieWithError( [ 'datadump-dump-does-not-exist', $fileName ] );
-		} elseif ( !in_array( $row->dumps_status, [ 'completed', 'failed' ], true ) ) {
+		} elseif ( $row->dumps_status !== 'completed' || $row->dumps_status !== 'failed' ) {
 			$this->dieWithError( [ 'datadump-cannot-delete' ] );
 		}
 

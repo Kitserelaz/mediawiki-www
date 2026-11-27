@@ -4,8 +4,6 @@
 			"Joanmp17"
 		]
 	},
-	"mobile-frontend-changeslist-nocomment": "መጠቓለሊ ኣርትዖት የለን",
-	"mobile-frontend-clear-search": "ኣጽርይ",
 	"mobile-frontend-copyright": "ትሕዝቶ ኣብ ትሕቲ ፍቓድ $1 ይርከብ እዩ፣ ካልእ እንተ ዘይተገልጸ።",
 	"mobile-frontend-editor-blocked-drawer-action-login": "ብመንነት እተው",
 	"mobile-frontend-editor-blocked-drawer-action-ok": "ተቐበል",
@@ -58,9 +56,7 @@
 	"mobile-frontend-user-page-describe-yourself-editors": "ኣርታዕቲ",
 	"tag-mobile_edit": "ኣርትዖት ካብ ሞባይል",
 	"mobile-frontend-loading-message": "ይጽዕን ኣሎ...",
-	"mobile-frontend-mobile-option-MFEnableFontChanger": "ዓቐን ቅርጺ ፊደል",
 	"mobile-frontend-mobile-option-amc-learn-more": "ተወሳኺ ፍለጥ",
 	"mobile-frontend-user-pref-option": "ምርጫታት ተጠቃሚ",
-	"mobile-frontend-amc-outreach-no-thanks": "ኣይፋል፣ የቐንየለይ",
 	"prefs-mobile": "ምርጫታት ሞባይል"
 }

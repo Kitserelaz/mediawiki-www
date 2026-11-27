@@ -1,8 +1,8 @@
 module.exports = function () {
 	const
 		currentPage = require( '../mobile.startup/currentPage' )(),
-		Toggler = require( '../mobile.startup/Toggler' ),
-		sectionCollapsing = require( '../mobile.startup/sectionCollapsing' ),
+		Toggler = require( './Toggler' ),
+		sectionCollapsing = require( './sectionCollapsing' ),
 		eventBus = require( '../mobile.startup/eventBusSingleton' );
 
 	/**
@@ -29,10 +29,10 @@ module.exports = function () {
 			}
 			// eslint-disable-next-line no-new
 			new Toggler( {
-				$container: $container,
-				prefix: prefix,
-				page: page,
-				eventBus: eventBus
+				$container,
+				prefix,
+				page,
+				eventBus
 			} );
 		}
 	}
@@ -45,7 +45,7 @@ module.exports = function () {
 			mw.config.get( 'wgAction' ) === 'edit'
 		)
 	) {
-		mw.hook( 'wikipage.content' ).add( function ( $container ) {
+		mw.hook( 'wikipage.content' ).add( ( $container ) => {
 			let $contentContainer = $container.find( '.mw-parser-output' );
 			// If there was no mw-parser-output wrapper, just use the parent.
 			if ( $contentContainer.length === 0 ) {

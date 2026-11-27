@@ -2,8 +2,7 @@
 
 namespace GrowthExperiments\HomepageModules;
 
-use GrowthExperiments\ExperimentUserManager;
-use GrowthExperiments\Mentorship\MentorManager;
+use GrowthExperiments\Mentorship\IMentorManager;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Html\Html;
@@ -11,24 +10,12 @@ use OOUI\ButtonWidget;
 
 class MentorshipOptIn extends BaseModule {
 
-	/** @var MentorManager */
-	private $mentorManager;
-
-	/**
-	 * @param IContextSource $context
-	 * @param Config $wikiConfig
-	 * @param ExperimentUserManager $experimentUserManager
-	 * @param MentorManager $mentorManager
-	 */
 	public function __construct(
 		IContextSource $context,
 		Config $wikiConfig,
-		ExperimentUserManager $experimentUserManager,
-		MentorManager $mentorManager
+		private readonly IMentorManager $mentorManager
 	) {
-		parent::__construct( 'mentorship-optin', $context, $wikiConfig, $experimentUserManager );
-
-		$this->mentorManager = $mentorManager;
+		parent::__construct( 'mentorship-optin', $context, $wikiConfig );
 	}
 
 	/**
@@ -37,7 +24,7 @@ class MentorshipOptIn extends BaseModule {
 	protected function canRender() {
 		return $this->mentorManager->getMentorshipStateForUser(
 			$this->getUser()
-		) === MentorManager::MENTORSHIP_OPTED_OUT;
+		) === IMentorManager::MENTORSHIP_OPTED_OUT;
 	}
 
 	/**
@@ -71,7 +58,7 @@ class MentorshipOptIn extends BaseModule {
 	protected function getBody() {
 		return implode( "\n", [
 			$this->getIntroductionElement(),
-			$this->getOptInButton()
+			$this->getOptInButton(),
 		] );
 	}
 
@@ -86,9 +73,6 @@ class MentorshipOptIn extends BaseModule {
 		) . $this->getOptInButton();
 	}
 
-	/**
-	 * @return string
-	 */
 	private function getIntroductionElement(): string {
 		return Html::element(
 			'p',
@@ -103,11 +87,8 @@ class MentorshipOptIn extends BaseModule {
 		return false;
 	}
 
-	/**
-	 * @return string
-	 */
 	private function getOptInButton(): string {
-		return new ButtonWidget( [
+		return ( new ButtonWidget( [
 			'id' => 'mw-ge-homepage-mentorship-optin',
 			'framed' => false,
 			'flags' => [ 'progressive' ],
@@ -115,6 +96,6 @@ class MentorshipOptIn extends BaseModule {
 			'label' => $this->msg( 'growthexperiments-homepage-mentorship-optin-button' )
 				->text(),
 			'infusable' => true,
-		] );
+		] ) )->toString();
 	}
 }

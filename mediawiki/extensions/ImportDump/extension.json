@@ -2,14 +2,14 @@
 	"name": "ImportDump",
 	"author": "Universal Omega",
 	"url": "https://github.com/miraheze/ImportDump",
-	"descriptionmsg": "importdump-desc",
-	"namemsg": "importdump-extensionname",
+	"descriptionmsg": "requestimport-desc",
+	"namemsg": "requestimport-extensionname",
 	"license-name": "GPL-3.0-or-later",
 	"type": "specialpage",
 	"requires": {
-		"MediaWiki": ">= 1.43.0",
+		"MediaWiki": ">= 1.46.0",
 		"platform": {
-			"php": ">= 8.1"
+			"php": ">= 8.4"
 		}
 	},
 	"MessagesDirs": {
@@ -21,20 +21,42 @@
 		"ImportDumpAliases": "ImportDumpAliases.php"
 	},
 	"AutoloadNamespaces": {
-		"Miraheze\\ImportDump\\": "includes/"
+		"Miraheze\\ImportDump\\": "includes/",
+		"Miraheze\\ImportDump\\Maintenance\\": "maintenance/"
 	},
 	"TestAutoloadNamespaces": {
 		"Miraheze\\ImportDump\\Tests\\": "tests/phpunit/"
+	},
+	"APIModules": {
+		"requestimportoutput": {
+			"class": "Miraheze\\ImportDump\\Api\\ApiRequestImportOutput",
+			"services": [
+				"RequestImport.RequestManager"
+			]
+		},
+		"requestimportprogress": {
+			"class": "Miraheze\\ImportDump\\Api\\ApiRequestImportProgress",
+			"services": [
+				"RequestImport.RequestManager"
+			]
+		},
+		"requestimportupload": {
+			"class": "Miraheze\\ImportDump\\Api\\ApiRequestImportUpload",
+			"services": [
+				"ConnectionProvider"
+			]
+		}
 	},
 	"JobClasses": {
 		"ImportDumpJob": {
 			"class": "Miraheze\\ImportDump\\Jobs\\ImportDumpJob",
 			"services": [
-				"ConfigFactory",
 				"ConnectionProvider",
+				"RequestImport.Config",
+				"RequestImport.Heartbeat",
+				"RequestImport.HookRunner",
+				"RequestImport.RequestManager",
 				"JobQueueGroupFactory",
-				"ImportDumpHookRunner",
-				"ImportDumpRequestManager",
 				"WikiImporterFactory"
 			],
 			"needsPage": false
@@ -42,9 +64,42 @@
 		"ImportDumpNotifyJob": {
 			"class": "Miraheze\\ImportDump\\Jobs\\ImportDumpNotifyJob",
 			"services": [
-				"ConfigFactory",
-				"ImportDumpRequestManager",
+				"RequestImport.Config",
+				"RequestImport.RequestManager",
+				"NotificationService",
 				"UserFactory"
+			],
+			"needsPage": false
+		},
+		"ImportDumpVerifyDump": {
+			"class": "Miraheze\\ImportDump\\Jobs\\VerifyDumpJob",
+			"services": [
+				"FormatterFactory",
+				"RequestImport.AttentionNotifier",
+				"RequestImport.DumpProcessor",
+				"RequestImport.ImageProcessor",
+				"RequestImport.RequestManager",
+				"UserFactory",
+				"RequestImport.VerificationProgress"
+			],
+			"needsPage": false
+		},
+		"ImportImagesJob": {
+			"class": "Miraheze\\ImportDump\\Jobs\\ImportImagesJob",
+			"services": [
+				"ConnectionProvider",
+				"RequestImport.Config",
+				"RequestImport.Heartbeat",
+				"RequestImport.HookRunner",
+				"RequestImport.RequestManager",
+				"JobQueueGroupFactory"
+			],
+			"needsPage": false
+		},
+		"ImportOutputStoreJob": {
+			"class": "Miraheze\\ImportDump\\Jobs\\ImportOutputStoreJob",
+			"services": [
+				"RequestImport.RequestManager"
 			],
 			"needsPage": false
 		}
@@ -61,26 +116,26 @@
 		"view-private-import-requests"
 	],
 	"LogActionsHandlers": {
-		"importdump/*": "LogFormatter",
-		"importdumpprivate/*": "LogFormatter"
+		"requestimport/*": "Miraheze\\ImportDump\\Logging\\RequestImportLogFormatter",
+		"requestimportprivate/*": "Miraheze\\ImportDump\\Logging\\RequestImportLogFormatter"
 	},
 	"LogHeaders": {
-		"importdump": "importdump-log-header",
-		"importdumpprivate": "importdumpprivate-log-header"
+		"requestimport": "requestimport-log-header",
+		"requestimportprivate": "requestimportprivate-log-header"
 	},
 	"LogNames": {
-		"importdump": "importdump-log-name",
-		"importdumpprivate": "importdumpprivate-log-name"
+		"requestimport": "requestimport-log-name",
+		"requestimportprivate": "requestimportprivate-log-name"
 	},
 	"LogTypes": [
-		"importdump",
-		"importdumpprivate"
+		"requestimport",
+		"requestimportprivate"
 	],
 	"LogRestrictions": {
-		"importdumpprivate": "view-private-import-requests"
+		"requestimportprivate": "view-private-import-requests"
 	},
 	"ActionFilteredLogs": {
-		"importdump": {
+		"requestimport": {
 			"interwiki": [
 				"interwiki"
 			],
@@ -94,7 +149,7 @@
 				"statusupdate"
 			]
 		},
-		"importdumpprivate": {
+		"requestimportprivate": {
 			"interwiki": [
 				"interwiki"
 			],
@@ -114,28 +169,33 @@
 			"class": "Miraheze\\ImportDump\\Specials\\SpecialRequestImport",
 			"services": [
 				"ConnectionProvider",
+				"RequestImport.AttentionNotifier",
+				"RequestImport.DumpProcessor",
+				"RequestImport.RequestManager",
+				"JobQueueGroup",
 				"MimeAnalyzer",
-				"PermissionManager",
+				"NotificationService",
 				"RepoGroup",
+				"UploadVerification",
 				"UserFactory"
 			],
 			"optional_services": [
-				"RemoteWikiFactory"
+				"ManageWikiModuleFactory"
 			]
 		},
 		"RequestImportQueue": {
 			"class": "Miraheze\\ImportDump\\Specials\\SpecialRequestImportQueue",
 			"services": [
 				"ConnectionProvider",
-				"ImportDumpRequestManager",
-				"PermissionManager",
+				"RequestImport.ExtensionNames",
+				"RequestImport.RequestManager",
 				"UserFactory"
 			]
 		}
 	},
 	"Hooks": {
 		"BeforeCreateEchoEvent": {
-			"handler": "Main"
+			"handler": "Notifications"
 		},
 		"GetAllBlockActions": {
 			"handler": "Main"
@@ -159,9 +219,61 @@
 			"services": [
 				"ConnectionProvider"
 			]
+		},
+		"Notifications": {
+			"class": "Miraheze\\ImportDump\\Hooks\\Handlers\\Notifications",
+			"services": [
+				"ConnectionProvider"
+			]
 		}
 	},
 	"ResourceModules": {
+		"ext.importdump.chunkedupload": {
+			"scripts": "ext.importdump.chunkedupload.js",
+			"dependencies": [
+				"mediawiki.api",
+				"oojs-ui-core"
+			],
+			"messages": [
+				"largefileserver",
+				"requestimport-chunkedupload-error",
+				"requestimport-chunkedupload-progress"
+			]
+		},
+		"ext.importdump.importprogress": {
+			"scripts": "ext.importdump.importprogress.js",
+			"dependencies": [
+				"mediawiki.api",
+				"mediawiki.language",
+				"oojs-ui-core"
+			],
+			"messages": [
+				"requestimport-import-finished",
+				"requestimport-import-step",
+				"requestimport-import-step-pages",
+				"requestimport-import-step-percent",
+				"requestimport-import-stopped",
+				"requestimport-import-waiting",
+				"requestimport-stage-afterimport",
+				"requestimport-stage-counts",
+				"requestimport-stage-download",
+				"requestimport-stage-import",
+				"requestimport-stage-recentchanges",
+				"requestimport-stage-refreshlinks",
+				"requestimport-stage-sitestats",
+				"requestimport-stage-textindex",
+				"requestimport-verification-reload"
+			]
+		},
+		"ext.importdump.output": {
+			"scripts": "ext.importdump.output.js",
+			"dependencies": [
+				"mediawiki.api"
+			],
+			"messages": [
+				"requestimport-output-empty"
+			]
+		},
 		"ext.importdump.oouiform": {
 			"scripts": "ext.importdump.oouiform.ooui.js",
 			"dependencies": [
@@ -171,6 +283,25 @@
 		},
 		"ext.importdump.oouiform.styles": {
 			"styles": "ext.importdump.oouiform.ooui.less"
+		},
+		"ext.importdump.progress": {
+			"scripts": "ext.importdump.progress.js",
+			"dependencies": [
+				"mediawiki.api",
+				"mediawiki.language",
+				"oojs-ui-core"
+			],
+			"messages": [
+				"requestimport-verification-checking",
+				"requestimport-verification-done",
+				"requestimport-verification-extracting",
+				"requestimport-verification-joining",
+				"requestimport-verification-label",
+				"requestimport-verification-merging",
+				"requestimport-verification-rejected",
+				"requestimport-verification-reload",
+				"requestimport-verification-waiting"
+			]
 		}
 	},
 	"ResourceFileModulePaths": {
@@ -178,41 +309,114 @@
 		"remoteExtPath": "ImportDump/modules"
 	},
 	"config": {
-		"ImportDumpEnableAutomatedJob": {
+		"RequestImportChunkedUploadThreshold": {
+			"value": null,
+			"description": "Size in bytes from which files are uploaded in chunks. It can only lower the point that PHP's upload limit and $wgMaxUploadSize already set. Leave as null to chunk only the files that are too big to be uploaded at once."
+		},
+		"RequestImportDumpCommand": {
+			"value": "php {IP}/maintenance/importDump.php --wiki={wiki} --username-prefix=\"{username-prefix}\" {file-path}",
+			"description": "Generated maintenance script command to use. If $wgRequestImportEnableAutomatedJob is enabled, this is not displayed unless the status is 'failed'."
+		},
+		"RequestImportEnableAutomatedJob": {
 			"value": false,
 			"description": "Whether to enable a job where a reviewer just has to 'approve' an import and job handles everything else. You can use the ImportDumpJobGetFile hook to manipulate how the job gets the XML file."
 		},
-		"ImportDumpHelpUrl": {
+		"RequestImportEnableChunkedUploads": {
+			"value": false,
+			"description": "Whether to upload XML files in chunks from Special:RequestImport using JavaScript. Chunks are sent to the requestimportupload API module."
+		},
+		"RequestImportEnableHistoryDetection": {
+			"value": false,
+			"description": "Whether to check if an uploaded dump has the full revision history of its pages, and tell handlers what was found. The result is a guess, see the message that is shown on the request."
+		},
+		"RequestImportEnableImageImports": {
+			"value": false,
+			"description": "Whether the form of Special:RequestImport has a field for an archive of image files. If one is uploaded, a second request is made with it that is linked to the one for the XML file, and the two are handled separately. The files are imported with the importImages.php maintenance script, which skips files that the wiki already has."
+		},
+		"RequestImportExtensionRequirements": {
+			"value": [],
+			"description": "Extensions that a dump can need, by the name that the extension has in its extension.json, such as WikibaseRepository. Each one has models, content models or the start of one that need the extension, patterns, regular expressions that match the text of a page that needs it, and settings, names of settings that must be enabled on the target wiki. Only the latest revision of each page is checked. Verification records which extensions a dump needs, and handlers are warned when the ImportDumpGetTargetState hook says that the target wiki does not have them. Nothing is checked if this is empty."
+		},
+		"RequestImportExternalBinaries": {
+			"value": [],
+			"description": "A mapping of 'format => settings' that turns on the archive formats that PHP cannot read itself. The formats are 'xz', for XZ files and TAR files compressed with XZ, and '7z', for 7z archives. The settings are an array with 'binary', the path to the program that unpacks the format, and optionally 'limits', for example [ '7z' => [ 'binary' => '/usr/bin/7z', 'limits' => [ 'memory' => 4294967296, 'time' => 3600, 'dictionary' => 1073741824 ] ] ]. Limits that are not set keep these values. 'memory' is the most memory in bytes that the program may use in the sandbox, 'time' is the most seconds it may run, and 'dictionary' is the most memory in bytes that unpacking an archive may need, which is read from how the archive was made. Just the path can be given instead of the array, as in [ 'xz' => '/usr/bin/xz' ]. The programs run through the shell command settings of MediaWiki, so they are sandboxed if $wgShellRestrictionMethod is set up, and they only ever get a copy of the uploaded file. Formats that are not listed are not accepted. Leave empty to turn all of them off."
+		},
+		"RequestImportFileExpiryDays": {
+			"value": [],
+			"description": "A mapping of 'status => days' for deleting the stored XML file of an import request once it is older than that many days, by running the ExpireFiles maintenance script. Only 'complete', 'declined' and 'failed' can be used. Statuses that are not listed are never expired. Leave empty to disable. Age is counted from when the request was made."
+		},
+		"RequestImportHelpUrl": {
 			"value": "",
 			"description": "Full URL. If set, adds a help URL to Special:RequestImport."
 		},
-		"ImportDumpInterwikiMap": {
+		"RequestImportImagesChunkSize": {
+			"value": 500,
+			"description": "How many image files each job of an import of images imports. When there are more, the job queues another one for the rest, so that a large import is not one job that runs for hours. Files that are already on the wiki are skipped, so a failed import can be started again."
+		},
+		"RequestImportImagesCommand": {
+			"value": "php {IP}/maintenance/importImages.php --wiki={wiki}{skip-dupes} --comment={comment} {file-path}",
+			"description": "Generated maintenance script command to use for a request of image files. {skip-dupes} becomes ' --skip-dupes' when the request skips duplicate files, and nothing otherwise. If $wgRequestImportEnableAutomatedJob is enabled, this is not displayed unless the status is 'failed'."
+		},
+		"RequestImportInterwikiMap": {
 			"value": [],
 			"description": "A mapping of 'domain => interwiki prefix' for multi-level interwiki prefix generation for --username-prefix."
 		},
-		"ImportDumpScriptCommand": {
-			"value": "php {IP}/maintenance/importDump.php --wiki={wiki} --username-prefix=\"{username-prefix}\" {file-path}",
-			"description": "Generated maintenance script command to use. If $wgImportDumpEnableAutomatedJob is enabled, this is not displayed unless the status is 'failed'."
+		"RequestImportMaintenanceCommand": {
+			"value": "php {IP}/maintenance/{script} --wiki={wiki} {arguments}",
+			"description": "Generated command to use for each of the maintenance scripts that still need to be run when an import stopped after its pages were already imported. {script} is the script file name, such as refreshLinks.php, {script-name} is the same without .php, and {arguments} is any arguments the script needs."
 		},
-		"ImportDumpUsersNotifiedOnAllRequests": {
-			"value": [],
-			"description": "Array of usernames to send email notifications to for all requests. Users listed here must have a verified email address on their account. This doesn't do anything if the Echo extension is not installed."
+		"RequestImportMaxArchiveEntries": {
+			"value": 50000,
+			"description": "Most entries, including directories, that an uploaded archive may have."
 		},
-		"ImportDumpUsersNotifiedOnFailedImports": {
+		"RequestImportMaxExtractedSize": {
+			"value": 53687091200,
+			"description": "Most bytes that an uploaded archive may expand to. Archives that expand to more, or that are compressed more than 200 times, are rejected while being extracted."
+		},
+		"RequestImportMaxSkippedImages": {
+			"value": 25,
+			"description": "Highest percentage of the files in an uploaded archive of images that may be left out because they cannot be imported, such as files with a wrong extension or contents. The rest are still imported, and the request shows which were left out. If more are left out, or none can be imported, the whole archive is rejected, as it is probably not the right one."
+		},
+		"RequestImportMaxUploadSize": {
+			"value": null,
+			"description": "Maximum total size in bytes of a file uploaded in chunks. Chunked uploads ignore $wgMaxUploadSize. Leave as null for no limit."
+		},
+		"RequestImportRequiredRights": {
+			"value": {
+				"images": [ "upload" ],
+				"xml": [ "import" ]
+			},
+			"description": "A mapping of 'request type => rights' for the rights that the requester needs on the target wiki. Requests of a type are shown a warning when the requester is missing any of its rights. Only the rights that the ImportDumpGetTargetState hook reports are checked. Types that are not listed, or have no rights, are not checked."
+		},
+		"RequestImportStalledImportHours": {
+			"value": null,
+			"description": "Number of hours without any sign of progress after which an import that is 'in progress' is treated as stalled by the FailStalledImports maintenance script, which marks it as failed. The import job reports progress about once a minute while pages are imported. Leave as null to disable."
+		},
+		"RequestImportTempDirectory": {
+			"value": null,
+			"description": "Directory where the files that are made while a request is verified are kept, which are the joined parts of an archive of images and what is extracted from archives. These can be as big as the upload, so it should not be in memory, as /tmp often is. It is created if it is missing. Leave as null to use the temporary directory of MediaWiki."
+		},
+		"RequestImportUsersNotifiedOnAllRequests": {
 			"value": [],
-			"description": "Array of usernames to send email notifications to for failed imports. Users listed here must have a verified email address on their account. This doesn't do anything if the Echo extension is not installed or if $wgImportDumpEnableAutomatedJob is not enabled."
+			"description": "Array of usernames to send email notifications to for all requests. Users listed here must have a verified email address on their account. Notifications are sent through the notification system of MediaWiki, so they are only delivered if an extension that handles notifications, such as Echo, is installed."
+		},
+		"RequestImportUsersNotifiedOnFailedImports": {
+			"value": [],
+			"description": "Array of usernames to send email notifications to for failed imports. Users listed here must have a verified email address on their account. Notifications are sent through the notification system of MediaWiki, so they are only delivered if an extension that handles notifications, such as Echo, is installed. This doesn't do anything if $wgRequestImportEnableAutomatedJob is not enabled."
 		}
 	},
 	"ConfigRegistry": {
-		"ImportDump": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
+		"RequestImport": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"DefaultUserOptions": {
-		"echo-subscriptions-email-importdump-import-failed": true,
-		"echo-subscriptions-email-importdump-new-request": true,
-		"echo-subscriptions-email-importdump-request-comment": true,
-		"echo-subscriptions-email-importdump-request-status-update": true,
-		"echo-subscriptions-web-importdump-request-comment": true,
-		"echo-subscriptions-web-importdump-request-status-update": true
+		"echo-subscriptions-email-requestimport-attention": true,
+		"echo-subscriptions-email-requestimport-import-failed": true,
+		"echo-subscriptions-email-requestimport-new-request": true,
+		"echo-subscriptions-email-requestimport-request-comment": true,
+		"echo-subscriptions-email-requestimport-request-status-update": true,
+		"echo-subscriptions-web-requestimport-attention": true,
+		"echo-subscriptions-web-requestimport-request-comment": true,
+		"echo-subscriptions-web-requestimport-request-status-update": true
 	},
 	"RateLimits": {
 		"request-import": {
@@ -226,7 +430,7 @@
 		"includes/ServiceWiring.php"
 	],
 	"DatabaseVirtualDomains": [
-		"virtual-importdump"
+		"virtual-requestimport"
 	],
 	"manifest_version": 2
 }

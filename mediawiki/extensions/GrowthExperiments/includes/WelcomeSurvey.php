@@ -3,15 +3,17 @@
 namespace GrowthExperiments;
 
 use GrowthExperiments\EventLogging\WelcomeSurveyLogger;
+use LogicException;
 use MediaWiki\Config\ConfigException;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Html\HtmlHelper;
 use MediaWiki\Json\FormatJson;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\User\Options\UserOptionsManager;
 use MediaWiki\Utils\MWTimestamp;
 use stdClass;
 use Wikimedia\LightweightObjectStore\ExpirationAwareness;
+use Wikimedia\Rdbms\IDBAccessObject;
 use Wikimedia\RemexHtml\HTMLData;
 use Wikimedia\RemexHtml\Serializer\SerializerNode;
 
@@ -29,12 +31,6 @@ class WelcomeSurvey {
 	private UserOptionsManager $userOptionsManager;
 	private bool $ulsInstalled;
 
-	/**
-	 * @param IContextSource $context
-	 * @param LanguageNameUtils $languageNameUtils
-	 * @param UserOptionsManager $userOptionsManager
-	 * @param bool $ulsInstalled
-	 */
 	public function __construct(
 		IContextSource $context,
 		LanguageNameUtils $languageNameUtils,
@@ -134,11 +130,11 @@ class WelcomeSurvey {
 		$submitted = ( $data->_submit_date ?? null ) !== null;
 
 		if ( !$data ) {
-			// Either the user is past the data retention period and all data was discarded
-			// (in which case we don't know if they ever filled out the survey but months
-			// have passed since they registered so it's fine to consider the survey as
-			// intentionally not filled out), or WelcomeSurveyHooks::onBeforeWelcomeCreation()
-			// did not run for some reason (maybe the feature wasn't enabled when they registered).
+			// Either the user is past the data retention period and all data was discarded (in
+			// which case we don't know if they ever filled out the survey but months have
+			// passed since they registered so it's fine to consider the survey as intentionally
+			// not filled out), or WelcomeSurveyHooks::on[CentralAuth]PostLoginRedirect() did
+			// not run for some reason (maybe the feature wasn't enabled when they registered).
 			return false;
 		} elseif ( $skipped ) {
 			// User chose not to fill out the survey. Somewhat arbitrarily, we consider that
@@ -226,8 +222,8 @@ class WelcomeSurvey {
 					$this->context->getUser()->getName() ],
 				'size' => 255,
 				'hide-if' => [ '!==', 'reason', 'other' ],
-				'group' => 'reason'
-			]
+				'group' => 'reason',
+			],
 		] : [];
 		// When free text is disabled, add an "Other" option to the reason question
 		$reasonOtherOption = $this->allowFreetext ? [] : [
@@ -248,7 +244,7 @@ class WelcomeSurvey {
 				"placeholder-message" => "welcomesurvey-dropdown-option-select-label",
 				"name" => "reason",
 				"group" => "reason",
-			] + $reasonOtherSettings
+			] + $reasonOtherSettings,
 		] + $reasonOtherQuestion + [
 			"edited" => [
 				"type" => "select",
@@ -279,16 +275,10 @@ class WelcomeSurvey {
 				"dependencies" => [
 					"modules" => [
 						"ext.growthExperiments.Account",
-						"ext.uls.mediawiki"
-					]
+						"ext.uls.mediawiki",
+					],
 				],
-				"disabled" => false
-			],
-			"user-research" => [
-				"type" => "check",
-				"label-message" => "welcomesurvey-question-user-research-label",
-				"help" => $this->context->msg( 'welcomesurvey-question-user-research-help' )
-					->parse(),
+				"disabled" => false,
 			],
 			"privacy-info" => [
 				"type" => "info",
@@ -297,7 +287,7 @@ class WelcomeSurvey {
 					$this->context->getUser()->getName(),
 					$this->context->getConfig()->get( 'WelcomeSurveyPrivacyStatementUrl' )
 				)->parse() ),
-				"cssclass" => "welcomesurvey-privacy-info"
+				"cssclass" => "welcomesurvey-privacy-info",
 			],
 			"mentor-info" => [
 				"type" => "info",
@@ -319,7 +309,7 @@ class WelcomeSurvey {
 				"placeholder-message" => "welcomesurvey-question-email-placeholder",
 				"help-message" => "welcomesurvey-question-email-help",
 				"group" => "email",
-			]
+			],
 		];
 		if ( !$this->ulsInstalled ) {
 			$questions['languages']['disabled'] = true;
@@ -337,7 +327,8 @@ class WelcomeSurvey {
 	 * @param string $renderDate Timestamp in MW format of when the form was shown
 	 */
 	public function handleResponses( $data, $save, $group, $renderDate ) {
-		$user = $this->context->getUser()->getInstanceForUpdate();
+		$user = $this->context->getUser()->getInstanceFromPrimary( IDBAccessObject::READ_EXCLUSIVE )
+			?? throw new LogicException( 'User not found in the database' );
 		$submitDate = MWTimestamp::now();
 
 		if ( $save ) {
@@ -461,7 +452,7 @@ class WelcomeSurvey {
 			'returnto' => $returnTo,
 			'returntoquery' => $returnToQuery,
 			'group' => $group,
-			'_welcomesurveytoken' => $welcomeSurveyToken
+			'_welcomesurveytoken' => $welcomeSurveyToken,
 		];
 	}
 

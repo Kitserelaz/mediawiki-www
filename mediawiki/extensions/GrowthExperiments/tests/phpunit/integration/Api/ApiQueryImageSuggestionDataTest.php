@@ -10,7 +10,6 @@ use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\StaticConfigurationLoader;
 use GrowthExperiments\NewcomerTasks\TaskType\ImageRecommendationTaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
-use MediaWiki\Api\ApiUsageException;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Tests\Api\Query\ApiQueryTestBase;
 use MediaWiki\Title\TitleValue;
@@ -40,11 +39,10 @@ class ApiQueryImageSuggestionDataTest extends ApiQueryTestBase {
 			},
 		] );
 		$user = $this->getServiceContainer()->getUserFactory()->newAnonymous();
-		$this->expectException( ApiUsageException::class );
-		$this->expectExceptionMessage( 'You must be logged in.' );
+		$this->expectApiErrorCode( 'mustbeloggedin-generic' );
 		$this->check( [
 			[ 'prop' => 'growthimagesuggestiondata', 'titles' => 'ImageSuggestionDataTest' ],
-			[]
+			[],
 		], [], false, $user );
 	}
 
@@ -58,13 +56,10 @@ class ApiQueryImageSuggestionDataTest extends ApiQueryTestBase {
 				},
 			]
 		);
-		$this->expectException( ApiUsageException::class );
-		$this->expectExceptionMessageMatches(
-			'/^Task type ID \'[^\']*\' was not found in the wiki\'s configuration.$/'
-		);
+		$this->expectApiErrorCode( 'not-in-config' );
 		$this->check( [
 			[ 'prop' => 'growthimagesuggestiondata', 'titles' => 'ImageSuggestionDataTest' ],
-			[]
+			[],
 		] );
 	}
 
@@ -78,16 +73,13 @@ class ApiQueryImageSuggestionDataTest extends ApiQueryTestBase {
 				] );
 			},
 		] );
-		$this->expectException( ApiUsageException::class );
-		$this->expectExceptionMessage(
-			"You've exceeded your rate limit. Please wait some time and try again."
-		);
+		$this->expectApiErrorCode( 'ratelimited' );
 		$this->overrideConfigValue( MainConfigNames::RateLimits,
 			[ 'growthexperiments-apiqueryimagesuggestiondata' => [ '&can-bypass' => false, 'user' => [ 0, 60 ] ] ]
 		);
 		$this->check( [
 			[ 'prop' => 'growthimagesuggestiondata', 'titles' => 'ImageSuggestionDataTest' ],
-			[]
+			[],
 		] );
 	}
 
@@ -118,7 +110,7 @@ class ApiQueryImageSuggestionDataTest extends ApiQueryTestBase {
 							) ],
 							new \StatusValue()
 						);
-					}
+					},
 			]
 		);
 
@@ -142,11 +134,11 @@ class ApiQueryImageSuggestionDataTest extends ApiQueryTestBase {
 								'sectionTitle' => null,
 							] ],
 							'titleNamespace' => 0,
-							'titleText' => 'ImageSuggestionDataTest'
-						] ]
-					]
-				]
-			]
+							'titleText' => 'ImageSuggestionDataTest',
+						] ],
+					],
+				],
+			],
 		] );
 	}
 

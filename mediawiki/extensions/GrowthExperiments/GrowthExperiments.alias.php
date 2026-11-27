@@ -44,7 +44,13 @@ $specialPageAliases['az'] = [
 	'WelcomeSurvey' => [ 'XoşGəlmisinizAnketi', 'XoşAnket' ],
 	'Homepage' => [ 'AnaSəhifə' ],
 	'Impact' => [ 'Təsir' ],
-	'ClaimMentee' => [ 'YeniIstifadəçiTələbEdin' ],
+	'ClaimMentee' => [ 'YeniİstifadəçiTələbEdin' ],
+	'NewcomerTasksInfo' => [ 'YeniİstifadəçiTapşırıqlarıMəlumatı' ],
+	'EditGrowthConfig' => [ 'GrowthKonfiqurasiyasıRedaktə' ],
+	'MentorDashboard' => [ 'MentorPaneli' ],
+	'QuitMentorship' => [ 'MentorluqdanAyrıl' ],
+	'ManageMentors' => [ 'MentorlarıİdarəEt' ],
+	'EnrollAsMentor' => [ 'MentorOl' ],
 ];
 
 /** Bangla (বাংলা) */
@@ -126,7 +132,7 @@ $specialPageAliases['eo'] = [
 $specialPageAliases['es'] = [
 	'WelcomeSurvey' => [ 'Encuesta_de_bienvenida' ],
 	'Homepage' => [ 'Página_inicial' ],
-	'Impact' => [ 'Incidencia' ],
+	'Impact' => [ 'Impacto', 'Incidencia' ],
 	'ClaimMentee' => [ 'Reclamar_nuevo_usuario' ],
 	'ManageMentors' => [ 'Gestionar_mentores' ],
 	'EnrollAsMentor' => [ 'Inscribirse_como_mentor' ],
@@ -250,7 +256,7 @@ $specialPageAliases['lv'] = [
 $specialPageAliases['nl'] = [
 	'WelcomeSurvey' => [ 'WelkomEnquête' ],
 	'Homepage' => [ 'Thuispagina' ],
-	'Impact' => [ 'Gevolg' ],
+	'Impact' => [ 'Impact', 'Gevolg' ],
 	'ClaimMentee' => [ 'ClaimMentee' ],
 ];
 
@@ -355,8 +361,15 @@ $specialPageAliases['sh'] = [
 /** Slovak (slovenčina) */
 $specialPageAliases['sk'] = [
 	'WelcomeSurvey' => [ 'UvítacíPrieskum' ],
-	'Homepage' => [ 'Domovská_stránka' ],
-	'Impact' => [ 'Dopad' ],
+	'Homepage' => [ 'DomovskáStránka', 'Domovská_stránka' ],
+	'Impact' => [ 'DosahPríspevkov', 'Dopad' ],
+	'ClaimMentee' => [ 'PrevziaťNováčika' ],
+	'NewcomerTasksInfo' => [ 'InformácieONavrhovanýchÚpravách' ],
+	'EditGrowthConfig' => [ 'UpraviťKonfiguráciuFunkciíGrowth' ],
+	'MentorDashboard' => [ 'NástenkaMentora' ],
+	'QuitMentorship' => [ 'UkončiťMentorstvo' ],
+	'ManageMentors' => [ 'SpravovaťMentorov', 'SprávaMentorov' ],
+	'EnrollAsMentor' => [ 'ZapísaťSaAkoMentor' ],
 ];
 
 /** Slovenian (slovenščina) */
@@ -449,7 +462,6 @@ $specialPageAliases['uk'] = [
 /** Urdu (اردو) */
 $specialPageAliases['ur'] = [
 	'WelcomeSurvey' => [ 'خیرمقدمی_جائزہ', 'خیرمقدم_سروے' ],
-	'Homepage' => [ 'صفحۂ_اول', 'ہوم_پیج' ],
 	'Impact' => [ 'اثرات', 'اثر', 'ثر' ],
 	'ClaimMentee' => [ 'طلب_مسترشد', 'ایک_نووارد_کا_دعوی' ],
 	'NewcomerTasksInfo' => [ 'نووارد_کے_امور_مفوضہ_کی_معلومات' ],
@@ -470,18 +482,44 @@ $specialPageAliases['vi'] = [
 	'QuitMentorship' => [ 'Ngừng_làm_cố_vấn' ],
 ];
 
+/** Chinese */
+$specialPageAliases['zh'] = [
+	'WelcomeSurvey' => [ 'WelcomeSurvey' ],
+	'Homepage' => [ 'Homepage' ],
+	'Impact' => [ 'Impact' ],
+	'ClaimMentee' => [ 'ClaimMentee' ],
+	'NewcomerTasksInfo' => [ 'NewcomerTasksInfo' ],
+	'EditGrowthConfig' => [ 'EditGrowthConfig' ],
+	'MentorDashboard' => [ 'MentorDashboard' ],
+	'QuitMentorship' => [ 'QuitMentorship' ],
+	'ManageMentors' => [ 'ManageMentors' ],
+	'EnrollAsMentor' => [ 'EnrollAsMentor' ],
+];
+
 /** Simplified Chinese */
 $specialPageAliases['zh-hans'] = [
 	'WelcomeSurvey' => [ '欢迎调查' ],
-	'Homepage' => [ '首页' ],
-	'Impact' => [ '影响' ],
+	'Homepage' => [ '新手主页', '首页' ],
+	'Impact' => [ '影响力', '影响' ],
 	'ClaimMentee' => [ '认领学员' ],
+	'NewcomerTasksInfo' => [ '新手任务信息' ],
+	'EditGrowthConfig' => [ '编辑Growth配置' ],
+	'MentorDashboard' => [ '导师面板' ],
+	'QuitMentorship' => [ '退出导师计划' ],
+	'ManageMentors' => [ '管理导师' ],
+	'EnrollAsMentor' => [ '登记为导师' ],
 ];
 
 /** Traditional Chinese */
 $specialPageAliases['zh-hant'] = [
 	'WelcomeSurvey' => [ '歡迎調查' ],
-	'Homepage' => [ '首頁' ],
+	'Homepage' => [ '新手主頁', '首頁' ],
 	'Impact' => [ '影響' ],
 	'ClaimMentee' => [ '認領學員' ],
+	'NewcomerTasksInfo' => [ '新手任務資訊' ],
+	'EditGrowthConfig' => [ '編輯Growth設定' ],
+	'MentorDashboard' => [ '導師面板' ],
+	'QuitMentorship' => [ '退出導師計畫' ],
+	'ManageMentors' => [ '管理導師' ],
+	'EnrollAsMentor' => [ '登記為導師' ],
  ];

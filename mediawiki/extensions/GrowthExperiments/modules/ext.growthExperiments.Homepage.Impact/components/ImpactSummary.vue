@@ -1,5 +1,5 @@
 <template>
-	<section class="ext-growthExperiments-NewImpactSummary">
+	<section class="ext-growthExperiments-ImpactSummary">
 		<!-- TODO: add skeletons, maybe use suspense, load sections only if data available -->
 		<trend-chart
 			v-if="data"
@@ -24,7 +24,6 @@ const InfoBoxes = require( './InfoBoxes.vue' );
 
 // @vue/component
 module.exports = exports = {
-	compatConfig: { MODE: 3 },
 	compilerOptions: { whitespace: 'condense' },
 	components: {
 		TrendChart,

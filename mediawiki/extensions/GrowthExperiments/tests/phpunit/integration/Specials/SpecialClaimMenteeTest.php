@@ -5,11 +5,10 @@ namespace GrowthExperiments\Tests\Integration;
 use GrowthExperiments\GrowthExperimentsServices;
 use GrowthExperiments\Mentorship\Store\MentorStore;
 use GrowthExperiments\Specials\SpecialClaimMentee;
-use MediaWiki\Config\GlobalVarConfig;
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\Request\FauxRequest;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use MediaWiki\User\User;
-use PermissionsError;
-use SpecialPageTestBase;
 
 /**
  * @group Database
@@ -34,9 +33,7 @@ class SpecialClaimMenteeTest extends SpecialPageTestBase {
 		return new SpecialClaimMentee(
 			$geServices->getMentorProvider(),
 			$geServices->getChangeMentorFactory(),
-			// This would normally be GrowthExperimentsMultiConfig, but there
-			// is no need to test the on-wiki config here
-			GlobalVarConfig::newInstance()
+			$this->getServiceContainer()->getUserLinkRenderer(),
 		);
 	}
 
@@ -49,9 +46,6 @@ class SpecialClaimMenteeTest extends SpecialPageTestBase {
 		$this->executeSpecialPage( '', null, null, $user );
 	}
 
-	/**
-	 * @return User
-	 */
 	private function getTestMentor(): User {
 		$geServices = GrowthExperimentsServices::wrap( $this->getServiceContainer() );
 		$mentorProvider = $geServices->getMentorProvider();
@@ -96,7 +90,7 @@ class SpecialClaimMenteeTest extends SpecialPageTestBase {
 
 		// first run of SpecialClaimMentee successfully changes the mentor
 		/** @var string $html */
-		[ $html, ] = $this->submitChangeMentor( [
+		[ $html ] = $this->submitChangeMentor( [
 			'wpmentees' => $mentee->getName(),
 		], $mentorOne );
 		$this->assertStringContainsString( 'growthexperiments-homepage-claimmentee-success', $html );
@@ -107,7 +101,7 @@ class SpecialClaimMenteeTest extends SpecialPageTestBase {
 
 		// second run of SpecialClaimMentee requires confirmation
 		/** @var string $html */
-		[ $html, ] = $this->submitChangeMentor( [
+		[ $html ] = $this->submitChangeMentor( [
 			'wpmentees' => $mentee->getName(),
 		], $mentorTwo );
 		$this->assertStringContainsString( 'growthexperiments-homepage-claimmentee-alreadychanged', $html );
@@ -118,7 +112,7 @@ class SpecialClaimMenteeTest extends SpecialPageTestBase {
 
 		// when confirmed, mentor successfully changed
 		/** @var string $html */
-		[ $html, ] = $this->submitChangeMentor( [
+		[ $html ] = $this->submitChangeMentor( [
 			'wpmentees' => $mentee->getName(),
 			'wpstage' => 3,
 			'wpconfirm' => true,

@@ -10,10 +10,11 @@ use GrowthExperiments\NewcomerTasks\AddImage\ImageRecommendationMetadataProvider
 use GrowthExperiments\NewcomerTasks\AddImage\MvpImageRecommendationApiHandler;
 use GrowthExperiments\NewcomerTasks\AddImage\ServiceImageRecommendationProvider;
 use GrowthExperiments\NewcomerTasks\TaskType\ImageRecommendationTaskType;
+use GrowthExperiments\NewcomerTasks\TaskType\SectionImageRecommendationTaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
 use MediaWiki\Http\HttpRequestFactory;
+use MediaWiki\Http\MWHttpRequest;
 use MediaWiki\Linker\LinkTarget;
-use MediaWiki\Page\PageIdentity;
 use MediaWiki\Page\PageIdentityValue;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Status\Status;
@@ -21,10 +22,10 @@ use MediaWiki\Title\TitleFactory;
 use MediaWiki\Title\TitleValue;
 use MediaWikiIntegrationTestCase;
 use MockTitleTrait;
-use MWHttpRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use StatusValue;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
+use Wikimedia\Stats\StatsUtils;
 
 /**
  * @coversDefaultClass \GrowthExperiments\NewcomerTasks\AddImage\ServiceImageRecommendationProvider
@@ -84,7 +85,7 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 		);
 		$provider = new ServiceImageRecommendationProvider(
 			$titleFactory,
-			$this->createMock( IBufferingStatsdDataFactory::class ),
+			StatsFactory::newNull(),
 			$apiHandler,
 			$metadataProvider,
 			$this->createMock( AddImageSubmissionHandler::class )
@@ -122,10 +123,22 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 		$this->assertSame( [ 'enwiki', 'dewiki' ], $recommendation->getImages()[0]->getProjects() );
 	}
 
+	public static function provideTaskTypes(): iterable {
+		return [
+			'image suggestions' => [
+				new ImageRecommendationTaskType( 'image-recommendation', TaskType::DIFFICULTY_MEDIUM ),
+			],
+			'section-level image suggestions' => [
+				new SectionImageRecommendationTaskType( 'section-image-recommendation', TaskType::DIFFICULTY_MEDIUM ),
+			],
+		];
+	}
+
 	/**
+	 * @dataProvider provideTaskTypes
 	 * @covers ::get
 	 */
-	public function testGet_instrumentation() {
+	public function testGet_instrumentation( TaskType $taskType ) {
 		$titleFactory = $this->getTitleFactory();
 		$url = 'http://example.com';
 		$wikiProject = 'wikipedia';
@@ -133,10 +146,8 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 		$metadataProvider = $this->createMock(
 			ImageRecommendationMetadataProvider::class
 		);
-		$statsDataFactory = $this->createMock( IBufferingStatsdDataFactory::class );
 		$metadataProvider->method( 'getFileMetadata' )->willReturn( self::metadataFactory() );
 		$metadataProvider->method( 'getMetadata' )->willReturn( self::metadataFactory() );
-		$taskType = new ImageRecommendationTaskType( 'image-recommendation', TaskType::DIFFICULTY_EASY );
 		$useTitle = true;
 		$apiHandler = new MvpImageRecommendationApiHandler(
 			$this->getHttpRequestFactory( [
@@ -154,26 +165,38 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 			null,
 			$useTitle
 		);
+
+		$unitTestingHelper = StatsFactory::newUnitTestingHelper();
 		$provider = new ServiceImageRecommendationProvider(
 			$titleFactory,
-			$statsDataFactory,
+			$unitTestingHelper->getStatsFactory(),
 			$apiHandler,
 			$metadataProvider,
 			$this->createMock( AddImageSubmissionHandler::class )
 		);
 
-		$expectedKeys = [
-			'timing.growthExperiments.imageRecommendationProvider.get' => true,
-			'timing.growthExperiments.imageRecommendationProvider.processApiResponseData' => true,
-		];
-		$statsDataFactory->expects( $this->exactly( 2 ) )
-			->method( 'timing' )
-			->willReturnCallback( function ( $key ) use ( &$expectedKeys ): void {
-				$this->assertArrayHasKey( $key, $expectedKeys );
-				unset( $expectedKeys[$key] );
-			} );
-
 		$provider->get( new TitleValue( NS_MAIN, '15' ), $taskType );
+
+		$taskTypeFilter = 'task_type=' . StatsUtils::normalizeString( $taskType->getId() );
+		$requestSelector = "GrowthExperiments.image_recommendation_provider_seconds{action=get,$taskTypeFilter}";
+		$this->assertSame(
+			1,
+			$unitTestingHelper->count( $requestSelector )
+		);
+		$this->assertIsFloat(
+			$unitTestingHelper->last( $requestSelector )
+		);
+
+		$processingSelector = 'GrowthExperiments.image_recommendation_provider_seconds{'
+		 . 'action=process_api_response_data,'
+		 . $taskTypeFilter . '}';
+		$this->assertSame(
+			1,
+			$unitTestingHelper->count( $processingSelector )
+		);
+		$this->assertIsFloat(
+			$unitTestingHelper->last( $processingSelector )
+		);
 	}
 
 	/**
@@ -205,7 +228,7 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 		);
 		$provider = new ServiceImageRecommendationProvider(
 			$titleFactory,
-			$this->createMock( IBufferingStatsdDataFactory::class ),
+			StatsFactory::newNull(),
 			$apiHandler,
 			$metadataProvider,
 			$this->createMock( AddImageSubmissionHandler::class )
@@ -250,7 +273,7 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 		);
 		$provider = new ServiceImageRecommendationProvider(
 			$this->getTitleFactory(),
-			$this->createMock( IBufferingStatsdDataFactory::class ),
+			StatsFactory::newNull(),
 			$apiHandler,
 			$metadataProvider,
 			$this->createMock( AddImageSubmissionHandler::class )
@@ -300,7 +323,7 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 		);
 		$provider = new ServiceImageRecommendationProvider(
 			$this->getTitleFactory(),
-			$this->createMock( IBufferingStatsdDataFactory::class ),
+			StatsFactory::newNull(),
 			$apiHandler,
 			$metadataProvider,
 			$this->createMock( AddImageSubmissionHandler::class )
@@ -324,17 +347,17 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 			->willReturn( self::metadataFactory( 200, MEDIATYPE_AUDIO ) );
 		$result = ServiceImageRecommendationProvider::processApiResponseData(
 			$taskType,
-			new PageIdentityValue( 0, NS_MAIN, 'Foo', PageIdentity::LOCAL ),
+			PageIdentityValue::localIdentity( 0, NS_MAIN, 'Foo' ),
 			'Foo',
 			[
-				new ImageRecommendationData( 'Bad.png', 'wikidata', '', 'x' )
+				new ImageRecommendationData( 'Bad.png', 'wikidata', '', 'x' ),
 			],
 			$mockMetadataProvider,
 			$this->createMock( AddImageSubmissionHandler::class )
 		);
 
 		$this->assertInstanceOf( StatusValue::class, $result );
-		$this->assertTrue( $result->isOK() );
+		$this->assertStatusOK( $result );
 		$this->assertSame(
 			'Invalid file Bad.png in article Foo. Filtered because AUDIO is not valid mime type (BITMAP, DRAWING)',
 			Status::wrap( $result )->getWikiText( false, false, 'en' )
@@ -348,17 +371,17 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 			->willReturn( self::metadataFactory( 99 ) );
 		$result = ServiceImageRecommendationProvider::processApiResponseData(
 			$taskType,
-			new PageIdentityValue( 0, NS_MAIN, 'Foo', PageIdentity::LOCAL ),
+			PageIdentityValue::localIdentity( 0, NS_MAIN, 'Foo' ),
 			'Foo',
 			[
-				new ImageRecommendationData( 'Bad.png', 'wikidata', '', 'x' )
+				new ImageRecommendationData( 'Bad.png', 'wikidata', '', 'x' ),
 			],
 			$mockMetadataProvider,
 			$this->createMock( AddImageSubmissionHandler::class )
 		);
 
 		$this->assertInstanceOf( StatusValue::class, $result );
-		$this->assertTrue( $result->isOK() );
+		$this->assertStatusOK( $result );
 		$this->assertSame(
 			'Invalid file Bad.png in article Foo. Filtered because not wide enough: 99 (minimum 100)',
 			Status::wrap( $result )->getWikiText( false, false, 'en' )
@@ -380,7 +403,7 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 		$taskType = new ImageRecommendationTaskType( 'image-recommendation', TaskType::DIFFICULTY_EASY );
 		$result = ServiceImageRecommendationProvider::processApiResponseData(
 			$taskType,
-			new PageIdentityValue( 0, NS_MAIN, 'Foo', PageIdentity::LOCAL ),
+			PageIdentityValue::localIdentity( 0, NS_MAIN, 'Foo' ),
 			'Foo',
 			$this->formatOldApiResponse( $data, $taskType ),
 			$mockMetadataProvider,
@@ -404,34 +427,26 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 	public function testProcessApiResponseDataFiltering( array $data, ?array $expectedResult ) {
 		$metadataProvider = $this->createNoOpMock(
 			ImageRecommendationMetadataProvider::class, [ 'getMetadata', 'getFileMetadata' ] );
-		$metadataProvider->method( 'getFileMetadata' )->willReturnCallback( function ( $filename ) {
-			if ( $filename === 'NoWidthInformed.png' ) {
-				return self::metadataFactory( false );
+		$getFileMetadata = function ( string $filename ) {
+			switch ( $filename ) {
+				case 'NoWidthInformed.png':
+					return self::metadataFactory( false );
+				case 'TooNarrow.png':
+					return self::metadataFactory( 99 );
+				case 'InvalidMediaType.png':
+					return self::metadataFactory( 200, MEDIATYPE_AUDIO );
+				default:
+					return self::metadataFactory( 101 );
 			}
-			if ( $filename === 'TooNarrow.png' ) {
-				return self::metadataFactory( 99 );
-			}
-			if ( $filename === 'InvalidMediaType.png' ) {
-				return self::metadataFactory( 200, MEDIATYPE_AUDIO );
-			}
-			return self::metadataFactory( 101 );
-		} );
-		$metadataProvider->method( 'getMetadata' )->willReturnCallback( function ( $suggestion ) {
-			if ( $suggestion['filename'] === 'NoWidthInformed.png' ) {
-				return self::metadataFactory( false );
-			}
-			if ( $suggestion['filename'] === 'TooNarrow.png' ) {
-				return self::metadataFactory( 99 );
-			}
-			if ( $suggestion['filename'] === 'InvalidMediaType.png' ) {
-				return self::metadataFactory( 200, MEDIATYPE_AUDIO );
-			}
-			return self::metadataFactory( 101 );
-		} );
+		};
+		$metadataProvider->method( 'getFileMetadata' )
+			->willReturnCallback( $getFileMetadata );
+		$metadataProvider->method( 'getMetadata' )
+			->willReturnCallback( static fn ( $suggestion ) => $getFileMetadata( $suggestion['filename'] ) );
 		$taskType = new ImageRecommendationTaskType( 'image-recommendation', TaskType::DIFFICULTY_EASY );
 		$result = ServiceImageRecommendationProvider::processApiResponseData(
 			$taskType,
-			new PageIdentityValue( 0, NS_MAIN, 'Foo', PageIdentity::LOCAL ),
+			PageIdentityValue::localIdentity( 0, NS_MAIN, 'Foo' ),
 			'Foo',
 			$this->formatOldApiResponse( $data, $taskType ),
 			$metadataProvider,
@@ -451,10 +466,12 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 		$metadataProvider = $this->createNoOpMock(
 			ImageRecommendationMetadataProvider::class, [ 'getFileMetadata' ] );
 		$metadataProvider->method( 'getFileMetadata' )->willReturnCallback( function ( $filename ) {
-			if ( $filename === 'NoWidthInformed.png' ) {
-				return $this->metadataFactory( false );
+			switch ( $filename ) {
+				case 'NoWidthInformed.png':
+					return self::metadataFactory( false );
+				default:
+					return self::metadataFactory( 99 );
 			}
-			return $this->metadataFactory( 99 );
 		} );
 		$submissionHandler = $this->createMock( AddImageSubmissionHandler::class );
 		$context = $this;
@@ -467,7 +484,7 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 		$taskType = new ImageRecommendationTaskType( 'image-recommendation', TaskType::DIFFICULTY_EASY );
 		$result = ServiceImageRecommendationProvider::processApiResponseData(
 			$taskType,
-			new PageIdentityValue( 0, NS_MAIN, $titleText, PageIdentity::LOCAL ),
+			PageIdentityValue::localIdentity( 0, NS_MAIN, $titleText ),
 			$titleText,
 			$this->formatOldApiResponse( $data, $taskType ),
 			$metadataProvider,
@@ -484,7 +501,7 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 			'descriptionUrl' => 'description url',
 			'originalWidth' => $width,
 			'originalHeight' => 768,
-			'mediaType' => $mediaType
+			'mediaType' => $mediaType,
 		];
 	}
 
@@ -510,7 +527,7 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 			[
 				'filename' => 'InvalidMediaType.png',
 				'source' => [ 'details' => $validSource ],
-			]
+			],
 		];
 
 		return [
@@ -553,7 +570,7 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 		];
 		$secondValidSuggestion = [
 			'filename' => 'bar.png',
-			'source' => [ 'details' => $validSource ]
+			'source' => [ 'details' => $validSource ],
 		];
 
 		return [
@@ -632,7 +649,7 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 			[
 				'filename' => 'NoWidthInformed.png',
 				'source' => [ 'details' => $validSource ],
-			]
+			],
 		];
 
 		return [
@@ -698,5 +715,4 @@ class ServiceImageRecommendationProviderTest extends MediaWikiIntegrationTestCas
 		);
 		return $apiHandler->getSuggestionDataFromApiResponse( $data, $taskType );
 	}
-
 }

@@ -2,17 +2,16 @@
 
 namespace GrowthExperiments\Mentorship\Hooks;
 
-use ChangesListStringOptionsFilter;
-use ChangesListStringOptionsFilterGroup;
 use GrowthExperiments\MentorDashboard\MenteeOverview\StarredMenteesStore;
 use GrowthExperiments\Mentorship\Provider\MentorProvider;
 use GrowthExperiments\Mentorship\Store\MentorStore;
 use GrowthExperiments\WikiConfigException;
-use MediaWiki\Config\Config;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\RecentChanges\ChangesListStringOptionsFilter;
+use MediaWiki\RecentChanges\ChangesListStringOptionsFilterGroup;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\SpecialPage\Hook\ChangesListSpecialPageStructuredFiltersHook;
 use MediaWiki\User\UserIdentity;
-use RecentChange;
 use Wikimedia\ObjectCache\HashBagOStuff;
 use Wikimedia\Rdbms\IDatabase;
 
@@ -22,34 +21,18 @@ use Wikimedia\Rdbms\IDatabase;
  */
 class MentorFilterHooks implements ChangesListSpecialPageStructuredFiltersHook {
 
-	/** @var Config */
-	private $config;
-
-	/** @var MentorStore */
-	private $mentorStore;
-
-	/** @var StarredMenteesStore */
-	private $starredMenteesStore;
-
-	/** @var MentorProvider */
-	private $mentorProvider;
+	private MentorStore $mentorStore;
+	private StarredMenteesStore $starredMenteesStore;
+	private MentorProvider $mentorProvider;
 
 	/** @var HashBagOStuff Mentor [starred|unstarred]:username => UserIdentity[] list of mentees */
-	private $menteeCache;
+	private HashBagOStuff $menteeCache;
 
-	/**
-	 * @param Config $config
-	 * @param MentorStore $mentorStore
-	 * @param StarredMenteesStore $starredMenteesStore
-	 * @param MentorProvider $mentorProvider
-	 */
 	public function __construct(
-		Config $config,
 		MentorStore $mentorStore,
 		StarredMenteesStore $starredMenteesStore,
 		MentorProvider $mentorProvider
 	) {
-		$this->config = $config;
 		$this->mentorStore = $mentorStore;
 		$this->starredMenteesStore = $starredMenteesStore;
 		$this->mentorProvider = $mentorProvider;
@@ -58,15 +41,12 @@ class MentorFilterHooks implements ChangesListSpecialPageStructuredFiltersHook {
 
 	/** @inheritDoc */
 	public function onChangesListSpecialPageStructuredFilters( $special ) {
-		// Somewhat arbitrarily, use the dashboard feature flag to expose the mentor filters.
-		// Also make sure the user is actually a mentor.
+		// Make sure the user is actually a mentor.
 		try {
-			if ( !$this->config->get( 'GEMentorDashboardEnabled' )
-				 || !$this->mentorProvider->isMentor( $special->getUser() )
-			) {
+			if ( !$this->mentorProvider->isMentor( $special->getUser() ) ) {
 				return;
 			}
-		} catch ( WikiConfigException $wikiConfigException ) {
+		} catch ( WikiConfigException ) {
 			return;
 		}
 
@@ -150,9 +130,7 @@ class MentorFilterHooks implements ChangesListSpecialPageStructuredFiltersHook {
 		}
 
 		$starredMentees = $this->starredMenteesStore->getStarredMentees( $user );
-		$starredMenteeIds = array_map( static function ( UserIdentity $user ) {
-			return $user->getId();
-		}, $starredMentees );
+		$starredMenteeIds = array_map( static fn ( UserIdentity $user ) => $user->getId(), $starredMentees );
 
 		$this->menteeCache->set( $key, $starredMenteeIds );
 		return $starredMenteeIds;
@@ -175,9 +153,7 @@ class MentorFilterHooks implements ChangesListSpecialPageStructuredFiltersHook {
 			false,
 			false
 		);
-		$menteeIds = array_map( static function ( UserIdentity $user ) {
-			return $user->getId();
-		}, $mentees );
+		$menteeIds = array_map( static fn ( UserIdentity $user ) => $user->getId(), $mentees );
 		$starredMenteeIds = $this->getStarredMenteeIds( $user );
 		$unstarredMenteeIds = array_diff( $menteeIds, $starredMenteeIds );
 

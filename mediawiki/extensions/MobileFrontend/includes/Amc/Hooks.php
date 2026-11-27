@@ -1,15 +1,15 @@
 <?php
 
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
-
 namespace MobileFrontend\Amc;
 
 use MediaWiki\ChangeTags\Hook\ChangeTagsListActiveHook;
 use MediaWiki\ChangeTags\Hook\ListDefinedTagsHook;
 use MediaWiki\ChangeTags\Taggable;
-use MediaWiki\Hook\ManualLogEntryBeforePublishHook;
-use MediaWiki\Hook\RecentChange_saveHook;
+use MediaWiki\Logging\Hook\ManualLogEntryBeforePublishHook;
+use MediaWiki\Logging\ManualLogEntry;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
+use MediaWiki\RecentChanges\Hook\RecentChange_saveHook;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\User\Hook\UserGetDefaultOptionsHook;
 use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
@@ -28,12 +28,9 @@ final class Hooks implements
 	UserGetDefaultOptionsHook,
 	ManualLogEntryBeforePublishHook
 {
-	private UserFactory $userFactory;
-
 	public function __construct(
-		UserFactory $userFactory
+		private readonly UserFactory $userFactory,
 	) {
-		$this->userFactory = $userFactory;
 	}
 
 	/**
@@ -95,7 +92,7 @@ final class Hooks implements
 	 * ManualLogEntryBeforePublish hook handler that tags actions logged when user uses AMC mode
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/ManualLogEntryBeforePublish
 	 *
-	 * @param \ManualLogEntry $logEntry
+	 * @param ManualLogEntry $logEntry
 	 */
 	public function onManualLogEntryBeforePublish( $logEntry ): void {
 		$performer = $this->userFactory->
@@ -107,7 +104,7 @@ final class Hooks implements
 	 * RecentChange_save hook handler that tags changes performed when user uses AMC mode
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/RecentChange_save
 	 *
-	 * @param \RecentChange $rc
+	 * @param RecentChange $rc
 	 */
 	public function onRecentChange_save( $rc ) {
 		// To be safe, we should use the User objected provided via RecentChange, not the

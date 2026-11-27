@@ -1,14 +1,13 @@
 <?php
 
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
+use MediaWiki\Context\RequestContext;
 use MediaWiki\Language\Language;
 
-/**
- * @package JsonConfig
- */
 class JCTabularContent extends JCDataContent {
 
+	/** @inheritDoc */
 	protected function createDefaultView() {
 		return new JCTabularContentView();
 	}
@@ -21,10 +20,10 @@ class JCTabularContent extends JCDataContent {
 	public function getWikitextForTransclusion() {
 		$toWiki = static function ( $value ) {
 			if ( is_object( $value ) ) {
-				global $wgLang;
-				$value = JCUtils::pickLocalizedString( $value, $wgLang );
+				$lang = RequestContext::getMain()->getLanguage();
+				$value = JCUtils::pickLocalizedString( $value, $lang );
 			}
-			if ( preg_match( '/^[ .\pL\pN]*$/i', $value ) ) {
+			if ( preg_match( '/^[ .\pL\pN]*$/i', $value ?? '' ) ) {
 				// Optimization: spaces, letters, numbers, and dots are returned without <nowiki>
 				return $value;
 			}
@@ -112,9 +111,9 @@ class JCTabularContent extends JCDataContent {
 			$this->testEach( 'data', function ( JCValue $v, array $path ) use ( $typeValidators ) {
 				$isOk = true;
 				$lastIdx = count( $path );
-				foreach ( array_keys( $typeValidators ) as $k ) {
+				foreach ( $typeValidators as $k => $validator ) {
 					$path[$lastIdx] = $k;
-					$isOk = $this->test( $path, $typeValidators[$k] ) && $isOk;
+					$isOk = $this->test( $path, $validator ) && $isOk;
 				}
 				return $isOk;
 			} );
@@ -150,7 +149,7 @@ class JCTabularContent extends JCDataContent {
 
 		if ( !$isLocalized ) {
 			// There are no localized strings in the data, optimize
-			$result->data = $data->data;
+			$result->data = $data->data ?? [];
 		} else {
 			$result->data = array_map( static function ( $row ) use ( $localize, $isLocalized ) {
 				foreach ( $isLocalized as $ind ) {
@@ -159,7 +158,10 @@ class JCTabularContent extends JCDataContent {
 					}
 				}
 				return $row;
-			}, $data->data );
+			}, $data->data ?? [] );
 		}
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCTabularContent::class, 'JsonConfig\\JCTabularContent' );

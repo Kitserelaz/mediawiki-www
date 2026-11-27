@@ -15,8 +15,9 @@
 	],
 	"url": "https://www.mediawiki.org/wiki/Extension:GrowthExperiments",
 	"requires": {
-		"MediaWiki": ">= 1.43.0",
+		"MediaWiki": ">= 1.46",
 		"extensions": {
+			"CommunityConfiguration": "*",
 			"VisualEditor": "*"
 		}
 	},
@@ -24,11 +25,15 @@
 		"GrowthExperiments\\": "includes/"
 	},
 	"TestAutoloadClasses": {
+		"GrowthExperiments\\Maintenance\\RefreshLinkRecommendations": "maintenance/refreshLinkRecommendations.php",
+		"GrowthExperiments\\Maintenance\\RevalidateLinkRecommendations": "maintenance/revalidateLinkRecommendations.php",
+		"GrowthExperiments\\Maintenance\\PurgeExpiredMentorStatus": "maintenance/purgeExpiredMentorStatus.php",
 		"GrowthExperiments\\Tests\\InvokedBetween": "tests/phpunit/InvokedBetween.php",
 		"GrowthExperiments\\Tests\\Unit\\SearchTaskSuggesterFactoryTestBase": "tests/phpunit/unit/SearchTaskSuggesterFactoryTestBase.php",
 		"GrowthExperiments\\Tests\\Integration\\MentorStoreTestCase": "tests/phpunit/integration/Mentorship/Store/MentorStoreTestCase.php",
 		"GrowthExperiments\\Tests\\Unit\\ChangeMentorForTests": "tests/phpunit/unit/Mentorship/ChangeMentorForTests.php",
-		"MediaWiki\\Extension\\CommunityConfiguration\\Tests\\SchemaProviderTestCase": "../CommunityConfiguration/tests/phpunit/integration/SchemaProviderTestCase.php"
+		"GrowthExperiments\\Tests\\Helpers\\CreateMenteeHelpers": "tests/phpunit/helpers/CreateMenteeHelpers.php",
+		"GrowthExperiments\\Tests\\Helpers\\HomepageHooksHelpers": "tests/phpunit/helpers/HomepageHooksHelpers.php"
 	},
 	"MessagesDirs": {
 		"GrowthExperiments": [
@@ -41,7 +46,8 @@
 			"i18n/confirmemail",
 			"i18n/newcomertasks/api",
 			"i18n/mentorship",
-			"i18n/mentorship/api"
+			"i18n/mentorship/api",
+			"i18n/Rest"
 		]
 	},
 	"ExtensionMessagesFiles": {
@@ -52,17 +58,60 @@
 		"ServiceWiring.php"
 	],
 	"ConfigRegistry": {
-		"GrowthExperiments": "GlobalVarConfig::newInstance"
+		"GrowthExperiments": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"JobClasses": {
-		"newcomerTasksCacheRefreshJob": "GrowthExperiments\\NewcomerTasks\\TaskSuggester\\NewcomerTasksCacheRefreshJob",
-		"setUserMentorDatabaseJob": "GrowthExperiments\\Mentorship\\Store\\SetUserMentorDatabaseJob",
-		"reassignMenteesJob": "GrowthExperiments\\Mentorship\\ReassignMenteesJob",
-		"menteeOverviewUpdateDataForMentor": "GrowthExperiments\\MentorDashboard\\MenteeOverview\\MenteeOverviewUpdateDataForMentorJob",
-		"refreshUserImpactJob": "GrowthExperiments\\UserImpact\\RefreshUserImpactJob",
+		"newcomerTasksCacheRefreshJob": {
+			"needsPage": false,
+			"class": "GrowthExperiments\\NewcomerTasks\\TaskSuggester\\NewcomerTasksCacheRefreshJob",
+			"services": [
+				"UserIdentityLookup",
+				"GrowthExperimentsNewcomerTasksUserOptionsLookup",
+				"GrowthExperimentsTaskSuggesterFactory"
+			]
+		},
+		"setUserMentorDatabaseJob": {
+			"needsPage": false,
+			"class": "GrowthExperiments\\Mentorship\\Store\\SetUserMentorDatabaseJob",
+			"services": [
+				"UserIdentityLookup",
+				"GrowthExperimentsMentorStoreDatabase"
+			]
+		},
+		"reassignMenteesJob": {
+			"needsPage": false,
+			"class": "GrowthExperiments\\Mentorship\\ReassignMenteesJob",
+			"services": [
+				"MainConfig",
+				"UserIdentityLookup",
+				"GrowthExperimentsMentorStore",
+				"GrowthExperimentsReassignMenteesFactory"
+			]
+		},
+		"menteeOverviewUpdateDataForMentor": {
+			"needsPage": false,
+			"class": "GrowthExperiments\\MentorDashboard\\MenteeOverview\\MenteeOverviewUpdateDataForMentorJob",
+			"services": [
+				"UserIdentityLookup",
+				"GrowthExperimentsMenteeOverviewDataUpdater"
+			]
+		},
+		"refreshUserImpactJob": {
+			"needsPage": false,
+			"class": "GrowthExperiments\\UserImpact\\RefreshUserImpactJob",
+			"services": [
+				"UserIdentityLookup",
+				"UserFactory",
+				"GrowthExperimentsUserImpactStore",
+				"GrowthExperimentsUserImpactLookup",
+				"GrowthExperimentsUserImpactFormatter"
+			]
+		},
 		"notificationKeepGoingJob": {
 			"class": "GrowthExperiments\\LevelingUp\\NotificationKeepGoingJob",
 			"services": [
+				"MainConfig",
+				"StatsFactory",
 				"UserIdentityLookup",
 				"SpecialPageFactory",
 				"GrowthExperimentsLevelingUpManager"
@@ -71,6 +120,17 @@
 		"notificationGetStartedJob": {
 			"class": "GrowthExperiments\\LevelingUp\\NotificationGetStartedJob",
 			"services": [
+				"MainConfig",
+				"StatsFactory",
+				"UserIdentityLookup",
+				"SpecialPageFactory",
+				"GrowthExperimentsLevelingUpManager"
+			]
+		},
+		"notificationReEngageJob": {
+			"class": "GrowthExperiments\\LevelingUp\\NotificationReEngageJob",
+			"services": [
+				"StatsFactory",
 				"UserIdentityLookup",
 				"SpecialPageFactory",
 				"GrowthExperimentsLevelingUpManager"
@@ -89,8 +149,10 @@
 			"class": "GrowthExperiments\\Api\\ApiSetMentor",
 			"services": [
 				"GrowthExperimentsMentorManager",
+				"GrowthExperimentsMentorProvider",
 				"GrowthExperimentsChangeMentorFactory",
-				"UserIdentityUtils"
+				"UserIdentityUtils",
+				"UserFactory"
 			]
 		},
 		"growthstarmentee": {
@@ -103,8 +165,7 @@
 			"class": "GrowthExperiments\\Api\\ApiSetMenteeStatus",
 			"services": [
 				"GrowthExperimentsCommunityConfig",
-				"GrowthExperimentsMentorManager",
-				"GrowthExperimentsMentorStore"
+				"GrowthExperimentsMentorManager"
 			]
 		},
 		"growthmanagementorlist": {
@@ -138,6 +199,14 @@
 				"GrowthExperimentsAddImageSubmissionHandler",
 				"GrowthExperimentsTaskSuggesterFactory",
 				"GrowthExperimentsNewcomerTasksUserOptionsLookup",
+				"TitleFactory",
+				"GrowthExperimentsFeatureManager"
+			]
+		},
+		"growthinvalidaterevisetonerecommendation": {
+			"class": "GrowthExperiments\\Api\\ApiInvalidateReviseToneRecommendation",
+			"services": [
+				"GrowthExperimentsReviseToneWeightedTagManager",
 				"TitleFactory"
 			]
 		}
@@ -149,7 +218,8 @@
 				"GrowthExperimentsImageRecommendationProvider",
 				"GrowthExperimentsNewcomerTasksConfigurationLoader",
 				"MainConfig",
-				"TitleFactory"
+				"TitleFactory",
+				"GrowthExperimentsFeatureManager"
 			]
 		}
 	},
@@ -162,7 +232,9 @@
 				"GrowthExperimentsNewcomerTasksConfigurationLoader",
 				"GrowthExperimentsLinkRecommendationFilter",
 				"GrowthExperimentsImageRecommendationFilter",
-				"GrowthExperimentsProtectionFilter"
+				"GrowthExperimentsProtectionFilter",
+				"GrowthExperimentsTopicRegistry",
+				"GrowthExperimentsFeatureManager"
 			]
 		},
 		"growthstarredmentees": {
@@ -180,7 +252,6 @@
 		"growthmentorlist": {
 			"class": "GrowthExperiments\\Api\\ApiQueryMentorList",
 			"services": [
-				"UserIdentityLookup",
 				"GrowthExperimentsMentorProvider"
 			]
 		}
@@ -204,101 +275,14 @@
 			"services": [
 				"GrowthExperimentsNewcomerTasksConfigurationLoader",
 				"GrowthExperimentsLevelingUpManager",
-				"GrowthExperimentsUserImpactLookup"
+				"GrowthExperimentsUserImpactLookup",
+				"GrowthExperimentsTaskTypeManager",
+				"GrowthExperimentsFeatureManager"
 			]
 		}
 	},
-	"RestRoutes": [
-		{
-			"path": "/growthexperiments/v0/quickstarttips/{skin}/{editor}/{tasktypeid}/{uselang}",
-			"method": "GET",
-			"class": "GrowthExperiments\\Rest\\Handler\\TipsHandler",
-			"services": [
-				"GrowthExperimentsTipsAssembler",
-				"GrowthExperimentsNewcomerTasksConfigurationLoader"
-			]
-		},
-		{
-			"path": "/growthexperiments/v0/suggestions/addlink/{title}",
-			"method": "GET",
-			"class": "GrowthExperiments\\Rest\\Handler\\AddLinkSuggestionsHandler",
-			"services": [
-				"GrowthExperimentsLinkRecommendationHelper"
-			]
-		},
-		{
-			"path": "/growthexperiments/v0/suggestions/addimage/feedback/{title}",
-			"method": "PUT",
-			"class": "GrowthExperiments\\Rest\\Handler\\AddImageFeedbackHandler",
-			"services": [
-				"TitleFactory",
-				"RevisionLookup",
-				"GrowthExperimentsNewcomerTasksConfigurationLoader",
-				"GrowthExperimentsAddImageSubmissionHandler"
-			]
-		},
-		{
-			"path": "/growthexperiments/v0/suggestions/info",
-			"method": "GET",
-			"class": "GrowthExperiments\\Rest\\Handler\\SuggestionsInfoHandler",
-			"services": [
-				"GrowthExperimentsSuggestionsInfo",
-				"MainWANObjectCache"
-			]
-		},
-		{
-			"path": "/growthexperiments/v0/mentees",
-			"method": "GET",
-			"class": "GrowthExperiments\\Rest\\Handler\\MenteesHandler",
-			"services": [
-				"GrowthExperimentsMenteeOverviewDataProvider",
-				"GrowthExperimentsStarredMenteesStore",
-				"UserFactory",
-				"TitleFactory",
-				"TitleParser",
-				"LinkBatchFactory"
-			]
-		},
-		{
-			"path": "/growthexperiments/v0/mentees/prefixsearch/{prefix}",
-			"method": "GET",
-			"class": "GrowthExperiments\\Rest\\Handler\\MenteesPrefixSearchHandler",
-			"services": [
-				"GrowthExperimentsMenteeOverviewDataProvider"
-			]
-		},
-		{
-			"path": "/growthexperiments/v0/newcomertask/complete",
-			"method": "POST",
-			"class": "GrowthExperiments\\Rest\\Handler\\NewcomerTaskCompleteHandler",
-			"services": [
-				"GrowthExperimentsNewcomerTasksChangeTagsManager"
-			]
-		},
-		{
-			"path": "/growthexperiments/v0/welcomesurvey/skip",
-			"method": "POST",
-			"class": "GrowthExperiments\\Rest\\Handler\\WelcomeSurveySkipHandler",
-			"services": [
-				"GrowthExperimentsWelcomeSurveyFactory"
-			]
-		},
-		{
-			"path": "/growthexperiments/v0/user-impact/{user}",
-			"method": [
-				"GET",
-				"POST"
-			],
-			"class": "GrowthExperiments\\Rest\\Handler\\UserImpactHandler",
-			"services": [
-				"GrowthExperimentsUserImpactStore",
-				"GrowthExperimentsUserImpactLookup",
-				"GrowthExperimentsUserImpactFormatter",
-				"StatsdDataFactory",
-				"JobQueueGroup",
-				"UserFactory"
-			]
-		}
+	"RestModuleFiles": [
+		"includes/Rest/growthexperiments.v0.json"
 	],
 	"HookHandlers": {
 		"communityconfig": {
@@ -308,13 +292,7 @@
 			]
 		},
 		"config": {
-			"class": "GrowthExperiments\\Config\\ConfigHooks",
-			"services": [
-				"GrowthExperimentsConfigValidatorFactory",
-				"GrowthExperimentsWikiPageConfigLoader",
-				"TitleFactory",
-				"MainConfig"
-			]
+			"class": "GrowthExperiments\\Config\\ConfigHooks"
 		},
 		"earlylifecycle": {
 			"class": "GrowthExperiments\\EarlyLifeCycleHooks",
@@ -338,13 +316,12 @@
 			"class": "GrowthExperiments\\HomepageHooks",
 			"services": [
 				"MainConfig",
-				"DBLoadBalancer",
 				"UserOptionsManager",
 				"UserOptionsLookup",
 				"UserIdentityUtils",
 				"NamespaceInfo",
 				"TitleFactory",
-				"PerDbNameStatsdDataFactory",
+				"StatsFactory",
 				"JobQueueGroup",
 				"GrowthExperimentsNewcomerTasksConfigurationLoader",
 				"GrowthExperimentsCampaignConfig",
@@ -352,27 +329,21 @@
 				"GrowthExperimentsTaskTypeHandlerRegistry",
 				"GrowthExperimentsTaskSuggesterFactory",
 				"GrowthExperimentsNewcomerTasksUserOptionsLookup",
-				"GrowthExperimentsLinkRecommendationStore",
-				"GrowthExperimentsLinkRecommendationHelper",
 				"SpecialPageFactory",
 				"GrowthExperimentsNewcomerTasksChangeTagsManager",
-				"GrowthExperimentsSuggestionsInfo",
 				"GrowthExperimentsUserImpactLookup_Computed",
-				"GrowthExperimentsUserImpactStore"
+				"GrowthExperimentsUserImpactStore",
+				"GrowthExperimentsInteractionLogger",
+				"GrowthExperimentsTaskTypeManager",
+				"GrowthExperimentsLevelingUpManager",
+				"GrowthExperimentsFeatureManager"
 			]
 		},
 		"impact": {
 			"class": "GrowthExperiments\\ImpactHooks",
 			"services": [
-				"MainConfig",
-				"GrowthExperimentsUserImpactLookup_Computed",
-				"GrowthExperimentsUserImpactStore",
-				"GrowthExperimentsUserImpactFormatter",
-				"UserOptionsLookup",
-				"UserFactory",
-				"UserEditTracker",
-				"JobQueueGroup",
-				"UserIdentityUtils"
+				"GrowthExperimentsUserImpactUpdater",
+				"UserFactory"
 			]
 		},
 		"levelingup": {
@@ -380,8 +351,8 @@
 			"services": [
 				"MainConfig",
 				"GrowthExperimentsNewcomerTasksConfigurationLoader",
-				"GrowthExperimentsExperimentUserManager",
-				"GrowthExperimentsLevelingUpManager"
+				"GrowthExperimentsLevelingUpManager",
+				"GrowthExperimentsFeatureManager"
 			]
 		},
 		"mediawikiservices": {
@@ -390,7 +361,6 @@
 		"mentor": {
 			"class": "GrowthExperiments\\Mentorship\\Hooks\\MentorHooks",
 			"services": [
-				"MainConfig",
 				"GrowthExperimentsCommunityConfig",
 				"UserIdentityLookup",
 				"GenderCache",
@@ -405,7 +375,6 @@
 		"mentordashboarddiscovery": {
 			"class": "GrowthExperiments\\MentorDashboard\\MentorDashboardDiscoveryHooks",
 			"services": [
-				"GrowthExperimentsConfig",
 				"GrowthExperimentsMentorProvider",
 				"UserOptionsLookup"
 			]
@@ -413,7 +382,6 @@
 		"mentorfilters": {
 			"class": "GrowthExperiments\\Mentorship\\Hooks\\MentorFilterHooks",
 			"services": [
-				"GrowthExperimentsConfig",
 				"GrowthExperimentsMentorStore",
 				"GrowthExperimentsStarredMenteesStore",
 				"GrowthExperimentsMentorProvider"
@@ -441,16 +409,7 @@
 		"tour": {
 			"class": "GrowthExperiments\\TourHooks",
 			"services": [
-				"UserOptionsLookup",
-				"GrowthExperimentsExperimentUserManager",
-				"MainConfig",
-				"UserOptionsManager"
-			]
-		},
-		"experiments": {
-			"class": "GrowthExperiments\\ExperimentsHooks",
-			"services": [
-				"GrowthExperimentsExperimentUserDefaultsManager"
+				"UserOptionsLookup"
 			]
 		},
 		"variant": {
@@ -459,7 +418,9 @@
 				"UserOptionsManager",
 				"GrowthExperimentsCampaignConfig",
 				"SpecialPageFactory",
-				"MainConfig"
+				"GrowthExperimentsExperimentUserManager",
+				"GrowthExperimentsCampaignLoader",
+				"GrowthExperimentsFeatureManager"
 			]
 		},
 		"visualeditor": {
@@ -468,7 +429,7 @@
 				"TitleFactory",
 				"GrowthExperimentsNewcomerTasksConfigurationLoader",
 				"GrowthExperimentsTaskTypeHandlerRegistry",
-				"PerDbNameStatsdDataFactory",
+				"StatsFactory",
 				"UserIdentityUtils"
 			]
 		},
@@ -479,18 +440,25 @@
 				"TitleFactory",
 				"SpecialPageFactory",
 				"GrowthExperimentsWelcomeSurveyFactory",
-				"GrowthExperimentsCampaignConfig"
+				"GrowthExperimentsCampaignConfig",
+				"GrowthExperimentsCampaignLoader"
 			]
 		},
 		"confirmEmail": {
-			"class": "GrowthExperiments\\ConfirmEmailHooks"
+			"class": "GrowthExperiments\\ConfirmEmailHooks",
+			"services": [
+				"TitleFactory",
+				"GrowthExperimentsFeatureManager",
+				"MainConfig",
+				"GrowthExperimentsExperimentUserManager",
+				"StatsFactory"
+			]
 		}
 	},
 	"Hooks": {
 		"APIGetAllowedParams": "visualeditor",
 		"AuthChangeFormFields": [
 			"confirmEmail",
-			"homepage",
 			"variant",
 			"mentor"
 		],
@@ -507,8 +475,10 @@
 			"welcomeSurvey",
 			"mentor"
 		],
+		"BlockIpComplete": [
+			"mentor"
+		],
 		"CentralAuthPostLoginRedirect": [
-			"variant",
 			"welcomeSurvey"
 		],
 		"ChangesListSpecialPageStructuredFilters": "mentorfilters",
@@ -523,8 +493,6 @@
 		"ContributeCards": "homepage",
 		"CommunityConfigurationSchemaBeforeEditor": "communityconfig",
 		"CommunityConfigurationProvider_initList": "communityconfig",
-		"ConditionalDefaultOptionsAddCondition": "experiments",
-		"EditFilterMergedContent": "config",
 		"FormatAutocomments": [
 			"homepage",
 			"mentor"
@@ -539,14 +507,15 @@
 			"variant",
 			"welcomeSurvey"
 		],
-		"JsonValidateSave": "config",
 		"ListDefinedTags": [
 			"helppanel",
 			"homepage",
 			"mentor"
 		],
 		"LoadExtensionSchemaUpdates": "schema",
+		"CreateAccountShouldShowUsernamePolicyPopover": "confirmEmail",
 		"LocalUserCreated": [
+			"confirmEmail",
 			"helppanel",
 			"homepage",
 			"mentor",
@@ -558,19 +527,15 @@
 		],
 		"MediaWikiServices": "mediawikiservices",
 		"MessageCacheFetchOverrides": "earlylifecycle",
-		"PageSaveComplete": [
-			"config",
-			"homepage",
-			"mentor",
-			"impact",
-			"personalizedpraise"
-		],
 		"ParserFirstCallInit": "parserfunctions",
 		"PostLoginRedirect": [
 			"variant",
 			"welcomeSurvey"
 		],
 		"RecentChange_save": "homepage",
+		"RenameUserComplete": [
+			"mentor"
+		],
 		"ResourceLoaderExcludeUserOptions": [
 			"helppanel",
 			"homepage",
@@ -581,11 +546,6 @@
 		"ResourceLoaderGetConfigVars": "variant",
 		"ResourceLoaderRegisterModules": "tour",
 		"SpecialContributionsBeforeMainOutput": "homepage",
-		"SearchDataForIndex": {
-			"handler": "homepage",
-			"deprecated": true
-		},
-		"SearchDataForIndex2": "homepage",
 		"SidebarBeforeOutput": "homepage",
 		"SiteNoticeAfter": "homepage",
 		"SkinAddFooterLinks": "variant",
@@ -593,7 +553,6 @@
 			"GrowthExperiments\\HomepageHooks::onSkinMinervaOptionsInit"
 		],
 		"SkinTemplateNavigation::Universal": [
-			"config",
 			"homepage",
 			"mentordashboarddiscovery"
 		],
@@ -614,12 +573,9 @@
 			"mentoruseroptions",
 			"personalizedpraise",
 			"tour",
-			"variant",
 			"levelingup"
 		],
 		"UserGetRights": "mentor",
-		"UnitTestsAfterDatabaseSetup": "schema",
-		"UserSendConfirmationMail": "confirmEmail",
 		"VisualEditorApiVisualEditorEditPreSave": "visualeditor",
 		"VisualEditorApiVisualEditorEditPostSave": [
 			"levelingup",
@@ -629,6 +585,74 @@
 			"GrowthExperiments\\HomepageHooks::onWikimediaEventsShouldSchemaEditAttemptStepOversample"
 		]
 	},
+	"DomainEventIngresses": [
+		{
+			"events": [
+				"PageLatestRevisionChanged"
+			],
+			"class": "GrowthExperiments\\Mentorship\\MediaWikiEventIngress\\PageLatestRevisionChangedIngress",
+			"services": [
+				"GrowthExperimentsMentorStore",
+				"GrowthExperimentsMenteeGraduation"
+			]
+		},
+		{
+			"events": [
+				"PageLatestRevisionChanged"
+			],
+			"class": "GrowthExperiments\\NewcomerTasks\\MediaWikiEventIngress\\PageLatestRevisionChangedIngress",
+			"services": [
+				"ChangeTagsStore",
+				"ConnectionProvider",
+				"StatsFactory",
+				"GrowthExperimentsLinkRecommendationHelper",
+				"GrowthExperimentsFeatureManager"
+			]
+		},
+		{
+			"events": [
+				"PageLatestRevisionChanged"
+			],
+			"class": "GrowthExperiments\\UserImpact\\MediaWikiEventIngress\\PageLatestRevisionChangedIngress",
+			"services": [
+				"GrowthExperimentsUserImpactUpdater"
+			]
+		},
+		{
+			"events": [
+				"PageLatestRevisionChanged"
+			],
+			"class": "GrowthExperiments\\MentorDashboard\\PersonalizedPraise\\MediaWikiEventIngress\\PageLatestRevisionChangedIngress",
+			"services": [
+				"GrowthExperimentsConfig",
+				"UserIdentityUtils",
+				"GrowthExperimentsMentorManager",
+				"GrowthExperimentsUserImpactLookup",
+				"GrowthExperimentsPraiseworthyConditionsLookup",
+				"GrowthExperimentsPraiseworthyMenteeSuggester"
+			]
+		},
+		{
+			"events": [ "PageLatestRevisionChanged" ],
+			"class": "GrowthExperiments\\NewcomerTasks\\MediaWikiEventIngress\\NewcomerMilestoneIngress",
+			"services": [
+				"UserEditTracker",
+				"GrowthExperimentsNewcomerTasksConfigurationLoader",
+				"GrowthExperimentsNewcomerTasksUserOptionsLookup",
+				"GrowthExperimentsUserImpactLookup_Computed",
+				"MainConfig"
+			]
+		},
+		{
+			"events": [
+				"PageLatestRevisionChanged"
+			],
+			"class": "GrowthExperiments\\NewcomerTasks\\MediaWikiEventIngress\\ReviseToneExperimentEditIngress",
+			"services": [
+				"GrowthExperimentsReviseToneExperimentInteractionLogger"
+			]
+		}
+	],
 	"ResourceFileModulePaths": {
 		"localBasePath": "modules",
 		"remoteExtPath": "GrowthExperiments/modules"
@@ -638,8 +662,8 @@
 			"Schemas": {
 				"HelpPanel": "/analytics/legacy/helppanel/1.4.1",
 				"HomepageModule": "/analytics/legacy/homepagemodule/1.6.7",
-				"NewcomerTask": "/analytics/legacy/newcomertask/1.0.0",
-				"HomepageVisit": "/analytics/legacy/homepagevisit/1.5.2"
+				"NewcomerTask": "/analytics/legacy/newcomertask/1.2.0",
+				"HomepageVisit": "/analytics/legacy/homepagevisit/1.6.2"
 			}
 		},
 		"CirrusSearch": {
@@ -674,7 +698,19 @@
 		"CommunityConfiguration": {
 			"ProviderClasses": {
 				"GrowthSuggestedEdits": {
-					"class": "GrowthExperiments\\Config\\Providers\\SuggestedEditsConfigProvider"
+					"class": "GrowthExperiments\\Config\\Providers\\SuggestedEditsConfigProvider",
+					"services": [
+						"MainConfig",
+						"GrowthExperimentsFeatureManager"
+					]
+				},
+				"GrowthMentorList": {
+					"class": "GrowthExperiments\\Config\\Providers\\MentorListConfigProvider"
+				}
+			},
+			"Validators": {
+				"GrowthMentorship": {
+					"class": "GrowthExperiments\\Config\\Validation\\CommunityStructuredMentorListValidator"
 				}
 			},
 			"Providers": {
@@ -757,13 +793,18 @@
 							"MediaWiki:GrowthMentors.json"
 						],
 						"options": {
-							"extraTags": [ "mentor list change" ]
+							"extraTags": [
+								"mentor list change"
+							]
 						}
 					},
 					"validator": {
-						"type": "noop"
+						"type": "jsonschema",
+						"args": [
+							"GrowthExperiments\\Config\\Schemas\\MentorListSchema"
+						]
 					},
-					"type": "data",
+					"type": "GrowthMentorList",
 					"options": {
 						"excludeFromUI": true
 					}
@@ -772,9 +813,12 @@
 		}
 	},
 	"ResourceModules": {
-		"ext.growthExperiments.cssCustomProperties": {
-			"styles": [
-				"utils/customProperties.less"
+		"ext.growthExperiments.NotificationsTracking": {
+			"localBasePath": "modules/ext.growthExperiments.NotificationsTracking",
+			"remoteExtPath": "GrowthExperiments/modules/ext.growthExperiments.NotificationsTracking",
+			"packageFiles": [
+				"index.js",
+				"EchoNotificationsTracker.js"
 			]
 		},
 		"ext.growthExperiments.mobileMenu.icons": {
@@ -794,7 +838,6 @@
 			"dependencies": [
 				"oojs",
 				"mediawiki.Title",
-				"mediawiki.Uri",
 				"mediawiki.user",
 				"mediawiki.util",
 				"mediawiki.api",
@@ -875,13 +918,13 @@
 				"ext.growthExperiments.DataStore/GrowthTasksApi.js",
 				"utils/Utils.js",
 				"utils/IconUtils.js",
-				"ui-components/SelectWithTextInputWidget.js",
-				"ui-components/OptionWithTextInputWidget.js"
+				"ui-components/AdaptiveSelectWidget.js"
 			],
 			"styles": [
 				"ext.growthExperiments.Homepage.mobile/index.less"
 			],
 			"messages": [
+				"ellipsis",
 				"growthexperiments-homepage-suggestededits-more-info",
 				"growthexperiments-homepage-welcome-notice-header",
 				"growthexperiments-homepage-welcome-notice-body-variant-c",
@@ -909,7 +952,7 @@
 				"ext.growthExperiments.Homepage.ConfirmEmailNotice/index.js",
 				"ext.growthExperiments.Homepage.WelcomeSurveyReminder/index.js",
 				"ext.growthExperiments.Homepage.Logger/index.js",
-				"ext.growthExperiments.Homepage.Logger/useEventLogging.js",
+				"ext.growthExperiments.Homepage.Logger/useInstrument.js",
 				"ext.growthExperiments.Homepage.Logging/index.js",
 				"utils/Utils.js"
 			],
@@ -918,7 +961,6 @@
 				"growthexperiments-homepage-impact-empty-pageviews-tooltip-button"
 			],
 			"dependencies": [
-				"mediawiki.Uri",
 				"mediawiki.user",
 				"oojs-ui-core",
 				"oojs-ui-windows"
@@ -952,14 +994,13 @@
 				"ext.growthExperiments.Homepage.Impact/components/RecentActivity.vue",
 				"ext.growthExperiments.Homepage.Impact/components/StreakGraph.vue",
 				"ext.growthExperiments.Homepage.Impact/components/ArticlesList.vue",
+				"ext.growthExperiments.Homepage.Impact/components/ArticlesListItem.vue",
 				"ext.growthExperiments.Homepage.Logger/index.js",
 				"lib/d3/d3.min.js",
 				"utils/Utils.js",
 				"utils/filters.js",
 				"vue-components/directives/click-outside.directive.js",
 				"vue-components/plugins/logger.js",
-				"vue-components/CPopover.vue",
-				"vue-components/CPopper.vue",
 				"vue-components/CSparkline.vue",
 				"vue-components/CText.vue",
 				"vue-components/CList.vue",
@@ -1047,8 +1088,7 @@
 				"ext.growthExperiments.Homepage.Mentorship/MentorshipOptoutReasonDialog.js",
 				"ext.growthExperiments.Homepage.Mentorship/MentorshipOptoutProcess.js",
 				"ext.growthExperiments.Homepage.Mentorship/MentorshipDetailsModal.js",
-				"ui-components/SelectWithTextInputWidget.js",
-				"ui-components/OptionWithTextInputWidget.js"
+				"ui-components/AdaptiveSelectWidget.js"
 			],
 			"dependencies": [
 				"ext.growthExperiments.Help",
@@ -1059,6 +1099,7 @@
 				"oojs-ui-widgets"
 			],
 			"messages": [
+				"ellipsis",
 				"growthexperiments-homepage-recent-questions-header",
 				"growthexperiments-homepage-mentorship-confirm-dialog-header",
 				"growthexperiments-homepage-mentorship-confirm-dialog-text",
@@ -1115,6 +1156,7 @@
 				"SuggestionGroupWidget.js",
 				"../ext.growthExperiments.StructuredTask/addimage/ImageSuggestionInteractionLogger.js",
 				"../ext.growthExperiments.StructuredTask/addlink/LinkSuggestionInteractionLogger.js",
+				"../ext.growthExperiments.StructuredTask/revisetone/useExperiment.js",
 				"../ext.growthExperiments.StructuredTask/StructuredTaskLogger.js",
 				"../ext.growthExperiments.Homepage.Logger/index.js",
 				"../utils/Utils.js",
@@ -1138,7 +1180,6 @@
 				"mediawiki.pulsatingdot",
 				"mediawiki.router",
 				"mediawiki.Title",
-				"mediawiki.Uri",
 				"mediawiki.user",
 				"mediawiki.util",
 				"oojs-ui-core",
@@ -1341,15 +1382,17 @@
 				"ext.growthExperiments.StructuredTask/addsectionimage/dmRecommendedImagePlaceholderNode.js",
 				"ext.growthExperiments.StructuredTask/addsectionimage/RecommendedSectionImageToolbarDialog.js",
 				"ext.growthExperiments.StructuredTask/addsectionimage/RecommendedSectionImageRejectionDialog.js",
+				"ext.growthExperiments.StructuredTask/revisetone/ReviseToneInitializer.js",
+				"ext.growthExperiments.StructuredTask/revisetone/GrowthSuggestionToneCheck.js",
+				"ext.growthExperiments.StructuredTask/revisetone/useExperiment.js",
+				"utils/SimpleLevenshtein.js",
 				"utils/Utils.js",
 				"ui-components/HelpPanelButton.js",
-				"ui-components/SelectWithTextInputWidget.js",
-				"ui-components/OptionWithTextInputWidget.js"
+				"ui-components/AdaptiveSelectWidget.js"
 			],
 			"styles": [
 				"ext.growthExperiments.StructuredTask/MachineSuggestionsMode.less",
 				"ext.growthExperiments.StructuredTask/EditModeConfirmationDialog.less",
-				"ui-components/OptionWithTextInputWidget.less",
 				"ext.growthExperiments.StructuredTask/StructuredTaskSaveDialog.less",
 				"ext.growthExperiments.StructuredTask/StructuredTaskToolbarDialog.less",
 				"ext.growthExperiments.StructuredTask/StructuredTaskMessageDialog.less",
@@ -1374,7 +1417,9 @@
 				"growthexperiments-addlink-context-button-accept",
 				"growthexperiments-addlink-context-button-reject",
 				"growthexperiments-addlink-context-button-next",
+				"growthexperiments-addlink-context-button-prev",
 				"growthexperiments-addlink-context-button-help",
+				"growthexperiments-addlink-single-recommendation-title",
 				"growthexperiments-addlink-rejectiondialog-title",
 				"growthexperiments-addlink-rejectiondialog-message",
 				"growthexperiments-addlink-rejectiondialog-reason-everyday",
@@ -1402,7 +1447,6 @@
 				"growthexperiments-structuredtask-editmode-confirmation-dialog-action-cancel",
 				"growthexperiments-structuredtask-no-suggestions-found-dialog-button",
 				"growthexperiments-structuredtask-summary-submit",
-				"growthexperiments-structuredtask-other-rejectionreason-placeholder",
 				"growthexperiments-homepage-suggestededits-tasktype-machine-description",
 				"growthexperiments-addlink-suggestions-outdated",
 				"growthexperiments-addimage-inspector-title",
@@ -1471,7 +1515,8 @@
 				"growthexperiments-structuredtask-user-error-login-cta",
 				"colon-separator",
 				"comma-separator",
-				"growthexperiments-addimage-caption-warning-tooshort"
+				"growthexperiments-addimage-caption-warning-tooshort",
+				"growthexperiments-addlink-done-button"
 			],
 			"dependencies": [
 				"mediawiki.language",
@@ -1553,19 +1598,45 @@
 				"ext.growthExperiments.StructuredTask.PreEdit/index.js",
 				"ext.growthExperiments.StructuredTask.PreEdit/StructuredTaskOnboardingDialog.js",
 				"ext.growthExperiments.StructuredTask.PreEdit/StructuredTaskOnboardingContent.js",
+				"ext.growthExperiments.StructuredTask.PreEdit/common/MultiPane.vue",
+				"ext.growthExperiments.StructuredTask.PreEdit/common/OnboardingDialog.vue",
+				"ext.growthExperiments.StructuredTask.PreEdit/common/OnboardingStepper.vue",
 				"ext.growthExperiments.StructuredTask.PreEdit/addlink/AddLinkOnboardingContent.js",
 				"ext.growthExperiments.StructuredTask.PreEdit/addimage/AddImageOnboardingContent.js",
 				"ext.growthExperiments.StructuredTask.PreEdit/addsectionimage/AddSectionImageOnboardingContent.js",
+				"ext.growthExperiments.StructuredTask.PreEdit/revisetone/NumberIcon.vue",
+				"ext.growthExperiments.StructuredTask.PreEdit/revisetone/ReviseToneQuizLauncher.js",
+				"ext.growthExperiments.StructuredTask.PreEdit/revisetone/QuizPill.vue",
+				"ext.growthExperiments.StructuredTask.PreEdit/revisetone/QuizGame.vue",
+				"ext.growthExperiments.StructuredTask.PreEdit/revisetone/ReviseToneOnboarding.vue",
+				"ext.growthExperiments.StructuredTask.PreEdit/revisetone/quizData.json",
+				"ext.growthExperiments.StructuredTask/revisetone/useExperiment.js",
+				"ext.growthExperiments.StructuredTask/revisetone/ReviseToneInteractionLogger.js",
+				"ext.growthExperiments.StructuredTask.PreEdit/App.vue",
 				"ext.growthExperiments.StructuredTask/StructuredTaskLogger.js",
 				"ext.growthExperiments.StructuredTask/addlink/LinkSuggestionInteractionLogger.js",
 				"ext.growthExperiments.StructuredTask/addimage/ImageSuggestionInteractionLogger.js",
+				"ext.growthExperiments.StructuredTask/revisetone/useExperiment.js",
 				"ui-components/MultiPaneDialog.js",
 				"ui-components/SwipePane.js",
-				"utils/Utils.js"
+				"utils/Utils.js",
+				{
+					"name": "ext.growthExperiments.StructuredTask.PreEdit/common/codex-icons.json",
+					"callback": "MediaWiki\\ResourceLoader\\CodexModule::getIcons",
+					"callbackParam": [
+						"cdxIconSuccess",
+						"cdxIconClear",
+						"cdxIconNext",
+						"cdxIconPrevious",
+						"cdxIconClose"
+					]
+				}
 			],
 			"styles": [
 				"ext.growthExperiments.StructuredTask.PreEdit/StructuredTaskOnboardingDialog.less",
 				"ext.growthExperiments.StructuredTask.PreEdit/StructuredTaskOnboardingContent.less",
+				"ext.growthExperiments.StructuredTask.PreEdit/common/mixins.less",
+				"ext.growthExperiments.StructuredTask.PreEdit/common/variables.less",
 				"ext.growthExperiments.StructuredTask.PreEdit/addlink/AddLinkOnboardingContent.less",
 				"ext.growthExperiments.StructuredTask.PreEdit/addimage/AddImageOnboardingContent.less",
 				"ext.growthExperiments.StructuredTask.PreEdit/addsectionimage/AddSectionImageOnboardingContent.less",
@@ -1626,18 +1697,55 @@
 				"growthexperiments-addsectionimage-onboarding-content-step4-title",
 				"growthexperiments-addsectionimage-onboarding-content-step4-alt-text",
 				"growthexperiments-addsectionimage-onboarding-content-step4-body-paragraph1",
-				"growthexperiments-addsectionimage-onboarding-content-step4-body-paragraph2"
+				"growthexperiments-addsectionimage-onboarding-content-step4-body-paragraph2",
+				"growthexperiments-revisetone-onboarding-dialog-skip-label",
+				"growthexperiments-revisetone-onboarding-dialog-skip-label",
+				"growthexperiments-revisetone-onboarding-example-label",
+				"growthexperiments-revisetone-onboarding-main-prompt",
+				"growthexperiments-revisetone-onboarding-introduction",
+				"growthexperiments-revisetone-onboarding-answer-none",
+				"growthexperiments-revisetone-onboarding-step1-title",
+				"growthexperiments-revisetone-onboarding-step1-example-sentence",
+				"growthexperiments-revisetone-onboarding-step1-answer1",
+				"growthexperiments-revisetone-onboarding-step1-answer2",
+				"growthexperiments-revisetone-onboarding-step1-answer3",
+				"growthexperiments-revisetone-onboarding-step1-explainer",
+				"growthexperiments-revisetone-onboarding-step2-title",
+				"growthexperiments-revisetone-onboarding-step2-example-sentence",
+				"growthexperiments-revisetone-onboarding-step2-answer1",
+				"growthexperiments-revisetone-onboarding-step2-answer2",
+				"growthexperiments-revisetone-onboarding-step2-answer3",
+				"growthexperiments-revisetone-onboarding-step2-explainer",
+				"growthexperiments-revisetone-onboarding-step3-title",
+				"growthexperiments-revisetone-onboarding-step3-example-sentence",
+				"growthexperiments-revisetone-onboarding-step3-answer1",
+				"growthexperiments-revisetone-onboarding-step3-answer2",
+				"growthexperiments-revisetone-onboarding-step3-answer3",
+				"growthexperiments-revisetone-onboarding-step3-explainer",
+				"growthexperiments-revisetone-onboarding-step4-title",
+				"growthexperiments-revisetone-onboarding-step4-example-sentence",
+				"growthexperiments-revisetone-onboarding-step4-answer1",
+				"growthexperiments-revisetone-onboarding-step4-answer2",
+				"growthexperiments-revisetone-onboarding-step4-answer3",
+				"growthexperiments-revisetone-onboarding-step4-explainer",
+				"growthexperiments-revisetone-onboarding-step5-title",
+				"growthexperiments-revisetone-onboarding-step5-example-sentence",
+				"growthexperiments-revisetone-onboarding-step5-answer1",
+				"growthexperiments-revisetone-onboarding-step5-answer2",
+				"growthexperiments-revisetone-onboarding-step5-answer3",
+				"growthexperiments-revisetone-onboarding-step5-explainer"
 			],
 			"dependencies": [
 				"mediawiki.jqueryMsg",
 				"mediawiki.language",
 				"mediawiki.user",
-				"mediawiki.Uri",
 				"mediawiki.util",
 				"oojs-ui-widgets",
 				"oojs-ui-windows",
 				"ext.growthExperiments.SuggestedEditSession",
-				"ext.growthExperiments.DataStore"
+				"ext.growthExperiments.DataStore",
+				"vue",
+				"@wikimedia/codex"
 			]
 		},
 		"ext.growthExperiments.Help": {
@@ -1673,7 +1781,6 @@
 			"dependencies": [
 				"mediawiki.jqueryMsg",
 				"mediawiki.storage",
-				"mediawiki.Uri",
 				"mediawiki.user",
 				"mediawiki.util",
 				"mediawiki.language",
@@ -1711,6 +1818,7 @@
 				"growthexperiments-help-panel-general-help-title",
 				"growthexperiments-help-panel-suggestededits-title",
 				"growthexperiments-help-panel-suggestededits-quick-start-tips",
+				"growthexperiments-help-panel-revise-tone-refresh-skills",
 				"growthexperiments-help-panel-suggestededits-footer-desktop",
 				"vector-view-edit",
 				"growthexperiments-help-panel-suggestededits-footer-mobile",
@@ -1742,6 +1850,7 @@
 				"growthexperiments-homepage-suggestededits-tasktype-name-link-recommendation",
 				"growthexperiments-homepage-suggestededits-tasktype-name-image-recommendation",
 				"growthexperiments-homepage-suggestededits-tasktype-name-section-image-recommendation",
+				"growthexperiments-homepage-suggestededits-tasktype-name-revise-tone",
 				"growthexperiments-help-panel-button-preheader-suggested-edits",
 				"growthexperiments-help-panel-button-header-ask-help",
 				"growthexperiments-help-panel-button-header-ask-help-mentor",
@@ -1886,7 +1995,8 @@
 				"growthexperiments-homepage-suggestededits-tasktype-name-update",
 				"growthexperiments-homepage-suggestededits-tasktype-name-expand",
 				"growthexperiments-homepage-suggestededits-tasktype-name-link-recommendation",
-				"growthexperiments-homepage-suggestededits-tasktype-name-image-recommendation"
+				"growthexperiments-homepage-suggestededits-tasktype-name-image-recommendation",
+				"growthexperiments-homepage-suggestededits-tasktype-name-revise-tone"
 			]
 		},
 		"ext.growthExperiments.Account": {
@@ -1894,7 +2004,8 @@
 				"ext.growthExperiments.Account/index.js",
 				"ext.growthExperiments.Account/ConfirmEmail.js",
 				"ext.growthExperiments.Account/ULSTagMultiselectWidget.js",
-				"ext.growthExperiments.Account/WelcomeSurvey.js"
+				"ext.growthExperiments.Account/WelcomeSurvey.js",
+				"ext.growthExperiments.Account/WE18ExperimentV1.js"
 			],
 			"messages": [
 				"growthexperiments-confirmemail-emailwarning",
@@ -1908,9 +2019,9 @@
 		},
 		"ext.growthExperiments.Account.styles": {
 			"styles": [
-				"ext.growthExperiments.Account.styles/ConfirmEmail.less",
 				"ext.growthExperiments.Account.styles/DonorSignupCampaign.less",
 				"ext.growthExperiments.Account.styles/SpecialContributions.less",
+				"ext.growthExperiments.Account.styles/WE18ExperimentV1.less",
 				"ext.growthExperiments.Account.styles/WelcomeSurvey.less"
 			]
 		},
@@ -1918,6 +2029,11 @@
 			"class": "MediaWiki\\ResourceLoader\\ImageModule",
 			"selectorWithVariant": ".oo-ui-image-{variant}.oo-ui-icon-{name}",
 			"selectorWithoutVariant": ".oo-ui-icon-{name},.mw-ui-icon-{name}",
+			"variants": {
+				"progressive": {
+					"color": "#3366cc"
+				}
+			},
 			"images": {
 				"growth-previous": {
 					"file": {
@@ -1987,7 +2103,10 @@
 					"file": {
 						"ltr": "../images/mentor-ltr.svg",
 						"rtl": "../images/mentor-rtl.svg"
-					}
+					},
+					"variants": [
+						"progressive"
+					]
 				},
 				"robot-task-type-easy": "../images/suggestededits/robot-easy.svg",
 				"robot-task-type-medium": "../images/suggestededits/robot-medium.svg"
@@ -2032,8 +2151,6 @@
 				"ext.growthExperiments.MentorDashboard/logger/Logger.js",
 				"vue-components/CScoreCard.vue",
 				"vue-components/CScoreCards.vue",
-				"vue-components/CPopover.vue",
-				"vue-components/CPopper.vue",
 				"vue-components/CText.vue",
 				"vue-components/directives/click-outside.directive.js",
 				"ext.growthExperiments.Homepage.Impact/constants.js",
@@ -2077,6 +2194,7 @@
 				}
 			],
 			"messages": [
+				"ellipsis",
 				"growthexperiments-mentor-dashboard-mentor-tools-cog-menu-quit",
 				"growthexperiments-mentor-dashboard-mentor-tools-cog-menu-quit-headline",
 				"growthexperiments-mentor-dashboard-mentor-tools-cog-menu-quit-text",
@@ -2088,8 +2206,8 @@
 				"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-text",
 				"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-away-for",
 				"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-away-for-label",
-				"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-toohigh",
 				"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-unknown",
+				"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-toohigh",
 				"growthexperiments-mentor-dashboard-mentor-tools-mentor-changed-to-active",
 				"growthexperiments-mentor-dashboard-mentor-tools-mentor-changed-to-away",
 				"growthexperiments-mentor-dashboard-mentor-tools-mentor-status-away-message",
@@ -2379,7 +2497,9 @@
 			"modules/ext.growthExperiments.Homepage.SuggestedEdits/NewcomerTaskLogger.js",
 			"tests/qunit/ext.growthExperiments.Homepage.SuggestedEdits/NewcomerTaskLogger.test.js",
 			"modules/ext.growthExperiments.Homepage.Logger/index.js",
+			"modules/ext.growthExperiments.Homepage.Logger/useInstrument.js",
 			"tests/qunit/ext.growthExperiments.Homepage.Logger/index.test.js",
+			"tests/qunit/ext.growthExperiments.Homepage.Logger/useInstrument.test.js",
 			"modules/utils/HelpPanelLogger.js",
 			"tests/qunit/ext.growthExperiments.Help/HelpPanelLogger.test.js",
 			"modules/ext.growthExperiments.Help/HelpPanelProcessDialog.js",
@@ -2433,9 +2553,8 @@
 			"tests/qunit/ext.growthExperiments.DataStore/NewcomerTasksStore.test.js",
 			"modules/ui-components/CollapsibleDrawer.js",
 			"tests/qunit/ui-components/CollapsibleDrawer.test.js",
-			"modules/ui-components/SelectWithTextInputWidget.js",
-			"modules/ui-components/OptionWithTextInputWidget.js",
-			"tests/qunit/ui-components/SelectWithTextInputWidget.test.js",
+			"modules/ui-components/AdaptiveSelectWidget.js",
+			"tests/qunit/ui-components/AdaptiveSelectWidget.test.js",
 			"tests/qunit/__mocks__/config.json",
 			"tests/qunit/__mocks__/GroupedTopics.json",
 			"tests/qunit/__mocks__/Topics.json",
@@ -2478,33 +2597,25 @@
 		]
 	},
 	"config": {
-		"GELevelingUpFeaturesEnabled": {
-			"description": "Feature flag to enable \"leveling up\" (phab:#growthexperiments-levelingup) functionality.",
-			"value": true
+		"GEApiQueryGrowthTasksLookaheadSize": {
+			"description": "Number of items to fetch lookahead when querying the GrowthTasks API.",
+			"value": null
 		},
 		"GELevelingUpKeepGoingNotificationSendAfterSeconds": {
 			"description": "Send a 'keep going' notification to new editors after this many seconds. Defaults to 48 hours.",
 			"value": 172800
 		},
-		"GELevelingUpKeepGoingNotificationThresholds": {
-			"description": "Article namespace edit count thresholds at which the user should receive a notification to keep going with suggested edits. The user can receive a notification if their edit count is greater than or equal to the first number in the array, and lower than or equal to the second number in the array.",
-			"value": [
-				1,
-				4
-			],
-			"merge_strategy": "provide_default"
-		},
 		"GELevelingUpGetStartedNotificationSendAfterSeconds": {
 			"description": "Send a 'get started' notification to new editors after this many seconds. Defaults to 48 hours.",
 			"value": 172800
 		},
-		"GELevelingUpGetStartedMaxTotalEdits": {
-			"description": "Do not send a 'get started' notification to users with more than this edits.",
-			"value": 10
-		},
 		"GELevelingUpManagerTaskTypeCountThresholdMultiple": {
 			"description": "The task type count threshold to use when determining whether to prompt a user to try a new task type. If the user has completed more than this number of a particular task type, it will not be suggested as a next task type to try. If a user completes edits for a task type in a multiple of of this number (e.g. 3, 6, or 12 with the default value), then the user is prompted to try a new task type.",
 			"value": 3
+		},
+		"GELevelingUpNotificationsTrackingEnabled": {
+			"description": "Feature flag to enable click-through rate tracking for leveling up notifications.",
+			"value": false
 		},
 		"GERefreshUserImpactDataMaintenanceScriptEnabled": {
 			"description": "Feature flag to determine if the refreshUserImpactData.php maintenance script may run.",
@@ -2518,83 +2629,13 @@
 			"description": "The maximum amount of time, in seconds, that may be used to fetch page view data from AQS. Currently used in job queue context. Default is 5 minutes.",
 			"value": 300
 		},
-		"GEInfoboxTemplates": {
-			"description": "List of templates that provide Infobox functionality.",
-			"value": []
-		},
-		"GEInfoboxTemplatesTest": {
-			"description": "List of templates that provide Infobox functionality. Used for manually testing changes.",
-			"value": []
-		},
-		"GEDatabaseCluster": {
-			"description": "Which database cluster to use. False means the cluster of the current wiki will be used. The database name will be the database name configured for the wiki, regardless of this setting. Only set this if you manage the DB schema manually.",
-			"value": false
-		},
-		"GEWikiConfigPageTitle": {
-			"description": "Name of page used for on-wiki config; must be in NS_MEDIAWIKI and end with .json; only variables listed in GEOnWikiConfigAllowList may be overriden on wiki",
-			"value": "MediaWiki:GrowthExperimentsConfig.json"
-		},
-		"GEWikiConfigEnabled": {
-			"description": "If set to false, on-wiki configuration will be ignored. WARNING: This will fallback to PHP-globals for all config. By setting this to false, you can break most of the features.",
-			"value": true
-		},
-		"GEUseCommunityConfigurationExtension": {
-			"description": "If set to true, the CommunityConfiguration extension is used to power on-wiki config.",
-			"value": false
-		},
-		"GEHelpPanelReadingModeNamespaces": {
-			"description": "Numerical IDs of the MediaWiki namespaces in which to show the help panel in reading mode. Specifying a namespace will also include its talk namespace. Defaults to NS_PROJECT and NS_HELP namespaces.",
-			"value": [
-				2,
-				4,
-				12
-			]
-		},
-		"GEHelpPanelExcludedNamespaces": {
-			"description": "MediaWiki namespaces that the help panel will be excluded from.",
-			"value": []
-		},
 		"GEHelpPanelNewAccountEnableWithHomepage": {
-			"description": "By default, the help panel is enabled for new accounts in lockstep with the homepage, controlled by GEHomepageNewAccountEnablePercentage. To disable this behavior and use GEHelpPanelNewAccountEnablePercentage instead, set this to false.",
+			"description": "By default, the help panel is enabled for new accounts. To disable this behavior and use GEHelpPanelNewAccountEnablePercentage instead, set this to false.",
 			"value": true
 		},
 		"GEHelpPanelNewAccountEnablePercentage": {
 			"description": "Percentage of new accounts to enable help panel for. Must be a whole number. Ignored by default, only used if GEHelpPanelNewAccountEnableWithHomepage is false.",
 			"value": 100
-		},
-		"GEHelpPanelHelpDeskTitle": {
-			"description": "MediaWiki title for help panel CTA when users have disabled JS. Templates or magic words contained in this string will be expanded.",
-			"value": "Main_Page"
-		},
-		"GEHelpPanelHelpDeskPostOnTop": {
-			"description": "Whether to post new questions on the top of the help desk. Default is to post on the bottom (like section=new does). Only affects wikitext pages.",
-			"value": false
-		},
-		"GEHelpPanelViewMoreTitle": {
-			"description": "MediaWiki title for view more articles on help link.",
-			"value": "Main_Page"
-		},
-		"GEHelpPanelEnabled": {
-			"description": "Global ON/OFF switch for the help panel feature.",
-			"value": true
-		},
-		"GEHelpPanelLinks": {
-			"description": "List of links to display in the help panel.",
-			"merge_strategy": "array_plus",
-			"value": [
-				{
-					"title": "Project:Help",
-					"text": "Site help",
-					"id": "help"
-				}
-			]
-		},
-		"GEHelpPanelSearchNamespaces": {
-			"description": "List of namespaces to include in the search for help content.",
-			"value": [
-				4,
-				12
-			]
 		},
 		"GEHelpPanelSearchForeignAPI": {
 			"description": "api.php URL of a foreign wiki to search instead of the current wiki. Used for testing/development to get more/better results.",
@@ -2606,12 +2647,9 @@
 				"template-based": "visualeditor",
 				"link-recommendation": "machineSuggestions",
 				"image-recommendation": "machineSuggestions",
-				"section-image-recommendation": "machineSuggestions"
+				"section-image-recommendation": "machineSuggestions",
+				"revise-tone": "visualeditor"
 			}
-		},
-		"GEHelpPanelAskMentor": {
-			"description": "When using the help panel's question-asking functionality, post on the mentor's talk page instead of on the help desk page.",
-			"value": true
 		},
 		"WelcomeSurveyEnabled": {
 			"description": "Global ON/OFF switch for the Welcome survey feature.",
@@ -2629,50 +2667,13 @@
 			"description": "Number of days a reminder on Special:Homepage should be shown for if the user has not filled out the welcome survey yet. Set to 0 to disable the reminder.",
 			"value": 30
 		},
-		"GEHomepageEnabled": {
-			"description": "Global ON/OFF switch for the Homepage feature.",
-			"value": true
-		},
-		"GEHomepageNewAccountEnablePercentage": {
-			"description": "Percentage of new accounts to enable homepage for. Must be a whole number.",
-			"value": 100
-		},
-		"GEHomepageNewAccountVariantsByPlatform": {
-			"description": "Which percentage of new accounts to assign which A/B testing variant. For each variant, assign a percentage to \"mobile\" or \"desktop\" platforms. For legacy reasons this has 'Homepage' in the name and is only applied to new accounts for whom the homepage got enabled. Percentages must be whole numbers. If the percentages don't add up to 100, some new accounts will not be assigned a variant. Those accounts will fall back on GEHomepageDefaultVariant. The random choice can be overridden with the geForceVariant query parameter.",
-			"value": {
-				"control": {
-					"mobile": 100,
-					"desktop": 100
-				}
-			}
-		},
 		"GEHomepageDefaultVariant": {
-			"description": "Experiment variant to use for users who weren't assigned a variant at account creation time, or the variant they got is not valid anymore. Valid values: 'control'.",
+			"description": "Experiment variant to use for users on sites where TestKitchen is not available (non-WMF). Valid values: virtually anything, there's no validation, in practice this should be a string representing a valid variant name for the current experiment.",
 			"value": "control"
 		},
-		"GEHomepageLoggingEnabled": {
-			"description": "ON/OFF switch for the homepage event logging feature.",
-			"value": true
-		},
-		"GEMentorshipEnabled": {
-			"description": "Are the mentorship features enabled?",
-			"value": true
-		},
 		"GEMentorshipNewAccountEnablePercentage": {
-			"description": "Percentage of new homepage-enabled users who will receive the mentorship module. Note that user must fall into _both_ GEHomepageNewAccountEnablePercentage and this percentage to be considered for mentorship.",
+			"description": "Percentage of new homepage-enabled users who will receive the mentorship module.",
 			"value": 100
-		},
-		"GEMentorshipAutomaticEligibility": {
-			"description": "Automatically grant \"enrollasmentor\" to users who are eligible to enroll as mentors. See GEMentorshipMinimumAge and GEMentorshipMinimumEditcount to define eligibility rules (requirements set by both variables need to be met to make users eligible).",
-			"value": true
-		},
-		"GEMentorshipMinimumAge": {
-			"description": "Minimum tenure (in days) required for users to be eligible as mentors. Only used if GEMentorshipAutomaticEligibility is true. To make an user eligible for mentorship, they need to satisfy both GEMentorshipMinimumAge and GEMentorshipMinimumEditcount.",
-			"value": 90
-		},
-		"GEMentorshipMinimumEditcount": {
-			"description": "Minimum number of edits required for users to be eligible as mentors. Only used if GEMentorshipAutomaticEligibility is true. To make an user eligible for mentorship, they need to satisfy both GEMentorshipMinimumAge and GEMentorshipMinimumEditcount.",
-			"value": 500
 		},
 		"GEMentorshipReassignMenteesBatchSize": {
 			"description": "Batch size for reassignMenteesJob",
@@ -2686,22 +2687,6 @@
 			"description": "Feature flag controlling whether personalized praise notifications are enabled",
 			"value": true
 		},
-		"GEPersonalizedPraiseDefaultNotificationsFrequency": {
-			"description": "Default frequency of notifications (in hours) related to personalized praise. Mentors can customize this.",
-			"value": "168"
-		},
-		"GEPersonalizedPraiseDays": {
-			"description": "Number of days to consider when checking whether a mentee is praiseworthy (used together with GEPersonalizedPraiseMinEdits). This must not be longer than wgRCMaxAge.",
-			"value": 7
-		},
-		"GEPersonalizedPraiseMinEdits": {
-			"description": "Number of article edits a mentee needs to have within GEPersonalizedPraiseDays to be considered praiseworthy",
-			"value": 8
-		},
-		"GEPersonalizedPraiseMaxEdits": {
-			"description": "Maximum number of total edits a mentee can have to be considered praiseworthy (used to avoid suggesting experienced users)",
-			"value": 500
-		},
 		"GEPersonalizedPraiseMaxReverts": {
 			"description": "Maximum number of total reverted edits a mentee can have to be considered praiseworthy or null if check should be skipped.",
 			"value": null
@@ -2709,10 +2694,6 @@
 		"GEStructuredMentorList": {
 			"description": "Title of the wiki page that has the mentor list in JSON format (used by StructuredMentorProvider)",
 			"value": "MediaWiki:GrowthMentors.json"
-		},
-		"GEMentorDashboardEnabled": {
-			"description": "Should users be allowed to access Special:MentorDashboard?",
-			"value": true
 		},
 		"GEMentorDashboardEnabledModules": {
 			"description": "List of enabled modules in the Mentor dashboard",
@@ -2727,36 +2708,9 @@
 			"description": "Global ON/OFF switch for the suggested edits feature on the homepage.",
 			"value": true
 		},
-		"GEHomepageSuggestedEditsIntroLinks": {
-			"description": "Titles of local help pages linked from the suggested edits intro dialog.",
-			"value": {
-				"create": "Help:Creating pages",
-				"image": "Help:Images"
-			}
-		},
 		"GEHomepageSuggestedEditsEnableTopics": {
 			"description": "Enable topic filters for suggested edits",
 			"value": true
-		},
-		"GEConfirmEmailEnabled": {
-			"description": "Global ON/OFF switch for the email confirmation changes.",
-			"value": true
-		},
-		"GENewcomerTasksConfigTitle": {
-			"description": "Title of a MediaWiki page which contains suggested edits configuration. If the title has an interwiki prefix, then its content will be loaded remotely via an HTTP request. Should be in the MediaWiki: namespace, have JSON content type and contain a map of task type -> task configuration where task configuration consists of the following fields: type  - a task type handler ID; group - 'easy', 'medium' or 'hard'. An optional 'disabled' field, when present and truthy, will make the system ignore that task type. Depending on the task type, there might be other fields, specifically:\n- type=template-based: templates - an array of template names (without namespace) for the maintenance templates\n- type=link-recommendation: minimumTasksPerTopic, minimumLinksPerTask, minimumLinkScore, maximumLinksPerTask, maximumLinksToShowPerTask, minimumTimeSinceLastEdit, minimumWordCount, maximumWordCount: parameters of acceptable tasks.\n\nThe system messages growthexperiments-homepage-suggestededits-tasktype-name-<tasktype> and growthexperiments-homepage-suggestededits-tasktype-description-<tasktype> will be used for task name and description; both must exist.",
-			"value": "MediaWiki:NewcomerTasks.json"
-		},
-		"GENewcomerTasksTopicType": {
-			"description": "How the topic of an article is identified. One of: morelike - use CirrusSearch morelikethis search with a predefined set of representetative articles for each topic; ores - use ORES articletopic predictions.",
-			"value": "morelike"
-		},
-		"GENewcomerTasksOresTopicConfigTitle": {
-			"description": "Title of a MediaWiki page which contains ORES topic configuration for suggested edits. If the title has an interwiki prefix, then its content will be loaded remotely via an HTTP request. Should be in the MediaWiki: namespace,  have JSON content type and contain an object like { topics: <topics>, groups: <groups> }. <topics> is a map of topic id -> topic configuration, with each topic an object with the properties 'group' (for grouping topics visually; each section name corresponds with a growthexperiments-homepage-suggestededits-topic-group-name-<id> system message which must exist) and 'oresTopics' (list of ORES topic IDs to use for this topic, ie. the values to use with the articletopic: search keyword). The system message growthexperiments-homepage-suggestededits-topic-name-<id> will be used for human-readable topic name and must exist. <groups> is a list of the group ids used in the topics section, to define the order of groups.",
-			"value": "MediaWiki:NewcomerTopicsOres.json"
-		},
-		"GENewcomerTasksTopicConfigTitle": {
-			"description": "Title of a MediaWiki page which contains morelike topic configuration for suggested edits. If the title has an interwiki prefix, then its content will be loaded remotely via an HTTP request. Should be in the MediaWiki: namespace, have JSON content type and contain a map of topic id -> topic configuration, which is an object with the properties 'titles' (list of mainspace page names of pages which are considered representative of the topic, to be used for text similarity comparision) and 'label' (human-readable name).",
-			"value": "MediaWiki:NewcomerTopics.json"
 		},
 		"GENewcomerTasksTaskTypeHandlers": {
 			"description": "Used for registering TaskTypeHandlers to the TaskTypeHandlerRegistry. An associative array with handler ID => handler specification, which is an ObjectFactory specification or a factory callable. Handlers IDs correspond to the 'type' parameters in the task config page.",
@@ -2775,7 +2729,8 @@
 						"GrowthExperimentsNewcomerTasksConfigurationValidator",
 						"TitleParser",
 						"GrowthExperimentsLinkRecommendationProvider",
-						"GrowthExperimentsAddLinkSubmissionHandler"
+						"GrowthExperimentsAddLinkSubmissionHandler",
+						"GrowthExperimentsConfig"
 					]
 				},
 				"image-recommendation": {
@@ -2796,6 +2751,15 @@
 						"GrowthExperimentsAddImageSubmissionHandler"
 					]
 				},
+				"revise-tone": {
+					"class": "GrowthExperiments\\NewcomerTasks\\TaskType\\ReviseToneTaskTypeHandler",
+					"services": [
+						"GrowthExperimentsNewcomerTasksConfigurationValidator",
+						"TitleParser",
+						"GrowthExperimentsReviseToneRecommendationProvider",
+						"MainConfig"
+					]
+				},
 				"null": {
 					"class": "GrowthExperiments\\NewcomerTasks\\TaskType\\NullTaskTypeHandler"
 				}
@@ -2808,14 +2772,6 @@
 		"GENewcomerTasksRemoteArticleOrigin": {
 			"description": "Origin to append suggested article URLs to (e.g. 'https://en.wikipedia.org'). This is meant for developer setups.",
 			"value": null
-		},
-		"GENewcomerTasksGuidanceEnabled": {
-			"description": "Global ON/OFF switch for the newcomer tasks guidance feature.",
-			"value": true
-		},
-		"GENewcomerTasksGuidanceRequiresOptIn": {
-			"description": "If true, the guidance feature will only be displayed to users who have the (hidden) preference for it enabled. If false (default), it will be displayed to everyone.",
-			"value": false
 		},
 		"GERestbaseUrl": {
 			"description": "URL of the RESTBase service (PCS Summary API - see https://www.mediawiki.org/wiki/Page_Content_Service#/page/summary) used for task cards. Autogenerated from the wiki URL when not set.",
@@ -2839,6 +2795,10 @@
 		"GELinkRecommendationsFrontendEnabled": {
 			"description": "Global ON/OFF switch for the link recommendations feature. Depending on the state, either the 'links' or the 'link-recommendation' task type is hidden. Can be overridden by SuggestedEdits::LINK_RECOMMENDATIONS_ENABLED_PREF.",
 			"value": true
+		},
+		"GELinkRecommendationsRefreshByIteratingThroughAllTitles": {
+			"description": "Whether to refresh link recommendations by iterating through all titles. Temporary config while rolling out this new system, see T386250",
+			"value": false
 		},
 		"GETopicsMatchModeEnabled": {
 			"description": "Global ON/OFF switch for the topics match mode UI feature.",
@@ -2888,10 +2848,6 @@
 			"description": "Request timeout when contacting the link recommendation service.",
 			"value": null
 		},
-		"GELinkRecommendationFallbackOnDBMiss": {
-			"description": "Fall back to the service at GELinkRecommendationServiceUrl when the recommendation is not cached in the database. This is only intended for simple local setups.",
-			"value": false
-		},
 		"GELinkRecommendationsUseEventGate": {
 			"description": "Whether to use EventGate for notifying about link recommendation creation. When set to false, uses CirrusSearch diretcly.",
 			"value": false
@@ -2899,14 +2855,6 @@
 		"GELinkRecommendationServiceWikiIdMasquerade": {
 			"description": "The wiki ID to use in requests to the link recommendation service. Used for developer setups.",
 			"value": null
-		},
-		"GETempLinkRecommendationSwitchTagClearHook": {
-			"description": "Temporary config to switch clearing LinkRecommendations from the onSearchDataForIndex hooks to onPageSaveComplete",
-			"value": false
-		},
-		"GEStructuredTaskRejectionReasonTextInputEnabled": {
-			"description": "Whether free text input should be shown when prompting the user for reasons why a suggestion was rejected.",
-			"value": false
 		},
 		"GELevelingUpManagerInvitationThresholds": {
 			"description": "Article namespace edit count thresholds at which the user should be invited to try suggested edits (assuming they haven't before).",
@@ -2940,8 +2888,48 @@
 			}
 		},
 		"GECommunityUpdatesEnabled": {
-			"description": "Are Community Updates enabled? NOTE: For this setting to work, GEUseCommunityConfigurationExtension needs to be true and CommunityConfiguration extension must be present.",
+			"description": "Are Community Updates enabled?",
 			"value": true
+		},
+		"GELinkRecommendationMinimumTasksPerTopic": {
+			"value": 500,
+			"description": "Minimum number of link recommendation tasks to maintain per ORES topic."
+		},
+		"GEUserImpactMaxEdits": {
+			"value": 1000,
+			"description": "Maximum number of edits to process for Impact Module statistics"
+		},
+		"GEUserImpactMaxThanks": {
+			"value": 1000,
+			"description": "Maximum number of thanks to process for Impact Module statistics"
+		},
+		"GEReviseToneSuggestedEditEnabled": {
+			"value": false,
+			"description": "Enable the Revise Tone feature so newcomers can spot non-neutral wording and receive in-context guidance to help users rewrite a sentence in a more encyclopedic tone."
+		},
+		"GEReviseToneExcludedTemplates": {
+			"value": [],
+			"description": "List of templates used for excluding articles for the ReviseTone task"
+		},
+		"GEReviseToneExcludedCategories": {
+			"value": [],
+			"description": "List of categories used for excluding articles for the ReviseTone task"
+		},
+		"GEReviseToneParagraphScoreThreshold": {
+			"value": 0.8,
+			"description": "Threshold score above which a Tone issue is considered for the ReviseTone task"
+		},
+		"GEReviseToneOverrideSearchTerm": {
+			"value": "",
+			"description": "Overrides generating the search terms for the ReviseTone task. Should only be set to something other than an empty string in beta or dev. Recommended value on beta: 'hastemplate:peacock_inline'. See ReviseToneTaskTypeHandler::getSearchTerm"
+		},
+		"GEReviseToneServiceUrl": {
+			"description": "Root URL of the internal Revise Tone service (no trailing slash).",
+			"value": false
+		},
+		"GEReviseToneRecommendationProvider": {
+			"description": "Corresponding Recommendation Provider to use for the Revise Tone recommendations; can be 'production' (ApiReviseToneRecommendationProvider), or 'subpage' (SubpageReviseToneRecommendationProvider).",
+			"value": "production"
 		}
 	},
 	"SpecialPages": {
@@ -3016,17 +3004,15 @@
 				"TitleParser"
 			]
 		},
-		"growthexperiments/addlink": "LogFormatter",
+		"growthexperiments/addlink": "MediaWiki\\Logging\\LogFormatter",
 		"growthexperiments/addimage": "GrowthExperiments\\NewcomerTasks\\AddImage\\AddImageLogFormatter",
 		"growthexperiments/addsectionimage": "GrowthExperiments\\NewcomerTasks\\AddSectionImage\\AddSectionImageLogFormatter"
 	},
 	"ActionFilteredLogs": {
 		"growthexperiments": {
-			"claimmentee": [
+			"mentorassignmentchanges": [
 				"claimmentee",
-				"claimmentee-no-previous-mentor"
-			],
-			"setmentor": [
+				"claimmentee-no-previous-mentor",
 				"setmentor",
 				"setmentor-no-previous-mentor"
 			],
@@ -3090,5 +3076,8 @@
 			]
 		}
 	},
+	"DatabaseVirtualDomains": [
+		"virtual-growthexperiments"
+	],
 	"manifest_version": 2
 }

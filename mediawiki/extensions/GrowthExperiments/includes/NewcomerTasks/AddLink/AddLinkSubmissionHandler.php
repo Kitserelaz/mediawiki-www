@@ -3,7 +3,6 @@
 namespace GrowthExperiments\NewcomerTasks\AddLink;
 
 use GrowthExperiments\NewcomerTasks\AbstractSubmissionHandler;
-use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
 use GrowthExperiments\NewcomerTasks\NewcomerTasksUserOptionsLookup;
 use GrowthExperiments\NewcomerTasks\SubmissionHandler;
 use GrowthExperiments\NewcomerTasks\Task\TaskSet;
@@ -12,9 +11,9 @@ use GrowthExperiments\NewcomerTasks\TaskSuggester\TaskSuggesterFactory;
 use GrowthExperiments\NewcomerTasks\TaskType\LinkRecommendationTaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\LinkRecommendationTaskTypeHandler;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Message\Message;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Page\ProperPageIdentity;
 use MediaWiki\Title\MalformedTitleException;
 use MediaWiki\Title\TitleFactory;
@@ -23,6 +22,7 @@ use MediaWiki\User\UserIdentityUtils;
 use Psr\Log\LoggerInterface;
 use StatusValue;
 use UnexpectedValueException;
+use Wikimedia\Message\ListType;
 use Wikimedia\Rdbms\DBReadOnlyError;
 use Wikimedia\Rdbms\IDBAccessObject;
 
@@ -31,39 +31,16 @@ use Wikimedia\Rdbms\IDBAccessObject;
  */
 class AddLinkSubmissionHandler extends AbstractSubmissionHandler implements SubmissionHandler {
 
-	/** @var LinkRecommendationHelper */
-	private $linkRecommendationHelper;
-	/** @var LinkSubmissionRecorder */
-	private $addLinkSubmissionRecorder;
-	/** @var TitleFactory */
-	private $titleFactory;
-	/** @var UserIdentityUtils */
-	private $userIdentityUtils;
-	/** @var LinkRecommendationStore */
-	private $linkRecommendationStore;
-	/** @var LinkBatchFactory */
-	private $linkBatchFactory;
-	/** @var TaskSuggesterFactory */
-	private $taskSuggesterFactory;
-	/** @var NewcomerTasksUserOptionsLookup */
-	private $newcomerTasksUserOptionsLookup;
-	/** @var ConfigurationLoader */
-	private $configurationLoader;
-	/** @var LoggerInterface */
-	private $logger;
+	private LinkRecommendationHelper $linkRecommendationHelper;
+	private LinkSubmissionRecorder $addLinkSubmissionRecorder;
+	private TitleFactory $titleFactory;
+	private UserIdentityUtils $userIdentityUtils;
+	private LinkRecommendationStore $linkRecommendationStore;
+	private LinkBatchFactory $linkBatchFactory;
+	private TaskSuggesterFactory $taskSuggesterFactory;
+	private NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup;
+	private LoggerInterface $logger;
 
-	/**
-	 * @param LinkRecommendationHelper $linkRecommendationHelper
-	 * @param LinkRecommendationStore $linkRecommendationStore
-	 * @param LinkSubmissionRecorder $addLinkSubmissionRecorder
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param TitleFactory $titleFactory
-	 * @param UserIdentityUtils $userIdentityUtils
-	 * @param TaskSuggesterFactory $taskSuggesterFactory
-	 * @param NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param LoggerInterface $logger
-	 */
 	public function __construct(
 		LinkRecommendationHelper $linkRecommendationHelper,
 		LinkRecommendationStore $linkRecommendationStore,
@@ -73,7 +50,6 @@ class AddLinkSubmissionHandler extends AbstractSubmissionHandler implements Subm
 		UserIdentityUtils $userIdentityUtils,
 		TaskSuggesterFactory $taskSuggesterFactory,
 		NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup,
-		ConfigurationLoader $configurationLoader,
 		LoggerInterface $logger
 	) {
 		$this->linkRecommendationHelper = $linkRecommendationHelper;
@@ -84,7 +60,6 @@ class AddLinkSubmissionHandler extends AbstractSubmissionHandler implements Subm
 		$this->userIdentityUtils = $userIdentityUtils;
 		$this->taskSuggesterFactory = $taskSuggesterFactory;
 		$this->newcomerTasksUserOptionsLookup = $newcomerTasksUserOptionsLookup;
-		$this->configurationLoader = $configurationLoader;
 		$this->logger = $logger;
 	}
 
@@ -137,7 +112,7 @@ class AddLinkSubmissionHandler extends AbstractSubmissionHandler implements Subm
 				'title' => $title->getPrefixedDBkey(),
 				'baseRevId' => $baseRevId,
 				'editRevId' => $editRevId,
-				'data' => json_encode( $data )
+				'data' => json_encode( $data ),
 			] );
 			// Try to find the find the link recommendation based on the link target.
 			$linkRecommendation = $this->linkRecommendationStore->getByLinkTarget(
@@ -154,7 +129,7 @@ class AddLinkSubmissionHandler extends AbstractSubmissionHandler implements Subm
 				'title' => $title->getPrefixedDBkey(),
 				'baseRevId' => $baseRevId,
 				'editRevId' => $editRevId,
-				'data' => json_encode( $data )
+				'data' => json_encode( $data ),
 			] );
 			return StatusValue::newFatal( 'growthexperiments-addlink-handler-notfound' );
 		}
@@ -168,7 +143,7 @@ class AddLinkSubmissionHandler extends AbstractSubmissionHandler implements Subm
 		$unexpectedTargets = array_diff( $allTargets, $links );
 		if ( $unexpectedTargets ) {
 			return StatusValue::newFatal( 'growthexperiments-addlink-handler-wrongtargets',
-				Message::listParam( $unexpectedTargets, 'comma' ) );
+				Message::listParam( $unexpectedTargets, ListType::COMMA ) );
 		}
 
 		$warnings = [];
@@ -207,7 +182,7 @@ class AddLinkSubmissionHandler extends AbstractSubmissionHandler implements Subm
 				StatusValue::newGood( [ 'warnings' => $warnings, 'logId' => $status->getValue() ] ),
 				true
 			);
-		} catch ( DBReadOnlyError $e ) {
+		} catch ( DBReadOnlyError ) {
 			$status = StatusValue::newFatal( 'readonly' );
 		}
 		return $status;

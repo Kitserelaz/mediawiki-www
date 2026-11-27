@@ -2,84 +2,54 @@
 
 namespace GrowthExperiments\Specials;
 
-use ErrorPageError;
 use GrowthExperiments\DashboardModule\IDashboardModule;
+use GrowthExperiments\EventLogging\ReviseToneExperimentInteractionLogger;
 use GrowthExperiments\EventLogging\SpecialHomepageLogger;
-use GrowthExperiments\ExperimentUserManager;
 use GrowthExperiments\Homepage\HomepageModuleRegistry;
 use GrowthExperiments\HomepageHooks;
 use GrowthExperiments\HomepageModules\BaseModule;
 use GrowthExperiments\HomepageModules\SuggestedEdits;
-use GrowthExperiments\Mentorship\MentorManager;
+use GrowthExperiments\Mentorship\IMentorManager;
+use GrowthExperiments\NewcomerTasks\TaskType\ReviseToneTaskTypeHandler;
 use GrowthExperiments\TourHooks;
 use GrowthExperiments\Util;
 use InvalidArgumentException;
 use MediaWiki\Config\Config;
 use MediaWiki\Config\ConfigException;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Exception\ErrorPageError;
+use MediaWiki\Exception\UserNotLoggedIn;
 use MediaWiki\Html\Html;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Registration\ExtensionRegistry;
-use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\SpecialPage\UnlistedSpecialPage;
 use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\Options\UserOptionsManager;
+use MediaWiki\Utils\MWCryptRand;
+use MediaWiki\WikiMap\WikiMap;
 use Throwable;
-use UserNotLoggedIn;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
-use Wikimedia\Stats\PrefixingStatsdDataFactoryProxy;
+use Wikimedia\Stats\StatsFactory;
 
-class SpecialHomepage extends SpecialPage {
-
-	private HomepageModuleRegistry $moduleRegistry;
-	private IBufferingStatsdDataFactory $statsdDataFactory;
-	private ExperimentUserManager $experimentUserManager;
-	private MentorManager $mentorManager;
-	private Config $wikiConfig;
-	private UserOptionsManager $userOptionsManager;
+class SpecialHomepage extends UnlistedSpecialPage {
 
 	/**
 	 * @var string Unique identifier for this specific rendering of Special:Homepage.
 	 * Used by various EventLogging schemas to correlate events.
 	 */
-	private $pageviewToken;
-
-	/** @var PrefixingStatsdDataFactoryProxy */
-	private $perDbNameStatsdDataFactory;
-
-	/** @var TitleFactory */
-	private $titleFactory;
+	private string $pageviewToken;
 	private bool $isMobile;
 
-	/**
-	 * @param HomepageModuleRegistry $moduleRegistry
-	 * @param IBufferingStatsdDataFactory $statsdDataFactory
-	 * @param PrefixingStatsdDataFactoryProxy $perDbNameStatsdDataFactory
-	 * @param ExperimentUserManager $experimentUserManager
-	 * @param MentorManager $mentorManager
-	 * @param Config $wikiConfig
-	 * @param UserOptionsManager $userOptionsManager
-	 * @param TitleFactory $titleFactory
-	 */
 	public function __construct(
-		HomepageModuleRegistry $moduleRegistry,
-		IBufferingStatsdDataFactory $statsdDataFactory,
-		PrefixingStatsdDataFactoryProxy $perDbNameStatsdDataFactory,
-		ExperimentUserManager $experimentUserManager,
-		MentorManager $mentorManager,
-		Config $wikiConfig,
-		UserOptionsManager $userOptionsManager,
-		TitleFactory $titleFactory
+		private readonly HomepageModuleRegistry $moduleRegistry,
+		private readonly StatsFactory $statsFactory,
+		private readonly IMentorManager $mentorManager,
+		private readonly Config $wikiConfig,
+		private readonly UserOptionsManager $userOptionsManager,
+		private readonly TitleFactory $titleFactory,
+		private readonly ReviseToneExperimentInteractionLogger $experimentInteractionLogger,
 	) {
-		parent::__construct( 'Homepage', '', false );
-		$this->moduleRegistry = $moduleRegistry;
-		$this->statsdDataFactory = $statsdDataFactory;
+		parent::__construct( 'Homepage' );
 		$this->pageviewToken = $this->generatePageviewToken();
-		$this->experimentUserManager = $experimentUserManager;
-		$this->mentorManager = $mentorManager;
-		$this->wikiConfig = $wikiConfig;
-		$this->userOptionsManager = $userOptionsManager;
-		$this->perDbNameStatsdDataFactory = $perDbNameStatsdDataFactory;
-		$this->titleFactory = $titleFactory;
 	}
 
 	/** @inheritDoc */
@@ -96,8 +66,6 @@ class SpecialHomepage extends SpecialPage {
 	 */
 	public function execute( $par = '' ) {
 		$startTime = microtime( true );
-		// Use in client-side performance instrumentation; export as milliseconds as that is what mw.now() uses.
-		$this->getOutput()->addJsConfigVars( 'GEHomepageStartTime', round( $startTime * 1000 ) );
 		$this->requireNamedUser();
 		parent::execute( $par );
 		$this->handleDisabledPreference();
@@ -109,26 +77,15 @@ class SpecialHomepage extends SpecialPage {
 
 		$out = $this->getContext()->getOutput();
 		$this->isMobile = Util::isMobile( $out->getSkin() );
-		$loggingEnabled = $this->getConfig()->get( 'GEHomepageLoggingEnabled' );
-		$userVariant = $this->experimentUserManager->getVariant( $this->getUser() );
 		$out->addJsConfigVars( [
 			'wgGEHomepagePageviewToken' => $this->pageviewToken,
-			'wgGEHomepageLoggingEnabled' => $loggingEnabled
 		] );
 		$out->addModules( 'ext.growthExperiments.Homepage' );
 		$out->enableOOUI();
-		$out->addModuleStyles( [
-			'ext.growthExperiments.cssCustomProperties',
-			'ext.growthExperiments.Homepage.styles'
-		] );
+		$out->addModuleStyles( [ 'ext.growthExperiments.Homepage.styles' ] );
 
 		$out->addHTML( Html::openElement( 'div', [
-			'class' => 'growthexperiments-homepage-container ' .
-				// Enable "Poor man's dark mode". Temporary workaround for T357699.
-				// FIXME: This should be removed when there is capacity for updating the extension
-				// to use Codex design tokens.
-				'notheme skin-invert ' .
-				'growthexperiments-homepage-container-user-variant-' . $userVariant
+			'class' => 'growthexperiments-homepage-container',
 		] ) );
 		$modules = $this->getModules( $this->isMobile, $par );
 
@@ -156,17 +113,14 @@ class SpecialHomepage extends SpecialPage {
 
 		$out->addHTML( Html::closeElement( 'div' ) );
 		$this->outputJsData( $mode, $modules );
-		$this->getOutput()->addBodyClasses(
-			'growthexperiments-homepage-user-variant-' .
-			$this->experimentUserManager->getVariant( $this->getUser() )
-		);
-		$this->statsdDataFactory->timing(
-			'timing.growthExperiments.specialHomepage.serverSideRender.' . ( $this->isMobile ? 'mobile' : 'desktop' ),
-			microtime( true ) - $startTime
-		);
+		$platform = ( $this->isMobile ? 'mobile' : 'desktop' );
+		$overallSsrTimeInSeconds = microtime( true ) - $startTime;
+		$this->statsFactory->withComponent( 'GrowthExperiments' )
+			->getTiming( 'special_homepage_server_side_render_seconds' )
+			->setLabel( 'platform', $platform )
+			->observeSeconds( $overallSsrTimeInSeconds );
 
-		if ( $loggingEnabled &&
-			 ExtensionRegistry::getInstance()->isLoaded( 'EventLogging' ) &&
+		if ( ExtensionRegistry::getInstance()->isLoaded( 'EventLogging' ) &&
 			 count( $modules ) ) {
 			$logger = new SpecialHomepageLogger(
 				$this->pageviewToken,
@@ -175,9 +129,17 @@ class SpecialHomepage extends SpecialPage {
 				$this->isMobile,
 				$modules
 			);
-			DeferredUpdates::addCallableUpdate( static function () use ( $logger ) {
+			DeferredUpdates::addCallableUpdate( function () use ( $logger ) {
 				$logger->log();
+				// Log page visits with the SE module enabled for the refined experiment exposure metric, remove after
+				// T407802 is concluded
+				if ( SuggestedEdits::isEnabledForAnyone( $this->wikiConfig ) ) {
+					$this->experimentInteractionLogger->log( 'experiment_exposure', [
+						'instrument_name' => 'Newcomer\'s homepage visited with SE module enabled',
+					] );
+				}
 			} );
+
 		}
 	}
 
@@ -214,7 +176,7 @@ class SpecialHomepage extends SpecialPage {
 		$moduleConfig = array_filter( [
 			'banner' => true,
 			'welcomesurveyreminder' => true,
-			'startemail' => true,
+			'startemail' => !$this->getUser()->isEmailConfirmed(),
 			// Only load start-startediting code (the uninitiated view of suggested edits) for desktop users who
 			// haven't activated SE yet.
 			'start-startediting' => SuggestedEdits::isEnabledForAnyone(
@@ -222,15 +184,14 @@ class SpecialHomepage extends SpecialPage {
 			) && ( !$par && !$isMobile &&
 				!SuggestedEdits::isActivated( $this->getUser(), $this->userOptionsManager )
 			),
-			'suggested-edits' => SuggestedEdits::isEnabled( $this->getConfig() ),
-			'community-updates' => Util::useCommunityConfiguration() &&
-				$this->getConfig()->get( 'GECommunityUpdatesEnabled' ),
+			'suggested-edits' => SuggestedEdits::isEnabledForAnyone( $this->getConfig() ),
+			'community-updates' => $this->getConfig()->get( 'GECommunityUpdatesEnabled' ),
 			'impact' => true,
 			'mentorship' => $this->wikiConfig->get( 'GEMentorshipEnabled' ) &&
-				$mentorshipState === MentorManager::MENTORSHIP_ENABLED,
+				$mentorshipState === IMentorManager::MENTORSHIP_ENABLED,
 			'mentorship-optin' => $this->wikiConfig->get( 'GEMentorshipEnabled' ) &&
-				$mentorshipState === MentorManager::MENTORSHIP_OPTED_OUT,
-			'help' => true
+				$mentorshipState === IMentorManager::MENTORSHIP_OPTED_OUT,
+			'help' => true,
 		] );
 		$modules = [];
 		foreach ( $moduleConfig as $moduleId => $_ ) {
@@ -251,15 +212,15 @@ class SpecialHomepage extends SpecialPage {
 				'primary' => [ 'banner', 'welcomesurveyreminder', 'startemail' ],
 				'secondary' => $isSuggestedEditsEnabled ?
 					[ 'start-startediting', 'suggested-edits' ] :
-					[ 'impact' ]
+					[ 'impact' ],
 			],
 			'sidebar' => [
 				'primary' => array_merge(
 					[ 'community-updates' ],
 					$isSuggestedEditsEnabled ? [ 'impact' ] : []
 				),
-				'secondary' => [ 'mentorship', 'mentorship-optin', 'help' ]
-			]
+				'secondary' => [ 'mentorship', 'mentorship-optin', 'help' ],
+			],
 		];
 	}
 
@@ -270,7 +231,7 @@ class SpecialHomepage extends SpecialPage {
 	 * @return string
 	 */
 	private function generatePageviewToken() {
-		return \Wikimedia\base_convert( \MWCryptRand::generateHex( 40 ), 16, 32, 32 );
+		return \Wikimedia\base_convert( MWCryptRand::generateHex( 40 ), 16, 32, 32 );
 	}
 
 	private function renderDesktop() {
@@ -279,15 +240,11 @@ class SpecialHomepage extends SpecialPage {
 		$out->addBodyClasses( 'growthexperiments-homepage-desktop' );
 		foreach ( $this->getModuleGroups() as $group => $subGroups ) {
 			$out->addHTML( Html::openElement( 'div', [
-				'class' => "growthexperiments-homepage-group-$group " .
-					"growthexperiments-homepage-group-$group-user-variant-" .
-					$this->experimentUserManager->getVariant( $this->getUser() ),
+				'class' => "growthexperiments-homepage-group-$group",
 			] ) );
 			foreach ( $subGroups as $subGroup => $moduleNames ) {
 				$out->addHTML( Html::openElement( 'div', [
-					'class' => "growthexperiments-homepage-group-$group-subgroup-$subGroup " .
-						"growthexperiments-homepage-group-$group-subgroup-$subGroup-user-variant-" .
-						$this->experimentUserManager->getVariant( $this->getUser() )
+					'class' => "growthexperiments-homepage-group-$group-subgroup-$subGroup",
 				] ) );
 				foreach ( $moduleNames as $moduleName ) {
 					/** @var IDashboardModule $module */
@@ -314,20 +271,16 @@ class SpecialHomepage extends SpecialPage {
 		}
 	}
 
-	private function recordModuleRenderingTime( string $moduleName, string $mode, float $timeToRecord ): void {
-		$this->perDbNameStatsdDataFactory->timing(
-			implode( '.', [
-				'timing.growthExperiments.specialHomepage.ssr',
-				$moduleName,
-				$mode,
-			] ),
-			$timeToRecord
-		);
+	private function recordModuleRenderingTime( string $moduleName, string $mode, float $timeToRecordInSeconds ): void {
+		$wiki = WikiMap::getCurrentWikiId();
+		$this->statsFactory->withComponent( 'GrowthExperiments' )
+			->getTiming( 'special_homepage_ssr_per_module_seconds' )
+			->setLabel( 'wiki', $wiki )
+			->setLabel( 'module', $moduleName )
+			->setLabel( 'mode', $mode )
+			->observeSeconds( $timeToRecordInSeconds );
 	}
 
-	/**
-	 * @param IDashboardModule $module
-	 */
 	private function renderMobileDetails( IDashboardModule $module ) {
 		$out = $this->getContext()->getOutput();
 		$out->addBodyClasses( 'growthexperiments-homepage-mobile-details' );
@@ -341,7 +294,7 @@ class SpecialHomepage extends SpecialPage {
 		$isOpeningOverlay = $this->getContext()->getRequest()->getFuzzyBool( 'overlay' );
 		$out->addBodyClasses( [
 			'growthexperiments-homepage-mobile-summary',
-			$isOpeningOverlay ? 'growthexperiments-homepage-mobile-summary--opening-overlay' : ''
+			$isOpeningOverlay ? 'growthexperiments-homepage-mobile-summary--opening-overlay' : '',
 		] );
 		foreach ( $modules as $moduleName => $module ) {
 			$startTime = microtime( true );
@@ -423,7 +376,7 @@ class SpecialHomepage extends SpecialPage {
 	private function handleNewcomerTask( ?string $par = null ): bool {
 		if ( !$par ||
 			!str_starts_with( $par, 'newcomertask/' ) ||
-			!SuggestedEdits::isEnabled( $this->getConfig() )
+			!SuggestedEdits::isEnabledForAnyone( $this->getConfig() )
 		) {
 			return false;
 		}
@@ -476,16 +429,39 @@ class SpecialHomepage extends SpecialPage {
 				'geclickid' => $clickId,
 				'genewcomertasktoken' => $newcomerTaskToken,
 				// Query parameter to show the onboarding Vue dialog
-				'new-onboarding' => $request->getVal( 'new-onboarding' )
+				'new-onboarding' => $request->getVal( 'new-onboarding' ),
+				'gerecommendationid' => $request->getVal( 'gerecommendationid' ),
+				'surfaced' => $request->getVal( 'surfaced' ),
+				'mpo' => $request->getVal( 'mpo' ),
 			],
 			$suggestedEdits instanceof SuggestedEdits ? $suggestedEdits->getRedirectParams( $taskTypeId ) : []
 		);
-		$this->perDbNameStatsdDataFactory->increment( 'GrowthExperiments.NewcomerTask.' . $taskTypeId . '.Click' );
 
+		$statsAction = 'Click';
+		$wiki = WikiMap::getCurrentWikiId();
+		$this->statsFactory->withComponent( 'GrowthExperiments' )
+				->getCounter( 'newcomertask_total' )
+				->setLabel( 'taskType', $taskTypeId ?? '' )
+				->setLabel( 'wiki', $wiki )
+				->setLabel( 'action', $statsAction )
+				->increment();
+
+		if ( $taskTypeId === ReviseToneTaskTypeHandler::TASK_TYPE_ID ) {
+			$this->experimentInteractionLogger->log( 'click', [
+				'instrument_name' => 'Revise tone homepage card click',
+				'action_source' => 'Suggested-Edits-1',
+				'action_subtype' => 'revise-tone-card',
+			] );
+		} elseif ( $taskTypeId === 'copyedit' ) {
+			$this->experimentInteractionLogger->log( 'click', [
+				'instrument_name' => 'Copyedit homepage card click',
+				'action_source' => 'Suggested-Edits-1',
+				'action_subtype' => 'copyedit-card',
+			] );
+		}
 		$this->getOutput()->redirect(
 			$title->getFullUrlForRedirect( $redirectParams )
 		);
 		return true;
 	}
-
 }

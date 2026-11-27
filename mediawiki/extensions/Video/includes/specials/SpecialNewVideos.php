@@ -11,13 +11,23 @@
 use MediaWiki\Html\FormOptions;
 use MediaWiki\Html\Html;
 use MediaWiki\HTMLForm\HTMLForm;
+use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\MainConfigNames;
+use MediaWiki\Permissions\GroupPermissionsLookup;
 use MediaWiki\Request\DerivativeRequest;
+use MediaWiki\User\UserFactory;
+use Wikimedia\Rdbms\IConnectionProvider;
 
 class NewVideos extends MediaWiki\SpecialPage\IncludableSpecialPage {
 	/** @var FormOptions */
 	protected $opts;
 
-	public function __construct() {
+	public function __construct(
+		private readonly IConnectionProvider $connectionProvider,
+		private readonly GroupPermissionsLookup $groupPermissionsLookup,
+		private readonly LinkRenderer $linkRenderer,
+		private readonly UserFactory $userFactory,
+	) {
 		parent::__construct( 'NewVideos' );
 	}
 
@@ -94,7 +104,14 @@ class NewVideos extends MediaWiki\SpecialPage\IncludableSpecialPage {
 
 		$this->opts = $opts;
 
-		$pager = new NewVideosPager( $context, $opts );
+		$pager = new NewVideosPager(
+			$this->connectionProvider,
+			$this->groupPermissionsLookup,
+			$this->linkRenderer,
+			$this->userFactory,
+			$context,
+			$opts
+		);
 		// Store html output for a moment so the toptext can be shown first.
 		// A workaround, as the number of videos isn't available before calling getBody(),
 		// but the toptext must be shown before the gallery
@@ -157,7 +174,7 @@ class NewVideos extends MediaWiki\SpecialPage\IncludableSpecialPage {
 			],
 		];
 
-		if ( $this->getConfig()->get( 'MiserMode' ) ) {
+		if ( $this->getConfig()->get( MainConfigNames::MiserMode ) ) {
 			unset( $formDescriptor['wpIlMatch'] );
 		}
 

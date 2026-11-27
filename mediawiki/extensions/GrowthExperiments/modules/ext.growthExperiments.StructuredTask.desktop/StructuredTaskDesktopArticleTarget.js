@@ -21,9 +21,15 @@ function StructuredTaskDesktopArticleTarget() {
 OO.inheritClass( StructuredTaskDesktopArticleTarget, ve.init.mw.DesktopArticleTarget );
 OO.mixinClass( StructuredTaskDesktopArticleTarget, StructuredTaskArticleTarget );
 
-StructuredTaskDesktopArticleTarget.static.toolbarGroups = MachineSuggestionsMode.getToolbarGroups(
-	StructuredTaskDesktopArticleTarget.static.toolbarGroups
-);
+StructuredTaskDesktopArticleTarget.static.toolbarGroups = [
+	MachineSuggestionsMode.getEditModeToolGroup(),
+	{
+		align: 'after',
+		name: 'save',
+		type: 'bar',
+		include: [ 'machineSuggestionsSave' ],
+	},
+];
 
 /**
  * @inheritdoc
@@ -32,7 +38,7 @@ StructuredTaskDesktopArticleTarget.prototype.setupToolbar = function () {
 	StructuredTaskDesktopArticleTarget.super.prototype.setupToolbar.apply( this, arguments );
 	if ( MachineSuggestionsMode.canAddToolbarTitle( this.toolbar.$element ) ) {
 		this.toolbar.$element.find( '.oo-ui-toolbar-bar' ).first().prepend(
-			MachineSuggestionsMode.getTitleElement( { includeIcon: true } )
+			MachineSuggestionsMode.getTitleElement( { includeIcon: true } ),
 		);
 	}
 	MachineSuggestionsMode.trackEditModeClick( this.toolbar.$element );
@@ -64,7 +70,7 @@ StructuredTaskDesktopArticleTarget.prototype.onBeforeUnload = function () {
 		return;
 	}
 	return StructuredTaskDesktopArticleTarget.super.prototype.onBeforeUnload.apply(
-		this, arguments
+		this, arguments,
 	);
 };
 
@@ -75,7 +81,7 @@ StructuredTaskDesktopArticleTarget.prototype.onBeforeUnload = function () {
  * @override
  */
 StructuredTaskDesktopArticleTarget.prototype.updateHistory = function () {
-	Utils.removeQueryParam( mw.Uri(), 'action' );
+	Utils.removeQueryParam( new URL( window.location.href ), 'action' );
 };
 
 /** @override **/

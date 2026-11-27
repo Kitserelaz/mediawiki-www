@@ -151,7 +151,8 @@
 			"services": [
 				"CentralIdLookup",
 				"GlobalBlocking.GlobalBlockLookup",
-				"GlobalBlocking.GlobalBlockingConnectionProvider"
+				"GlobalBlocking.GlobalBlockLocalStatusLookup",
+				"GlobalBlocking.GlobalBlockingUserVisibilityLookup"
 			]
 		}
 	},

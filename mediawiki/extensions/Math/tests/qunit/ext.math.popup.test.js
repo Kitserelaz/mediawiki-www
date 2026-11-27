@@ -3,7 +3,7 @@
 QUnit.module( 'ext.math.popup', () => {
 	QUnit.test( 'fetchPreviewForTitle sends only a valid QID to the REST API', function ( assert ) {
 		const restPaths = [];
-		this.sandbox.stub( mw.Rest.prototype, 'ajax' ).callsFake( ( path ) => {
+		this.sandbox.stub( mw.Rest.prototype, 'ajax', ( path ) => {
 			restPaths.push( path );
 			return $.Deferred().resolve( { title: 'Formula', extract: 'Formula extract' } ).promise();
 		} );

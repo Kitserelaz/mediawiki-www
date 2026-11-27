@@ -1,11 +1,13 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace GrowthExperiments\NewcomerTasks\AddImage;
 
-use File;
 use GrowthExperiments\NewcomerTasks\TaskType\ImageRecommendationBaseTaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
 use MediaWiki\Api\ApiRawMessage;
+use MediaWiki\FileRepo\File\File;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\Logger\LoggerFactory;
@@ -15,7 +17,7 @@ use MediaWiki\Title\TitleFactory;
 use MediaWiki\Title\TitleValue;
 use StatusValue;
 use Wikimedia\Assert\Assert;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * Provides image recommendations via the Image Suggestion API.
@@ -25,53 +27,28 @@ use Wikimedia\Stats\IBufferingStatsdDataFactory;
  */
 class ServiceImageRecommendationProvider implements ImageRecommendationProvider {
 
-	/** @var TitleFactory */
-	private $titleFactory;
+	private TitleFactory $titleFactory;
+	private StatsFactory $statsFactory;
+	private ImageRecommendationApiHandler $apiHandler;
+	private ImageRecommendationMetadataProvider $metadataProvider;
+	private AddImageSubmissionHandler $imageSubmissionHandler;
+	private bool $geDeveloperSetup;
+	private int $maxSuggestionsToProcess = 1;
 
-	/** @var IBufferingStatsdDataFactory */
-	private $statsdDataFactory;
-
-	/** @var ImageRecommendationApiHandler */
-	private $apiHandler;
-
-	/** @var ImageRecommendationMetadataProvider */
-	private $metadataProvider;
-
-	/** @var AddImageSubmissionHandler */
-	private $imageSubmissionHandler;
-
-	/** @var bool */
-	private $geDeveloperSetup;
-
-	/** @var int */
-	private $maxSuggestionsToProcess;
-
-	/**
-	 * @param TitleFactory $titleFactory
-	 * @param IBufferingStatsdDataFactory $statsdDataFactory
-	 * @param ImageRecommendationApiHandler $apiHandler
-	 * @param ImageRecommendationMetadataProvider $metadataProvider Image metadata provider
-	 * @param AddImageSubmissionHandler $imageSubmissionHandler
-	 * @param bool $geDeveloperSetup
-	 * @param int $maxSuggestionsToProcess Maximum number of valid suggestions to process and return with
-	 * an ImageRecommendation object.
-	 */
 	public function __construct(
 		TitleFactory $titleFactory,
-		IBufferingStatsdDataFactory $statsdDataFactory,
+		StatsFactory $statsFactory,
 		ImageRecommendationApiHandler $apiHandler,
 		ImageRecommendationMetadataProvider $metadataProvider,
 		AddImageSubmissionHandler $imageSubmissionHandler,
-		bool $geDeveloperSetup = false,
-		int $maxSuggestionsToProcess = 1
+		bool $geDeveloperSetup = false
 	) {
 		$this->titleFactory = $titleFactory;
-		$this->statsdDataFactory = $statsdDataFactory;
+		$this->statsFactory = $statsFactory->withComponent( 'GrowthExperiments' );
 		$this->apiHandler = $apiHandler;
 		$this->metadataProvider = $metadataProvider;
 		$this->imageSubmissionHandler = $imageSubmissionHandler;
 		$this->geDeveloperSetup = $geDeveloperSetup;
-		$this->maxSuggestionsToProcess = $maxSuggestionsToProcess;
 	}
 
 	/** @inheritDoc */
@@ -100,11 +77,12 @@ class ServiceImageRecommendationProvider implements ImageRecommendationProvider 
 
 		$startTime = microtime( true );
 		$status = $request->execute();
+		$getRequestTimeInSeconds = microtime( true ) - $startTime;
 
-		$this->statsdDataFactory->timing(
-			'timing.growthExperiments.imageRecommendationProvider.get',
-			microtime( true ) - $startTime
-		);
+		$timing = $this->statsFactory->getTiming( 'image_recommendation_provider_seconds' );
+		$timing->setLabel( 'action', 'get' )
+			->setLabel( 'task_type', $taskType->getId() )
+			->observeSeconds( $getRequestTimeInSeconds );
 
 		if ( !$status->isOK() && $request->getStatus() < 400 ) {
 			return $status;
@@ -143,10 +121,11 @@ class ServiceImageRecommendationProvider implements ImageRecommendationProvider 
 			$this->maxSuggestionsToProcess
 		);
 
-		$this->statsdDataFactory->timing(
-			'timing.growthExperiments.imageRecommendationProvider.processApiResponseData',
-			microtime( true ) - $startTime
-		);
+		$processingTimeInSeconds = microtime( true ) - $startTime;
+		$timing
+			->setLabel( 'action', 'process_api_response_data' )
+			->setLabel( 'task_type', $taskType->getId() )
+			->observeSeconds( $processingTimeInSeconds );
 
 		return $responseData;
 	}
@@ -265,22 +244,10 @@ class ServiceImageRecommendationProvider implements ImageRecommendationProvider 
 		return new ImageRecommendation( $linkTarget, $images, $datasetId );
 	}
 
-	/**
-	 * @param int $maxSuggestionsToProcess
-	 * @return void
-	 */
-	public function setMaxSuggestionsToProcess( int $maxSuggestionsToProcess ) {
+	public function setMaxSuggestionsToProcess( int $maxSuggestionsToProcess ): void {
 		$this->maxSuggestionsToProcess = $maxSuggestionsToProcess;
 	}
 
-	/**
-	 * @param int $minimumWidth
-	 * @param int $imageWidth
-	 * @param string $filename
-	 * @param string $pageTitleText
-	 * @param StatusValue $status
-	 * @return bool
-	 */
 	private static function hasMinimumWidth(
 		int $minimumWidth,
 		int $imageWidth,
@@ -298,14 +265,6 @@ class ServiceImageRecommendationProvider implements ImageRecommendationProvider 
 		return $res;
 	}
 
-	/**
-	 * @param array $validMediaTypes
-	 * @param string $mediaType
-	 * @param string $filename
-	 * @param string $pageTitleText
-	 * @param StatusValue $status
-	 * @return bool
-	 */
 	private static function isValidMediaType(
 		array $validMediaTypes,
 		string $mediaType,

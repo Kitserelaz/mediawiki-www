@@ -1,0 +1,28 @@
+{
+	"@metadata": {
+		"authors": [
+			"AmazingJus"
+		]
+	},
+	"babel-0": "Dis {{GENDER:$4|yuza}} [[$1|nɔ]] sabi [[$2|$3]] (ɔ i de ɔndastand am wit bɔku prɔblɛm).",
+	"babel-1": "Dis {{GENDER:$4|yuza}} gɛt [[$1|smɔl]] sabi bɔt [[$2|$3]].",
+	"babel-2": "Dis {{GENDER:$4|yuza}} gɛt [[$1|midiɔm]] sabi bɔt [[$2|$3]].",
+	"babel-3": "Dis {{GENDER:$4|yuza}} sabi [[$2|$3]] [[$1|wɛl wɛl]].",
+	"babel-4": "Dis {{GENDER:$4|yuza}} sabi [[$2|$3]] [[$1|lɛk netiv spika]].",
+	"babel-5": "Dis {{GENDER:$4|yuza}} gɛt [[$1|prɔfɛshɔnal]] sabi fɔ [[$2|$3]].",
+	"babel-N": "Dis {{GENDER:$4|yuza}} na [[$1|netiv]] [[$2|$3]] spika.",
+	"babel-0-n": "Dis {{GENDER:$4|yuza}} [[$1|nɔ]] sabi [[$2|Krio]] (ɔ i de ɔndastand am wit bɔku prɔblɛm).",
+	"babel-1-n": "Dis {{GENDER:$4|yuza}} gɛt [[$1|smɔl]] sabi bɔt [[$2|Krio]].",
+	"babel-2-n": "Dis {{GENDER:$4|yuza}} gɛt [[$1|midiɔm]] sabi bɔt [[$2|Krio]].",
+	"babel-3-n": "Dis {{GENDER:$4|yuza}} sabi [[$2|Krio]] [[$1|wɛl wɛl]].",
+	"babel-4-n": "Dis {{GENDER:$4|yuza}} sabi [[$2|Krio]] [[$1|lɛk netiv spika]].",
+	"babel-5-n": "Dis {{GENDER:$4|yuza}} gɛt [[$1|prɔfɛshɔnal]] sabi fɔ [[$2|Krio]].",
+	"babel-N-n": "Dis {{GENDER:$4|yuza}} na [[$1|netiv]] [[$2|Krio]] spika.",
+	"communityconfiguration-babel-babelcategorynames-0-label": "Lɛvul 0",
+	"communityconfiguration-babel-babelcategorynames-1-label": "Lɛvul 1",
+	"communityconfiguration-babel-babelcategorynames-2-label": "Lɛvul 2",
+	"communityconfiguration-babel-babelcategorynames-3-label": "Lɛvul 3",
+	"communityconfiguration-babel-babelcategorynames-4-label": "Lɛvul 4",
+	"communityconfiguration-babel-babelcategorynames-5-label": "Lɛvul 5",
+	"communityconfiguration-babel-babelcategorynames-n-label": "Lɛvul N"
+}

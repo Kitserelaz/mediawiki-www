@@ -6,80 +6,365 @@ use CoreParserFunctions;
 use DOMDocument;
 use MediaWiki\Languages\Data\Names;
 use MediaWiki\MediaWikiServices;
-use MWException;
 use NumberFormatter;
+use RuntimeException;
 use function sprintf;
 
 /**
  * Class wrapping the constant containing multimedia software data source presets purposes for autoloading.
  *
  * @author Alexander Mashin
- *
  */
 class Media extends Base {
-	/**
+	/** @const string[] KROKI_BOILERPLATE Common part of all Kroki sources. */
+	private const KROKI_BOILERPLATE = [
+		'name' => 'Kroki',
+		'version' => 'Kroki is a free service built and maintained by [https://yuzutech.fr/ Yuzu tech] '
+			. 'and supported by [https://www.exoscale.com/?utm_source=kroki Exoscale]. '
+			. 'Kroki is an [https://github.com/yuzutech/kroki open source project] '
+			. 'licensed under the [https://opensource.org/licenses/mit-license.php MIT license].',
+		'program url' => 'https://kroki.io/',
+		'params' => [
+			'diagram',
+			'yaml' => false,
+			'width' => 800, 'height' => 600, 'scale' => 1.0,
+			'id' => __CLASS__ . '::chartId'
+		],
+		'param filters' => [
+			'width' => __CLASS__ . '::isInt',
+			'height' => __CLASS__ . '::isInt',
+			'scale' => __CLASS__ . '::isFloat'
+		],
+		'input' => 'diagram',
+		'postprocess' => [ __CLASS__ . '::onlySvg', __CLASS__ . '::sizeSvg' ],
+	] + self::DOCKER;
+
+	/** @const array VEGA Boilerplate for 'vega', 'kroki:vega', 'vegalite'. */
+	private const VEGA = [
+		'params' => [
+			'diagram',
+			'width' => 600, 'height' => 600,
+			'currency' => '₽',
+			'yaml' => false,
+			'id' => __CLASS__ . '::chartId'
+		],
+		'param filters' => [
+			'diagram' => __CLASS__ . '::validateJsonOrYaml',
+			'width' => __CLASS__ . '::isInt', 'height' => __CLASS__ . '::isInt',
+			'currency' => '/^(\p{Sc}|[A-Z]{3})$/u',
+		],
+		'input' => 'diagram',
+		'preprocess' => [
+			__CLASS__ . '::yamlToJson',
+			__CLASS__ . '::inject3d',
+			__CLASS__ . '::remove160'
+		],
+		'postprocess' => __CLASS__ . '::animateChart',
+		'scripts' => [
+			'/js/vega/vega/build/vega.min.js',
+			'/js/vega/vega-lite/build/vega-lite.min.js',
+			'/js/vega/vega-embed/build/vega-embed.min.js'
+		],
+		'class' => 'vega',
+		'html' => <<<'HTML'
+			<div class="%1$s" id="%2$s">%4$s</div>
+			%5$s
+		HTML,
+		'javascript' => <<<'JS'
+			vegaEmbed( '#%1$s', %2$s ).then( function( result ) {
+				console.log( 'vegaEmbed result: ' + result );
+			} ).catch( function( error ) {
+				mw.log.error( error );
+			} );
+		JS,
+	];
+
+	/** @var array[] KROKI_ONLY Data sources provided only by Kroki. */
+	private const KROKI_ONLY = [
+		'blockdiag' => [
+			'url' => 'http://kroki:8000/blockdiag/svg?size=$width$x$height$',
+			'name' => 'BlockDiag',
+			'program url' => 'https://github.com/blockdiag/blockdiag',
+			'version' => '3.1.0',
+			'tag' => 'blockdiag'
+		] + self::KROKI_BOILERPLATE,
+		'bytefield' => [
+			'url' => 'http://kroki:8000/bytefield/svg?size=$width$x$height$',
+			'name' => 'Bytefield',
+			'program url' => 'https://github.com/Deep-Symmetry/bytefield-svg/',
+			'version' => '1.11.0',
+			'tag' => 'bytefield',
+		] + self::KROKI_BOILERPLATE,
+		'seqdiag' => [
+			'url' => 'http://kroki:8000/seqdiag/svg?size=$width$x$height$',
+			'name' => 'SeqDiag',
+			'program url' => 'https://github.com/blockdiag/seqdiag',
+			'version' => '3.1.0',
+			'tag' => 'seqdiag'
+		] + self::KROKI_BOILERPLATE,
+		'actdiag' => [
+			'url' => 'http://kroki:8000/actdiag/svg?size=$width$x$height$',
+			'name' => 'ActDiag',
+			'program url' => 'https://github.com/blockdiag/actdiag',
+			'version' => '3.1.0',
+			'tag' => 'actdiag'
+		] + self::KROKI_BOILERPLATE,
+		'nwdiag' => [
+			'url' => 'http://kroki:8000/nwdiag/svg?size=$width$x$height$',
+			'name' => 'NwDiag',
+			'program url' => 'https://github.com/blockdiag/nwdiag',
+			'version' => '3.1.0',
+			'tag' => 'nwdiag'
+		] + self::KROKI_BOILERPLATE,
+		'packetdiag' => [
+			'url' => 'http://kroki:8000/packetdiag/svg?size=$width$x$height$',
+			'name' => 'PacketDiag',
+			'program url' => 'https://github.com/blockdiag/nwdiag',
+			'version' => '3.1.0',
+			'tag' => 'packetdiag'
+		] + self::KROKI_BOILERPLATE,
+		'rackdiag' => [
+			'url' => 'http://kroki:8000/rackdiag/svg?size=$width$x$height$',
+			'name' => 'RackDiag',
+			'program url' => 'https://github.com/blockdiag/nwdiag',
+			'version' => '3.1.0',
+			'tag' => 'rackdiag'
+		] + self::KROKI_BOILERPLATE,
+		'c4plantuml' => [
+			'url' => 'http://kroki:8000/c4plantuml/svg?size=$width$x$height$',
+			'name' => 'C4 with PlantUML',
+			'program url' => 'https://github.com/RicardoNiepel/C4-PlantUML',
+			'version' => '1.2025.2',
+			'tag' => 'c4plantuml'
+		] + self::KROKI_BOILERPLATE,
+		'd2' => [
+			'url' => 'http://kroki:8000/d2/svg?size=$width$x$height$&theme=$theme$&layout=$layout$',
+			'name' => 'D2',
+			'program url' => 'https://github.com/terrastruct/d2',
+			'version' => '0.7.0',
+			'params' => [
+				'diagram',
+				'width' => 800, 'height' => 600, 'scale' => 1.0,
+				'id' => __CLASS__ . '::chartId',
+				'theme' => 'default',
+				'layout' => 'dagre'
+			],
+			'param filters' => [
+				'width' => __CLASS__ . '::isInt',
+				'height' => __CLASS__ . '::isInt',
+				'scale' => __CLASS__ . '::isFloat',
+				'theme' => '/^('
+					. 'default|neutral-gray|flagship-terrastruct|cool-classics|mixed-berry-blue|grape-soda|'
+					. 'aubergine|colorblind-clear|vanilla-nitro-cola|orange-creamsicle|shirley-temple|'
+					. 'earth-tones|everglade-green|buttered-toast|dark-mauve|terminal|terminal-grayscale|'
+					. '[013-8]|10[0-5]|200|300|301'
+				. ')$/',
+				'layout' => '/^(dagre|elk)$/'
+			],
+			'tag' => 'd2'
+		] + self::KROKI_BOILERPLATE,
+		'dbml' => [
+			'url' => 'http://kroki:8000/dbml/svg?size=$width$x$height$',
+			'name' => 'DBML',
+			'program url' => 'https://github.com/softwaretechnik-berlin/dbml-renderer',
+			'version' => '1.0.30',
+			'tag' => 'dbml'
+		] + self::KROKI_BOILERPLATE,
+		'ditaa' => [
+			'url' => 'http://kroki:8000/ditaa/svg'
+				. '?no-separation=$no-separation$&round-corners=$round-corners$&no-shadows=$no-shadows$',
+			'name' => 'Ditaa',
+			'program url' => 'https://ditaa.sourceforge.net/',
+			'version' => '1.0.3',
+			'tag' => 'ditaa',
+			'params' => [
+				'diagram',
+				'width' => 800, 'height' => 600, 'scale' => 1.0,
+				'id' => __CLASS__ . '::chartId',
+				'no-separation' => '',
+				'round-corners' => '',
+				'no-shadows' => '',
+				'tabs' => 8
+			],
+			'param filters' => [
+				'width' => __CLASS__ . '::isInt',
+				'height' => __CLASS__ . '::isInt',
+				'scale' => __CLASS__ . '::isFloat',
+				'no-separation' => self::ANY,
+				'round-corners' => self::ANY,
+				'no-shadows' => self::ANY,
+				'tabs' => __CLASS__ . '::isInt'
+			],
+		] + self::KROKI_BOILERPLATE,
+		'erd' => [
+			'url' => 'http://kroki:8000/erd/svg',
+			'name' => 'Erd',
+			'program url' => 'https://github.com/BurntSushi/erd',
+			'version' => '0.2.3',
+			'tag' => 'erd'
+		] + self::KROKI_BOILERPLATE,
+		'excalidraw' => [
+			'url' => 'http://kroki:8000/excalidraw/svg',
+			'name' => 'Excalidraw',
+			'program url' => 'https://github.com/excalidraw/excalidraw',
+			'version' => '0.18.0',
+			'options' => [ 'sslVerifyCert' => false, 'headers' => [ 'Content-Type' => 'text/json' ] ],
+			'param filters' => [
+				'diagram' => __CLASS__ . '::validateJsonOrYaml',
+				'width' => __CLASS__ . '::isInt', 'height' => __CLASS__ . '::isInt'
+			],
+			'preprocess' => [ __CLASS__ . '::yamlToJson' ],
+			'tag' => 'excalidraw'
+		] + self::KROKI_BOILERPLATE,
+		'nomnoml' => [
+			'url' => 'http://kroki:8000/nomnoml/svg',
+			'name' => 'Nomnoml',
+			'program url' => 'https://github.com/skanaar/nomnoml',
+			'version' => '1.7.0',
+			'tag' => 'nomnoml'
+		] + self::KROKI_BOILERPLATE,
+		'pikchr' => [
+			'url' => 'http://kroki:8000/pikchr/svg',
+			'name' => 'Pikchr',
+			'program url' => 'https://github.com/drhsqlite/pikchr',
+			'version' => '7269f78c4a',
+			'tag' => 'pikchr'
+		] + self::KROKI_BOILERPLATE,
+		'structurizr' => [
+			'url' => 'http://kroki:8000/structurizr/svg?view-key=$view-key$&output=$output$',
+			'name' => 'Structurizr',
+			'program url' => 'https://github.com/structurizr/dsl',
+			'version' => '3.0.0',
+			'tag' => 'structurizr',
+			'params' => [
+				'view-key' => '',
+				'output' => 'diagram'
+			],
+			'param filters' => [
+				'view-keys' => self::ANY,
+				'output' => '/^(diagram|legend)$/'
+			]
+		] + self::KROKI_BOILERPLATE,
+		'svgbob' => [
+			'url' => 'http://kroki:8000/svgbob/svg'
+				. '?font-family=$font-family$&fill-color=$fill-color$',
+			'name' => 'Svgbob',
+			'program url' => 'https://github.com/ivanceras/svgbob',
+			'version' => '0.7.6',
+			'params' => [
+				'diagram',
+				'width' => 800, 'height' => 600, 'scale' => 1.0,
+				'id' => __CLASS__ . '::chartId',
+				'stroke-width' => 2,
+				'font-family' => 'arial',
+				'font-size' => 14,
+				'fill-color' => 'black'
+			],
+			'param filters' => [
+				'width' => __CLASS__ . '::isInt',
+				'height' => __CLASS__ . '::isInt',
+				'scale' => __CLASS__ . '::isFloat',
+				'stroke-width' => self::ANY,
+				'font-family' => self::ANY,
+				'font-size' => __CLASS__ . '::isInt',
+				'fill-color' => self::ANY
+			],
+			'tag' => 'svgbob'
+		] + self::KROKI_BOILERPLATE,
+		'symbolator' => [
+			'url' => 'http://kroki:8000/symbolator/svg'
+				. '?transparent=$transparent$&component=$component$&title=$title$&scale=$scale$'
+				. '&no-type=$no-type$&library-name=$library-name$',
+			'name' => 'Symbolator',
+			'program url' => 'https://github.com/kevinpt/symbolator',
+			'version' => '1.2.2',
+			'params' => [
+				'component' => '',
+				'transparent' => 'yes',
+				'title' => '',
+				'scale' => '1.0',
+				'no-type' => '',
+				'library-name' => ''
+			],
+			'param filters' => [
+				'component' => self::ANY,
+				'transparent' => self::ANY,
+				'title' => self::ANY,
+				'scale' => __CLASS__ . '::isFloat',
+				'no-type' => self::ANY,
+				'library-name' => self::ANY
+			],
+			'tag' => 'symbolator'
+		] + self::KROKI_BOILERPLATE,
+		'tikz' => [
+			'url' => 'http://kroki:8000/tikz/svg',
+			'name' => 'TikZ',
+			'program url' => 'https://github.com/pgf-tikz/pgf',
+			'version' => '3.1.9a',
+			'tag' => 'tikz'
+		] + self::KROKI_BOILERPLATE,
+		'umlet' => [
+			'url' => 'http://kroki:8000/umlet/svg',
+			'name' => 'UMlet',
+			'program url' => 'https://github.com/umlet/umlet',
+			'version' => '15.1',
+			'tag' => 'umlet',
+			'param filters' => [
+				'width' => __CLASS__ . '::isInt',
+				'height' => __CLASS__ . '::isInt',
+				'scale' => __CLASS__ . '::isFloat',
+				'diagram' => __CLASS__ . '::validateXml'
+			],
+		] + self::KROKI_BOILERPLATE,
+		'vegalite' => [
+			'url' => 'http://kroki:8000/vegalite/svg',
+			'name' => 'vegalite',
+			'program url' => 'https://github.com/vega/vega-lite',
+			'version' => '5.23.0',
+			'options' => [ 'sslVerifyCert' => false, 'headers' => [ 'Content-Type' => 'text/json' ] ],
+			'tag' => 'vegalite'
+		] + self::VEGA + self::KROKI_BOILERPLATE,
+		'wavedrom' => [
+			'url' => 'http://kroki:8000/wavedrom/svg',
+			'name' => 'WaveDrom',
+			'program url' => 'https://github.com/wavedrom/wavedrom',
+			'version' => '3.5.0',
+			'options' => [ 'sslVerifyCert' => false, 'headers' => [ 'Content-Type' => 'text/json' ] ],
+			'param filters' => [
+				'diagram' => __CLASS__ . '::validateJsonOrYaml',
+				'width' => __CLASS__ . '::isInt', 'height' => __CLASS__ . '::isInt'
+			],
+			'preprocess' => [ __CLASS__ . '::yamlToJson' ],
+			'tag' => 'wavedrom'
+		] + self::KROKI_BOILERPLATE,
+		'wireviz' => [
+			'url' => 'http://kroki:8000/wireviz/svg',
+			'name' => 'WireViz',
+			'program url' => 'https://github.com/formatc1702/WireViz',
+			'version' => '0.3.3',
+			'tag' => 'wireviz'
+		] + self::KROKI_BOILERPLATE
+	];
+
+	/*
 	 * @const array SOURCES Connections to Docker containers for testing purposes with useful multimedia programs.
 	 * Use $wgExternalDataSources = array_merge( $wgExternalDataSources, Presets::test ); to make all of them available.
 	 */
 	public const SOURCES = [
-		// This data source does not replace MathJax MW extension (https://github.com/alex-mashin/MathJax).
-		'mathjax' => [
-			'url' => 'http://mathjax/cgi-bin/cgi.sh?config=yes',
-			'format' => 'text',
-			'options' => [ 'sslVerifyCert' => false ],
-			'version url' => 'http://mathjax/cgi-bin/version.sh',
-			'name' => 'MathJax',
-			'program url' => 'https://www.mathjax.org/',
-			'params' => [ 'display' => 'inline', 'nomenu' => false ],
-			'param filters' => [ 'display' => '/^(block|inline)$/' ],
-			'input' => 'tex',
-			'preprocess' => __CLASS__ . '::encloseTex',
-			'max tries' => 1,
-			'min cache seconds' => 30 * 24 * 60 * 60,
-			'postprocess' => [
-				__CLASS__ . '::innerHtml',
-				__CLASS__ . '::addMathJaxMenu'
-			],
-			'scripts' => '/js/mathjax',
-			'tag' => 'mathjax',
-		],
-
-		'maxima' => [
-			'url' => 'http://maxima/cgi-bin/cgi.sh',
-			'format' => 'text',
-			'options' => [ 'sslVerifyCert' => false, 'timeout' => 90 ],
-			'version url' => 'http://maxima/cgi-bin/version.sh',
-			'name' => 'Maxima',
-			'program url' => 'https://maxima.sourceforge.io/',
-			'params' => [ 'decorate' => false, 'showinput' => false ],
-			'input' => 'code',
-			'max tries' => 1,
-			'min cache seconds' => 30 * 24 * 60 * 60,
-			'preprocess' => __CLASS__ . '::decorateMaxima',
-			'postprocess' => __CLASS__ . '::stripSlashedLineBreaks',
-			'tag' => 'maxima'
-		],
-
-		'lilypond' => [
+		'lilypond' => self::DOCKER + [
 			'url' => 'http://lilypond/cgi-bin/cgi.sh?size=$size$',
-			'options' => [ 'sslVerifyCert' => false ],
-			'format' => 'text',
 			'version url' => 'http://lilypond/cgi-bin/version.sh',
 			'name' => 'LilyPond',
 			'program url' => 'http://lilypond.org/',
 			'params' => [ 'size' => 'a4' ],
 			'param filters' => [ 'size' => '/^\w+$/' ],
 			'input' => 'score',
-			'max tries' => 1,
-			'min cache seconds' => 30 * 24 * 60 * 60,
 			'tag' => 'score'
 		],
 
-		'zint' => [
+		'zint' => self::DOCKER + [
 			'url' => 'http://zint/cgi-bin/cgi.sh?type=$type$&eci=$eci$&data=$barcode_data$'
 				. '&fg=$foreground$&bg=$background$&rotate=$rotate$&scale=$scale$',
-			'options' => [ 'sslVerifyCert' => false ],
-			'format' => 'text',
 			'version url' => 'http://zint/cgi-bin/version.sh',
 			'name' => 'Zint',
 			'program url' => 'https://www.zint.org.uk',
@@ -109,20 +394,17 @@ class Media extends Base {
 			],
 			'input' => 'barcode_data',
 			'postprocess' => __CLASS__ . '::innerXml',
-			'min cache seconds' => 30 * 24 * 60 * 60,
 			'tag' => 'barcode'
 		],
 
-		'graphviz' => [
+		'graphviz' => self::DOCKER + [
 			'url' => 'http://graphviz/cgi-bin/cgi.sh?layout=$layout$',
-			'format' => 'text',
-			'options' => [ 'sslVerifyCert' => false ],
 			'version url' => 'http://graphviz/cgi-bin/version.sh',
 			'name' => 'GraphViz',
 			'program url' => 'https://graphviz.org/',
 			'params' => [ 'layout' => 'dot' ],
 			'param filters' => [ 'layout' => '/^(dot|neato|twopi|circo|fdp|osage|patchwork|sfdp)$/' ],
-			'input' => 'dot',
+			'input' => 'diagram',
 			// Set this parameter to the path at which all uploads ($wgUploadDirectory) are mounted
 			// to the graphviz container, assuming that the uploads for a single wiki are mounted
 			// as 'mounted farm uploads/$wgDbName'.
@@ -135,44 +417,43 @@ class Media extends Base {
 				__CLASS__ . '::innerXml',
 				__CLASS__ . '::filepathToUrl'
 			],
-			'min cache seconds' => 30 * 24 * 60 * 60,
 			'tag' => 'graphviz',
 		],
 
 		// mscgen:
-		'mscgen' => [
+		'mscgen' => self::DOCKER + [
 			'url' => 'http://mscgen/cgi-bin/cgi.sh',
-			'options' => [ 'sslVerifyCert' => false ],
-			'format' => 'text',
 			'version url' => 'http://mscgen/cgi-bin/version.sh',
 			'name' => 'mscgen',
 			'program url' => 'https://www.mcternan.me.uk/mscgen/',
 			'input' => 'dot',
 			'preprocess' => __CLASS__ . '::wikilinks4dot',
 			'postprocess' => __CLASS__ . '::innerXml',
-			'min cache seconds' => 30 * 24 * 60 * 60,
 			'tag' => 'mscgen'
 		],
 
-		'plantuml' => [
-			'url' => 'http://plantuml/cgi-bin/cgi.sh',
-			'options' => [ 'sslVerifyCert' => false ],
-			'format' => 'text',
+		'plantuml' => self::DOCKER + [
+			'url' => 'http://plantuml/cgi-bin/cgi.sh?theme=$theme$',
 			'version url' => 'http://plantuml/cgi-bin/version.sh',
 			'name' => 'PlantUML',
 			'program url' => 'https://plantuml.com',
-			'params' => [ 'uml' ],
-			'input' => 'uml',
+			'params' => [ 'diagram', 'theme' => '_none_' ],
+			'param filters' => [
+				'theme' => '/^(' .
+					'amiga|aws-orange|black-knight|bluegray|blueprint|carbon-gray|cerulean|cloudscape-design|' .
+					'crt-amber|cyborg|hacker|lightgray|mars|materia|metal|mimeograph|minty|mono|none|_none_|plain|' .
+					'reddress-darkblue|reddress-lightblue|sandstone|silver|sketchy|spacelab|Sunlust|superhero|toy|' .
+					'united|vibrant' .
+				')$/'
+			],
+			'input' => 'diagram',
 			'preprocess' => __CLASS__ . '::wikilinks4uml',
 			'postprocess' => __CLASS__ . '::innerXml',
-			'min cache seconds' => 30 * 24 * 60 * 60,
 			'tag' => 'plantuml'
 		],
 
-		'ploticus' => [
+		'ploticus' => self::DOCKER + [
 			'url' => 'http://ploticus/cgi-bin/cgi.sh?title=$title$&fontsize=$fontsize$',
-			'options' => [ 'sslVerifyCert' => false ],
-			'format' => 'text',
 			'version url' => 'http://ploticus/cgi-bin/version.sh',
 			'name' => 'ploticus',
 			'program url' => 'http://ploticus.sourceforge.net/doc/welcome.html',
@@ -185,118 +466,26 @@ class Media extends Base {
 				__CLASS__ . '::jsLinksInSvg'
 			],
 			'scripts' => '/js/ploticus',
-			'min cache seconds' => 30 * 24 * 60 * 60,
-			'tries' => 1,
 			'tag' => 'ploticus'
 		],
 
-		'gnuplot' => [
-			'url' =>
-				'http://gnuplot/cgi-bin/cgi.sh?width=$width$&height=$height$&size=$size$&name=$name$&heads=$heads$',
-			'options' => [ 'sslVerifyCert' => false ],
-			'format' => 'text',
-			'version url' => 'http://gnuplot/cgi-bin/version.sh',
-			'name' => 'gnuplot',
-			'program url' => 'http://www.gnuplot.info/',
-			'params' => [ 'width' => 800, 'height' => 600, 'size' => 10, 'name' => 'gnuplot', 'heads' => 'butt' ],
-			'param filters' => [
-				'width' => '/^\d+$/',
-				'height' => '/^\d+$/',
-				'size' => '/^\d+$/',
-				'heads' => '/^(rounded|butt|square)$/'
-			],
-			'input' => 'script',
-			'postprocess' => [
-				__CLASS__ . '::innerXml',
-				__CLASS__ . '::sizeSVG'
-			],
-			'min cache seconds' => 30 * 24 * 60 * 60,
-			'tag' => 'gnuplot'
-		],
-
-		'asymptote' => [
-			'url' =>
-				'http://asymptote/cgi-bin/cgi.sh?output=$output$',
-			'options' => [ 'sslVerifyCert' => false, 'timeout' => 60 ],
-			'format' => 'text',
-			'version url' => 'http://asymptote/cgi-bin/version.sh',
-			'name' => 'asymptote',
-			'program url' => 'https://asymptote.sourceforge.io/',
-			'params' => [ 'output' => 'svg', 'width' => 600, 'height' => 600 ],
-			'param filters' => [ 'output' => '/^(svg|html)$/', 'width' => '/^\d+$/', 'height' => '/^\d+$/' ],
-			'input' => 'script',
-			'postprocess' => [
-				__CLASS__ . '::innerXml',
-				__CLASS__ . '::sizeSVG',
-				__CLASS__ . '::wrapHtml'
-			],
-			'scripts' => '/js/asymptote/asygl-1.02.js',
-			'original script' => 'https://vectorgraphics.github.io/asymptote/base/webgl/asygl-1.02.js',
-			'max tries' => 1,
-			'min cache seconds' => 30 * 24 * 60 * 60,
-			'tag' => 'asy'
-		],
-
-		'vega' => [
+		'vega' => self::DOCKER + [
 			'url' => 'http://vega/cgi-bin/cgi.sh?width=$width$&height=$height$',
-			'options' => [ 'sslVerifyCert' => false ],
-			'format' => 'text',
+			'options' => [ 'sslVerifyCert' => false, 'headers' => [ 'Content-Type' => 'text/json' ] ],
 			'version url' => 'http://vega/cgi-bin/version.sh',
 			'name' => 'Vega',
 			'program url' => 'https://vega.github.io',
-			'params' => [
-				'json',
-				'width' => 600,
-				'height' => 600,
-				'currency' => '₽',
-				'yaml' => false,
-				'id' => __CLASS__ . '::chartId'
-			],
-			'param filters' => [
-				'json' => __CLASS__ . '::validateJsonOrYaml',
-				'width' => '/^\d+$/', 'height' => '/^\d+$/',
-				'currency' => '/^(\p{Sc}|[A-Z]{3})$/u',
-			],
-			'input' => 'json',
-			'preprocess' => [
-				__CLASS__ . '::yamlToJson',
-				__CLASS__ . '::inject3d',
-				__CLASS__ . '::remove160'
-			],
-			'postprocess' => __CLASS__ . '::animateChart',
-			'scripts' => [
-				'/js/vega/vega/build/vega.min.js',
-				'/js/vega/vega-lite/build/vega-lite.min.js',
-				'/js/vega/vega-embed/build/vega-embed.min.js'
-			],
-			'class' => 'vega',
-			'html' => <<<'HTML'
-				<div class="%1$s" id="%2$s">%4$s</div>
-				%5$s
-				HTML,
-			'javascript' => <<<'JS'
-				vegaEmbed( '#%1$s', %2$s ).then(
-					function( result ) {
-						console.log( 'vegaEmbed result: ' + result );
-					} ).catch( function( error ) {
-						mw.log.error( error );
-					} );
-			JS,
-			'max tries' => 1,
-			'min cache seconds' => 30 * 24 * 60 * 60,
 			'tag' => 'graph'
-		],
+		] + self::VEGA,
 
-		'mermaid' => [
+		'mermaid' => self::DOCKER + [
 			'url' => 'http://mermaid/cgi-bin/cgi.sh?id=$id$&scale=$scale$&width=$width$&height=$height$'
 				. '&theme=$theme$&look=$look$&background=$background$',
-			'options' => [ 'sslVerifyCert' => false ],
-			'format' => 'text',
 			'version url' => 'http://mermaid/cgi-bin/version.sh',
 			'name' => 'mermaid', // need fallback to data source in version report.
 			'program url' => 'https://mermaid-js.github.io',
 			'params' => [
-				'mmd',
+				'diagram',
 				'scale' => 1,
 				'width' => '800',
 				'height' => '600',
@@ -307,15 +496,13 @@ class Media extends Base {
 			],
 			'param filters' => [
 				'scale' => '/^\d+(\.\d+)?$/',
-				'width' => '/^\d+$/',
-				'height' => '/^\d+$/',
+				'width' => __CLASS__ . '::isInt',
+				'height' => __CLASS__ . '::isInt',
 				'theme' => '/^(default|forest|dark|neutral)$/i',
 				'look' => '/^(classic|handDrawn)$/i',
 				'background' => '/^(\w+|\#[0-9A-F]{6})$/i'
 			],
-			'input' => 'mmd',
-			'max tries' => 1,
-			'min cache seconds' => 30 * 24 * 60 * 60,
+			'input' => 'diagram',
 			'tag' => 'mermaid',
 			'preprocess' => [
 				__CLASS__ . '::screenColons',
@@ -324,6 +511,7 @@ class Media extends Base {
 			],
 			'postprocess' => [
 				__CLASS__ . '::onlySvg',
+				__CLASS__ . '::sizeSvg',
 				__CLASS__ . '::wikiLinksInXml',
 				__CLASS__ . '::animateChart'
 			],
@@ -342,39 +530,74 @@ class Media extends Base {
 			JS,
 			'scripts' => '/js/mermaid/mermaid.min.js'
 		],
-
 		'bpmn' => [
 			'url' => 'http://bpmn:8080/',
-			'options' => [ 'sslVerifyCert' => false, 'headers' => [ 'Content-Type' => 'application/xml' ] ],
-			'format' => 'text',
+			'options' => [ 'sslVerifyCert' => false, 'headers' => [ 'Content-Type' => 'text/xml' ] ],
 			'version' => 'bpmn2svg by Pierre Schwang',
 			'name' => 'bpmn2svg',
 			'program url' => 'https://github.com/PierreSchwang/bpmn2svg',
-			'params' => [ 'bpmn', 'width' => 400, 'height' => 300, 'scale' => 1, 'title' => 'BPMN diagram' ],
+			'params' => [ 'diagram', 'width' => 400, 'height' => 300, 'scale' => 1, 'title' => 'BPMN diagram' ],
 			'param filters' => [
-				'bpmn' => __CLASS__ . '::validateXml',
-				'width' => '/^\d+$/',
-				'height' => '/^\d+$/',
-				'scale' => '/^\d+(\.\d+)?$/'
+				'diagram' => __CLASS__ . '::validateXml',
+				'width' => __CLASS__ . '::isInt',
+				'height' => __CLASS__ . '::isInt',
+				'scale' => __CLASS__ . '::isFloat',
+				'title' => self::ANY
 			],
-			'input' => 'bpmn',
-			'min cache seconds' => 30 * 24 * 60 * 60,
+			'input' => 'diagram',
 			'tag' => 'bpmn'
-		],
+		] + self::DOCKER
+	] + self::KROKI_ONLY;
+
+	/** @const array[] KROKI_OR_STANDALONE Can be provided by either or standalone containers. */
+	private const KROKI_OR_STANDALONE = [
+		'bpmn' => [
+			'url' => 'http://kroki:8000/bpmn/svg',
+			'name' => 'bpmn2svg',
+			'program url' => 'https://github.com/PierreSchwang/bpmn2svg',
+			'version' => '18.6.1',
+			'tag' => 'bpmn'
+		] + self::SOURCES['bpmn'],
+		'graphviz' => [
+			'url' => 'http://kroki:8000/graphviz/svg',
+			'name' => 'GraphViz',
+			'program url' => 'https://graphviz.org/',
+			'version' => '9.0.0',
+			'tag' => 'graphviz'
+		] + self::SOURCES['graphviz'],
+		'mermaid' => [
+			'url' => 'http://kroki:8000/mermaid/svg?theme=$theme$',
+			'name' => 'mermaid',
+			'program url' => 'https://mermaid-js.github.io',
+			'version' => '11.6.0',
+			'tag' => 'mermaid'
+		] + self::SOURCES['mermaid'],
+		'plantuml' => [
+			'url' => 'http://kroki:8000/plantuml/svg',
+			'name' => 'PlantUML',
+			'program url' => 'https://plantuml.com',
+			'version' => '1.2025.2',
+			'tag' => 'plantuml'
+		] + self::SOURCES['plantuml'],
+		'vega' => [
+			'url' => 'http://kroki:8000/vega/svg',
+			'name' => 'Vega',
+			'program url' => 'https://vega.github.io',
+			'version' => '5.33.0',
+			'tag' => 'vega'
+		] + self::SOURCES['vega']
 	];
 
 	/**
 	 * Return External Data sources, some of which cannot be constants.
-	 *
+	 * @param null|bool|array $mode Additional information to configure presets.
 	 * @return array[]
 	 */
-	public static function sources(): array {
+	public static function sources( $mode = null ): array {
 		global $wgArticlePath, $wgLanguageCode;
-		return self::SOURCES + [
-			'timeline' => [
+		$sources = self::SOURCES + [
+			'timeline' => self::DOCKER + [
 				'url' => 'http://easytimeline/cgi-bin/cgi.sh?path=' . $wgArticlePath,
-				'options' => [ 'sslVerifyCert' => false ],
-				'format' => 'text',
 				'version url' => 'http://easytimeline/cgi-bin/version.sh',
 				'name' => 'EasyTimeline',
 				'program url' => 'http://infodisiac.com/Wikipedia/EasyTimeline/Introduction.htm',
@@ -388,17 +611,13 @@ class Media extends Base {
 					__CLASS__ . '::htmlEntityDecode',
 					__CLASS__ . '::wikilinksInSvg'
 				],
-				'min cache seconds' => 30 * 24 * 60 * 60,
-				'max tries' => 1,
 				'tag' => 'timeline'
 			],
 
-			'echarts' => [
+			'echarts' => self::DOCKER + [
 				'name' => 'Apache ECharts',
 				'program url' => 'https://echarts.apache.org',
 				'url' => 'http://echarts/cgi-bin/cgi.sh?width=$width$&height=$height$&theme=$theme$&locale=$locale$',
-				'format' => 'text',
-				'version url' => 'http://echarts/cgi-bin/version.sh',
 				'params' => [
 					'json',
 					'yaml' => false,
@@ -412,7 +631,7 @@ class Media extends Base {
 					'json' => __CLASS__ . '::validateJsonOrYaml',
 					'width' => '/^(\d+|auto)$/',
 					'height' => '/^(\d+|auto)$/',
-					'locale' => '/^(' . implode( '|', array_keys( Names::$names ) ) . ')$/',
+					'locale' => '/^(' . implode( '|', array_keys( Names::NAMES ) ) . ')$/',
 					'theme' => '/^(azul|bee-inspired|blue|caravan|carp|cool|dark-blue|dark-bold|dark-digerati|'
 						. 'dark-fresh-cut|dark-mushroom|dark|eduardo|forest|fresh-cut|fruit|gray|green|helianthus|'
 						. 'infographic|inspired|jazz|london|macarons|macarons2|mint|packageon|red-velvet|red|roma|'
@@ -430,27 +649,129 @@ class Media extends Base {
 					echarts.init( document.getElementById( '%1$s' ), init.theme, init ).setOption( %2$s );
 				JS,
 				'scripts' => '/js/echarts/dist/echarts.js',
-				'max tries' => 1,
-				'min cache seconds' => 30 * 24 * 60 * 60,
 				'tag' => 'echarts'
 			]
 		];
+
+		if ( is_array( $mode ) && $mode['prefer kroki'] ) {
+			$sources = array_merge_recursive( $sources, self::KROKI_OR_STANDALONE );
+		}
+
+		// Allow <kroki lang="…"> syntax.
+		$kroki_sources = self::KROKI_ONLY + self::KROKI_OR_STANDALONE;
+
+		$sources['kroki'] = [
+			'url' => 'http://kroki:8000/$lang$/svg?size=$width$x$height$&scale=$scale$'
+				. '&theme=$theme$&layout=$layout$'
+				. '&transparent=$transparent$&component=$component$&title=$title$'
+				. '$&fill-color=$fill-color$&stroke-width=$stroke-width'
+				. '$&font-family=$font-family$&font-size=$font-size$'
+				. '&no-type=$no-type$&library-name=$library-name$'
+				. '&view-key=$view-key$&output=$output$'
+				. '&no-separation=$no-separation$&round-corners=$round-corners$&no-shadows=$no-shadows$',
+			'tag' => 'kroki'
+		] + self::KROKI_BOILERPLATE;
+
+		// Merge from all Kroki sources.
+		foreach ( [ 'html', 'class', 'javascript' ] as $param ) {
+			$sources['kroki'][$param] = array_map( static function ( array $source ) use ( $param ): ?string {
+				return $source[$param] ?? null;
+			}, $sources );
+		}
+		foreach ( [
+			'params' => [ 'lang' => '' ],
+			'param filters' => [
+				'lang' => '/^(' . implode( '|', array_map( static function ( array $source ): string {
+					return $source['tag'];
+				}, $kroki_sources ) ) . ')$/',
+				'url' => static function ( string &$url, array $params ): bool {
+					if ( $params['lang'] === 'c4plantuml' || $params['lang'] === 'plantuml' ) {
+						$url = str_replace( '&theme=default', '&theme=plain', $url );
+					}
+					return true;
+				}
+			],
+			'scripts' => []
+		] as $param => $init ) {
+			$sources['kroki'][$param] = array_reduce(
+				$kroki_sources,
+				static function ( array $carry, array $source ) use ( $param ): array {
+					$value = $source[$param] ?? [];
+					return ( is_array( $value ) ? $value : [] ) + $carry;
+				},
+				$init
+			);
+		}
+
+		$sources['kroki']['param filters']['diagram'] = static function ( string $diagram, array $params ): bool {
+			switch ( $params['lang'] ) {
+				case 'bpmn':
+				case 'umlet':
+					return self::validateXml( $diagram );
+				case 'excalidraw':
+				case 'vega':
+				case 'vegalite':
+					return self::validateJsonOrYaml( $diagram, $params );
+			}
+			return true;
+		};
+
+		$sources['kroki']['preprocess'] = static function ( string $diagram, array $params ): string {
+			$lang = $params['lang'];
+			switch ( $lang ) {
+				case 'graphviz':
+					$diagram = self::wikilinks4dot( $diagram, $params );
+					break;
+				case 'vega':
+				case 'vegalite':
+					$diagram = self::yamlToJson( $diagram, $params );
+					$diagram = self::inject3d( $diagram, $params );
+					$diagram = self::remove160( $diagram );
+					break;
+				case 'mermaid':
+					$diagram = self::screenColons( $diagram );
+					$diagram = self::wikilinks4mermaid( $diagram );
+					$diagram = self::injectMermaidParams( $diagram, $params );
+					break;
+				case 'plantuml':
+					$diagram = self::wikilinks4uml( $diagram );
+					break;
+			}
+			return $diagram;
+		};
+
+		$sources['kroki']['postprocess'] = static function ( string $svg, array $params ): string {
+			$lang = $params['lang'];
+			foreach ( [ 'html', 'class', 'javascript' ] as $param ) {
+				$params[$param] = ( $params[$param]["kroki:$lang"] ?? null ) ?: ( $params[$param][$lang] ?? null );
+			}
+			switch ( $lang ) {
+				case 'graphviz':
+					$svg = self::innerXml( $svg, $params );
+					break;
+				case 'vega':
+				case 'vegalite':
+					$svg = self::animateChart( $svg, $params, $params['diagram'] );
+					break;
+				case 'mermaid':
+					$svg = self::onlySvg( $svg );
+					$svg = self::sizeSvg( $svg, $params );
+					$svg = self::wikiLinksInXml( $svg );
+					$svg = self::animateChart( $svg, $params, $params['diagram'] );
+					break;
+				case 'plantuml':
+					$svg = self::innerXml( $svg, $params );
+					break;
+			}
+			return $svg;
+		};
+
+		return $sources;
 	}
 
 	/*
 	 * Pre- and postprocessing utilities.
 	 */
-
-	/**
-	 * Surround TeX with \(…\) or $$…$$ for MathJax.
-	 *
-	 * @param string $tex
-	 * @param array $params
-	 * @return string
-	 */
-	public static function encloseTex( string $tex, array $params ): string {
-		return $params['display'] === 'block' ? '$$' . $tex . '$$' : "\($tex\)";
-	}
 
 	/** @const string[] ECI_AWARE ECI-aware types of bar / QR codes. */
 	private const ECI_AWARE = [
@@ -474,11 +795,12 @@ class Media extends Base {
 
 	/**
 	 * A sevice function converting page title into its local URL.
-	 * @param string $page
+	 * @param string|null $page
 	 * @return string
 	 */
-	private static function localurl( string $page ): string {
-		$url = CoreParserFunctions::localurl( null, $page );
+	private static function localurl( ?string $page ): string {
+		$parser = MediaWikiServices::getInstance()->getParser();
+		$url = CoreParserFunctions::localurl( $parser, $page );
 		return is_string( $url ) ? $url : '/';
 	}
 
@@ -514,55 +836,6 @@ class Media extends Base {
 	}
 
 	/**
-	 * Inject into Maxima commands sequence commands that cause formulae to be output as TeX and graphs, as SVG.
-	 * @param string $maxima
-	 * @param array $params
-	 * @return string
-	 */
-	public static function decorateMaxima( string $maxima, array $params ) {
-		if ( $params['decorate'] === false ) {
-			return $maxima;
-		}
-		$input = $params['showinput'] !== false ? ' grind(_)$' : '';
-
-		$inject = [
-			'draw' => '$1 ($2, terminal = svg, file_name = "$file")',
-			'draw2d' => '$1 ($2, terminal = svg, file_name = "$file")',
-			'draw3d' => '$1 ($2, terminal = svg, file_name = "$file")',
-			'plot2d' => '$1 ($2, [svg_file, "$file.svg"])',
-			'plot3d' => '$1 ($2, [svg_file, "$file.svg"])',
-			'julia' => '$1 ($2, [svg_file, "$file.svg"])',
-			'mandelbot' => '$1 ($2, [svg_file, "$file.svg"])',
-			'printfile' => '$0'
-		];
-		$notex_regex = '/(' . implode( '|', array_keys( $inject ) ) . ')\s*\((.+)\)\s*([$;]?)/s';
-
-		if ( preg_match_all( '/((?:"[^"]*"|.)+?)([;$])/s', $maxima, $matches, PREG_SET_ORDER ) ) {
-			$lines = [];
-			foreach ( $matches as [ $_, $command, $suffix ] ) {
-				$command = trim( $command );
-				if ( preg_match( $notex_regex, $command, $matches2 ) ) {
-					// We need to make it deterministic, in order not to kill the ED cache.
-					$file = '/tmp/of' . md5( $command );
-					$replace = str_replace( '$file', $file, $inject[$matches2[1]] );
-					$command = preg_replace( $notex_regex, $replace, $command );
-					$suffix = '$' . $input . ' ?sleep(1)$ printfile ("' . $file . '.svg")$';
-				} else {
-					if ( $suffix !== '$' ) {
-						$shift = $input ? 1 : 0;
-						$suffix = '$' . $input . ' '
-							. 'print (tex (%th(' . ( 1 + $shift ) . '), false))$ '
-							. '%th(' . ( 2 + $shift ) . ')$';
-					}
-				}
-				$lines[] = $command . $suffix;
-			}
-			return implode( PHP_EOL, $lines );
-		}
-		return $maxima;
-	}
-
-	/**
 	 * Strips TeX newline continuations with slashes, produced by Maxima and breaking operators.
 	 * @param string $tex
 	 * @return string
@@ -585,7 +858,6 @@ class Media extends Base {
 
 	/**
 	 * Injects parameters for a Mermaid diagram.
-	 *
 	 * @param string $mmd Mermaid diagram code.
 	 * @param array $params Tag parameters.
 	 * @return string
@@ -756,50 +1028,6 @@ class Media extends Base {
 	}
 
 	/**
-	 * If $htm contains <html> tag, wrap it with <iframe>.
-	 * @param string $html
-	 * @param array $params
-	 * @return string
-	 */
-	public static function wrapHtml( string $html, array $params ): string {
-		if ( !preg_match( '~<html\s.+</html>~si', $html, $matches ) ) {
-			return $html;
-		}
-		$html = str_replace( $params['original script'], $params['scripts'], $matches[0] );
-		return '<iframe width="' . $params['width'] . '" height="' . $params['height'] . '" frameborder="0" srcdoc="'
-			. strtr( $html, [ '&' => 'amp;', '"' => '&quot;' ] )
-			. '"></iframe>';
-	}
-
-	/**
-	 * Set SVG size, if not set.
-	 *
-	 * @param string $svg
-	 * @param array $params
-	 * @return string
-	 */
-	public static function sizeSVG( string $svg, array $params ): string {
-		if ( ( $params['output'] ?? '' ) === 'html' ) {
-			return $svg;
-		}
-		$dom = new DOMDocument();
-		$dom->loadXML( $svg, LIBXML_NOENT );
-		$root = $dom->documentElement;
-		if ( !$root ) {
-			return $svg;
-		}
-		foreach ( [ 'width', 'height' ] as $attr ) {
-			if ( !$root->hasAttribute( $attr ) && ( $params[$attr] ?? 0 ) ) {
-				$root->setAttribute( $attr, $params[$attr] );
-			}
-		}
-		if ( !$root->hasAttribute( 'viewport' ) && isset( $params['width'] ) && isset( $params['height'] ) ) {
-			$root->setAttribute( 'viewport', "0 0 {$params['width']} {$params['height']}" );
-		}
-		return $dom->saveHTML();
-	}
-
-	/**
 	 * Convert [[…]] in SVG <text> into <a>.
 	 *
 	 * @param string $svg
@@ -816,6 +1044,7 @@ class Media extends Base {
 		} finally {
 			self::stopThrowingWarnings();
 		}
+		// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 		if ( !$loaded ) {
 			// SVG might be illegal and cannot be processed. Hopefully, this point is never reached.
 			throw new \MWException( 'Cannot process wikilinks in SVG: invalid XML.' );
@@ -889,6 +1118,7 @@ class Media extends Base {
 		} finally {
 			self::stopThrowingWarnings();
 		}
+		// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 		if ( !$loaded ) {
 			// Hopefully, this code will never be reached.
 			throw new \MWException( 'Cannot process images in SVG: invalid XML).' );
@@ -904,11 +1134,10 @@ class Media extends Base {
 
 	/**
 	 * Inject locale object for Vega.
-	 *
 	 * @param array|string $json
 	 * @param array $params
 	 * @return string
-	 * @throws MWException
+	 * @throws RuntimeException
 	 */
 	public static function inject3d( $json, array $params ): string {
 		$language = MediaWikiServices::getInstance()->getContentLanguage();
@@ -947,25 +1176,6 @@ class Media extends Base {
 		return json_encode( $json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
 	}
 
-	/**
-	 * Make MathJax formula interactive.
-	 *
-	 * @param string $html MathML code wrapped in HTML.
-	 * @param array $params Parameters passed to MathJax.
-	 * @return string HTML code containing the animated MathJax.
-	 */
-	public static function addMathJaxMenu( string $html, array $params ): string {
-		static $math_jax_included = false;
-		if ( $params['nomenu'] === false && !$math_jax_included ) {
-			$math_jax_included = true;
-			$script = "\n" . '<script type="text/javascript" async src="'
-				. "{$params['scripts']}/tex-mml-chtml.js" . '"></script>';
-		} else {
-			$script = '';
-		}
-		return "$html$script";
-	}
-
 	/** @const string PLACEHOLDER Temporary replacement for colons in wikilinks in Mermaid diagrams. */
 	private const PLACEHOLDER = '(colon)';
 
@@ -983,16 +1193,6 @@ class Media extends Base {
 			},
 			$mmd
 		);
-	}
-
-	/**
-	 * Strips log messages before and after SVG that could not be stripped otherwise.
-	 *
-	 * @param string $input
-	 * @return string
-	 */
-	public static function onlySvg( string $input ): string {
-		return preg_match( '%<svg.+</svg>%i', $input, $matches ) ? $matches[0] : $input;
 	}
 
 	/**

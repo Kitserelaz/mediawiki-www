@@ -2,6 +2,7 @@
 	"@metadata": {
 		"authors": [
 			"Amire80",
+			"Neriah",
 			"Rotemliss",
 			"Steeve815",
 			"YaronSh",
@@ -9,7 +10,6 @@
 			"מקף"
 		]
 	},
-	"getdata": "קבלת נתונים",
 	"externaldata-desc": "אפשרות לקבלת נתונים מבניים מכתובות חיצוניות, מסדי נתונים ומקורות אחרים",
 	"externaldata-no-param-specified": "שגיאה: לא הוגדר פרמטר \"$1\".",
 	"externaldata-param-type-error": "שגיאה: פרמטר $1 צריך להיות מסוג $2.",
@@ -48,7 +48,7 @@
 	"externaldata-url-hooks-aborted": "פעולת המפענח $1 הופסקה והחזירה שגיאות: $2",
 	"externaldata-url-not-fetched": "בעת אחזור נתונים מהכתובת $1 אירעה שגיאה: $2.",
 	"externaldata-url-unknown-error": "בעת אחזור נתונים מה־URL אירעה שגיאה: $1.",
-	"externaldata-url-not-allowed": "ה־URL‏ $1 אינו מותר בוויקי הזה.",
+	"externaldata-url-not-allowed": "ה־URL‏ שכתובתו $1 אינו מותר בוויקי הזה; יש להוסיף אותו, או את התחום שלו, ל־<code>$wgExternalDataAllowedSources</code>.",
 	"externaldata-caught-exception-soap": "נתפס חריג $1 בעת יצירת לקוח SOAP.",
 	"externaldata-parsing-html-failed": "לא ניתן לפענח HTML:\n $1",
 	"externaldata-caught-exception-parsing-html": "בעת פענוח HTML נתפס חריג. הודעת השגיאה הייתה &quot;$1&quot;.",
@@ -70,6 +70,5 @@
 	"external-data-archive-could-not-extract": "שגיאה: לא היה ניתן לחלץ את הקובץ <code>$2</code> מארכיון מסוג $1 (מידע נוסף: $3)",
 	"externaldata-no-local-variable": "שגיאה: המשתנה המקומי \"$1\" לא הוגדר.",
 	"externaldata-no-template": "שגיאה: לא הוגדרה תבנית.",
-	"externaldata-no-loop-body": "שגיאה: אין גוף לולאה שהוגדר כפרמטר הראשון או השני.",
-	"externaldata-getdata-badurl": "חובה לציין את שם הדף בכתובת;\nעל הכתובת להיות מהצורה \"{{#Special:GetData}}/שם_הדף\"."
+	"externaldata-no-loop-body": "שגיאה: אין גוף לולאה שהוגדר כפרמטר הראשון או השני."
 }

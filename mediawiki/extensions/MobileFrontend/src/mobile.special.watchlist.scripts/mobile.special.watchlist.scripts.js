@@ -4,6 +4,7 @@ const WatchList = require( './WatchList' ),
 
 /**
  * Initialises JavaScript on Special:Watchlist
+ *
  * @private
  */
 function init() {
@@ -17,13 +18,13 @@ function init() {
 			el: $watchlist,
 			funnel: 'watchlist',
 			skipTemplateRender: true,
-			eventBus: eventBus
+			eventBus
 		} );
 	}
 	// not needed now we have JS view which has infinite scrolling
 	$watchlist.find( '.mw-mf-watchlist-more' ).remove();
 }
 
-$( function () {
+$( () => {
 	init();
 } );

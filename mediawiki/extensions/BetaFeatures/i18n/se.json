@@ -1,9 +1,9 @@
 {
 	"@metadata": {
 		"authors": [
+			"Jon Harald Søby",
 			"Kimberli Mäkäräinen (WMNO)",
-			"WMNO sámeprošeakta",
-			"Jon Harald Søby"
+			"WMNO sámeprošeakta"
 		]
 	},
 	"betafeatures-auto-enroll": "Váldde stuorimus oasi betadoaimmaid atnui automáhtalaččat",

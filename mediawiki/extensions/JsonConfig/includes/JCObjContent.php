@@ -1,5 +1,5 @@
 <?php
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use InvalidArgumentException;
 use LogicException;
@@ -10,7 +10,6 @@ use stdClass;
 /**
  * This class treats all configs as proper object representation of JSON,
  * and offers a number of primitives to simplify validation on all levels
- * @package JsonConfig
  */
 abstract class JCObjContent extends JCContent {
 
@@ -53,6 +52,7 @@ abstract class JCObjContent extends JCContent {
 		return FormatJson::encode( $this->getDataWithDefaults(), true, FormatJson::ALL_OK );
 	}
 
+	/** @inheritDoc */
 	protected function createDefaultView() {
 		return new JCDefaultObjContentView();
 	}
@@ -127,6 +127,7 @@ abstract class JCObjContent extends JCContent {
 		return $this->data;
 	}
 
+	/** @inheritDoc */
 	public function validate( $data ) {
 		if ( $this->initValidation( $data ) ) {
 			$this->validateContent();
@@ -158,10 +159,11 @@ abstract class JCObjContent extends JCContent {
 	 *        the value is considered optional.
 	 * @param callable|null $validator callback function as defined in JCValidators::run(). More than
 	 *        one  validator may be given. If validators are not provided, any value is accepted
+	 * @param callable ...$extraValidators
 	 * @return bool true if ok, false otherwise
 	 */
-	public function testOptional( $path, $default, $validator = null ) {
-		$vld = self::convertValidators( $validator, func_get_args(), 2 );
+	public function testOptional( $path, $default, $validator = null, ...$extraValidators ) {
+		$vld = self::convertValidators( $validator, $extraValidators );
 		// first validator will replace missing with the default
 		array_unshift( $vld, JCValidators::useDefault( $default ) );
 		return $this->testInt( $path, $vld );
@@ -182,7 +184,7 @@ abstract class JCObjContent extends JCContent {
 	 * @return bool true if ok, false otherwise
 	 */
 	public function test( $path, $validator, ...$extraValidators ) {
-		$vld = self::convertValidators( $validator, func_get_args(), 1 );
+		$vld = self::convertValidators( $validator, $extraValidators );
 		return $this->testInt( $path, $vld );
 	}
 
@@ -202,7 +204,7 @@ abstract class JCObjContent extends JCContent {
 	 * @return bool true if all values tested ok, false otherwise
 	 */
 	public function testEach( $path, $validator = null, ...$extraValidators ) {
-		$vld = self::convertValidators( $validator, func_get_args(), 1 );
+		$vld = self::convertValidators( $validator, $extraValidators );
 		$isOk = true;
 		$path = (array)$path;
 		$containerField = $this->getField( $path );
@@ -213,7 +215,7 @@ abstract class JCObjContent extends JCContent {
 				if ( is_object( $container ) ) {
 					$container = get_object_vars( $container );
 				}
-				foreach ( array_keys( $container ) as $k ) {
+				foreach ( $container as $k => $_ ) {
 					$path[$lastIdx] = $k;
 					$isOk = $this->testInt( $path, $vld ) && $isOk;
 				}
@@ -299,7 +301,6 @@ abstract class JCObjContent extends JCContent {
 				throw new LogicException( 'Logic error - subJcv must be valid here' );
 			} elseif ( $subJcv === false ) {
 				// field does not exist
-				// @phan-suppress-next-line PhanTypePossiblyInvalidDimOffset
 				$initValue = !$path ? null : ( is_string( $path[0] ) ? (object)[] : [] );
 				$subJcv = new JCValue( JCValue::MISSING, $initValue );
 			}
@@ -366,9 +367,8 @@ abstract class JCObjContent extends JCContent {
 	 * Recursively reorder all sub-elements - checked first, followed by unchecked.
 	 * Also, convert all sub-elements to JCValue(UNCHECKED) if at least one of them was JCValue
 	 * This is useful for HTML rendering to indicate unchecked items
-	 * @param JCValue $data
 	 */
-	private static function markUnchecked( JCValue $data ) {
+	private static function markUnchecked( JCValue $data ): void {
 		$val = $data->getValue();
 		$isObject = is_object( $val );
 		if ( !$isObject && !is_array( $val ) ) {
@@ -395,9 +395,7 @@ abstract class JCObjContent extends JCContent {
 					if ( !$isJcv ) {
 						$subVal = new JCValue( JCValue::UNCHECKED, $subVal );
 					}
-					if ( $result === null ) {
-						$result = $isObject ? (object)[] : [];
-					}
+					$result ??= $isObject ? (object)[] : [];
 					if ( $isObject ) {
 						$result->$key = $subVal;
 						unset( $val->$key );
@@ -441,9 +439,7 @@ abstract class JCObjContent extends JCContent {
 	 *      JCValue if the value is found
 	 */
 	public function getField( $field, $data = null ) {
-		if ( $data === null ) {
-			$data = $this->getValidationData();
-		}
+		$data ??= $this->getValidationData();
 		foreach ( (array)$field as $fld ) {
 			if ( !is_int( $fld ) && !is_string( $fld ) ) {
 				throw new InvalidArgumentException( 'Field must be either int or string' );
@@ -519,18 +515,19 @@ abstract class JCObjContent extends JCContent {
 
 	/**
 	 * @param null|callable|array $param first validator parameter
-	 * @param array $funcArgs result of func_get_args() call
-	 * @param int $skipArgs how many non-validator arguments to remove
-	 *   from the beginning of the $funcArgs
+	 * @param array $extraValidators
 	 * @return array of validators
 	 */
-	private static function convertValidators( $param, $funcArgs, $skipArgs ) {
+	private static function convertValidators( $param, $extraValidators ) {
 		if ( $param === null ) {
 			return []; // no validators given
 		} elseif ( is_array( $param ) && !is_callable( $param, true ) ) {
 			return $param; // first argument is an array of validators
 		} else {
-			return array_slice( $funcArgs, $skipArgs ); // remove fixed params from the beginning
+			return [ $param, ...$extraValidators ];
 		}
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCObjContent::class, 'JsonConfig\\JCObjContent' );

@@ -6,11 +6,13 @@ use GrowthExperiments\GrowthExperimentsServices;
 use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendation;
 use MediaWiki\Maintenance\Maintenance;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 class InsertLinkRecommendation extends Maintenance {
 
@@ -42,9 +44,10 @@ class InsertLinkRecommendation extends Maintenance {
 			$this->fatalError( 'Unable to decode JSON' );
 		}
 		$title = $services->getTitleFactory()->newFromText( $this->getOption( 'title' ) );
-		if ( !$title ) {
+		if ( !$title || !$title->exists() ) {
 			$this->fatalError( 'Unable to get a title for ' . $this->getOption( 'title' ) );
 		}
+
 		$linkRecommendation = new LinkRecommendation(
 			$title,
 			$title->getId(),
@@ -52,10 +55,15 @@ class InsertLinkRecommendation extends Maintenance {
 			LinkRecommendation::getLinksFromArray( $data['links'] ),
 			LinkRecommendation::getMetadataFromArray( $data['meta'] )
 		);
+		$this->output(
+			'Inserting ' . count( $data['links'] ) . ' link recommendation(s) for ' . $title->getPrefixedText() . "\n"
+		);
 		$linkRecommendationStore = $growthServices->getLinkRecommendationStore();
-		$linkRecommendationStore->insert( $linkRecommendation );
+		$linkRecommendationStore->insertExistingLinkRecommendation( $linkRecommendation );
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = InsertLinkRecommendation::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

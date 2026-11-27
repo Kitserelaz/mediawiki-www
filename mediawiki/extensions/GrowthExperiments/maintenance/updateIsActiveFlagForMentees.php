@@ -5,34 +5,27 @@ namespace GrowthExperiments\Maintenance;
 use GrowthExperiments\GrowthExperimentsServices;
 use GrowthExperiments\Mentorship\Store\MentorStore;
 use MediaWiki\Maintenance\Maintenance;
+use MediaWiki\User\Registration\UserRegistrationLookup;
 use MediaWiki\User\UserEditTracker;
-use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentityLookup;
 use MediaWiki\User\UserIdentityValue;
 use Wikimedia\Rdbms\ILoadBalancer;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 class UpdateIsActiveFlagForMentees extends Maintenance {
 
-	/** @var UserIdentityLookup */
-	private $userIdentityLookup;
-
-	/** @var UserEditTracker */
-	private $userEditTracker;
-
-	/** @var UserFactory */
-	private $userFactory;
-
-	/** @var ILoadBalancer */
-	private $growthLoadBalancer;
-
-	/** @var MentorStore */
-	private $mentorStore;
+	private UserIdentityLookup $userIdentityLookup;
+	private UserEditTracker $userEditTracker;
+	private UserRegistrationLookup $userRegistrationLookup;
+	private ILoadBalancer $growthLoadBalancer;
+	private MentorStore $mentorStore;
 
 	public function __construct() {
 		parent::__construct();
@@ -53,7 +46,7 @@ class UpdateIsActiveFlagForMentees extends Maintenance {
 		$geServices = GrowthExperimentsServices::wrap( $services );
 
 		$this->userIdentityLookup = $services->getUserIdentityLookup();
-		$this->userFactory = $services->getUserFactory();
+		$this->userRegistrationLookup = $services->getUserRegistrationLookup();
 		$this->userEditTracker = $services->getUserEditTracker();
 		$this->growthLoadBalancer = $geServices->getLoadBalancer();
 		$this->mentorStore = $geServices->getMentorStore();
@@ -93,8 +86,7 @@ class UpdateIsActiveFlagForMentees extends Maintenance {
 
 			$lastActivityTimestamp = $this->userEditTracker->getLatestEditTimestamp( $menteeUser );
 			if ( $lastActivityTimestamp === false ) {
-				$lastActivityTimestamp = $this->userFactory->newFromUserIdentity( $menteeUser )
-					->getRegistration();
+				$lastActivityTimestamp = $this->userRegistrationLookup->getRegistration( $menteeUser );
 			}
 
 			$timeDelta = (int)wfTimestamp() - (int)wfTimestamp(
@@ -118,5 +110,7 @@ class UpdateIsActiveFlagForMentees extends Maintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = UpdateIsActiveFlagForMentees::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

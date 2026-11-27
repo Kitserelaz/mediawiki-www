@@ -12,14 +12,13 @@
 <script>
 // @vue/component
 module.exports = exports = {
-	compatConfig: { MODE: 3 },
 	compilerOptions: { whitespace: 'condense' },
 	props: {
 		backgroundColor: {
 			type: String,
-			default: 'base'
-		}
-	}
+			default: 'base',
+		},
+	},
 };
 </script>
 

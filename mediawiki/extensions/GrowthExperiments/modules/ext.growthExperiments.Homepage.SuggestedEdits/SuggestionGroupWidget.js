@@ -19,7 +19,7 @@ function SuggestionGroupWidget( config ) {
 		toggleSuggestion: 'updateSelectAllButtonLabel',
 		add: 'updateSelectAllButtonLabel',
 		clear: 'updateSelectAllButtonLabel',
-		remove: 'updateSelectAllButtonLabel'
+		remove: 'updateSelectAllButtonLabel',
 	} );
 	if ( config.items ) {
 		this.addItems( config.items );
@@ -35,11 +35,12 @@ function SuggestionGroupWidget( config ) {
 
 	this.selectAllButton = null;
 	if ( config.selectAll ) {
+		// eslint-disable-next-line mediawiki/no-unlabeled-buttonwidget
 		this.selectAllButton = new OO.ui.ButtonWidget( {
 			classes: [ 'mw-ge-suggestionGroupWidget-headerRow-select-all' ],
 			label: '', // set by updateSelectAllButtonLabel()
 			flags: [ 'progressive' ],
-			framed: false
+			framed: false,
 		} );
 		this.updateSelectAllButtonLabel();
 		this.selectAllButton.connect( this, { click: 'onSelectAllButtonClick' } );
@@ -51,7 +52,7 @@ function SuggestionGroupWidget( config ) {
 		this.showMoreButton = new OO.ui.ButtonWidget( {
 			label: mw.msg( 'growthexperiments-homepage-suggestededits-topics-more' ),
 			flags: [ 'progressive' ],
-			framed: false
+			framed: false,
 		} );
 		this.showMoreButton.connect( this, { click: 'onShowMoreButtonClick' } );
 	}
@@ -65,10 +66,10 @@ function SuggestionGroupWidget( config ) {
 		.append(
 			$( '<div>' ).addClass( 'mw-ge-suggestionGroupWidget-headerRow' ).append(
 				this.$header,
-				this.selectAllButton && this.selectAllButton.$element
+				this.selectAllButton && this.selectAllButton.$element,
 			),
 			this.$group,
-			this.showMoreButton && this.showMoreButton.$element
+			this.showMoreButton && this.showMoreButton.$element,
 		);
 }
 
@@ -115,7 +116,7 @@ SuggestionGroupWidget.prototype.updateSelectAllButtonLabel = function () {
 	if ( this.selectAllButton ) {
 		this.selectAllButton.setLabel( this.isEverythingSelected() ?
 			mw.msg( 'growthexperiments-homepage-suggestededits-topics-unselectall' ) :
-			mw.msg( 'growthexperiments-homepage-suggestededits-topics-selectall' )
+			mw.msg( 'growthexperiments-homepage-suggestededits-topics-selectall' ),
 		);
 	}
 };

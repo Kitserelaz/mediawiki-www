@@ -4,27 +4,19 @@ namespace GrowthExperiments\Api;
 
 use GrowthExperiments\MentorDashboard\MenteeOverview\MenteeOverviewUpdateDataForMentorJob;
 use GrowthExperiments\Mentorship\Provider\MentorProvider;
-use JobQueueGroup;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\JobQueue\JobSpecification;
 
 class ApiMentorDashboardUpdateData extends ApiBase {
 
-	/** @var MentorProvider */
-	private $mentorProvider;
+	private MentorProvider $mentorProvider;
+	private JobQueueGroup $jobQueueGroup;
 
-	/** @var JobQueueGroup */
-	private $jobQueueGroup;
-
-	/**
-	 * @param ApiMain $mainModule
-	 * @param string $moduleName
-	 * @param MentorProvider $mentorProvider
-	 * @param JobQueueGroup $jobQueueGroup
-	 */
 	public function __construct(
 		ApiMain $mainModule,
-		$moduleName,
+		string $moduleName,
 		MentorProvider $mentorProvider,
 		JobQueueGroup $jobQueueGroup
 	) {
@@ -38,10 +30,7 @@ class ApiMentorDashboardUpdateData extends ApiBase {
 	 * @inheritDoc
 	 */
 	public function execute() {
-		if (
-			!$this->getConfig()->get( 'GEMentorDashboardEnabled' ) ||
-			!$this->mentorProvider->isMentor( $this->getUser() )
-		) {
+		if ( !$this->mentorProvider->isMentor( $this->getUser() ) ) {
 			$this->dieWithError( [ 'apierror-permissiondenied-generic' ] );
 		}
 
@@ -49,8 +38,8 @@ class ApiMentorDashboardUpdateData extends ApiBase {
 			$this->dieWithError( [ 'actionthrottledtext' ] );
 		}
 
-		$this->jobQueueGroup->lazyPush( new MenteeOverviewUpdateDataForMentorJob( [
-			'mentorId' => $this->getUser()->getId()
+		$this->jobQueueGroup->lazyPush( new JobSpecification( MenteeOverviewUpdateDataForMentorJob::JOB_NAME, [
+			'mentorId' => $this->getUser()->getId(),
 		] ) );
 
 		$this->getResult()->addValue( null, $this->getModuleName(), [

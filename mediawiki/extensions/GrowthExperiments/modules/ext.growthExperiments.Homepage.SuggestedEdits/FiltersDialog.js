@@ -29,15 +29,15 @@ OO.inheritClass( FiltersDialog, OO.ui.ProcessDialog );
 /** @inheritDoc **/
 FiltersDialog.prototype.initialize = function () {
 	FiltersDialog.super.prototype.initialize.call( this );
-	this.$element.addClass( 'mw-ge-filtersDialog skin-invert notheme' );
+	this.$element.addClass( 'mw-ge-filtersDialog' );
 	this.$foot.addClass( 'mw-ge-filtersDialog-footer' );
 	this.content = new OO.ui.PanelLayout( {
 		padded: true,
-		expanded: false
+		expanded: false,
 	} );
 	this.footerPanelLayout = new OO.ui.PanelLayout( {
 		padded: true,
-		expanded: false
+		expanded: false,
 	} );
 	this.articleCounter = new ArticleCountWidget();
 	this.footerPanelLayout.$element.append( this.articleCounter.$element );
@@ -101,9 +101,13 @@ FiltersDialog.prototype.getActionProcess = function ( action ) {
 		.next( function () {
 			if ( action === 'close' ) {
 				// Show the loading state of the ProcessDialog while tasks are fetched
-				const promise = $.Deferred();
+				const deferred = $.Deferred();
 				this.savePreferences();
-				this.emit( 'done', promise );
+				// FIXME: Passing a Deferred object to event emitter and relying
+				// on a listener to resolve it seems *very* flaky.
+				this.emit( 'done', deferred );
+
+				const promise = deferred.promise();
 				promise.always( () => {
 					this.close( { action: 'done' } );
 				} );

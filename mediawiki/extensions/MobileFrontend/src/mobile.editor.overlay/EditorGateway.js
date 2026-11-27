@@ -1,51 +1,52 @@
-const util = require( '../mobile.startup/util' ),
-	actionParams = require( '../mobile.startup/actionParams' );
+const mobile = require( 'mobile.startup' );
+const util = mobile.util;
+const actionParams = mobile.actionParams;
 
 /**
  * API that helps save and retrieve page content
  *
- * @param {Object} options Configuration options
- * @param {mw.Api} options.api an Api to use.
- * @param {string} options.title the title to edit
- * @param {string|null} options.sectionId the id of the section to operate edits on.
- * @param {number} [options.oldId] revision to operate on. If absent defaults to latest.
- * @param {boolean} [options.fromModified] whether the page was loaded in a modified state
- * @param {string} [options.preload] the name of a page to preload into the editor
- * @param {Array} [options.preloadparams] parameters to prefill into the preload content
- * @param {string} [options.editintro] edit intro to add to notices
  * @private
  */
-function EditorGateway( options ) {
-	this.api = options.api;
-	this.title = options.title;
-	this.sectionId = options.sectionId;
-	this.oldId = options.oldId;
-	this.preload = options.preload;
-	this.preloadparams = options.preloadparams;
-	this.editintro = options.editintro;
-	this.content = undefined;
-	this.fromModified = options.fromModified;
-	this.hasChanged = options.fromModified;
-}
-
-EditorGateway.prototype = {
+class EditorGateway {
+	/**
+	 * @param {Object} options Configuration options
+	 * @param {mw.Api} options.api an Api to use.
+	 * @param {string} options.title the title to edit
+	 * @param {string|null} options.sectionId the id of the section to operate edits on.
+	 * @param {number} [options.oldId] revision to operate on. If absent defaults to latest.
+	 * @param {boolean} [options.fromModified] whether the page was loaded in a modified state
+	 * @param {string} [options.preload] the name of a page to preload into the editor
+	 * @param {Array} [options.preloadparams] parameters to prefill into the preload content
+	 * @param {string} [options.editintro] edit intro to add to notices
+	 */
+	constructor( options ) {
+		this.api = options.api;
+		this.title = options.title;
+		this.sectionId = options.sectionId;
+		this.oldId = options.oldId;
+		this.preload = options.preload;
+		this.preloadparams = options.preloadparams;
+		this.editintro = options.editintro;
+		this.content = undefined;
+		this.fromModified = options.fromModified;
+		this.hasChanged = options.fromModified;
+	}
 
 	/**
 	 * Get the block (if there is one) from the result.
 	 *
-	 * @memberof EditorGateway
 	 * @param {Object} pageObj Page object
 	 * @return {Object|null}
 	 */
-	getBlockInfo: function ( pageObj ) {
+	getBlockInfo( pageObj ) {
 		let blockedError;
 
 		if ( pageObj.actions &&
 			pageObj.actions.edit &&
 			Array.isArray( pageObj.actions.edit )
 		) {
-			pageObj.actions.edit.some( function ( error ) {
-				if ( [ 'blocked', 'autoblocked' ].indexOf( error.code ) !== -1 ) {
+			pageObj.actions.edit.some( ( error ) => {
+				if ( [ 'blocked', 'autoblocked' ].includes( error.code ) ) {
 					blockedError = error;
 					return true;
 				}
@@ -58,26 +59,22 @@ EditorGateway.prototype = {
 		}
 
 		return null;
-	},
+	}
+
 	/**
 	 * Get the content of a page.
 	 *
-	 * @memberof EditorGateway
 	 * @instance
 	 * @return {jQuery.Promise}
 	 */
-	getContent: function () {
+	getContent() {
 		let options;
 
-		const self = this;
-
-		function resolve() {
-			return util.Deferred().resolve( {
-				text: self.content || '',
-				blockinfo: self.blockinfo,
-				notices: self.notices
-			} );
-		}
+		const resolve = () => util.Deferred().resolve( {
+			text: this.content || '',
+			blockinfo: this.blockinfo,
+			notices: this.notices
+		} );
 
 		if ( this.content !== undefined ) {
 			return resolve();
@@ -86,10 +83,10 @@ EditorGateway.prototype = {
 				prop: [ 'revisions', 'info' ],
 				rvprop: [ 'content', 'timestamp' ],
 				inprop: [ 'preloadcontent', 'editintro' ],
-				inpreloadcustom: self.preload,
-				inpreloadparams: self.preloadparams,
-				ineditintrocustom: self.editintro,
-				titles: self.title,
+				inpreloadcustom: this.preload,
+				inpreloadparams: this.preloadparams,
+				ineditintrocustom: this.editintro,
+				titles: this.title,
 				// get block information for this user
 				intestactions: 'edit',
 				// …and test whether this edit will auto-create an account
@@ -104,7 +101,7 @@ EditorGateway.prototype = {
 			if ( this.sectionId ) {
 				options.rvsection = this.sectionId;
 			}
-			return this.api.get( options ).then( function ( resp ) {
+			return this.api.get( options ).then( ( resp ) => {
 				if ( resp.error ) {
 					return util.Deferred().reject( resp.error.code );
 				}
@@ -113,49 +110,47 @@ EditorGateway.prototype = {
 				// page might not exist and caller might not have known.
 				if ( pageObj.missing !== undefined ) {
 					if ( pageObj.preloadcontent ) {
-						self.content = pageObj.preloadcontent.content;
-						self.hasChanged = !pageObj.preloadisdefault;
+						this.content = pageObj.preloadcontent.content;
+						this.hasChanged = !pageObj.preloadisdefault;
 					} else {
-						self.content = '';
+						this.content = '';
 					}
 				} else {
 					const revision = pageObj.revisions[0];
-					self.content = revision.content;
-					self.timestamp = revision.timestamp;
+					this.content = revision.content;
+					this.timestamp = revision.timestamp;
 				}
 
 				// save content a second time to be able to check for changes
-				self.originalContent = self.content;
-				self.blockinfo = self.getBlockInfo( pageObj );
-				self.wouldautocreate = pageObj.wouldautocreate && pageObj.wouldautocreate.edit;
-				self.notices = pageObj.editintro;
+				this.originalContent = this.content;
+				this.blockinfo = this.getBlockInfo( pageObj );
+				this.wouldautocreate = pageObj.wouldautocreate && pageObj.wouldautocreate.edit;
+				this.notices = pageObj.editintro;
 
 				return resolve();
 			} );
 		}
-	},
+	}
 
 	/**
 	 * Mark content as modified and set changes to be submitted when #save
 	 * is invoked.
 	 *
-	 * @memberof EditorGateway
 	 * @instance
 	 * @param {string} content New section content.
 	 */
-	setContent: function ( content ) {
+	setContent( content ) {
 		if ( this.originalContent !== content || this.fromModified ) {
 			this.hasChanged = true;
 		} else {
 			this.hasChanged = false;
 		}
 		this.content = content;
-	},
+	}
 
 	/**
 	 * Save the new content of the section, previously set using #setContent.
 	 *
-	 * @memberof EditorGateway
 	 * @instance
 	 * @param {Object} options Configuration options
 	 * @param {string} [options.summary] Optional summary for the edit.
@@ -163,13 +158,14 @@ EditorGateway.prototype = {
 	 * captcha.
 	 * @param {string} [options.captchaWord] If CAPTCHA was requested, term
 	 * displayed in the CAPTCHA.
+	 * @param {string} [options.editorinterface] Optional name of the editor
+	 * interface used for making the edit.
 	 * @return {jQuery.Deferred} On failure callback is passed an object with
 	 * `type` and `details` properties. `type` is a string describing the type
 	 * of error, `details` can be any object (usually error message).
 	 */
-	save: function ( options ) {
-		const self = this,
-			result = util.Deferred();
+	save( options ) {
+		const result = util.Deferred();
 
 		options = options || {};
 
@@ -178,27 +174,36 @@ EditorGateway.prototype = {
 		 *
 		 * @return {jQuery.Deferred}
 		 */
-		function saveContent() {
+		const saveContent = () => {
 			const apiOptions = {
 				action: 'edit',
 				errorformat: 'html',
 				errorlang: mw.config.get( 'wgUserLanguage' ),
 				errorsuselocal: 1,
 				formatversion: 2,
-				title: self.title,
+				title: this.title,
 				summary: options.summary,
 				captchaid: options.captchaId,
 				captchaword: options.captchaWord,
-				basetimestamp: self.timestamp,
-				starttimestamp: self.timestamp
+				basetimestamp: this.timestamp,
+				starttimestamp: this.timestamp
 			};
 
-			if ( self.content !== undefined ) {
-				apiOptions.text = self.content;
+			if ( this.content !== undefined ) {
+				apiOptions.text = this.content;
 			}
 
-			if ( self.sectionId ) {
-				apiOptions.section = self.sectionId;
+			if ( this.sectionId ) {
+				apiOptions.section = this.sectionId;
+			}
+
+			if ( 'editorinterface' in options ) {
+				apiOptions.editorinterface = options.editorinterface;
+			}
+
+			if ( 'isRespondingToForcedCaptcha' in options ) {
+				apiOptions.wgConfirmEditForceShowCaptcha =
+					!!options.isRespondingToForcedCaptcha;
 			}
 
 			// TODO: When `wouldautocreate` is true, we should also set up:
@@ -207,49 +212,45 @@ EditorGateway.prototype = {
 			// - apiOptions.returntoquery to be 'redirect=no' if we're saving a redirect
 			//   (but we have can't figure that out, unless we parse the wikitext)
 
-			self.api.postWithToken( 'csrf', apiOptions ).then( function ( data ) {
+			this.api.postWithToken( 'csrf', apiOptions ).then( ( data ) => {
 				if ( data && data.edit && data.edit.result === 'Success' ) {
-					self.hasChanged = false;
+					this.hasChanged = false;
 					result.resolve( data.edit.newrevid, data.edit.tempusercreatedredirect,
 						data.edit.tempusercreated );
 				} else {
 					result.reject( data );
 				}
-			}, function ( code, data ) {
+			}, ( code, data ) => {
 				result.reject( data );
 			} );
 			return result;
-		}
+		};
 
 		return saveContent();
-	},
+	}
 
 	/**
 	 * Abort any pending previews.
 	 *
-	 * @memberof EditorGateway
 	 * @instance
 	 */
-	abortPreview: function () {
+	abortPreview() {
 		if ( this._pending ) {
 			this._pending.abort();
 		}
-	},
+	}
 
 	/**
 	 * Get page preview from the API and abort any existing previews.
 	 *
-	 * @memberof EditorGateway
 	 * @instance
 	 * @param {Object} options API query parameters
 	 * @return {jQuery.Deferred}
 	 */
-	getPreview: function ( options ) {
+	getPreview( options ) {
 		let
 			sectionLine = '',
 			sectionId = '';
-
-		const self = this;
 
 		util.extend( options, {
 			action: 'parse',
@@ -271,15 +272,15 @@ EditorGateway.prototype = {
 		// Acquire a temporary user username before previewing, so that signatures and
 		// user-related magic words display the temp user instead of IP user in the
 		// preview. (T331397)
-		const promise = mw.user.acquireTempUserName().then( function () {
-			self._pending = self.api.post( options );
-			return self._pending;
+		const promise = mw.user.acquireTempUserName().then( () => {
+			this._pending = this.api.post( options );
+			return this._pending;
 		} );
 
-		return promise.then( function ( resp ) {
+		return promise.then( ( resp ) => {
 			if ( resp && resp.parse && resp.parse.text ) {
 				// When editing section 0 or the whole page, there is no section name, so skip
-				if ( self.sectionId && self.sectionId !== '0' &&
+				if ( this.sectionId && this.sectionId !== '0' &&
 					resp.parse.sections !== undefined &&
 					resp.parse.sections[0] !== undefined
 				) {
@@ -299,11 +300,11 @@ EditorGateway.prototype = {
 				return util.Deferred().reject();
 			}
 		} ).promise( {
-			abort: function () {
-				self._pending.abort();
+			abort: () => {
+				this._pending.abort();
 			}
 		} );
 	}
-};
+}
 
 module.exports = EditorGateway;

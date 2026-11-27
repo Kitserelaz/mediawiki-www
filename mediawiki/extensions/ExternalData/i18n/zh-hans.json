@@ -15,8 +15,8 @@
 			"沈澄心"
 		]
 	},
-	"getdata": "获取数据",
 	"externaldata-desc": "允许从外部URL、数据库和其他来源检索结构化数据",
+	"externaldata-disabled": "类<code>$1</code>已禁用：$2。要启用该类，wiki管理员必须从<code>$wgExternalDataDisabledClasses</code>配置设置中移除该类。",
 	"externaldata-no-param-specified": "错误：未指定“$1”参数。",
 	"externaldata-param-type-error": "错误：参数$1必须是$2类型。",
 	"externaldata-processing-exception": "运行预处理器或后处理器时抛出异常：$1",
@@ -54,7 +54,7 @@
 	"externaldata-url-hooks-aborted": "“$1”挂钩中止，返回错误：$2",
 	"externaldata-url-not-fetched": "从URL“$1”获取数据时出错：$2。",
 	"externaldata-url-unknown-error": "从URL“$1”获取数据时出现未知错误。",
-	"externaldata-url-not-allowed": "此wiki不允许URL“$1”。",
+	"externaldata-url-not-allowed": "此wiki不允许出现URL $1；您必须将其或其域名添加到<code>$wgExternalDataAllowedSources</code>。",
 	"externaldata-caught-exception-soap": "创建SOAP客户端时捕获异常$1。",
 	"externaldata-parsing-html-failed": "无法解析HTML：\n $1",
 	"externaldata-caught-exception-parsing-html": "解析HTML时捕获异常。错误消息是“$1”。",
@@ -76,6 +76,5 @@
 	"external-data-archive-could-not-extract": "错误：无法从$1档案提取文件<code>$2</code>（$3）",
 	"externaldata-no-local-variable": "错误：未设置本地变量“$1”。",
 	"externaldata-no-template": "错误：未指定模板。",
-	"externaldata-no-loop-body": "错误：第一个或第二个参数没有设置为循环体。",
-	"externaldata-getdata-badurl": "您必须在URL内指定页面名称。如“{{#Special:GetData}}/页面名称”。"
+	"externaldata-no-loop-body": "错误：第一个或第二个参数没有设置为循环体。"
 }

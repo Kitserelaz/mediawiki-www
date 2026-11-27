@@ -1,8 +1,9 @@
 'use strict';
-const Button = require( '../mobile.startup/Button' ),
-	View = require( '../mobile.startup/View' ),
-	Icon = require( '../mobile.startup/Icon' ),
-	util = require( '../mobile.startup/util' );
+const mobile = require( 'mobile.startup' );
+const Button = mobile.class.Button,
+	View = mobile.class.View,
+	Icon = mobile.class.Icon,
+	util = mobile.util;
 
 /**
  * Renders a block message details.
@@ -21,15 +22,11 @@ class BlockMessageDetails extends View {
 	 */
 	get defaults() {
 		return {
-			createDetailsAnchorHref: function () {
-				return function ( blockId, render ) {
-					return mw.util.getUrl( 'Special:BlockList', { wpTarget: '#' + render( blockId ) } );
-				};
-			},
-			createDetailsAnchorLabel: function () {
-				return mw.msg( 'mobile-frontend-editor-blocked-drawer-help' );
-			},
-			createTitle: function () {
+			createDetailsAnchorHref: () => ( blockId, render ) => mw.util.getUrl(
+				'Special:BlockList', { wpTarget: '#' + render( blockId ) }
+			),
+			createDetailsAnchorLabel: () => mw.msg( 'mobile-frontend-editor-blocked-drawer-help' ),
+			createTitle: () => {
 				let msgKey = 'mobile-frontend-editor-blocked-drawer-title';
 				if ( mw.user.isAnon() ) {
 					msgKey += '-ip';
@@ -44,7 +41,7 @@ class BlockMessageDetails extends View {
 				// * mobile-frontend-editor-blocked-drawer-title-ip-partial
 				return mw.msg( msgKey );
 			},
-			createBody: function () {
+			createBody: () => {
 				let msgKey = '';
 				if ( mw.user.isAnon() && this.anonOnly ) {
 					msgKey = 'mobile-frontend-editor-blocked-drawer-body';
@@ -71,11 +68,11 @@ class BlockMessageDetails extends View {
 			},
 			seeMoreLink: mw.msg( 'mobile-frontend-editor-blocked-drawer-body-link' ),
 			reasonHeader: mw.msg( 'mobile-frontend-editor-blocked-drawer-reason-header' ),
-			creatorHeader: function () {
+			creatorHeader: () => mw.msg(
+				'mobile-frontend-editor-blocked-drawer-creator-header',
 				// The gender is the subject (the blockee) not the object (the blocker).
-				return mw.msg( 'mobile-frontend-editor-blocked-drawer-creator-header',
-					mw.user.options.get( 'gender' ) );
-			},
+				mw.user.options.get( 'gender' )
+			),
 			expiryHeader: mw.msg( 'mobile-frontend-editor-blocked-drawer-expiry-header' )
 		};
 	}
@@ -111,9 +108,19 @@ class BlockMessageDetails extends View {
 
 		if ( cta && mw.config.get( 'wgMFTrackBlockNotices' ) ) {
 			mw.track( 'counter.MediaWiki.BlockNotices.' + wiki + '.MobileFrontend.ctaShown', 1 );
+			mw.track( 'stats.mediawiki_block_notices_total', 1, {
+				source: 'MobileFrontend',
+				action: 'ctaShown',
+				wiki
+			} );
 			config.events = {
-				click: function () {
+				click() {
 					mw.track( 'counter.MediaWiki.BlockNotices.' + wiki + '.MobileFrontend.ctaClicked', 1 );
+					mw.track( 'stats.mediawiki_block_notices_total', 1, {
+						source: 'MobileFrontend',
+						action: 'ctaClicked',
+						wiki
+					} );
 				}
 			};
 		}
@@ -125,7 +132,6 @@ class BlockMessageDetails extends View {
 	 * @inheritdoc
 	 */
 	postRender() {
-		const drawer = this;
 		this.$el.find( '.block-message-buttons' ).prepend(
 			new Button( this.getButtonConfig() ).$el
 		);
@@ -134,8 +140,8 @@ class BlockMessageDetails extends View {
 				icon: 'block-destructive'
 			} ) ).$el
 		);
-		this.options.parsedReason.then( function ( htmlReason ) {
-			drawer.$el.find( '.block-message-reason div' ).html( htmlReason );
+		this.options.parsedReason.then( ( htmlReason ) => {
+			this.$el.find( '.block-message-reason div' ).html( htmlReason );
 		} );
 	}
 

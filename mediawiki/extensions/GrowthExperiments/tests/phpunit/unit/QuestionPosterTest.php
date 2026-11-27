@@ -5,14 +5,19 @@ namespace GrowthExperiments\Tests\Unit;
 use GrowthExperiments\HelpPanel\QuestionPoster\QuestionPoster;
 use GrowthExperiments\HelpPanel\QuestionRecord;
 use MediaWiki\Content\WikitextContent;
+use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\PermissionManager;
 use MediaWiki\Revision\RevisionRecord;
+use MediaWiki\Status\Status;
 use MediaWiki\Storage\PageUpdater;
+use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\User;
 use MediaWikiUnitTestCase;
 use StatusValue;
 use Wikimedia\ScopedCallback;
+use Wikimedia\Stats\StatsFactory;
 use Wikimedia\TestingAccessWrapper;
 
 /**
@@ -29,15 +34,10 @@ class QuestionPosterTest extends MediaWikiUnitTestCase {
 
 		$permissionManager = $this->createMock( PermissionManager::class );
 		$permissionManager->method( 'addTemporaryUserRights' )
-			->willReturnCallback(
-				static function ( $user, $rights ) {
-					return new ScopedCallback(
-						static function () {
-							// Do nothing
-						}
-					);
-				}
-			);
+			->willReturnCallback( static fn ( $user, $rights ) => new ScopedCallback(
+				// Do nothing
+				static fn () => null
+			) );
 		$accessWrapper->permissionManager = $permissionManager;
 
 		// Needed for providing the user to the permission manager
@@ -47,6 +47,35 @@ class QuestionPosterTest extends MediaWikiUnitTestCase {
 		$accessWrapper->context = $requestContext;
 
 		return $questionPoster;
+	}
+
+	/**
+	 * @covers ::getRelevantTitle
+	 */
+	public function testGetRelevantTitleReturnsNullWhenNoRawTitle() {
+		$wikiPageFactory = $this->createMock( WikiPageFactory::class );
+		$titleFactory = $this->createMock( TitleFactory::class );
+		$permissionManager = $this->createMock( PermissionManager::class );
+		$statsFactory = StatsFactory::newNull();
+		$user = $this->createMock( User::class );
+		$ctx = new DerivativeContext( RequestContext::getMain() );
+		$ctx->setUser( $user );
+		$user->method( 'isNamed' )
+			->willReturn( true );
+
+		$questionPoster = $this->getMockBuilder( QuestionPoster::class )
+			->setConstructorArgs( [ $wikiPageFactory,
+				$titleFactory,
+				$permissionManager,
+				$statsFactory,
+				true,
+				true,
+				$ctx,
+				'test-body',
+				] )
+			->getMockForAbstractClass();
+
+		self::assertNull( $questionPoster->getRelevantTitle() );
 	}
 
 	/**
@@ -64,7 +93,6 @@ class QuestionPosterTest extends MediaWikiUnitTestCase {
 		$questionPoster->method( 'checkContent' )
 			->willReturn( StatusValue::newFatal( 'apierror-missingcontent-revid' ) );
 		$questionPoster->method( 'makeWikitextContent' )->willReturn( null );
-		$questionPoster->method( 'setSectionHeader' )->willReturn( null );
 		$questionPoster->method( 'getTargetContentModel' )->willReturn( CONTENT_MODEL_WIKITEXT );
 
 		/** @var \StatusValue $status */
@@ -89,7 +117,6 @@ class QuestionPosterTest extends MediaWikiUnitTestCase {
 			'getTargetContentModel',
 		] );
 		$questionPoster->method( 'makeWikitextContent' )->willReturn( null );
-		$questionPoster->method( 'setSectionHeader' )->willReturn( null );
 		$questionPoster->method( 'getTargetContentModel' )->willReturn( CONTENT_MODEL_WIKITEXT );
 		$pageUpdaterMock = $this->createNoOpMock( PageUpdater::class, [ 'grabParentRevision' ] );
 		$revisionRecordMock = $this->createMock( RevisionRecord::class );
@@ -130,13 +157,16 @@ class QuestionPosterTest extends MediaWikiUnitTestCase {
 			'setSectionHeader',
 			'getTargetContentModel',
 		] );
-		$questionPoster->method( 'makeWikitextContent' )->willReturn( null );
-		$questionPoster->method( 'setSectionHeader' )->willReturn( null );
+		$contentMock = $this->createNoOpMock( WikitextContent::class );
+		$questionPoster->method( 'makeWikitextContent' )->willReturn( $contentMock );
 		$questionPoster->method( 'getTargetContentModel' )->willReturn( CONTENT_MODEL_WIKITEXT );
 		$questionPoster->method( 'checkUserPermissions' )->willReturn(
 			StatusValue::newFatal( '' )
 		);
-		$questionPoster->method( 'checkContent' )->willReturn(
+		$questionPoster->expects( $this->once() )
+			->method( 'checkContent' )
+			->with( $contentMock )
+			->willReturn(
 			StatusValue::newGood( '' )
 		);
 		/** @var StatusValue $status */
@@ -160,8 +190,8 @@ class QuestionPosterTest extends MediaWikiUnitTestCase {
 			'setSectionHeader',
 			'runEditFilterMergedContentHook',
 			'getTargetContentModel',
+			'getSectionHeaderTemplate',
 		] );
-		$questionPoster->method( 'setSectionHeader' )->willReturn( null );
 		$questionPoster->method( 'getTargetContentModel' )->willReturn( CONTENT_MODEL_WIKITEXT );
 		$questionPoster->method( 'checkUserPermissions' )->willReturn(
 			StatusValue::newGood( '' )
@@ -172,10 +202,11 @@ class QuestionPosterTest extends MediaWikiUnitTestCase {
 		$contentMock = $this->createMock( WikitextContent::class );
 		$questionPoster->method( 'makeWikitextContent' )
 			->willReturn( $contentMock );
+		$questionPoster->method( 'getSectionHeaderTemplate' )->willReturn( '' );
 		$questionPoster->expects( $this->once() )
 			->method( 'runEditFilterMergedContentHook' )
 			->willReturn(
-				StatusValue::newFatal( '' )
+				Status::newFatal( '' )
 			);
 		/** @var StatusValue $status */
 		$status = $questionPoster->submit();
@@ -208,7 +239,7 @@ class QuestionPosterTest extends MediaWikiUnitTestCase {
 		$questionPoster = TestingAccessWrapper::newFromObject( $questionPosterMock );
 		$questionRecords = [
 			QuestionRecord::newFromArray( [ 'sectionHeader' => 'Foo' ] ),
-			QuestionRecord::newFromArray( [ 'sectionHeader' => 'Foo (2)' ] )
+			QuestionRecord::newFromArray( [ 'sectionHeader' => 'Foo (2)' ] ),
 		];
 		$questionPoster->existingQuestionsByUser = $questionRecords;
 		$this->assertSame(
@@ -227,7 +258,7 @@ class QuestionPosterTest extends MediaWikiUnitTestCase {
 		$questionPoster = TestingAccessWrapper::newFromObject( $questionPosterMock );
 		$questionRecords = [
 			QuestionRecord::newFromArray( [ 'sectionHeader' => 'Foo' ] ),
-			QuestionRecord::newFromArray( [ 'sectionHeader' => 'Foo (3)' ] )
+			QuestionRecord::newFromArray( [ 'sectionHeader' => 'Foo (3)' ] ),
 		];
 		$questionPoster->existingQuestionsByUser = $questionRecords;
 		$this->assertSame(

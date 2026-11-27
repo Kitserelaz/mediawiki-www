@@ -22,20 +22,19 @@ use MediaWiki\Babel\BabelBox\NotBabelBox;
 use MediaWiki\Babel\BabelBox\NullBabelBox;
 use MediaWiki\Config\Config;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Page\PageReference;
+use MediaWiki\Page\PageReferenceValue;
+use MediaWiki\Parser\Parser;
+use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\WikiMap\WikiMap;
-use Parser;
-use ParserOutput;
 
 /**
  * Main class for the Babel extension.
  */
 class Babel {
-	/**
-	 * @var Title
-	 */
-	protected static $title;
+	private readonly PageReference $page;
 
 	/**
 	 * Get a Config instance to use
@@ -54,26 +53,47 @@ class Babel {
 	 * @param string ...$parameters
 	 * @return string Babel tower.
 	 */
-	public static function Render( Parser $parser, string ...$parameters ): string {
-		self::$title = $parser->getTitle();
+	public static function render( Parser $parser, string ...$parameters ): string {
+		return ( new Babel( $parser ) )->doRender( $parameters );
+	}
 
+	private function __construct(
+		private readonly Parser $parser,
+	) {
+		// @phan-suppress-next-line PhanCoalescingNeverNull Needed for MW < 1.46
+		$this->page = $parser->getPage() ?? PageReferenceValue::localReference( NS_SPECIAL, 'BadTitle/Missing' );
+	}
+
+	/** @param string[] $parameters */
+	private function doRender( array $parameters ): string {
 		self::mTemplateLinkBatch( $parameters );
 
-		$parser->getOutput()->addModuleStyles( [ 'ext.babel' ] );
+		$this->parser->getOutput()->addModuleStyles( [ 'ext.babel' ] );
 
-		$content = self::mGenerateContentTower( $parser, $parameters );
+		$nocat = false;
+		$plain = false;
 
-		if ( preg_match( '/^plain\s*=\s*\S/', reset( $parameters ) ) ) {
+		foreach ( $parameters as $param ) {
+			if ( preg_match( '/^plain\s*=\s*\S/', $param ) ) {
+				$plain = true;
+			} elseif ( preg_match( '/^nocat\s*=\s*\S/', $param ) ) {
+				$nocat = true;
+			}
+		}
+
+		$content = $this->mGenerateContentTower( $parameters, !$nocat );
+
+		if ( $plain ) {
 			return $content;
 		}
 
 		if ( self::getConfig()->get( 'BabelUseUserLanguage' ) ) {
-			$uiLang = $parser->getOptions()->getUserLangObj();
+			$uiLang = $this->parser->getOptions()->getUserLangObj();
 		} else {
-			$uiLang = self::$title->getPageLanguage();
+			$uiLang = $this->parser->getTargetLanguage();
 		}
 
-		$top = wfMessage( 'babel', self::$title->getDBkey() )->inLanguage( $uiLang );
+		$top = wfMessage( 'babel', $this->page->getDBkey() )->inLanguage( $uiLang );
 
 		if ( $top->isDisabled() ) {
 			$top = '';
@@ -85,7 +105,7 @@ class Babel {
 			}
 			$top = '! class="mw-babel-header" | ' . $top;
 		}
-		$footer = wfMessage( 'babel-footer', self::$title->getDBkey() )->inLanguage( $uiLang );
+		$footer = wfMessage( 'babel-footer', $this->page->getDBkey() )->inLanguage( $uiLang );
 
 		$url = wfMessage( 'babel-footer-url' )->inContentLanguage();
 		$showFooter = '';
@@ -95,7 +115,7 @@ class Babel {
 		}
 
 		$tower = <<<EOT
-{|class="mw-babel-wrapper notheme"
+{|class="mw-babel-wrapper"
 $top
 |-
 | $content
@@ -106,7 +126,7 @@ EOT;
 		if ( self::getConfig()->get( 'BabelAllowOverride' ) ) {
 			// Make sure the page shows up as transcluding MediaWiki:babel-category-override
 			$title = Title::makeTitle( NS_MEDIAWIKI, "Babel-category-override" );
-			$revision = $parser->fetchCurrentRevisionRecordOfTitle( $title );
+			$revision = $this->parser->fetchCurrentRevisionRecordOfTitle( $title );
 			if ( $revision === null ) {
 				$revid = null;
 			} else {
@@ -115,36 +135,38 @@ EOT;
 			// Passing null here when the page doesn't exist matches what the core parser does
 			// even though the documentation of the method says otherwise.
 			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable
-			$parser->getOutput()->addTemplate( $title, $title->getArticleID(), $revid );
+			$this->parser->getOutput()->addTemplate( $title, $title->getArticleID(), $revid );
 		}
 		return $tower;
 	}
 
 	/**
-	 * @param Parser $parser
 	 * @param string[] $parameters
+	 * @param bool $generateCategories whether to generate categories
 	 *
 	 * @return string Wikitext
 	 */
-	private static function mGenerateContentTower( Parser $parser, array $parameters ): string {
+	private function mGenerateContentTower( array $parameters, bool $generateCategories ): string {
 		$content = '';
 		// collects name=value parameters to be passed to wiki templates.
 		$templateParameters = [];
-		$first = true;
 
-		$generateCategories = !preg_match( '/^nocat\s*=\s*\S/', reset( $parameters ) );
+		$pendingBabelBox = null;
 
 		foreach ( $parameters as $name ) {
+			// Keep this check in sync with mTemplateLinkBatch
 			if ( strpos( $name, '=' ) !== false ) {
 				$templateParameters[] = $name;
-				if ( !$first || !preg_match( '/^(plain|nocat)\s*=\s*\S/', $name ) ) {
-					$parser->addTrackingCategory( "babel-template-params-category" );
-				}
 				continue;
 			}
-
-			$content .= self::mGenerateContent( $parser, $name, $templateParameters, $generateCategories );
-			$first = false;
+			if ( $pendingBabelBox ) {
+				$content .= $this->mGenerateContent( $pendingBabelBox, $templateParameters, $generateCategories );
+			}
+			$templateParameters = [];
+			$pendingBabelBox = $name;
+		}
+		if ( $pendingBabelBox ) {
+			$content .= $this->mGenerateContent( $pendingBabelBox, $templateParameters, $generateCategories );
 		}
 
 		return $content;
@@ -161,14 +183,12 @@ EOT;
 	}
 
 	/**
-	 * @param Parser $parser
 	 * @param string $name
 	 * @param string[] $templateParameters
 	 * @param bool $generateCategories Whether to add categories
 	 * @return string Wikitext
 	 */
-	private static function mGenerateContent(
-		Parser $parser,
+	private function mGenerateContent(
 		string $name,
 		array $templateParameters,
 		bool $generateCategories
@@ -176,7 +196,7 @@ EOT;
 		$components = self::mParseParameter( $name );
 
 		$template = wfMessage( 'babel-template', $name )->inContentLanguage()->text();
-		$parserOutput = $parser->getOutput();
+		$parserOutput = $this->parser->getOutput();
 
 		if ( $name === '' ) {
 			$box = new NullBabelBox();
@@ -184,18 +204,19 @@ EOT;
 			// Valid parameter syntax (with lowercase language code), babel box
 			$box = new LanguageBabelBox(
 				self::getConfig(),
-				self::$title,
+				$this->page,
+				$this->parser->getTargetLanguage(),
 				$components['code'],
 				$components['level'],
 			);
 			self::setExtensionData( $parserOutput, $components['code'], $components['level'] );
 		} elseif ( self::mPageExists( $template ) ) {
 			// Check for an existing template
-			$templateParameters[0] = $template;
+			array_unshift( $templateParameters, $template );
 			$template = implode( '|', $templateParameters );
 			$box = new NotBabelBox(
-				self::$title->getPageLanguage()->getDir(),
-				$parser->replaceVariables( "{{{$template}}}" )
+				$this->parser->getTargetLanguage()->getDir(),
+				$this->parser->replaceVariables( "{{" . $template . "}}" )
 			);
 		} elseif ( self::mValidTitle( $template ) ) {
 			// Non-existing page, so try again as a babel box,
@@ -204,7 +225,8 @@ EOT;
 			if ( $components2 !== false ) {
 				$box = new LanguageBabelBox(
 					self::getConfig(),
-					self::$title,
+					$this->page,
+					$this->parser->getTargetLanguage(),
 					$components2['code'],
 					$components2['level'],
 				);
@@ -213,14 +235,14 @@ EOT;
 			} else {
 				// Non-existent page and invalid parameter syntax, red link.
 				$box = new NotBabelBox(
-					self::$title->getPageLanguage()->getDir(),
+					$this->parser->getTargetLanguage()->getDir(),
 					'[[' . $template . ']]'
 				);
 			}
 		} else {
 			// Invalid title, output raw.
 			$box = new NotBabelBox(
-				self::$title->getPageLanguage()->getDir(),
+				$this->parser->getTargetLanguage()->getDir(),
 				$template
 			);
 		}
@@ -239,6 +261,10 @@ EOT;
 	protected static function mTemplateLinkBatch( array $parameters ): void {
 		$titles = [];
 		foreach ( $parameters as $name ) {
+			// No need to check if template parameters exist. Keep this check in sync with mGenerateContentTower above
+			if ( strpos( $name, '=' ) !== false ) {
+				continue;
+			}
 			$title = Title::newFromText( wfMessage( 'babel-template', $name )->inContentLanguage()->text() );
 			if ( is_object( $title ) ) {
 				$titles[] = $title;
@@ -251,7 +277,7 @@ EOT;
 	}
 
 	/**
-	 * Identify whether or not a page exists.
+	 * Identify whether a page exists.
 	 *
 	 * @param string $name Name of the page to check.
 	 * @return bool Indication of whether the page exists.
@@ -265,7 +291,7 @@ EOT;
 	/**
 	 * Identify whether the passed string would make a valid page name.
 	 *
-	 * @param string $name Name of page to check.
+	 * @param string $name Name of the page to check.
 	 * @return bool Indication of whether the title is valid.
 	 */
 	protected static function mValidTitle( string $name ): bool {
@@ -287,7 +313,7 @@ EOT;
 		$babelCode = $strtolower ? strtolower( $parameter ) : $parameter;
 		// Try treating the parameter as a language code (for default level).
 		$code = BabelLanguageCodes::getCode( $babelCode );
-		if ( $code !== false ) {
+		if ( $code !== null ) {
 			$return['code'] = $code;
 			$return['level'] = self::getConfig()->get( 'BabelDefaultLevel' );
 			return $return;
@@ -303,7 +329,7 @@ EOT;
 		$babelCode = $strtolower ? strtolower( $code ) : $code;
 		// Validate code.
 		$return['code'] = BabelLanguageCodes::getCode( $babelCode );
-		if ( $return['code'] === false ) {
+		if ( $return['code'] === null ) {
 			return false;
 		}
 		// Validate level.
@@ -463,5 +489,3 @@ EOT;
 		return $babelDB->getForRemoteUser( $centralDb, $user->getName() );
 	}
 }
-
-class_alias( Babel::class, 'Babel' );

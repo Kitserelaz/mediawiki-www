@@ -5,15 +5,15 @@
 			"Bgo eiu",
 			"BukhariSaeed",
 			"Khalid Mahmood",
-			"Saanvel"
+			"Saanvel",
+			"Ayaat123"
 		]
 	},
 	"mobile-frontend-account-create-captcha-placeholder": "کنفرمیشن کوڈ بھیجو",
-	"mobile-frontend-changeslist-nocomment": "لکھائی دا خلاصہ کوئی نہیں",
-	"mobile-frontend-clear-search": "صاف",
 	"mobile-frontend-copyright": "لکھت $1 لسنس تھلے ہیگا اے۔",
 	"mobile-frontend-desc": "موبائل وکھالہ",
 	"mobile-frontend-editor-anonwarning": "'''خبردار''': تسی اندر نہیں آئے\nتواڈا ''آئی پی'' پتہ فائل وچ لکھیا جائے گا تے ساریاں نوں دسے گا۔ اگر تسیں $1 اندر آؤ یا $2 کھاتہ کھولو تے تواڈیاں لکھتاں تواڈے ورتن ناں نال جڑیاں ہون گئیاں۔",
+	"mobile-frontend-editor-anonwarning-soft-separator": "یا",
 	"mobile-frontend-editor-blocked-drawer-action-login": "لاگ ان",
 	"mobile-frontend-editor-blocked-drawer-action-ok": "اوکے",
 	"mobile-frontend-editor-blocked-drawer-body-link": "ہور دیکھو",
@@ -38,11 +38,9 @@
 	"mobile-frontend-media-details": "تفصیل",
 	"mobile-frontend-media-load-fail-retry": "سجرا",
 	"mobile-frontend-missing-image": "تصویر",
-	"mobile-frontend-opt-in-explain": "بیٹا پسند کرن نال تسیں اج کم ہوندیاں تھانواں تے آؤگے جتھے مسلے تے بگز ہوسکدے نیں۔",
 	"mobile-frontend-overlay-close": "بند",
 	"mobile-frontend-privacy-link-text": "پرائیویسی",
 	"mobile-frontend-save-settings": "بچاؤ",
-	"mobile-frontend-search-content": "صفحہ وچ تلاش",
 	"mobile-frontend-terms-text": "ورتن شرطاں",
 	"mobile-frontend-view": "موبائیل سائٹ",
 	"mobile-frontend-view-desktop": "ڈیسک ٹاپ",
@@ -57,6 +55,5 @@
 	"tag-mobile_edit": "موبائیل توں لکھائی",
 	"tag-mobile_web_edit": "موبائیل ویب سائیٹ توں تبدیلی",
 	"mobile-frontend-mobile-option-amc-learn-more": "ہور سکھو",
-	"mobile-frontend-amc-outreach-no-thanks": "نئیں، شکریہ۔",
 	"prefs-mobile": "موبائل ترجیحاں"
 }

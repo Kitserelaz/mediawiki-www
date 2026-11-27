@@ -65,6 +65,12 @@ mw.JsonConfig.JsonEditDialog.prototype.initialize = function () {
 	this.data = null;
 	this.fieldTypes = null;
 
+	this.sizeWarning = new OO.ui.MessageWidget( {
+		type: 'warning',
+		showClose: true,
+		label: mw.msg( 'jsonconfig-edit-dialog-warning-data-large' )
+	} );
+
 	this.tableWidget = new mw.widgets.TableWidget( {
 		showRowLabels: false,
 		allowRowInsertion: true,
@@ -77,7 +83,7 @@ mw.JsonConfig.JsonEditDialog.prototype.initialize = function () {
 		scrollable: true
 	} );
 
-	this.panel.$element.append( this.tableWidget.$element );
+	this.panel.$element.append( this.sizeWarning.$element, this.tableWidget.$element );
 	this.$body.append( this.panel.$element );
 };
 
@@ -87,8 +93,6 @@ mw.JsonConfig.JsonEditDialog.prototype.initialize = function () {
 mw.JsonConfig.JsonEditDialog.prototype.getSetupProcess = function ( data ) {
 	return mw.JsonConfig.JsonEditDialog.super.prototype.getSetupProcess.call( this, data )
 		.next( function () {
-			var i, fields, fieldNames;
-
 			this.json = data;
 
 			try {
@@ -101,23 +105,28 @@ mw.JsonConfig.JsonEditDialog.prototype.getSetupProcess = function ( data ) {
 
 			this.data = this.json.data;
 
-			fields = this.json.schema.fields;
-			fieldNames = fields.map( function ( value ) {
-				return value.name;
-			} );
-			this.fieldTypes = fields.map( function ( value ) {
-				return value.type;
-			} );
+			const fields = this.json.schema.fields;
+			const fieldNames = fields.map( ( value ) => value.name );
+			this.fieldTypes = fields.map( ( value ) => value.type );
+
+			this.sizeWarning.toggle( this.json.data.length * this.json.schema.fields.length > 5000 );
 
 			// Insert column metadata
-			for ( i = 0; i < fieldNames.length; i++ ) {
+			for ( let i = 0; i < fieldNames.length; i++ ) {
 				this.tableWidget.insertColumn( null, i, i, fieldNames[ i ] );
 			}
 
 			// Insert row data (with no metadata)
-			for ( i = 0; i < this.data.length; i++ ) {
+			for ( let i = 0; i < this.data.length; i++ ) {
 				this.tableWidget.insertRow( this.data[ i ] );
 			}
+
+			// Make the dialog fullscreen if the usual size would require horizontal scrolling (T275192)
+			this.setSize( 'large' );
+			if ( this.panel.$element.prop( 'scrollWidth' ) > this.panel.$element.prop( 'clientWidth' ) ) {
+				this.setSize( 'full' );
+			}
+
 		}, this );
 };
 
@@ -128,7 +137,7 @@ mw.JsonConfig.JsonEditDialog.prototype.getSetupProcess = function ( data ) {
  * @throws {Error}
  */
 mw.JsonConfig.JsonEditDialog.prototype.validateJson = function () {
-	var json = this.json;
+	const json = this.json;
 
 	if ( !Array.isArray( json.data ) ) {
 		throw new Error( mw.msg( 'jsonconfig-edit-dialog-error-data-missing' ) );
@@ -143,34 +152,24 @@ mw.JsonConfig.JsonEditDialog.prototype.validateJson = function () {
 	}
 
 	if (
-		!json.schema.fields.every( function ( field ) {
-			return typeof field.name === 'string';
-		} )
+		!json.schema.fields.every( ( field ) => typeof field.name === 'string' )
 	) {
 		throw new Error( mw.msg( 'jsonconfig-edit-dialog-error-field-name-missing' ) );
 	}
 
 	// TODO: Handle 'boolean' and 'localized' types
 	if (
-		!json.schema.fields.every( function ( field ) {
-			return ( field.type === 'number' || field.type === 'string' );
-		} )
+		!json.schema.fields.every( ( field ) => ( field.type === 'number' || field.type === 'string' ) )
 	) {
 		throw new Error( mw.msg( 'jsonconfig-edit-dialog-error-field-type-invalid' ) );
 	}
 
 	// Each data item is an array with the same length as fields
 	if (
-		!json.data.every( function ( item ) {
-			return Array.isArray( item ) &&
-				item.length === json.schema.fields.length;
-		} )
+		!json.data.every( ( item ) => Array.isArray( item ) &&
+				item.length === json.schema.fields.length )
 	) {
 		throw new Error( mw.msg( 'jsonconfig-edit-dialog-error-data-invalid' ) );
-	}
-
-	if ( json.data.length * json.schema.fields.length > 5000 ) {
-		throw new Error( mw.msg( 'jsonconfig-edit-dialog-error-data-too-large' ) );
 	}
 };
 
@@ -188,14 +187,12 @@ mw.JsonConfig.JsonEditDialog.prototype.getActionProcess = function ( action ) {
 	switch ( action ) {
 		case 'apply':
 			return new OO.ui.Process( function () {
-				var i, j, data;
-
-				data = this.tableWidget.model.data;
+				const data = this.tableWidget.model.data;
 
 				// Ensure data values are correct type
 				// TODO: Handle 'boolean' and 'localized' types
-				for ( i = 0; i < data.length; i++ ) {
-					for ( j = 0; j < data[ i ].length; j++ ) {
+				for ( let i = 0; i < data.length; i++ ) {
+					for ( let j = 0; j < data[ i ].length; j++ ) {
 						if ( this.fieldTypes[ j ] === 'number' ) {
 							data[ i ][ j ] = +data[ i ][ j ];
 						}

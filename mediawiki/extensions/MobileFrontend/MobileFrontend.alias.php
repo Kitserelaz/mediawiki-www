@@ -12,7 +12,6 @@ $specialPageAliases = [];
 $specialPageAliases['en'] = [
 	'Uploads' => [ 'Uploads' ],
 	'History' => [ 'History' ],
-	'MobileCite' => [ 'MobileCite' ],
 	'MobileOptions' => [ 'MobileOptions' ],
 	'MobileDiff' => [ 'MobileDiff' ],
 	'MobileLanguages' => [ 'MobileLanguages' ],
@@ -51,7 +50,10 @@ $specialPageAliases['av'] = [
 
 /** Azerbaijani (azərbaycanca) */
 $specialPageAliases['az'] = [
+	'Uploads' => [ 'Yükləmələrim' ],
 	'History' => [ 'Tarixçə' ],
+	'MobileOptions' => [ 'MobilSeçimlər' ],
+	'MobileDiff' => [ 'MobilFərq' ],
 	'MobileLanguages' => [ 'MobilDillər' ],
 ];
 
@@ -67,7 +69,6 @@ $specialPageAliases['bgn'] = [
 /** Bengali (বাংলা) */
 $specialPageAliases['bn'] = [
 	'History' => [ 'ইতিহাস' ],
-	'MobileCite' => [ 'মোবাইল_উদ্ধৃতি' ],
 	'MobileOptions' => [ 'মোবাইল_বিকল্প' ],
 	'Uploads' => [ 'আপলোডসমূহ' ],
 	'MobileDiff' => [ 'মোবাইল_পার্থক্য' ],
@@ -84,7 +85,6 @@ $specialPageAliases['ce'] = [
 /** Czech (čeština) */
 $specialPageAliases['cs'] = [
 	'History' => [ 'Historie' ],
-	'MobileCite' => [ 'Mobilní_citace' ],
 	'MobileOptions' => [ 'Mobilní_nastavení' ],
 	'Uploads' => [ 'Vaše_soubory' ],
 	'MobileDiff' => [ 'Mobilní_rozdíl' ],
@@ -209,7 +209,6 @@ $specialPageAliases['lb'] = [
 	'Uploads' => [ 'Eropgeluede_Fichieren' ],
 	'MobileDiff' => [ 'Mobilen_Ënnerscheed' ],
 	'MobileLanguages' => [ 'Mobil_Sproochen' ],
-	'Nearby' => [ 'Nobäi' ],
 ];
 
 /** Northern Luri (لۊری شومالی) */
@@ -253,7 +252,6 @@ $specialPageAliases['nan'] = [
 $specialPageAliases['nb'] = [
 	'Uploads' => [ 'Opplastinger' ],
 	'History' => [ 'Historikk' ],
-	'MobileCite' => [ 'Mobilsitering' ],
 	'MobileOptions' => [ 'Mobilinnstillinger' ],
 	'MobileDiff' => [ 'Mobildiff' ],
 	'MobileLanguages' => [ 'Mobilspråk' ],
@@ -284,7 +282,6 @@ $specialPageAliases['pa'] = [
 $specialPageAliases['pl'] = [
 	'Uploads' => [ 'Przesłane' ],
 	'History' => [ 'Historia' ],
-	'MobileCite' => [ 'Cytowanie_mobilne' ],
 	'MobileOptions' => [ 'Ustawienia_mobile' ],
 	'MobileDiff' => [ 'Różnica_mobilna' ],
 	'MobileLanguages' => [ 'Języki_mobilne' ],
@@ -305,7 +302,6 @@ $specialPageAliases['scn'] = [
 /** Slovak (slovenčina) */
 $specialPageAliases['sk'] = [
 	'History' => [ 'História', 'Historia' ],
-	'MobileCite' => [ 'Mobilná_citácia', 'MobilnáCitácia', 'Mobilna_citacia', 'MobilnaCitacia' ],
 	'MobileOptions' => [ 'Mobilné_nastavenia', 'MobilnéNastavenia', 'Mobilne_nastavenia', 'MobilneNastavenia' ],
 	'Uploads' => [ 'Nahrané_súbory', 'NahranéSúbory', 'Nahrane_subory', 'NahraneSubory' ],
 	'MobileDiff' => [ 'Mobilný_rozdiel', 'MobilnýRozdiel', 'Mobilny_rozdiel', 'MobilnyRozdiel' ],
@@ -315,7 +311,6 @@ $specialPageAliases['sk'] = [
 /** Serbian (Cyrillic script) (српски (ћирилица)) */
 $specialPageAliases['sr-cyrl'] = [
 	'History' => [ 'Историја' ],
-	'MobileCite' => [ 'МобилнеРеференце', 'Мобилне_референце' ],
 	'MobileOptions' => [ 'МобилнаПодешавања', 'Мобилна_подешавања' ],
 	'Uploads' => [ 'Отпремања' ],
 	'MobileDiff' => [ 'МобилнеРазлике', 'Мобилне_разлике' ],
@@ -325,7 +320,6 @@ $specialPageAliases['sr-cyrl'] = [
 /** Serbian (Latin script) (srpski (latinica)) */
 $specialPageAliases['sr-latn'] = [
 	'History' => [ 'Istorija' ],
-	'MobileCite' => [ 'MobilneReference', 'Mobilne_reference' ],
 	'MobileOptions' => [ 'MobilnaPodešavanja', 'Mobilna_podešavanja' ],
 	'Uploads' => [ 'Otpremanja' ],
 	'MobileDiff' => [ 'MobilneRazlike', 'Mobilne_razlike' ],
@@ -350,7 +344,6 @@ $specialPageAliases['uk'] = [
 /** Urdu (اردو) */
 $specialPageAliases['ur'] = [
 	'History' => [ 'تاریخچہ', 'تاریخ' ],
-	'MobileCite' => [ 'موبائل_حوالہ' ],
 	'MobileOptions' => [ 'اختیارات_موبائل', 'موبائل_اختیارات' ],
 	'Uploads' => [ 'اپلوڈ_کردہ' ],
 	'MobileDiff' => [ 'موبائل_فرق' ],

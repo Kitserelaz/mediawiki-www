@@ -4,6 +4,7 @@ namespace GrowthExperiments\HomepageModules\SuggestedEditsComponents;
 
 use GrowthExperiments\NewcomerTasks\Task\TaskSet;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
+use MediaWiki\Language\MessageLocalizer;
 use OOUI\ButtonWidget;
 use OOUI\IconWidget;
 use OOUI\Tag;
@@ -16,7 +17,7 @@ use OOUI\Widget;
  */
 class TaskExplanationWidget extends Widget {
 
-	/** @var \MessageLocalizer */
+	/** @var MessageLocalizer */
 	private $localizer;
 
 	/** @var TaskType */
@@ -31,7 +32,6 @@ class TaskExplanationWidget extends Widget {
 			return;
 		}
 		$this->taskType = $taskSet[0]->getTaskType();
-		/** @var \MessageLocalizer $localizer */
 		$this->localizer = $config['localizer'];
 
 		$this->appendContent(
@@ -45,9 +45,6 @@ class TaskExplanationWidget extends Widget {
 		);
 	}
 
-	/**
-	 * @return Tag
-	 */
 	private function getInfoRow(): Tag {
 		return ( new Tag( 'div' ) )
 			->addClasses( [ 'suggested-edits-taskexplanation-additional-info' ] )
@@ -57,18 +54,12 @@ class TaskExplanationWidget extends Widget {
 			);
 	}
 
-	/**
-	 * @return Tag
-	 */
 	private function getName(): Tag {
 		return ( new Tag( 'span' ) )
 			->addClasses( [ 'suggested-edits-task-explanation-heading' ] )
 			->appendContent( $this->taskType->getName( $this->localizer )->text() );
 	}
 
-	/**
-	 * @return ButtonWidget
-	 */
 	private function getInfo(): ButtonWidget {
 		return new ButtonWidget( [
 			'icon' => 'info-unpadded',
@@ -79,34 +70,25 @@ class TaskExplanationWidget extends Widget {
 		] );
 	}
 
-	/**
-	 * @return IconWidget|null
-	 */
 	private function getIcon(): ?IconWidget {
 		$iconData = $this->taskType->getIconData();
 		if ( array_key_exists( 'icon', $iconData ) ) {
 			return new IconWidget(
 				[
 					'icon' => $iconData['icon'],
-					'classes' => [ 'suggested-edits-task-explanation-icon' ]
+					'classes' => [ 'suggested-edits-task-explanation-icon' ],
 				]
 			);
 		}
 		return null;
 	}
 
-	/**
-	 * @return Tag
-	 */
 	private function getDescriptionRow(): Tag {
 		return ( new Tag( 'p' ) )
 			->addClasses( [ 'suggested-edits-short-description' ] )
 			->appendContent( $this->taskType->getShortDescription( $this->localizer )->text() );
 	}
 
-	/**
-	 * @return Tag
-	 */
 	private function getDifficultyAndTime(): Tag {
 		$difficulty = $this->taskType->getDifficulty();
 		return ( new Tag( 'div' ) )
@@ -121,7 +103,7 @@ class TaskExplanationWidget extends Widget {
 							// * suggested-edits-difficulty-indicator-easy
 							// * suggested-edits-difficulty-indicator-medium
 							// * suggested-edits-difficulty-indicator-hard
-							'suggested-edits-difficulty-indicator suggested-edits-difficulty-indicator-' . $difficulty
+							'suggested-edits-difficulty-indicator suggested-edits-difficulty-indicator-' . $difficulty,
 						] )->appendContent(
 							$this->localizer->msg(
 								'growthexperiments-homepage-suggestededits-difficulty-indicator-label-' .
@@ -129,7 +111,7 @@ class TaskExplanationWidget extends Widget {
 							)->text()
 						),
 						( new Tag( 'div' ) )->addClasses( [
-							'suggested-edits-difficulty-level'
+							'suggested-edits-difficulty-level',
 						] )->appendContent( $this->taskType->getTimeEstimate( $this->localizer )->text() )
 					)
 			);

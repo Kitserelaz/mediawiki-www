@@ -106,6 +106,7 @@
 </template>
 
 <script>
+const { inject } = require( 'vue' );
 const moment = require( 'moment' );
 const { getIntlLocale } = require( '../utils/Utils.js' );
 const CScoreCard = require( './CScoreCard.vue' );
@@ -116,17 +117,16 @@ const {
 	cdxIconUserTalk,
 	cdxIconClock,
 	cdxIconChart,
-	cdxIconInfoFilled
+	cdxIconInfoFilled,
 } = require( './icons.json' );
-const { NO_DATA_CHARACTER, DATA_ROWS_LIMIT } = require( '../ext.growthExperiments.Homepage.Impact/constants.js' );
+const { NO_DATA_CHARACTER } = require( '../ext.growthExperiments.Homepage.Impact/constants.js' );
 
 // @vue/component
 module.exports = exports = {
-	compatConfig: { MODE: 3 },
 	compilerOptions: { whitespace: 'condense' },
 	components: {
 		CScoreCard,
-		CText
+		CText,
 	},
 	props: {
 		/**
@@ -134,21 +134,21 @@ module.exports = exports = {
 		 */
 		userName: {
 			type: String,
-			default: null
+			default: null,
 		},
 		/**
 		 * Should the score cards refer to the user in third person? Default is first person.
 		 */
 		renderThirdPerson: {
 			type: Boolean,
-			default: false
+			default: false,
 		},
 		/**
 		 * Does the browser support Intl?
 		 */
 		hasIntl: {
 			type: Boolean,
-			default: false
+			default: false,
 		},
 		/**
 		 * List of score cards that should be included
@@ -166,26 +166,30 @@ module.exports = exports = {
 				'edit-count',
 				'thanks-count',
 				'last-edit',
-				'best-streak'
-			]
+				'best-streak',
+			],
 		},
 		/**
 		 * JavaScript representation of the UserImpact PHP object
 		 */
 		data: {
 			type: Object,
-			default: null
-		}
+			default: null,
+		},
 	},
 	emits: [ 'interaction' ],
 	setup() {
+		const maxEdits = inject( 'IMPACT_MAX_EDITS' );
+		const maxThanks = inject( 'IMPACT_MAX_THANKS' );
 		return {
 			cdxIconEdit,
 			cdxIconEditUndo,
 			cdxIconUserTalk,
 			cdxIconClock,
 			cdxIconChart,
-			cdxIconInfoFilled
+			cdxIconInfoFilled,
+			maxEdits,
+			maxThanks,
 		};
 	},
 	computed: {
@@ -204,8 +208,9 @@ module.exports = exports = {
 		receivedThanksCount() {
 			if ( !this.data ) {
 				return NO_DATA_CHARACTER;
-			} else if ( this.data.receivedThanksCount >= DATA_ROWS_LIMIT ) {
-				return this.$i18n( 'growthexperiments-homepage-impact-scores-over-limit' );
+			} else if ( this.data.receivedThanksCount >= this.maxThanks ) {
+				return this.$i18n( 'growthexperiments-homepage-impact-scores-over-limit',
+					this.$filters.convertNumber( this.maxThanks ) ).text();
 			}
 			return this.$filters.convertNumber( this.data.receivedThanksCount );
 		},
@@ -213,12 +218,12 @@ module.exports = exports = {
 			return this.renderThirdPerson ?
 				this.$i18n(
 					'growthexperiments-homepage-impact-scores-thanks-info-text-third-person',
-					this.$filters.convertNumber( DATA_ROWS_LIMIT )
+					this.$filters.convertNumber( this.maxThanks )
 				).text() :
 				this.$i18n(
 					'growthexperiments-homepage-impact-scores-thanks-info-text',
 					'', // used to be the username
-					this.$filters.convertNumber( DATA_ROWS_LIMIT )
+					this.$filters.convertNumber( this.maxThanks )
 				).text();
 		},
 		lastEditFormattedTimeAgo() {
@@ -273,12 +278,12 @@ module.exports = exports = {
 			return this.renderThirdPerson ?
 				this.$i18n(
 					'growthexperiments-homepage-impact-scores-best-streak-info-text-third-person',
-					this.$filters.convertNumber( DATA_ROWS_LIMIT )
+					this.$filters.convertNumber( this.maxEdits )
 				).text() :
 				this.$i18n(
 					'growthexperiments-homepage-impact-scores-best-streak-info-text',
 					'', // used to be the username
-					this.$filters.convertNumber( DATA_ROWS_LIMIT )
+					this.$filters.convertNumber( this.maxEdits )
 				).text();
 		},
 		longestEditingStreakSecondParagraph() {
@@ -292,7 +297,7 @@ module.exports = exports = {
 					message = 'growthexperiments-homepage-impact-scores-best-streak-info-data-text';
 					args = [
 						this.$filters.convertNumber( this.data.longestEditingStreak.datePeriod.days ),
-						...args
+						...args,
 					];
 				}
 
@@ -315,15 +320,15 @@ module.exports = exports = {
 		},
 		revertsUrl() {
 			return mw.util.getUrl( `Special:Contributions/${ this.userName }`, {
-				tagfilter: 'mw-reverted'
+				tagfilter: 'mw-reverted',
 			} );
 		},
 		thanksUrl() {
 			return mw.util.getUrl( 'Special:Log', {
 				type: 'thanks',
-				page: this.userName
+				page: this.userName,
 			} );
-		}
-	}
+		},
+	},
 };
 </script>

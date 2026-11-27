@@ -1,5 +1,5 @@
 <?php
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use MediaWiki\Json\FormatJson;
 use MediaWiki\MediaWikiServices;
@@ -7,10 +7,6 @@ use MediaWiki\Page\PageReference;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Registration\ExtensionRegistry;
-
-/**
- * @package JsonConfig
- */
 
 class JCMapDataContentView extends JCContentView {
 
@@ -110,6 +106,15 @@ EOT;
     "zoom": 3,
     "latitude": 0,
     "longitude": 0,
+
+	// Optional array of categories for the Map data page.
+    "mediawikiCategories": [
+    	{
+    		"name": "ExampleCategory",
+    		// Optional sort key
+    		"sort": "ExampleSortKey"
+    	}
+    ],
     "data": {
 
         ... GeoJSON ...
@@ -119,3 +124,6 @@ EOT;
 EOT;
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCMapDataContentView::class, 'JsonConfig\\JCMapDataContentView' );

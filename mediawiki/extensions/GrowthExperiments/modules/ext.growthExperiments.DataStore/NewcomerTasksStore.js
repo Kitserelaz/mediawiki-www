@@ -50,7 +50,7 @@ function NewcomerTasksStore( root ) {
 		defaultTaskTypes: CONSTANTS.DEFAULT_TASK_TYPES,
 		suggestedEditsConfig: suggestedEditsConfig,
 		aqsConfig: aqsConfig,
-		isMobile: OO.ui.isMobile()
+		isMobile: OO.ui.isMobile(),
 	} );
 	/** @property {jQuery.Promise|null} apiPromise Promise for fetching tasks */
 	this.apiPromise = null;
@@ -301,7 +301,7 @@ NewcomerTasksStore.prototype.fetchTasks = function ( context, config ) {
 		this.apiPromise.abort();
 	}
 
-	const promise = $.Deferred(),
+	const deferred = $.Deferred(),
 		apiConfig = { context: context };
 
 	if ( config && config.excludePageId ) {
@@ -338,7 +338,13 @@ NewcomerTasksStore.prototype.fetchTasks = function ( context, config ) {
 		this.allTasksFetched = false;
 		this.tasksFetchedCount = data.tasks.length;
 		this.currentTaskIndex = 0;
-		if ( this.preloadedFirstTask ) {
+		const assertFiltersAreEqual = () => {
+			const prefs = this.api.getPreferences();
+			return prefs.taskTypes === this.filters.taskTypes &&
+				prefs.topicFilters.topics.toString() === this.filters.topics.toString() &&
+				prefs.topicFilters.topicsMatchMode === this.filters.topicsMatchMode;
+		};
+		if ( this.preloadedFirstTask && assertFiltersAreEqual() ) {
 			const preloadedTask = this.preloadedFirstTask;
 			updatedTaskQueue = updatedTaskQueue.filter( ( task ) => task.title !== preloadedTask.title );
 			updatedTaskQueue = [ preloadedTask ].concat( updatedTaskQueue );
@@ -361,16 +367,16 @@ NewcomerTasksStore.prototype.fetchTasks = function ( context, config ) {
 		}
 
 		this.synchronizeExtraData();
-		promise.resolve();
+		deferred.resolve();
 	} ).catch( ( error ) => {
 		// Don't update the loading state if the promise is aborted (the next promise is still in progress)
 		if ( error !== 'abort' ) {
 			this.setTaskQueueLoading( false );
 		}
 		this.setTaskQueueLoadingError( new Error( error ) );
-		promise.reject( error );
+		deferred.reject( error );
 	} );
-	return promise;
+	return deferred.promise();
 };
 
 /**
@@ -422,7 +428,7 @@ NewcomerTasksStore.prototype.fetchMoreTasks = function ( context ) {
 	const existingPageIds = this.taskQueue.map( ( task ) => task.pageId ) || [],
 		config = { context: context },
 		currentPageId = mw.config.get( 'wgArticleId' ),
-		promise = $.Deferred();
+		deferred = $.Deferred();
 
 	if ( currentPageId ) {
 		existingPageIds.push( currentPageId );
@@ -435,10 +441,10 @@ NewcomerTasksStore.prototype.fetchMoreTasks = function ( context ) {
 	this.apiFetchMoreTasksPromise = this.api.fetchTasks(
 		this.filters.getTaskTypesQuery(),
 		this.filters.getTopicsQuery(),
-		config
+		config,
 	);
 
-	this.apiFetchMoreTasksPromise.done( ( data ) => {
+	this.apiFetchMoreTasksPromise.then( ( data ) => {
 		const newTasks = data.tasks || [];
 		// accumulate the number of tasks fetched
 		this.tasksFetchedCount += newTasks.length;
@@ -450,12 +456,12 @@ NewcomerTasksStore.prototype.fetchMoreTasks = function ( context ) {
 		}
 		this.addToTaskQueue( newTasks );
 		this.preloadExtraDataForUpcomingTask();
-		promise.resolve();
+		deferred.resolve();
 	} ).always( () => {
 		this.setTaskQueueLoading( false );
 	} );
 
-	return promise;
+	return deferred.promise();
 };
 
 /**
@@ -471,43 +477,43 @@ NewcomerTasksStore.prototype.fetchMoreTasks = function ( context ) {
  */
 NewcomerTasksStore.prototype.fetchExtraDataForTaskIndex = function ( taskIndex, context ) {
 	const apiConfig = {
-			context: context || 'suggestedEditsModule.getExtraDataAndUpdateQueue'
+			context: context || 'suggestedEditsModule.getExtraDataAndUpdateQueue',
 		},
-		suggestedEditData = this.taskQueue[ taskIndex ],
-		promise = $.Deferred();
+		taskAtIndex = this.taskQueue[ taskIndex ],
+		deferred = $.Deferred();
 
-	if ( !suggestedEditData ) {
+	if ( !taskAtIndex ) {
 		return $.Deferred().resolve().promise();
 	}
 
-	const pcsPromise = this.api.getExtraDataFromPcs( suggestedEditData, apiConfig ).fail( () => {
+	const pcsPromise = this.api.getExtraDataFromPcs( taskAtIndex, apiConfig ).catch( () => {
 		// Set the PCS provided data to null so the subscribed widgets stop showing
 		// the loading interfaces like skeletons for them.
-		this.taskQueue[ this.currentTaskIndex ].description = null;
-		this.taskQueue[ this.currentTaskIndex ].thumbnailSource = null;
+		taskAtIndex.description = null;
+		taskAtIndex.thumbnailSource = null;
 	} );
-	const aqsPromise = this.api.getExtraDataFromAqs( suggestedEditData, apiConfig ).fail( () => {
+	const aqsPromise = this.api.getExtraDataFromAqs( taskAtIndex, apiConfig ).catch( () => {
 		// Set the AQS provided data to null so the subscribed widgets stop showing
 		// the loading interfaces like skeletons for them.
-		this.taskQueue[ this.currentTaskIndex ].pageviews = null;
+		taskAtIndex.pageviews = null;
 	} );
 
-	const preloaded = this.preloadCardImage( suggestedEditData );
+	const preloaded = this.preloadCardImage( taskAtIndex );
 	if ( !preloaded ) {
-		pcsPromise.done( () => {
-			this.preloadCardImage( suggestedEditData );
+		pcsPromise.then( () => {
+			this.preloadCardImage( taskAtIndex );
 		} );
 	}
 
 	$.when( pcsPromise, aqsPromise ).then( () => {
-		promise.resolve();
+		deferred.resolve();
 	} ).always( () => {
 		if ( taskIndex === this.currentTaskIndex ) {
 			this.onCurrentTaskExtraDataChanged();
 		}
 	} );
 
-	return promise;
+	return deferred.promise();
 };
 
 /**
@@ -555,7 +561,7 @@ NewcomerTasksStore.prototype.backupState = function () {
 	this.backup = {
 		taskQueue: this.getTaskQueue(),
 		currentTaskIndex: this.getQueuePosition(),
-		taskCount: this.getTaskCount()
+		taskCount: this.getTaskCount(),
 	};
 	this.filters.backupState();
 };

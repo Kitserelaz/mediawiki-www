@@ -2,12 +2,13 @@
 
 namespace GrowthExperiments\NewcomerTasks;
 
-use GrowthExperiments\ExperimentUserManager;
+use GrowthExperiments\FeatureManager;
 use GrowthExperiments\HomepageModules\SuggestedEdits;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\SearchStrategy\SearchStrategy;
 use GrowthExperiments\NewcomerTasks\TaskType\ImageRecommendationTaskTypeHandler;
 use GrowthExperiments\NewcomerTasks\TaskType\LinkRecommendationTaskTypeHandler;
+use GrowthExperiments\NewcomerTasks\TaskType\ReviseToneTaskTypeHandler;
 use GrowthExperiments\NewcomerTasks\TaskType\SectionImageRecommendationTaskTypeHandler;
 use MediaWiki\Config\Config;
 use MediaWiki\User\Options\UserOptionsLookup;
@@ -17,39 +18,12 @@ use MediaWiki\User\UserIdentity;
  * Retrieves user settings related to newcomer tasks.
  */
 class NewcomerTasksUserOptionsLookup {
-
-	/**
-	 * This property isn't used, but we want to preserve the ability to run A/B tests where
-	 * user options depend on the user's experiment group.
-	 * @var ExperimentUserManager
-	 */
-	private $experimentUserManager;
-
-	/** @var UserOptionsLookup */
-	private $userOptionsLookup;
-
-	/** @var Config */
-	private $config;
-
-	/** @var ConfigurationLoader */
-	private $configurationLoader;
-
-	/**
-	 * @param ExperimentUserManager $experimentUserManager
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param Config $config
-	 * @param ConfigurationLoader $configurationLoader
-	 */
 	public function __construct(
-		ExperimentUserManager $experimentUserManager,
-		UserOptionsLookup $userOptionsLookup,
-		Config $config,
-		ConfigurationLoader $configurationLoader
+		private readonly FeatureManager $featureManager,
+		private readonly UserOptionsLookup $userOptionsLookup,
+		private readonly Config $config,
+		private readonly ConfigurationLoader $configurationLoader
 	) {
-		$this->experimentUserManager = $experimentUserManager;
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->config = $config;
-		$this->configurationLoader = $configurationLoader;
 	}
 
 	/**
@@ -104,15 +78,16 @@ class NewcomerTasksUserOptionsLookup {
 	 *   no preference set, or null if preference wasn't set or is invalid.
 	 */
 	public function getTopicFilterWithoutFallback( UserIdentity $user ): ?array {
-		return $this->getJsonListOption( $user, SuggestedEdits::getTopicFiltersPref( $this->config ) );
+		return $this->getJsonListOption( $user, SuggestedEdits::TOPICS_ORES_PREF );
 	}
 
 	/**
 	 * Check if link recommendations are enabled. When true, the link-recommendation task type
 	 * should be made available to the user and the links task type hidden.
+	 * @note This has to be equivalent to areLinkRecommendationsEnabled in TaskTypesAbFilter.js
 	 * @return bool
 	 */
-	public function areLinkRecommendationsEnabled(): bool {
+	public function areLinkRecommendationsEnabled( UserIdentity $user ): bool {
 		return $this->config->get( 'GENewcomerTasksLinkRecommendationsEnabled' )
 			   && $this->config->get( 'GELinkRecommendationsFrontendEnabled' )
 			   && array_key_exists( LinkRecommendationTaskTypeHandler::TASK_TYPE_ID,
@@ -122,6 +97,7 @@ class NewcomerTasksUserOptionsLookup {
 	/**
 	 * Check if image recommendations are enabled. When true, the image-recommendation task type
 	 * should be made available to the user.
+	 * @note This has to be equivalent to areImageRecommendationsEnabled in TaskTypesAbFilter.js
 	 * @return bool
 	 */
 	public function areImageRecommendationsEnabled(): bool {
@@ -133,6 +109,7 @@ class NewcomerTasksUserOptionsLookup {
 	/**
 	 * Check if section-level image recommendations are enabled. When true, the
 	 * section-image-recommendation task type should be made available to the user.
+	 * @note This has to be equivalent to areSectionImageRecommendationsEnabled in TaskTypesAbFilter.js
 	 * @param UserIdentity $user
 	 * @return bool
 	 */
@@ -140,6 +117,20 @@ class NewcomerTasksUserOptionsLookup {
 		return $this->config->get( 'GENewcomerTasksSectionImageRecommendationsEnabled' )
 			&& array_key_exists( SectionImageRecommendationTaskTypeHandler::TASK_TYPE_ID,
 				$this->configurationLoader->getTaskTypes() );
+	}
+
+	/**
+	 * Check if section-level image recommendations are enabled. When true, the
+	 * section-image-recommendation task type should be made available to the user.
+	 * @note This has to be equivalent to areSectionImageRecommendationsEnabled in TaskTypesAbFilter.js
+	 * @param UserIdentity $user
+	 * @return bool
+	 */
+	public function areReviseToneRecommendationsEnabled( UserIdentity $user ): bool {
+		$areReviseToneRecommendationsEnabled = array_key_exists( ReviseToneTaskTypeHandler::TASK_TYPE_ID,
+				$this->configurationLoader->getTaskTypes() );
+		// TODO: remove after experiment is concluded, T407802
+		return $areReviseToneRecommendationsEnabled && $this->featureManager->shouldShowReviseToneTasksForUser( $user );
 	}
 
 	/**
@@ -152,7 +143,7 @@ class NewcomerTasksUserOptionsLookup {
 	public function filterTaskTypes( array $taskTypes, UserIdentity $user ): array {
 		$conversionMap = $this->getConversionMap( $user );
 		$taskTypes = array_filter( $taskTypes,
-			fn ( $taskTypeId ) => !array_key_exists( $taskTypeId, $conversionMap )
+			static fn ( $taskTypeId ) => !array_key_exists( $taskTypeId, $conversionMap )
 		);
 		return $this->filterNonExistentTaskTypes( $taskTypes );
 	}
@@ -161,11 +152,12 @@ class NewcomerTasksUserOptionsLookup {
 	 * Get default task types when the user has no stored preference.
 	 * @param UserIdentity $user
 	 * @return string[]
+	 * @suppress PhanUnusedPrivateMethodParameter $user
 	 */
 	private function getDefaultTaskTypes( UserIdentity $user ): array {
 		// This doesn't do anything useful right now, but we want to preserve the ability
 		// to determine the default task types dynamically for A/B testing.
-		return SuggestedEdits::DEFAULT_TASK_TYPES;
+		return SuggestedEdits::getDefaultTaskTypes( $this->config );
 	}
 
 	/**
@@ -178,10 +170,15 @@ class NewcomerTasksUserOptionsLookup {
 	 */
 	private function getConversionMap( UserIdentity $user ): array {
 		$map = [];
-		if ( $this->areLinkRecommendationsEnabled() ) {
+		if ( $this->areLinkRecommendationsEnabled( $user ) ) {
 			$map += [ 'links' => LinkRecommendationTaskTypeHandler::TASK_TYPE_ID ];
 		} else {
 			$map += [ LinkRecommendationTaskTypeHandler::TASK_TYPE_ID => 'links' ];
+		}
+		if ( $this->areReviseToneRecommendationsEnabled( $user ) ) {
+			$map += [ 'copyedit' => ReviseToneTaskTypeHandler::TASK_TYPE_ID ];
+		} else {
+			$map += [ ReviseToneTaskTypeHandler::TASK_TYPE_ID => 'copyedit' ];
 		}
 		if ( !$this->areImageRecommendationsEnabled() ) {
 			$map += [ ImageRecommendationTaskTypeHandler::TASK_TYPE_ID => false ];
@@ -199,7 +196,7 @@ class NewcomerTasksUserOptionsLookup {
 	 * @param UserIdentity $user
 	 * @return string[] Converted task types IDs. Array keys are not preserved.
 	 */
-	private function convertTaskTypes( array $taskTypes, UserIdentity $user ): array {
+	public function convertTaskTypes( array $taskTypes, UserIdentity $user ): array {
 		$map = $this->getConversionMap( $user );
 		$taskTypes = array_map( static function ( string $taskType ) use ( $map ) {
 			return $map[$taskType] ?? $taskType;
@@ -254,14 +251,4 @@ class NewcomerTasksUserOptionsLookup {
 		}
 		return $stored;
 	}
-
-	/**
-	 * Check if the user is an internal pseudo-user who should see all task types.
-	 * @param UserIdentity $user
-	 * @return bool
-	 */
-	private function shouldUserSeeAllTaskTypes( UserIdentity $user ) {
-		return $user->getId() === 0 && $user->getName() === SuggestionsInfo::USER;
-	}
-
 }

@@ -2,15 +2,17 @@
 
 namespace GrowthExperiments\Tests\Integration;
 
+use GrowthExperiments\GrowthExperimentsServices;
 use GrowthExperiments\Mentorship\Store\DatabaseMentorStore;
-use JobQueueGroup;
-use MediaWiki\Api\ApiUsageException;
+use GrowthExperiments\Mentorship\Store\MentorStore;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Tests\Api\ApiTestCase;
 use MediaWiki\User\User;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityLookup;
 use PHPUnit\Framework\Constraint\Constraint;
+use Psr\Log\NullLogger;
 use Wikimedia\ObjectCache\HashBagOStuff;
 use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\ILoadBalancer;
@@ -22,12 +24,9 @@ use Wikimedia\Rdbms\ILoadBalancer;
  * @covers \GrowthExperiments\Api\ApiSetMentor
  */
 class ApiSetMentorTest extends ApiTestCase {
-	/**
-	 * @covers \GrowthExperiments\Api\ApiSetMentor::getAllowedParams
-	 */
+
 	public function testRequiredParams() {
-		$this->expectException( ApiUsageException::class );
-		$this->expectExceptionMessage( 'The "mentee" parameter must be set.' );
+		$this->expectApiErrorCode( 'missingparam' );
 
 		$this->doApiRequestWithToken(
 			[ 'action' => 'growthsetmentor' ],
@@ -36,48 +35,45 @@ class ApiSetMentorTest extends ApiTestCase {
 		);
 	}
 
-	/**
-	 * @covers \GrowthExperiments\API\ApiSetMentor::execute
-	 */
 	public function testAnonCannotSetMentor() {
-		$this->expectException( ApiUsageException::class );
-		$this->expectExceptionMessage( "You don't have permission to set user's mentor." );
 		$mentee = $this->getMutableTestUser()->getUser();
 		$mentor = $this->getMutableTestUser()->getUser();
+
+		// Ensure no mentor changes are made
+		$this->setService( 'GrowthExperimentsMentorStore', $this->createNoOpMock( MentorStore::class ) );
+
+		$this->expectApiErrorCode( 'permissiondenied' );
 		$response = $this->doApiRequestWithToken(
 			[
 				'action' => 'growthsetmentor',
 				'mentor' => $mentor->getName(),
-				'mentee' => $mentee->getName()
+				'mentee' => $mentee->getName(),
 			],
 			null,
 			new User()
 		);
 	}
 
-	/**
-	 * @covers \GrowthExperiments\API\ApiSetMentor::execute
-	 */
 	public function testNormalUserCannotSetMentor() {
-		$this->expectException( ApiUsageException::class );
-		$this->expectExceptionMessage( "You don't have permission to set user's mentor." );
 		$mentee = $this->getMutableTestUser()->getUser();
 		$mentor = $this->getMutableTestUser()->getUser();
 		$performer = $this->getMutableTestUser()->getUser();
+
+		// Ensure no mentor changes are made
+		$this->setService( 'GrowthExperimentsMentorStore', $this->createNoOpMock( MentorStore::class ) );
+
+		$this->expectApiErrorCode( 'permissiondenied' );
 		$response = $this->doApiRequestWithToken(
 			[
 				'action' => 'growthsetmentor',
 				'mentor' => $mentor->getName(),
-				'mentee' => $mentee->getName()
+				'mentee' => $mentee->getName(),
 			],
 			null,
 			$performer
 		);
 	}
 
-	/**
-	 * @covers \GrowthExperiments\API\ApiSetMentor::execute
-	 */
 	public function testSetMentorBySysop() {
 		$mentee = $this->getMutableTestUser()->getUser();
 		$mentor = $this->getMutableTestUser()->getUser();
@@ -90,7 +86,7 @@ class ApiSetMentorTest extends ApiTestCase {
 			[
 				'action' => 'growthsetmentor',
 				'mentor' => $mentor->getName(),
-				'mentee' => $mentee->getName()
+				'mentee' => $mentee->getName(),
 			],
 			null,
 			$this->getTestSysop()->getUser()
@@ -98,12 +94,19 @@ class ApiSetMentorTest extends ApiTestCase {
 		$this->assertEquals( 'ok', $response[0]['growthsetmentor']['status'] );
 	}
 
-	/**
-	 * @covers \GrowthExperiments\API\ApiSetMentor::execute
-	 */
-	public function testSetMentorByMentee() {
+	public function testSetMentorByMenteeWhenMentorRegistered() {
 		$mentee = $this->getMutableTestUser()->getUser();
 		$mentor = $this->getMutableTestUser()->getUser();
+
+		$geServices = GrowthExperimentsServices::wrap( $this->getServiceContainer() );
+		$mentorProvider = $geServices->getMentorProvider();
+		$mentorWriter  = $geServices->getMentorWriter();
+		$this->assertStatusOK( $mentorWriter->addMentor(
+			$mentorProvider->newMentorFromUserIdentity( $mentor ),
+			$this->getTestSysop()->getUserIdentity(),
+			''
+		) );
+
 		$mockMentorStore = $this->getMockMentorStore( $mentee, $mentor );
 		$mockMentorStore->expects( $this->once() )
 			->method( 'setMentorForUser' )
@@ -113,7 +116,7 @@ class ApiSetMentorTest extends ApiTestCase {
 			[
 				'action' => 'growthsetmentor',
 				'mentor' => $mentor->getName(),
-				'mentee' => $mentee->getName()
+				'mentee' => $mentee->getName(),
 			],
 			null,
 			$mentee
@@ -121,12 +124,38 @@ class ApiSetMentorTest extends ApiTestCase {
 		$this->assertEquals( 'ok', $response[0]['growthsetmentor']['status'] );
 	}
 
-	/**
-	 * @covers \GrowthExperiments\API\ApiSetMentor::execute
-	 */
-	public function testSetMentorByMentor() {
+	public function testSetMentorByMenteeWhenMentorNormalUser() {
 		$mentee = $this->getMutableTestUser()->getUser();
 		$mentor = $this->getMutableTestUser()->getUser();
+
+		// Ensure no mentor changes are made
+		$this->setService( 'GrowthExperimentsMentorStore', $this->createNoOpMock( MentorStore::class ) );
+
+		$this->expectApiErrorCode( 'permissiondenied' );
+		$response = $this->doApiRequestWithToken(
+			[
+				'action' => 'growthsetmentor',
+				'mentor' => $mentor->getName(),
+				'mentee' => $mentee->getName(),
+			],
+			null,
+			$mentee
+		);
+	}
+
+	public function testSetMentorByMentorWhenRegistered() {
+		$mentee = $this->getMutableTestUser()->getUser();
+		$mentor = $this->getMutableTestUser()->getUser();
+
+		$geServices = GrowthExperimentsServices::wrap( $this->getServiceContainer() );
+		$mentorProvider = $geServices->getMentorProvider();
+		$mentorWriter  = $geServices->getMentorWriter();
+		$this->assertStatusOK( $mentorWriter->addMentor(
+			$mentorProvider->newMentorFromUserIdentity( $mentor ),
+			$this->getTestSysop()->getUserIdentity(),
+			''
+		) );
+
 		$mockMentorStore = $this->getMockMentorStore( $mentee, $mentor );
 		$mockMentorStore->expects( $this->once() )
 			->method( 'setMentorForUser' )
@@ -136,7 +165,7 @@ class ApiSetMentorTest extends ApiTestCase {
 			[
 				'action' => 'growthsetmentor',
 				'mentor' => $mentor->getName(),
-				'mentee' => $mentee->getName()
+				'mentee' => $mentee->getName(),
 			],
 			null,
 			$mentor
@@ -144,16 +173,36 @@ class ApiSetMentorTest extends ApiTestCase {
 		$this->assertEquals( 'ok', $response[0]['growthsetmentor']['status'] );
 	}
 
+	public function testSetMentorByMentorWhenNormalUser() {
+		$mentee = $this->getMutableTestUser()->getUser();
+		$mentor = $this->getMutableTestUser()->getUser();
+
+		// Ensure no mentor changes are made
+		$this->setService( 'GrowthExperimentsMentorStore', $this->createNoOpMock( MentorStore::class ) );
+
+		$this->expectApiErrorCode( 'permissiondenied' );
+		$response = $this->doApiRequestWithToken(
+			[
+				'action' => 'growthsetmentor',
+				'mentor' => $mentor->getName(),
+				'mentee' => $mentee->getName(),
+			],
+			null,
+			$mentor
+		);
+	}
+
 	private function getMockMentorStore( UserIdentity $mentee, UserIdentity $mentor ) {
 		$mock = $this->getMockBuilder( DatabaseMentorStore::class )
 			->setConstructorArgs( [
+				new NullLogger(),
 				new WANObjectCache( [ 'cache' => new HashBagOStuff() ] ),
 				$this->createMock( UserFactory::class ),
 				$this->createMock( UserIdentityLookup::class ),
 				$this->createMock( JobQueueGroup::class ),
 				$this->createNoOpMock( ILoadBalancer::class ),
 				true,
-				true
+				true,
 			] )
 			->onlyMethods( [ 'setMentorForUser', 'loadMentorUser' ] )
 			->getMock();
@@ -164,7 +213,7 @@ class ApiSetMentorTest extends ApiTestCase {
 
 	private function ruleUserEquals( UserIdentity $user ) {
 		return new class( $user ) extends Constraint {
-			private $user;
+			private UserIdentity $user;
 
 			public function __construct( UserIdentity $user ) {
 				$this->user = $user;

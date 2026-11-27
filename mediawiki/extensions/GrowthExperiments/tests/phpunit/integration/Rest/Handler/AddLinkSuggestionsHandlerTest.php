@@ -3,11 +3,13 @@
 namespace GrowthExperiments\Tests\Integration;
 
 use GrowthExperiments\ErrorException;
+use GrowthExperiments\GrowthExperimentsServices;
 use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendation;
 use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationHelper;
 use GrowthExperiments\Rest\Handler\AddLinkSuggestionsHandler;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\Linker\LinkTarget;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Rest\HttpException;
 use MediaWiki\Rest\ResponseFactory;
 use MediaWiki\Title\TitleValue;
@@ -23,7 +25,15 @@ class AddLinkSuggestionsHandlerTest extends MediaWikiIntegrationTestCase {
 	 * @covers \GrowthExperiments\Rest\Handler\AddLinkSuggestionsHandler::run
 	 */
 	public function testRun() {
-		$this->overrideConfigValue( 'GENewcomerTasksLinkRecommendationsEnabled', true );
+		$geServices = GrowthExperimentsServices::wrap( MediaWikiServices::getInstance() );
+		$features = $geServices->getFeatureManager();
+		if ( !$features->isNewcomerTasksAvailable() ) {
+			$this->markTestSkipped( 'NewcomerTasks is not available.' );
+		}
+		$this->overrideConfigValues( [
+			'GENewcomerTasksLinkRecommendationsEnabled' => true,
+			'GEHomepageSuggestedEditsEnabled' => true,
+		] );
 		$goodTitle = new TitleValue( NS_USER, 'Foo' );
 		$badTitle = new TitleValue( NS_USER, 'Bar' );
 		$currentTime = 1577865600;
@@ -45,7 +55,7 @@ class AddLinkSuggestionsHandlerTest extends MediaWikiIntegrationTestCase {
 				'model' => 'dd650648b87d69547b1721560f0e16027e5f81ccb5dd2dcfdcf121d460abb53c',
 				'pageids' => '9e1b004e7fa84b0187a486c682a1cbf152ca52d2e769d9c3a140eefe9b540d44',
 				'redirects' => '57c5ce51d0ce4048743674a7ebb53e7a527d325765fd0632fa1455be46f7eb3c',
-				'w2vfiltered' => '096a5f2ca30708ce41408897c99efb854204ac8322fbada8a8147d8156b031e8'
+				'w2vfiltered' => '096a5f2ca30708ce41408897c99efb854204ac8322fbada8a8147d8156b031e8',
 			],
 			'format_version' => 1,
 		];
@@ -55,7 +65,10 @@ class AddLinkSuggestionsHandlerTest extends MediaWikiIntegrationTestCase {
 			$this->getTitleKey( $goodTitle ) => new LinkRecommendation( $goodTitle, 1, 1, $links, $meta ),
 			$this->getTitleKey( $badTitle ) => StatusValue::newFatal( new RawMessage( 'error' ) ),
 		] );
-		$handler = new AddLinkSuggestionsHandler( $linkRecommendationHelper );
+		$handler = new AddLinkSuggestionsHandler(
+			$linkRecommendationHelper,
+			GrowthExperimentsServices::wrap( $this->getServiceContainer() )->getFeatureManager()
+		);
 		$this->setResponseFactory( $handler );
 
 		$this->assertSame(
@@ -80,7 +93,10 @@ class AddLinkSuggestionsHandlerTest extends MediaWikiIntegrationTestCase {
 			),
 			$this->getTitleKey( $badTitle ) => StatusValue::newFatal( new RawMessage( 'error' ) ),
 		] );
-		$handler = new AddLinkSuggestionsHandler( $linkRecommendationHelperNoMetadata );
+		$handler = new AddLinkSuggestionsHandler(
+			$linkRecommendationHelperNoMetadata,
+			GrowthExperimentsServices::wrap( $this->getServiceContainer() )->getFeatureManager()
+		);
 		$this->setResponseFactory( $handler );
 
 		$this->assertSame(

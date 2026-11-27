@@ -1,6 +1,6 @@
 {
 	"root": true,
-	"extends": [ "wikimedia/mediawiki", "wikimedia/client-es6" ],
+	"extends": [ "wikimedia/mediawiki", "wikimedia/client" ],
 	"rules": {
 		"vue/component-name-in-template-casing": [ "error", "kebab-case" ],
 		"vue/no-unsupported-features": [
@@ -11,7 +11,7 @@
 	"overrides": [
 		{
 			"files": [ "docs/*.cjs" ],
-			"extends": [ "wikimedia/mediawiki", "wikimedia/client-es6" ]
+			"extends": [ "wikimedia/mediawiki", "wikimedia/client" ]
 		},
 		{
 			"files": [ "vite.components.config.js", "vitest.config.js" ],
@@ -25,8 +25,8 @@
 		},
 		{
 			"files": [ "{component-demos,components}/**/*.test.js" ],
-			"extends": [ "wikimedia/language/es6", "wikimedia/mediawiki" ],
-			"rules": { "compat/compat": "off" }
+			"extends": [ "wikimedia/server" ],
+			"parserOptions": { "ecmaVersion": 2020, "sourceType": "module" }
 		}
 	],
 	"parserOptions": { "ecmaVersion": 2020, "sourceType": "module" }

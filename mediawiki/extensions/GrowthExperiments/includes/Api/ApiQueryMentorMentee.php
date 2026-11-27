@@ -11,17 +11,11 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class ApiQueryMentorMentee extends ApiQueryBase {
 
-	/** @var MentorStore */
-	private $mentorStore;
+	private MentorStore $mentorStore;
 
-	/**
-	 * @param ApiQuery $queryModule
-	 * @param string $moduleName
-	 * @param MentorStore $mentorStore
-	 */
 	public function __construct(
 		ApiQuery $queryModule,
-		$moduleName,
+		string $moduleName,
 		MentorStore $mentorStore
 	) {
 		parent::__construct( $queryModule, $moduleName );
@@ -43,12 +37,12 @@ class ApiQueryMentorMentee extends ApiQueryBase {
 			'mentees' => array_map( static function ( UserIdentity $mentee ) {
 				return [
 					'name' => $mentee->getName(),
-					'id' => $mentee->getId()
+					'id' => $mentee->getId(),
 				];
 			}, $this->mentorStore->getMenteesByMentor(
 				$mentor,
 				MentorStore::ROLE_PRIMARY
-			) )
+			) ),
 		] );
 	}
 
@@ -62,7 +56,7 @@ class ApiQueryMentorMentee extends ApiQueryBase {
 				ParamValidator::PARAM_REQUIRED => true,
 				UserDef::PARAM_ALLOWED_USER_TYPES => [ 'name', 'id' ],
 				UserDef::PARAM_RETURN_OBJECT => true,
-			]
+			],
 		];
 	}
 }

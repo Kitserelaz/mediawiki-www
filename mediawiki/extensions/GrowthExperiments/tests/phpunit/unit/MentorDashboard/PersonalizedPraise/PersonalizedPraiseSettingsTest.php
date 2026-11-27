@@ -6,6 +6,7 @@ use GrowthExperiments\MentorDashboard\PersonalizedPraise\PersonalizedPraiseSetti
 use GrowthExperiments\MentorDashboard\PersonalizedPraise\PraiseworthyConditions;
 use MediaWiki\Config\HashConfig;
 use MediaWiki\Json\FormatJson;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\Options\UserOptionsLookup;
@@ -13,7 +14,6 @@ use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiUnitTestCase;
-use MessageLocalizer;
 
 /**
  * @coversDefaultClass \GrowthExperiments\MentorDashboard\PersonalizedPraise\PersonalizedPraiseSettings
@@ -80,32 +80,32 @@ class PersonalizedPraiseSettingsTest extends MediaWikiUnitTestCase {
 			'none set' => [
 				new PraiseworthyConditions( 500, 8, 12, 7 ),
 				'{}',
-				500, 8, 12, 7
+				500, 8, 12, 7,
 			],
 			'maxEdits set' => [
 				new PraiseworthyConditions( 200, 8, 12, 7 ),
-				FormatJson::encode( [ PraiseworthyConditions::SETTING_MAX_EDITS => 200, ] ),
-				500, 8, 12, 7
+				FormatJson::encode( [ PraiseworthyConditions::SETTING_MAX_EDITS => 200 ] ),
+				500, 8, 12, 7,
 			],
 			'minEdits set' => [
 				new PraiseworthyConditions( 500, 200, 12, 7 ),
-				FormatJson::encode( [ PraiseworthyConditions::SETTING_MIN_EDITS => 200, ] ),
-				500, 8, 12, 7
+				FormatJson::encode( [ PraiseworthyConditions::SETTING_MIN_EDITS => 200 ] ),
+				500, 8, 12, 7,
 			],
 			'maxReverts set' => [
 				new PraiseworthyConditions( 500, 8, 200, 7 ),
-				FormatJson::encode( [ PraiseworthyConditions::SETTING_MAX_REVERTS => 200, ] ),
-				500, 8, 12, 7
+				FormatJson::encode( [ PraiseworthyConditions::SETTING_MAX_REVERTS => 200 ] ),
+				500, 8, 12, 7,
 			],
 			'maxReverts null' => [
 				new PraiseworthyConditions( 500, 8, null, 7 ),
 				'{}',
-				500, 8, null, 7
+				500, 8, null, 7,
 			],
 			'something else set' => [
 				new PraiseworthyConditions( 500, 8, 12, 7 ),
-				FormatJson::encode( [ 'foo' => 200, ] ),
-				500, 8, 12, 7
+				FormatJson::encode( [ 'foo' => 200 ] ),
+				500, 8, 12, 7,
 			],
 		];
 	}

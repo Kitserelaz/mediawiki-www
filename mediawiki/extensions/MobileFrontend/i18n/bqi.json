@@ -4,8 +4,6 @@
 			"Mogoeilor"
 		]
 	},
-	"mobile-frontend-changeslist-nocomment": "هيژ چکسدإیي مإن ڤيرایشت ني",
-	"mobile-frontend-clear-search": "پاکسا کردن",
 	"mobile-frontend-copyright": "مإنۈنأ ايچو سي $1 مإن دسرسإ مأر یو کإ یأ جۈر دیأ نڤشدإ ڤابۈ.",
 	"mobile-frontend-editor-anon": "آلشدکاری کردن بی یو کاْ بیائین ڤامیٛن.",
 	"mobile-frontend-editor-blocked-drawer-reason-header": "دلیل نیاگری",
@@ -45,9 +43,6 @@
 	"mobile-frontend-references-citation": "جادیار کردن",
 	"mobile-frontend-requires-title": "بٱلگاْ میٛن دٱسرس نی",
 	"mobile-frontend-save-settings": "کۊ کردن",
-	"mobile-frontend-search-content": "پاٛی جۊری میٛن بٱلگاْیٱل",
-	"mobile-frontend-search-no-results": "چونو بٱلگاْیی ڤا ای داسوݩ نیڌ",
-	"mobile-frontend-settings-beta": "{{SITENAME}} بتا",
 	"mobile-frontend-settings-save": "میزونکاری کۊ ڤابیڌ.",
 	"mobile-frontend-terms-text": "ڤاجإیل ب کارگرهڌني",
 	"mobile-frontend-view": "دیئن موڤایلی",
@@ -70,8 +65,5 @@
 	"tag-advanced_mobile_edit": "آلشدکاری پیشکرداْ موبایلی",
 	"tag-mobile_web_edit": "ڤيرایشت تیارگه موبایلی",
 	"mobile-frontend-loading-message": "ب هال و بال سوڤار كرد...",
-	"mobile-frontend-mobile-option-MFEnableWikidataDescriptions": "تۉزی داسوݩ",
-	"mobile-frontend-mobile-option-MFShowFirstParagraphBeforeInfobox": "پاراگراف ٱسلی",
-	"mobile-frontend-mobile-option-MFEnableFontChanger": "ٱندازاْ فونت",
 	"mobile-frontend-mobile-option-amc-learn-more": "بیشتر یاڌ بگرین"
 }

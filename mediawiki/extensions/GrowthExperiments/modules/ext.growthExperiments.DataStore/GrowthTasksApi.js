@@ -9,7 +9,7 @@
  */
 ( function () {
 
-	const formatTitle = require( '../utils/Utils.js' ).formatTitle;
+	const { formatTitle, normalizeLabelForStats } = require( '../utils/Utils.js' );
 	const TopicFilters = require( './TopicFilters.js' );
 	const DEFAULT_LOOKAHEAD_SIZE = 5;
 
@@ -81,6 +81,7 @@
 	 * @param {Object} config.suggestedEditsConfig.GENewcomerTasksTopicFiltersPref
 	 * @param {string} [config.suggestedEditsConfig.GENewcomerTasksRemoteArticleOrigin]
 	 * @param {number} config.suggestedEditsConfig.GESearchTaskSuggesterDefaultLimit
+	 * @param {number|null} config.suggestedEditsConfig.GEApiQueryGrowthTasksLookaheadSize
 	 * @param {Object} config.aqsConfig Configuration for the AQS service, as returned by
 	 *   HomepageHooks::getAQSConfigJson. Used by the getExtraDataFromAqs method.
 	 * @param {string} config.aqsConfig.project Project domain name to get views for (might be
@@ -99,7 +100,8 @@
 		this.logContext = config.logContext;
 		this.thumbnailWidth = this.isMobile ? 260 : 332;
 		this.pageSize = this.suggestedEditsConfig.GESearchTaskSuggesterDefaultLimit;
-		this.lookAheadSize = config.lookAheadSize || DEFAULT_LOOKAHEAD_SIZE;
+		this.lookAheadSize = Number.isInteger( this.suggestedEditsConfig.GEApiQueryGrowthTasksLookaheadSize ) ?
+			this.suggestedEditsConfig.GEApiQueryGrowthTasksLookaheadSize : DEFAULT_LOOKAHEAD_SIZE;
 	}
 
 	/**
@@ -133,11 +135,11 @@
 	GrowthTasksApi.prototype.fetchTasks = function ( taskTypes, topicFilters, config ) {
 		const startTime = mw.now(),
 			self = this,
-			url = new mw.Uri( window.location.href );
+			url = new URL( window.location.href );
 		const defaultConfig = {
 			getDescription: false,
 			size: this.pageSize,
-			thumbnailWidth: this.thumbnailWidth
+			thumbnailWidth: this.thumbnailWidth,
 		};
 
 		// Filter out undefined values
@@ -155,9 +157,9 @@
 			// No point in doing the query if no task types are allowed.
 			return $.Deferred().resolve( {
 				count: 0,
-				tasks: []
+				tasks: [],
 			} ).promise( {
-				abort: function () {}
+				abort: function () {},
 			} );
 		}
 
@@ -171,7 +173,7 @@
 			ggtlimit: config.size + this.lookAheadSize,
 			ggttasktypes: taskTypes,
 			formatversion: 2,
-			uselang: mw.config.get( 'wgUserLanguage' )
+			uselang: mw.config.get( 'wgUserLanguage' ),
 		};
 		if ( topicFilters && topicFilters.hasFilters() ) {
 			apiParams.ggttopics = topicFilters.getTopics();
@@ -182,7 +184,7 @@
 		if ( config.excludePageIds && config.excludePageIds.length ) {
 			apiParams.ggtexcludepageids = config.excludePageIds;
 		}
-		if ( 'debug' in url.query ) {
+		if ( url.searchParams.has( 'debug' ) ) {
 			apiParams.ggtdebug = 1;
 		}
 
@@ -218,7 +220,7 @@
 					token: item.token,
 					description: item.description,
 					qualityGateIds: item.qualityGateIds || [],
-					qualityGateConfig: item.qualityGateConfig || {}
+					qualityGateConfig: item.qualityGateConfig || {},
 				};
 				self.fixThumbnailWidth( task, config.thumbnailWidth );
 				self.setUrlOverride( task );
@@ -242,12 +244,12 @@
 			return {
 				hasNext: tasks.length > config.size,
 				count: data.growthtasks.totalCount,
-				tasks: tasks.slice( 0, config.size )
+				tasks: tasks.slice( 0, config.size ),
 			};
 		} );
 
 		return finalPromise.catch( this.handleError.bind( this ) ).promise( {
-			abort: actionApiPromise.abort.bind( actionApiPromise )
+			abort: actionApiPromise.abort.bind( actionApiPromise ),
 		} );
 	};
 
@@ -278,7 +280,7 @@
 			apiUrlBase = this.suggestedEditsConfig.GERestbaseUrl;
 
 		config = Object.assign( {
-			thumbnailWidth: this.thumbnailWidth
+			thumbnailWidth: this.thumbnailWidth,
 		}, config || {} );
 
 		if ( task.extract !== undefined ) {
@@ -394,7 +396,7 @@
 			}
 			return new TopicFilters( {
 				topics: topicsPreference,
-				topicsMatchMode: topicsMatchModePreference
+				topicsMatchMode: topicsMatchModePreference,
 			} );
 		}
 
@@ -412,7 +414,7 @@
 		taskTypes = taskTypes.filter( ( taskType ) => taskType in this.taskTypes );
 		return {
 			taskTypes: taskTypes,
-			topicFilters: topicFilters
+			topicFilters: topicFilters,
 		};
 	};
 
@@ -484,7 +486,7 @@
 	};
 
 	/**
-	 * Log time spent since startTime to Statsd.
+	 * Log time spent since startTime to Statsd and Prometheus.
 	 *
 	 * @param {string} name Name of the thing (e.g. method call) that's timed.
 	 * @param {number} startTime Start timestamp, e.g. from mw.now().
@@ -492,10 +494,20 @@
 	 * @private
 	 */
 	GrowthTasksApi.prototype.logTiming = function ( name, startTime, contextOverride ) {
+		const duration = mw.now() - startTime;
+		const platform = this.isMobile ? 'mobile' : 'desktop';
+		const originalContext = contextOverride || this.logContext || 'unknown_context';
+
 		mw.track(
-			'timing.growthExperiments.specialHomepage.growthTasksApi.' + name + '.' +
-				( contextOverride || this.logContext ) + '.' + ( this.isMobile ? 'mobile' : 'desktop' ),
-			mw.now() - startTime
+			'stats.mediawiki_GrowthExperiments_special_homepage_seconds',
+			duration,
+			{
+				module: 'growthTasksApi',
+				operation: name,
+				context: normalizeLabelForStats( originalContext ),
+				platform: platform,
+				wiki: mw.config.get( 'wgDBname' ),
+			},
 		);
 	};
 

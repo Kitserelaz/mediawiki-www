@@ -11,7 +11,7 @@ let
 
 QUnit.module( 'MobileFrontend editorLoadingOverlay.js', {
 	beforeEach: function () {
-		sandbox = sinon.sandbox.create();
+		sandbox = sinon.createSandbox();
 
 		dom.setUp( sandbox, global );
 		jQuery.setUp( sandbox, global );
@@ -39,15 +39,13 @@ QUnit.module( 'MobileFrontend editorLoadingOverlay.js', {
 	}
 } );
 
-QUnit.test( 'editorLoadingOverlay calls the callbacks', function ( assert ) {
+QUnit.test( 'editorLoadingOverlay calls the callbacks', ( assert ) => {
 	const
 		afterShow = sandbox.spy(),
 		afterHide = sandbox.spy(),
 		overlay = editorLoadingOverlay( afterShow, afterHide );
 
-	overlayManager.add( /^test$/, function () {
-		return overlay;
-	} );
+	overlayManager.add( /^test$/, () => overlay );
 	fakeRouter.emit( 'route', {
 		path: 'test'
 	} );

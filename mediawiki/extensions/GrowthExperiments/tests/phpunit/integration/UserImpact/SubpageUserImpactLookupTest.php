@@ -24,6 +24,7 @@ class SubpageUserImpactLookupTest extends MediaWikiIntegrationTestCase {
 		$userImpact1 = new UserImpact(
 			UserIdentityValue::newRegistered( 1, 'User1' ),
 			10,
+			5,
 			[ NS_MAIN => 100, NS_TALK => 10, NS_USER_TALK => 15 ],
 			[ '2022-08-24' => 10, '2022-08-25' => 20 ],
 			[ 'copyedit' => 10, 'link-recommendation' => 20 ],
@@ -34,11 +35,13 @@ class SubpageUserImpactLookupTest extends MediaWikiIntegrationTestCase {
 				ComputeEditingStreaks::makeDatePeriod( '2022-08-24', '2022-08-25' ),
 				30
 			),
+			0,
 			125
 		);
 		$fallbackUserImpact1 = new UserImpact(
 			UserIdentityValue::newRegistered( 1, 'User1' ),
 			20,
+			10,
 			[ NS_MAIN => 200, NS_TALK => 20, NS_USER_TALK => 30 ],
 			[ '2022-08-24' => 11, '2022-08-25' => 21 ],
 			[ 'copyedit' => 11, 'link-recommendation' => 21 ],
@@ -46,11 +49,13 @@ class SubpageUserImpactLookupTest extends MediaWikiIntegrationTestCase {
 			100,
 			wfTimestamp( TS_UNIX, '20200909000000' ),
 			new EditingStreak(),
+			0,
 			null
 		);
 		$userImpact2 = new UserImpact(
 			UserIdentityValue::newRegistered( 2, 'User2' ),
 			30,
+			15,
 			[ NS_MAIN => 300, NS_TALK => 30, NS_USER_TALK => 40 ],
 			[ '2022-08-24' => 12, '2022-08-25' => 22 ],
 			[ 'copyedit' => 12, 'link-recommendation' => 22 ],
@@ -58,6 +63,7 @@ class SubpageUserImpactLookupTest extends MediaWikiIntegrationTestCase {
 			110,
 			wfTimestamp( TS_UNIX, '20220101000000' ),
 			new EditingStreak(),
+			0,
 			null
 		);
 		$this->makeJsonPage( 'User:User1/userimpact.json', [
@@ -65,6 +71,7 @@ class SubpageUserImpactLookupTest extends MediaWikiIntegrationTestCase {
 			'userId' => 1,
 			'userName' => 'User1',
 			'receivedThanksCount' => 10,
+			'givenThanksCount' => 5,
 			'editCountByNamespace' => [ NS_MAIN => 100, NS_TALK => 10, NS_USER_TALK => 15 ],
 			'editCountByDay' => [ '2022-08-24' => 10, '2022-08-25' => 20 ],
 			'editCountByTaskType' => [ 'copyedit' => 10, 'link-recommendation' => 20 ],
@@ -77,10 +84,11 @@ class SubpageUserImpactLookupTest extends MediaWikiIntegrationTestCase {
 				'datePeriod' => [
 					'start' => '2022-08-24',
 					'end' => '2022-08-25',
-					'days' => 2
+					'days' => 2,
 				],
-				'totalEditCountForPeriod' => 30
+				'totalEditCountForPeriod' => 30,
 			],
+			'totalArticlesCreatedCount' => 0,
 			'totalUserEditCount' => 125,
 		] );
 

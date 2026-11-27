@@ -19,10 +19,14 @@
 			url = new mw.Title( data.title ).getUrl();
 		}
 		// Get the new-onboarding query and pass it to the url
-		const uri = new mw.Uri();
-		if ( uri.query[ 'new-onboarding' ] ) {
-			url = new mw.Uri( url );
-			url = url.extend( { 'new-onboarding': uri.query[ 'new-onboarding' ] } );
+		const currentUrl = new URL( window.location.href );
+		if ( currentUrl.searchParams.has( 'new-onboarding' ) ) {
+			const finalUrl = new URL( url, window.location.origin );
+			finalUrl.searchParams.set(
+				'new-onboarding',
+				currentUrl.searchParams.get( 'new-onboarding' ),
+			);
+			url = finalUrl.toString();
 		}
 		this.$element.append(
 			$( '<div>' ).addClass( 'suggested-edits-task-card-wrapper' )
@@ -32,9 +36,9 @@
 						.addClass( 'se-card-content' )
 						.append(
 							this.getImageContent(),
-							this.getTextContent()
-						)
-				)
+							this.getTextContent(),
+						),
+				),
 		);
 
 		if ( !url ) {
@@ -62,7 +66,6 @@
 				$imageForCaching.remove();
 				// Now that the image has downloaded, remove the loading animation.
 				$imageContent.removeClass( 'skeleton no-image' );
-				$imageContent.addClass( 'mw-no-invert' );
 				// The image was already downloaded, so doing this does not make another request.
 				$imageContent.css( 'background-image', 'url("' + this.data.thumbnailSource + '")' );
 			} );
@@ -83,7 +86,7 @@
 					$( '<div>' )
 						.addClass( 'se-card-extract' )
 						.addClass( !this.data.extraDataLoaded ? 'skeleton' : '' )
-						.html( this.data.extract || '' )
+						.text( this.data.extract || '' ),
 				);
 		if ( !this.data.extraDataLoaded ) {
 			$pageViews.addClass( 'skeleton' );
@@ -94,7 +97,7 @@
 		}
 		const pageViewsMessage = this.data.pageviews ? mw.message(
 			'growthexperiments-homepage-suggestededits-pageviews',
-			mw.language.convertNumber( this.data.pageviews )
+			mw.language.convertNumber( this.data.pageviews ),
 		).escaped() : '';
 		$textContent.append(
 			$pageViews.append(

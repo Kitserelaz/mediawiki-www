@@ -16,9 +16,6 @@ class UserImpactFormatter {
 
 	private stdClass $AQSConfig;
 
-	/**
-	 * @param stdClass $AQSConfig
-	 */
 	public function __construct(
 		stdClass $AQSConfig
 	) {
@@ -109,7 +106,7 @@ class UserImpactFormatter {
 			'recentEditsWithoutPageviews' => $recentEditsWithoutPageviews,
 			'topViewedArticles' => $topViewedArticles,
 			'topViewedArticlesCount' => $topViewedArticlesCount,
-			'totalPageviewsCount' => $totalPageviewsCount
+			'totalPageviewsCount' => $totalPageviewsCount,
 		];
 	}
 

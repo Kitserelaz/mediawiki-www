@@ -4,7 +4,6 @@
  *
  * @author Alexander Mashin
  */
-
 abstract class EDParserJSON extends EDParserBase {
 	/** @const string NAME The name of this format. */
 	public const NAME = 'JSON';
@@ -20,7 +19,6 @@ abstract class EDParserJSON extends EDParserBase {
 	 * Constructor.
 	 *
 	 * @param array $params A named array of parameters passed from parser or Lua function.
-	 *
 	 */
 	protected function __construct( array $params ) {
 		parent::__construct( $params );

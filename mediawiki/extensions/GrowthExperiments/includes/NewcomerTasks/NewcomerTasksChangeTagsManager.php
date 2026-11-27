@@ -15,11 +15,13 @@ use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityUtils;
+use MediaWiki\WikiMap\WikiMap;
 use StatusValue;
 use Wikimedia\Rdbms\IConnectionProvider;
-use Wikimedia\Stats\PrefixingStatsdDataFactoryProxy;
+use Wikimedia\Stats\StatsFactory;
 
 class NewcomerTasksChangeTagsManager {
+	public const SURFACED_CHANGE_TAG = 'newcomer task read view suggestion';
 
 	/** @var ConfigurationLoader */
 	private $configurationLoader;
@@ -29,8 +31,6 @@ class NewcomerTasksChangeTagsManager {
 	private $taskTypeHandlerRegistry;
 	/** @var UserOptionsLookup */
 	private $userOptionsLookup;
-	/** @var PrefixingStatsdDataFactoryProxy */
-	private $perDbNameStatsdDataFactory;
 	/** @var IConnectionProvider */
 	private $connectionProvider;
 	/** @var UserIdentityUtils */
@@ -41,16 +41,17 @@ class NewcomerTasksChangeTagsManager {
 	private $user;
 
 	private ChangeTagsStore $changeTagsStore;
+	private StatsFactory $statsFactory;
 
 	/**
 	 * @param UserOptionsLookup $userOptionsLookup
 	 * @param TaskTypeHandlerRegistry $taskTypeHandlerRegistry
 	 * @param ConfigurationLoader $configurationLoader
-	 * @param PrefixingStatsdDataFactoryProxy $perDbNameStatsdDataFactory
 	 * @param RevisionLookup $revisionLookup
 	 * @param IConnectionProvider $connectionProvider
 	 * @param UserIdentityUtils $userIdentityUtils
 	 * @param ChangeTagsStore $changeTagsStore
+	 * @param StatsFactory $statsFactory
 	 * @param Config|null $config
 	 * @param UserIdentity|null $user
 	 * FIXME $config and $user should be mandatory and injected by a factory
@@ -59,11 +60,11 @@ class NewcomerTasksChangeTagsManager {
 		UserOptionsLookup $userOptionsLookup,
 		TaskTypeHandlerRegistry $taskTypeHandlerRegistry,
 		ConfigurationLoader $configurationLoader,
-		PrefixingStatsdDataFactoryProxy $perDbNameStatsdDataFactory,
 		RevisionLookup $revisionLookup,
 		IConnectionProvider $connectionProvider,
 		UserIdentityUtils $userIdentityUtils,
 		ChangeTagsStore $changeTagsStore,
+		StatsFactory $statsFactory,
 		?Config $config = null,
 		?UserIdentity $user = null
 	) {
@@ -71,12 +72,12 @@ class NewcomerTasksChangeTagsManager {
 		$this->revisionLookup = $revisionLookup;
 		$this->taskTypeHandlerRegistry = $taskTypeHandlerRegistry;
 		$this->userOptionsLookup = $userOptionsLookup;
-		$this->perDbNameStatsdDataFactory = $perDbNameStatsdDataFactory;
 		$this->connectionProvider = $connectionProvider;
 		$this->userIdentityUtils = $userIdentityUtils;
 		$this->changeTagsStore = $changeTagsStore;
 		$this->config = $config;
 		$this->user = $user;
+		$this->statsFactory = $statsFactory;
 	}
 
 	/**
@@ -138,16 +139,19 @@ class NewcomerTasksChangeTagsManager {
 		);
 		// This is needed for non-VE edits.
 		// VE edits are incremented in the post-save VisualEditor hook.
-		$this->perDbNameStatsdDataFactory->increment(
-			'GrowthExperiments.NewcomerTask.' . $taskTypeId . '.Save'
-		);
+		$statsAction = 'Save';
+		$wiki = WikiMap::getCurrentWikiId();
+		$this->statsFactory
+			->withComponent( 'GrowthExperiments' )
+			->getCounter( 'newcomertask_total' )
+			->setLabel( 'taskType', $taskTypeId )
+			->setLabel( 'wiki', $wiki )
+			->setLabel( 'action', $statsAction )
+			->increment();
+
 		return StatusValue::newGood( $result );
 	}
 
-	/**
-	 * @param int $revId
-	 * @return StatusValue
-	 */
 	private function checkExistingTags( int $revId ): StatusValue {
 		$rc_id = null;
 		$log_id = null;
@@ -165,10 +169,6 @@ class NewcomerTasksChangeTagsManager {
 		return StatusValue::newGood();
 	}
 
-	/**
-	 * @param UserIdentity $userIdentity
-	 * @return StatusValue
-	 */
 	private function checkUserAccess( UserIdentity $userIdentity ): StatusValue {
 		if ( !$this->userIdentityUtils->isNamed( $userIdentity ) ) {
 			return StatusValue::newFatal( 'You must be logged-in' );
@@ -178,7 +178,7 @@ class NewcomerTasksChangeTagsManager {
 			$this->config = $ctx->getConfig();
 			$this->user = $ctx->getUser();
 		}
-		if ( !SuggestedEdits::isEnabled( $this->config ) ||
+		if ( !SuggestedEdits::isEnabledForAnyone( $this->config ) ||
 			!SuggestedEdits::isActivated( $this->user, $this->userOptionsLookup )
 		) {
 			return StatusValue::newFatal( 'Suggested edits are not enabled or activated for your user.' );
@@ -189,9 +189,14 @@ class NewcomerTasksChangeTagsManager {
 	/**
 	 * @param string $taskTypeId
 	 * @param UserIdentity $userIdentity
+	 * @param bool $wasTaskSurfaced was the task surfaced in read-mode?
 	 * @return StatusValue
 	 */
-	public function getTags( string $taskTypeId, UserIdentity $userIdentity ): StatusValue {
+	public function getTags(
+		string $taskTypeId,
+		UserIdentity $userIdentity,
+		bool $wasTaskSurfaced = false
+	): StatusValue {
 		$result = $this->checkUserAccess( $userIdentity );
 		if ( !$result->isGood() ) {
 			return $result;
@@ -202,6 +207,9 @@ class NewcomerTasksChangeTagsManager {
 		}
 		$taskTypeHandler = $this->taskTypeHandlerRegistry->getByTaskType( $taskType );
 		$tags = $taskTypeHandler->getChangeTags( $taskType->getId() );
+		if ( $wasTaskSurfaced ) {
+			$tags[] = self::SURFACED_CHANGE_TAG;
+		}
 		return StatusValue::newGood( $tags );
 	}
 

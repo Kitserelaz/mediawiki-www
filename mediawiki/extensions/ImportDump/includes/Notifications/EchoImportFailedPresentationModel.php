@@ -1,5 +1,7 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace Miraheze\ImportDump\Notifications;
 
 use MediaWiki\Extension\Notifications\DiscussionParser;
@@ -8,52 +10,42 @@ use MediaWiki\Message\Message;
 
 class EchoImportFailedPresentationModel extends EchoEventPresentationModel {
 
-	/**
-	 * @return string
-	 */
-	public function getIconType() {
+	/** @inheritDoc */
+	public function getIconType(): string {
 		return 'global';
 	}
 
-	/**
-	 * @return Message
-	 */
-	public function getHeaderMessage() {
+	/** @inheritDoc */
+	public function getHeaderMessage(): Message {
 		return $this->msg(
-			'importdump-notification-header-import-failed',
+			'requestimport-notification-header-import-failed',
 			$this->event->getExtraParam( 'request-id' )
 		);
 	}
 
-	/**
-	 * @return Message
-	 */
-	public function getBodyMessage() {
+	/** @inheritDoc */
+	public function getBodyMessage(): Message {
 		$reason = DiscussionParser::getTextSnippet(
 			$this->event->getExtraParam( 'reason' ),
 			$this->language,
 			1000
 		);
 
-		return $this->msg( 'importdump-notification-body-import-failed',
+		return $this->msg( 'requestimport-notification-body-import-failed',
 			$reason
 		);
 	}
 
-	/**
-	 * @return bool
-	 */
-	public function getPrimaryLink() {
+	/** @inheritDoc */
+	public function getPrimaryLink(): false {
 		return false;
 	}
 
-	/**
-	 * @return array
-	 */
-	public function getSecondaryLinks() {
+	/** @inheritDoc */
+	public function getSecondaryLinks(): array {
 		$visitLink = [
 			'url' => $this->event->getExtraParam( 'request-url', 0 ),
-			'label' => $this->msg( 'importdump-notification-visit-request' )->text(),
+			'label' => $this->msg( 'requestimport-notification-visit-request' )->text(),
 			'prioritized' => true,
 		];
 

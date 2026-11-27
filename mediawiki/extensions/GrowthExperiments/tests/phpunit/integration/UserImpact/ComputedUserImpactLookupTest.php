@@ -8,6 +8,7 @@ use GrowthExperiments\NewcomerTasks\TaskType\TemplateBasedTaskTypeHandler;
 use GrowthExperiments\UserImpact\ComputedUserImpactLookup;
 use MediaWiki\Extension\PageViewInfo\PageViewService;
 use MediaWiki\MainConfigNames;
+use MediaWiki\Request\FauxRequest;
 use MediaWiki\Tests\Api\ApiTestCase;
 use MediaWiki\Title\Title;
 use StatusValue;
@@ -20,6 +21,7 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
 class ComputedUserImpactLookupTest extends ApiTestCase {
 
 	public function testGetUserImpact_empty() {
+		$this->overrideConfigValue( 'GEReviseToneSuggestedEditEnabled', true );
 		// This is a lazy way of ensuring that the tag exists. Revision 1 is the main page,
 		// created by the installer.
 		$this->getServiceContainer()->getChangeTagsStore()->addTags(
@@ -33,10 +35,30 @@ class ComputedUserImpactLookupTest extends ApiTestCase {
 		$this->assertTrue( $userIdentity->equals( $userImpact->getUser() ) );
 		$this->assertSame( [], $userImpact->getEditCountByNamespace() );
 		$this->assertSame( [], $userImpact->getEditCountByDay() );
-		$this->assertSame( [], $userImpact->getEditCountByTaskType() );
+		$this->assertEqualsCanonicalizing(
+			array_fill_keys( [
+				'expand', 'links', 'references', 'update', 'copyedit',
+				'image-recommendation', 'section-image-recommendation',
+				'link-recommendation', 'revise-tone',
+			], 0 ),
+			$userImpact->getEditCountByTaskType()
+		);
 		$this->assertSame( 0, $userImpact->getNewcomerTaskEditCount() );
 		$this->assertNull( $userImpact->getLastEditTimestamp() );
 		$this->assertSame( 0, $userImpact->getReceivedThanksCount() );
+	}
+
+	public function testGetUserImpactForTemporaryAccount() {
+		$this->markTestSkippedIfExtensionNotLoaded( 'PageViewInfo' );
+		$temporaryAccount = $this->getServiceContainer()->getTempUserCreator()
+			->create( '~2025-1', new FauxRequest() )
+			->getUser();
+		/** @var ComputedUserImpactLookup $userImpactLookup */
+		$userImpactLookup = $this->getServiceContainer()->get( 'GrowthExperimentsUserImpactLookup_Computed' );
+		$userImpact = $userImpactLookup->getUserImpact( $temporaryAccount );
+		$this->assertTrue( $temporaryAccount->equals( $userImpact->getUser() ) );
+		$expensiveUserImpact = $userImpactLookup->getExpensiveUserImpact( $temporaryAccount );
+		$this->assertTrue( $temporaryAccount->equals( $expensiveUserImpact->getUser() ) );
 	}
 
 	public function testGetUserImpact() {
@@ -44,7 +66,7 @@ class ComputedUserImpactLookupTest extends ApiTestCase {
 
 		$configurationLoader = $this->createMock( ConfigurationLoader::class );
 		$configurationLoader->method( 'getTaskTypes' )->willReturn( [
-			'copyedit' => new TemplateBasedTaskType( 'copyedit', 'easy', [], [] )
+			'copyedit' => new TemplateBasedTaskType( 'copyedit', 'easy', [], [] ),
 		] );
 		$this->setService( 'GrowthExperimentsNewcomerTasksConfigurationLoader', $configurationLoader );
 
@@ -70,6 +92,14 @@ class ComputedUserImpactLookupTest extends ApiTestCase {
 			TemplateBasedTaskTypeHandler::NEWCOMER_TASK_COPYEDIT_TAG, null, $newcomerTaskRevision
 		);
 
+		// Mark the page creation entry for "Baz" as deleted, so that it is not counted
+		$this->getDb()->newUpdateQueryBuilder()
+			->update( 'logging' )
+			->set( [ 'log_deleted' => 15 ] )
+			->where( [ 'log_type' => 'create', 'log_title' => 'Baz' ] )
+			->caller( __METHOD__ )
+			->execute();
+
 		ConvertibleTimestamp::setFakeTime( '20221002130000' );
 		$thanker = $this->getTestUser()->getUser();
 		$this->doApiRequestWithToken( [
@@ -84,11 +114,15 @@ class ComputedUserImpactLookupTest extends ApiTestCase {
 		$userImpact = $userImpactLookup->getUserImpact( $userIdentity );
 
 		$this->assertTrue( $userIdentity->equals( $userImpact->getUser() ) );
-		$this->assertSame( [ NS_MAIN => 5, NS_TALK => 1, ], $userImpact->getEditCountByNamespace() );
+		$this->assertSame( [ NS_MAIN => 5, NS_TALK => 1 ], $userImpact->getEditCountByNamespace() );
 		$this->assertSame( [ '2022-10-01' => 5, '2022-10-02' => 1 ], $userImpact->getEditCountByDay() );
 		$this->assertSame( 1, $userImpact->getNewcomerTaskEditCount() );
 		$this->assertSame( (int)wfTimestamp( TS_UNIX, '20221002120000' ), $userImpact->getLastEditTimestamp() );
 		$this->assertSame( 1, $userImpact->getReceivedThanksCount() );
+		$this->assertSame( 0, $userImpact->getGivenThanksCount() );
+		$this->assertSame( 2, $userImpact->getTotalArticlesCreatedCount() );
+		$thankerUserImpact = $userImpactLookup->getUserImpact( $thanker );
+		$this->assertSame( 1, $thankerUserImpact->getGivenThanksCount() );
 	}
 
 	public function testGetUserImpact_offset() {
@@ -154,6 +188,19 @@ class ComputedUserImpactLookupTest extends ApiTestCase {
 		$testUser = $this->getMutableTestUser();
 		$user = $testUser->getUser();
 		$userIdentity = $testUser->getUserIdentity();
+		ConvertibleTimestamp::setFakeTime( '20221001120000' );
+		$status->merge( $this->editPage( 'Test 1', 'test edit', '', NS_MAIN, $user ) );
+		ConvertibleTimestamp::setFakeTime( '20221002120001' );
+		$status->merge( $this->editPage( 'Test 2', 'test edit', '', NS_MAIN, $user ) );
+		ConvertibleTimestamp::setFakeTime( '20221003120002' );
+		$status->merge( $this->editPage( 'Test 3', 'test edit', '', NS_MAIN, $user ) );
+		ConvertibleTimestamp::setFakeTime( '20221004120003' );
+		$status->merge( $this->editPage( 'Test 4', 'test edit', '', NS_MAIN, $user ) );
+		ConvertibleTimestamp::setFakeTime( '20221005120004' );
+		$status->merge( $this->editPage( 'Test 5', 'test edit', '', NS_MAIN, $user ) );
+		ConvertibleTimestamp::setFakeTime( '20221006120005' );
+		$status->merge( $this->editPage( 'Test 6', 'test edit', '', NS_MAIN, $user ) );
+		$this->assertStatusGood( $status );
 
 		$pageViewService = $this->createNoOpMock( PageViewService::class, [ 'getPageData' ] );
 		$pageViewService->method( 'getPageData' )->willReturnCallback( function ( array $titles, int $days ) {
@@ -176,20 +223,6 @@ class ComputedUserImpactLookupTest extends ApiTestCase {
 			return $status;
 		} );
 		$this->setService( 'PageViewService', $pageViewService );
-
-		ConvertibleTimestamp::setFakeTime( '20221001120000' );
-		$status->merge( $this->editPage( 'Test 1', 'test edit', '', NS_MAIN, $user ) );
-		ConvertibleTimestamp::setFakeTime( '20221002120001' );
-		$status->merge( $this->editPage( 'Test 2', 'test edit', '', NS_MAIN, $user ) );
-		ConvertibleTimestamp::setFakeTime( '20221003120002' );
-		$status->merge( $this->editPage( 'Test 3', 'test edit', '', NS_MAIN, $user ) );
-		ConvertibleTimestamp::setFakeTime( '20221004120003' );
-		$status->merge( $this->editPage( 'Test 4', 'test edit', '', NS_MAIN, $user ) );
-		ConvertibleTimestamp::setFakeTime( '20221005120004' );
-		$status->merge( $this->editPage( 'Test 5', 'test edit', '', NS_MAIN, $user ) );
-		ConvertibleTimestamp::setFakeTime( '20221006120005' );
-		$status->merge( $this->editPage( 'Test 6', 'test edit', '', NS_MAIN, $user ) );
-		$this->assertStatusGood( $status );
 
 		/** @var ComputedUserImpactLookup $userImpactLookup */
 		$userImpactLookup = $this->getServiceContainer()->get( 'GrowthExperimentsUserImpactLookup_Computed' );

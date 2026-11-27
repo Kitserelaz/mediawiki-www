@@ -2,16 +2,16 @@
 
 namespace GrowthExperiments\UserImpact;
 
-use ChangeTags;
 use DateTime;
+use GrowthExperiments\FeatureManager;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeHandlerRegistry;
 use LogicException;
+use MediaWiki\ChangeTags\ChangeTags;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Extension\PageViewInfo\PageViewService;
 use MediaWiki\Extension\Thanks\ThanksQueryHelper;
 use MediaWiki\MainConfigNames;
-use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\Revision\RevisionRecord;
 use MediaWiki\Status\Status;
 use MediaWiki\Storage\NameTableAccessException;
@@ -33,7 +33,8 @@ use StatusValue;
 use Wikimedia\Rdbms\DBAccessObjectUtils;
 use Wikimedia\Rdbms\IConnectionProvider;
 use Wikimedia\Rdbms\IDBAccessObject;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Rdbms\IReadableDatabase;
+use Wikimedia\Stats\StatsFactory;
 
 class ComputedUserImpactLookup implements UserImpactLookup {
 
@@ -41,6 +42,9 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 		MainConfigNames::LocalTZoffset,
 		'GEUserImpactMaxArticlesToProcessForPageviews',
 		'GEUserImpactMaximumProcessTimeSeconds',
+		'GEUserImpactMaxEdits',
+		'GEUserImpactMaxThanks',
+		'GEHomepageSuggestedEditsEnabled',
 	];
 
 	/**
@@ -49,12 +53,6 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 	 * in the impact module.
 	 */
 	private const THUMBNAIL_SIZE = 40;
-
-	/** Cutoff for edit statistics. See also DATA_ROWS_LIMIT in ScoreCards.vue. */
-	private const MAX_EDITS = 1000;
-
-	/** Cutoff for thanks count. See also DATA_ROWS_LIMIT in ScoreCards.vue. */
-	private const MAX_THANKS = 1000;
 
 	/** How many articles to use for $priorityTitles in getPageViewData(). */
 	private const PRIORITY_ARTICLES_LIMIT = 5;
@@ -69,28 +67,15 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 	private UserEditTracker $userEditTracker;
 	private TitleFormatter $titleFormatter;
 	private TitleFactory $titleFactory;
-	private IBufferingStatsdDataFactory $statsdDataFactory;
+	private StatsFactory $statsFactory;
 	private ?LoggerInterface $logger;
+	private ?PageImages $pageImages;
 	private ?PageViewService $pageViewService;
 	private ?ThanksQueryHelper $thanksQueryHelper;
 	private TaskTypeHandlerRegistry $taskTypeHandlerRegistry;
 	private ConfigurationLoader $configurationLoader;
+	private FeatureManager $featureManager;
 
-	/**
-	 * @param ServiceOptions $config
-	 * @param IConnectionProvider $connectionProvider
-	 * @param NameTableStore $changeTagDefStore
-	 * @param UserFactory $userFactory
-	 * @param UserEditTracker $userEditTracker
-	 * @param TitleFormatter $titleFormatter
-	 * @param TitleFactory $titleFactory
-	 * @param IBufferingStatsdDataFactory $statsdDataFactory
-	 * @param TaskTypeHandlerRegistry $taskTypeHandlerRegistry
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param LoggerInterface|null $loggerFactory
-	 * @param PageViewService|null $pageViewService
-	 * @param ThanksQueryHelper|null $thanksQueryHelper
-	 */
 	public function __construct(
 		ServiceOptions $config,
 		IConnectionProvider $connectionProvider,
@@ -99,10 +84,12 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 		UserEditTracker $userEditTracker,
 		TitleFormatter $titleFormatter,
 		TitleFactory $titleFactory,
-		IBufferingStatsdDataFactory $statsdDataFactory,
+		StatsFactory $statsFactory,
 		TaskTypeHandlerRegistry $taskTypeHandlerRegistry,
 		ConfigurationLoader $configurationLoader,
+		FeatureManager $featureManager,
 		?LoggerInterface $loggerFactory,
+		?PageImages $pageImages,
 		?PageViewService $pageViewService,
 		?ThanksQueryHelper $thanksQueryHelper
 	) {
@@ -113,27 +100,31 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 		$this->userEditTracker = $userEditTracker;
 		$this->titleFormatter = $titleFormatter;
 		$this->titleFactory = $titleFactory;
-		$this->statsdDataFactory = $statsdDataFactory;
+		$this->statsFactory = $statsFactory;
 		$this->logger = $loggerFactory ?? new NullLogger();
+		$this->pageImages = $pageImages;
 		$this->pageViewService = $pageViewService;
 		$this->thanksQueryHelper = $thanksQueryHelper;
 		$this->taskTypeHandlerRegistry = $taskTypeHandlerRegistry;
 		$this->configurationLoader = $configurationLoader;
+		$this->featureManager = $featureManager;
 	}
 
 	/** @inheritDoc */
 	public function getUserImpact( UserIdentity $user, int $flags = IDBAccessObject::READ_NORMAL ): ?UserImpact {
 		$user = $this->userFactory->newFromUserIdentity( $user );
-		if ( !$user->isNamed() || $user->isHidden() ) {
+		if ( !$user->isRegistered() || $user->isHidden() ) {
 			return null;
 		}
 
 		$editData = $this->getEditData( $user, $flags );
-		$thanksCount = $this->getThanksCount( $user, $flags );
+		$thanksReceivedCount = $this->getThanksReceivedCount( $user, $flags );
+		$thanksGivenCount = $this->getThanksGivenCount( $user, $flags );
 
 		return new UserImpact(
 			$user,
-			$thanksCount,
+			$thanksReceivedCount,
+			$thanksGivenCount,
 			$editData->getEditCountByNamespace(),
 			$editData->getEditCountByDay(),
 			$editData->getEditCountByTaskType(),
@@ -141,6 +132,7 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 			$editData->getNewcomerTaskEditCount(),
 			wfTimestampOrNull( TS_UNIX, $editData->getLastEditTimestamp() ),
 			ComputeEditingStreaks::getLongestEditingStreak( $editData->getEditCountByDay() ),
+			$editData->getCreatedArticlesCount(),
 			$this->userEditTracker->getUserEditCount( $user )
 		);
 	}
@@ -156,12 +148,13 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 			return null;
 		}
 		$user = $this->userFactory->newFromUserIdentity( $user );
-		if ( !$user->isNamed() || $user->isHidden() ) {
+		if ( !$user->isRegistered() || $user->isHidden() ) {
 			return null;
 		}
 
 		$editData = $this->getEditData( $user, $flags );
-		$thanksCount = $this->getThanksCount( $user, $flags );
+		$thanksReceivedCount = $this->getThanksReceivedCount( $user, $flags );
+		$thanksGivenCount = $this->getThanksGivenCount( $user, $flags );
 		// Use priority articles if known, otherwise make use of the last edited articles
 		// as "top articles" .
 		// This won't exclude retrieving data for other articles, but ensures that we fetch page
@@ -183,7 +176,8 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 
 		$expensiveUserImpact = new ExpensiveUserImpact(
 			$user,
-			$thanksCount,
+			$thanksReceivedCount,
+			$thanksGivenCount,
 			$editData->getEditCountByNamespace(),
 			$editData->getEditCountByDay(),
 			$editData->getEditCountByTaskType(),
@@ -193,11 +187,14 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 			$pageViewData['dailyTotalViews'],
 			$pageViewData['dailyArticleViews'],
 			ComputeEditingStreaks::getLongestEditingStreak( $editData->getEditCountByDay() ),
+			$editData->getCreatedArticlesCount(),
 			$this->userEditTracker->getUserEditCount( $user )
 		);
-		$this->statsdDataFactory->timing(
-			'timing.growthExperiments.ComputedUserImpactLookup.getExpensiveUserImpact', microtime( true ) - $start
-		);
+		$userImpactLookupDurationInSeconds = microtime( true ) - $start;
+		$this->statsFactory->withComponent( 'GrowthExperiments' )
+			->getTiming( 'computed_user_impact_lookup_expensive_seconds' )
+			->observeSeconds( $userImpactLookupDurationInSeconds );
+
 		return $expensiveUserImpact;
 	}
 
@@ -218,7 +215,7 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 
 		$taskChangeTagNames = $this->taskTypeHandlerRegistry->getUniqueChangeTags();
 		$additionalChangeTagNames = [
-			ChangeTags::TAG_REVERTED
+			ChangeTags::TAG_REVERTED,
 		];
 
 		$changeTagNames = array_merge( $taskChangeTagNames, $additionalChangeTagNames );
@@ -247,7 +244,7 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 				$tagId = $this->changeTagDefStore->getId( $changeTagName );
 				$changeTagIds[$tagId] = $taskTypeId;
 				$changeTagIdToName[$tagId] = $changeTagName;
-			} catch ( NameTableAccessException $nameTableAccessException ) {
+			} catch ( NameTableAccessException ) {
 				// Some tags won't exist in test scenarios, and possibly in some small wikis where
 				// no suggested edits have been done yet. We can safely ignore the exception,
 				// it will mean that 'newcomerTaskEditCount' is 0 in the result.
@@ -265,9 +262,10 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 		$queryBuilder->fields( [ 'page_namespace', 'page_title', 'rev_timestamp' ] );
 		$queryBuilder->where( [ 'rev_actor' => $user->getActorId() ] );
 		$queryBuilder->where( $db->bitAnd( 'rev_deleted', RevisionRecord::DELETED_USER ) . ' = 0' );
+		$queryBuilder->where( [ 'page_is_redirect' => 0 ] );
 		// hopefully able to use the rev_actor_timestamp index for an efficient query
 		$queryBuilder->orderBy( 'rev_timestamp', 'DESC' );
-		$queryBuilder->limit( self::MAX_EDITS );
+		$queryBuilder->limit( $this->config->get( 'GEUserImpactMaxEdits' ) );
 		$queryBuilder->recency( $flags );
 		$queryBuilder->caller( __METHOD__ );
 		// T331264
@@ -276,7 +274,14 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 		$editCountByNamespace = [];
 		$editCountByDay = [];
 		$revertedEditCount = 0;
-		$editCountByTaskType = array_fill_keys( array_keys( $this->configurationLoader->getTaskTypes() ), 0 );
+		$taskTypes = [];
+		// Only try to load task types if SE enabled
+		if ( $this->featureManager->isNewcomerTasksAvailable() ) {
+			$taskTypes = $this->configurationLoader->getTaskTypes();
+		} else {
+			$this->logger->debug( 'Newcomer tasks are not available, no "editCountByTaskType" will be computed.' );
+		}
+		$editCountByTaskType = array_fill_keys( array_keys( $taskTypes ), 0 );
 		$newcomerTaskEditCount = 0;
 		$lastEditTimestamp = null;
 		$editedArticles = [];
@@ -325,6 +330,8 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 			$editedArticles[$titleDbKey]['newestEdit'] ??= $row->rev_timestamp;
 		}
 
+		$createdArticleCount = $this->getCreatedArticleCount( $db, $user );
+
 		return new EditData(
 			$editCountByNamespace,
 			array_reverse( $this->updateToIso8601DateKeys( $editCountByDay ) ),
@@ -332,8 +339,63 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 			$revertedEditCount,
 			$newcomerTaskEditCount,
 			$lastEditTimestamp,
-			$editedArticles
+			$editedArticles,
+			$createdArticleCount
 		);
+	}
+
+	/**
+	 * Return the number of NS_MAIN pages created by a user.
+	 *
+	 * @param IReadableDatabase $db
+	 * @param User $user
+	 * @return int The count of pages created by the user. Note that the maximum value
+	 *  for this is the value of GEUserImpactMaxEdits
+	 */
+	private function getCreatedArticleCount( IReadableDatabase $db, User $user ): int {
+		$queryBuilder = $db->newSelectQueryBuilder();
+		$queryBuilder->select( 'log_page' )
+			->where(
+				[
+					'log_type' => 'create',
+					'log_actor' => $user->getActorId(),
+					// TODO: Eventually we might want to accept an Authority to count deleted
+					// logs if the user has the right to view them.
+					'log_deleted' => 0,
+					// FIXME: This should have a clause for log_namespace => NS_MAIN,
+					// but that would require creating a new index to include the namespace
+				]
+			)
+			->from( 'logging' )
+			// Optimizer doesn't pick the right index when a user has lots of log actions (T303089)
+			->useIndex( 'log_actor_type_time' )
+			->caller( __METHOD__ )
+			// FIXME: Since we can't efficiently query on log_namespace, collect a larger sample of
+			// log entries for the create action, in the hopes that we'll able to include within that
+			// a roughly accurate count of NS_MAIN page creations
+			->limit( max( 10_000, $this->config->get( 'GEUserImpactMaxEdits' ) ) )
+			// Start with newer log entries first, as these are more relevant to the features
+			// that consume this data
+			->orderBy( 'log_timestamp', $queryBuilder::SORT_DESC );
+		$result = $queryBuilder->fetchResultSet();
+		$pageIds = [];
+		foreach ( $result as $row ) {
+			$pageIds[] = (int)$row->log_page;
+		}
+		if ( !count( $pageIds ) ) {
+			return 0;
+		}
+		$queryBuilder = $db->newSelectQueryBuilder();
+		$queryBuilder->from( 'page' )
+			->where( [
+				'page_namespace' => NS_MAIN,
+				'page_is_redirect' => false,
+				'page_id' => $pageIds,
+			] )
+			// No need for a LIMIT on this query, since we'll have at most $wgGEUserImpactMaxEdits
+			// page IDs from above.
+			->caller( __METHOD__ );
+		return $queryBuilder->fetchRowCount();
 	}
 
 	/**
@@ -341,9 +403,22 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 	 * @param int $flags
 	 * @return int Number of thanks received for the user ID
 	 */
-	private function getThanksCount( User $user, int $flags ): int {
+	private function getThanksReceivedCount( User $user, int $flags ): int {
 		return $this->thanksQueryHelper
-			? $this->thanksQueryHelper->getThanksReceivedCount( $user, self::MAX_THANKS, $flags )
+			? $this->thanksQueryHelper->getThanksReceivedCount(
+				$user, $this->config->get( 'GEUserImpactMaxThanks' ), $flags )
+			: 0;
+	}
+
+	/**
+	 * @param UserIdentity $user
+	 * @param int $flags
+	 * @return int Number of thanks given for the user
+	 */
+	private function getThanksGivenCount( UserIdentity $user, int $flags ): int {
+		return $this->thanksQueryHelper
+			? $this->thanksQueryHelper->getThanksGivenCount(
+				$user, $this->config->get( 'GEUserImpactMaxThanks' ), $flags )
 			: 0;
 	}
 
@@ -393,7 +468,7 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 				// the first 8 characters for comparison with Ymd format date strings.
 				'rev_timestamp' => substr( $data['oldestEdit'], 0, 8 ),
 				'newestEdit' => $data['newestEdit'],
-				'oldestEdit' => $data['oldestEdit']
+				'oldestEdit' => $data['oldestEdit'],
 			];
 		}
 		if ( defined( 'MEDIAWIKI_JOB_RUNNER' ) || MW_ENTRY_POINT === 'cli' ) {
@@ -407,6 +482,18 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 		foreach ( $pageViewData as $title => $days ) {
 			// Normalize titles as PageViewInfo does not define which title format it uses :(
 			$title = str_replace( ' ', '_', $title );
+			if ( !isset( $allTitleObjects[$title] ) ) {
+				// There still seems to be a title normalization issue, see T400574 and T401005
+				$this->logger->warning(
+					'Title {title} not found in allTitleObjects',
+					[
+						'title' => $title,
+						'allTitleObjectsKeys' => implode( ',', array_keys( $allTitleObjects ) ),
+						'exception' => new \RuntimeException,
+					],
+				);
+				continue;
+			}
 			$mwTitle = $this->titleFactory->newFromTextThrow( $title );
 			$imageUrl = $this->getImage( $mwTitle );
 			if ( $imageUrl ) {
@@ -512,10 +599,10 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 				Status::wrap( $status )->getWikiText( false, false, 'en' )
 			);
 		} else {
-			$this->statsdDataFactory->updateCount(
-				'GrowthExperiments.ComputedUserImpactLookup.PviCachedErrorTitle',
-				$status->failCount
-			);
+			$this->statsFactory->withComponent( 'GrowthExperiments' )
+				->getCounter( 'computed_user_impact_lookup_errors_total' )
+				->setLabel( 'type', 'pvi_cached_error_title' )
+				->incrementBy( $status->failCount );
 		}
 	}
 
@@ -542,19 +629,30 @@ class ComputedUserImpactLookup implements UserImpactLookup {
 	 * @return ?string
 	 */
 	private function getImage( Title $title ): ?string {
-		if ( !ExtensionRegistry::getInstance()->isLoaded( 'PageImages' ) ) {
+		if ( !$this->pageImages ) {
 			return null;
 		}
 
-		$imageFile = PageImages::getPageImage( $title );
+		$imageFile = $this->pageImages->getImage( $title );
 		if ( $imageFile ) {
-			$ratio = $imageFile->getWidth() / $imageFile->getHeight();
 			$options = [
-				'width' => $ratio > 1 ?
-					// Avoid decimals in the width because it makes the thumb url construction fail
-					floor( self::THUMBNAIL_SIZE / $imageFile->getHeight() * $imageFile->getWidth() ) :
-					self::THUMBNAIL_SIZE
+				'width' => self::THUMBNAIL_SIZE,
 			];
+			$height = $imageFile->getHeight();
+			if ( $height ) {
+				$ratio = $imageFile->getWidth() / $height;
+				if ( $ratio > 1 ) {
+					// Avoid decimals in the width because it makes the thumb url construction fail
+					$options[ 'width' ] = floor(
+						self::THUMBNAIL_SIZE / $height * $imageFile->getWidth()
+					);
+				}
+			} else {
+				$this->logger->warning( 'PageImages returned 0-height image for page {title}, {fileName}', [
+					'title' => $title->getDBkey(),
+					'fileName' => $imageFile->getName(),
+				] );
+			}
 
 			$thumb = $imageFile->transform( $options );
 			if ( $thumb ) {

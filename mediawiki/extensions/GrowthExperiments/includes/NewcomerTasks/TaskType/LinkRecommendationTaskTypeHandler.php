@@ -1,16 +1,17 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace GrowthExperiments\NewcomerTasks\TaskType;
 
 use GrowthExperiments\NewcomerTasks\AddLink\AddLinkSubmissionHandler;
 use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationProvider;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationValidator;
-use GrowthExperiments\NewcomerTasks\RecommendationProvider;
-use GrowthExperiments\NewcomerTasks\SubmissionHandler;
 use InvalidArgumentException;
 use LogicException;
+use MediaWiki\Config\Config;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Title\TitleParser;
-use MessageLocalizer;
 use Wikimedia\Message\MessageSpecifier;
 
 class LinkRecommendationTaskTypeHandler extends StructuredTaskTypeHandler {
@@ -24,24 +25,21 @@ class LinkRecommendationTaskTypeHandler extends StructuredTaskTypeHandler {
 	/** The tag prefix used for CirrusSearch\Wikimedia\WeightedTags. */
 	public const WEIGHTED_TAG_PREFIX = 'recommendation.link';
 
-	private LinkRecommendationProvider $recommendationProvider;
-	private AddLinkSubmissionHandler $submissionHandler;
+	private readonly LinkRecommendationProvider $recommendationProvider;
+	private readonly AddLinkSubmissionHandler $submissionHandler;
+	private readonly Config $config;
 
-	/**
-	 * @param ConfigurationValidator $configurationValidator
-	 * @param TitleParser $titleParser
-	 * @param LinkRecommendationProvider $recommendationProvider
-	 * @param AddLinkSubmissionHandler $submissionHandler
-	 */
 	public function __construct(
 		ConfigurationValidator $configurationValidator,
 		TitleParser $titleParser,
 		LinkRecommendationProvider $recommendationProvider,
-		AddLinkSubmissionHandler $submissionHandler
+		AddLinkSubmissionHandler $submissionHandler,
+		Config $config
 	) {
 		parent::__construct( $configurationValidator, $titleParser );
 		$this->recommendationProvider = $recommendationProvider;
 		$this->submissionHandler = $submissionHandler;
+		$this->config = $config;
 	}
 
 	/** @inheritDoc */
@@ -51,18 +49,23 @@ class LinkRecommendationTaskTypeHandler extends StructuredTaskTypeHandler {
 
 	/**
 	 * @inheritDoc
-	 * @return LinkRecommendationProvider
 	 */
-	public function getRecommendationProvider(): RecommendationProvider {
+	public function getRecommendationProvider(): LinkRecommendationProvider {
 		return $this->recommendationProvider;
 	}
 
 	/**
 	 * @inheritDoc
-	 * @return AddLinkSubmissionHandler
 	 */
-	public function getSubmissionHandler(): SubmissionHandler {
+	public function getSubmissionHandler(): AddLinkSubmissionHandler {
 		return $this->submissionHandler;
+	}
+
+	private function parseMaximumEditsTaskIsAvailable( string $configValue ): ?int {
+		if ( !$configValue || $configValue === 'no' ) {
+			return null;
+		}
+		return (int)$configValue;
 	}
 
 	/** @inheritDoc */
@@ -70,6 +73,10 @@ class LinkRecommendationTaskTypeHandler extends StructuredTaskTypeHandler {
 		$extraData = [ 'learnMoreLink' => $config['learnmore'] ?? null ];
 		// FIXME add settings validation
 		$settings = array_intersect_key( $config, LinkRecommendationTaskType::DEFAULT_SETTINGS );
+		$settings['minimumTasksPerTopic'] = $this->config->get( 'GELinkRecommendationMinimumTasksPerTopic' );
+		$settings['maximumEditsTaskIsAvailable'] = $this->parseMaximumEditsTaskIsAvailable(
+			$config['maximumEditsTaskIsAvailable']
+		);
 
 		$taskType = new LinkRecommendationTaskType(
 			$taskTypeId,

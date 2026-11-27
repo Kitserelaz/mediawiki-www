@@ -1,58 +1,35 @@
 <?php
 
+use MobileFrontend\Tests\Utils;
 use MobileFrontend\Transforms\MoveLeadParagraphTransform;
-use Wikimedia\Parsoid\Utils\DOMCompat;
+use Wikimedia\Parsoid\Core\DOMCompat;
 use Wikimedia\TestingAccessWrapper;
 
 /**
  * @group MobileFrontend
  */
 class MoveLeadParagraphTransformTest extends \MediaWikiUnitTestCase {
-	public static function wrap( $html ) {
-		return "<!DOCTYPE HTML>
-<html><body>$html</body></html>
-";
-	}
-
-	public static function wrapSection( $html ) {
-		return "<section>$html</section>";
-	}
-
 	/**
 	 * @covers \MobileFrontend\Transforms\MoveLeadParagraphTransform::identifyInfoboxElement
-	 * @covers \MobileFrontend\Transforms\MoveLeadParagraphTransform::matchElement
 	 * @dataProvider provideIdentifyInfoboxElement
 	 */
 	public function testIdentifyInfoboxElement( string $html, ?string $expected, string $msg ) {
-		$doc = new DOMDocument();
-		$doc->loadHTML( self::wrap( $html ), LIBXML_NOERROR );
-		$xPath = new DOMXPath( $doc );
-		$bodyNode = DOMCompat::querySelector( $doc, 'body' );
-
-		$wrappedInfobox = $doc->createElement( 'table' );
-		$wrappedInfobox->setAttribute( 'class', 'infobox' );
-		$stack = $doc->createElement( 'div' );
-		$stack->setAttribute( 'class', 'mw-stack' );
-		$stack->appendChild( $wrappedInfobox );
-		$pNode = $doc->createElement( 'p' );
-		$infobox = $doc->createElement( 'table' );
-		$infobox->setAttribute( 'class', 'infobox' );
-		$anotherInfobox = $doc->createElement( 'table' );
-		$anotherInfobox->setAttribute( 'class', 'infobox' );
-		$section = $doc->createElement( 'div' );
-		$section->appendChild( $anotherInfobox );
-
 		$transform = TestingAccessWrapper::newFromObject(
 			new MoveLeadParagraphTransform( 'DummyTitle', 1 )
 		);
 
-		$infobox = $transform->identifyInfoboxElement( $xPath, $bodyNode );
+		$bodyNode = Utils::createBody( $html );
+		$infobox = $transform->identifyInfoboxElement( $bodyNode );
 
-		$this->assertEquals(
-			$expected,
-			$infobox ? $infobox->getNodePath() : null,
-			$msg
-		);
+		if ( !$expected ) {
+			$this->assertNull( $infobox, $msg );
+		} else {
+			$this->assertEquals(
+				DOMCompat::querySelector( $bodyNode->ownerDocument, $expected ),
+				$infobox,
+				$msg
+			);
+		}
 	}
 
 	public static function provideIdentifyInfoboxElement(): array {
@@ -64,27 +41,27 @@ class MoveLeadParagraphTransformTest extends \MediaWikiUnitTestCase {
 			],
 			[
 				'html' => '<p></p><div class="infobox"></div>',
-				'expected' => '/html/body/div',
+				'expected' => 'html > body > div',
 				'msg' => 'Simple infobox'
 			],
 			[
 				'html' => '<p></p><div class="mw-stack"><table class="infobox"></table></div>',
-				'expected' => '/html/body/div',
+				'expected' => 'html > body > div',
 				'msg' => 'Infobox wrapped in an known container'
 			],
 			[
 				'html' => '<p></p><div><table class="infobox"></table></div>',
-				'expected' => '/html/body/div/table',
+				'expected' => 'html > body > div > table',
 				'msg' => 'Infobox wrapped in an unknown container'
 			],
 			[
 				'html' => '<p></p><div class="thumb tright"></div>',
-				'expected' => '/html/body/div',
+				'expected' => 'html > body > div',
 				'msg' => 'Thumbnail'
 			],
 			[
 				'html' => '<p></p><figure></figure>',
-				'expected' => '/html/body/figure',
+				'expected' => 'html > body > figure',
 				'msg' => 'Thumbnail (Parsoid)'
 			],
 		];
@@ -101,23 +78,18 @@ class MoveLeadParagraphTransformTest extends \MediaWikiUnitTestCase {
 	 * @covers \MobileFrontend\Transforms\MoveLeadParagraphTransform::isPreviousSibling
 	 */
 	public function testApplySectionSecondSectionShouldBeIgnored() {
-		$infobox = '<table class="infobox">1</table>';
+		$infobox = '<table class="infobox"><tbody><tr><td>1</td></tr></tbody></table>';
 		$paragraph = '<p><b>First paragraph</b> <span> with info that links to a '
 			. PHP_EOL . ' <a href="">Page</a></span> and some more content</p>';
 
 		$transform = new MoveLeadParagraphTransform( 'A', 1 );
-		libxml_use_internal_errors( true );
-		$doc = new DOMDocument();
-		$doc->loadHTML( self::wrap(
-			self::wrapSection( 'First' ) . self::wrapSection( $infobox . $paragraph )
-		) );
-		$transform->apply( DOMCompat::querySelector( $doc, 'body' ) );
+		$body = Utils::createBody( Utils::wrapSection( 'First' ) . Utils::wrapSection( $infobox . $paragraph ) );
+		$transform->apply( $body );
 		$this->assertEquals(
-			self::wrap( self::wrapSection( 'First' ) . self::wrapSection( $infobox . $paragraph ) ),
-			$doc->saveHTML(),
+			Utils::wrapSection( 'First' ) . Utils::wrapSection( $infobox . $paragraph ),
+			Utils::getInnerHTML( $body ),
 			"The second section should be ignored"
 		);
-		libxml_clear_errors();
 	}
 
 	/**
@@ -140,28 +112,27 @@ class MoveLeadParagraphTransformTest extends \MediaWikiUnitTestCase {
 		$reason = 'Move lead paragraph unexpected result'
 	) {
 		$transform = new MoveLeadParagraphTransform( 'A', 1 );
-		libxml_use_internal_errors( true );
-		$doc = new DOMDocument();
-		$doc->loadHTML( self::wrap( self::wrapSection( $html ) ) );
-		$transform->apply( DOMCompat::querySelector( $doc, 'body' ) );
+		$doc = DOMCompat::newDocument();
+		$body = Utils::createBody( Utils::wrapSection( $html ) );
+		$transform->apply( $body );
 		$this->assertEquals(
-			self::wrap( self::wrapSection( $expected ) ),
-			$doc->saveHTML(), $reason
+			Utils::wrapSection( $expected ),
+			Utils::getInnerHTML( $body ),
+			$reason
 		);
-		libxml_clear_errors();
 	}
 
 	public static function provideTransform() {
 		$divinfobox = '<div class="infobox infobox_v3">infobox</div>';
 		$hatnote = '<div role="note" class="hatnote navigation-not-searchable">hatnote.</div>';
-		$infobox = '<table class="infobox">1</table>';
+		$infobox = '<table class="infobox"><tbody><tr><td>1</td></tr></tbody></table>';
 		$coordinates = '<span id="coordinates"><span>0;0</span></span>';
 		$templateStyles = '<style data-mw-deduplicate="TemplateStyles:r123">CSS</style>';
 		$wrappedTemplateStyles = "<p>$templateStyles</p>";
 		$wrappedTemplateStylesAndContent = "<p>Content $templateStyles</p>";
 		$wrappedCoordsWithTrailingWhitespace = '<p><span><span id="coordinates">not empty</span>'
 		  . '</span>    </p>';
-		$anotherInfobox = '<table class="infobox">2</table>';
+		$anotherInfobox = '<table class="infobox"><tbody><tr><td>2</td></tr></tbody></table>';
 		$stackInfobox = "<div class=\"mw-stack\">$infobox</div>";
 		$emptyStack = '<div class="mw-stack">Empty</div>';
 		$emptypelt = '<p class="mw-empty-elt"></p>';
@@ -172,10 +143,11 @@ class MoveLeadParagraphTransformTest extends \MediaWikiUnitTestCase {
 		// The $paragraphWithWhitespacesOnly has not only whitespaces (space,new line,tab)
 		// , but also contains a span with whitespaces
 		$paragraphWithWhitespacesOnly = '<p class="someParagraphClass">  	'
-			. PHP_EOL . "<span> 	\r\n</span></p>";
-		$collapsibleInfobox = '<table class="collapsible"><table class="infobox"></table></table>';
-		$collapsibleNotInfobox = '<table class="collapsible">'
-			. '<table class="mf-test-infobox"></table></table>';
+			. PHP_EOL . "<span> 	\n</span></p>";
+		$collapsibleInfobox = '<table class="collapsible"><tbody><tr><td>'
+			. '<table class="infobox"></table></td></tr></tbody></table>';
+		$collapsibleNotInfobox = '<table class="collapsible"><tbody><tr><td>'
+			. '<table class="mf-test-infobox"></table></td></tr></tbody></table>';
 
 		return [
 			[

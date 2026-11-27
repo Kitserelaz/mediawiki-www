@@ -1,14 +1,28 @@
 <?php
 $cfg = require __DIR__ . '/../vendor/mediawiki/mediawiki-phan-config/src/config.php';
 $cfg['suppress_issue_types'] = array_merge( $cfg['suppress_issue_types'], [
-	'PhanTypeMissingReturn', // have to keep compatibility with old PHP versions without scalar type hints.
-	'PhanPluginDuplicateExpressionAssignmentOperation', // have to keep compatibility with old PHP versions without ??=.
-	'PhanUndeclaredTypeReturnType', // Extensions only suggested.
 	'PhanUndeclaredTypeParameter', // Extensions only suggested.
 	'PhanUndeclaredTypeProperty', // Extensions only suggested.
 	'PhanUndeclaredExtendedClass', // Extensions only suggested.
 	'PhanParamSuspiciousOrder', // Need this.
-	'PhanRedundantCondition', // Title object behaves differently in different MW versions.
-	'UnusedPluginSuppression' // Different versions of MediaWiki will need different suppressions.
+	'PhanUnusedVariableCaughtException', // requires pure php8+, MW 1.42
+	// Phan can be run on installations with different optional dependencies installed;
+	// therefore PhanUndeclaredClassMethod is sometimes used and sometimes not.
+	'UnusedPluginSuppression'
 ] );
+
+$cfg['directory_list'] = array_merge(
+	$cfg['directory_list'],
+	[
+		'../../extensions/Scribunto',
+	]
+);
+
+$cfg['exclude_analysis_directory_list'] = array_merge(
+	$cfg['exclude_analysis_directory_list'],
+	[
+		'../../extensions/Scribunto',
+	]
+);
+
 return $cfg;

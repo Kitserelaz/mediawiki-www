@@ -7,7 +7,7 @@
 	const { hasIntl } = require( '../utils/Utils.js' );
 	const HomepageLogger = require( '../ext.growthExperiments.Homepage.Logger/index.js' );
 	const logger = require( '../vue-components/plugins/logger.js' );
-	const relevantUserId = mw.config.get( 'GENewImpactRelevantUserId' );
+	const relevantUserId = mw.config.get( 'GEImpactRelevantUserId' );
 
 	/**
 	 * Maybe retrieve server exported data for the impact module
@@ -88,18 +88,20 @@
 		app.provide( 'RELEVANT_USER_ID', relevantUserId );
 		app.provide( 'RELEVANT_USER_DATA', data );
 		app.provide( 'FETCH_ERROR', error );
-		app.provide( 'RELEVANT_USER_USERNAME', mw.config.get( 'GENewImpactRelevantUserName' ) );
-		app.provide( 'RELEVANT_USER_MODULE_UNACTIVATED', mw.config.get( 'GENewImpactRelevantUserUnactivated' ) );
-		app.provide( 'RELEVANT_USER_SUGGESTED_EDITS_ENABLED', mw.config.get( 'GENewImpactIsSuggestedEditsEnabledForUser' ) );
-		app.provide( 'RELEVANT_USER_SUGGESTED_EDITS_ACTIVATED', mw.config.get( 'GENewImpactIsSuggestedEditsActivatedForUser' ) );
-		app.provide( 'RENDER_IN_THIRD_PERSON', mw.config.get( 'GENewImpactThirdPersonRender' ) );
+		app.provide( 'RELEVANT_USER_USERNAME', mw.config.get( 'GEImpactRelevantUserName' ) );
+		app.provide( 'RELEVANT_USER_MODULE_UNACTIVATED', mw.config.get( 'GEImpactRelevantUserUnactivated' ) );
+		app.provide( 'RELEVANT_USER_SUGGESTED_EDITS_ENABLED', mw.config.get( 'GEImpactIsSuggestedEditsEnabledForUser' ) );
+		app.provide( 'RELEVANT_USER_SUGGESTED_EDITS_ACTIVATED', mw.config.get( 'GEImpactIsSuggestedEditsActivatedForUser' ) );
+		app.provide( 'RENDER_IN_THIRD_PERSON', mw.config.get( 'GEImpactThirdPersonRender' ) );
 		app.provide( 'BROWSER_HAS_INTL', hasIntl() );
 		app.provide( 'RENDER_MODE', mode );
+		app.provide( 'IMPACT_MAX_EDITS', mw.config.get( 'GEImpactMaxEdits' ) );
+		app.provide( 'IMPACT_MAX_THANKS', mw.config.get( 'GEImpactMaxThanks' ) );
 		app.use( logger, {
 			mode,
 			logger: new HomepageLogger(
-				mw.config.get( 'wgGEHomepageLoggingEnabled' ),
-				mw.config.get( 'wgGEHomepagePageviewToken' )
+				mw.config.get( 'wgGEHomepagePageviewToken' ),
+				mw.config.get( 'wgGEDisableLogging' )
 			)
 		} );
 		app.mount( mountPoint );
@@ -123,13 +125,13 @@
 				createApp( {
 					data,
 					error,
-					mountPoint: '#new-impact-vue-root--mobile',
+					mountPoint: '#impact-vue-root--mobile',
 					mode: renderMode
 				} );
 				createApp( {
 					data,
 					error,
-					mountPoint: '#new-impact-vue-root',
+					mountPoint: '#impact-vue-root',
 					mode: 'mobile-overlay'
 				} );
 				break;
@@ -138,7 +140,7 @@
 				createApp( {
 					data,
 					error,
-					mountPoint: '#new-impact-vue-root',
+					mountPoint: '#impact-vue-root',
 					mode: 'mobile-details'
 				} );
 				break;
@@ -147,7 +149,7 @@
 				createApp( {
 					data,
 					error,
-					mountPoint: '#new-impact-vue-root',
+					mountPoint: '#impact-vue-root',
 					mode: renderMode
 				} );
 				break;

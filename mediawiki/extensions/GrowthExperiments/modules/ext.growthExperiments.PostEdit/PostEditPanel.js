@@ -49,11 +49,11 @@ function PostEditPanel( config ) {
 	this.linkRecommendationDailyTasksExceeded = config.linkRecommendationDailyTasksExceeded;
 	this.prevButton = new OO.ui.ButtonWidget( {
 		icon: 'previous',
-		classes: [ 'mw-ge-help-panel-postedit-navigation-prev' ]
+		classes: [ 'mw-ge-help-panel-postedit-navigation-prev' ],
 	} );
 	this.nextButton = new OO.ui.ButtonWidget( {
 		icon: 'next',
-		classes: [ 'mw-ge-help-panel-postedit-navigation-next' ]
+		classes: [ 'mw-ge-help-panel-postedit-navigation-next' ],
 	} );
 	this.prevButton.connect( this, { click: [ 'onPrevButtonClicked' ] } );
 	this.nextButton.connect( this, { click: [ 'onNextButtonClicked' ] } );
@@ -62,6 +62,12 @@ function PostEditPanel( config ) {
 	this.togglePrevNavigation( false );
 	this.toggleNextNavigation( false );
 
+	this.tasksStore.on( CONSTANTS.EVENTS.TASK_QUEUE_LOADING, ( isLoading ) => {
+		if ( isLoading ) {
+			return;
+		}
+		this.updateNavigation();
+	} );
 	this.tasksStore.on( CONSTANTS.EVENTS.TASK_QUEUE_CHANGED, () => {
 		const currentTask = this.tasksStore.getCurrentTask();
 		if ( currentTask ) {
@@ -132,9 +138,12 @@ PostEditPanel.prototype.getPostEditToastMessage = function () {
 
 	return new PostEditToastMessage( {
 		icon: 'check',
-		type: hasSavedTask ? 'success' : 'notice',
+		type: (
+			hasSavedTask ||
+			this.taskState === SuggestedEditSession.static.STATES.SUBMITTED
+		) ? 'success' : 'notice',
 		label: $( '<span>' ).append( mw.message( messageKey ).parse() ),
-		autoHideDuration: 5000
+		autoHideDuration: 5000,
 	} );
 };
 
@@ -148,7 +157,7 @@ PostEditPanel.prototype.getFooterButtons = function () {
 		href: Utils.getSuggestedEditsFeedUrl( 'postedit-panel' ),
 		label: mw.message( 'growthexperiments-help-panel-postedit-footer' ).text(),
 		framed: false,
-		classes: [ 'mw-ge-help-panel-postedit-footer' ]
+		classes: [ 'mw-ge-help-panel-postedit-footer' ],
 	} );
 	footer.$element.on( 'click', this.logLinkClick.bind( this, 'homepage' ) );
 	return [ footer.$element ];
@@ -243,15 +252,15 @@ PostEditPanel.prototype.getFallbackCard = function () {
 				// The following messages are used here:
 				// * growthexperiments-help-panel-postedit-suggestededits-title
 				// * growthexperiments-help-panel-postedit-suggestededits-levelingup-title
-				mw.message( postEditFallbackCardTitleMessage ).text()
+				mw.message( postEditFallbackCardTitleMessage ).text(),
 			),
 			$( '<div>' ).addClass( 'mw-ge-help-panel-postedit-fallbackCard-text' ).text(
 				// The following messages are used here:
 				// * growthexperiments-help-panel-postedit-suggestededits-info
 				// * growthexperiments-help-panel-postedit-suggestededits-levelingup-info
-				mw.message( postEditFallbackCardInfoMessage ).text()
-			)
-		)
+				mw.message( postEditFallbackCardInfoMessage ).text(),
+			),
+		),
 	);
 	return $fallbackCard;
 };
@@ -273,8 +282,12 @@ PostEditPanel.prototype.getCard = function ( task ) {
 		geclickid: this.helpPanelLogger.helpPanelSessionId,
 		getasktype: task.tasktype,
 		genewcomertasktoken: task.token,
-		gesuggestededit: 1
+		gesuggestededit: 1,
 	};
+	const currentPageSearchParams = new URLSearchParams( location.search );
+	if ( currentPageSearchParams.has( 'mpo' ) ) {
+		params.mpo = currentPageSearchParams.get( 'mpo' );
+	}
 	let url;
 	if ( task.url ) {
 		// Override for developer setups
@@ -290,7 +303,7 @@ PostEditPanel.prototype.getCard = function ( task ) {
 	const taskCard = new SmallTaskCard( {
 		task: task,
 		taskTypes: this.taskTypes,
-		taskUrl: url
+		taskUrl: url,
 	} );
 	taskCard.connect( this, { click: 'logTaskClick' } );
 	return taskCard.$element;
@@ -350,7 +363,7 @@ PostEditPanel.prototype.logImpression = function ( extraData ) {
 			type: 'full',
 			savedTaskType: extraData.savedTaskType,
 			userTaskTypes: extraData.userTaskTypes,
-			newcomerTaskToken: extraData.newcomerTaskToken
+			newcomerTaskToken: extraData.newcomerTaskToken,
 		};
 		if ( extraData.userTopics && extraData.userTopics.length ) {
 			data.userTopics = extraData.userTopics;
@@ -360,12 +373,12 @@ PostEditPanel.prototype.logImpression = function ( extraData ) {
 		this.helpPanelLogger.log( 'postedit-impression', {
 			type: 'error',
 			savedTaskType: extraData.savedTaskType,
-			error: extraData.errorMessage
+			error: extraData.errorMessage,
 		} );
 	} else {
 		this.helpPanelLogger.log( 'postedit-impression', {
 			type: 'small',
-			savedTaskType: extraData.savedTaskType
+			savedTaskType: extraData.savedTaskType,
 		} );
 	}
 };
@@ -410,14 +423,14 @@ PostEditPanel.prototype.updateNextTask = function ( task ) {
 /**
  * Navigate to next card and log events when the next button is clicked
  *
- * @fires PostEditPanel#postedit-next-task
+ * @fires mw.libs.ge.PostEditPanel#postedit-next-task
  */
 PostEditPanel.prototype.onNextButtonClicked = function () {
 	this.tasksStore.showNextTask();
 	this.helpPanelLogger.log( 'postedit-task-navigation', {
 		dir: 'next',
 		/* eslint-disable-next-line camelcase */
-		navigation_type: 'click'
+		navigation_type: 'click',
 	} );
 };
 
@@ -430,7 +443,7 @@ PostEditPanel.prototype.onPrevButtonClicked = function () {
 	this.helpPanelLogger.log( 'postedit-task-navigation', {
 		dir: 'prev',
 		/* eslint-disable-next-line camelcase */
-		navigation_type: 'click'
+		navigation_type: 'click',
 	} );
 };
 

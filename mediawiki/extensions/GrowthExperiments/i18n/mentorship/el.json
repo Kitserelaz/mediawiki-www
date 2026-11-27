@@ -11,7 +11,6 @@
 	},
 	"growthexperiments-mentor-dashboard-title": "Πίνακας εργασίας καθοδηγητή",
 	"growthexperiments-mentor-dashboard-pt-link": "Πίνακας εργασίας καθοδηγητή",
-	"growthexperiments-mentor-dashboard-disabled": "Ο πίνακας εργασίας καθοδηγητή δεν είναι ενεργοποιημένος σε αυτό το wiki.",
 	"growthexperiments-mentor-dashboard-must-be-mentor": "Για να ενεργοποιήσετε τον πίνακα εργασίας καθοδηγητή, χρειάζεται πρώτα να [[$1|εγγραφείτε ως {{GENDER:|καθοδηγητής|καθοδηγήτρια}}]].",
 	"growthexperiments-mentor-dashboard-misconfigured-missing-list": "Πριν μπορέσει να χρησιμοποιηθεί ο πίνακας καθοδηγητή, πρέπει πρώτα να ρυθμιστεί ο κατάλογος καθοδηγητών. Ένας διαχειριστής μπορεί να χρησιμοποιήσει το [[Special:EditGrowthConfig]] για αυτό τον σκοπό.",
 	"growthexperiments-mentor-dashboard-mentee-overview-headline": "Οι καθοδηγούμενοί {{GENDER:|σας}}",
@@ -105,7 +104,7 @@
 	"growthexperiments-notification-header-mentee-claimed": "{{GENDER:$3|O καθοδηγούμενος σας|Η καθοδηγουμένη σας}}, $3, είχε αξιωθεί από {{GENDER:$2|τον|την}} $1.",
 	"growthexperiments-notification-body-mentee-claimed": "Αιτία: $1",
 	"growthexperiments-notification-secondary-link-label-mentee-claimed": "Τι είναι η \"διεκδίκηση καθοδηγούμνου\";",
-	"growthexperiments-notification-header-new-praiseworthy-mentees": "{{GENDER:|Εσείς}} έχετε καθοδηγούμνεους που είναι άξιοι για έπαινο! Στείλτε ενθάρυνση στους καθοδηγούμενους μέσω του δικού σας ταμπλού μέντορα.",
+	"growthexperiments-notification-header-new-praiseworthy-mentees": "{{GENDER:|Έχετε}} καθοδηγούμενους που είναι άξιοι για έπαινο! Ενθαρρύνετε τους καθοδηγούμενους μέσω του δικού σας ταμπλό Καθοδηγητή.",
 	"growthexperiments-notification-secondary-link-new-praiseworthy-mentees": "Προβολή πίνακα καθοδηγητή",
 	"growthexperiments-mentor-dashboard-mentor-tools-mentor-weight-headline": "Αριθμός από καθοδηγούμενους καθορισμένοι σε εμένα",
 	"growthexperiments-mentor-dashboard-mentor-tools-mentor-weight-none": "Κανένα (τα διεκδικώ χειροκίνητα)",
@@ -212,6 +211,6 @@
 	"growthexperiments-mentorship-enrollasmentor-success": "{{GENDER:|Εσείς}} πρόκειται να εγγραφείτε ως {{GENDER:|καθοδηγητής|καθοδηγήτρια}}. Μπορείτε να συνεχίσετε στο [[Special:MentorDashboard|στο ταμπλό του {{GENDER:|καθοδηγητή|καθοδηγήτριας}}]] τώρα.",
 	"growthexperiments-mentorship-enrollasmentor-summary": "Προσθέτω τον ευατό μου ως {{GENDER:|καθοδηγητή|καθοδηγήτρια}}",
 	"growthexperiments-mentorship-enrollasmentor-error-not-autoeligible": "Χρήστες μόνο με τουλάχιστον $1 {{PLURAL:$1|επεξεργασία|επεξεργασίες}} και $2 {{PLURAL:$2|ημέρα|ημέρες}} παρουσίας μπορούν να εγγραφούν ως {{GENDER:|καθοδηγητές|καθοδηγήτριες}}.",
-	"tag-mentor list change": "Αλλαγή της λίστας καθοδηγητών",
-	"tag-mentor list change-description": "Εφαρμόστηκε ετικέτα σε τροποποιήσεις που έγιναν στη λίστα δομημένων καθοδηγητών μέσω του GrowthExperiments"
+	"tag-mentor_list_change": "Αλλαγή της λίστας καθοδηγητών",
+	"tag-mentor_list_change-description": "Εφαρμόστηκε ετικέτα σε τροποποιήσεις που έγιναν στη λίστα δομημένων καθοδηγητών μέσω του GrowthExperiments"
 }

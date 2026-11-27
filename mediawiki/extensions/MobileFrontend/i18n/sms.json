@@ -1,14 +1,18 @@
 {
 	"@metadata": {
 		"authors": [
+			"Tynnoel",
 			"Yupik"
 		]
 	},
-	"mobile-frontend-changeslist-nocomment": "õʹhtteǩeässmõš ij leäkku",
-	"mobile-frontend-clear-search": "Kuârad",
+	"mobile-frontend-account-create-captcha-placeholder": "Ǩeeʹrjet raʹvvjemkoodd",
 	"mobile-frontend-copyright": "Siiskâž lij vuäǯǯamnalla $1 -liseeʹnsin, ǥõõi ij nuuʹbbnalla leäkku peäggtum.",
 	"mobile-frontend-editor-anon": "Muuʹtt ǩeeʹrjtõõđǩâni sizz",
+	"mobile-frontend-editor-anonwarning-soft-separator": "leʹbe",
 	"mobile-frontend-editor-blocked-drawer-action-login": "Ǩeeʹrjtõõđ sizz",
+	"mobile-frontend-drawer-arrow-label": "Piij ǩidd",
+	"mobile-frontend-editor-blocked-drawer-action-ok": "OK",
+	"mobile-frontend-editor-blocked-drawer-body-link": "Lââʹssteâđ",
 	"mobile-frontend-editor-blocked-drawer-reason-header": "Mäinn",
 	"mobile-frontend-editor-blocked-drawer-help": "Čuäʹjet teâđaid",
 	"mobile-frontend-editor-cancel": "Jõõsk",
@@ -29,6 +33,7 @@
 	"mobile-frontend-media-license-link": "Teâđ liseeʹnsest",
 	"mobile-frontend-media-load-fail-retry": "Peiʹvved",
 	"mobile-frontend-missing-image": "Kartt leʼbe snimldõk",
+	"mobile-frontend-overlay-close": "Piij ǩidd",
 	"mobile-frontend-privacy-link-text": "Teâttsuejjčiõʹlǧǧõs",
 	"mobile-frontend-save-settings": "Ruõkk",
 	"mobile-frontend-settings-tagline": "Lookkâmasetõõzz",
@@ -41,10 +46,9 @@
 	"mobile-frontend-watchlist-filter-articles": "Seeid",
 	"mobile-frontend-watchlist-filter-other": "Jeeʹres",
 	"mobile-frontend-watchlist-filter-talk": "Saǥstõõllâmseidd",
-	"mobile-frontend-search-feedback-link-text": "Uuʹd maacctõõzz.",
 	"mobile-frontend-send-feedback": "Vuõlttâd maacctõõzz",
-	"mobile-frontend-mobile-option-MFEnableFontChanger": "Bukvai šorradvuõtt",
 	"mobile-frontend-mobile-option-amc-learn-more": "Lââʹssteâđ",
 	"mobile-frontend-mobile-option-amc-send-feedback": "Vuõlttâd maacctõõzz",
+	"mobile-frontend-user-pref-option": "Õõʹnniasetõõzz",
 	"prefs-mobile": "Mobiilasetõõzz"
 }

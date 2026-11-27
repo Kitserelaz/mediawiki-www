@@ -95,8 +95,8 @@
 }
 
 .mw-mf-page-center__mask.suggested-edits {
-	// Set value to be higher than Minerva's overlay content (@z-indexOverlay: 3).
-	z-index: 4 !important; // stylelint-disable-line declaration-no-important
+	// Set value to be higher than Minerva's overlay content (@z-index-overlay-backdrop: 400).
+	z-index: @z-index-overlay;
 }
 
 .drawer.suggested-edits-taskexplanation-drawer {
@@ -117,7 +117,7 @@
 	padding: 16px;
 
 	main {
-		background-color: @suggestedEditsBackgroundColorLegacyLightOnly;
+		background-color: @suggestedEditsBackgroundColor;
 		padding: 16px;
 		margin: -16px;
 
@@ -147,7 +147,7 @@
 body.mw-special-Homepage {
 	.overlay-content .growthexperiments-homepage-module-mobile-overlay.growthexperiments-homepage-module-suggested-edits {
 		padding: 0;
-		background-color: @suggestedEditsBackgroundColorLegacyLightOnly;
+		background-color: @suggestedEditsBackgroundColor;
 	}
 
 	.overlay.suggested-edits-module-mobile-overlay {
@@ -177,7 +177,7 @@ body.mw-special-Homepage {
 
 			.suggested-edits-filters {
 				position: fixed;
-				z-index: 2;
+				z-index: @z-index-fixed;
 			}
 
 			.suggested-edits-module-wrapper {
@@ -217,8 +217,8 @@ body.mw-special-Homepage {
 	}
 
 	.drawer-container {
-		// Display over Minerva's overlay content (@z-indexOverOverlay: 4).
-		z-index: 5;
+		// Set value to be higher than Minerva's overlay content (@z-index-overlay-backdrop: 400).
+		z-index: @z-index-overlay;
 		position: relative;
 	}
 	// Hide the popup from the button widget,
@@ -246,7 +246,7 @@ body.mw-special-Homepage {
 		// negate the padding on .growthexperiments-homepage-module in Homepage.less
 		margin: 16px -16px -16px -16px;
 		padding: 12px 24px 12px;
-		border: @border-width-thick @border-style-base @suggestedEditsBackgroundColorLegacyLightOnly;
+		border: @border-width-thick @border-style-base @suggestedEditsBackgroundColor;
 		background-color: @background-color-base;
 		color: @color-subtle;
 		font-size: 0.9em;
@@ -308,7 +308,7 @@ body.mw-special-Homepage {
 						top: 100%;
 						cursor: pointer;
 						// Ensure it appears above the button after clicked.
-						z-index: 2;
+						z-index: @z-index-stacking-2;
 					}
 				}
 			}
@@ -507,14 +507,14 @@ body.mw-special-Homepage {
 							/* @noflip */
 							right: 0;
 							/* @noflip */
-							background: linear-gradient( to right, rgba( 255, 255, 255, 0 ), #fff 50% );
+							background: linear-gradient( to right, rgba( 255, 255, 255, 0 ), @background-color-base 50% );
 						}
 
 						&[ dir='rtl' ] .se-card-extract::after {
 							/* @noflip */
 							left: 0;
 							/* @noflip */
-							background: linear-gradient( to left, rgba( 255, 255, 255, 0 ), #fff 50% );
+							background: linear-gradient( to left, rgba( 255, 255, 255, 0 ), @background-color-base 50% );
 						}
 
 						.se-card-pageviews {
@@ -614,7 +614,7 @@ body.mw-special-Homepage {
 							width: 316px;
 							height: 16px;
 							clear: both;
-							z-index: 100;
+							z-index: @z-index-top;
 						}
 					}
 				}
@@ -623,7 +623,7 @@ body.mw-special-Homepage {
 	}
 
 	&.growthexperiments-homepage-module-mobile-summary {
-		background-color: #f5f9ff;
+		background-color: @suggestedEditsBackgroundColor;
 	}
 
 	&.growthexperiments-homepage-module-mobile-overlay,
@@ -646,7 +646,7 @@ body.mw-special-Homepage {
 						top: 100%;
 						cursor: pointer;
 						// Ensure it appears above the button after clicked.
-						z-index: 2;
+						z-index: @z-index-stacking-2;
 					}
 
 					.oo-ui-iconElement-icon {

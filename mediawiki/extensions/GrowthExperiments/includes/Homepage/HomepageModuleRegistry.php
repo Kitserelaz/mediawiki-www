@@ -16,6 +16,7 @@ use GrowthExperiments\HomepageModules\SuggestedEdits;
 use GrowthExperiments\HomepageModules\WelcomeSurveyReminder;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\CommunityConfiguration\CommunityConfigurationServices;
+use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Registration\ExtensionRegistry;
 use OutOfBoundsException;
@@ -25,27 +26,18 @@ use OutOfBoundsException;
  */
 class HomepageModuleRegistry {
 
-	/** @var MediaWikiServices */
-	private $services;
+	private MediaWikiServices $services;
 
-	/** @var callable[] id => factory method */
-	private $wiring;
+	/** @var callable[]|null id => factory method */
+	private ?array $wiring = null;
 
 	/** @var IDashboardModule[] id => module */
-	private $modules = [];
+	private array $modules = [];
 
-	/**
-	 * @param MediaWikiServices $services
-	 */
 	public function __construct( MediaWikiServices $services ) {
 		$this->services = $services;
 	}
 
-	/**
-	 * @param string $id
-	 * @param IContextSource $contextSource
-	 * @return IDashboardModule
-	 */
 	public function get( string $id, IContextSource $contextSource ): IDashboardModule {
 		if ( $this->modules[$id] ?? null ) {
 			return $this->modules[$id];
@@ -84,7 +76,6 @@ class HomepageModuleRegistry {
 				return new Banner(
 					$context,
 					$growthServices->getGrowthWikiConfig(),
-					$growthServices->getExperimentUserManager()
 				);
 			},
 
@@ -96,7 +87,6 @@ class HomepageModuleRegistry {
 				return new WelcomeSurveyReminder(
 					$context,
 					$growthServices->getGrowthWikiConfig(),
-					$growthServices->getExperimentUserManager(),
 					$services->getSpecialPageFactory(),
 					$growthServices->getWelcomeSurveyFactory()
 				);
@@ -109,8 +99,7 @@ class HomepageModuleRegistry {
 				$growthServices = GrowthExperimentsServices::wrap( $services );
 				return new StartEmail(
 					$context,
-					$growthServices->getGrowthWikiConfig(),
-					$growthServices->getExperimentUserManager()
+					$growthServices->getGrowthWikiConfig()
 				);
 			},
 
@@ -124,17 +113,19 @@ class HomepageModuleRegistry {
 					$context,
 					$growthServices->getGrowthWikiConfig(),
 					$growthServices->getGrowthExperimentsCampaignConfig(),
-					$growthServices->getExperimentUserManager(),
+					$growthServices->getFeatureManager(),
 					$pageViewInfoEnabled ? $services->get( 'PageViewService' ) : null,
 					$growthServices->getNewcomerTasksConfigurationLoader(),
 					$growthServices->getNewcomerTasksUserOptionsLookup(),
 					$growthServices->getTaskSuggesterFactory()->create(),
 					$services->getTitleFactory(),
 					$growthServices->getProtectionFilter(),
-					$services->getUserOptionsLookup(),
+					$services->getUserOptionsManager(),
 					$growthServices->getLinkRecommendationFilter(),
 					$growthServices->getImageRecommendationFilter(),
-					$services->getPerDbNameStatsdDataFactory(),
+					$services->getStatsFactory(),
+					$growthServices->getTopicRegistry(),
+					$growthServices->getTaskTypeManager()
 				);
 			},
 
@@ -147,12 +138,11 @@ class HomepageModuleRegistry {
 				return new Impact(
 					$context,
 					$growthServices->getGrowthWikiConfig(),
-					$growthServices->getExperimentUserManager(),
 					$context->getUser(),
 					$growthServices->getUserImpactStore(),
 					$growthServices->getUserImpactFormatter(),
 					$growthServices->getUserDatabaseHelper(),
-					SuggestedEdits::isEnabled( $context->getConfig() ),
+					SuggestedEdits::isEnabledForAnyone( $context->getConfig() ),
 					SuggestedEdits::isActivated( $context->getUser(), $userOptionsLookup )
 				);
 			},
@@ -165,10 +155,10 @@ class HomepageModuleRegistry {
 				return new Mentorship(
 					$context,
 					$growthServices->getGrowthWikiConfig(),
-					$growthServices->getExperimentUserManager(),
 					$growthServices->getMentorManager(),
 					$growthServices->getMentorStatusManager(),
-					$services->getGenderCache()
+					$services->getGenderCache(),
+					$services->getUserEditTracker()
 				);
 			},
 
@@ -180,7 +170,6 @@ class HomepageModuleRegistry {
 				return new MentorshipOptIn(
 					$context,
 					$growthServices->getGrowthWikiConfig(),
-					$growthServices->getExperimentUserManager(),
 					$growthServices->getMentorManager()
 				);
 			},
@@ -192,8 +181,7 @@ class HomepageModuleRegistry {
 				$growthServices = GrowthExperimentsServices::wrap( $services );
 				return new Help(
 					$context,
-					$growthServices->getGrowthWikiConfig(),
-					$growthServices->getExperimentUserManager()
+					$growthServices->getGrowthWikiConfig()
 				);
 			},
 
@@ -205,7 +193,6 @@ class HomepageModuleRegistry {
 				return new StartEditing(
 					$context,
 					$growthServices->getGrowthWikiConfig(),
-					$growthServices->getExperimentUserManager(),
 					$services->getUserOptionsLookup()
 				);
 			},
@@ -215,9 +202,9 @@ class HomepageModuleRegistry {
 			) {
 				$growthServices = GrowthExperimentsServices::wrap( $services );
 				return new CommunityUpdates(
+					LoggerFactory::getInstance( 'GrowthExperiments' ),
 					$context,
 					$growthServices->getGrowthWikiConfig(),
-					$growthServices->getExperimentUserManager(),
 					CommunityConfigurationServices::wrap( $services )->getConfigurationProviderFactory(),
 					$services->getUserEditTracker(),
 					$services->getLinkRenderer(),

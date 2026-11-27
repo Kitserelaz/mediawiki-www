@@ -1,8 +1,8 @@
 {
 	"@metadata": {
 		"authors": [
-			"BadDog",
-			"Aca"
+			"Aca",
+			"BadDog"
 		]
 	},
 	"apihelp-homepagequestionstore-summary": "Прибављање форматираних питања постављених путем модулâ за почетну страницу",

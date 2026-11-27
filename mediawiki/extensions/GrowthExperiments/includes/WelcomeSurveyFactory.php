@@ -3,7 +3,7 @@
 namespace GrowthExperiments;
 
 use MediaWiki\Context\IContextSource;
-use MediaWiki\Languages\LanguageNameUtils;
+use MediaWiki\Language\LanguageNameUtils;
 use MediaWiki\User\Options\UserOptionsManager;
 
 /**
@@ -17,11 +17,6 @@ class WelcomeSurveyFactory {
 	private UserOptionsManager $userOptionsManager;
 	private bool $ulsInstalled;
 
-	/**
-	 * @param LanguageNameUtils $languageNameUtils
-	 * @param UserOptionsManager $userOptionsManager
-	 * @param bool $ulsInstalled
-	 */
 	public function __construct(
 		LanguageNameUtils $languageNameUtils,
 		UserOptionsManager $userOptionsManager,
@@ -32,10 +27,6 @@ class WelcomeSurveyFactory {
 		$this->ulsInstalled = $ulsInstalled;
 	}
 
-	/**
-	 * @param IContextSource $context
-	 * @return WelcomeSurvey
-	 */
 	public function newWelcomeSurvey( IContextSource $context ): WelcomeSurvey {
 		return new WelcomeSurvey(
 			$context,

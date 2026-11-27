@@ -21,6 +21,12 @@
 	"apihelp-jsondata-param-title": "Título a recuperar. Por defecto, asume que o espazo de nomes é \"Data:\"",
 	"apihelp-jsondata-example-1": "Obter o contido JSON da páxina Sample.tab, localizada na lingua do usuario",
 	"apihelp-jsondata-example-2": "Obter o contido JSON da páxina Sample.tab localizada en francés",
+	"apihelp-jsontransform-summary": "Recuperar os datos JSON transformados por unha función de Lua.",
+	"apihelp-jsontransform-param-title": "Título a procesar sen o prefixo do espazo de nomes.",
+	"apihelp-jsontransform-param-jtmodule": "Nome do módulo de Lua desde o que se cargará o código de transformación. Por defecto, o espazo de nomes é \"Module:\".",
+	"apihelp-jsontransform-param-jtfunction": "Nome da función de Lua a executar",
+	"apihelp-jsontransform-param-jtargs": "Secuencia de cadeas de texto para pasar como argumentos á función de transformación de Lua",
+	"apihelp-jsontransform-example-1": "Obter o contido JSON da páxina Sample.tab que se executa a través dunha transformación de Lua",
 	"apierror-jsonconfig-paramrequired": "O parámetro <var>$1</var> é obrigatorio para este comando.",
 	"apierror-jsonconfig-badtitle": "A páxina especificada polos parámetros <var>namespace</var> e <var>title</var> non é válida ou non está rexistrada na configuración JsonConfig."
 }

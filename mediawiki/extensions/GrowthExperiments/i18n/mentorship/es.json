@@ -1,26 +1,28 @@
 {
 	"@metadata": {
 		"authors": [
+			"Avengium",
 			"Biancailin",
 			"Bruno44101",
 			"Danniel07",
+			"Dgstranz",
 			"DiegoAmbrocio",
 			"Fewasser Traduce",
+			"IZapico (WMF)",
 			"Josuert",
 			"MarcoAurelio",
 			"Martin Urbanec (WMF)",
+			"McDutchie",
 			"OriginReboot",
 			"SpikeShroom",
 			"Warming Hearth",
-			"Zapipedia (WMF)",
-			"IZapico (WMF)",
-			"McDutchie",
-			"Dgstranz"
+			"Zapipedia (WMF)"
 		]
 	},
+	"growthexperiments-exception-not-mentored": "El usuario no está mentorizado",
+	"growthexperiments-exception-no-mentored-text": "El usuario no tiene mentor, lo que significa que no puede hacerle una pregunta a su mentor.",
 	"growthexperiments-mentor-dashboard-title": "Panel de control de mentoría",
 	"growthexperiments-mentor-dashboard-pt-link": "Panel de mentoría",
-	"growthexperiments-mentor-dashboard-disabled": "El panel de control de mentoría no está habilitado en esta wiki.",
 	"growthexperiments-mentor-dashboard-must-be-mentor": "Para habilitar el panel de mentoría, necesitas [[$1|inscribirte como mentor o mentora]].",
 	"growthexperiments-mentor-dashboard-misconfigured-missing-list": "Antes de que se pueda utilizar el panel de control de mentoría, es necesario configurar antes la lista de mentores y mentoras. Un administrador/a puede usar [[Special:EditGrowthConfig]] para ese propósito.",
 	"growthexperiments-mentor-dashboard-mentee-overview-headline": "Tus aprendices",
@@ -92,7 +94,7 @@
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-text": "Si no puedes ejercer tu labor de {{GENDER:|mentor|mentora}} durante un periodo de tiempo específico (más de 1 semana) puedes indicar que estás ausente. Durante ese periodo, otro mentor o mentora recibirá las preguntas de tus aprendices.",
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-away-for": "Estarás ausente por:",
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-away-for-label": "días",
-	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-toohigh": "La entrada en \"{{GENDER:|You'll}} be gone for\" es demasiado alta. El número máximo de días que un mentor puede ausentarse es $1 (un año).",
+	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-toohigh": "El número máximo de días que un mentor puede estar ausente es $1 (un año).",
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-unknown": "Ha ocurrido un error desconocido. Por favor, inténtalo de nuevo.",
 	"growthexperiments-mentor-dashboard-mentor-tools-mentor-changed-to-active": "Tu estado ha cambiado a \"Activo\".",
 	"growthexperiments-mentor-dashboard-mentor-tools-mentor-changed-to-away": "Tu estado ha cambiado a \"Ausente\".",
@@ -250,7 +252,7 @@
 	"growthexperiments-mentorship-enrollasmentor-success": "Estás inscrito como {{GENDER:|mentor|mentora}}. Puedes continuar al [[Special:MentorDashboard|panel de control de mentoría]].",
 	"growthexperiments-mentorship-enrollasmentor-summary": "Añadirme como {{GENDER:|mentor|mentora}}",
 	"growthexperiments-mentorship-enrollasmentor-error-not-autoeligible": "Solo quienes tengan al menos $1 {{PLURAL:$1|edición|ediciones}} y $2 {{PLURAL:$2|día|días}} de antigüedad pueden convertirse en mentores/as.",
-	"tag-mentor list change": "Cambio de la lista de mentores y mentoras",
-	"tag-mentor list change-description": "Etiqueta aplicada a las ediciones realizadas en la lista estructurada de mentoría a través de GrowthExperiments",
+	"tag-mentor_list_change": "Cambio de la lista de mentores y mentoras",
+	"tag-mentor_list_change-description": "Etiqueta aplicada a las ediciones realizadas en la lista estructurada de mentoría a través de GrowthExperiments",
 	"growthexperiments-mentor-dashboard-mentorship-disabled-with-link": "La mentoría está actualmente desactivada. Los administradores pueden activarla a través de [[$1]]."
 }

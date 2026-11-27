@@ -1,8 +1,8 @@
 <?php
-// phpcs:disable MediaWiki.NamingConventions.LowerCamelFunctionsName.FunctionName
 
 namespace GrowthExperiments;
 
+use GrowthExperiments\Campaigns\CampaignLoader;
 use GrowthExperiments\EventLogging\WelcomeSurveyLogger;
 use GrowthExperiments\NewcomerTasks\CampaignConfig;
 use GrowthExperiments\Specials\SpecialWelcomeSurvey;
@@ -11,7 +11,6 @@ use MediaWiki\Config\Config;
 use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
-use MediaWiki\Hook\PostLoginRedirectHook;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Output\Hook\BeforePageDisplayHook;
 use MediaWiki\Preferences\Hook\GetPreferencesHook;
@@ -19,6 +18,7 @@ use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SpecialPage\Hook\SpecialPage_initListHook;
 use MediaWiki\SpecialPage\Hook\SpecialPageBeforeExecuteHook;
 use MediaWiki\SpecialPage\SpecialPageFactory;
+use MediaWiki\Specials\Hook\PostLoginRedirectHook;
 use MediaWiki\Specials\SpecialCreateAccount;
 use MediaWiki\Specials\SpecialUserLogin;
 use MediaWiki\Title\Title;
@@ -40,19 +40,13 @@ class WelcomeSurveyHooks implements
 	private WelcomeSurveyFactory $welcomeSurveyFactory;
 	private CampaignConfig $campaignConfig;
 
-	/**
-	 * @param Config $config
-	 * @param TitleFactory $titleFactory
-	 * @param SpecialPageFactory $specialPageFactory
-	 * @param WelcomeSurveyFactory $welcomeSurveyFactory
-	 * @param CampaignConfig $campaignConfig
-	 */
 	public function __construct(
 		Config $config,
 		TitleFactory $titleFactory,
 		SpecialPageFactory $specialPageFactory,
 		WelcomeSurveyFactory $welcomeSurveyFactory,
-		CampaignConfig $campaignConfig
+		CampaignConfig $campaignConfig,
+		private readonly CampaignLoader $campaignLoader,
 	) {
 		$this->config = $config;
 		$this->titleFactory = $titleFactory;
@@ -94,7 +88,7 @@ class WelcomeSurveyHooks implements
 		}
 	}
 
-	private function isWelcomeSurveyEnabled() {
+	private function isWelcomeSurveyEnabled(): bool {
 		return $this->config->get( 'WelcomeSurveyEnabled' );
 	}
 
@@ -191,33 +185,64 @@ class WelcomeSurveyHooks implements
 		$welcomeSurvey->saveGroup( $group );
 	}
 
+	private function addAccountJustCreatedToQuery( string $query ): string {
+		$asArray = wfCgiToArray( $query );
+		$asArray['accountJustCreated'] = 1;
+		return wfArrayToCgi( $asArray );
+	}
+
 	/** @inheritDoc */
 	public function onCentralAuthPostLoginRedirect(
 		string &$returnTo, string &$returnToQuery, bool $stickHTTPS, string $type, string &$injectedHtml
-	) {
-		$context = RequestContext::getMain();
-		if ( $type !== 'signup'
-			|| !$this->shouldShowWelcomeSurvey( $context )
+	): bool {
+		if ( $type !== 'signup' ) {
+			return true;
+		}
+
+		$campaign = $this->campaignLoader->getCampaign();
+		if ( $this->campaignConfig->isGrowthCampaign( $campaign )
+			&& $this->campaignConfig->shouldSkipWelcomeSurvey( $campaign )
 		) {
-			return;
+			$returnTo = $this->specialPageFactory->getTitleForAlias( 'Homepage' )->getPrefixedText();
+			$returnToQuery = $this->addAccountJustCreatedToQuery( $returnToQuery );
+			return false;
+		}
+
+		$context = RequestContext::getMain();
+		if ( !$this->shouldShowWelcomeSurvey( $context ) ) {
+			$returnToQuery = $this->addAccountJustCreatedToQuery( $returnToQuery );
+			return true;
 		}
 
 		$welcomeSurvey = $this->welcomeSurveyFactory->newWelcomeSurvey( $context );
 		$group = $welcomeSurvey->getGroup();
 		if ( $group === false ) {
-			return;
+			$returnToQuery = $this->addAccountJustCreatedToQuery( $returnToQuery );
+			return true;
 		}
 
 		if ( $this->userWasEditing( $returnTo, $returnToQuery ) ) {
-			return;
+			$returnToQuery = $this->addAccountJustCreatedToQuery( $returnToQuery );
+			return true;
 		}
 
 		$oldReturnTo = $returnTo;
 		$oldReturnToQuery = $returnToQuery;
+		if ( str_contains( $oldReturnToQuery, 'accountJustCreated' ) ) {
+			$asArray = wfCgiToArray( $oldReturnToQuery );
+			unset( $asArray['accountJustCreated'] );
+			$oldReturnToQuery = wfArrayToCgi( $asArray );
+		}
 		$returnToQueryArray = $welcomeSurvey->getRedirectUrlQuery( $group, $oldReturnTo, $oldReturnToQuery );
 		if ( $returnToQueryArray === false ) {
-			return;
+			$returnToQuery = $this->addAccountJustCreatedToQuery( $returnToQuery );
+			return true;
 		}
+		// Ensure accountJustCreated query param is added directly to the URL instead of to the returntoquery param
+		// on WS redirections
+		$returnToQueryArray += [
+			'accountJustCreated' => '1',
+		];
 
 		$returnTo = $this->specialPageFactory->getTitleForAlias( 'WelcomeSurvey' )->getPrefixedText();
 		$returnToQuery = wfArrayToCgi( $returnToQueryArray );
@@ -253,17 +278,10 @@ class WelcomeSurveyHooks implements
 		return false;
 	}
 
-	/**
-	 * @param IContextSource $context
-	 * @return bool
-	 */
 	private function shouldShowWelcomeSurvey( IContextSource $context ): bool {
 		return $this->isWelcomeSurveyEnabled()
 			&& !$context->getUser()->isTemp()
-			&& HomepageHooks::getGrowthFeaturesOptInOptOutOverride() !== HomepageHooks::GROWTH_FORCE_OPTOUT
-			&& !VariantHooks::shouldCampaignSkipWelcomeSurvey(
-				VariantHooks::getCampaign( $context ), $this->campaignConfig
-			);
+			&& !$this->campaignConfig->shouldSkipWelcomeSurvey( $this->campaignLoader->getCampaign() );
 	}
 
 }

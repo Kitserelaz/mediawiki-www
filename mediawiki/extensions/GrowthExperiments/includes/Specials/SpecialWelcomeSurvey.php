@@ -29,20 +29,20 @@ class SpecialWelcomeSurvey extends FormSpecialPage {
 	private WelcomeSurveyFactory $welcomeSurveyFactory;
 	private WelcomeSurveyLogger $welcomeSurveyLogger;
 
-	/**
-	 * @param SpecialPageFactory $specialPageFactory
-	 * @param WelcomeSurveyFactory $welcomeSurveyFactory
-	 * @param WelcomeSurveyLogger $welcomeSurveyLogger
-	 */
 	public function __construct(
 		SpecialPageFactory $specialPageFactory,
 		WelcomeSurveyFactory $welcomeSurveyFactory,
 		WelcomeSurveyLogger $welcomeSurveyLogger
 	) {
-		parent::__construct( 'WelcomeSurvey', '', false );
+		parent::__construct( 'WelcomeSurvey' );
 		$this->specialPageFactory = $specialPageFactory;
 		$this->welcomeSurveyFactory = $welcomeSurveyFactory;
 		$this->welcomeSurveyLogger = $welcomeSurveyLogger;
+	}
+
+	/** @inheritDoc */
+	public function isListed(): bool {
+		return false;
 	}
 
 	/** @inheritDoc */
@@ -230,6 +230,7 @@ class SpecialWelcomeSurvey extends FormSpecialPage {
 			$returnToQueryArray['_welcomesurveytoken'] = $token;
 			$returnToQuery = wfArrayToCgi( $returnToQueryArray );
 			$this->welcomeSurveyLogger->logInteraction( self::ACTION_SAVE );
+			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable $returnTo always string
 			$this->showConfirmationPage( $returnTo, $returnToQuery );
 		} else {
 			// redirect to pre-createaccount page with query
@@ -240,13 +241,14 @@ class SpecialWelcomeSurvey extends FormSpecialPage {
 			}
 			$returnToQuery = wfArrayToCgi( $returnToQueryArray );
 			$this->welcomeSurveyLogger->logInteraction( self::ACTION_SKIP );
+			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable $returnTo always string
 			$this->redirect( $returnTo, $returnToQuery );
 		}
 
 		return true;
 	}
 
-	private function showConfirmationPage( $to, $query ) {
+	private function showConfirmationPage( string $to, string $query ) {
 		$this->getOutput()->setPageTitleMsg( $this->msg( 'welcomesurvey-save-confirmation-title' ) );
 		HomepageHooks::isHomepageEnabled( $this->getUser() ) ?
 			$this->showHomepageAwareConfirmationPage( $to, $query ) :
@@ -254,7 +256,7 @@ class SpecialWelcomeSurvey extends FormSpecialPage {
 		$this->welcomeSurveyLogger->logInteraction( self::ACTION_SHOW_CONFIRMATION_PAGE );
 	}
 
-	private function showHomepageAwareConfirmationPage( $to, $query ) {
+	private function showHomepageAwareConfirmationPage( string $to, string $query ) {
 		$title = Title::newFromText( $to ) ?: $this->specialPageFactory->getTitleForAlias( 'Homepage' );
 		if ( $title->isMainPage() ) {
 			$title = $this->specialPageFactory->getTitleForAlias( 'Homepage' );
@@ -271,7 +273,7 @@ class SpecialWelcomeSurvey extends FormSpecialPage {
 		);
 	}
 
-	private function showDefaultConfirmationPage( $to, $query ) {
+	private function showDefaultConfirmationPage( string $to, string $query ) {
 		$this->getOutput()->addHTML(
 			Html::rawElement(
 				'div',
@@ -304,13 +306,13 @@ class SpecialWelcomeSurvey extends FormSpecialPage {
 				$this->msg( 'welcomesurvey-close-btn', $title->getPrefixedText() )->text(),
 				[
 					'href' => $title->getLinkURL( $query ),
-					'class' => 'mw-ui-button mw-ui-progressive'
+					'class' => 'mw-ui-button mw-ui-progressive',
 				]
 			)
 		);
 	}
 
-	private function getConfirmationButtonsWrapper( $rawHtml ) {
+	private function getConfirmationButtonsWrapper( string $rawHtml ): string {
 		return Html::rawElement(
 			'div',
 			[ 'class' => 'welcomesurvey-confirmation-buttons' ],
@@ -318,22 +320,22 @@ class SpecialWelcomeSurvey extends FormSpecialPage {
 		);
 	}
 
-	private function getHomepageAwareActionButtons( Title $title, $query ) {
+	private function getHomepageAwareActionButtons( Title $title, string $query ): string {
 		if ( $title->isSpecial( 'Homepage' ) ) {
 			return $this->getConfirmationButtonsWrapper( $this->getHomepageButton() );
 		}
 		$queryArray = wfCgiToArray( $query );
 		$queryArray['source'] = 'welcomesurvey-originalcontext';
 		return $this->getConfirmationButtonsWrapper(
-			Html::linkButton( $this->msg( 'welcomesurvey-close-btn', $title )->text(), [
+			Html::linkButton( $this->msg( 'welcomesurvey-close-btn', $title->getPrefixedText() )->text(), [
 				'href' => $title->getLinkURL( wfArrayToCgi( $queryArray ) ),
-				'class' => 'mw-ui-button mw-ui-safe'
+				'class' => 'mw-ui-button mw-ui-safe',
 			] ) .
 			$this->getHomepageButton()
 		);
 	}
 
-	private function getHomepageButton() {
+	private function getHomepageButton(): string {
 		return Html::linkButton(
 			$this->msg( 'growthexperiments-homepage-welcomesurvey-default-close',
 				$this->getUser()->getName()
@@ -342,17 +344,17 @@ class SpecialWelcomeSurvey extends FormSpecialPage {
 				'href' => $this->specialPageFactory->getTitleForAlias( 'Homepage' )->getLinkURL(
 					[ 'source' => 'specialwelcomesurvey' ]
 				),
-				'class' => 'mw-ui-button mw-ui-progressive mw-ge-welcomesurvey-homepage-button'
+				'class' => 'mw-ui-button mw-ui-progressive mw-ge-welcomesurvey-homepage-button',
 			]
 		);
 	}
 
-	private function redirect( $to, $query ) {
+	private function redirect( string $to, string $query ) {
 		$title = Title::newFromText( $to ) ?: Title::newMainPage();
 		$this->getOutput()->redirect( $title->getFullUrlForRedirect( $query ) );
 	}
 
-	private function buildGettingStartedLinks( $source ) {
+	private function buildGettingStartedLinks( string $source ): string {
 		$html = '<ul class="welcomesurvey-gettingstarted-links">';
 		for ( $i = 1; $i <= 4; $i++ ) {
 			$text = $this->msg( "welcomesurvey-sidebar-editing-link$i-text" );
@@ -380,7 +382,7 @@ class SpecialWelcomeSurvey extends FormSpecialPage {
 		return $html;
 	}
 
-	private function buildSidebar() {
+	private function buildSidebar(): string {
 		return Html::rawElement(
 			'div',
 			[ 'class' => 'welcomesurvey-sidebar' ],
@@ -406,7 +408,6 @@ class SpecialWelcomeSurvey extends FormSpecialPage {
 
 	/**
 	 * Load ResourceLoader module dependencies defined by questions.
-	 * @param array $questions
 	 */
 	private function loadDependencies( array $questions ) {
 		array_walk( $questions, function ( $question ) {

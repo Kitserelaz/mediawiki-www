@@ -25,8 +25,8 @@ class SearchQuery {
 	/** @var TaskType */
 	private $taskType;
 
-	/** @var Topic|null */
-	private $topic;
+	/** @var Topic[] */
+	private array $topics;
 
 	/** @var string|null */
 	private $sort;
@@ -41,19 +41,18 @@ class SearchQuery {
 	 * @param string $id Search ID. Used for internal purposes such as debugging or deduplication.
 	 * @param string $queryString Search query string.
 	 * @param TaskType $taskType Task type returned by the query.
-	 * @param Topic|null $topic Topic returned by the query.
+	 * @param array{0:?Topic} $topics Topics associated to the query.
 	 */
-	public function __construct( string $id, string $queryString, TaskType $taskType, ?Topic $topic ) {
+	public function __construct( string $id, string $queryString, TaskType $taskType, array $topics ) {
 		$this->id = $id;
 		$this->queryString = $queryString;
 		$this->taskType = $taskType;
-		$this->topic = $topic;
+		$this->topics = array_filter( $topics );
 	}
 
 	/**
 	 * Get a human-readable unique ID for this search query. This is used internally by the
 	 * task suggester for deduplication and for debug logging.
-	 * @return string
 	 */
 	public function getId(): string {
 		return $this->id;
@@ -62,7 +61,6 @@ class SearchQuery {
 	/**
 	 * Get the search query string represented by this object. This is a string suitable for
 	 * passing to SearchEngine::searchText() or the srsearch parameter of the search API.
-	 * @return string
 	 */
 	public function getQueryString(): string {
 		return $this->queryString;
@@ -70,18 +68,18 @@ class SearchQuery {
 
 	/**
 	 * Results from the search query will belong to this task type.
-	 * @return TaskType
 	 */
 	public function getTaskType(): TaskType {
 		return $this->taskType;
 	}
 
 	/**
-	 * Results from the search query will belong to this topic.
-	 * @return Topic|null
+	 * Results from the search query can belong to any of the topics requested. To get per-topic score
+	 * or extra data from the search result T243478 needs to be resolved first.
+	 * @return array Array of Topic(s) associated with the query
 	 */
-	public function getTopic(): ?Topic {
-		return $this->topic;
+	public function getTopics(): array {
+		return $this->topics;
 	}
 
 	/**

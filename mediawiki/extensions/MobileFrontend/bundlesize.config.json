@@ -1,15 +1,11 @@
 [
 	{
 		"resourceModule": "mobile.startup",
-		"maxSize": "23.4KB"
-	},
-	{
-		"resourceModule": "mobile.editor.overlay",
-		"maxSize": "14.2KB"
+		"maxSize": "17.3KB"
 	},
 	{
 		"resourceModule": "mobile.init",
-		"maxSize": "5.9KB"
+		"maxSize": "6KB"
 	},
 	{
 		"resourceModule": "mobile.languages.structured",
@@ -21,7 +17,7 @@
 	},
 	{
 		"resourceModule": "mobile.special.mobileoptions.scripts",
-		"maxSize": "3.2KB"
+		"maxSize": "3.3KB"
 	},
 	{
 		"resourceModule": "mobile.special.userlogin.scripts",
@@ -29,15 +25,7 @@
 	},
 	{
 		"resourceModule": "mobile.special.watchlist.scripts",
-		"maxSize": "1.6KB"
-	},
-	{
-		"resourceModule": "mobile.pagelist.styles",
-		"maxSize": "0.9KB"
-	},
-	{
-		"resourceModule": "mobile.pagesummary.styles",
-		"maxSize": "0.5KB"
+		"maxSize": "3.1KB"
 	},
 	{
 		"resourceModule": "mobile.userpage.styles",
@@ -45,7 +33,7 @@
 	},
 	{
 		"resourceModule": "mobile.special.styles",
-		"maxSize": "1.0KB"
+		"maxSize": "2.8KB"
 	},
 	{
 		"resourceModule": "mobile.special.mobileoptions.styles",

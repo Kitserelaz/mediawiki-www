@@ -27,33 +27,25 @@ abstract class DashboardModule implements IDashboardModule {
 	protected static $supportedModes = [
 		self::RENDER_DESKTOP,
 		self::RENDER_MOBILE_SUMMARY,
-		self::RENDER_MOBILE_DETAILS
+		self::RENDER_MOBILE_DETAILS,
 	];
 
-	/** @var IContextSource */
-	private $ctx;
+	private IContextSource $ctx;
 
 	/** @var string Name of the module */
-	protected $name;
+	protected string $name;
 
 	/** @var string Rendering mode (one of RENDER_* constants) */
-	private $mode;
+	private string $mode;
 
-	/**
-	 * @param string $name
-	 * @param IContextSource $ctx
-	 */
 	public function __construct(
-		$name,
+		string $name,
 		IContextSource $ctx
 	) {
 		$this->name = $name;
 		$this->ctx = $ctx;
 	}
 
-	/**
-	 * @return IContextSource
-	 */
 	final protected function getContext(): IContextSource {
 		return $this->ctx;
 	}
@@ -62,8 +54,6 @@ abstract class DashboardModule implements IDashboardModule {
 	 * Get current user
 	 *
 	 * Short for $this->getContext()->getUser().
-	 *
-	 * @return User
 	 */
 	final protected function getUser(): User {
 		return $this->getContext()->getUser();
@@ -73,8 +63,6 @@ abstract class DashboardModule implements IDashboardModule {
 	 * Shortcut to get main config object
 	 *
 	 * Short for $this->getContext()->getConfig().
-	 *
-	 * @return Config
 	 */
 	final protected function getConfig(): Config {
 		return $this->getContext()->getConfig();
@@ -87,9 +75,6 @@ abstract class DashboardModule implements IDashboardModule {
 		return $this->mode;
 	}
 
-	/**
-	 * @return string
-	 */
 	final protected function getName(): string {
 		return $this->name;
 	}
@@ -176,7 +161,6 @@ abstract class DashboardModule implements IDashboardModule {
 
 	protected function outputDependencies() {
 		$out = $this->getContext()->getOutput();
-		$out->addModuleStyles( 'ext.growthExperiments.cssCustomProperties' );
 		$out->addModuleStyles( $this->getModuleStyles() );
 		$out->addModules( $this->getModules() );
 		$out->addJsConfigVars( $this->getJsConfigVars() );
@@ -217,20 +201,26 @@ abstract class DashboardModule implements IDashboardModule {
 	}
 
 	/**
-	 * @param string ...$sections
+	 * @param string ...$sections HTML content
 	 * @return string
 	 */
-	protected function buildModuleWrapper( ...$sections ) {
+	protected function buildModuleWrapper( string ...$sections ): string {
 		return Html::rawElement(
 			'div',
 			[
-				'class' => array_merge( [
+				// NOTE: Not a class, but the purpose of the constant is to be an unique prefix,
+				// which allows us to generate a unique ID. The ID is intended to allow for
+				// anchor links (requested in T411626). For styling, please use one of the
+				// classes below.
+				'id' => static::BASE_CSS_CLASS . '-' . $this->name,
+				'class' => [
 					static::BASE_CSS_CLASS,
 					static::BASE_CSS_CLASS . '-' . $this->name,
-					static::BASE_CSS_CLASS . '-' . $this->getMode()
-				], $this->getCssClasses() ),
+					static::BASE_CSS_CLASS . '-' . $this->getMode(),
+					...$this->getCssClasses(),
+				],
 				'data-module-name' => $this->name,
-				'data-mode' => $this->getMode()
+				'data-mode' => $this->getMode(),
 			],
 			implode( "\n", $sections )
 		);
@@ -244,17 +234,17 @@ abstract class DashboardModule implements IDashboardModule {
 	 * @param string $name Name of the section, used to generate a class
 	 * @param string $content HTML content of the section
 	 * @param string $tag HTML tag to use for the section
-	 * @return string
+	 * @return string HTML
 	 */
-	protected function buildSection( $name, $content, $tag = 'div' ) {
+	protected function buildSection( string $name, string $content, string $tag = 'div' ): string {
 		return $content ? Html::rawElement(
 			$tag,
 			[
 				'class' => [
 					static::BASE_CSS_CLASS . '-section',
 					static::BASE_CSS_CLASS . '-section-' . $name,
-					static::BASE_CSS_CLASS . '-' . $name
-				]
+					static::BASE_CSS_CLASS . '-' . $name,
+				],
 			],
 			$content
 		) : '';
@@ -361,16 +351,16 @@ abstract class DashboardModule implements IDashboardModule {
 		return $icon . $text;
 	}
 
-	private function getBackIcon() {
+	private function getBackIcon(): string {
 		return Html::rawElement(
 			'a',
 			[
 				'href' => SpecialPage::getTitleFor( 'Homepage' )->getLinkURL(),
 			],
-			new IconWidget( [
+			( new IconWidget( [
 				'icon' => 'arrowPrevious',
 				'classes' => [ static::BASE_CSS_CLASS . '-header-back-icon' ],
-			] )
+			] ) )->toString()
 		);
 	}
 
@@ -416,7 +406,7 @@ abstract class DashboardModule implements IDashboardModule {
 	protected function getSubheaderTextElement() {
 		$text = $this->getSubheaderText();
 		return $text ? Html::element(
-			'div',
+			'span',
 			[ 'class' => static::BASE_CSS_CLASS . '-subheader-text' ],
 			$text
 		) : '';
@@ -448,7 +438,7 @@ abstract class DashboardModule implements IDashboardModule {
 	protected function getHeaderIcon( $name, $invert ) {
 		$defaultIconClasses = [
 			self::BASE_CSS_CLASS . '-header-icon',
-			'icon-' . $name
+			'icon-' . $name,
 		];
 		$invertClasses = $invert ?
 			[ 'oo-ui-image-invert', 'oo-ui-checkboxInputWidget-checkIcon' ] :
@@ -460,7 +450,7 @@ abstract class DashboardModule implements IDashboardModule {
 			// 'classes' => [ 'oo-ui-image-invert' ] doesn't work either, because
 			// Theme::getElementClasses() will unset it again. So instead, trick that code into
 			// thinking this is a checkbox icon, which will cause it to invert the icon
-			'classes' => array_merge( $defaultIconClasses, $invertClasses )
+			'classes' => array_merge( $defaultIconClasses, $invertClasses ),
 		] );
 	}
 

@@ -18,10 +18,6 @@ class StarredMenteesStore {
 	/** @var UserOptionsManager */
 	private $userOptionsManager;
 
-	/**
-	 * @param UserIdentityLookup $userIdentityLookup
-	 * @param UserOptionsManager $userOptionsManager
-	 */
 	public function __construct(
 		UserIdentityLookup $userIdentityLookup,
 		UserOptionsManager $userOptionsManager
@@ -34,6 +30,9 @@ class StarredMenteesStore {
 		return implode( self::SEPARATOR, $ids );
 	}
 
+	/**
+	 * @return int[]
+	 */
 	private function decodeMenteeIds( string $encodedIds ): array {
 		$res = explode( self::SEPARATOR, $encodedIds );
 		return array_map( 'intval', array_filter( $res, 'is_numeric' ) );
@@ -54,6 +53,7 @@ class StarredMenteesStore {
 		return iterator_to_array( $this->userIdentityLookup
 			->newSelectQueryBuilder()
 			->whereUserIds( $ids )
+			->hidden( false )
 			->caller( __METHOD__ )
 			->fetchUserIdentities() );
 	}
@@ -76,10 +76,6 @@ class StarredMenteesStore {
 		);
 	}
 
-	/**
-	 * @param UserIdentity $mentor
-	 * @param UserIdentity $mentee
-	 */
 	public function starMentee( UserIdentity $mentor, UserIdentity $mentee ): void {
 		$starredMentees = $this->getStarredMenteeIds( $mentor, IDBAccessObject::READ_LOCKING );
 		$menteeId = $mentee->getId();
@@ -99,10 +95,6 @@ class StarredMenteesStore {
 		$this->userOptionsManager->saveOptions( $mentor );
 	}
 
-	/**
-	 * @param UserIdentity $mentor
-	 * @param UserIdentity $mentee
-	 */
 	public function unstarMentee( UserIdentity $mentor, UserIdentity $mentee ): void {
 		$starredMentees = $this->getStarredMenteeIds( $mentor, IDBAccessObject::READ_LOCKING );
 		$menteeId = $mentee->getId();

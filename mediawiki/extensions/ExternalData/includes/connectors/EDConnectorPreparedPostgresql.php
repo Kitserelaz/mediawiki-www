@@ -7,7 +7,6 @@ use MediaWiki\Title\Title;
  * for database connections to PostgreSQL servers with prepared statements.
  *
  * @author Alexander Mashin
- *
  */
 class EDConnectorPreparedPostgresql extends EDConnectorPrepared {
 	/** @var string|\pgsql\connection $pg Connection to PostrgreSQL server. */
@@ -57,7 +56,6 @@ class EDConnectorPreparedPostgresql extends EDConnectorPrepared {
 		// Throw exceptions instead of warnings.
 		self::throwWarnings();
 		try {
-			// @phan-suppress-next-line PhanUndeclaredConstant Optional extension
 			$this->pg = pg_connect( $this->credentials['connection string'] );
 		} catch ( Exception $e ) {
 			$this->error( 'externaldata-db-could-not-connect', $e->getMessage() );
@@ -66,7 +64,6 @@ class EDConnectorPreparedPostgresql extends EDConnectorPrepared {
 		} finally {
 			self::stopThrowingWarnings();
 		}
-		// @phan-suppress-next-line PhanUndeclaredConstant Optional extension
 		if ( $this->pg === false || pg_connection_status( $this->pg ) !== PGSQL_CONNECTION_OK ) {
 			// Could not create Database object.
 			$this->error( 'externaldata-db-could-not-connect', '(no connection)' );
@@ -97,7 +94,6 @@ class EDConnectorPreparedPostgresql extends EDConnectorPrepared {
 			self::stopThrowingWarnings();
 		}
 		if ( $result !== false ) {
-			// @phan-suppress-next-line PhanUndeclaredConstant Optional extension
 			$rows = pg_fetch_all( $result, PGSQL_ASSOC );
 			return $rows;
 		} else {

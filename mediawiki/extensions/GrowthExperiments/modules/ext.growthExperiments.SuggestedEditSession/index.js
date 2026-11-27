@@ -8,7 +8,7 @@
 		/** Task state after the user submits a structured task without making an edit. */
 		SUBMITTED: 'submitted',
 		/** Task state after the user leaves the workflow without saving or submitting anything. */
-		CANCELLED: 'cancelled'
+		CANCELLED: 'cancelled',
 	};
 	const allStates = [ states.STARTED, states.SAVED, states.SUBMITTED, states.CANCELLED ];
 
@@ -37,7 +37,7 @@
 		/** @member {boolean} Whether we are in a suggested edit session currently. */
 		this.active = false;
 		/**
-		 * @member {number|null} Suggested edit session ID. This will be used in
+		 * @member {number|string|null} Suggested edit session ID. This will be used in
 		 *   EditAttemptStep.editing_session_id and HelpPanel.help_panel_session_id
 		 *   in events logged during the session. It is set via the geclickid URL parameter
 		 *   (which is how a suggested edit session starts) and reset during page save.
@@ -94,6 +94,7 @@
 		this.helpPanelSuggestedEditsInteractionHappened = false;
 		/** @member {boolean} Whether the article should be opened in edit mode after loading. */
 		this.shouldOpenArticleInEditMode = false;
+		this.hasCustomMobileContextItem = false;
 		/**
 		 * @member {boolean} Whether onboarding dialog needs to be shown for the session
 		 * This prevents onboading dialog from being shown multiple times during the same session.
@@ -193,7 +194,8 @@
 			onboardingNeedsToBeShown: this.onboardingNeedsToBeShown,
 			newcomerTaskToken: this.newcomerTaskToken,
 			shouldOpenArticleInEditMode: this.shouldOpenArticleInEditMode,
-			qualityGateConfig: this.qualityGateConfig
+			hasCustomMobileContextItem: this.hasCustomMobileContextItem,
+			qualityGateConfig: this.qualityGateConfig,
 		};
 		if ( !this.active ) {
 			throw new Error( 'Trying to save an inactive suggested edit session' );
@@ -248,6 +250,7 @@
 				this.onboardingNeedsToBeShown = data.onboardingNeedsToBeShown;
 				this.newcomerTaskToken = data.newcomerTaskToken;
 				this.shouldOpenArticleInEditMode = data.shouldOpenArticleInEditMode;
+				this.hasCustomMobileContextItem = data.hasCustomMobileContextItem;
 				this.qualityGateConfig = data.qualityGateConfig;
 			} else {
 				mw.storage.session.remove( 'ge-suggestededit-session' );
@@ -263,15 +266,15 @@
 	 * @return {boolean} Whether the session has been initiated.
 	 */
 	SuggestedEditSession.prototype.maybeStart = function () {
-		const url = new mw.Uri();
+		const url = new URL( window.location.href );
 
 		if ( this.active ) {
 			throw new Error( 'Trying to start an already started active edit session' );
 		}
 
-		if ( url.query.geclickid ) {
+		if ( url.searchParams.get( 'geclickid' ) ) {
 			this.active = true;
-			this.clickId = url.query.geclickid;
+			this.clickId = url.searchParams.get( 'geclickid' );
 			this.title = this.getCurrentTitle();
 			this.taskType = mw.config.get( 'wgGESuggestedEditTaskType' );
 			this.taskData = mw.config.get( 'wgGESuggestedEditData' );
@@ -279,13 +282,13 @@
 			this.taskState = states.STARTED;
 
 			Utils.removeQueryParam( url, 'geclickid' );
-			if ( url.query.getasktype ) {
+			if ( url.searchParams.get( 'getasktype' ) ) {
 				Utils.removeQueryParam( url, 'getasktype' );
 			}
 		}
 
-		if ( url.query.genewcomertasktoken ) {
-			this.newcomerTaskToken = url.query.genewcomertasktoken;
+		if ( url.searchParams.get( 'genewcomertasktoken' ) ) {
+			this.newcomerTaskToken = url.searchParams.get( 'genewcomertasktoken' );
 			Utils.removeQueryParam( url, 'genewcomertasktoken' );
 		}
 
@@ -294,7 +297,12 @@
 		// when the preference is switched off T284088)
 
 		// Don't show help panel & mobile peek if the article is in edit mode
-		this.shouldOpenArticleInEditMode = url.query.veaction === 'edit';
+		this.shouldOpenArticleInEditMode = url.searchParams.get( 'veaction' ) === 'edit';
+		this.hasCustomMobileContextItem = [
+			'link-recommendation',
+			'image-recommendation',
+			'section-image-recommendation',
+		].includes( this.taskType );
 		this.helpPanelShouldOpen = !this.shouldOpenArticleInEditMode;
 		this.mobilePeekShown = this.shouldOpenArticleInEditMode;
 
@@ -314,7 +322,7 @@
 		// Do this only if VE's init module was already going to be loaded; we don't want to trigger
 		// it if it wasn't going to be loaded otherwise
 		if ( veState === 'loading' || veState === 'loaded' || veState === 'ready' ) {
-			mw.loader.using( 'ext.visualEditor.desktopArticleTarget.init' ).done( () => {
+			mw.loader.using( 'ext.visualEditor.desktopArticleTarget.init' ).then( () => {
 				mw.libs.ve.disableWelcomeDialog();
 				mw.libs.ve.disableEducationPopups();
 			} );
@@ -325,7 +333,7 @@
 	 * @param {string} state One of the states.* constants.
 	 */
 	SuggestedEditSession.prototype.setTaskState = function ( state ) {
-		if ( allStates.indexOf( state ) !== -1 ) {
+		if ( allStates.includes( state ) ) {
 			this.taskState = state;
 			this.save();
 		} else {
@@ -359,10 +367,10 @@
 		// WikiEditor doesn't use mw.track. But it doesn't load dynamically either so
 		// we can check it at page load time.
 		$( () => {
-			const uri = new mw.Uri();
+			const url = new URL( window.location.href );
 			// "submit" can be in the URL query if the user switched from VE to source
 			// eslint-disable-next-line no-jquery/no-global-selector, no-jquery/no-sizzle
-			if ( [ 'edit', 'submit' ].indexOf( uri.query.action ) !== -1 && $( '#wpTextbox1:visible' ).length ) {
+			if ( [ 'edit', 'submit' ].includes( url.searchParams.get( 'action' ) ) && $( '#wpTextbox1:visible' ).length ) {
 				saveEditorChanges( self, 'wikitext' );
 			}
 		} );
@@ -380,12 +388,10 @@
 		mw.config.set( 'wgWMESchemaEditAttemptStepSamplingRate', 1 );
 		$( () => {
 			$( linkSelector ).each( function () {
-				const linkUrl = new mw.Uri( this.href );
-				linkUrl.extend( {
-					editingStatsId: self.clickId,
-					editingStatsOversample: 1,
-					gesuggestededit: 1
-				} );
+				const linkUrl = new URL( this.href, window.location.origin );
+				linkUrl.searchParams.set( 'editingStatsId', self.clickId );
+				linkUrl.searchParams.set( 'editingStatsOversample', 1 );
+				linkUrl.searchParams.set( 'gesuggestededit', 1 );
 				$( this ).attr( 'href', linkUrl.toString() );
 			} );
 		} );
@@ -402,7 +408,7 @@
 		const apiParams = {
 			action: 'query',
 			meta: 'growthnextsuggestedtasktype',
-			gnsttactivetasktype: this.taskType
+			gnsttactivetasktype: this.taskType,
 		};
 		return new mw.Api().post( apiParams ).then( ( result ) => {
 			this.nextSuggestedTaskType = result.query.growthnextsuggestedtasktype;
@@ -426,8 +432,8 @@
 	 *   Will only be set for edits done via mobile.
 	 */
 	SuggestedEditSession.prototype.showPostEditDialog = function ( config ) {
-		const self = this,
-			uri = new mw.Uri();
+		const url = new URL( window.location.href );
+		const self = this;
 
 		config = config || {};
 		// T283120: avoid opening the dialog multiple times at once. This shouldn't be
@@ -448,10 +454,10 @@
 		this.newRevId = self.newRevId || config.newRevId;
 		this.save();
 
-		if ( !config.nextRequest && mw.config.get( 'wgGENewcomerTasksGuidanceEnabled' ) &&
+		if ( !config.nextRequest &&
 			// Never show the dialog on an edit screen, just defer it to the next request.
 			// This can happen when VisualEditor fires the postEdit hook before reloading the page.
-			!( uri.query.veaction || uri.query.action === 'edit' )
+			!( url.searchParams.get( 'veaction' ) || url.searchParams.get( 'action' ) === 'edit' )
 		) {
 			this.postEditDialogIsOpen = true;
 			mw.hook( 'helpPanel.hideCta' ).fire();
@@ -473,9 +479,9 @@
 
 				const postEditDialogLifecycle = require( 'ext.growthExperiments.PostEdit' ).setupPanel(
 					tryNewTaskResult.closeData,
-					!tryNewTaskResult.shown
+					!tryNewTaskResult.shown,
 				);
-				postEditDialogLifecycle.openPromise.done( () => {
+				postEditDialogLifecycle.openPromise.then( () => {
 					self.postEditDialogNeedsToBeShown = false;
 					self.save();
 					if ( self.editorInterface !== 'visualeditor' ) {
@@ -491,7 +497,7 @@
 				return postEditDialogLifecycle.closePromise;
 			} ) );
 
-			postEditDialogClosePromise.done( () => {
+			postEditDialogClosePromise.then( () => {
 				// Make sure we'll show the dialog again if the page is edited again in VE
 				// without a page reload.
 				self.postEditDialogIsOpen = false;
@@ -509,7 +515,7 @@
 	 * is complete.
 	 */
 	SuggestedEditSession.prototype.tagNonVisualEditorEditWithGrowthChangeTags = function (
-		taskType
+		taskType,
 	) {
 		const revIdPromise = this.newRevId ? $.Deferred().resolve().promise() : new mw.Api().get( {
 			action: 'query',
@@ -517,9 +523,9 @@
 			pageids: mw.config.get( 'wgRelevantArticleId' ),
 			rvprop: 'ids|tags',
 			rvlimit: 1,
-			rvuser: mw.config.get( 'wgUserName' )
+			rvuser: mw.config.get( 'wgUserName' ),
 		} );
-		return revIdPromise.done( ( data ) => {
+		return revIdPromise.then( ( data ) => {
 			// We didn't have the new revision ID already, so get it from the API response.
 			if ( !this.newRevId && data && data.query && data.query.pages ) {
 				const response = data.query.pages[ Object.keys( data.query.pages )[ 0 ] ];
@@ -531,7 +537,7 @@
 			}
 			const apiUrl = '/growthexperiments/v0/newcomertask/complete';
 			return new mw.Rest().post( apiUrl + '?' + $.param( { taskTypeId: taskType, revId: this.newRevId } ) )
-				.fail( ( err, errObject ) => {
+				.then( () => {}, ( err, errObject ) => {
 					mw.log.error( errObject );
 					let errMessage = errObject.exception;
 					if ( errObject.xhr &&
@@ -541,6 +547,7 @@
 						errMessage = errObject.xhr.responseJSON.messageTranslations.en;
 					}
 					mw.errorLogger.logError( new Error( errMessage ), 'error.growthexperiments' );
+					throw new Error( errMessage );
 				} );
 		} );
 	};
@@ -568,11 +575,10 @@
 		if ( mw.config.get( 'wgAction' ) === 'history' ) {
 			return;
 		}
-		const self = this,
-			currentTitle = this.getCurrentTitle(),
-			uri = new mw.Uri(),
-			hasSwitchedFromMachineSuggestions = uri.query.hideMachineSuggestions;
-
+		const self = this;
+		const currentTitle = this.getCurrentTitle();
+		const url = new URL( window.location.href );
+		const hasSwitchedFromMachineSuggestions = url.searchParams.get( 'hideMachineSuggestions' ) !== null;
 		// Only show the post-edit dialog on the task page, not e.g. on talk page edits.
 		// Skip the dialog if the user saved an edit w/VE after switching from suggestions mode.
 		if ( !currentTitle || !this.title ||
@@ -597,21 +603,6 @@
 			self.setTaskState( states.SAVED );
 			self.showPostEditDialog( { resetSession: true } );
 		} );
-
-		/**
-		 * @param {Object} data
-		 * @param {number|null} [data.newRevId] ID of the newly created revision, or null if it was
-		 *  a null edit.
-		 */
-		mw.hook( 'postEditMobile' ).add( ( data ) => {
-			self.setTaskState( data.newRevId ? states.SAVED : states.SUBMITTED );
-			self.showPostEditDialog( {
-				resetSession: true,
-				newRevId: data.newRevId,
-				// VE updates the page dynamically so the post-edit dialog can be shown immediately
-				nextRequest: self.editorInterface !== 'visualeditor'
-			} );
-		} );
 	};
 
 	/**
@@ -623,10 +614,17 @@
 		if ( !this.startTime || !this.shouldTrackPerformance ) {
 			return;
 		}
+		const duration = window.performance.now() - this.startTime;
 		mw.track(
-			'timing.growthExperiments.suggestedEdits.taskEditorReady.' + this.taskType +
-			( OO.ui.isMobile() ? '.mobile' : '.desktop' ),
-			window.performance.now() - this.startTime
+			'stats.mediawiki_GrowthExperiments_task_editor_ready_seconds',
+			duration,
+			{
+				// eslint-disable-next-line camelcase
+				task_type: Utils.normalizeLabelForStats( this.taskType ),
+				platform: ( OO.ui.isMobile() ? 'mobile' : 'desktop' ),
+				operation: 'editor_shown',
+				wiki: mw.config.get( 'wgDBname' ),
+			},
 		);
 	};
 
@@ -642,24 +640,33 @@
 		if ( this.shouldOpenArticleInEditMode || !this.startTime || !this.shouldTrackPerformance ) {
 			return;
 		}
+		const guidanceDisplayDuration = window.performance.now() - this.startTime;
 		mw.track(
-			'timing.growthExperiments.suggestedEdits.guidanceShown.' + this.taskType +
-			( OO.ui.isMobile() ? '.mobile' : '.desktop' ),
-			window.performance.now() - this.startTime
+			'stats.mediawiki_GrowthExperiments_suggested_edits_session_seconds',
+			guidanceDisplayDuration,
+			{
+				// eslint-disable-next-line camelcase
+				task_type: Utils.normalizeLabelForStats( this.taskType ),
+				platform: ( OO.ui.isMobile() ? 'mobile' : 'desktop' ),
+				operation: 'guidance_shown',
+				wiki: mw.config.get( 'wgDBname' ),
+			},
 		);
 	};
 
 	/**
-	 * Clear session-specific data and set the task state to SAVED,
-	 * used when making non-null edits with structured tasks
+	 * Clear session-specific data and set the task state to SAVED or SUBMITTED,
+	 * used when saving structured tasks.
+	 *
+	 * @param {boolean} [wasNullEdit] Whether the save resulted in a null edit.
 	 */
-	SuggestedEditSession.prototype.onStructuredTaskSaved = function () {
+	SuggestedEditSession.prototype.onStructuredTaskSaved = function ( wasNullEdit ) {
 		// Since the page is reloaded, the postEdit hook won't be fired so the flag is used instead in
 		// SuggestedEditSession to show the post-edit dialog.
 		this.postEditDialogNeedsToBeShown = true;
 		// After saving, the clickId is used for the next task.
 		this.clickId = mw.user.generateRandomSessionId();
-		this.setTaskState( states.SAVED );
+		this.setTaskState( wasNullEdit ? states.SUBMITTED : states.SAVED );
 		this.save();
 	};
 
@@ -700,8 +707,8 @@
 		return [
 			'link-recommendation',
 			'image-recommendation',
-			'section-image-recommendation'
-		].indexOf( taskType ) !== -1;
+			'section-image-recommendation',
+		].includes( taskType );
 	};
 
 	// Always initiate. We need to do this to be able to terminate the session when the user
@@ -738,6 +745,14 @@
 			ve.init.target.saveFields.plugins = function () {
 				return plugins;
 			};
+		}
+	} );
+
+	mw.hook( 've.newTarget' ).add( () => {
+		// TODO: Remove this once the experiment T419181 is done
+		if ( ge.suggestedEditSession.taskType === 'copyedit' && mw.testKitchen &&
+			mw.testKitchen.getExperiment( 'growthexperiments-revise-tone' ).getAssignedGroup() === 'treatment' ) {
+			ve.init.target.editcheckController.suppressSuggestionDisplay( true );
 		}
 	} );
 

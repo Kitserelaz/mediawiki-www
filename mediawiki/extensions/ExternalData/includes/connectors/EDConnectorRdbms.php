@@ -8,10 +8,15 @@
  *
  */
 use Wikimedia\Rdbms\Database;
+use Wikimedia\Rdbms\DatabaseFactory;
+use Wikimedia\Rdbms\IResultWrapper;
 
 abstract class EDConnectorRdbms extends EDConnectorComposed {
 	/** @var Database The database object. */
 	protected $database;
+
+	/** @var \Wikimedia\Rdbms\SelectQueryBuilder $query The prebuild query. */
+	private $query;
 
 	/**
 	 * Set credentials settings for database from $this->dbId.
@@ -32,17 +37,8 @@ abstract class EDConnectorRdbms extends EDConnectorComposed {
 	 */
 	protected function connect() {
 		try {
-			if ( class_exists( 'Wikimedia\Rdbms\DatabaseFactory' ) ) {
-				// MW 1.39+
-				// @phan-suppress-next-line PhanUndeclaredClass, PhanUndeclaredClassMethod Different MW versions.
-				$factory = new Wikimedia\Rdbms\DatabaseFactory();
-				// @phan-suppress-next-line PhanUndeclaredClassMethod Different MW versions.
-				$this->database = $factory->create( $this->type, $this->credentials );
-			} else {
-				// MW 1.38-
-				// @phan-suppress-next-line PhanUndeclaredStaticMethod Different MW versions.
-				$this->database = Database::factory( $this->type, $this->credentials );
-			}
+			$factory = new DatabaseFactory();
+			$this->database = $factory->create( $this->type, $this->credentials );
 		} catch ( Exception $e ) {
 			$this->error( 'externaldata-db-could-not-connect', $e->getMessage() );
 			return false;
@@ -56,6 +52,12 @@ abstract class EDConnectorRdbms extends EDConnectorComposed {
 			$this->error( 'externaldata-db-could-not-connect' );
 			return false;
 		}
+		$this->query = $this->database->newSelectQueryBuilder()
+			->tables( $this->tables )
+			->joinConds( $this->joins )
+			->fields( $this->columns )
+			->where( $this->conditions ?? [] )
+			->options( $this->sqlOptions );
 		return true;
 	}
 
@@ -64,46 +66,19 @@ abstract class EDConnectorRdbms extends EDConnectorComposed {
 	 * @return string
 	 */
 	protected function getQuery(): string {
-		return $this->database->selectSQLText(
-			$this->tables,
-			$this->columns,
-			$this->conditions,
-			__METHOD__,
-			$this->sqlOptions,
-			$this->joins
-		);
+		return $this->query->getSQL();
 	}
 
 	/**
 	 * Get query result as a two-dimensional array.
-	 * @return \Wikimedia\Rdbms\IResultWrapper|null
+	 * @return IResultWrapper|null
 	 */
-	protected function fetch(): ?\Wikimedia\Rdbms\IResultWrapper {
+	protected function fetch(): ?IResultWrapper {
 		try {
-			$rows = $this->database->select(
-				$this->tables,
-				$this->columns,
-				$this->conditions,
-				__METHOD__,
-				$this->sqlOptions,
-				$this->joins
-			);
+			$rows = $this->query->fetchResultSet();
 		} catch ( Exception $e ) {
 			// No result.
-			$this->error(
-				'externaldata-db-invalid-query',
-				$this->getQuery(),
-				$e->getMessage()
-			);
-			return null;
-		}
-		if ( !$rows ) {
-			// No result.
-			$this->error(
-				'externaldata-db-invalid-query',
-				$this->getQuery(),
-				$this->database->lastError()
-			);
+			$this->error( 'externaldata-db-invalid-query', $this->getQuery(), $e->getMessage() );
 			return null;
 		}
 		return $rows;
@@ -113,6 +88,6 @@ abstract class EDConnectorRdbms extends EDConnectorComposed {
 	 * Disconnect from DB server.
 	 */
 	protected function disconnect() {
-		$this->database->close();
+		$this->database->close( __METHOD__ );
 	}
 }

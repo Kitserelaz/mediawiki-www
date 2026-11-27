@@ -4,9 +4,7 @@
  * for an ODBC connection to MS SQL Server.
  *
  * @author Alexander Mashin
- *
  */
-
 class EDConnectorOdbcMssql extends EDConnectorOdbc {
 	/** @const string TEMPLATE SQL query template. */
 	protected const TEMPLATE = 'SELECT $limit $columns $from $where $group $having $order;';

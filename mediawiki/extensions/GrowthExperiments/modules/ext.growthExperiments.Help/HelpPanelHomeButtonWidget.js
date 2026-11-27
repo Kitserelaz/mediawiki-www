@@ -24,7 +24,7 @@ HelpPanelHomeButtonWidget.prototype.build = function () {
 			// * mw-ge-help-panel-home-button-ask-help
 			// * mw-ge-help-panel-home-button-general-help
 			// * mw-ge-help-panel-home-button-suggested-edits
-			'mw-ge-help-panel-home-button-' + this.config.id
+			'mw-ge-help-panel-home-button-' + this.config.id,
 		] )
 		.append(
 			$( '<div>' ).addClass( 'mw-ge-help-panel-home-button-text' )
@@ -32,9 +32,9 @@ HelpPanelHomeButtonWidget.prototype.build = function () {
 					this.getPreHeader(),
 					this.getHeader(),
 					this.getSubsubheader(),
-					this.getSubheader()
+					this.getSubheader(),
 				),
-			$( '<div>' ).addClass( 'mw-ge-help-panel-home-button-image' ).append( this.getIcon() )
+			$( '<div>' ).addClass( 'mw-ge-help-panel-home-button-image' ).append( this.getIcon() ),
 		);
 	this.$element.append( $button );
 };
@@ -44,7 +44,7 @@ HelpPanelHomeButtonWidget.prototype.getIcon = function () {
 			'ask-help': 'userTalk',
 			'ask-help-mentor': 'mentor',
 			'general-help': 'help',
-			'suggested-edits': 'suggestedEdits'
+			'suggested-edits': 'suggestedEdits',
 		},
 		iconKey = iconKeyMap[ this.config.id ];
 	return new OO.ui.IconWidget( {
@@ -58,8 +58,8 @@ HelpPanelHomeButtonWidget.prototype.getIcon = function () {
 			// * mw-ge-help-panel-home-button-image-icon-ask-help-mentor
 			// * mw-ge-help-panel-home-button-image-icon-general-help
 			// * mw-ge-help-panel-home-button-image-icon-suggested-edits
-			'mw-ge-help-panel-home-button-image-icon-' + this.config.id
-		]
+			'mw-ge-help-panel-home-button-image-icon-' + this.config.id,
+		],
 	} ).$element;
 };
 
@@ -71,7 +71,7 @@ HelpPanelHomeButtonWidget.prototype.getPreHeader = function () {
 		.append(
 			new OO.ui.IconWidget( {
 				icon: 'lightbulb',
-				classes: [ 'mw-ge-help-panel-home-button-preheader-icon' ]
+				classes: [ 'mw-ge-help-panel-home-button-preheader-icon' ],
 			} ).$element,
 			// The following messages are used here:
 			// * growthexperiments-help-panel-button-header-general-help
@@ -95,7 +95,7 @@ HelpPanelHomeButtonWidget.prototype.getHeader = function () {
 	} else if ( this.config.id === 'ask-help-mentor' ) {
 		headerText = mw.message(
 			'growthexperiments-help-panel-button-header-ask-help-mentor',
-			this.getMentorGender()
+			this.getMentorGender(),
 		).text();
 	} else {
 		// The following messages are used here:
@@ -111,11 +111,13 @@ HelpPanelHomeButtonWidget.prototype.getSubheader = function () {
 
 	if ( this.config.customSubheader ) {
 		text = this.config.customSubheader;
+	} else if ( this.config.id === 'suggested-edits' && this.config.taskTypeId === 'revise-tone' ) {
+		text = mw.msg( 'growthexperiments-help-panel-revise-tone-refresh-skills' );
 	} else {
 		// The following messages are used here:
 		// * growthexperiments-help-panel-button-subheader-general-help
 		// * growthexperiments-help-panel-button-subheader-ask-help
-		// * growthexperiments-help-panel-button-header-suggested-edits
+		// * growthexperiments-help-panel-button-subheader-suggested-edits
 		text = mw.msg( 'growthexperiments-help-panel-button-subheader-' + this.config.id );
 	}
 	return $( '<div>' ).addClass( 'mw-ge-help-panel-home-button-text-subheader' ).text( text );

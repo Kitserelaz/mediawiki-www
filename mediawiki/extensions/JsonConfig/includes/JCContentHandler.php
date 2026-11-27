@@ -1,6 +1,6 @@
 <?php
 
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use MediaWiki\Content\CodeContentHandler;
 use MediaWiki\Content\Content;
@@ -8,12 +8,12 @@ use MediaWiki\Content\Renderer\ContentParseParams;
 use MediaWiki\Content\Transform\PreSaveTransformParams;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Json\FormatJson;
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\ParserOutput;
 
 /**
  * JSON Json Config content handler
  *
- * @file
  * @ingroup Extensions
  * @ingroup JsonConfig
  *
@@ -48,7 +48,7 @@ class JCContentHandler extends CodeContentHandler {
 		} elseif ( $status->isOK() ) {
 			$data = $content->getRawData(); // JSON is valid, but the data has errors
 		} else {
-			return $content->getNativeData(); // Invalid JSON - can't do anything with it
+			return $content->getText(); // Invalid JSON - can't do anything with it
 		}
 
 		return FormatJson::encode( $data, $format === self::CONTENT_FORMAT_JSON_PRETTY,
@@ -88,6 +88,7 @@ class JCContentHandler extends CodeContentHandler {
 		return $this->unserializeContent( $result, $format );
 	}
 
+	/** @inheritDoc */
 	protected function getSlotDiffRendererWithOptions( IContextSource $context, $options = [] ) {
 		return new JCSlotDiffRenderer( $this->createTextSlotDiffRenderer( $options ) );
 	}
@@ -175,8 +176,37 @@ class JCContentHandler extends CodeContentHandler {
 			$html .= $content
 				->getView( $content->getModel() )
 				->valueToHtml( $content, $page, $revId, $parserOptions, $generateHtml, $output );
+
+			if ( $content instanceof JCDataContent && $content->isValid() ) {
+				$this->addCategoriesToParserOutput( $content, $output );
+			}
 		}
 
-		$output->setText( $html );
+		$output->setContentHolderText( $html );
+	}
+
+	/**
+	 * @param JCDataContent $content
+	 * @param ParserOutput $parserOutput
+	 */
+	protected function addCategoriesToParserOutput( JCDataContent $content, ParserOutput $parserOutput ) {
+		$titleParser = MediaWikiServices::getInstance()->getTitleParser();
+
+		$categoriesField = $content->getField( 'mediawikiCategories' );
+		if ( $categoriesField && !$categoriesField->error() ) {
+			$categories = $categoriesField->getValue();
+			foreach ( $categories as $categoryItem ) {
+				$categoryName = $categoryItem->name;
+				$sortKey = $categoryItem->sort ?? '';
+
+				$categoryTitle = $titleParser->makeTitleValueSafe( NS_CATEGORY, $categoryName );
+				if ( $categoryTitle !== null ) {
+					$parserOutput->addCategory( $categoryTitle->getDBkey(), $sortKey );
+				}
+			}
+		}
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCContentHandler::class, 'JsonConfig\\JCContentHandler' );

@@ -49,24 +49,38 @@ RecommendedLinkToolbarDialog.static.name = 'recommendedLink';
  * @inheritdoc
  */
 RecommendedLinkToolbarDialog.prototype.initialize = function () {
-	const introLabel = new OO.ui.LabelWidget( {
-		label: mw.msg( 'growthexperiments-addlink-context-intro' ),
-		classes: [ 'mw-ge-recommendedLinkToolbarDialog-introLabel' ]
-	} );
 	RecommendedLinkToolbarDialog.super.prototype.initialize.call( this );
-
-	// The following elements have to be set up when this.linkRecommendationFragments is set.
-	this.$progress = $( '<span>' ).addClass( 'mw-ge-recommendedLinkToolbarDialog-progress' );
-	this.$progressTitle = $( '<span>' ).addClass( 'mw-ge-recommendedLinkToolbarDialog-progress-title' );
+	// The following elements have to be set up when this.linkRecommendationFragments is set. ??
 	this.$buttons = $( '<div>' ).addClass( 'mw-ge-recommendedLinkToolbarDialog-buttons' );
-	this.setupButtons();
-	this.$head.append( [ this.getRobotIcon(), this.$progressTitle, this.$progress ] );
-	this.$body.append( [ introLabel.$element, this.setupLinkPreview() ] );
 
 	// Used by other dialogs to return focus.
 	mw.hook( 'inspector-regainfocus' ).add( () => {
 		this.regainFocus();
 	} );
+};
+
+RecommendedLinkToolbarDialog.prototype.setupControls = function ( fragmentsSize ) {
+	const introLabel = new OO.ui.LabelWidget( {
+		label: mw.msg( 'growthexperiments-addlink-context-intro' ),
+		classes: [ 'mw-ge-recommendedLinkToolbarDialog-introLabel' ],
+	} );
+	if ( fragmentsSize === 1 ) {
+		this.$buttons.append( this.setupAcceptanceButtons( fragmentsSize ) );
+		this.$headTitle = $( '<span>' );
+		this.$headTitle.addClass( 'mw-ge-recommendedLinkToolbarDialog-progress-title' );
+		this.$headTitle.addClass( 'mw-ge-recommendedLinkToolbarDialog-progress-title--single' );
+		this.$headTitle.text(
+			mw.msg( 'growthexperiments-addlink-single-recommendation-title' ),
+		);
+		this.$head.prepend( [ this.getRobotIcon(), this.$headTitle ] );
+	} else {
+		this.$progress = $( '<span>' ).addClass( 'mw-ge-recommendedLinkToolbarDialog-progress' );
+		this.setupProgressIndicators( this.linkRecommendationFragments.length );
+		this.$progressTitle = $( '<span>' ).addClass( 'mw-ge-recommendedLinkToolbarDialog-progress-title' );
+		this.$buttons.append( this.setupAcceptanceButtons( fragmentsSize ), this.setupNavigationButtons() );
+		this.$head.prepend( [ this.getRobotIcon(), this.$progressTitle, this.$progress ] );
+	}
+	this.$body.append( [ introLabel.$element, this.setupLinkPreview() ] );
 };
 
 /**
@@ -99,7 +113,7 @@ RecommendedLinkToolbarDialog.prototype.scrollToToolbarDialogTarget = function ()
  */
 RecommendedLinkToolbarDialog.prototype.onAnnotationClicked = function (
 	annotationModel,
-	isActive
+	isActive,
 ) {
 	if ( !annotationModel ) {
 		return;
@@ -115,15 +129,14 @@ RecommendedLinkToolbarDialog.prototype.onAnnotationClicked = function (
  * Initialize elements after this.surface and this.linkRecommendationFragments are set
  */
 RecommendedLinkToolbarDialog.prototype.afterSetupProcess = function () {
-	this.updateSurfacePadding();
-	this.setupProgressIndicators( this.linkRecommendationFragments.length );
+	this.setupControls( this.linkRecommendationFragments.length );
 	this.showFirstRecommendation().then( () => {
 		this.updateActionButtonsMode();
 		this.logger.log( 'impression', this.getSuggestionLogActionData() );
 	} );
 
 	$( window ).on( 'resize',
-		OO.ui.debounce( this.updateActionButtonsMode.bind( this ), 250 )
+		OO.ui.debounce( this.updateActionButtonsMode.bind( this ), 250 ),
 	);
 	mw.hook( 'growthExperiments.onAnnotationClicked' ).add( this.onAnnotationClicked.bind( this ) );
 };
@@ -137,7 +150,7 @@ RecommendedLinkToolbarDialog.prototype.afterSetupProcess = function () {
 RecommendedLinkToolbarDialog.prototype.onPrevButtonClicked = function ( isSwipe ) {
 	this.logger.log( 'back', Object.assign(
 		/* eslint-disable-next-line camelcase */
-		this.getSuggestionLogActionData(), { navigation_type: isSwipe ? 'swipe' : 'click' }
+		this.getSuggestionLogActionData(), { navigation_type: isSwipe ? 'swipe' : 'click' },
 	) );
 	if ( this.currentIndex === 0 ) {
 		return;
@@ -155,7 +168,7 @@ RecommendedLinkToolbarDialog.prototype.onPrevButtonClicked = function ( isSwipe 
 RecommendedLinkToolbarDialog.prototype.onNextButtonClicked = function ( isSwipe ) {
 	this.logger.log( 'next', Object.assign(
 		/* eslint-disable-next-line camelcase */
-		this.getSuggestionLogActionData(), { navigation_type: isSwipe ? 'swipe' : 'click' }
+		this.getSuggestionLogActionData(), { navigation_type: isSwipe ? 'swipe' : 'click' },
 	) );
 	if ( this.currentDataModel.isUndecided() ) {
 		this.logger.log( 'suggestion_skip', this.getSuggestionLogActionData() );
@@ -186,7 +199,7 @@ RecommendedLinkToolbarDialog.prototype.onYesButtonClicked = function () {
 	if ( this.currentDataModel.isAccepted() ) {
 		this.logger.log( 'suggestion_mark_undecided', Object.assign( this.getSuggestionLogActionData(), {
 			// eslint-disable-next-line camelcase
-			previous_acceptance_state: 'accepted'
+			previous_acceptance_state: 'accepted',
 		} ) );
 		this.setLastAnnotationState( true );
 	} else {
@@ -207,7 +220,7 @@ RecommendedLinkToolbarDialog.prototype.onNoButtonClicked = function () {
 	if ( this.currentDataModel.isRejected() ) {
 		this.logger.log( 'suggestion_mark_undecided', Object.assign( this.getSuggestionLogActionData(), {
 			// eslint-disable-next-line camelcase
-			previous_acceptance_state: 'rejected'
+			previous_acceptance_state: 'rejected',
 		} ) );
 		this.setLastAnnotationState( true );
 	} else {
@@ -282,23 +295,15 @@ RecommendedLinkToolbarDialog.prototype.reopenRejectionDialog = function () {
  * (the yes/no button has been toggled).
  */
 RecommendedLinkToolbarDialog.prototype.setAccepted = function ( accepted ) {
-	let acceptancePromise = $.Deferred().resolve();
+	let acceptancePromise = $.Deferred().resolve().promise();
 	const fragment = this.getCurrentFragment(),
 		annotation = this.getCurrentDataModel(),
 		surfaceModel = this.surface.getModel(),
 		oldReadOnly = surfaceModel.isReadOnly(),
 		attributes = {
 			recommendationAccepted: accepted,
-			rejectionReason: undefined
-		},
-		getRejectionDialogLogActionData = function ( rejectionReason, otherReason ) {
-			return Object.assign( this.getSuggestionLogActionData(), {
-				/* eslint-disable camelcase */
-				rejection_reason: rejectionReason,
-				other_reason: otherReason ? encodeURIComponent( otherReason ) : undefined
-				/* eslint-enable camelcase */
-			} );
-		}.bind( this );
+			rejectionReason: undefined,
+		};
 
 	// Temporarily disable read-only mode
 	surfaceModel.setReadOnly( false );
@@ -309,21 +314,17 @@ RecommendedLinkToolbarDialog.prototype.setAccepted = function ( accepted ) {
 		this.updateAnnotation( fragment, annotation, attributes );
 
 		const openRejectionDialogWindowPromise = this.surface.dialogs.openWindow(
-			'recommendedLinkRejection', {
-				selection: this.currentDataModel.getRejectionReason(),
-				otherRejectionReason: this.currentDataModel.getOtherRejectionReason()
-			}
-		);
+			'recommendedLinkRejection', this.currentDataModel.getRejectionReason() );
 
 		openRejectionDialogWindowPromise.opening.then( () => {
 			this.logger.log(
 				'impression',
-				getRejectionDialogLogActionData(
-					this.currentDataModel.getRejectionReason(),
-					this.currentDataModel.getOtherRejectionReason()
-				),
+				Object.assign( this.getSuggestionLogActionData(), {
+					// eslint-disable-next-line camelcase
+					rejection_reason: this.currentDataModel.getRejectionReason(),
+				} ),
 				// eslint-disable-next-line camelcase
-				{ active_interface: 'rejection_dialog' }
+				{ active_interface: 'rejection_dialog' },
 			);
 		} );
 
@@ -332,27 +333,21 @@ RecommendedLinkToolbarDialog.prototype.setAccepted = function ( accepted ) {
 				this.currentDataModel.getRejectionReason();
 			this.logger.log(
 				'close',
-				getRejectionDialogLogActionData( rejectionReason, closedData.otherRejectionReason ),
+				Object.assign( this.getSuggestionLogActionData(), {
+					// eslint-disable-next-line camelcase
+					rejection_reason: rejectionReason,
+				} ),
 				// eslint-disable-next-line camelcase
-				{ active_interface: 'rejection_dialog' }
+				{ active_interface: 'rejection_dialog' },
 			);
-			return closedData;
+			return closedData && rejectionReason;
 		} );
 	}
 
-	acceptancePromise.then( ( closedData ) => {
-		closedData = closedData || {};
-
-		const rejectionReason = closedData.reason,
-			otherRejectionReason = closedData.otherRejectionReason;
+	acceptancePromise.then( ( rejectionReason ) => {
 		if ( rejectionReason ) {
 			attributes.rejectionReason = rejectionReason;
 		}
-
-		if ( otherRejectionReason ) {
-			attributes.otherRejectionReason = otherRejectionReason;
-		}
-
 		return this.updateAnnotation( fragment, annotation, attributes );
 	} ).then( () => {
 		// Re-enable read-only mode (if it was previously enabled)
@@ -410,10 +405,10 @@ RecommendedLinkToolbarDialog.prototype.selectAnnotationView = function () {
  * @param {number} index Zero-based index of the suggestion in the linkRecommendationFragments array
  * @param {boolean} [manualFocus] if the recommendation was manually focused via a click/tap as
  *  opposed to using the next/back buttons.
- * @throws Will throw an error if this.linkRecommendationFragments is empty
+ * @throws {Error} Will throw an error if this.linkRecommendationFragments is empty
  */
 RecommendedLinkToolbarDialog.prototype.showRecommendationAtIndex = function (
-	index, manualFocus
+	index, manualFocus,
 ) {
 	const isUpdatingCurrentRecommendation = this.isUpdatingCurrentRecommendation;
 	if ( !isUpdatingCurrentRecommendation && ( index === this.currentIndex || index < 0 ) ) {
@@ -436,7 +431,7 @@ RecommendedLinkToolbarDialog.prototype.showRecommendationAtIndex = function (
 	this.logger.log(
 		'suggestion_focus',
 		// eslint-disable-next-line camelcase
-		Object.assign( this.getSuggestionLogActionData(), { manual_focus: manualFocus || false } )
+		Object.assign( this.getSuggestionLogActionData(), { manual_focus: manualFocus || false } ),
 	);
 };
 
@@ -446,25 +441,46 @@ RecommendedLinkToolbarDialog.prototype.showRecommendationAtIndex = function (
  * @return {jQuery.Promise} Promise which resolves when the link inspector is shown
  */
 RecommendedLinkToolbarDialog.prototype.showFirstRecommendation = function () {
-	const promise = $.Deferred(),
+	const deferred = $.Deferred(),
 		annotationView = this.getAnnotationViewAtIndex( 0 );
 	if ( !annotationView ) {
 		this.toggle( false );
-		return promise.reject();
+		return deferred.reject().promise();
 	}
-	this.scrollToAnnotationView( annotationView ).then( () => {
-		this.showRecommendationAtIndex( 0 );
-		this.$element.removeClass( 'animate-below' );
-		promise.resolve();
-	} );
-	return promise;
+	this.beforeShowFirstRecommendation();
+	// HACK: The start selection is scrolled into view with a debounce of 500ms
+	// when the article first opened (ve.ui.Surface#scrollSelectionIntoViewDebounced).
+	// To avoid conflicting with this call, wait.
+	setTimeout( () => {
+		this.scrollToAnnotationView( annotationView ).then( () => {
+			this.showRecommendationAtIndex( 0 );
+			this.afterShowFirstRecommendation().then( deferred.resolve );
+		} );
+	}, 600 );
+	return deferred.promise();
+};
+
+/**
+ * Run before the first animation has been scrolled to
+ */
+RecommendedLinkToolbarDialog.prototype.beforeShowFirstRecommendation = function () {
+};
+
+/**
+ * Run after the first animation has been scrolled to
+ *
+ * @return {jQuery.Promise} Promise which resolves when any after-animation is complete
+ */
+RecommendedLinkToolbarDialog.prototype.afterShowFirstRecommendation = function () {
+	this.$element.removeClass( 'animate-below' );
+	return $.Deferred().resolve().promise();
 };
 
 /**
  * Get annotation view for the specified index
  *
  * @param {number} index Zero-based index of the suggestion in the linkRecommendationFragments array
- * @throws Will throw an error if annotation view at the specified index can't be found
+ * @throws {Error} Will throw an error if annotation view at the specified index can't be found
  * @return {jQuery}
  */
 RecommendedLinkToolbarDialog.prototype.getAnnotationViewAtIndex = function ( index ) {
@@ -472,7 +488,7 @@ RecommendedLinkToolbarDialog.prototype.getAnnotationViewAtIndex = function ( ind
 		.find( '.mw-ge-recommendedLinkAnnotation' )[ index ];
 	if ( !annotationView ) {
 		StructuredTaskPreEdit.showErrorDialogOnFailure(
-			new Error( 'Unable to find any expected phrase in document.' )
+			new Error( 'Unable to find any expected phrase in document.' ),
 		);
 	}
 	return annotationView;
@@ -486,20 +502,30 @@ RecommendedLinkToolbarDialog.prototype.getAnnotationViewAtIndex = function ( ind
  * when scrollTimeout is reached
  */
 RecommendedLinkToolbarDialog.prototype.scrollToAnnotationView = function ( $el ) {
-	const promise = $.Deferred(),
+	const deferred = $.Deferred(),
 		resolveTimeout = setTimeout( () => {
-			promise.resolve();
+			deferred.resolve();
 		}, this.scrollTimeout );
+
+	const padding = ve.copy( this.surface.getPadding() );
+	padding.bottom += this.scrollOffset;
+	if ( !OO.ui.isMobile() ) {
+		// As this isn't within the DesktopContext which automatically scrolls
+		// into view, we need to add manual scroll padding to account for the
+		// dialog height.
+		padding.bottom += Math.max( this.$element.height(), this.minHeight );
+	}
+
 	OO.ui.Element.static.scrollIntoView( $el, {
 		animate: true,
 		duration: 'slow',
-		padding: this.surface.padding,
-		direction: 'y'
+		padding: padding,
+		direction: 'y',
 	} ).then( () => {
 		clearTimeout( resolveTimeout );
-		promise.resolve();
+		deferred.resolve();
 	} );
-	return promise;
+	return deferred.promise();
 };
 
 /**
@@ -508,7 +534,7 @@ RecommendedLinkToolbarDialog.prototype.scrollToAnnotationView = function ( $el )
  * @private
  * @return {ve.dm.SurfaceFragment}
  *
- * @throws Will throw an error if there is no link recommendation
+ * @throws {Error} Will throw an error if there is no link recommendation
  */
 RecommendedLinkToolbarDialog.prototype.getCurrentFragment = function () {
 	const currentRecommendation = this.linkRecommendationFragments[ this.currentIndex ];
@@ -548,32 +574,38 @@ RecommendedLinkToolbarDialog.prototype.allRecommendationsSkipped = function () {
 /**
  * Set up yes, no and reopen rejection dialog buttons
  *
+ * @param {number} fragmentsSize
  * @return {jQuery}
  */
-RecommendedLinkToolbarDialog.prototype.setupAcceptanceButtons = function () {
+RecommendedLinkToolbarDialog.prototype.setupAcceptanceButtons = function ( fragmentsSize ) {
 	this.yesButton = new OO.ui.ToggleButtonWidget( {
 		icon: 'check',
 		label: mw.msg( 'growthexperiments-addlink-context-button-accept' ),
-		classes: [ 'mw-ge-recommendedLinkToolbarDialog-buttons-yes' ]
+		classes: [ 'mw-ge-recommendedLinkToolbarDialog-buttons-yes' ],
 	} );
 	this.noButton = new OO.ui.ToggleButtonWidget( {
 		icon: 'close',
 		label: mw.msg( 'growthexperiments-addlink-context-button-reject' ),
-		classes: [ 'mw-ge-recommendedLinkToolbarDialog-buttons-no' ]
+		classes: [ 'mw-ge-recommendedLinkToolbarDialog-buttons-no' ],
 	} );
 	this.reopenRejectionDialogButton = new OO.ui.ButtonWidget( {
 		icon: 'ellipsis',
 		framed: false,
-		title: mw.msg( 'growthexperiments-addlink-rejectiondialog-reopen-button-title' ),
-		classes: [ 'mw-ge-recommendedLinkToolbarDialog-buttons-no-reopen' ]
+		label: mw.msg( 'growthexperiments-addlink-rejectiondialog-reopen-button-title' ),
+		invisibleLabel: true,
+		classes: [ 'mw-ge-recommendedLinkToolbarDialog-buttons-no-reopen' ],
 	} );
 	this.$acceptanceButtonGroup = $( '<div>' ).addClass(
-		'mw-ge-recommendedLinkToolbarDialog-buttons-acceptance-group'
+		'mw-ge-recommendedLinkToolbarDialog-buttons-acceptance-group',
 	);
+	if ( fragmentsSize > 1 ) {
+		this.$acceptanceButtonGroup
+			.addClass( 'mw-ge-recommendedLinkToolbarDialog-buttons-acceptance-group__with-nav-buttons' );
+	}
 	this.$acceptanceButtonGroup.append( [
 		this.yesButton.$element,
 		this.noButton.$element,
-		this.reopenRejectionDialogButton.$element
+		this.reopenRejectionDialogButton.$element,
 	] );
 	this.yesButton.connect( this, { click: [ 'onYesButtonClicked' ] } );
 	this.noButton.connect( this, { click: [ 'onNoButtonClicked' ] } );
@@ -586,24 +618,25 @@ RecommendedLinkToolbarDialog.prototype.setupAcceptanceButtons = function () {
  *
  * @return {jQuery}
  */
-RecommendedLinkToolbarDialog.prototype.setupButtons = function () {
+RecommendedLinkToolbarDialog.prototype.setupNavigationButtons = function () {
 	this.prevButton = new OO.ui.ButtonWidget( {
 		icon: 'previous',
 		framed: false,
-		classes: [ 'mw-ge-recommendedLinkToolbarDialog-buttons-prev' ]
+		label: mw.msg( 'growthexperiments-addlink-context-button-prev' ),
+		invisibleLabel: true,
+		classes: [ 'mw-ge-recommendedLinkToolbarDialog-buttons-prev' ],
 	} );
 	this.nextButton = new OO.ui.ButtonWidget( {
 		icon: 'next',
 		framed: false,
 		label: mw.msg( 'growthexperiments-addlink-context-button-next' ),
-		classes: [ 'mw-ge-recommendedLinkToolbarDialog-buttons-next' ]
+		classes: [ 'mw-ge-recommendedLinkToolbarDialog-buttons-next' ],
 	} );
 	this.prevButton.connect( this, { click: [ 'onPrevButtonClicked' ] } );
 	this.nextButton.connect( this, { click: [ 'onNextButtonClicked' ] } );
 	this.$navButtonGroup = $( '<div>' ).addClass( 'mw-ge-recommendedLinkToolbarDialog-buttons-nav-group' );
 	this.$navButtonGroup.append( [ this.prevButton.$element, this.nextButton.$element ] );
-	this.$buttons.append( this.setupAcceptanceButtons(), this.$navButtonGroup );
-	return this.$buttons;
+	return this.$navButtonGroup;
 };
 
 /**
@@ -626,7 +659,7 @@ RecommendedLinkToolbarDialog.prototype.setupProgressIndicators = function ( tota
  */
 RecommendedLinkToolbarDialog.prototype.setupLinkPreview = function () {
 	this.$linkPreview = $( '<div>' ).addClass(
-		'mw-ge-recommendedLinkToolbarDialog-linkPreview'
+		'mw-ge-recommendedLinkToolbarDialog-linkPreview',
 	);
 	return this.$linkPreview;
 };
@@ -652,7 +685,7 @@ RecommendedLinkToolbarDialog.prototype.getLinkForPreview = function () {
 			.attr( {
 				href: titleObj.getUrl(),
 				target: '_blank',
-				rel: 'noopener'
+				rel: 'noopener',
 			} );
 	linkCache.styleElement( title, $link, this.currentDataModel.getFragment() );
 	$link.removeClass( 'mw-selflink' );
@@ -670,13 +703,13 @@ RecommendedLinkToolbarDialog.prototype.getLinkForPreview = function () {
 RecommendedLinkToolbarDialog.prototype.getLinkPreview = function () {
 	const icon = new OO.ui.IconWidget( {
 			icon: 'image',
-			classes: [ 'mw-ge-recommendedLinkToolbarDialog-linkPreview-icon' ]
+			classes: [ 'mw-ge-recommendedLinkToolbarDialog-linkPreview-icon' ],
 		} ),
 		$extract = $( '<span>' ).addClass(
-			'mw-ge-recommendedLinkToolbarDialog-linkPreview-extract'
+			'mw-ge-recommendedLinkToolbarDialog-linkPreview-extract',
 		),
 		$linkPreviewBody = $( '<div>' ).addClass(
-			'mw-ge-recommendedLinkToolbarDialog-linkPreview-body'
+			'mw-ge-recommendedLinkToolbarDialog-linkPreview-body',
 		);
 
 	ve.init.platform.linkCache.get( this.currentDataModel.getAttribute( 'lookupTitle' ) )
@@ -694,7 +727,7 @@ RecommendedLinkToolbarDialog.prototype.getLinkPreview = function () {
 			.append( icon.$element ),
 		$( '<div>' )
 			.addClass( 'mw-ge-recommendedLinkToolbarDialog-linkPreview-content' )
-			.append( [ this.getLinkForPreview(), $extract ] )
+			.append( [ this.getLinkForPreview(), $extract ] ),
 	] );
 
 	this.fetchArticleExtract().then( ( extract ) => {
@@ -707,7 +740,7 @@ RecommendedLinkToolbarDialog.prototype.getLinkPreview = function () {
 /**
  * Render content specific to the current recommendation
  *
- * @throws Will throw an error if there's no DataModel
+ * @throws {Error} Will throw an error if there's no DataModel
  */
 RecommendedLinkToolbarDialog.prototype.updateContentForCurrentRecommendation = function () {
 	if ( !this.currentDataModel ) {
@@ -722,7 +755,9 @@ RecommendedLinkToolbarDialog.prototype.updateContentForCurrentRecommendation = f
  * Update button states based on the current DataModel
  */
 RecommendedLinkToolbarDialog.prototype.updateButtonStates = function () {
-	this.prevButton.setDisabled( this.currentIndex === 0 );
+	if ( this.prevButton ) {
+		this.prevButton.setDisabled( this.currentIndex === 0 );
+	}
 	this.yesButton.setValue( this.currentDataModel.isAccepted() );
 	this.noButton.setValue( this.currentDataModel.isRejected() );
 	this.reopenRejectionDialogButton.toggle( this.currentDataModel.isRejected() );
@@ -741,6 +776,9 @@ RecommendedLinkToolbarDialog.prototype.resetAcceptanceButtonStates = function ()
  * Update states of progress indicator dots based on current progress
  */
 RecommendedLinkToolbarDialog.prototype.updateProgressIndicators = function () {
+	if ( this.linkRecommendationFragments.length < 2 ) {
+		return;
+	}
 	const currentIndex = this.currentIndex;
 	this.$progress.children().each( ( index, indicator ) => {
 		if ( index <= currentIndex ) {
@@ -753,8 +791,8 @@ RecommendedLinkToolbarDialog.prototype.updateProgressIndicators = function () {
 		mw.msg(
 			'growthexperiments-addlink-context-title',
 			mw.language.convertNumber( this.currentIndex + 1 ),
-			mw.language.convertNumber( this.linkRecommendationFragments.length )
-		)
+			mw.language.convertNumber( this.linkRecommendationFragments.length ),
+		),
 	);
 };
 
@@ -768,12 +806,16 @@ RecommendedLinkToolbarDialog.prototype.updateProgressIndicators = function () {
  * - Acceptance buttons separated, center aligned (overflow if aligned w/description)
  */
 RecommendedLinkToolbarDialog.prototype.updateActionButtonsMode = function () {
+	if ( !this.nextButton ) {
+		return;
+	}
 	let acceptanceButtonsWidth = this.acceptanceButtonsWidth || this.$acceptanceButtonGroup.width(),
 		canOverflowStateAlign = false;
+
 	const $nextButton = this.nextButton.$element,
 		nextButtonLeft = $nextButton.position().left,
 		$linkPreviewText = this.$linkPreview.find(
-			'.mw-ge-recommendedLinkToolbarDialog-linkPreview-content'
+			'.mw-ge-recommendedLinkToolbarDialog-linkPreview-content',
 		),
 		linkPreviewTextLeft = this.linkPreviewTextLeft || $linkPreviewText.position().left,
 		imageOffset = 68; // @imageThumbnailSize + @gutterSize in RecommendedLinkToolbarDialog.less
@@ -805,30 +847,7 @@ RecommendedLinkToolbarDialog.prototype.updateActionButtonsMode = function () {
 		this.$navButtonGroup.css( 'margin-top', 0 );
 	}
 
-	this.updateDimensions();
-};
-
-/**
- * Update the bottom padding value on the surface so that
- * scroll-into-view calculations can be adjusted so that both
- * the annotation and the link inspector are in the viewport
- */
-RecommendedLinkToolbarDialog.prototype.updateSurfacePadding = function () {
-	const bottomPadding = Math.max( this.$element.height(), this.minHeight ) + this.scrollOffset,
-		topOffset = this.topOffset || 0;
-	if ( !this.originalTopPadding ) {
-		this.originalTopPadding = this.surface.padding.top;
-	}
-	const topPadding = this.originalTopPadding + topOffset;
-	this.surface.setPadding( { top: topPadding, bottom: bottomPadding } );
-};
-
-/**
- * Update the window size and surface padding in case the window height changes
- */
-RecommendedLinkToolbarDialog.prototype.updateDimensions = function () {
 	this.updateSize();
-	this.updateSurfacePadding();
 };
 
 /**
@@ -845,13 +864,13 @@ RecommendedLinkToolbarDialog.prototype.showSkippedAllDialog = function () {
 		actions: [
 			{
 				action: 'accept',
-				label: mw.message( 'growthexperiments-addlink-skip-accept' ).text()
+				label: mw.message( 'growthexperiments-addlink-skip-accept' ).text(),
 			},
 			{
 				action: 'reject',
-				label: mw.message( 'growthexperiments-addlink-skip-reject' ).text()
-			}
-		]
+				label: mw.message( 'growthexperiments-addlink-skip-reject' ).text(),
+			},
+		],
 	} ).closed.then( ( data ) => {
 		if ( data && data.action === 'accept' ) {
 			this.logger.log( 'confirm_skip_all_suggestions', {}, logMetadata );
@@ -874,13 +893,13 @@ RecommendedLinkToolbarDialog.prototype.showSkippedAllDialog = function () {
  * @param {Object} attributes
  */
 RecommendedLinkToolbarDialog.prototype.updateAnnotation = function (
-	fragment, annotation, attributes
+	fragment, annotation, attributes,
 ) {
 	fragment.annotateContent( 'clear', annotation );
 	this.isUpdatingCurrentRecommendation = true;
 	fragment.annotateContent( 'set', new DmRecommendedLinkAnnotation( $.extend( true,
 		annotation.getElement(),
-		{ attributes: attributes }
+		{ attributes: attributes },
 	) ) );
 };
 
@@ -898,7 +917,7 @@ RecommendedLinkToolbarDialog.prototype.setLastAnnotationState = function ( isDes
 	AnnotationAnimation.setLastState( {
 		oldState: annotation.getState(),
 		recommendationWikitextOffset: annotation.getAttribute( 'recommendationWikitextOffset' ),
-		isDeselect: isDeselect
+		isDeselect: isDeselect,
 	} );
 	this.shouldSkipAutoAdvance = isDeselect;
 };
@@ -941,7 +960,7 @@ RecommendedLinkToolbarDialog.prototype.getSuggestionLogActionData = function () 
 		probability_score: suggestion.score,
 		series_number: this.getIndexForModel( this.currentDataModel ),
 		rejection_reason: this.currentDataModel.isRejected() ? this.currentDataModel.getRejectionReason() : '',
-		acceptance_state: acceptanceState
+		acceptance_state: acceptanceState,
 		/* eslint-enable camelcase */
 	};
 };
@@ -952,31 +971,29 @@ RecommendedLinkToolbarDialog.prototype.getSuggestionLogActionData = function () 
  * @return {jQuery.Promise} Promise that resolves when the extract has been fetched
  */
 RecommendedLinkToolbarDialog.prototype.fetchArticleExtract = function () {
-	const promise = $.Deferred(),
+	const deferred = $.Deferred(),
 		apiUrlBase = SUGGESTED_EDITS_CONFIG.GERestbaseUrl,
 		title = this.currentDataModel.getAttribute( 'lookupTitle' );
 
 	if ( this.extracts[ title ] ) {
-		promise.resolve( this.extracts[ title ] );
-		return promise;
+		return deferred.resolve( this.extracts[ title ] ).promise();
 	}
 
 	if ( !apiUrlBase ) {
-		promise.reject();
-		return promise;
+		return deferred.reject().promise();
 	}
 
 	$.get( apiUrlBase + '/page/summary/' + formatTitle( title ) ).then( ( data ) => {
 		if ( data && data.extract ) {
 			this.extracts[ title ] = data.extract;
-			promise.resolve( data.extract );
+			deferred.resolve( data.extract );
 		} else {
-			promise.reject();
+			deferred.reject();
 		}
 	} ).catch( () => {
-		promise.reject();
+		deferred.reject();
 	} );
-	return promise;
+	return deferred.promise();
 };
 
 module.exports = RecommendedLinkToolbarDialog;

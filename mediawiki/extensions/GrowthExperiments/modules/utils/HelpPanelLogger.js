@@ -59,10 +59,10 @@
 			{
 				action: action,
 				/* eslint-disable-next-line camelcase */
-				action_data: Utils.serializeActionData( data )
+				action_data: Utils.serializeActionData( data ),
 			},
 			this.getMetaData(),
-			metadataOverride
+			metadataOverride,
 		);
 
 		mw.track( 'event.HelpPanel', eventData );
@@ -74,7 +74,7 @@
 		const defaultEditor = this.getEditor(),
 			defaultContext = this.getContext(),
 			editingModes = [ 'editing', 'postedit', 'postedit-nonsuggested' ],
-			readingMode = ( editingModes.indexOf( defaultContext ) === -1 );
+			readingMode = ( !editingModes.includes( defaultContext ) );
 		/* eslint-disable camelcase */
 		return {
 			user_id: mw.user.getId(),
@@ -89,7 +89,7 @@
 			user_can_edit: mw.config.get( 'wgIsProbablyEditable' ),
 			page_protection: this.getPageRestrictions(),
 			session_token: mw.user.sessionId(),
-			help_panel_session_id: this.helpPanelSessionId
+			help_panel_session_id: this.helpPanelSessionId,
 		};
 		/* eslint-enable camelcase */
 	};
@@ -101,7 +101,8 @@
 	 * @return {boolean}
 	 */
 	HelpPanelLogger.prototype.isEditing = function () {
-		const uri = new mw.Uri();
+		const url = new URL( window.location.href );
+		const searchParams = url.searchParams;
 
 		if ( mw.config.get( 'wgCanonicalSpecialPageName' ) ) {
 			// Good enough for now; at some point special editing interfaces like ContentTranslate
@@ -110,7 +111,9 @@
 		} else if ( this.isMobile ) {
 			return Boolean( this.editor );
 		} else {
-			return Boolean( uri.query.veaction ) || uri.query.action === 'edit' || uri.query.action === 'submit';
+			return Boolean( searchParams.get( 'veaction' ) ) ||
+				searchParams.get( 'action' ) === 'edit' ||
+				searchParams.get( 'action' ) === 'submit';
 		}
 	};
 
@@ -217,7 +220,7 @@
 				const restrictions = mw.config.get(
 					'wgRestriction' +
 					action[ 0 ].toUpperCase() +
-					action.slice( 1 ).toLowerCase()
+					action.slice( 1 ).toLowerCase(),
 				);
 				if ( restrictions && restrictions.length ) {
 					return action + '=' + restrictions.join( ',' );

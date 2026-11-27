@@ -143,7 +143,7 @@ StructuredTaskArticleTarget.prototype.initAutosave = function () {
  * @return {jQuery.Promise} Promise that resolves when the user has confirmed or cancelled
  */
 StructuredTaskArticleTarget.prototype.confirmSwitchEditMode = function ( editMode ) {
-	const promise = $.Deferred(),
+	const deferred = $.Deferred(),
 		confirmationDialogPromise = this.surface.dialogs.openWindow( 'editModeConfirmation' );
 
 	confirmationDialogPromise.opening.then( () => {
@@ -151,7 +151,7 @@ StructuredTaskArticleTarget.prototype.confirmSwitchEditMode = function ( editMod
 			'impression',
 			'',
 			// eslint-disable-next-line camelcase
-			{ active_interface: 'editmode_confirmation_dialog' }
+			{ active_interface: 'editmode_confirmation_dialog' },
 		);
 	} );
 
@@ -161,13 +161,13 @@ StructuredTaskArticleTarget.prototype.confirmSwitchEditMode = function ( editMod
 			isConfirm ? 'editmode_confirm_switch' : 'editmode_cancel_switch',
 			/* eslint-disable camelcase */
 			isConfirm ? { selected_mode: editMode } : {},
-			{ active_interface: 'editmode_confirmation_dialog' }
+			{ active_interface: 'editmode_confirmation_dialog' },
 			/* eslint-enable camelcase */
 		);
-		return promise.resolve( isConfirm );
+		return deferred.resolve( isConfirm );
 	} );
 
-	return promise;
+	return deferred.promise();
 };
 
 /**
@@ -192,16 +192,13 @@ StructuredTaskArticleTarget.prototype.switchToVisualWithSuggestions = function (
 		$( window ).off( 'beforeunload' );
 	}
 
-	const uri = new mw.Uri(),
-		fragment = uri.fragment;
+	const url = new URL( window.location.href );
 	this.hasSwitched = true;
 	// Only include veaction so VE is loaded regardless of the default editor preference.
-	delete uri.query.action;
-	uri.query.veaction = 'edit';
-	uri.query.hideMachineSuggestions = 1;
-	// uri.toString encodes fragment by default, breaking fragments such as "/editor/all".
-	uri.fragment = '';
-	location.href = uri.toString() + ( fragment ? '#' + fragment : '' );
+	url.searchParams.delete( 'action' );
+	url.searchParams.set( 'veaction', 'edit' );
+	url.searchParams.set( 'hideMachineSuggestions', '1' );
+	location.href = url.toString();
 };
 
 /**
@@ -276,7 +273,7 @@ StructuredTaskArticleTarget.prototype.saveErrorNewUser = function ( username ) {
  * @return {jQuery.Promise} Promise that resolves when the user has confirmed or cancelled
  */
 StructuredTaskArticleTarget.prototype.confirmLeavingSuggestionsMode = function () {
-	const promise = $.Deferred();
+	const deferred = $.Deferred();
 	const abandonEditDialogPromise = this.getSurface().dialogs.openWindow( 'abandonedit' ),
 		// eslint-disable-next-line camelcase
 		metadataOverride = { active_interface: 'abandonedit_dialog' };
@@ -288,12 +285,12 @@ StructuredTaskArticleTarget.prototype.confirmLeavingSuggestionsMode = function (
 	abandonEditDialogPromise.closed.then( ( data ) => {
 		if ( data && data.action === 'discard' ) {
 			this.logger.log( 'discard', '', metadataOverride );
-			return promise.resolve();
+			return deferred.resolve().promise();
 		}
 		this.logger.log( 'keep', '', metadataOverride );
-		return promise.reject();
+		return deferred.reject();
 	} );
-	return promise;
+	return deferred.promise();
 };
 
 /**
@@ -309,7 +306,7 @@ StructuredTaskArticleTarget.prototype.teardownWithoutPrompt = null;
 StructuredTaskArticleTarget.prototype.tryTeardown = function ( noPrompt, trackMechanism ) {
 	if ( this.edited || this.hasReviewedSuggestions() ) {
 		return this.constructor.super.super.prototype.tryTeardown.call(
-			this, noPrompt, trackMechanism
+			this, noPrompt, trackMechanism,
 		);
 	}
 	// Show a confirmation when the user hasn't made any edits (T300582)
@@ -325,18 +322,24 @@ StructuredTaskArticleTarget.prototype.tryTeardown = function ( noPrompt, trackMe
 StructuredTaskArticleTarget.prototype.saveComplete = function ( data ) {
 	this.emit( 'save', data );
 	this.hasSaved = true;
-	suggestedEditSession.onStructuredTaskSaved();
+	suggestedEditSession.onStructuredTaskSaved( this.madeNullEdit );
 
-	const uri = new mw.Uri();
-	delete uri.query.gesuggestededit;
-	delete uri.query.veaction;
+	const url = new URL( window.location.href );
+	url.searchParams.delete( 'gesuggestededit' );
+	url.searchParams.delete( 'veaction' );
+
+	// Explicitly clear the hash/fragment to prevent VE re-initialization
+	// VE uses fragments like #/editor/all to maintain editor state
+	// We must clear this when exiting the editor to ensure a clean return to reading mode
+	url.hash = '';
+
 	if ( this.saveDialog && this.saveDialog.isOpened() ) {
 		this.saveDialog.close();
 	}
 	// Skip default warnings when leaving the page
 	$( window ).off( 'beforeunload' );
 	window.onbeforeunload = null;
-	window.location.href = uri.toString();
+	window.location.href = url.toString();
 };
 
 module.exports = StructuredTaskArticleTarget;

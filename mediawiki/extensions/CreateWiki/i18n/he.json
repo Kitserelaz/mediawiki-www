@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"A100Star",
 			"Amire80",
 			"Erelon",
 			"Guycn2",
@@ -54,7 +55,7 @@
 	"createwiki-label-sitename": "שם האתר:",
 	"createwiki-label-statuschangecomment": "הסיבה לפעולה הזאת:",
 	"createwiki-no-changes": "לא נעשו שינויים.",
-	"createwiki-request-locked": "הבקשה הזאת ננעלה. אי אפשר לערוך אותה או להוסיף לה הערות.",
+	"createwiki-request-locked": "הבקשה הזאת ננעלה. אי־אפשר לערוך אותה או להוסיף לה הערות.",
 	"createwiki-request-updated": "בבקשה עודכנה.",
 	"createwiki-rest-disabled": "הגישה ל־REST API בשביל CreateWiki הושבתה בהגדרות של הוויקי הזה.",
 	"createwiki-rest-mustlogin": "צריך להיכנס לחשבון כדי לבצע את הפעולה הזאת.",
@@ -118,8 +119,8 @@
 	"requestwiki-ai-decision-moredetails": "הבקשה הזאת דורשת פרטים נוספים לפני שיהיה אפשר להעריך אותה יותר, מסיבה הבאה: \"$1\"",
 	"requestwiki-ai-decision-onhold": "הבקשה הזאת לא הייתה יכולה להיות מאושרת אוטומטית ודורשת סקירה ידנית מהסיבה הבאה: \"$1\"",
 	"requestwiki-ai-error": "לא היה אפשר להעריך את הבקשה הזאת באופן אוטומטי. נא להמתין לסקירה אנושית.",
-	"requestwiki-ai-error-reason": "לא היה אפשר להעריך את הבקשה הזאת באופן אוטומטי, והסיבה נרשמה ביומן. נא להמתין לסקירה אנושית.",
 	"requestwiki-ai-error-history-reason": "הוחזרה השגיאה הבאה בעת הערכת הבקשה באמצעות בינה מלאכותית:\n\n\"$1\"",
+	"requestwiki-ai-error-reason": "לא היה אפשר להעריך את הבקשה הזאת באופן אוטומטי, והסיבה נרשמה ביומן. נא להמתין לסקירה אנושית.",
 	"requestwiki-edit-success": "השינויים שלך לבקשת הוויקי הזאת נשמרו בהצלחה.",
 	"requestwiki-error-emailnotconfirmed": "הדוא\"ל שלך לא אושר. כדי לבקש יצירת אתרי ויקי, נא [[Special:ChangeEmail|לאשר דוא\"ל]] תחילה.",
 	"requestwiki-error-invalidcomment": "בקשת הוויקי שלך מכילה תו בלתי־תקין. נא לתקן את זה ולנסות שוב.",

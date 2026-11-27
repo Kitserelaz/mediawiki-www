@@ -23,12 +23,16 @@ use Wikimedia\ObjectCache\WANObjectCache;
 class AddImageSubmissionHandlerTest extends MediaWikiUnitTestCase {
 
 	public function testValidateAccepted() {
+		if ( !interface_exists( WeightedTagsUpdater::class ) ) {
+			$this->markTestSkipped( 'CirrusSearch extension is not installed.' );
+		}
+
 		$weightedTagsUpdaterMock = $this->createMock( WeightedTagsUpdater::class );
 		$userIdentityUtilsMock = $this->createMock( UserIdentityUtils::class );
 		$userIdentityUtilsMock->method( 'isNamed' )->willReturn( true );
 		$imageTaskType = new ImageRecommendationTaskType( 'image', TaskType::DIFFICULTY_EASY );
 		$handler = new AddImageSubmissionHandler(
-			static fn () => $weightedTagsUpdaterMock,
+			$weightedTagsUpdaterMock,
 			$this->createMock( LocalSearchTaskSuggesterFactory::class ),
 			$this->createMock( NewcomerTasksUserOptionsLookup::class ),
 			$this->createMock( WANObjectCache::class ),
@@ -43,21 +47,21 @@ class AddImageSubmissionHandlerTest extends MediaWikiUnitTestCase {
 		$this->assertStatusMessage( 'apierror-growthexperiments-addimage-handler-accepted-missing', $status );
 
 		$status = $handler->validate( $imageTaskType, $page, $user, 1, [
-			'accepted' => null
+			'accepted' => null,
 		] );
 		$this->assertInstanceOf( StatusValue::class, $status );
 		$this->assertStatusMessage( 'apierror-growthexperiments-addimage-handler-accepted-wrongtype', $status );
 
 		$status = $handler->validate( $imageTaskType, $page, $user, 1, [
 			'accepted' => false,
-			'reasons' => [ 1 ]
+			'reasons' => [ 1 ],
 		] );
 		$this->assertInstanceOf( StatusValue::class, $status );
 		$this->assertStatusMessage( 'apierror-growthexperiments-addimage-handler-reason-invaliditem', $status );
 
 		$status = $handler->validate( $imageTaskType, $page, $user, 1, [
 			'accepted' => false,
-			'reasons' => [ 'invalid-reason' ]
+			'reasons' => [ 'invalid-reason' ],
 		] );
 		$this->assertInstanceOf( StatusValue::class, $status );
 		$this->assertStatusMessage( 'apierror-growthexperiments-addimage-handler-reason-invaliditem', $status );
@@ -65,7 +69,7 @@ class AddImageSubmissionHandlerTest extends MediaWikiUnitTestCase {
 		$status = $handler->validate( $imageTaskType, $page, $user, 1, [
 			'accepted' => true,
 			'reasons' => [],
-			'caption' => 'fail'
+			'caption' => 'fail',
 		] );
 		$this->assertInstanceOf( StatusValue::class, $status );
 		$this->assertStatusMessage( 'growthexperiments-addimage-caption-warning-tooshort', $status );
@@ -113,6 +117,10 @@ class AddImageSubmissionHandlerTest extends MediaWikiUnitTestCase {
 	}
 
 	public function testValidateAcceptedSectionImage() {
+		if ( !interface_exists( WeightedTagsUpdater::class ) ) {
+			$this->markTestSkipped( 'CirrusSearch extension is not installed.' );
+		}
+
 		$weightedTagsUpdaterMock = $this->createMock( WeightedTagsUpdater::class );
 		$sectionImageTaskType = new SectionImageRecommendationTaskType(
 			'section-image-recommendation',
@@ -123,7 +131,7 @@ class AddImageSubmissionHandlerTest extends MediaWikiUnitTestCase {
 			->method( 'isNamed' )
 			->willReturn( true );
 		$handler = new AddImageSubmissionHandler(
-			static fn () => $weightedTagsUpdaterMock,
+			$weightedTagsUpdaterMock,
 			$this->createMock( LocalSearchTaskSuggesterFactory::class ),
 			$this->createMock( NewcomerTasksUserOptionsLookup::class ),
 			$this->createMock( WANObjectCache::class ),
@@ -181,7 +189,7 @@ class AddImageSubmissionHandlerTest extends MediaWikiUnitTestCase {
 			'caption' => 'succeed',
 			'filename' => '',
 			'sectionTitle' => 'Some section title',
-			'sectionNumber' => 'wrongtype'
+			'sectionNumber' => 'wrongtype',
 		] );
 		$this->assertInstanceOf( StatusValue::class, $status );
 		$this->assertStatusMessage(
@@ -195,7 +203,7 @@ class AddImageSubmissionHandlerTest extends MediaWikiUnitTestCase {
 			'caption' => 'succeed',
 			'filename' => '',
 			'sectionTitle' => 'Some section title',
-			'sectionNumber' => 3
+			'sectionNumber' => 3,
 		] );
 		$this->assertInstanceOf( StatusValue::class, $status );
 		$this->assertArrayEquals( [ true, [], '', 'Some section title', 3 ], $status->getValue() );

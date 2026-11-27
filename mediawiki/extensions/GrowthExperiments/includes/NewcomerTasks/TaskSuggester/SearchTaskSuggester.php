@@ -12,17 +12,18 @@ use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeHandlerRegistry;
 use GrowthExperiments\NewcomerTasks\Topic\Topic;
 use GrowthExperiments\Util;
-use ISearchResultSet;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Message\Message;
+use MediaWiki\Page\LinkBatchFactory;
+use MediaWiki\Search\ISearchResultSet;
+use MediaWiki\Search\SearchResult;
 use MediaWiki\Status\Status;
 use MediaWiki\User\UserIdentity;
 use MultipleIterator;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use Psr\Log\NullLogger;
-use SearchResult;
 use StatusValue;
+use Wikimedia\Message\ListType;
 
 /**
  * Shared functionality for local and remote search.
@@ -130,6 +131,7 @@ abstract class SearchTaskSuggester implements TaskSuggester, LoggerAwareInterfac
 	 * @param int|null $offset
 	 * @param array $options Same as in suggest().
 	 * @return TaskSet|StatusValue
+	 * @suppress PhanUnusedPrivateMethodParameter $offset
 	 */
 	private function doSuggest(
 		?array $pageIds,
@@ -180,7 +182,7 @@ abstract class SearchTaskSuggester implements TaskSuggester, LoggerAwareInterfac
 		if ( !$taskTypes ) {
 			return StatusValue::newFatal(
 				wfMessage( 'growthexperiments-newcomertasks-invalid-tasktype',
-					Message::listParam( $invalidTaskTypes, 'comma' )
+					Message::listParam( $invalidTaskTypes, ListType::COMMA )
 				)
 			);
 		}
@@ -214,9 +216,9 @@ abstract class SearchTaskSuggester implements TaskSuggester, LoggerAwareInterfac
 		$taskCount = 0;
 		$suggestions = [];
 		foreach ( $matchIterator as $matchSlice ) {
+			/** @var SearchResult $match */
 			foreach ( array_filter( $matchSlice ) as $queryId => $match ) {
 				// TODO: Filter out pages that are protected.
-				/** @var $match SearchResult */
 				$query = $queries[$queryId];
 				$taskType = $query->getTaskType();
 				$suggestions[] = $this->taskTypeHandlerRegistry->getByTaskType( $taskType )
@@ -268,12 +270,11 @@ abstract class SearchTaskSuggester implements TaskSuggester, LoggerAwareInterfac
 			$key = $task->getTitle()->getNamespace() . ':' . $task->getTitle()->getDBkey();
 			$taskMap[$key] = $task;
 		}
-
 		foreach ( $targetTasks as $task ) {
 			$key = $task->getTitle()->getNamespace() . ':' . $task->getTitle()->getDBkey();
 			$sourceTask = $taskMap[$key] ?? null;
 			if ( $sourceTask ) {
-				$task->setTopics( $sourceTask->getTopics(), $sourceTask->getTopicScores() );
+				$task->setTopics( $sourceTask->getTopics() );
 			}
 		}
 	}

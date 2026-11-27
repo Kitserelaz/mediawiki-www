@@ -7,7 +7,7 @@ use MediaWiki\Html\Html;
 use MediaWiki\Message\Message;
 use MediaWiki\SpecialPage\FormSpecialPage;
 use Miraheze\CreateWiki\ConfigNames;
-use Miraheze\CreateWiki\Helpers\WikiCategoryLabels;
+use WikiOasis\WikiOasisMagic\Helpers\WikiCategoryLabels;
 use Miraheze\CreateWiki\Services\CreateWikiDatabaseUtils;
 use Miraheze\CreateWiki\Services\WikiManagerFactory;
 use Miraheze\CreateWiki\Services\CreateWikiValidator;

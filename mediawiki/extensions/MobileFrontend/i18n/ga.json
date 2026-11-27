@@ -1,6 +1,7 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aindriu80",
 			"Kscanne",
 			"MinecraftAustralia",
 			"Smirkybec",
@@ -8,7 +9,6 @@
 			"පසිඳු කාවින්ද"
 		]
 	},
-	"mobile-frontend-clear-search": "Glan",
 	"mobile-frontend-copyright": "Tá an t-ábhar seo ar fáil faoi $1 mura luaitear a mhalairt.",
 	"mobile-frontend-editor-blocked-drawer-help": "Sonraí",
 	"mobile-frontend-editor-cancel": "Cealaigh",
@@ -29,7 +29,7 @@
 	"mobile-frontend-save-settings": "Sábháil",
 	"mobile-frontend-terms-text": "Téarmaí Úsáide",
 	"mobile-frontend-view": "Amharc móibíleach",
-	"mobile-frontend-view-desktop": "Leagan deisce",
+	"mobile-frontend-view-desktop": "Radharc deisce",
 	"mobile-frontend-watchlist-cta-button-login": "Logáil isteach",
 	"mobile-frontend-watchlist-cta-button-signup": "Cláraigh",
 	"mobile-frontend-watchlist-filter-articles": "Leathanaigh",
@@ -38,6 +38,5 @@
 	"mobile-frontend-watchlist-more": "tuilleadh",
 	"mobile-frontend-user-page-describe-yourself-editors": "eagarthóirí",
 	"mobile-frontend-loading-message": "Ag lódáil...",
-	"mobile-frontend-mobile-option-MFEnableFontChanger": "Clómhéid",
 	"mobile-frontend-mobile-option-amc-learn-more": "Foghlaim tuilleadh"
 }

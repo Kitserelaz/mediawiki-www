@@ -3,25 +3,26 @@
 namespace GrowthExperiments\HomepageModules;
 
 use DateInterval;
-use GrowthExperiments\ExperimentUserManager;
 use GrowthExperiments\HelpPanel;
 use GrowthExperiments\HelpPanel\QuestionRecord;
 use GrowthExperiments\HelpPanel\QuestionStoreFactory;
 use GrowthExperiments\MentorDashboard\MentorTools\MentorStatusManager;
-use GrowthExperiments\Mentorship\MentorManager;
+use GrowthExperiments\Mentorship\IMentorManager;
 use GrowthExperiments\Mentorship\Provider\MentorProvider;
+use LogicException;
 use MediaWiki\Cache\GenderCache;
 use MediaWiki\Config\Config;
 use MediaWiki\Config\ConfigException;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Html\Html;
-use MediaWiki\MediaWikiServices;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\User\User;
+use MediaWiki\User\UserEditTracker;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\Utils\MWTimestamp;
-use MessageLocalizer;
 use OOUI\ButtonWidget;
 use OOUI\IconWidget;
+use Wikimedia\Assert\Assert;
 
 /**
  * This is the "Mentorship" module. It shows your mentor and
@@ -33,41 +34,29 @@ class Mentorship extends BaseModule {
 	public const MENTORSHIP_HELPPANEL_QUESTION_TAG = 'mentorship panel question';
 	public const QUESTION_PREF = 'growthexperiments-mentor-questions';
 
-	/** @var UserIdentity */
-	private $mentor;
+	private ?UserIdentity $mentor = null;
 
 	/** @var QuestionRecord[] */
-	private $recentQuestions = [];
+	private array $recentQuestions = [];
+	private IMentorManager $mentorManager;
 
-	/** @var MentorManager */
-	private $mentorManager;
+	private MentorStatusManager $mentorStatusManager;
+	private GenderCache $genderCache;
+	private UserEditTracker $userEditTracker;
 
-	/** @var MentorStatusManager */
-	private $mentorStatusManager;
-
-	/** @var GenderCache */
-	private $genderCache;
-
-	/**
-	 * @param IContextSource $context
-	 * @param Config $wikiConfig
-	 * @param ExperimentUserManager $experimentUserManager
-	 * @param MentorManager $mentorManager
-	 * @param MentorStatusManager $mentorStatusManager
-	 * @param GenderCache $genderCache
-	 */
 	public function __construct(
 		IContextSource $context,
 		Config $wikiConfig,
-		ExperimentUserManager $experimentUserManager,
-		MentorManager $mentorManager,
+		IMentorManager $mentorManager,
 		MentorStatusManager $mentorStatusManager,
-		GenderCache $genderCache
+		GenderCache $genderCache,
+		UserEditTracker $userEditTracker
 	) {
-		parent::__construct( 'mentorship', $context, $wikiConfig, $experimentUserManager );
+		parent::__construct( 'mentorship', $context, $wikiConfig );
 		$this->mentorManager = $mentorManager;
 		$this->mentorStatusManager = $mentorStatusManager;
 		$this->genderCache = $genderCache;
+		$this->userEditTracker = $userEditTracker;
 	}
 
 	/**
@@ -75,13 +64,14 @@ class Mentorship extends BaseModule {
 	 * @param UserIdentity $mentor The mentoring user.
 	 * @param User $mentee The mentored user (for time formatting).
 	 * @param MessageLocalizer $messageLocalizer
+	 * @param UserEditTracker $userEditTracker
 	 * @return string
 	 */
 	public static function getMentorLastActive(
-		UserIdentity $mentor, User $mentee, MessageLocalizer $messageLocalizer
+		UserIdentity $mentor, User $mentee,
+		MessageLocalizer $messageLocalizer, UserEditTracker $userEditTracker
 	) {
-		$editTimestamp = new MWTimestamp( MediaWikiServices::getInstance()->getUserEditTracker()
-			->getLatestEditTimestamp( $mentor ) );
+		$editTimestamp = new MWTimestamp( $userEditTracker->getLatestEditTimestamp( $mentor ) );
 		$editTimestamp->offsetForUser( $mentee );
 		$editDate = $editTimestamp->format( 'Ymd' );
 
@@ -126,36 +116,33 @@ class Mentorship extends BaseModule {
 	/**
 	 * @inheritDoc
 	 */
-	protected function buildSection( $name, $content, $tag = 'div' ) {
+	protected function buildSection( string $name, string $content, string $tag = 'div' ): string {
 		if ( $name === 'header' && $this->getMode() === self::RENDER_DESKTOP ) {
 			return Html::rawElement(
 				'div',
 				[ 'class' => 'growthexperiments-homepage-mentorship-header-wrapper' ],
 				implode( "\n", [
 					parent::buildSection( $name, $content, $tag ),
-					$this->getEllipsisWidget()
+					$this->getEllipsisWidget(),
 				] )
 			);
 		}
 		return parent::buildSection( $name, $content, $tag );
 	}
 
-	/**
-	 * @return string
-	 */
-	private function getEllipsisWidget() {
+	private function getEllipsisWidget(): string {
 		// NOTE: This will be replaced with ButtonMenuSelectWidget in EllipsisMenu.js on the
 		// client side.
 		return Html::rawElement(
 			'div',
 			[ 'class' => 'growthexperiments-homepage-mentorship-ellipsis' ],
-			new ButtonWidget( [
+			( new ButtonWidget( [
 				'id' => 'mw-ge-homepage-mentorship-ellipsis',
 				'icon' => 'ellipsis',
 				'framed' => false,
 				'invisibleLabel' => true,
 				'infusable' => true,
-			] )
+			] ) )->toString(),
 		);
 	}
 
@@ -254,7 +241,6 @@ class Mentorship extends BaseModule {
 	 * @inheritDoc
 	 */
 	protected function getActionData() {
-		$editTracker = MediaWikiServices::getInstance()->getUserEditTracker();
 		$archivedQuestions = 0;
 		$unarchivedQuestions = 0;
 		foreach ( $this->getRecentQuestions() as $questionRecord ) {
@@ -268,10 +254,10 @@ class Mentorship extends BaseModule {
 		return array_merge(
 			parent::getActionData(),
 			[
-				'mentorEditCount' => $editTracker->getUserEditCount( $this->getMentor() ),
-				'mentorLastActive' => $editTracker->getLatestEditTimestamp( $this->getMentor() ),
+				'mentorEditCount' => $this->userEditTracker->getUserEditCount( $this->getMentor() ),
+				'mentorLastActive' => $this->userEditTracker->getLatestEditTimestamp( $this->getMentor() ),
 				'archivedQuestions' => $archivedQuestions,
-				'unarchivedQuestions' => $unarchivedQuestions
+				'unarchivedQuestions' => $unarchivedQuestions,
 			]
 		);
 	}
@@ -282,11 +268,11 @@ class Mentorship extends BaseModule {
 	protected function canRender() {
 		return $this->mentorManager->getMentorshipStateForUser(
 			$this->getUser()
-		) === MentorManager::MENTORSHIP_ENABLED &&
+		) === IMentorManager::MENTORSHIP_ENABLED &&
 			$this->mentorManager->getEffectiveMentorForUserSafe( $this->getUser() ) !== null;
 	}
 
-	private function getMentorUsernameElement( $link ) {
+	private function getMentorUsernameElement( bool $link ): string {
 		$iconElement = new IconWidget( [ 'icon' => 'mentor' ] );
 		$dir = $this->getContext()->getLanguage()->getDir();
 		$usernameElement = Html::rawElement(
@@ -300,7 +286,7 @@ class Mentorship extends BaseModule {
 				[
 					'href' => User::newFromIdentity( $this->getMentor() )->getUserPage()->getLinkURL(),
 					'data-link-id' => 'mentor-userpage',
-					'class' => 'growthexperiments-homepage-mentorship-userlink-link'
+					'class' => 'growthexperiments-homepage-mentorship-userlink-link',
 				],
 				$iconElement . $usernameElement
 			);
@@ -312,41 +298,51 @@ class Mentorship extends BaseModule {
 			);
 		}
 		return Html::rawElement( 'div', [
-			'class' => 'growthexperiments-homepage-mentorship-userlink'
+			'class' => 'growthexperiments-homepage-mentorship-userlink',
 		], $content );
 	}
 
-	private function getMentorInfo() {
+	private function getMentorInfo(): string {
 		return Html::rawElement(
 			'div',
 			[
-				'class' => 'growthexperiments-homepage-mentorship-mentorinfo'
+				'class' => 'growthexperiments-homepage-mentorship-mentorinfo',
 			],
 			$this->getEditCount() . ' &bull; ' . $this->getLastActive()
 		);
 	}
 
-	private function getEditCount() {
+	private function getEditCount(): string {
+		$mentorEditCount = $this->userEditTracker->getUserEditCount( $this->getMentor() );
+		if ( !is_int( $mentorEditCount ) ) {
+			throw new LogicException(
+				'UserEditTracker returned non-integer for user ' . $this->getMentor()->getName()
+			);
+		}
+
 		$text = $this->getContext()
 			->msg( 'growthexperiments-homepage-mentorship-mentor-edits' )
-			->numParams( MediaWikiServices::getInstance()->getUserEditTracker()
-				->getUserEditCount( $this->getMentor() ) )
+			->numParams( $mentorEditCount )
 			->text();
 		return Html::element( 'span', [
-			'class' => 'growthexperiments-homepage-mentorship-editcount'
+			'class' => 'growthexperiments-homepage-mentorship-editcount',
 		], $text );
 	}
 
-	private function getLastActive() {
+	private function getLastActive(): string {
 		$text = self::getMentorLastActive( $this->getMentor(), $this->getContext()->getUser(),
-			$this->getContext() );
+			$this->getContext(), $this->userEditTracker );
 		return Html::element( 'span', [
-			'class' => 'growthexperiments-homepage-mentorship-lastactive'
+			'class' => 'growthexperiments-homepage-mentorship-lastactive',
 		], $text );
 	}
 
-	private function getIntroText() {
-		$mentor = $this->mentorManager->getMentorForUser( $this->getContext()->getUser() );
+	private function getIntroText(): string {
+		$mentor = $this->mentorManager->getMentorForUserSafe( $this->getContext()->getUser() );
+		Assert::invariant(
+			$mentor !== null,
+			'Mentorship module rendered despite canRender() returning false'
+		);
 
 		$introText = $this->getContext()->getLanguage()->truncateForVisual(
 			$mentor->getIntroText(),
@@ -366,7 +362,7 @@ class Mentorship extends BaseModule {
 		);
 	}
 
-	private function getQuestionButton() {
+	private function getQuestionButton(): ButtonWidget {
 		return new ButtonWidget( [
 			'id' => 'mw-ge-homepage-mentorship-cta',
 			'classes' => [ 'growthexperiments-homepage-mentorship-cta' ],
@@ -391,17 +387,16 @@ class Mentorship extends BaseModule {
 	 */
 	private function getMentor() {
 		if ( !$this->mentor ) {
-			$mentor = $this->mentorManager->getMentorForUserSafe( $this->getContext()->getUser() );
-			if ( $mentor ) {
-				$this->mentor = $mentor->getUserIdentity();
-			} else {
+			$this->mentor = $this->mentorManager->getMentorForUserSafe( $this->getContext()->getUser() )
+				?->getUserIdentity();
+			if ( !$this->mentor ) {
 				return false;
 			}
 		}
 		return $this->mentor;
 	}
 
-	private function getRecentQuestionsSection() {
+	private function getRecentQuestionsSection(): string {
 		$recentQuestionFormatter = new RecentQuestionsFormatter(
 			$this->getContext(),
 			$this->getRecentQuestions(),
@@ -410,7 +405,7 @@ class Mentorship extends BaseModule {
 		return $recentQuestionFormatter->format();
 	}
 
-	private function getRecentQuestions() {
+	private function getRecentQuestions(): array {
 		if ( count( $this->recentQuestions ) ) {
 			return $this->recentQuestions;
 		}
@@ -421,7 +416,7 @@ class Mentorship extends BaseModule {
 		return $this->recentQuestions;
 	}
 
-	private function getAboutMentorshipElement() {
+	private function getAboutMentorshipElement(): string {
 		return Html::rawElement(
 			'p',
 			[ 'class' => 'growthexperiments-homepage-mentorship-about' ],
@@ -441,7 +436,7 @@ class Mentorship extends BaseModule {
 						'href' => '#',
 					],
 					$this->msg( 'growthexperiments-homepage-mentorship-learn-more' )->text()
-				)
+				),
 			] )
 		);
 	}
@@ -458,8 +453,6 @@ class Mentorship extends BaseModule {
 
 	/**
 	 * Get the gender of the mentor
-	 *
-	 * @return string
 	 */
 	private function getMentorGender(): string {
 		return $this->getUserGender( $this->getMentor() );

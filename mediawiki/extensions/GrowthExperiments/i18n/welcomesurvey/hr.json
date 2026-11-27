@@ -1,11 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
+			"Aca",
 			"BadDog",
 			"Bugoslav",
 			"Ivi104",
-			"Ponor",
-			"Aca"
+			"Ponor"
 		]
 	},
 	"welcomesurvey": "{{GENDER:$1|Dobro došli}}, $1!",

@@ -1,18 +1,18 @@
 <?php
 
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use MediaWiki\Html\Html;
 use MediaWiki\Language\Language;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Message\Message;
 use MediaWiki\Page\PageReference;
 use MediaWiki\Parser\Parser;
 use MediaWiki\Parser\ParserOptions;
+use MediaWiki\StubObject\StubUserLang;
 use stdClass;
+use Wikimedia\Message\ListType;
 
-/**
- * @package JsonConfig
- */
 abstract class JCDataContent extends JCObjContent {
 
 	/**
@@ -28,6 +28,7 @@ abstract class JCDataContent extends JCObjContent {
 		$this->test( 'license', JCValidators::isStringLine(), self::isValidLicense() );
 		$this->testOptional( 'description', [ 'en' => '' ], JCValidators::isLocalizedString() );
 		$this->testOptional( 'sources', '', JCValidators::isString() );
+		$this->testOptional( 'mediawikiCategories', [], self::isValidCategories() );
 	}
 
 	/** Returns a validator function to check if the value is a valid string
@@ -35,13 +36,50 @@ abstract class JCDataContent extends JCObjContent {
 	 */
 	public static function isValidLicense() {
 		return static function ( JCValue $v, array $path ) {
-			global $wgLang;
 			$allowedLicenses = MediaWikiServices::getInstance()->getMainConfig()->get( 'JsonConfigAllowedLicenses' );
 			if ( !in_array( $v->getValue(), $allowedLicenses, true ) ) {
 				$v->error( 'jsonconfig-err-license', $path,
-					$wgLang->commaList( $allowedLicenses ) );
+					Message::listParam( $allowedLicenses, ListType::COMMA ) );
 				return false;
 			}
+			return true;
+		};
+	}
+
+	/**
+	 * Returns a function to check that categories is a valid array,
+	 * with name and sort (optional) properties.
+	 * @return callable
+	 */
+	public static function isValidCategories() {
+		return static function ( JCValue $v, array $path ) {
+			$categories = $v->getValue();
+			if ( !is_array( $categories ) ) {
+				$v->error( 'jsonconfig-err-array', $path );
+				return false;
+			}
+
+			foreach ( $categories as $idx => $category ) {
+				$itemPath = array_merge( $path, [ $idx ] );
+
+				if ( !is_object( $category ) ) {
+					$v->error( 'jsonconfig-err-category-invalid', $itemPath );
+					return false;
+				}
+
+				if ( !property_exists( $category, 'name' )
+					|| !is_string( $category->name ) ) {
+					$v->error( 'jsonconfig-err-category-name-invalid', $itemPath );
+					return false;
+				}
+
+				if ( property_exists( $category, 'sort' )
+					&& !is_string( $category->sort ) ) {
+					$v->error( 'jsonconfig-err-category-sort-invalid', $itemPath );
+					return false;
+				}
+			}
+
 			return true;
 		};
 	}
@@ -83,8 +121,15 @@ abstract class JCDataContent extends JCObjContent {
 		if ( property_exists( $data, 'sources' ) ) {
 			$result->sources = $data->sources;
 		}
+		if ( property_exists( $data, 'mediawikiCategories' ) ) {
+			$result->mediawikiCategories = $data->mediawikiCategories;
+		}
 	}
 
+	/**
+	 * @param Language|StubUserLang $lang
+	 * @return string
+	 */
 	public function renderDescription( $lang ) {
 		$description = $this->getField( 'description' );
 		if ( !$description || $description->error() ) {
@@ -133,6 +178,13 @@ abstract class JCDataContent extends JCObjContent {
 		];
 	}
 
+	/**
+	 * @param Parser $parser
+	 * @param PageReference $page
+	 * @param int|null $revId
+	 * @param ParserOptions $options
+	 * @return string
+	 */
 	public function renderSources( Parser $parser, PageReference $page, $revId, ParserOptions $options ) {
 		$sources = $this->getField( 'sources' );
 		if ( !$sources || $sources->error() ) {
@@ -143,4 +195,8 @@ abstract class JCDataContent extends JCObjContent {
 		return Html::rawElement( 'p', [ 'class' => 'mw-jsonconfig-sources' ],
 			$parser->parse( $markup, $page, $options, true, true, $revId )->getRawText() );
 	}
+
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCDataContent::class, 'JsonConfig\\JCDataContent' );

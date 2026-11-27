@@ -2,8 +2,6 @@
 
 namespace GrowthExperiments\NewcomerTasks\TaskSuggester;
 
-use FauxSearchResultSet;
-use GrowthExperiments\NewcomerTasks\FauxSearchResultWithScore;
 use GrowthExperiments\NewcomerTasks\NewcomerTasksUserOptionsLookup;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\SearchStrategy\SearchQuery;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\SearchStrategy\SearchStrategy;
@@ -11,8 +9,9 @@ use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeHandlerRegistry;
 use GrowthExperiments\NewcomerTasks\Topic\Topic;
 use GrowthExperiments\Util;
-use MediaWiki\Cache\LinkBatchFactory;
 use MediaWiki\Http\HttpRequestFactory;
+use MediaWiki\Page\LinkBatchFactory;
+use MediaWiki\Search\FauxSearchResultSet;
 use MediaWiki\Title\TitleFactory;
 
 /**
@@ -92,13 +91,12 @@ class RemoteSearchTaskSuggester extends SearchTaskSuggester {
 		$data = $status->getValue();
 
 		$results = [];
-		foreach ( $data['query']['search'] ?? [] as $i => $result ) {
+		foreach ( $data['query']['search'] ?? [] as $result ) {
 			$title = $this->titleFactory->newFromText( $result['title'], $result['ns'] );
 			if ( !$title ) {
 				continue;
 			}
-			// The search API does not expose scores :( Put in something fake, just to ease testing.
-			$results[] = new FauxSearchResultWithScore( $title, 100 / ( $i + 1 ) );
+			$results[] = $title;
 		}
 		$resultSet = new FauxSearchResultSet( $results, (int)$data['query']['searchinfo']['totalhits'] );
 

@@ -7,10 +7,12 @@ use GrowthExperiments\HomepageHooks;
 use GrowthExperiments\Mentorship\StaticMentorManager;
 use GrowthExperiments\Specials\SpecialHomepage;
 use InvalidArgumentException;
-use MediaWiki\Config\GlobalVarConfig;
+use MediaWiki\Exception\ErrorPageError;
+use MediaWiki\Extension\CommunityConfiguration\CommunityConfigurationServices;
+use MediaWiki\Http\MWHttpRequest;
 use MediaWiki\Request\FauxRequest;
+use MediaWiki\Tests\Specials\SpecialPageTestBase;
 use MediaWiki\User\User;
-use SpecialPageTestBase;
 
 /**
  * @group Database
@@ -27,23 +29,21 @@ class SpecialHomepageTest extends SpecialPageTestBase {
 		$this->setService( 'GrowthExperimentsMentorManager', new StaticMentorManager( [] ) );
 
 		// Needed to avoid errors in DeferredUpdates from the SpecialHomepageLogger
-		$mwHttpRequest = $this->createMock( \MWHttpRequest::class );
+		$mwHttpRequest = $this->createMock( MWHttpRequest::class );
 		$mwHttpRequest->method( 'execute' )
 			->willReturn( new \StatusValue() );
 		$this->installMockHttp( $mwHttpRequest );
 
 		$growthExperimentsServices = GrowthExperimentsServices::wrap( $this->getServiceContainer() );
+		$communityConfigServices = CommunityConfigurationServices::wrap( $this->getServiceContainer() );
 		return new SpecialHomepage(
 			$growthExperimentsServices->getHomepageModuleRegistry(),
-			$this->getServiceContainer()->getStatsdDataFactory(),
-			$this->getServiceContainer()->getPerDbNameStatsdDataFactory(),
-			$growthExperimentsServices->getExperimentUserManager(),
+			$this->getServiceContainer()->getStatsFactory(),
 			$growthExperimentsServices->getMentorManager(),
-			// This would normally be wiki-powered config, but
-			// there is no need to test this
-			GlobalVarConfig::newInstance(),
+			$communityConfigServices->getMediaWikiConfigRouter(),
 			$this->getServiceContainer()->getUserOptionsManager(),
-			$this->getServiceContainer()->getTitleFactory()
+			$this->getServiceContainer()->getTitleFactory(),
+			$growthExperimentsServices->getReviseToneExperimentInteractionLogger(),
 		);
 	}
 
@@ -53,7 +53,7 @@ class SpecialHomepageTest extends SpecialPageTestBase {
 	public function testHomepageDoesNotRenderWhenPreferenceIsDisabled() {
 		$user = $this->getTestUser()->getUser();
 
-		$this->expectException( \ErrorPageError::class );
+		$this->expectException( ErrorPageError::class );
 		$this->expectExceptionMessage( 'To enable the newcomer homepage, visit your' );
 
 		$this->executeSpecialPage( '', null, null, $user );
@@ -94,59 +94,55 @@ class SpecialHomepageTest extends SpecialPageTestBase {
 
 	private function enableHomepageForTesting(): User {
 		$this->overrideConfigValues( [
-			'GEHomepageEnabled' => true,
 			'GEHelpPanelHelpDeskTitle' => 'HelpDeskTitle',
 		] );
-		$user = $this->getMutableTestUser()->getUser()->getInstanceForUpdate();
+		$user = $this->getMutableTestUser()->getUser();
 		$userOptionsManager = $this->getServiceContainer()->getUserOptionsManager();
 		$userOptionsManager->setOption( $user, HomepageHooks::HOMEPAGE_PREF_ENABLE, 1 );
 		$userOptionsManager->setOption( $user, HomepageHooks::HOMEPAGE_PREF_PT_LINK, 1 );
-		$user->saveSettings();
+		$userOptionsManager->saveOptions( $user );
 		return $user;
 	}
 
-	/**
-	 * @return array
-	 */
 	public static function provideTestMissingParametersToNewcomerTaskSubpath(): array {
 		return [
 			'missing click id' => [
 				[
 					'genewcomertasktoken' => 2,
-					'getasktype' => 'links'
+					'getasktype' => 'links',
 				],
 				[
-					'geclickid'
-				]
+					'geclickid',
+				],
 			],
 			'null click id' => [
 				[
 					'geclickid' => null,
 					'genewcomertasktoken' => 2,
-					'getasktype' => 'copyedit'
+					'getasktype' => 'copyedit',
 				],
 				[
-					'geclickid'
-				]
+					'geclickid',
+				],
 			],
 			'missing token' => [
 				[
 					'geclickid' => 1,
-					'getasktype' => 'copyedit'
+					'getasktype' => 'copyedit',
 				],
 				[
-					'genewcomertasktoken'
-				]
+					'genewcomertasktoken',
+				],
 			],
 			'null token' => [
 				[
 					'genewcomertasktoken' => null,
 					'geclickid' => 1,
-					'getasktype' => 'copyedit'
+					'getasktype' => 'copyedit',
 				],
 				[
-					'genewcomertasktoken'
-				]
+					'genewcomertasktoken',
+				],
 			],
 			'missing task type' => [
 				[
@@ -154,18 +150,18 @@ class SpecialHomepageTest extends SpecialPageTestBase {
 					'geclickid' => 1,
 				],
 				[
-					'getasktype'
-				]
+					'getasktype',
+				],
 			],
 			'null task type' => [
 				[
 					'genewcomertasktoken' => 2,
 					'geclickid' => 1,
-					'getasktype' => null
+					'getasktype' => null,
 				],
 				[
-					'getasktype'
-				]
+					'getasktype',
+				],
 			],
 		];
 	}

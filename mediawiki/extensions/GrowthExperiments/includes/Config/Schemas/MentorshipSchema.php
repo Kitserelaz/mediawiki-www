@@ -6,6 +6,8 @@ use MediaWiki\Extension\CommunityConfiguration\Schema\JsonSchema;
 
 // phpcs:disable Generic.NamingConventions.UpperCaseConstantName.ClassConstantNotUpperCase
 class MentorshipSchema extends JsonSchema {
+	public const VERSION = '1.0.0';
+
 	public const GEMentorshipEnabled = [
 		self::TYPE => self::TYPE_BOOLEAN,
 		self::DEFAULT => false,
@@ -43,5 +45,26 @@ class MentorshipSchema extends JsonSchema {
 		self::TYPE => self::TYPE_INTEGER,
 		self::DEFAULT => 8,
 		self::MINIMUM => 0,
+	];
+
+	public const GEMentorshipStartOptedOutThresholds = [
+		self::TYPE => self::TYPE_OBJECT,
+		self::PROPERTIES => [
+			// The `enabled` row could be replaced with nullable types (T365145)
+			'enabled' => [
+				self::TYPE => self::TYPE_BOOLEAN,
+				self::DEFAULT => false,
+			],
+			'minEditcount' => [
+				self::TYPE => self::TYPE_INTEGER,
+				self::MINIMUM => 0,
+				self::DEFAULT => 500,
+			],
+			'minTenureInDays' => [
+				self::TYPE => self::TYPE_INTEGER,
+				self::MINIMUM => 0,
+				self::DEFAULT => 30,
+			],
+		],
 	];
 }

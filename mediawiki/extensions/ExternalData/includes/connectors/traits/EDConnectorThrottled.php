@@ -9,7 +9,6 @@ use MediaWiki\Title\Title;
  * and can call functions wrapped in $this->callThrottled().
  *
  * @author Alexander Mashin
- *
  */
 trait EDConnectorThrottled {
 	/** @var Title $title Title object for the page that calls a throttled service. */
@@ -91,14 +90,8 @@ trait EDConnectorThrottled {
 	 * @param float $when When to reparse the page.
 	 */
 	private function planPurge( $when ) {
-		if ( method_exists( MediaWikiServices::class, 'getJobQueueGroup' ) ) {
-			// MW 1.37+
-			// @phan-suppress-next-line PhanUndeclaredMethod Different MW versions.
-			$queue_group = MediaWikiServices::getInstance()->getJobQueueGroup();
-		} else {
-			// @phan-suppress-next-line PhanUndeclaredStaticMethod
-			$queue_group = JobQueueGroup::singleton();
-		}
+		$services = MediaWikiServices::getInstance();
+		$queue_group = $services->getJobQueueGroup();
 		$params = [
 			'title' => $this->title->getText(),
 			'namespace' => $this->title->getNamespace(),
@@ -111,6 +104,6 @@ trait EDConnectorThrottled {
 				break;
 			}
 		}
-		$queue_group->lazyPush( Job::factory( 'edReparse', $params ) );
+		$queue_group->lazyPush( $services->getJobFactory()->newJob( 'edReparse', $params ) );
 	}
 }

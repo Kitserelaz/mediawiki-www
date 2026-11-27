@@ -2,7 +2,7 @@
 
 namespace MobileFrontend\Transforms;
 
-use DOMElement;
+use Wikimedia\Parsoid\DOM\Element;
 
 class NoTransform implements IMobileTransform {
 
@@ -15,8 +15,6 @@ class NoTransform implements IMobileTransform {
 	 * Note: There's no need in many instances of this class as it does nothing.
 	 * So it's a common pre-optimization to make such classes as singleton, what's
 	 * rather a matter of convenience than real optimization.
-	 *
-	 * @return self
 	 */
 	public static function getInstance(): self {
 		if ( self::$instance === null ) {
@@ -27,9 +25,9 @@ class NoTransform implements IMobileTransform {
 
 	/**
 	 * Does nothing.
-	 * @param DOMElement $node to be transformed
+	 * @param Element $node to be transformed
 	 */
-	public function apply( DOMElement $node ) {
+	public function apply( Element $node ) {
 		// nothing happens
 	}
 }

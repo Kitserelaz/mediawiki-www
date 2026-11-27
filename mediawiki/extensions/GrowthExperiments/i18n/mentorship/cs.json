@@ -9,9 +9,10 @@
 			"Spotter"
 		]
 	},
+	"growthexperiments-exception-not-mentored": "Uživatel nemá mentora",
+	"growthexperiments-exception-no-mentored-text": "Uživatel nemá mentora, a tedy mu nemůže položit žádnou otázku",
 	"growthexperiments-mentor-dashboard-title": "Nástěnka mentora",
 	"growthexperiments-mentor-dashboard-pt-link": "Nástěnka mentora",
-	"growthexperiments-mentor-dashboard-disabled": "Nástěnka mentora na tomto projektu zatím není aktivovaná.",
 	"growthexperiments-mentor-dashboard-must-be-mentor": "Pro aktivování nástěnky mentorů se nejprve {{GENDER:|musíte}} [[$1|zapsat jako mentor]].",
 	"growthexperiments-mentor-dashboard-misconfigured-missing-list": "Předtím, než můžete nástěnku mentorů použít, musí být nakonfigurován seznam mentorů. Správce může za tímto účelem využít stránky [[Special:EditGrowthConfig]].",
 	"growthexperiments-mentor-dashboard-mentee-overview-headline": "{{GENDER:|Vaši}} nováčci",
@@ -28,6 +29,7 @@
 	"growthexperiments-mentor-dashboard-mentee-overview-info-legend-questions": "Počet položených otázek",
 	"growthexperiments-mentor-dashboard-mentee-overview-info-legend-editcount": "Počet editací",
 	"growthexperiments-mentor-dashboard-mentee-overview-info-legend-registration": "Datum registrace",
+	"growthexperiments-mentor-dashboard-mentee-overview-info-updated": "Naposledy aktualizováno před $1",
 	"growthexperiments-mentor-dashboard-mentee-overview-add-filter": "Filtry",
 	"growthexperiments-mentor-dashboard-mentee-overview-add-filter-submit": "Odeslat",
 	"growthexperiments-mentor-dashboard-mentee-overview-add-filter-total-edits-headline": "Počet editací",
@@ -83,7 +85,7 @@
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-text": "Pokud nemůžete nějakou chvíli (více než jeden týden) působit jako {{GENDER:|mentor|mentorka}}, můžete svůj stav změnit na \"Pryč\". Během doby, kdy jste pryč, budou otázky od vašich nováčků směřovány na nějakého jiného mentora.",
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-away-for": "Budu pryč následující...",
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-away-for-label": "dny",
-	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-toohigh": "Vstup v políčku „{{GENDER:|Budu}} pryč následující...“ je příliš velký. Maximální počet dní, po které mentor může být pryč, je $1 (tj. jeden rok).",
+	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-toohigh": "Maximální počet dní, po které mentor může být pryč, je $1 (tj. jeden rok).",
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-unknown": "Došlo k neznámé chybě. Zkuste to prosím později.",
 	"growthexperiments-mentor-dashboard-mentor-tools-mentor-changed-to-active": "Váš stav byl změněn na „Aktivní“.",
 	"growthexperiments-mentor-dashboard-mentor-tools-mentor-changed-to-away": "Váš stav byl změněn na „Pryč“.",
@@ -176,7 +178,9 @@
 	"growthexperiments-mentor-dashboard-personalized-praise-settings-success": "Vaše nastavení byla uložena.",
 	"growthexperiments-mentor-list-missing-key": "Klíč <code>$1</code> chybí.",
 	"growthexperiments-mentor-list-datatype-mismatch": "<code>$1</code> by mělo být <code>$2</code>, ale je <code>$3</code>",
+	"growthexperiments-mentor-list-datatype-mismatch-not-convertible-timestamp": "<code>$1</code> má být platná časová známka, ID uživatele: <code>$2</code>",
 	"growthexperiments-mentor-list-unexpected-key-mentor": "Definice mentora obsahuje neočekávaný klíč <code>$1</code>",
+	"growthexperiments-mentor-list-invalid-weight": "<code>$1</code> má být jedno z: <code>$2</code>, ale je <code>$3</code>",
 	"growthexperiments-mentor-writer-error-already-added": "Mentor $1 již do seznamu mentorů byl přidán",
 	"growthexperiments-mentor-writer-error-not-in-the-list": "Mentor $1 není v seznamu mentorů",
 	"growthexperiments-mentor-writer-error-anonymous-user": "Mentor $1 není registrovaný uživatel",
@@ -240,7 +244,7 @@
 	"growthexperiments-mentorship-enrollasmentor-success": "Úspěšně jste se {{GENDER:|zapsal|zapsala}} jako {{GENDER:|mentor|mentorka}}. Nyní {{GENDER:|můžete}} pokračovat na [[Special:MentorDashboard|nástěnku mentora]].",
 	"growthexperiments-mentorship-enrollasmentor-summary": "Přidávám se jako mentor",
 	"growthexperiments-mentorship-enrollasmentor-error-not-autoeligible": "Jako mentoři se mohou zapsat pouze uživatelé s alespoň {{PLURAL:$1|jednou editací|$1 editacemi}} a {{PLURAL:$2|jedním dnem|$2 dny}} od registrace.",
-	"tag-mentor list change": "Změna seznamu mentorů",
-	"tag-mentor list change-description": "Značka aplikovaná na změny strukturovaného seznamu mentorů, které byly uloženy prostřednictvím rozšíření GrowthExperiments.",
+	"tag-mentor_list_change": "Změna seznamu mentorů",
+	"tag-mentor_list_change-description": "Značka aplikovaná na změny strukturovaného seznamu mentorů, které byly uloženy prostřednictvím rozšíření GrowthExperiments.",
 	"growthexperiments-mentor-dashboard-mentorship-disabled-with-link": "Mentorství je momentálně vypnuté. Správci jej mohou zapnout pomocí [[$1]]."
 }

@@ -21,16 +21,9 @@ use MediaWiki\User\User;
  */
 class LoggedInUserMode implements IUserMode {
 
-	/**
-	 * @var User
-	 */
-	private $user;
-
-	/**
-	 * @param User $user
-	 */
-	public function __construct( User $user ) {
-		$this->user = $user;
+	public function __construct(
+		private readonly User $user,
+	) {
 	}
 
 	/**

@@ -1,27 +1,35 @@
 @import 'mediawiki.skin.variables.less';
 
+// FIXME Overrides for the help panel button not overlapping with other
+// interfaces, see T399864
+.mw-portlet-dock-bottom.mw-ge-underlaid-dock-menu {
+	// Add specificity to override .client-js .mw-portlet-dock-bottom z-index:9999
+	.client-js & {
+		// Prevents overlap with the own help panel overlay, VEs edit summary dialog. Lower index
+		// makes it not show behind VEs editing surface.
+		z-index: @z-index-stacking-2;
+	}
+
+	.secondary-navigation-enabled > & {
+		// Prevents overlap with Echo notifications mobile overlay
+		z-index: @z-index-base;
+	}
+}
+
 .mw-ge-help-panel-cta {
 	// Don't show the help panel in printable versions of a page.
 	@media print {
 		display: none;
 	}
-	animation: help-panel-slidein 800ms;
-
-	&.animate-out {
-		animation: help-panel-slideout 400ms;
-		bottom: -1em;
-		opacity: 0;
-	}
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	transition-property: bottom;
+	transition-duration: @transition-duration-medium;
 
 	.client-js &:not( .mw-ge-help-panel-ready ) {
 		display: none;
 	}
-}
-
-.mw-ge-help-panel-widget-overlay .mw-ge-help-panel-cta {
-	position: fixed;
-	bottom: 2em;
-	right: 1em;
 }
 
 .suggested-edits-mobile-peek-footer {
@@ -30,43 +38,16 @@
 	}
 }
 
-@keyframes help-panel-slidein {
-	0%,
-	20% {
-		bottom: -1em;
-		opacity: 0.5;
-	}
-
-	70% {
-		bottom: 1.75em;
-		opacity: 0.9;
-	}
-
-	100% {
-		bottom: 2em;
-		opacity: 1;
-	}
-}
-
-@keyframes help-panel-slideout {
-	0% {
-		bottom: 2em;
-		opacity: 1;
-	}
-
-	100% {
-		bottom: -1em;
-		opacity: 0;
-	}
-}
-
-.mw-ge-help-panel-widget-overlay {
+// For compatibility with skins not providing p-dock-bottom portlet
+body > .mw-ge-help-panel-widget-overlay {
 	position: fixed;
 	right: 1em;
 	bottom: 1em;
-	z-index: 2;
+	z-index: @z-index-fixed;
 
-	.secondary-navigation-enabled & {
-		z-index: 0;
+	.mw-ge-help-panel-cta {
+		position: fixed;
+		bottom: 2em;
+		right: 1em;
 	}
 }

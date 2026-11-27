@@ -11,8 +11,6 @@
 			"පසිඳු කාවින්ද"
 		]
 	},
-	"mobile-frontend-changeslist-nocomment": "ez dago edizio laburpenik",
-	"mobile-frontend-clear-search": "Garbitu",
 	"mobile-frontend-copyright": "Eduki guztia $1(r)en babespean dago, ez bada kontrakoa esaten.",
 	"mobile-frontend-editor-anon": "Editatu saioa hasi gabe",
 	"mobile-frontend-editor-cancel": "Utzi",
@@ -37,14 +35,11 @@
 	"mobile-frontend-overlay-close": "Itxi",
 	"mobile-frontend-privacy-link-text": "Pribatutasuna",
 	"mobile-frontend-save-settings": "Gorde",
-	"mobile-frontend-settings-beta": "{{SITENAME}} βeta",
 	"mobile-frontend-terms-text": "Erabilera-baldintzak",
 	"mobile-frontend-view": "Mugikorreko bista",
-	"mobile-frontend-view-desktop": "Idazmahaia",
+	"mobile-frontend-view-desktop": "Mahaigaineko ikuspegia",
 	"mobile-frontend-watchlist-more": "gehiago",
 	"tag-mobile_edit": "Mugikor edizioa",
 	"tag-mobile_web_edit": "Mugikor web edizioa",
-	"mobile-frontend-loading-message": "Kargatzen...",
-	"mobile-frontend-search-feedback-link-text": "Egiguzu iruzkina.",
-	"mobile-frontend-mobile-option-MFEnableFontChanger": "Letra-tamaina"
+	"mobile-frontend-loading-message": "Kargatzen..."
 }

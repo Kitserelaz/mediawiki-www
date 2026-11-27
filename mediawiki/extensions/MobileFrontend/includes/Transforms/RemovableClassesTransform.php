@@ -2,25 +2,23 @@
 
 namespace MobileFrontend\Transforms;
 
-use DOMElement;
-use Wikimedia\Parsoid\Utils\DOMCompat;
+use Wikimedia\Parsoid\Core\DOMCompat;
+use Wikimedia\Parsoid\DOM\Element;
 
 class RemovableClassesTransform implements IMobileTransform {
-
-	/** @var string[] */
-	private $removableClasses;
 
 	/**
 	 * @param string[] $removableClasses List of slectors denoting elements to be removed
 	 */
-	public function __construct( array $removableClasses ) {
-		$this->removableClasses = $removableClasses;
+	public function __construct(
+		private readonly array $removableClasses,
+	) {
 	}
 
 	/**
-	 * @param DOMElement $node to be transformed
+	 * @param Element $node to be transformed
 	 */
-	public function apply( DOMElement $node ) {
+	public function apply( Element $node ) {
 		foreach ( $this->removableClasses as $selector ) {
 			foreach ( DOMCompat::querySelectorAll( $node, $selector ) as $element ) {
 				$element->parentNode->removeChild( $element );

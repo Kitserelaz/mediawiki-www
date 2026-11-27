@@ -13,10 +13,6 @@ class NewcomersByMentorMetric implements IMetric {
 	/** @var IReadableDatabase */
 	private $dbr;
 
-	/**
-	 * @param MetricsFactory $metricsFactory
-	 * @param IReadableDatabase $dbr
-	 */
 	public function __construct(
 		MetricsFactory $metricsFactory,
 		IReadableDatabase $dbr
@@ -47,7 +43,7 @@ class NewcomersByMentorMetric implements IMetric {
 				'log_action' => 'create',
 				$this->dbr->expr( 'log_timestamp', '>', $this->dbr->timestamp(
 					(int)wfTimestamp() - ExpirationAwareness::TTL_MONTH
-				) )
+				) ),
 			] )
 			->caller( __METHOD__ )
 			->fetchField();
@@ -59,8 +55,16 @@ class NewcomersByMentorMetric implements IMetric {
 
 	/**
 	 * @inheritDoc
+	 * @deprecated Will be removed when StatsD support is dropped. Use getStatsLibKey() instead.
 	 */
 	public function getStatsdKey(): string {
 		return 'GrowthExperiments.Mentorship.NewcomerByMentors';
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function getStatsLibKey(): string {
+		return 'mentorship_newcomers_by_mentor';
 	}
 }

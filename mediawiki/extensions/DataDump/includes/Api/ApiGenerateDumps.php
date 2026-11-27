@@ -104,14 +104,20 @@ class ApiGenerateDumps extends ApiBase {
 
 		if ( isset( $dataDumpConfig[$type]['limit'] ) && $dataDumpConfig[$type]['limit'] ) {
 			$dbr = $this->connectionProvider->getReplicaDatabase();
-			$count = $dbr->newSelectQueryBuilder()
-				->select( 'COUNT(*)' )
+			$row = $dbr->newSelectQueryBuilder()
+				->select( '*' )
 				->from( 'data_dump' )
 				->where( [ 'dumps_type' => $type ] )
 				->caller( __METHOD__ )
-				->fetchField();
+				->fetchRow();
 
-			return (int)$count < (int)$dataDumpConfig[$type]['limit'];
+			$limit = $dataDumpConfig[$type]['limit'];
+
+			if ( (int)$row < $limit ) {
+				return true;
+			} else {
+				return false;
+			}
 		}
 
 		return true;

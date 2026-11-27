@@ -2,10 +2,8 @@
 
 namespace GrowthExperiments\HomepageModules;
 
-use GrowthExperiments\ExperimentUserManager;
-use HtmlArmor;
+use GrowthExperiments\Util;
 use MediaWiki\Config\Config;
-use MediaWiki\Config\ConfigException;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Extension\CommunityConfiguration\Provider\ConfigurationProviderFactory;
 use MediaWiki\Extension\CommunityConfiguration\Provider\IConfigurationProvider;
@@ -14,10 +12,14 @@ use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\Linker\LinkRenderer;
 use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\UserEditTracker;
+use Psr\Log\LoggerInterface;
 use stdClass;
+use Wikimedia\HtmlArmor\HtmlArmor;
 use Wikimedia\ObjectCache\WANObjectCache;
 
 class CommunityUpdates extends BaseModule {
+
+	private LoggerInterface $logger;
 	private ?IConfigurationProvider $provider = null;
 	private ConfigurationProviderFactory $providerFactory;
 	private UserEditTracker $userEditTracker;
@@ -26,21 +28,10 @@ class CommunityUpdates extends BaseModule {
 	private WANObjectCache $cache;
 	private HttpRequestFactory $httpRequestFactory;
 
-	/**
-	 * @param IContextSource $context
-	 * @param Config $wikiConfig
-	 * @param ExperimentUserManager $experimentUserManager
-	 * @param ConfigurationProviderFactory $providerFactory
-	 * @param UserEditTracker $userEditTracker
-	 * @param LinkRenderer $linkRenderer
-	 * @param TitleFactory $titleFactory
-	 * @param WANObjectCache $cache
-	 * @param HttpRequestFactory $httpRequestFactory
-	 */
 	public function __construct(
+		LoggerInterface $logger,
 		IContextSource $context,
 		Config $wikiConfig,
-		ExperimentUserManager $experimentUserManager,
 		ConfigurationProviderFactory $providerFactory,
 		UserEditTracker $userEditTracker,
 		LinkRenderer $linkRenderer,
@@ -48,7 +39,8 @@ class CommunityUpdates extends BaseModule {
 		WANObjectCache $cache,
 		HttpRequestFactory $httpRequestFactory
 	) {
-		parent::__construct( 'community-updates', $context, $wikiConfig, $experimentUserManager );
+		parent::__construct( 'community-updates', $context, $wikiConfig );
+		$this->logger = $logger;
 		$this->providerFactory = $providerFactory;
 		$this->userEditTracker = $userEditTracker;
 		$this->linkRenderer = $linkRenderer;
@@ -79,7 +71,6 @@ class CommunityUpdates extends BaseModule {
 
 	/**
 	 * Determines if the CommunityUpdates module can be rendered based on configuration and other conditions.
-	 * @return bool
 	 */
 	protected function canRender(): bool {
 		$this->initializeProvider();
@@ -135,18 +126,28 @@ class CommunityUpdates extends BaseModule {
 	 * @return string The generated HTML for the thumbnail
 	 */
 	private function generateThumbnailHtml( string $thumbUrl ): string {
-		$thumbnailContent = Html::rawElement( 'img', [
-			'class' => 'cdx-thumbnail__image ext-growthExperiments-CommunityUpdates__thumbnail__image',
-			'src' => $thumbUrl,
-			'alt' => ''
+		// mw-no-invert is added to avoid invert color in images for non-Vector night dark modes
+		$darkModeClass = $this->shouldAddWhiteBackground() ?
+			' ext-growthExperiments-CommunityUpdates__thumbnail__image--dark-mode mw-no-invert' : '';
+		$thumbnailContent = Html::rawElement( 'div', [
+			'class' => 'cdx-thumbnail__image ext-growthExperiments-CommunityUpdates__thumbnail__image' . $darkModeClass,
+			'style' => 'background-image: url( ' . $thumbUrl . ' )',
 		] );
 		return Html::rawElement( 'div', [ 'class' => 'cdx-card__thumbnail' ], $thumbnailContent );
+	}
+
+	private function shouldAddWhiteBackground(): bool {
+		$config = $this->provider->loadValidConfiguration()->getValue();
+		return $config->GEHomepageCommunityUpdatesThumbnailAddDarkModeBackground;
 	}
 
 	private function getThumbnailUrlFromCommonsApi( string $fileTitle ): string {
 		$apiUrl = $this->getGrowthWikiConfig()->get( 'CommunityConfigurationCommonsApiURL' );
 		if ( !$apiUrl ) {
-			throw new ConfigException( 'Invalid CommunityConfigurationCommonsApiURL' );
+			$this->logger->debug(
+				'CommunityUpdates module displaying without images support: Commons API URL is undefined'
+			);
+			return '';
 		}
 		// The thumbnail width is set to 120px, which is 3x the standard Codex thumbnail size (40px).
 		// This provides a high-quality image that can be scaled down for various display sizes
@@ -158,24 +159,38 @@ class CommunityUpdates extends BaseModule {
 			'prop' => 'imageinfo',
 			'titles' => $fileTitle,
 			'iiprop' => 'url|size',
-			'iiurlwidth' => $thumbnailWidth
+			'iiurlwidth' => $thumbnailWidth,
 		];
 
 		$url = wfAppendQuery( $apiUrl, $params );
-		$options = [ 'timeout' => 10 ];
-		$request = $this->httpRequestFactory->create( $url, $options, __METHOD__ );
-		$status = $request->execute();
+		$status = Util::getJsonUrl(
+			$this->httpRequestFactory,
+			$url,
+			// Assume we're on the same wikifarm, this enhances request with extra headers that
+			// are ocassionally useful for debugging
+			true
+		);
 
-		if ( $status->isOK() ) {
-			$response = json_decode( $request->getContent(), true );
+		if ( !$status->isOK() ) {
+			Util::logStatus( $status );
+			return '';
+		}
 
-			if ( isset( $response['query']['pages'] ) ) {
-				$page = reset( $response['query']['pages'] );
-				if ( isset( $page['imageinfo'][0]['thumburl'] ) ) {
-					return $page['imageinfo'][0]['thumburl'];
-				}
+		$response = $status->getValue();
+		if ( isset( $response['query']['pages'] ) ) {
+			$page = array_first( $response['query']['pages'] );
+			if ( isset( $page['imageinfo'][0]['thumburl'] ) ) {
+				return $page['imageinfo'][0]['thumburl'];
 			}
 		}
+
+		$this->logger->error(
+			'CommunityUpdates failed to find thumburl in Commons API response',
+			[
+				'exception' => new \RuntimeException,
+				'response' => $response,
+			]
+		);
 		return '';
 	}
 
@@ -202,7 +217,7 @@ class CommunityUpdates extends BaseModule {
 			$link = $this->linkRenderer->makeLink( $pageTitle, $buttonText, [
 				'class' => 'ext-growthExperiments-CommunityUpdates__CallToAction__link',
 				'data-link-id' => 'community-updates-cta',
-				'data-link-data' => $pageTitle->getDBkey()
+				'data-link-data' => $pageTitle->getDBkey(),
 			] );
 		}
 
@@ -212,17 +227,13 @@ class CommunityUpdates extends BaseModule {
 		}
 
 		return Html::rawElement( 'div', [ 'class' => 'cdx-card-content' ],
-			Html::rawElement( 'div', [ 'class' => 'cdx-card-content-row-1' ],
-				$thumbnail .
-				Html::rawElement(
-					'div', [ 'class' => 'cdx-card__text__title' ], HtmlArmor::getHtml( $contentTitle )
-				)
+			$thumbnail .
+			Html::rawElement(
+				'div', [ 'class' => 'cdx-card__text__title' ], HtmlArmor::getHtml( $contentTitle )
 			) .
-			Html::rawElement( 'div', [ 'class' => 'cdx-card-content-row-2' ],
-				Html::rawElement(
-					'div', [ 'class' => 'cdx-card__text__description' ], HtmlArmor::getHtml( $contentBody )
-				) . $link
-			)
+			Html::rawElement(
+				'div', [ 'class' => 'cdx-card__text__description' ], HtmlArmor::getHtml( $contentBody )
+			) . $link
 		);
 	}
 
@@ -238,7 +249,7 @@ class CommunityUpdates extends BaseModule {
 		$updateTitle = strtolower( implode( "_", explode( " ", $cleanTitle ) ) );
 
 		return array_merge( parent::getActionData(), [
-			'context' => $updateTitle
+			'context' => $updateTitle,
 		] );
 	}
 
@@ -251,6 +262,13 @@ class CommunityUpdates extends BaseModule {
 	 */
 	protected function getMobileSummaryBody() {
 		return $this->getBody();
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	protected function getMobileSummaryHeader() {
+		return $this->getHeaderTextElement();
 	}
 
 	/**

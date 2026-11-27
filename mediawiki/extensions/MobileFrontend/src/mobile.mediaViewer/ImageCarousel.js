@@ -1,6 +1,5 @@
 const View = require( '../mobile.startup/View' ),
 	util = require( '../mobile.startup/util' ),
-	mfExtend = require( '../mobile.startup/mfExtend' ),
 	IconButton = require( '../mobile.startup/IconButton' ),
 	icons = require( '../mobile.startup/icons' ),
 	eventBus = require( '../mobile.startup/eventBusSingleton' ),
@@ -27,41 +26,40 @@ const View = require( '../mobile.startup/View' ),
 /**
  * Displays images in full screen overlay
  *
- * @class ImageCarousel
- * @extends module:mobile.startup/View
- * @param {Object} options Configuration options, see Overlay#defaults
  * @private
  */
-function ImageCarousel( options ) {
-	this.gateway = options.gateway || new ImageGateway( {
-		api: options.api
-	} );
-	this.router = options.router || router;
-	this.eventBus = options.eventBus;
-	this.hasLoadError = false;
-
-	View.call(
-		this,
-		util.extend(
-			{
-				className: 'image-carousel',
-				events: {
-					'click .image-wrapper': 'onToggleDetails',
-					// Click tracking for table of contents so we can see if people interact with it
-					'click .slider-button': 'onSlide'
-				}
-			},
-			options
-		)
-	);
-}
-
-mfExtend( ImageCarousel, View, {
+class ImageCarousel extends View {
 	/**
-	 * @memberof ImageCarousel
-	 * @instance
+	 * @param {Object} options Configuration options, see Overlay#defaults
 	 */
-	template: util.template( `
+	constructor( options ) {
+		super(
+			util.extend(
+				{
+					className: 'image-carousel',
+					events: {
+						'click .image-wrapper': 'onToggleDetails',
+						// Click tracking for table of contents so we can see if people interact with it
+						'click .slider-button': 'onSlide'
+					}
+				},
+				options
+			)
+		);
+	}
+
+	initialize( options ) {
+		this.gateway = options.gateway || new ImageGateway( {
+			api: options.api
+		} );
+		this.router = options.router || router;
+		this.eventBus = options.eventBus;
+		this.hasLoadError = false;
+		super.initialize( options );
+	}
+
+	get template() {
+		return util.template( `
 <button title="{{prevMsg}}" class="prev slider-button"></button>
 <div class="main">
 	<div class="image-wrapper">
@@ -75,11 +73,10 @@ mfExtend( ImageCarousel, View, {
 	</div>
 </div>
 <button title="{{nextMsg}}" class="next slider-button"></button>
-	` ),
+	` );
+	}
 
 	/**
-	 * @memberof ImageCarousel
-	 * @instance
 	 * @mixes Overlay#defaults
 	 * @property {Object} defaults Default options hash.
 	 * @property {mw.Api} defaults.api instance of API to use
@@ -88,20 +85,21 @@ mfExtend( ImageCarousel, View, {
 	 * @property {string} defaults.nextMsg Title for "next" button in media viewer.
 	 * @property {Thumbnail[]} defaults.thumbnails a list of thumbnails to browse
 	 */
-	defaults: util.extend( {}, View.prototype.defaults, {
-		licenseLinkMsg: mw.msg( 'mobile-frontend-media-license-link' ),
-		prevMsg: mw.msg( 'mobile-frontend-media-prev' ),
-		nextMsg: mw.msg( 'mobile-frontend-media-next' ),
-		thumbnails: []
-	} ),
+	get defaults() {
+		return util.extend( {}, super.defaults, {
+			licenseLinkMsg: mw.msg( 'mobile-frontend-media-license-link' ),
+			prevMsg: mw.msg( 'mobile-frontend-media-prev' ),
+			nextMsg: mw.msg( 'mobile-frontend-media-next' ),
+			thumbnails: []
+		} );
+	}
+
 	/**
 	 * Event handler for slide event
 	 *
-	 * @memberof ImageCarousel
-	 * @instance
 	 * @param {jQuery.Event} ev
 	 */
-	onSlide: function ( ev ) {
+	onSlide( ev ) {
 		const
 			nextThumbnail = this.$el.find( ev.target ).closest( '.slider-button' ).data( 'thumbnail' ),
 			title = nextThumbnail.options.filename;
@@ -114,31 +112,28 @@ mfExtend( ImageCarousel, View, {
 		const newImageCarousel = new ImageCarousel( this.options );
 		this.$el.replaceWith( newImageCarousel.$el );
 		this.$el = newImageCarousel.$el;
-	},
+	}
+
 	/**
 	 * @inheritdoc
-	 * @memberof ImageCarousel
-	 * @instance
 	 */
-	preRender: function () {
-		const self = this;
-		this.options.thumbnails.forEach( function ( thumbnail, i ) {
-			if ( thumbnail.getFileName() === self.options.title ) {
-				self.options.caption = thumbnail.getDescription();
-				self.galleryOffset = i;
+	preRender() {
+		this.options.thumbnails.forEach( ( thumbnail, i ) => {
+			if ( thumbnail.getFileName() === this.options.title ) {
+				this.options.caption = thumbnail.getDescription();
+				this.galleryOffset = i;
 			}
 		} );
-	},
+	}
+
 	/**
 	 * Setup the next and previous images to enable the user to arrow through
 	 * all images in the set of images given in thumbs.
 	 *
-	 * @memberof ImageCarousel
-	 * @instance
 	 * @param {Array} thumbs A set of images, which are available
 	 * @private
 	 */
-	_enableArrowImages: function ( thumbs ) {
+	_enableArrowImages( thumbs ) {
 		const offset = this.galleryOffset;
 		let lastThumb, nextThumb;
 
@@ -155,44 +150,38 @@ mfExtend( ImageCarousel, View, {
 
 		this.$el.find( '.prev' ).data( 'thumbnail', lastThumb );
 		this.$el.find( '.next' ).data( 'thumbnail', nextThumb );
-	},
+	}
+
 	/**
 	 * Disables the possibility to arrow through all images of the page.
 	 *
-	 * @memberof ImageCarousel
-	 * @instance
 	 * @private
 	 */
-	_disableArrowImages: function () {
+	_disableArrowImages() {
 		this.$el.find( '.prev, .next' ).remove();
-	},
+	}
 
 	/**
 	 * Handler for retry event which triggers when user tries to reload overlay
 	 * after a loading error.
 	 *
-	 * @memberof ImageCarousel
-	 * @instance
 	 * @private
 	 */
-	_handleRetry: function () {
+	_handleRetry() {
 		// A hacky way to simulate a reload of the overlay
 		this.router.emit( 'hashchange' );
-	},
+	}
 
 	/**
 	 * @inheritdoc
-	 * @memberof ImageCarousel
-	 * @instance
 	 */
-	postRender: function () {
+	postRender() {
 		let
 			$img;
 		const
 			$el = this.$el,
 			$spinner = icons.spinner().$el,
-			thumbs = this.options.thumbnails || [],
-			self = this;
+			thumbs = this.options.thumbnails || [];
 
 		/**
 		 * Display media load failure message
@@ -200,8 +189,8 @@ mfExtend( ImageCarousel, View, {
 		 * @method
 		 * @ignore
 		 */
-		function showLoadFailMsg() {
-			self.hasLoadError = true;
+		const showLoadFailMsg = () => {
+			this.hasLoadError = true;
 
 			$spinner.hide();
 			// hide broken image if present
@@ -209,11 +198,11 @@ mfExtend( ImageCarousel, View, {
 
 			// show error message if not visible already
 			if ( $el.find( '.load-fail-msg' ).length === 0 ) {
-				new LoadErrorMessage( { retryPath: self.router.getPath() } )
-					.on( 'retry', self._handleRetry.bind( self ) )
+				new LoadErrorMessage( { retryPath: this.router.getPath() } )
+					.on( 'retry', () => this._handleRetry() )
 					.prependTo( $el.find( '.image' ) );
 			}
-		}
+		};
 
 		/**
 		 * Start image load transitions
@@ -221,9 +210,9 @@ mfExtend( ImageCarousel, View, {
 		 * @method
 		 * @ignore
 		 */
-		function addImageLoadClass() {
+		const addImageLoadClass = () => {
 			$img.addClass( 'image-loaded' );
-		}
+		};
 
 		if ( thumbs.length < 2 ) {
 			this._disableArrowImages();
@@ -236,15 +225,15 @@ mfExtend( ImageCarousel, View, {
 
 		this.$details.prepend( detailsButton.$el );
 
-		this.gateway.getThumb( self.options.title ).then( function ( data ) {
+		this.gateway.getThumb( this.options.title ).then( ( data ) => {
 			let author;
 			const url = data.descriptionurl + '#mw-jump-to-license';
 
 			$spinner.hide();
 
-			self.thumbWidth = data.thumbwidth;
-			self.thumbHeight = data.thumbheight;
-			self.imgRatio = data.thumbwidth / data.thumbheight;
+			this.thumbWidth = data.thumbwidth;
+			this.thumbHeight = data.thumbheight;
+			this.imgRatio = data.thumbwidth / data.thumbheight;
 
 			// We need to explicitly specify document for context param as jQuery 3
 			// will create a new document for the element if the context is
@@ -252,7 +241,7 @@ mfExtend( ImageCarousel, View, {
 			// can fire in both the active document and new document which can cause
 			// insidious bugs.
 			// (https://api.jquery.com/jquery.parsehtml/#entry-longdesc)
-			$img = self.parseHTML( '<img>', document );
+			$img = this.parseHTML( '<img>', document );
 
 			// Remove the loader when the image is loaded or display load fail
 			// message on failure
@@ -269,11 +258,11 @@ mfExtend( ImageCarousel, View, {
 			// event prior to setting the image src
 			// (https://stackoverflow.com/questions/12354865/image-onload-event-and-browser-cache#answer-12355031)
 			$img.on( 'load', addImageLoadClass ).on( 'error', showLoadFailMsg );
-			$img.attr( 'src', data.thumburl ).attr( 'alt', self.options.caption );
+			$img.attr( 'src', data.thumburl ).attr( 'alt', this.options.caption );
 			$el.find( '.image' ).append( $img );
 
-			self.$details.addClass( 'is-visible' );
-			self._positionImage();
+			this.$details.addClass( 'is-visible' );
+			this._positionImage();
 			$el.find( '.image-details a' ).attr( 'href', url );
 			if ( data.extmetadata ) {
 				// Add license information
@@ -289,39 +278,36 @@ mfExtend( ImageCarousel, View, {
 					$el.find( '.license' ).prepend( author + ' &bull; ' );
 				}
 			}
-			self.adjustDetails();
-		}, function () {
+			this.adjustDetails();
+		}, () => {
 			// retrieving image location failed so show load fail msg
 			showLoadFailMsg();
 		} );
 
-		eventBus.on( 'resize:throttled', this._positionImage.bind( this ) );
+		eventBus.on( 'resize:throttled', () => this._positionImage() );
 		this._positionImage();
-	},
+	}
 
 	/**
 	 * Event handler that toggles the details bar.
 	 *
-	 * @memberof ImageCarousel
-	 * @instance
 	 */
-	onToggleDetails: function () {
+	onToggleDetails() {
 		if ( !this.hasLoadError ) {
 			this.$el.find( '.cancel, .slider-button' ).toggle();
 			this.$details.toggle();
 			this._positionImage();
 		}
-	},
+	}
+
 	/**
 	 * Fit the image into the window if its dimensions are bigger than the window dimensions.
 	 * Compare window width to height ratio to that of image width to height when setting
 	 * image width or height.
 	 *
-	 * @memberof ImageCarousel
-	 * @instance
 	 * @private
 	 */
-	_positionImage: function () {
+	_positionImage() {
 		const $window = util.getWindow();
 
 		this.adjustDetails();
@@ -353,20 +339,18 @@ mfExtend( ImageCarousel, View, {
 		this.$el.find( '.image-wrapper' ).css( 'bottom', detailsHeight );
 		this.$el.find( '.slider-button.prev' ).append( slideLeftButton.$el );
 		this.$el.find( '.slider-button.next' ).append( slideRightButton.$el );
-	},
+	}
 
 	/**
 	 * Function to adjust the height of details section to not more than 50% of window height.
 	 *
-	 * @memberof ImageCarousel
-	 * @instance
 	 */
-	adjustDetails: function () {
+	adjustDetails() {
 		const windowHeight = util.getWindow().height();
 		if ( this.$el.find( '.image-details' ).height() > windowHeight * 0.50 ) {
 			this.$el.find( '.image-details' ).css( 'max-height', windowHeight * 0.50 );
 		}
 	}
-} );
+}
 
 module.exports = ImageCarousel;

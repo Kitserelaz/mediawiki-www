@@ -6,14 +6,18 @@ use MediaWiki\Context\IContextSource;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Page\Article;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\Parser\ParserOutput;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\Request\WebRequest;
+use MediaWiki\Skin\Skin;
+use MediaWiki\Skin\SkinFactory;
+use MediaWiki\Skin\SkinFallback;
+use MediaWiki\Skin\SkinTemplate;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\User;
-use MobileFrontend\Tests\Utils;
 use Psr\Container\ContainerInterface;
 use Wikimedia\ObjectFactory\ObjectFactory;
 
@@ -33,6 +37,7 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 			$services->getHookContainer(),
 			$services->getService( 'MobileFrontend.Config' ),
 			$services->getSkinFactory(),
+			$services->getUrlUtils(),
 			$services->getUserOptionsLookup(),
 			$services->getWatchlistManager(),
 			$services->getService( 'MobileFrontend.Context' ),
@@ -118,8 +123,10 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 		$isAlternateCanonical, $isXAnalytics, $mfVaryHeaderSet
 	) {
 		$this->overrideConfigValues( [
-			'MFEnableManifest' => false,
-			'MobileUrlCallback' => $useMobileUrl ? [ Utils::class, 'mobileUrlCallback' ] : null,
+			MainConfigNames::Server => 'http://en.example.org',
+			'MobileUrlCallback' => $useMobileUrl
+				? ( static fn ( $domain ) => $domain === 'en.example.org' ? 'en.m.example.org' : $domain )
+				: null,
 			'MFNoindexPages' => $mfNoindexPages,
 			'MFEnableXAnalyticsLogging' => $mfEnableXAnalyticsLogging,
 			'MFAutodetectMobileView' => $mfAutoDetectMobileView,
@@ -134,11 +141,16 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 		// run the test
 		$this->newMobileFrontendHooks()->onBeforePageDisplay( $out, $skin );
 
-		// test, if alternate or canonical link is added, but not both
-		$links = $out->getLinkTags();
+		// test that either alternate or canonical link is added, but not both
+		$links = array_filter(
+			$out->getLinkTags(),
+			static function ( $link ) {;
+				return in_array( $link['rel'], [ 'alternate', 'canonical' ], true );
+			}
+		);
 		$this->assertCount( $isAlternateCanonical, $links,
-			'test, if alternate or canonical link is added, but not both' );
-		// if there should be an alternate or canonical link, check, if it's the correct one
+			'test that either alternate or canonical link is added, but not both' );
+		// if there should be an alternate or canonical link, check if it's the correct one
 		if ( $isAlternateCanonical ) {
 			// should be canonical link, not alternate in mobile view
 			$this->assertSame( 'canonical', $links[0]['rel'],
@@ -188,7 +200,8 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 	 * @param array $mfXAnalyticsItems
 	 * @param Title|null $title
 	 * @return array Array of objects, including MobileContext (context),
-	 * SkinTemplate (sk) and OutputPage (out)
+	 *   SkinTemplate (sk) and OutputPage (out)
+	 * @phan-return array{out:OutputPage,sk:SkinTemplate,context:MobileContext}
 	 */
 	protected function getContextSetup( $mode, $mfXAnalyticsItems, $title = null ) {
 		$this->getServiceContainer()->resetServiceForTesting( 'MobileFrontend.Context' );
@@ -203,6 +216,10 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 		$request = new FauxRequest();
 		$mainContext->setRequest( $request );
 		$mainContext->setTitle( $title ?? Title::newMainPage() );
+		// In order to prevent the code from reaching out to the DB to get
+		// the article's content model (which is irrelevant for what is being
+		// tested here), we'll manually set it to wikitext here.
+		$mainContext->getTitle()->setContentModel( CONTENT_MODEL_WIKITEXT );
 		$skin->setContext( $mainContext );
 		$mainContext->setOutput( $out );
 		$context->setContext( $mainContext );
@@ -242,26 +259,84 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 	}
 
 	/**
+	 * @covers MobileFrontendHooks
+	 */
+	public function testIndexPhpVaryHeader() {
+		$this->overrideConfigValues( [
+			'Server' => '//en.example.org',
+			'MFAutodetectMobileView' => false,
+			'MFEnableXAnalyticsLogging' => false,
+			'MFMobileHeader' => null,
+			'MFVaryOnUA' => false,
+			'MobileUrlCallback' => null,
+		] );
+		$out = $this->getContextSetup( null, [] )[ 'out' ];
+
+		$this->assertStringNotContainsString(
+			'X-Subdomain',
+			$out->getVaryHeader(),
+			'no X-Subdomain when MFMobileHeader disabled and hook not called'
+		);
+
+		$this->newMobileFrontendHooks()->onMediaWikiPerformAction(
+			$out,
+			null,
+			null,
+			null,
+			$out->getRequest(),
+			null
+		);
+		$this->assertStringNotContainsString(
+			'X-Subdomain',
+			$out->getVaryHeader(),
+			'no X-Subdomain when disabled and called'
+		);
+
+		$this->overrideConfigValues( [ 'MFMobileHeader' => 'X-Subdomain' ] );
+		$out = $this->getContextSetup( null, [] )[ 'out' ];
+
+		$this->assertStringNotContainsString(
+			'X-Subdomain',
+			$out->getVaryHeader(),
+			'no X-Subdomain when enabled and not called'
+		);
+
+		$this->newMobileFrontendHooks()->onMediaWikiPerformAction(
+			$out,
+			null,
+			null,
+			null,
+			$out->getRequest(),
+			null
+		);
+		$this->assertStringContainsString(
+			'X-Subdomain',
+			$out->getVaryHeader(),
+			'add X-Subdomain when enabled and called'
+		);
+	}
+
+	/**
 	 * @covers MobileFrontendHooks::onTitleSquidURLs
 	 */
 	public function testOnTitleSquidURLs() {
 		$this->overrideConfigValues( [
-			'MobileUrlCallback' => [ Utils::class, 'mobileUrlCallback' ],
-			MainConfigNames::Server => 'http://en.wikipedia.org',
+			'MobileUrlCallback' => static fn ( $domain ) => $domain === 'en.example.org' ? 'en.m.example.org' : $domain,
+			MainConfigNames::Server => 'http://en.example.org',
 			MainConfigNames::ArticlePath => '/wiki/$1',
 			MainConfigNames::ScriptPath => '/w',
 			MainConfigNames::Script => '/w/index.php',
 		] );
 		$title = Title::newFromText( 'PurgeTest' );
 
-		$htmlCacheUpdater = $this->getServiceContainer()->getHtmlCacheUpdater();
+		$htmlCacheUpdater = $this->getServiceContainer()->getHTMLCacheUpdater();
 		$urls = $htmlCacheUpdater->getUrls( $title );
 
 		$expected = [
-			'http://en.wikipedia.org/wiki/PurgeTest',
-			'http://en.wikipedia.org/w/index.php?title=PurgeTest&action=history',
-			'http://en.m.wikipedia.org/w/index.php?title=PurgeTest&action=history',
-			'http://en.m.wikipedia.org/wiki/PurgeTest',
+			'http://en.example.org/wiki/PurgeTest',
+			'http://en.example.org/w/index.php?title=PurgeTest&action=history',
+			'http://en.m.example.org/w/index.php?title=PurgeTest&action=history',
+			'http://en.m.example.org/wiki/PurgeTest',
 		];
 
 		$this->assertArrayEquals( $expected, $urls );
@@ -334,6 +409,7 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 			$services->getHookContainer(),
 			$services->getService( 'MobileFrontend.Config' ),
 			$services->getSkinFactory(),
+			$services->getUrlUtils(),
 			$userOptLookup,
 			$services->getWatchlistManager(),
 			$services->getService( 'MobileFrontend.Context' ),
@@ -402,6 +478,7 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 			$services->getHookContainer(),
 			$config,
 			$skinFactory,
+			$services->getUrlUtils(),
 			$userOptionLookup,
 			$services->getWatchlistManager(),
 			$services->getService( 'MobileFrontend.Context' ),
@@ -422,10 +499,13 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 
 	public static function provideArticleParserOptions() {
 		return [
-			[ false, false, false ],
-			[ false, true, false ],
-			[ true, false, false ],
-			[ true, true, true ],
+			'desktop, no parsoid' => [ false, false, NS_MAIN, false ],
+			'desktop, parsoid enabled' => [ false, true, NS_MAIN, false ],
+			'mobile, no parsoid' => [ true, false, NS_MAIN, false ],
+			'mobile, parsoid, main namespace' => [ true, true, NS_MAIN, true ],
+			'mobile, parsoid, file namespace' => [ true, true, NS_FILE, false ],
+			'mobile, parsoid, category namespace' => [ true, true, NS_CATEGORY, false ],
+			'mobile, parsoid, media namespace' => [ true, true, NS_MEDIA, false ],
 		];
 	}
 
@@ -433,14 +513,25 @@ class MobileFrontendHooksTest extends MediaWikiIntegrationTestCase {
 	 * @covers MobileFrontendHooks::onArticleParserOptions
 	 * @dataProvider provideArticleParserOptions
 	 */
-	public function testArticleParserOptions( bool $isMobile, bool $isParsoid, bool $expected ) {
+	public function testArticleParserOptions( bool $isMobile, bool $isParsoid, int $namespace, bool $expected ) {
 		// this section of the code depends on the ParserMigration extension being loaded
 		$this->markTestSkippedIfExtensionNotLoaded( 'ParserMigration' );
 
 		MobileContext::singleton()->setForceMobileView( $isMobile );
 		$this->overrideConfigValue( 'ParserMigrationEnableParsoidArticlePages', $isParsoid );
 
-		$article = new Article( Title::newMainPage() );
+		// Create a title in the specified namespace
+		$title = $namespace === NS_MAIN
+			? Title::newMainPage()
+			: Title::makeTitle( $namespace, 'Test' );
+		$article = Article::newFromTitle( $title, new RequestContext() );
+		// In order to prevent the code from reaching out to the DB to get
+		// the article's content model (which is irrelevant for what is being
+		// tested here), we'll manually set it to wikitext here.
+		// Note that it's not being set on the original `$title` instance
+		// because `Article::newFromTitle` create a new Title object for
+		// NS_MEDIA titles.
+		$article->getTitle()->setContentModel( CONTENT_MODEL_WIKITEXT );
 		$parserOptions = ParserOptions::newFromAnon();
 
 		$this->newMobileFrontendHooks()->onArticleParserOptions( $article, $parserOptions );

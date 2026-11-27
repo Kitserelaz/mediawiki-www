@@ -2,7 +2,6 @@
 
 namespace GrowthExperiments\Specials;
 
-use ErrorPageError;
 use GrowthExperiments\DashboardModule\IDashboardModule;
 use GrowthExperiments\EventLogging\SpecialMentorDashboardLogger;
 use GrowthExperiments\MentorDashboard\MentorDashboardDiscoveryHooks;
@@ -10,14 +9,15 @@ use GrowthExperiments\MentorDashboard\MentorDashboardModuleRegistry;
 use GrowthExperiments\Mentorship\Provider\MentorProvider;
 use GrowthExperiments\Util;
 use MediaWiki\Deferred\DeferredUpdates;
+use MediaWiki\Exception\ErrorPageError;
+use MediaWiki\Exception\PermissionsError;
 use MediaWiki\Html\Html;
 use MediaWiki\JobQueue\JobQueueGroupFactory;
 use MediaWiki\Registration\ExtensionRegistry;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\Options\UserOptionsLookup;
-use MWCryptRand;
-use PermissionsError;
-use UserOptionsUpdateJob;
+use MediaWiki\User\Options\UserOptionsUpdateJob;
+use MediaWiki\Utils\MWCryptRand;
 
 class SpecialMentorDashboard extends SpecialPage {
 
@@ -31,12 +31,6 @@ class SpecialMentorDashboard extends SpecialPage {
 	private UserOptionsLookup $userOptionsLookup;
 	private JobQueueGroupFactory $jobQueueGroupFactory;
 
-	/**
-	 * @param MentorDashboardModuleRegistry $mentorDashboardModuleRegistry
-	 * @param MentorProvider $mentorProvider
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param JobQueueGroupFactory $jobQueueGroupFactory
-	 */
 	public function __construct(
 		MentorDashboardModuleRegistry $mentorDashboardModuleRegistry,
 		MentorProvider $mentorProvider,
@@ -75,10 +69,9 @@ class SpecialMentorDashboard extends SpecialPage {
 	}
 
 	/**
-	 * @param bool $isMobile
 	 * @return IDashboardModule[]
 	 */
-	private function getModules( bool $isMobile = false ): array {
+	private function getModules(): array {
 		$enabledModules = $this->getConfig()->get( 'GEMentorDashboardEnabledModules' );
 		$modules = [];
 		foreach ( $enabledModules as $moduleId => $enabled ) {
@@ -100,13 +93,13 @@ class SpecialMentorDashboard extends SpecialPage {
 	private function getModuleGroups(): array {
 		return [
 			'main' => [
-				'mentee-overview'
+				'mentee-overview',
 			],
 			'sidebar' => [
 				'personalized-praise',
 				'mentor-tools',
-				'resources'
-			]
+				'resources',
+			],
 		];
 	}
 
@@ -118,22 +111,7 @@ class SpecialMentorDashboard extends SpecialPage {
 	private function maybeRedirectToEnrollAsMentor(): void {
 		if ( !$this->mentorProvider->isMentor( $this->getUser() ) ) {
 			$this->getOutput()->redirect(
-				SpecialPage::getTitleFor( 'EnrollAsMentor' )->getLocalURL()
-			);
-		}
-	}
-
-	/**
-	 * Ensure mentor dashboard is enabled
-	 *
-	 * @throws ErrorPageError
-	 */
-	private function requireMentorDashboardEnabled() {
-		if ( !$this->isEnabled() ) {
-			// Mentor dashboard is disabled, display a meaningful restriction error
-			throw new ErrorPageError(
-				'growthexperiments-mentor-dashboard-title',
-				'growthexperiments-mentor-dashboard-disabled'
+				SpecialPage::getTitleFor( 'EnrollAsMentor' )->getFullURL()
 			);
 		}
 	}
@@ -158,14 +136,13 @@ class SpecialMentorDashboard extends SpecialPage {
 	public function execute( $par ) {
 		$this->requireNamedUser();
 		$this->maybeRedirectToEnrollAsMentor();
-		$this->requireMentorDashboardEnabled();
 		$this->requireMentorList();
 
 		parent::execute( $par );
 
 		$out = $this->getContext()->getOutput();
 		$out->addJsConfigVars( [
-			'wgGEMentorDashboardPageviewToken' => $this->pageviewToken
+			'wgGEMentorDashboardPageviewToken' => $this->pageviewToken,
 		] );
 
 		$out->enableOOUI();
@@ -175,16 +152,16 @@ class SpecialMentorDashboard extends SpecialPage {
 		$out->addModuleStyles( 'ext.growthExperiments.MentorDashboard.styles' );
 
 		$out->addHTML( Html::openElement( 'div', [
-			'class' => 'growthexperiments-mentor-dashboard-container'
+			'class' => 'growthexperiments-mentor-dashboard-container',
 		] ) );
 
-		$modules = $this->getModules( false );
+		$modules = $this->getModules();
 
 		foreach ( $this->getModuleGroups() as $group => $moduleNames ) {
 			$out->addHTML( Html::openElement(
 				'div',
 				[
-					'class' => "growthexperiments-mentor-dashboard-group-$group"
+					'class' => "growthexperiments-mentor-dashboard-group-$group",
 				]
 			) );
 
@@ -246,19 +223,10 @@ class SpecialMentorDashboard extends SpecialPage {
 			$this->jobQueueGroupFactory->makeJobQueueGroup()->lazyPush( new UserOptionsUpdateJob( [
 				'userId' => $user->getId(),
 				'options' => [
-					MentorDashboardDiscoveryHooks::MENTOR_DASHBOARD_SEEN_PREF => 1
-				]
+					MentorDashboardDiscoveryHooks::MENTOR_DASHBOARD_SEEN_PREF => 1,
+				],
 			] ) );
 		} );
-	}
-
-	/**
-	 * Check if mentor dashboard is enabled via GEMentorDashboardEnabled
-	 *
-	 * @return bool
-	 */
-	private function isEnabled(): bool {
-		return $this->getConfig()->get( 'GEMentorDashboardEnabled' );
 	}
 
 	/**

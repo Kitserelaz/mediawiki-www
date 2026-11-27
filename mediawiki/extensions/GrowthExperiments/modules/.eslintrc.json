@@ -12,6 +12,9 @@
 	"env": {
 		"commonjs": true
 	},
+	"parserOptions": {
+		"ecmaVersion": 8
+	},
 	"rules": {
 		"max-len": "off"
 	},
@@ -34,12 +37,26 @@
 	},
 	"overrides": [
 		{
-			"files": [ "**/*.test.js" ],
+			"files": [
+				"**/*.test.js"
+			],
 			"extends": [
 				"wikimedia/server"
 			],
 			"env": {
 				"jest": true
+			}
+		},
+		{
+			"files": [
+				"**/*.js",
+				"**/*.vue"
+			],
+			"rules": {
+				"comma-dangle": [
+					"error",
+					"always-multiline"
+				]
 			}
 		}
 	]

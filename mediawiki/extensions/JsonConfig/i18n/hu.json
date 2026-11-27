@@ -1,11 +1,13 @@
 {
 	"@metadata": {
 		"authors": [
+			"Alfa-ketosav",
 			"Bináris",
+			"Boro",
+			"Karmantomi",
 			"Máté",
 			"Tacsipacsi",
-			"Alfa-ketosav",
-			"Karmantomi"
+			"Dj"
 		]
 	},
 	"jsonconfig-desc": "Lehetővé teszi JSON-konfiguráció tárolását egy wikiben",
@@ -16,13 +18,14 @@
 	"jsonconfig-edit-dialog-error": "Nem sikerült táblázatként szerkeszteni: $1",
 	"jsonconfig-err-array": "A(z) „$1” paraméter értékének listának kell lennie (pl. <kbd>[\"érték1\", \"érték2\", …]</kbd>)",
 	"jsonconfig-err-array-count": "A(z) „$1” listának $2 értéke van, de $3 értékkel kell rendelkeznie, ugyanannyival, mint a(z) „$4” listának",
-	"jsonconfig-optional-field": "(opcionális)",
+	"jsonconfig-err-category-name-invalid": "A kategória objektumnak rendelkeznie kell egy „name” tulajdonsággal, amely egy karakterlánc",
+	"jsonconfig-err-license": "A(z) „$1” paraméternek az érvényes licenckódok egyikének kell lennie, például $2",
+	"jsonconfig-optional-field": "(nem kötelező)",
 	"jsonconfig-type-name-invalid": "érvénytelen",
 	"jsonconfig-type-name-string": "karakterlánc",
 	"jsonconfig-type-name-localized": "lokalizált",
 	"jsonconfig-type-name-number": "szám",
 	"jsonconfig-type-name-boolean": "logikai",
-	"jsonconfig-use-category": "JsonConfig kiterjesztést használó lapok",
 	"jsonconfig-license": "Az adatok a(z) $1 licenc feltételei szerint használhatók fel.",
 	"jsonconfig-license-not-set": "A lap szerkesztésekor beleegyezel a szerkesztésed <code>licence</code> mezőben megadott licenc alatti közzétételébe.",
 	"jsonconfig-license-copyrightwarning": "A módosítások közzétételével beleegyezel a közreműködésed közzétételébe a(z) [{{int:jsonconfig-license-url-$1}} {{int:jsonconfig-license-name-$1}}] licenc feltételei szerint.",

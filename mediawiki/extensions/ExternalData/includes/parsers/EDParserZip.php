@@ -3,7 +3,6 @@
  * Class for parsing ZIP archives.
  *
  * @author Alexander Mashin
- *
  */
 class EDParserZip extends EDParserArchive {
 	/** @const array EXT An array of possible archive extensions. */
@@ -39,8 +38,7 @@ class EDParserZip extends EDParserArchive {
 	 */
 	protected function open( string $temp ) {
 		$this->archive = new ZipArchive();
-		// @phan-suppress-next-line PhanUndeclaredConstantOfClass Class constant available only since PHP 7.4.
-		$flags = defined( 'ZipArchive::RDONLY' ) ? ZipArchive::RDONLY : 0;
+		$flags = ZipArchive::RDONLY;
 		$result = $this->archive->open( $temp, $flags );
 		if ( $result !== true ) {
 			throw new EDParserException(

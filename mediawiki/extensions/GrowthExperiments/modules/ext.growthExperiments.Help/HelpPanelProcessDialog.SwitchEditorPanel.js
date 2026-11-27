@@ -46,13 +46,13 @@
 						'growthexperiments-help-panel-suggested-edits-switch-editor-to-' + this.preferredEditor,
 						new OO.ui.IconWidget( {
 							icon: 'alert',
-							classes: [ 'oo-ui-image-warning' ]
-						} ).$element ).parse() )
+							classes: [ 'oo-ui-image-warning' ],
+						} ).$element ).parse() ),
 				),
 			$switchLink = $( '<a>' ).attr( {
 				classes: [ 'suggested-edits-panel-switch-editor-panel-link' ],
 				'data-link-id': 'switch-editor',
-				href: '#'
+				href: '#',
 			} );
 		$switchLink.on( 'click', this.onClick.bind( this ) );
 
@@ -64,9 +64,9 @@
 					// * growthexperiments-help-panel-suggested-edits-switch-editor-to-wikitext-link-text
 					mw.message(
 						'growthexperiments-help-panel-suggested-edits-switch-editor-to-' +
-						this.preferredEditor + '-link-text'
-					).text()
-				) )
+						this.preferredEditor + '-link-text',
+					).text(),
+				) ),
 			);
 		}
 		this.$element.append( $content );
@@ -102,8 +102,6 @@
 			$( 'li#ca-ve-edit' ).first().find( 'a' ).find( '.mw-pulsating-dot' ).remove();
 			mw.libs.ve.activateVe( 'visual' );
 		} else if ( this.currentEditor === 'visualeditor' ) {
-			// FIXME: This does not preserve content modifications made in VE,
-			// unlike manually toggling in the UI or clicking "Edit Source"
 			ve.init.target.switchToWikitextEditor();
 		}
 	};
@@ -117,12 +115,12 @@
 	 */
 	SwitchEditorPanel.prototype.isCurrentEditorPreferred = function () {
 		const editorModes = {
-			visualeditor: [ 'machineSuggestions' ]
+			visualeditor: [ 'machineSuggestions' ],
 		};
 		if ( this.currentEditor === this.preferredEditor ) {
 			return true;
 		}
-		return ( editorModes[ this.currentEditor ] || [] ).indexOf( this.preferredEditor ) !== -1;
+		return ( editorModes[ this.currentEditor ] || [] ).includes( this.preferredEditor );
 	};
 
 	module.exports = SwitchEditorPanel;

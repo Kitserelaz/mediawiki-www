@@ -2,13 +2,13 @@
 
 namespace MobileFrontend\Transforms;
 
-use DOMDocument;
-use DOMElement;
-use DOMNode;
-use DOMXPath;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Title\Title;
-use Wikimedia\Parsoid\Utils\DOMCompat;
+use Wikimedia\Parsoid\Core\DOMCompat;
+use Wikimedia\Parsoid\DOM\Document;
+use Wikimedia\Parsoid\DOM\Element;
+use Wikimedia\Parsoid\DOM\Node;
+use Wikimedia\Parsoid\Ext\DOMUtils;
 
 class MoveLeadParagraphTransform implements IMobileTransform {
 	/**
@@ -17,26 +17,23 @@ class MoveLeadParagraphTransform implements IMobileTransform {
 	private $title;
 
 	/**
-	 * @var int
-	 */
-	private $revId;
-
-	/**
 	 * @param Title|string $title for logging purposes
 	 * @param int $revId for logging purposes
 	 */
-	public function __construct( $title, $revId ) {
+	public function __construct(
+		$title,
+		private readonly int $revId,
+	) {
 		$this->title = $title;
-		$this->revId = $revId;
 	}
 
 	/**
 	 * Rearranges content so that text in the lead paragraph is prioritised to appear
 	 * before the infobox. Lead
 	 *
-	 * @param DOMElement $node to be transformed
+	 * @param Element $node to be transformed
 	 */
-	public function apply( DOMElement $node ) {
+	public function apply( Element $node ) {
 		$section = DOMCompat::querySelector( $node, 'section' );
 		if ( $section ) {
 			$this->moveFirstParagraphBeforeInfobox( $section, $section->ownerDocument );
@@ -44,24 +41,10 @@ class MoveLeadParagraphTransform implements IMobileTransform {
 	}
 
 	/**
-	 * Helper function to verify that passed $node matched tagName and has set required classname
-	 * @param DOMElement $node Node to verify
-	 * @param string|bool $requiredTagName Required tag name, has to be lowercase
-	 *   if false it is ignored and requiredClass is used.
-	 * @param string $requiredClass Regular expression with required class name
-	 * @return bool
-	 */
-	private static function matchElement( DOMElement $node, $requiredTagName, $requiredClass ) {
-		$classes = explode( ' ', $node->getAttribute( 'class' ) );
-		return ( $requiredTagName === false || strtolower( $node->tagName ) === $requiredTagName )
-			&& preg_grep( $requiredClass, $classes );
-	}
-
-	/**
 	 * Iterate up the DOM tree until find a parent node which has the parent $parent
-	 * @param DOMNode $node
-	 * @param DOMNode $parent
-	 * @return DOMNode representing a node which is either $node or an ancestor of $node which
+	 * @param Node $node
+	 * @param Node $parent
+	 * @return Node representing a node which is either $node or an ancestor of $node which
 	 *  has a parent $parent. Note, it is assumed that $node will always be a descendent of $parent so
 	 *  if this is not true, you probably shouldn't be using this function and I, as the writer of this
 	 *  code cannot be held responsible for portals that open to another dimension or your laptop
@@ -72,43 +55,41 @@ class MoveLeadParagraphTransform implements IMobileTransform {
 		while ( $search->parentNode && !$search->parentNode->isSameNode( $parent ) ) {
 			$search = $search->parentNode;
 		}
+		// @var Node $search We assert this will always find a parent.
+		'@phan-var Node $search';
 		return $search;
 	}
 
 	/**
 	 * Extract the first infobox in document
-	 * @param DOMXPath $xPath XPath object to execute the query
-	 * @param DOMElement $section Where to search for an infobox
-	 * @return DOMElement|null The first infobox
+	 * @param Element $section Where to search for an infobox
+	 * @return Element|null The first infobox
 	 */
-	private function identifyInfoboxElement( DOMXPath $xPath, DOMElement $section ): ?DOMElement {
-		$paths = [
-			// Infoboxes: *.infobox
-			'.//*[contains(concat(" ",normalize-space(@class)," ")," infobox ")]',
-			// Thumbnail images: .thumb, figure (Parsoid)
-			'.//*[contains(concat(" ",normalize-space(@class)," ")," thumb ")]',
-			'.//figure',
-		];
-		$query = '(' . implode( '|', $paths ) . ')';
-		$infobox = $xPath->query( $query, $section )->item( 0 );
+	private function identifyInfoboxElement( Element $section ): ?Element {
+		$infobox = DOMCompat::querySelector(
+			$section,
+			// Infoboxes are .infobox, and thumbnail images are .thumb, figure
+			'.infobox, .thumb, figure'
+		);
 
-		if ( $infobox instanceof DOMElement ) {
+		if ( $infobox instanceof Element ) {
 			// Check if the infobox is inside a container
 			$node = $infobox;
-			$wrapperClass = '/^(mw-stack|collapsible)$/';
 			// Traverse up
 			while ( $node->parentNode ) {
-				if ( self::matchElement( $node, false, $wrapperClass ) ) {
+				$classList = DOMCompat::getClassList( $node );
+				if ( $classList->contains( 'mw-stack' ) ||
+					 $classList->contains( 'collapsible' ) ) {
 					$infobox = $node;
 				}
 				$node = $node->parentNode;
 			}
 			// For images, include any containers.
 			// We don't need to check if the parent is an infobox, because it
-			// would've matched first in the XPath query.
+			// would've matched first in the selector query.
 			if (
-				strtolower( $infobox->tagName ) === 'figure' ||
-				strpos( $infobox->getAttribute( 'class' ), 'thumb' ) !== false
+				DOMUtils::nodeName( $infobox ) === 'figure' ||
+				DOMCompat::getClassList( $infobox )->contains( 'thumb' )
 			) {
 				while ( $infobox->parentNode !== $section ) {
 					$infobox = $infobox->parentNode;
@@ -125,24 +106,17 @@ class MoveLeadParagraphTransform implements IMobileTransform {
 	 * only.
 	 * example: `<p> <span> </span> </p>` is not a lead paragraph
 	 *
-	 * Keep in sync with mobile.init/identifyLeadParagraph.js.
+	 * Keep in sync with mobile.editor.overlay/identifyLeadParagraph.js.
 	 *
-	 * @param DOMXPath $xPath XPath object to execute the query
-	 * @param DOMElement $section Where to search for paragraphs
-	 * @return DOMElement|null The lead paragraph
+	 * @param Element $section Where to search for paragraphs
+	 * @return Element|null The lead paragraph
 	 */
-	private function identifyLeadParagraph( DOMXPath $xPath, DOMElement $section ): ?DOMElement {
-		$paragraphs = $xPath->query( './p', $section );
-
-		$index = 0;
-		while ( $index < $paragraphs->length ) {
-			$node = $paragraphs->item( $index );
-			if ( $node && !$this->isNonLeadParagraph( $xPath, $node ) ) {
-				/** @phan-suppress-next-line PhanTypeMismatchReturn DOMNode vs. DOMElement */
+	private function identifyLeadParagraph( Element $section ): ?Element {
+		$paragraphs = DOMCompat::querySelectorAll( $section, ':scope > p' );
+		foreach ( $paragraphs as $node ) {
+			if ( !$this->isNonLeadParagraph( $node ) ) {
 				return $node;
 			}
-
-			++$index;
 		}
 		return null;
 	}
@@ -163,18 +137,17 @@ class MoveLeadParagraphTransform implements IMobileTransform {
 	 * Note that the first paragraph is not moved before hatnotes, or mbox or other
 	 * elements that are not infoboxes.
 	 *
-	 * @param DOMElement $leadSection
-	 * @param ?DOMDocument $doc Document to which the section belongs
+	 * @param Element $leadSection
+	 * @param ?Document $doc Document to which the section belongs
 	 */
-	private function moveFirstParagraphBeforeInfobox( DOMElement $leadSection, ?DOMDocument $doc ) {
+	private function moveFirstParagraphBeforeInfobox( Element $leadSection, ?Document $doc ) {
 		if ( $doc === null ) {
 			return;
 		}
-		$xPath = new DOMXPath( $doc );
-		$infobox = $this->identifyInfoboxElement( $xPath, $leadSection );
+		$infobox = $this->identifyInfoboxElement( $leadSection );
 
 		if ( $infobox ) {
-			$leadParagraph = $this->identifyLeadParagraph( $xPath, $leadSection );
+			$leadParagraph = $this->identifyLeadParagraph( $leadSection );
 			$isTopLevelInfobox = $infobox->parentNode->isSameNode( $leadSection );
 
 			if ( $leadParagraph && $isTopLevelInfobox &&
@@ -183,12 +156,13 @@ class MoveLeadParagraphTransform implements IMobileTransform {
 				$listElementAfterParagraph = null;
 				$where = $infobox;
 
-				$elementAfterParagraphQuery = $xPath->query( 'following-sibling::*[1]', $leadParagraph );
-				if ( $elementAfterParagraphQuery->length > 0 ) {
-					$elem = $elementAfterParagraphQuery->item( 0 );
-					/** @phan-suppress-next-line PhanUndeclaredProperty DOMNode vs. DOMElement */
-					if ( $elem->tagName === 'ol' || $elem->tagName === 'ul' ) {
-						$listElementAfterParagraph = $elem;
+				$elementAfterParagraph = DOMCompat::getNextElementSibling(
+					$leadParagraph
+				);
+				if ( $elementAfterParagraph ) {
+					$nodeName = DOMUtils::nodeName( $elementAfterParagraph );
+					if ( $nodeName === 'ol' || $nodeName === 'ul' ) {
+						$listElementAfterParagraph = $elementAfterParagraph;
 					}
 				}
 
@@ -197,8 +171,8 @@ class MoveLeadParagraphTransform implements IMobileTransform {
 					$leadSection->insertBefore( $listElementAfterParagraph, $where );
 				}
 			} elseif ( !$isTopLevelInfobox ) {
-				$isInWrongPlace = $this->hasNoNonEmptyPrecedingParagraphs( $xPath,
-					/** @phan-suppress-next-line PhanTypeMismatchArgumentSuperType DOMNode vs. DOMElement */
+				$isInWrongPlace = $this->hasNoNonEmptyPrecedingParagraphs(
+					/** @phan-suppress-next-line PhanTypeMismatchArgumentSuperType Node vs. Element */
 					self::findParentWithParent( $infobox, $leadSection )
 				);
 				$loggingEnabled = MediaWikiServices::getInstance()
@@ -219,11 +193,11 @@ class MoveLeadParagraphTransform implements IMobileTransform {
 	 *
 	 * Keep in sync with mobile.init/identifyLeadParagraph.js.
 	 *
-	 * @param DOMNode $node
+	 * @param Node $node
 	 * @return bool
 	 */
-	private function isNotEmptyNode( DOMNode $node ) {
-		return (bool)preg_match( '/\S/', $node->textContent );
+	private function isNotEmptyNode( Node $node ) {
+		return (bool)preg_match( '/\S/', $node->textContent ?? '' );
 	}
 
 	/**
@@ -232,22 +206,24 @@ class MoveLeadParagraphTransform implements IMobileTransform {
 	 *
 	 * Keep in sync with mobile.init/identifyLeadParagraph.js.
 	 *
-	 * @param DOMXPath $xPath An XPath query
-	 * @param DOMNode $node DOM Node to verify
+	 * @param Node $node DOM Node to verify
 	 * @return bool
 	 */
-	private function isNonLeadParagraph( $xPath, $node ) {
+	private function isNonLeadParagraph( $node ) {
 		if (
 			$node->nodeType === XML_ELEMENT_NODE &&
-			/** @phan-suppress-next-line PhanUndeclaredProperty DOMNode vs. DOMElement */
-			$node->tagName === 'p' &&
+			DOMUtils::nodeName( $node ) === 'p' &&
 			$this->isNotEmptyNode( $node )
 		) {
 			// Clone the node so we can modifiy it
 			$node = $node->cloneNode( true );
+			// @var Element $node
+			'@phan-var Element $node';
 
 			// Remove any TemplateStyle tags, or coordinate wrappers...
-			$templateStyles = $xPath->query( '(.//style|.//span[@id="coordinates"])', $node );
+			$templateStyles = DOMCompat::querySelectorAll(
+				$node, 'style, span#coordinates'
+			);
 			foreach ( $templateStyles as $style ) {
 				$style->parentNode->removeChild( $style );
 			}
@@ -270,11 +246,11 @@ class MoveLeadParagraphTransform implements IMobileTransform {
 	 * `isSameNode()` check. If those elements are not in the order, we will quickly get to
 	 * $node->previousSibling==null and return false instead of the whole traversing document.
 	 *
-	 * @param DOMNode $first
-	 * @param DOMNode $second
+	 * @param Node $first
+	 * @param Node $second
 	 * @return bool
 	 */
-	private function isPreviousSibling( DOMNode $first, DOMNode $second ) {
+	private function isPreviousSibling( Node $first, Node $second ) {
 		$node = $second->previousSibling;
 		while ( $node !== null ) {
 			if ( $node->isSameNode( $first ) ) {
@@ -288,14 +264,13 @@ class MoveLeadParagraphTransform implements IMobileTransform {
 	/**
 	 * Check if there are any non-empty siblings before $element
 	 *
-	 * @param DOMXPath $xPath
-	 * @param DOMElement $element
+	 * @param Element $element
 	 * @return bool
 	 */
-	private function hasNoNonEmptyPrecedingParagraphs( DOMXPath $xPath, DOMElement $element ) {
+	private function hasNoNonEmptyPrecedingParagraphs( Element $element ) {
 		$node = $element->previousSibling;
 		while ( $node !== null ) {
-			if ( !$this->isNonLeadParagraph( $xPath, $node ) ) {
+			if ( !$this->isNonLeadParagraph( $node ) ) {
 				return false;
 			}
 			$node = $node->previousSibling;
@@ -304,7 +279,7 @@ class MoveLeadParagraphTransform implements IMobileTransform {
 	}
 
 	/**
-	 * Finds all infoboxes which are one or more levels deep in $xPath content. When at least one
+	 * Finds all infoboxes which are one or more levels deep in content. When at least one
 	 * element is found - log the page title and revision
 	 *
 	 * @see https://phabricator.wikimedia.org/T149884

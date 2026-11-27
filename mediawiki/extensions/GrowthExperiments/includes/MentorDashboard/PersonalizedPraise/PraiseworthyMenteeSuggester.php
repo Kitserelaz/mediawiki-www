@@ -9,17 +9,16 @@ use GrowthExperiments\UserImpact\UserImpact;
 use GrowthExperiments\UserImpact\UserImpactLookup;
 use MediaWiki\User\Options\UserOptionsManager;
 use MediaWiki\User\UserIdentity;
-use Psr\Log\LoggerAwareTrait;
+use Psr\Log\LoggerInterface;
 use Wikimedia\LightweightObjectStore\ExpirationAwareness;
 use Wikimedia\ObjectCache\BagOStuff;
 use Wikimedia\ScopedCallback;
 use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 class PraiseworthyMenteeSuggester {
-	use LoggerAwareTrait;
-
 	private const EXPIRATION_TTL = ExpirationAwareness::TTL_DAY;
 
+	private LoggerInterface $logger;
 	private BagOStuff $globalCache;
 	private UserOptionsManager $userOptionsManager;
 	private PraiseworthyConditionsLookup $praiseworthyConditionsLookup;
@@ -28,16 +27,8 @@ class PraiseworthyMenteeSuggester {
 	private MentorStore $mentorStore;
 	private UserImpactLookup $userImpactLookup;
 
-	/**
-	 * @param BagOStuff $globalCache
-	 * @param UserOptionsManager $userOptionsManager
-	 * @param PraiseworthyConditionsLookup $praiseworthyConditionsLookup
-	 * @param PersonalizedPraiseNotificationsDispatcher $notificationsDispatcher
-	 * @param PersonalizedPraiseLogger $personalizedPraiseLogger
-	 * @param MentorStore $mentorStore
-	 * @param UserImpactLookup $userImpactLookup
-	 */
 	public function __construct(
+		LoggerInterface $logger,
 		BagOStuff $globalCache,
 		UserOptionsManager $userOptionsManager,
 		PraiseworthyConditionsLookup $praiseworthyConditionsLookup,
@@ -46,6 +37,7 @@ class PraiseworthyMenteeSuggester {
 		MentorStore $mentorStore,
 		UserImpactLookup $userImpactLookup
 	) {
+		$this->logger = $logger;
 		$this->globalCache = $globalCache;
 		$this->userOptionsManager = $userOptionsManager;
 		$this->praiseworthyConditionsLookup = $praiseworthyConditionsLookup;
@@ -59,7 +51,7 @@ class PraiseworthyMenteeSuggester {
 	 * Get array of user impacts for all active mentees assigned to $mentor
 	 *
 	 * @param UserIdentity $mentor
-	 * @return UserImpact[]
+	 * @return (UserImpact|null)[]
 	 */
 	private function getUserImpactsForActiveMentees( UserIdentity $mentor ): array {
 		$mentees = $this->mentorStore->getMenteesByMentor(
@@ -68,9 +60,7 @@ class PraiseworthyMenteeSuggester {
 		);
 
 		if ( $this->userImpactLookup instanceof DatabaseUserImpactStore ) {
-			$userIds = array_map( static function ( UserIdentity $mentee ) {
-				return $mentee->getId();
-			}, $mentees );
+			$userIds = array_map( static fn ( UserIdentity $user ) => $user->getId(), $mentees );
 			return $this->userImpactLookup->batchGetUserImpact( $userIds );
 		} else {
 			// There is no batching in other implementations than DatabaseUserImpactStore; fetch
@@ -96,6 +86,7 @@ class PraiseworthyMenteeSuggester {
 	 */
 	public function getPraiseworthyMenteesForMentorUncached( UserIdentity $mentor ): array {
 		$impacts = $this->getUserImpactsForActiveMentees( $mentor );
+		// @phan-suppress-next-line PhanTypeMismatchReturn Null is removed via array_filter
 		return array_filter( $impacts, function ( ?UserImpact $impact ) use ( $mentor ) {
 			if ( $impact === null ) {
 				return false;
@@ -107,14 +98,11 @@ class PraiseworthyMenteeSuggester {
 		} );
 	}
 
-	/**
-	 * @param UserIdentity $mentor
-	 * @return string
-	 */
 	private function makeCacheKeyForMentor( UserIdentity $mentor ): string {
 		return $this->globalCache->makeKey(
-			'GrowthExperiments', 'PraiseworthyMenteeSuggester',
-			UserImpact::VERSION, 'getPraiseworthyMentees', $mentor->getId()
+			'growthexperiments-mentor-praiseworthymentees',
+			UserImpact::VERSION,
+			$mentor->getId()
 		);
 	}
 
@@ -140,8 +128,6 @@ class PraiseworthyMenteeSuggester {
 
 	/**
 	 * Refresh the mentor's cache of their praiseworthy mentees
-	 *
-	 * @param UserIdentity $mentor
 	 */
 	public function refreshPraiseworthyMenteesForMentor( UserIdentity $mentor ): void {
 		$key = $this->makeCacheKeyForMentor( $mentor );
@@ -153,7 +139,7 @@ class PraiseworthyMenteeSuggester {
 		$praiseworthyMentees = $this->getPraiseworthyMenteesForMentorUncached( $mentor );
 		$this->globalCache->set(
 			$key,
-			$praiseworthyMentees,
+			$this->serializeForCache( $praiseworthyMentees ),
 			self::EXPIRATION_TTL
 		);
 
@@ -176,18 +162,9 @@ class PraiseworthyMenteeSuggester {
 			return [];
 		}
 
-		$res = $this->globalCache->get( $key );
-		if ( !$res ) {
-			return [];
-		}
-		return $res;
+		return $this->deserializeFromCache( $this->globalCache->get( $key ) ) ?: [];
 	}
 
-	/**
-	 * @param UserIdentity $mentee
-	 * @param UserIdentity $mentor
-	 * @return bool
-	 */
 	public function isMenteeMarkedAsPraiseworthy( UserIdentity $mentee, UserIdentity $mentor ): bool {
 		$praiseworthyIds = array_keys( $this->getPraiseworthyMenteesForMentor( $mentor ) );
 		return in_array( $mentee->getId(), $praiseworthyIds );
@@ -217,20 +194,18 @@ class PraiseworthyMenteeSuggester {
 			return;
 		}
 
-		$data = $this->globalCache->get( $key );
+		$data = $this->deserializeFromCache( $this->globalCache->get( $key ) );
 		if ( !$data ) {
 			$data = [];
 		}
 		$data[$menteeImpact->getUser()->getId()] = $menteeImpact;
-		$this->globalCache->set( $key, $data, self::EXPIRATION_TTL );
+		$this->globalCache->set( $key, $this->serializeForCache( $data ), self::EXPIRATION_TTL );
 
 		$this->notificationsDispatcher->onMenteeSuggested( $mentorUser, $menteeImpact->getUser() );
 	}
 
 	/**
 	 * Remove a mentee from the list of praiseworthy mentees
-	 *
-	 * @param UserIdentity $mentee
 	 */
 	private function removeMenteeFromSuggestions( UserIdentity $mentee ): void {
 		$mentor = $this->mentorStore->loadMentorUser( $mentee, MentorStore::ROLE_PRIMARY );
@@ -241,11 +216,12 @@ class PraiseworthyMenteeSuggester {
 		if ( $this->isMenteeMarkedAsPraiseworthy( $mentee, $mentor ) ) {
 			$this->globalCache->merge(
 				$this->makeCacheKeyForMentor( $mentor ),
-				static function ( $cache, $key, $value ) use ( $mentee ) {
+				function ( $cache, $key, $value ) use ( $mentee ) {
+					$value = $this->deserializeFromCache( $value );
 					if ( array_key_exists( $mentee->getId(), $value ) ) {
 						unset( $value[$mentee->getId()] );
 					}
-					return $value;
+					return $this->serializeForCache( $value );
 				}
 			);
 		}
@@ -253,8 +229,6 @@ class PraiseworthyMenteeSuggester {
 
 	/**
 	 * Mark a mentee as already praised
-	 *
-	 * @param UserIdentity $mentee
 	 */
 	public function markMenteeAsPraised( UserIdentity $mentee ): void {
 		$this->userOptionsManager->setOption(
@@ -272,8 +246,6 @@ class PraiseworthyMenteeSuggester {
 	 *
 	 * The mentee will not be re-suggested for PraiseworthyConditionsLookup::SKIP_MENTEES_FOR_DAYS
 	 * days.
-	 *
-	 * @param UserIdentity $mentee
 	 */
 	public function markMenteeAsSkipped( UserIdentity $mentee ): void {
 		$this->userOptionsManager->setOption(
@@ -286,5 +258,23 @@ class PraiseworthyMenteeSuggester {
 		$this->userOptionsManager->saveOptions( $mentee );
 
 		$this->removeMenteeFromSuggestions( $mentee );
+	}
+
+	private function serializeForCache( array $menteeImpacts ): string {
+		return json_encode( $menteeImpacts, flags: JSON_THROW_ON_ERROR );
+	}
+
+	private function deserializeFromCache( string|false $cachedData ): mixed {
+		if ( $cachedData === false ) {
+			return false;
+		}
+
+		$impactData = json_decode( $cachedData, associative: true, flags: JSON_THROW_ON_ERROR );
+		$menteeImpacts = [];
+		foreach ( $impactData as $menteeImpactData ) {
+			$menteeImpacts[] = UserImpact::newFromJsonArray( $menteeImpactData );
+		}
+
+		return $menteeImpacts;
 	}
 }

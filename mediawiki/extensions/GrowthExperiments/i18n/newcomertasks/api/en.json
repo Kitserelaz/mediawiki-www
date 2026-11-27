@@ -20,6 +20,9 @@
 	"apihelp-visualeditoredit-paramvalue-plugins-ge-task-link-recommendation": "Use when saving a GrowthExperiments \"[https://www.mediawiki.org/wiki/Growth/Personalized_first_day/Structured_tasks/Add_a_link Add a link]\" structured edit.",
 	"apihelp-visualeditoredit-paramvalue-plugins-ge-task-image-recommendation": "Use when saving a GrowthExperiments \"[https://www.mediawiki.org/wiki/Growth/Personalized_first_day/Structured_tasks/Add_an_image Add an image]\" structured edit.",
 	"apihelp-visualeditoredit-paramvalue-plugins-ge-task-section-image-recommendation": "Use when saving a GrowthExperiments \"[https://www.mediawiki.org/wiki/Growth/Personalized_first_day/Structured_tasks/Add_an_image#\"Add_an_image\"_to_a_Section Add an image to a section]\" structured edit.",
+	"apihelp-visualeditoredit-paramvalue-plugins-ge-task-revise-tone": "Use when saving a GrowthExperiments \"[[mw:Growth/Revise_Tone|Revise Tone]]\" structured edit.",
+	"apihelp-visualeditoredit-append-data-plugin-ge-task-revise-tone": "<dl><dt>For the <var>ge-task-revise-tone</var> plugin</dt><dd>\n$1\n</dd></dl>",
+	"apihelp-growthexperiments-structured-task-submit-data-format-revise-tone": "No data should be included for this plugin.",
 	"apihelp-visualeditoredit-append-data-plugin-ge-task-link-recommendation": "<dl><dt>For the <var>ge-task-link-recommendation</var> plugin</dt><dd>\n$1\n</dd></dl>",
 	"apihelp-visualeditoredit-append-data-plugin-ge-task-image-recommendation": "<dl><dt>For the <var>ge-task-image-recommendation</var> plugin</dt><dd>\n$1\n</dd></dl>",
 	"apihelp-visualeditoredit-append-data-plugin-ge-task-section-image-recommendation": "<dl><dt>For the <var>ge-task-section-image-recommendation</var> plugin</dt><dd>\n$1\n</dd></dl>",
@@ -36,10 +39,12 @@
 	"apierror-growthexperiments-addsectionimage-handler-section-number-wrongtype": "'sectionNumber' parameter must be an integer in Add Section Image plugin data, is $1",
 	"apierror-growthexperiments-addlink-handler-notfound": "Link recommendation record not found",
 	"apierror-growthexperiments-addlink-handler-wrongtargets": "Unexpected link recommendation targets: $1",
-	"growthexperiments-underlinked-rescore-profile": "Internal rescore profile used in GrowthExperiments link recommendations for prioritizing articles which do not yet have enough links.",
+	"growthexperiments-underlinked-rescore-profile": "Internal rescore profile used in GrowthExperiments link recommendations for prioritizing articles which do not yet have enough links. This is a no-op when Link Recommendations are disabled.",
 	"growthexperiments-addimage-feedback-accepted-editrevid": "The <var>editRevId</var> parameter is required when the <var>accepted</var> parameter is set to <kbd>true</kbd>.",
 	"growthexperiments-addimage-feedback-rejected-editrevid": "The <var>editRevId</var> parameter cannot be used when the <var>accepted</var> parameter is set to <kbd>false</kbd>.",
 	"growthexperiments-addimage-feedback-accepted-caption": "The <var>caption</var> parameter is required when the <var>accepted</var> parameter is set to <kbd>true</kbd>.",
 	"growthexperiments-addimage-feedback-revid-nonexistent": "The revision specified in <var>editRevId</var> was not found.",
-	"growthexperiments-addimage-feedback-invalid-revid-wrong-page": "The revision specified in <var>editRevId</var> belongs to a different page."
+	"growthexperiments-addimage-feedback-invalid-revid-wrong-page": "The revision specified in <var>editRevId</var> belongs to a different page.",
+	"apihelp-growthinvalidaterevisetonerecommendation-summary": "Drop a 'Revise Tone' recommendation for a given page.",
+	"apihelp-growthinvalidaterevisetonerecommendation-param-title": "Title of the page for which to drop the recommendation, without namespace."
 }

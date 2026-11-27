@@ -4,7 +4,7 @@ namespace GrowthExperiments\Tests\Integration;
 
 use GrowthExperiments\GrowthExperimentsServices;
 use GrowthExperiments\Mentorship\Store\MentorStore;
-use MediaWiki\Title\Title;
+use MediaWiki\Extension\CommunityConfiguration\Tests\CommunityConfigurationTestHelpers;
 use MediaWiki\User\User;
 use MediaWikiIntegrationTestCase;
 use Wikimedia\LightweightObjectStore\ExpirationAwareness;
@@ -13,14 +13,10 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
 /**
  * @group Database
  * @group medium
- * @coversDefaultClass \GrowthExperiments\Mentorship\Hooks\MentorHooks
+ * @covers \GrowthExperiments\Mentorship\Hooks\MentorHooks
  */
 class MentorHooksTest extends MediaWikiIntegrationTestCase {
-
-	protected function setUp(): void {
-		parent::setUp();
-		$this->setMainCache( CACHE_NONE );
-	}
+	use CommunityConfigurationTestHelpers;
 
 	private function getUserByRegistrationAndEditcount(
 		$timestamp,
@@ -33,7 +29,7 @@ class MentorHooksTest extends MediaWikiIntegrationTestCase {
 			->update( 'user' )
 			->set( [
 				'user_registration' => $dbw->timestamp( $timestamp ),
-				'user_editcount' => $editcount
+				'user_editcount' => $editcount,
 			] )
 			->where( [ 'user_id' => $user->getId() ] )
 			->caller( __METHOD__ )
@@ -47,17 +43,16 @@ class MentorHooksTest extends MediaWikiIntegrationTestCase {
 	 * @param int $minAge
 	 * @param int $minEditcount
 	 * @dataProvider provideOnUserGetRights
-	 * @covers ::onUserGetRights
 	 */
 	public function testOnUserGetRights(
 		int $minAge,
 		int $minEditcount
 	) {
-		$this->overrideConfigValues( [
+		$this->overrideProviderConfig( [
 			'GEMentorshipAutomaticEligibility' => true,
 			'GEMentorshipMinimumAge' => $minAge,
 			'GEMentorshipMinimumEditcount' => $minEditcount,
-		] );
+		], 'Mentorship' );
 		// Pin time to avoid failure when next second starts - T316154
 		$now = strtotime( '2011-04-01T12:00Z' );
 		ConvertibleTimestamp::setFakeTime( $now );
@@ -88,27 +83,34 @@ class MentorHooksTest extends MediaWikiIntegrationTestCase {
 		];
 	}
 
+	public static function provideOnBlockIpComplete() {
+		return [
+			'Temporary block' => [ true, '1 day' ],
+			'Sitewide block' => [ false, 'indefinite' ],
+		];
+	}
+
 	/**
-	 * @covers ::onPageSaveComplete
+	 * @dataProvider provideOnBlockIpComplete
+	 * @param bool $expectedSurvival
+	 * @param string $expiry
 	 */
-	public function testMarkMenteeAsActive() {
+	public function testOnBlockIpComplete( bool $expectedSurvival, string $expiry ) {
 		$mentorStore = GrowthExperimentsServices::wrap( $this->getServiceContainer() )
 			->getMentorStore();
+		$blockUserFactory = $this->getServiceContainer()->getBlockUserFactory();
 
-		$mentor = $this->getTestSysop()->getUserIdentity();
-		$menteeTestUser = $this->getMutableTestUser();
-		$mentorStore->setMentorForUser( $menteeTestUser->getUserIdentity(), $mentor, MentorStore::ROLE_PRIMARY );
-		$mentorStore->markMenteeAsInactive( $menteeTestUser->getUserIdentity() );
-		$this->assertFalse( $mentorStore->isMenteeActive( $menteeTestUser->getUserIdentity() ) );
+		$mentee = $this->getTestUser()->getUserIdentity();
+		$sysop = $this->getTestSysop()->getUser();
+		$mentorStore->setMentorForUser( $mentee, $sysop, MentorStore::ROLE_PRIMARY );
 
-		$this->editPage(
-			Title::newFromText( 'Sandbox' ),
-			'test',
-			'',
-			NS_MAIN,
-			$menteeTestUser->getAuthority()
-		);
+		$blockStatus = $blockUserFactory->newBlockUser( $mentee, $sysop, $expiry )->placeBlock();
+		$this->assertStatusOK( $blockStatus, 'Failed to block mentor' );
 
-		$this->assertTrue( $mentorStore->isMenteeActive( $menteeTestUser->getUserIdentity() ) );
+		if ( $expectedSurvival ) {
+			$this->assertEquals( $sysop, $mentorStore->loadMentorUser( $mentee, MentorStore::ROLE_PRIMARY ) );
+		} else {
+			$this->assertNull( $mentorStore->loadMentorUser( $mentee, MentorStore::ROLE_PRIMARY ) );
+		}
 	}
 }

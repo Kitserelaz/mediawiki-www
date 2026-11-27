@@ -11,21 +11,15 @@
 		configData = Help.configData,
 		suggestedEditSession = require( 'ext.growthExperiments.SuggestedEditSession' ).getInstance(),
 		suggestedEditsPeek = require( '../ui-components/SuggestedEditsPeek.js' ),
-		guidanceEnabled = mw.config.get( 'wgGENewcomerTasksGuidanceEnabled' ),
 		askHelpEnabled = mw.config.get( 'wgGEAskQuestionEnabled' );
-	if ( guidanceEnabled && suggestedEditSession.active &&
+	if ( suggestedEditSession.active &&
 		!suggestedEditSession.postEditDialogNeedsToBeShown
 	) {
 		require( './SuggestedEditsGuidance.js' );
 	}
 	const taskTypeId = suggestedEditSession.taskType;
 	const taskTypeLogData = taskTypeId ? { taskType: taskTypeId } : null;
-	const guidanceAvailable = guidanceEnabled && taskTypeId && TASK_TYPES[ taskTypeId ];
-
-	// This shouldn't happen, but just to be sure
-	if ( !mw.config.get( 'wgGEHelpPanelEnabled' ) ) {
-		return;
-	}
+	const guidanceAvailable = taskTypeId && TASK_TYPES[ taskTypeId ];
 
 	$( () => {
 		// eslint-disable-next-line no-jquery/no-global-selector
@@ -35,7 +29,8 @@
 			windowManager = new OO.ui.WindowManager( { modal: OO.ui.isMobile() } ),
 			$overlay = $( '<div>' ).addClass( 'mw-ge-help-panel-widget-overlay' ),
 			// If standardized menu area is available - use that.
-			helpButtonLocationDock = mw.util.addPortletLink( 'p-dock-bottom', '#', '' ),
+			dockPortletId = 'p-dock-bottom',
+			helpButtonLocationDock = mw.util.addPortletLink( dockPortletId, '#', '' ),
 			helpButtonLocation = helpButtonLocationDock ?
 				$( helpButtonLocationDock ).html( '' ) : $overlay,
 			logger = new HelpPanelLogger( {
@@ -46,7 +41,7 @@
 				// edit session's ID, if we are in one.
 				sessionId: mw.config.get( 'wgGEHomepagePageviewToken' ) ||
 					suggestedEditSession.active && suggestedEditSession.clickId,
-				isSuggestedTask: suggestedEditSession.active
+				isSuggestedTask: suggestedEditSession.active,
 			} ),
 			size = OO.ui.isMobile() ? 'full' : 'small',
 			/**
@@ -57,11 +52,13 @@
 				size: Math.max( document.documentElement.clientWidth, window.innerWidth || 0 ) > 1366 ? 'medium' : size,
 				logger: logger,
 				questionPosterAllowIncludingTitle: true,
-				guidanceEnabled: guidanceEnabled,
 				askHelpEnabled: askHelpEnabled,
 				taskTypeId: taskTypeId,
-				suggestedEditSession: suggestedEditSession
+				suggestedEditSession: suggestedEditSession,
 			} );
+		// FIXME the z-index stack for the p-dock menu should be revised in Minerva, meanwhile
+		// add a custom growth class to reduce in conflicting interfaces, T399864.
+		$( `#${ dockPortletId }` ).addClass( 'mw-ge-underlaid-dock-menu' );
 		let $buttonWrapper = $buttonToInfuse.parent(),
 			isCtaHidden = true,
 			lifecycle;
@@ -134,7 +131,7 @@
 			helpPanelProcessDialog.updateEditMode();
 			// If the help panel should show for the namespace, then don't detach the button
 			// and also log an impression.
-			if ( configData.GEHelpPanelReadingModeNamespaces.indexOf( mw.config.get( 'wgNamespaceNumber' ) ) !== -1 ) {
+			if ( configData.GEHelpPanelReadingModeNamespaces.includes( mw.config.get( 'wgNamespaceNumber' ) ) ) {
 				// When closing the wikitext editor, the url is only updated some time after
 				// so there is a chance that we need to log an impression event but we'll
 				// only know for sure a little later ;)
@@ -154,13 +151,18 @@
 		 * Hide the CTA when VE's context item is opened and show it when the context item is closed
 		 */
 		function setupHelpButtonToggle() {
-			const onContextResize = function () {
-				const isContextItemVisible = window.ve.init.target.surface.context.isVisible();
-				$buttonWrapper.toggleClass( 'animate-out', isContextItemVisible );
-			};
-			const onContextResizeDebounced = OO.ui.debounce( onContextResize, 200 );
-			mw.hook( 've.activationComplete' ).add( () => {
-				window.ve.init.target.surface.context.on( 'resize', onContextResizeDebounced );
+			mw.hook( 've.newTarget' ).add( ( target ) => {
+				if ( target.constructor.static.name !== 'article' ) {
+					return;
+				}
+				target.on( 'surfaceReady', () => {
+					const surface = target.getSurface();
+					const onSurfacePadding = function () {
+						$buttonWrapper.css( 'bottom', surface.getPadding().bottom + 'px' );
+					};
+					const onSurfacePaddingDebounced = OO.ui.debounce( onSurfacePadding );
+					surface.on( 'padding', onSurfacePaddingDebounced );
+				} );
 			} );
 		}
 
@@ -180,7 +182,7 @@
 		} else {
 			helpCtaButton = new HelpPanelButton( {
 				label: mw.msg( 'growthexperiments-help-panel-cta-button-text' ),
-				href: mw.util.getUrl( configData.GEHelpPanelHelpDeskTitle )
+				href: mw.util.getUrl( configData.GEHelpPanelHelpDeskTitle ),
 			} );
 			$buttonWrapper = $( '<div>' )
 				.addClass( 'mw-ge-help-panel-cta' )
@@ -212,17 +214,17 @@
 
 			$buttonWrapper.addClass( 'mw-ge-help-panel-opened' );
 			lifecycle = windowManager.openWindow( helpPanelProcessDialog, {
-				panel: panel
+				panel: panel,
 			} );
 			lifecycle.opening.then( () => {
 				logger.log( 'open' );
 				helpPanelProcessDialog.updateSuggestedEditSession( {
-					helpPanelShouldOpen: true
+					helpPanelShouldOpen: true,
 				} );
 				helpPanelProcessDialog.updateEditMode();
 				helpCtaButton.setOpen( true );
 			} );
-			lifecycle.closing.done( () => {
+			lifecycle.closing.then( () => {
 				if ( OO.ui.isMobile() ) {
 					$body.append( $mfOverlay, $veUiOverlay );
 				}
@@ -271,19 +273,19 @@
 					suggestedEditsPeek.getSuggestedEditsPeek(
 						'suggested-edits-mobile-peek-content',
 						taskTypeData.messages,
-						taskTypeData.difficulty
+						taskTypeData.difficulty,
 					),
 					$( '<div>' ).addClass( 'suggested-edits-mobile-peek-footer' )
 						.append(
 							$( '<a>' ).attr( {
 								href: '#',
-								class: 'suggested-edits-mobile-peek-more-about-this-edit'
+								class: 'suggested-edits-mobile-peek-more-about-this-edit',
 							} ).text(
 								mw.msg(
-									'growthexperiments-homepage-suggestededits-mobile-peek-more-about-this-edit'
-								)
-							)
-						)
+									'growthexperiments-homepage-suggestededits-mobile-peek-more-about-this-edit',
+								),
+							),
+						),
 				],
 				onBeforeHide: function ( drawer ) {
 					if ( !tapped ) {
@@ -296,7 +298,7 @@
 						helpCtaButton.toggle( true );
 						drawer.$el.remove();
 					}, 250 );
-				}
+				},
 			} );
 			mobilePeek.$el.find( '.suggested-edits-mobile-peek' ).on( 'click', () => {
 				tapped = true;
@@ -306,7 +308,7 @@
 				// When the mobile peek is shown, the help panel is considered "opened", so the
 				// auto-advance behavior is treated as if the help panel started out opened.
 				helpPanelProcessDialog.setGuidanceAutoAdvance(
-					helpPanelProcessDialog.shouldAutoAdvanceUponInit()
+					helpPanelProcessDialog.shouldAutoAdvanceUponInit(),
 				);
 			} );
 			document.body.appendChild( mobilePeek.$el[ 0 ] );
@@ -334,7 +336,7 @@
 					// help panel opens.
 					$overlay.addClass( 'mw-ge-help-panel-popup-guidance' );
 					openHelpPanel( suggestedEditSession.helpPanelCurrentPanel || 'suggested-edits' ).closing
-						.done( () => {
+						.then( () => {
 							$overlay.removeClass( 'mw-ge-help-panel-popup-guidance' );
 						} );
 				}
@@ -348,7 +350,7 @@
 				openHelpPanel(
 					guidanceAvailable ?
 						( suggestedEditSession.helpPanelCurrentPanel || 'suggested-edits' ) :
-						'home'
+						'home',
 				);
 			}
 		} );
@@ -356,7 +358,7 @@
 		// Attach or detach the help panel CTA in response to hooks from MobileFrontend,
 		// and set the logger's editor interface.
 		if ( OO.ui.isMobile() ) {
-			if ( suggestedEditSession.shouldOpenArticleInEditMode ) {
+			if ( suggestedEditSession.shouldOpenArticleInEditMode && suggestedEditSession.hasCustomMobileContextItem ) {
 				/* Hide CTA if the article is opened in edit mode automatically
 				 * since the CTA appears on top of the context item on mobile.
 				 * Help panel can be invoked from help button in the context item.
@@ -365,7 +367,7 @@
 				mw.hook( 'growthExperiments.contextItem.openHelpPanel' ).add(
 					( helpPanelButton ) => {
 						const prevScrollPosition = $( document ).scrollTop();
-						openHelpPanel( 'suggested-edits' ).closing.done( () => {
+						openHelpPanel( 'suggested-edits' ).closing.then( () => {
 							// When help panel closes, article is scrolled to 0.
 							// Make sure annotation is visible.
 							$( document ).scrollTop( prevScrollPosition );
@@ -373,7 +375,7 @@
 								helpPanelButton.setOpen( false );
 							}
 						} );
-					}
+					},
 				);
 			}
 
@@ -382,13 +384,13 @@
 					helpPanelProcessDialog.logger.setEditor( editor );
 					attachHelpButton( editor );
 
-				}
+				},
 			);
 			mw.hook( 'mobileFrontend.editorClosed' ).add(
 				( editor ) => {
 					helpPanelProcessDialog.logger.setEditor( editor );
 					detachHelpButton();
-				}
+				},
 			);
 
 			setupHelpButtonToggle();

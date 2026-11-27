@@ -1,49 +1,40 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace GrowthExperiments\Maintenance;
 
 use GrowthExperiments\GrowthExperimentsServices;
 use GrowthExperiments\MentorDashboard\MenteeOverview\MenteeOverviewDataUpdater;
 use GrowthExperiments\Mentorship\Provider\MentorProvider;
-use GrowthExperiments\WikiConfigException;
-use Liuggio\StatsdClient\Factory\StatsdDataFactoryInterface;
 use MediaWiki\Maintenance\Maintenance;
-use MediaWiki\User\UserFactory;
+use MediaWiki\User\UserIdentityLookup;
 use Wikimedia\Rdbms\ILoadBalancer;
+use Wikimedia\Stats\StatsFactory;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 class UpdateMenteeData extends Maintenance {
 
-	/** @var MenteeOverviewDataUpdater */
-	private $menteeOverviewDataUpdater;
-
-	/** @var MentorProvider */
-	private $mentorProvider;
-
-	/** @var UserFactory */
-	private $userFactory;
-
-	/** @var ILoadBalancer */
-	private $growthLoadBalancer;
-
-	/** @var StatsdDataFactoryInterface */
-	private $dataFactory;
-
-	/** @var array */
-	private $detailedProfilingInfo = [];
+	private MenteeOverviewDataUpdater $menteeOverviewDataUpdater;
+	private MentorProvider $mentorProvider;
+	private ILoadBalancer $growthLoadBalancer;
+	private StatsFactory $statsFactory;
+	private UserIdentityLookup $userIdentityLookup;
+	private array $detailedProfilingInfo = [];
 
 	public function __construct() {
 		parent::__construct();
-		$this->setBatchSize( 200 );
+		$this->setBatchSize( 100 );
 		$this->requireExtension( 'GrowthExperiments' );
 
 		$this->addDescription( 'Update growthexperiments_mentee_data database table' );
-		$this->addOption( 'force', 'Do the update even if GEMentorDashboardEnabled is false' );
 		$this->addOption( 'mentor', 'Username of the mentor to update the data for', false, true );
 		$this->addOption( 'statsd', 'Send timing information to statsd' );
 		$this->addOption( 'verbose', 'Output detailed profiling information' );
@@ -55,16 +46,16 @@ class UpdateMenteeData extends Maintenance {
 		);
 	}
 
-	private function initServices() {
+	private function initServices(): void {
 		$services = $this->getServiceContainer();
 		$geServices = GrowthExperimentsServices::wrap( $services );
 
 		$this->menteeOverviewDataUpdater = $geServices->getMenteeOverviewDataUpdater();
 		$this->menteeOverviewDataUpdater->setBatchSize( $this->getBatchSize() );
 		$this->mentorProvider = $geServices->getMentorProvider();
-		$this->userFactory = $services->getUserFactory();
 		$this->growthLoadBalancer = $geServices->getLoadBalancer();
-		$this->dataFactory = $services->getStatsdDataFactory();
+		$this->statsFactory = $services->getStatsFactory();
+		$this->userIdentityLookup = $services->getUserIdentityLookup();
 	}
 
 	private function addProfilingInfoForMentor( array $mentorProfilingInfo ): void {
@@ -85,38 +76,28 @@ class UpdateMenteeData extends Maintenance {
 		return $res;
 	}
 
+	/**
+	 * @inheritDoc
+	 */
 	public function execute() {
-		if (
-			!$this->getConfig()->get( 'GEMentorDashboardEnabled' ) &&
-			!$this->hasOption( 'force' )
-		) {
-			$this->output( "Mentor dashboard is disabled.\n" );
-			return;
-		}
-
 		$this->initServices();
 
 		$startTime = time();
 
 		if ( $this->hasOption( 'mentor' ) ) {
-			$mentors = [ $this->getOption( 'mentor' ) ];
-		} else {
-			try {
-				$mentors = $this->mentorProvider->getMentors();
-			} catch ( WikiConfigException $e ) {
-				$this->fatalError( 'List of mentors cannot be fetched.' );
+			$username = $this->getOption( 'mentor' );
+			$user = $this->userIdentityLookup->getUserIdentityByName( $username );
+			if ( !$user ) {
+				$this->fatalError( "No such user $username found" );
 			}
+			$mentors = [ $user ];
+		} else {
+			$mentors = $this->mentorProvider->getMentors();
 		}
 
 		$allUpdatedMenteeIds = [];
 		$dbw = $this->growthLoadBalancer->getConnection( DB_PRIMARY );
-		foreach ( $mentors as $mentorRaw ) {
-			$mentor = $this->userFactory->newFromName( $mentorRaw );
-			if ( $mentor === null ) {
-				$this->output( 'Skipping ' . $mentorRaw . ", invalid user\n" );
-				continue;
-			}
-
+		foreach ( $mentors as $mentor ) {
 			$updatedMenteeIds = $this->menteeOverviewDataUpdater->updateDataForMentor( $mentor );
 			$allUpdatedMenteeIds = array_merge( $allUpdatedMenteeIds, $updatedMenteeIds );
 			$this->addProfilingInfoForMentor(
@@ -142,14 +123,14 @@ class UpdateMenteeData extends Maintenance {
 				$dbw->newDeleteQueryBuilder()
 					->deleteFrom( 'growthexperiments_mentee_data' )
 					->where( [
-						'mentee_id' => $menteeIdsToDelete
+						'mentee_id' => $menteeIdsToDelete,
 					] )
 					->caller( __METHOD__ )
 					->execute();
 			}
 		}
 
-		$totalTime = time() - $startTime;
+		$totalTimeInSeconds = time() - $startTime;
 		$profilingInfo = $this->getSummarizedProfilingInfoInSeconds();
 
 		if ( $this->hasOption( 'verbose' ) ) {
@@ -161,25 +142,27 @@ class UpdateMenteeData extends Maintenance {
 		}
 
 		if ( $this->hasOption( 'statsd' ) && $this->hasOption( 'dbshard' ) ) {
-			$this->dataFactory->timing(
-				'timing.growthExperiments.updateMenteeData.' . $this->getOption( 'dbshard' ) . '.total',
-				$totalTime
-			);
+			$dbShard = $this->getOption( 'dbshard' );
+			$this->statsFactory->withComponent( 'GrowthExperiments' )
+				->getTiming( 'update_mentee_data_seconds' )
+				->setLabel( 'shard', $dbShard )
+				->setLabel( 'type', 'total' )
+				->observeSeconds( $totalTimeInSeconds );
 
 			foreach ( $profilingInfo as $section => $seconds ) {
-				$this->dataFactory->timing(
-					'timing.growthExperiments.updateMenteeData.' .
-					$this->getOption( 'dbshard' ) .
-					'.' .
-					$section,
-					$seconds
-				);
+				$this->statsFactory->withComponent( 'GrowthExperiments' )
+					->getTiming( 'update_mentee_data_section_seconds' )
+					->setLabel( 'shard', $dbShard )
+					->setLabel( 'section', $section )
+					->observeSeconds( $seconds );
 			}
 		}
 
-		$this->output( "Done. Took {$totalTime} seconds.\n" );
+		$this->output( "Done. Took {$totalTimeInSeconds} seconds.\n" );
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = UpdateMenteeData::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

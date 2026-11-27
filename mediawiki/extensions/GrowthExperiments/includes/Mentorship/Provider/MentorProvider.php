@@ -3,17 +3,16 @@
 namespace GrowthExperiments\Mentorship\Provider;
 
 use GrowthExperiments\Mentorship\Mentor;
-use GrowthExperiments\WikiConfigException;
 use MediaWiki\Title\Title;
 use MediaWiki\User\UserIdentity;
-use Psr\Log\LoggerAwareTrait;
-use Psr\Log\NullLogger;
+use Psr\Log\LoggerInterface;
 
 abstract class MentorProvider {
-	use LoggerAwareTrait;
 
-	public function __construct() {
-		$this->setLogger( new NullLogger() );
+	protected LoggerInterface $logger;
+
+	public function __construct( LoggerInterface $logger ) {
+		$this->logger = $logger;
 	}
 
 	/** @var int Maximum mentor intro length. */
@@ -46,74 +45,32 @@ abstract class MentorProvider {
 	): Mentor;
 
 	/**
-	 * Get list of source Title objects
-	 *
-	 * A hook will run MentorProvider::invalidateCache() if it sees an edit made on any of those
-	 * pages.
-	 *
-	 * @internal To be used from MentorHooks only
-	 * @return Title[]
-	 */
-	public function getSourceTitles(): array {
-		return [];
-	}
-
-	/**
-	 * Invalidate the WAN cache
-	 *
-	 * @note Default implementation does not do anything.
-	 */
-	public function invalidateCache(): void {
-	}
-
-	/**
-	 * Checks if an user is a mentor (regardless of their auto-assignment status)
+	 * Checks if a user is a mentor (regardless of their auto-assignment status)
 	 * @param UserIdentity $user
 	 * @return bool
 	 */
 	public function isMentor( UserIdentity $user ): bool {
-		return $user->isRegistered() && in_array( $user->getName(), $this->getMentorsSafe() );
+		return $user->isRegistered() && array_reduce(
+				$this->getMentors(),
+				static function ( bool $carry, UserIdentity $mentorUser ) use ( $user ) {
+					if ( $carry ) {
+						return true;
+					}
+					return $user->equals( $mentorUser );
+				},
+				false
+			);
 	}
 
 	/**
 	 * Get all mentors, regardless on their auto-assignment status
-	 * @throws WikiConfigException If the mentor page cannot be fetched due to misconfiguration.
-	 * @return string[] List of mentors usernames.
+	 * @return UserIdentity[] List of mentors
 	 */
-	public function getMentors(): array {
-		return array_unique(
-			array_merge(
-				$this->getAutoAssignedMentors(),
-				$this->getManuallyAssignedMentors()
-			)
-		);
-	}
-
-	/**
-	 * Get all mentors, regardless of their auto-assignment status
-	 *
-	 * This does the same thing as getMentors(), but it suppresses any instance
-	 * of WikiConfigException (and returns an empty array instead).
-	 *
-	 * @return string[]
-	 */
-	public function getMentorsSafe(): array {
-		$mentors = [];
-		try {
-			$mentors = array_merge( $mentors, $this->getAutoAssignedMentors() );
-		} catch ( WikiConfigException $e ) {
-		}
-		try {
-			$mentors = array_merge( $mentors, $this->getManuallyAssignedMentors() );
-		} catch ( WikiConfigException $e ) {
-		}
-		return array_unique( $mentors );
-	}
+	abstract public function getMentors(): array;
 
 	/**
 	 * Get all the mentors who are automatically assigned to mentees.
-	 * @throws WikiConfigException If the mentor page cannot be fetched due to misconfiguration.
-	 * @return string[] List of mentor usernames.
+	 * @return UserIdentity[] List of mentors.
 	 */
 	abstract public function getAutoAssignedMentors(): array;
 
@@ -123,14 +80,24 @@ abstract class MentorProvider {
 	 * If a mentor is configured to receive more mentees than others, the returned array will
 	 * have their name multiple times.
 	 *
-	 * @return string[] Array of usernames
+	 * @return UserIdentity[] Array of mentors
 	 */
 	abstract public function getWeightedAutoAssignedMentors(): array;
 
 	/**
 	 * Get a list of mentors who are not automatically assigned to mentees.
-	 * @throws WikiConfigException If the mentor page cannot be fetched due to misconfiguration.
-	 * @return string[] List of mentors usernames.
+	 * @return UserIdentity[] List of mentors.
 	 */
 	abstract public function getManuallyAssignedMentors(): array;
+
+	/**
+	 * Invalidate any cached mentor data
+	 *
+	 * This method should be implemented by providers that use caching
+	 * to ensure cache consistency when mentor data changes.
+	 *
+	 * @since 1.43
+	 */
+	public function invalidateMentorsCache(): void {
+	}
 }

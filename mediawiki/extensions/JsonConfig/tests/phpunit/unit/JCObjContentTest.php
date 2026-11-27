@@ -1,16 +1,14 @@
 <?php
 
-namespace JsonConfig\Tests;
+namespace MediaWiki\Extension\JsonConfig\Tests;
 
-use JsonConfig\JCObjContent;
-use JsonConfig\JCValidators;
-use JsonConfig\JCValue;
+use MediaWiki\Extension\JsonConfig\JCObjContent;
+use MediaWiki\Extension\JsonConfig\JCValidators;
+use MediaWiki\Extension\JsonConfig\JCValue;
 use MediaWikiUnitTestCase;
 use PHPUnit\Framework\Assert;
 
 /**
- * @package JsonConfigTests
- * @group JsonConfig
  * @covers \JsonConfig\JCObjContent
  */
 class JCObjContentTest extends MediaWikiUnitTestCase {

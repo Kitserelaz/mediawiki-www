@@ -1,38 +1,33 @@
 <?php
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
+use MediaWiki\Content\WikitextContent;
+use MediaWiki\Http\MWHttpRequest;
 use MediaWiki\MediaWikiServices;
-use Wikimedia\ObjectCache\BagOStuff;
+use Wikimedia\ObjectCache\WANObjectCache;
 
 /**
  * Represents a json blob on a remote wiki.
  * Handles retrieval (via HTTP) and memcached caching.
  */
 class JCCache {
-	/** @var JCTitle */
-	private $titleValue;
-	/** @var string */
-	private $key;
-	/** @var BagOStuff */
-	private $cache;
+	private readonly string $key;
+	private readonly WANObjectCache $cache;
 	/** @var bool|string|JCContent */
 	private $content = null;
 
 	/** @var int number of seconds to keep the value in cache */
-	private $cacheExpiration;
+	private readonly int $cacheExpiration;
 
 	/**
 	 * ** DO NOT USE directly - call JCSingleton::getContent() instead. **
-	 *
-	 * @param JCTitle $titleValue
-	 * @param JCContent|null $content
 	 */
-	public function __construct( JCTitle $titleValue, $content = null ) {
-		$this->titleValue = $titleValue;
+	public function __construct(
+		private readonly JCTitle $titleValue,
+	) {
 		$conf = $this->titleValue->getConfig();
 		$flRev = $conf->flaggedRevs;
-		$this->cache = MediaWikiServices::getInstance()
-			->getObjectCacheFactory()->getInstance( CACHE_ANYTHING );
+		$this->cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
 		$keyArgs = [
 			'JsonConfig',
 			MediaWikiServices::getInstance()->getMainConfig()->get( 'JsonConfigCacheKeyPrefix' ),
@@ -47,7 +42,6 @@ class JCCache {
 			$this->key = $this->cache->makeGlobalKey( ...$keyArgs );
 		}
 		$this->cacheExpiration = $conf->cacheExp;
-		$this->content = $content ?: null; // ensure that if we don't have content, we use 'null'
 	}
 
 	/**
@@ -56,18 +50,34 @@ class JCCache {
 	 */
 	public function get() {
 		if ( $this->content === null ) {
-			$value = $this->memcGet(); // Get content from the memcached
-			if ( $value === false ) {
-				if ( $this->titleValue->getConfig()->store ) {
-					$this->loadLocal(); // Get it from the local wiki
-				} else {
-					$this->loadRemote(); // Get it from HTTP
+			if ( $this->disableJsonConfigCache() ) {
+				$this->content = $this->fetchContent();
+				return $this->content;
+			}
+
+			$value = $this->cache->getWithSetCallback(
+				$this->key,
+				$this->cacheExpiration,
+				function ( $oldValue, &$ttl ) {
+					// If the content is invalid, store an empty string to prevent repeated attempts
+					$content = $this->fetchContent() ?: '';
+
+					if ( !$content ) {
+						$ttl = 10;
+					}
+
+					if ( !is_string( $content ) ) {
+						$content = $content->getText();
+					}
+
+					return $content;
 				}
-				$this->memcSet(); // Save result to memcached
-			} elseif ( $value === '' ) {
-				$this->content = false; // Invalid ID was cached
+			);
+
+			if ( $value === '' ) {
+				$this->content = false;
 			} else {
-				$this->content = $value; // Content was cached
+				$this->content = $value;
 			}
 		}
 
@@ -75,61 +85,47 @@ class JCCache {
 	}
 
 	/**
-	 * Retrieves content from memcached.
-	 * @return string|bool Carrier config or false if not in cache.
+	 * Returns true if caching is disabled for JsonConfig
+	 *
+	 * TODO: Use this method in upcoming refactorings.
+	 *
+	 * @return bool
 	 */
-	private function memcGet() {
-		return MediaWikiServices::getInstance()->getMainConfig()->get( 'JsonConfigDisableCache' ) ?
-			false :
-			$this->cache->get( $this->key );
+	private function disableJsonConfigCache(): bool {
+		return MediaWikiServices::getInstance()->getMainConfig()->get( 'JsonConfigDisableCache' );
 	}
 
 	/**
-	 * Store $this->content in memcached.
-	 * If the content is invalid, store an empty string to prevent repeated attempts
+	 * Retrieves the content of the JSON config if the page
+	 * exists on the local wiki or over HTTP and set the content
+	 * property (on-demand).
+	 *
+	 * @return string|JCContent|false
 	 */
-	private function memcSet() {
-		if ( !MediaWikiServices::getInstance()->getMainConfig()->get( 'JsonConfigDisableCache' ) ) {
-			// caching an error condition for short time
-			$exp = $this->content ? $this->cacheExpiration : 10;
-			$value = $this->content ?: '';
-			if ( !is_string( $value ) ) {
-				$value = $value->getNativeData();
-			}
+	private function fetchContent() {
+		if ( $this->titleValue->getConfig()->store ) {
+			return $this->loadLocal(); // Get it from the local wiki
+		}
 
-			$this->cache->set( $this->key, $value, $exp );
+		return $this->loadRemote(); // Get it from HTTP
+	}
+
+	/**
+	 * Delete any cached information related to this config.
+	 */
+	public function resetCache() {
+		if ( !$this->disableJsonConfigCache() ) {
+			// Delete the old value: this will propagate over WANCache
+			$this->cache->delete( $this->key );
 		}
 	}
 
 	/**
-	 * Delete any cached information related to this config
-	 * @param null|bool $updateCacheContent controls if cache should be updated with the new content
-	 *   false = only clear cache,
-	 *   true = set cache to the new value,
-	 *   null = use configuration settings
-	 *   New content will be set only if it is present
-	 *   (either get() was called before, or it was set via ctor)
+	 * Retrieve the config from the local storage
+	 *
+	 * @return bool|string|JCContent
 	 */
-	public function resetCache( $updateCacheContent = null ) {
-		if ( !MediaWikiServices::getInstance()->getMainConfig()->get( 'JsonConfigDisableCache' ) ) {
-			$conf = $this->titleValue->getConfig();
-			if ( $this->content && ( $updateCacheContent === true ||
-				( $updateCacheContent === null && isset( $conf->store ) &&
-					// @phan-suppress-next-line PhanTypeExpectedObjectPropAccess
-					$conf->store->cacheNewValue ) )
-			) {
-				$this->memcSet(); // update cache with the new value
-			} else {
-				$this->cache->delete( $this->key ); // only delete existing value
-			}
-		}
-	}
-
-	/**
-	 * Retrieves the config from the local storage,
-	 * and sets $this->content to the content object or false
-	 */
-	private function loadLocal() {
+	protected function loadLocal() {
 		// @fixme @bug handle flagged revisions
 		$result = MediaWikiServices::getInstance()
 			->getWikiPageFactory()
@@ -138,28 +134,30 @@ class JCCache {
 		if ( !$result ) {
 			$result = false; // Keeping consistent with other usages
 		} elseif ( !( $result instanceof JCContent ) ) {
-			if ( $result->getModel() === CONTENT_MODEL_WIKITEXT ) {
+			if ( $result->getModel() === CONTENT_MODEL_WIKITEXT && $result instanceof WikitextContent ) {
 				// If this is a regular wiki page, allow it to be parsed as a json config
-				$result = $result->getNativeData();
+				$result = $result->getText();
 			} else {
 				wfLogWarning( "The locally stored wiki page '$this->titleValue' has " .
 					"unsupported content model'" );
 				$result = false;
 			}
 		}
-		$this->content = $result;
+		return $result;
 	}
 
 	/**
-	 * Retrieves the config using HTTP and sets $this->content to string or false
+	 * Retrieve the content over HTTP from another wiki
+	 *
+	 * @return bool|string
 	 */
 	private function loadRemote() {
 		do {
 			$result = false;
 			$conf = $this->titleValue->getConfig();
 			$remote = $conf->remote;
-			// @phan-suppress-next-line PhanTypeExpectedObjectPropAccessButGotNull
-			$req = JCUtils::initApiRequestObj( $remote->url, $remote->username, $remote->password );
+			$apiUtils = MediaWikiServices::getInstance()->getService( 'JsonConfig.ApiUtils' );
+			$req = $apiUtils->initApiRequestObj( $remote->url, $remote->username ?? null, $remote->password ?? null );
 			if ( !$req ) {
 				break;
 			}
@@ -212,17 +210,18 @@ class JCCache {
 			}
 		} while ( false );
 
-		$this->content = $result;
+		return $result;
 	}
 
 	/** Given a legal set of API parameters, return page from API
 	 * @param string $articleName title name used for warnings
-	 * @param \MWHttpRequest $req logged-in session
+	 * @param MWHttpRequest $req logged-in session
 	 * @param array $query
 	 * @return bool|mixed
 	 */
 	private function getPageFromApi( $articleName, $req, $query ) {
-		$revInfo = JCUtils::callApi( $req, $query, 'get remote JsonConfig' );
+		$apiUtils = MediaWikiServices::getInstance()->getService( 'JsonConfig.ApiUtils' );
+		$revInfo = $apiUtils->callApi( $req, $query, 'get remote JsonConfig' );
 		if ( $revInfo === false ) {
 			return false;
 		}
@@ -242,3 +241,6 @@ class JCCache {
 		return $pageInfo;
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCCache::class, 'JsonConfig\\JCCache' );

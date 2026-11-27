@@ -6,17 +6,17 @@ use GrowthExperiments\GrowthExperimentsServices;
 use GrowthExperiments\MentorDashboard\PersonalizedPraise\PraiseworthyMenteeSuggester;
 use GrowthExperiments\Mentorship\Provider\MentorProvider;
 use MediaWiki\Maintenance\Maintenance;
-use MediaWiki\User\UserIdentityLookup;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 class RefreshPraiseworthyMentees extends Maintenance {
 
-	private UserIdentityLookup $userIdentityLookup;
 	private MentorProvider $mentorProvider;
 	private PraiseworthyMenteeSuggester $praiseworthyMenteeSuggester;
 
@@ -33,7 +33,6 @@ class RefreshPraiseworthyMentees extends Maintenance {
 		$services = $this->getServiceContainer();
 		$geServices = GrowthExperimentsServices::wrap( $services );
 
-		$this->userIdentityLookup = $services->getUserIdentityLookup();
 		$this->mentorProvider = $geServices->getMentorProvider();
 		$this->praiseworthyMenteeSuggester = $geServices->getPraiseworthyMenteeSuggester();
 	}
@@ -52,14 +51,8 @@ class RefreshPraiseworthyMentees extends Maintenance {
 			return;
 		}
 
-		$mentors = $this->mentorProvider->getMentorsSafe();
-		foreach ( $mentors as $mentorName ) {
-			$mentor = $this->userIdentityLookup->getUserIdentityByName( $mentorName );
-			if ( !$mentor ) {
-				$this->output( 'Skipping ' . $mentorName . ", invalid user\n" );
-				continue;
-			}
-
+		$mentors = $this->mentorProvider->getMentors();
+		foreach ( $mentors as $mentor ) {
 			$this->praiseworthyMenteeSuggester->refreshPraiseworthyMenteesForMentor( $mentor );
 		}
 
@@ -67,5 +60,7 @@ class RefreshPraiseworthyMentees extends Maintenance {
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = RefreshPraiseworthyMentees::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

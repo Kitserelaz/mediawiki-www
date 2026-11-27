@@ -1,6 +1,6 @@
 <?php
 
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use MediaWiki\Config\Config;
 use MediaWiki\Content\IContentHandlerFactory;
@@ -11,7 +11,6 @@ use MediaWiki\Title\Title;
  * Hook handlers for JsonConfig extension.
  * All hooks from the CodeEditor extension which is optional to use with this extension.
  *
- * @file
  * @ingroup Extensions
  * @ingroup JsonConfig
  * @license GPL-2.0-or-later
@@ -19,15 +18,10 @@ use MediaWiki\Title\Title;
 class CodeEditorHooks implements
 	CodeEditorGetPageLanguageHook
 {
-	private Config $config;
-	private IContentHandlerFactory $contentHandlerFactory;
-
 	public function __construct(
-		Config $config,
-		IContentHandlerFactory $contentHandlerFactory
+		private readonly Config $config,
+		private readonly IContentHandlerFactory $contentHandlerFactory,
 	) {
-		$this->config = $config;
-		$this->contentHandlerFactory = $contentHandlerFactory;
 	}
 
 	/**
@@ -40,14 +34,17 @@ class CodeEditorHooks implements
 	 * @return bool|void True or no return value to continue or false to abort
 	 */
 	public function onCodeEditorGetPageLanguage( Title $title, ?string &$lang, string $model, string $format ) {
-		if ( !JCHooks::jsonConfigIsStorage( $this->config ) ) {
-			return;
-		}
-
-		// todo/fixme? We should probably add 'json' lang to only those pages that pass parseTitle()
-		$handler = $this->contentHandlerFactory->getContentHandler( $title->getContentModel() );
-		if ( $handler->getDefaultFormat() === CONTENT_FORMAT_JSON || JCSingleton::parseTitle( $title ) ) {
-			$lang = 'json';
+		if ( JCHooks::jsonConfigIsStorage( $this->config ) && $this->config->get( 'JsonConfigUseCodeEditor' ) ) {
+			$handler = $this->contentHandlerFactory->getContentHandler( $title->getContentModel() );
+			if (
+				$handler->getDefaultFormat() === CONTENT_FORMAT_JSON &&
+				JCSingleton::parseTitle( $title )
+			) {
+				$lang = 'json';
+			}
 		}
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( CodeEditorHooks::class, 'JsonConfig\\CodeEditorHooks' );

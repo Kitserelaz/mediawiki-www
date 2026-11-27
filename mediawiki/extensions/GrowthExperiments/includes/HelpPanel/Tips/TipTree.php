@@ -21,7 +21,7 @@ abstract class TipTree {
 		'step1',
 		'step2',
 		'step3',
-		'publish'
+		'publish',
 	];
 
 	// The types of tips that can be shown for a task type. Hard-coded for now.
@@ -31,20 +31,12 @@ abstract class TipTree {
 		'main-multiple',
 		'example',
 		'graphic',
-		'text'
+		'text',
 	];
-	/**
-	 * @var string|null
-	 */
-	protected $learnMoreLink;
-	/**
-	 * @var array
-	 */
-	protected $extraData;
 
-	/**
-	 * @param array $extraData
-	 */
+	protected ?string $learnMoreLink = null;
+	protected array $extraData;
+
 	public function __construct( array $extraData ) {
 		$this->learnMoreLink = $extraData[$this->getTaskTypeId()]['learnMoreLink'] ?? null;
 		$this->extraData = $extraData;
@@ -86,8 +78,8 @@ abstract class TipTree {
 			'variant' => [
 				'minerva' => [
 					'data' => 'mobile-frontend-editor-edit',
-				]
-			]
+				],
+			],
 		];
 	}
 
@@ -97,7 +89,7 @@ abstract class TipTree {
 	protected function getPublishMessageTipConfigData(): array {
 		return [
 			'type' => self::TIP_DATA_TYPE_PLAIN_MESSAGE,
-			'data' => 'publishchanges-start'
+			'data' => 'publishchanges-start',
 		];
 	}
 
@@ -117,7 +109,7 @@ abstract class TipTree {
 				[
 					'type' => self::TIP_DATA_TYPE_TITLE,
 					'data' => [ 'title' => $this->getLearnMoreLink() ],
-				]
+				],
 			];
 		}
 		return $steps;

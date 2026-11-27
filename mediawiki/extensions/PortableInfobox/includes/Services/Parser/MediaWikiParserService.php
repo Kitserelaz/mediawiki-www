@@ -11,6 +11,7 @@ use MediaWiki\Parser\PPFrame;
 use MediaWiki\Tidy\RemexDriver;
 use MediaWiki\Title\Title;
 use PageImages\Hooks\ParserFileProcessingHookHandlers;
+use ReflectionMethod;
 
 class MediaWikiParserService implements ExternalParser {
 
@@ -37,8 +38,9 @@ class MediaWikiParserService implements ExternalParser {
 							'pwrap' => false,
 						],
 					],
-					// Older MediaWiki versions require this option; newer versions ignore it.
-					[ "ParserEnableLegacyMediaDOM" => false ]
+					// Removed in MediaWiki 1.45, so we don't use MainConfigNames here.
+					// Can be removed when we drop backcompat.
+					[ 'ParserEnableLegacyMediaDOM' => false ]
 				)
 			);
 		}
@@ -65,10 +67,12 @@ class MediaWikiParserService implements ExternalParser {
 		$output = BlockLevelPass::doBlockLevels( $parsed, false );
 		$ready = $this->parser->getStripState()->unstripBoth( $output );
 
-		// @phan-suppress-next-line PhanDeprecatedFunction
-		$this->parser->replaceLinkHolders( $ready );
+		// This is required and there is no alternative to this if we want to prevent pwrap with our
+		// own tidy setup, otherwise we could just call recursiveTagParseFully above instead.
+		$replaceLinkHolders = new ReflectionMethod( Parser::class, 'replaceLinkHoldersPrivate' );
+		$replaceLinkHolders->invokeArgs( $this->parser, [ &$ready ] );
 
-		if ( isset( $this->tidyDriver ) ) {
+		if ( $this->tidyDriver ) {
 			$ready = $this->tidyDriver->tidy( $ready );
 		}
 
@@ -90,9 +94,10 @@ class MediaWikiParserService implements ExternalParser {
 	 * Add image to parser output for later usage
 	 *
 	 * @param Title $title
+	 * @param array $sizeParams
 	 * @return ?string PageImages markers, if any.
 	 */
-	public function addImage( $title ): ?string {
+	public function addImage( $title, array $sizeParams ): ?string {
 		$services = MediaWikiServices::getInstance();
 
 		$repoGroup = $services->getRepoGroup();
@@ -117,7 +122,9 @@ class MediaWikiParserService implements ExternalParser {
 				$services->getLinksMigration()
 			);
 
-			$params = [];
+			$params = [
+				'handler' => $sizeParams,
+			];
 			$html = '';
 
 			$handler->onParserModifyImageHTML(

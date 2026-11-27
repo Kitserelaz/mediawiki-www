@@ -9,7 +9,7 @@ const MachineSuggestionsMode = require( './MachineSuggestionsMode.js' ),
 		'showSave',
 		'showMobileSave',
 		'editMode',
-		'back'
+		'back',
 	],
 	allowedCommands = [ 'showSave', 'showChanges', 'back', 'cancel' ];
 
@@ -41,14 +41,14 @@ function TargetInitializer( config ) {
 	this.taskArticleTarget = config.taskArticleTarget;
 	this.suggestionsArticleTarget = config.suggestionsArticleTarget;
 	this.safeTools = allowedTools.concat(
-		MachineSuggestionsMode.getEditModeToolNames(), safeTools
+		MachineSuggestionsMode.getEditModeToolNames(), safeTools,
 	);
 	this.safeCommands = allowedCommands.concat( safeCommands );
 	this.dataModels = config.dataModels || [];
 	this.annotationViews = config.annotationViews || [];
 	this.windows = [
 		EditModeConfirmationDialog,
-		StructuredTaskMessageDialog
+		StructuredTaskMessageDialog,
 	].concat( customWindows );
 	this.commands = config.commands || [];
 	this.tools = config.tools || [];
@@ -103,7 +103,7 @@ TargetInitializer.prototype.registerEditModeToggle = function () {
  * @return {boolean}
  */
 TargetInitializer.prototype.shouldShowRegularVeMode = function () {
-	return ( new mw.Uri().query || {} ).hideMachineSuggestions;
+	return new URL( window.location.href ).searchParams.has( 'hideMachineSuggestions' );
 };
 
 /**
@@ -201,7 +201,7 @@ TargetInitializer.prototype.disableContextItems = function () {
  */
 TargetInitializer.prototype.getToolsToDisable = function () {
 	const safeTools = this.safeTools;
-	return Object.keys( ve.ui.toolFactory.registry ).filter( ( toolName ) => safeTools.indexOf( toolName ) === -1 );
+	return Object.keys( ve.ui.toolFactory.registry ).filter( ( toolName ) => !safeTools.includes( toolName ) );
 };
 
 /**
@@ -221,12 +221,9 @@ TargetInitializer.prototype.disableTools = function ( toolsToDisable ) {
  * See T281434
  */
 TargetInitializer.prototype.disableCommands = function () {
-	const safeCommands = this.safeCommands;
-	Object.keys( ve.ui.commandRegistry.registry ).forEach( ( commandItem ) => {
-		if ( safeCommands.indexOf( commandItem ) === -1 ) {
-			ve.ui.commandRegistry.unregister( commandItem );
-		}
-	} );
+	ve.ui.commandRegistry.unregister( ve.ui.commandRegistry.getNames().filter(
+		( name ) => !this.safeCommands.includes( name ),
+	) );
 };
 
 /**

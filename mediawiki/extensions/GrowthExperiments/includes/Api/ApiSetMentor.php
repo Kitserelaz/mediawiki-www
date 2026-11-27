@@ -3,46 +3,62 @@
 namespace GrowthExperiments\Api;
 
 use GrowthExperiments\Mentorship\ChangeMentorFactory;
+use GrowthExperiments\Mentorship\IMentorManager;
 use GrowthExperiments\Mentorship\Mentor;
-use GrowthExperiments\Mentorship\MentorManager;
+use GrowthExperiments\Mentorship\Provider\MentorProvider;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
 use MediaWiki\Api\ApiUsageException;
 use MediaWiki\ParamValidator\TypeDef\UserDef;
+use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityUtils;
 use Wikimedia\ParamValidator\ParamValidator;
 use Wikimedia\Rdbms\IDBAccessObject;
 
 class ApiSetMentor extends ApiBase {
-	/** @var MentorManager */
-	private $mentorManager;
+	private IMentorManager $mentorManager;
+	private MentorProvider $mentorProvider;
+	private ChangeMentorFactory $changeMentorFactory;
+	private UserIdentityUtils $userIdentityUtils;
+	private UserFactory $userFactory;
 
-	/** @var ChangeMentorFactory */
-	private $changeMentorFactory;
-
-	/** @var UserIdentityUtils */
-	private $userIdentityUtils;
-
-	/**
-	 * @param ApiMain $mainModule
-	 * @param string $moduleName
-	 * @param MentorManager $mentorManager
-	 * @param ChangeMentorFactory $changeMentorFactory
-	 * @param UserIdentityUtils $userIdentityUtils
-	 */
 	public function __construct(
 		ApiMain $mainModule,
-		$moduleName,
-		MentorManager $mentorManager,
+		string $moduleName,
+		IMentorManager $mentorManager,
+		MentorProvider $mentorProvider,
 		ChangeMentorFactory $changeMentorFactory,
-		UserIdentityUtils $userIdentityUtils
+		UserIdentityUtils $userIdentityUtils,
+		UserFactory $userFactory
 	) {
 		parent::__construct( $mainModule, $moduleName );
 
 		$this->mentorManager = $mentorManager;
+		$this->mentorProvider = $mentorProvider;
 		$this->changeMentorFactory = $changeMentorFactory;
 		$this->userIdentityUtils = $userIdentityUtils;
+		$this->userFactory = $userFactory;
+	}
+
+	/**
+	 * Check whether a permissionless change of assigned mentor is allowed
+	 *
+	 * We only allow mentor changes when one of the following conditions is met:
+	 * 	1. The target mentor is registered, and the performer is either the mentee or the mentor
+	 * 	2. The performer has the `setmentor` permission (normally available to sysops)
+	 *
+	 * This method checks the first condition.
+	 */
+	private function allowPermissionlessChange(
+		UserIdentity $mentor,
+		UserIdentity $mentee
+	): bool {
+		return $this->mentorProvider->isMentor( $mentor ) &&
+			(
+				$this->getUser()->equals( $mentee ) ||
+				$this->getUser()->equals( $mentor )
+			);
 	}
 
 	/**
@@ -60,9 +76,7 @@ class ApiSetMentor extends ApiBase {
 		/** @var UserIdentity $mentor */
 		$mentor = $params['mentor'];
 
-		if ( !in_array( $this->getUser()->getId(), [ $mentee->getId(), $mentor->getId() ] ) ) {
-			// If you're neither the mentee nor the (new) mentor,
-			// you must have setmentor rights.
+		if ( !$this->allowPermissionlessChange( $mentor, $mentee ) ) {
 			$this->checkUserRightsAny( 'setmentor' );
 		}
 
@@ -84,7 +98,9 @@ class ApiSetMentor extends ApiBase {
 			'status' => 'ok',
 			'mentee' => $mentee,
 			'newMentor' => $mentor,
-			'oldMentor' => $oldMentorObj instanceof Mentor ? $oldMentorObj->getUserIdentity() : false,
+			'oldMentor' => $oldMentorObj instanceof Mentor &&
+				!$this->userFactory->newFromUserIdentity( $oldMentorObj->getUserIdentity() )->isHidden()
+				? $oldMentorObj->getUserIdentity() : false,
 		] );
 	}
 

@@ -2,15 +2,19 @@
 
 namespace GrowthExperiments\Tests\Unit;
 
+use GrowthExperiments\Campaigns\CampaignLoader;
+use GrowthExperiments\FeatureManager;
 use GrowthExperiments\NewcomerTasks\CampaignConfig;
+use GrowthExperiments\StaticExperimentManager;
 use GrowthExperiments\VariantHooks;
 use MediaWiki\Config\HashConfig;
+use MediaWiki\Config\ServiceOptions;
 use MediaWiki\ResourceLoader as RL;
+use MediaWiki\Skin\Skin;
 use MediaWiki\SpecialPage\SpecialPageFactory;
 use MediaWiki\User\Options\UserOptionsManager;
 use MediaWiki\User\User;
 use MediaWikiUnitTestCase;
-use Skin;
 
 /**
  * @coversDefaultClass \GrowthExperiments\VariantHooks
@@ -33,8 +37,7 @@ class VariantHooksTest extends MediaWikiUnitTestCase {
 		$variantHooks->onGetPreferences( $this->createNoOpMock( User::class ), $prefs );
 		$this->assertArrayEquals(
 			[
-				'growthexperiments-homepage-variant' => [ 'type' => 'api' ],
-				'growthexperiments-campaign' => [ 'type' => 'api' ]
+				'growthexperiments-campaign' => [ 'type' => 'api' ],
 			],
 			$prefs
 		);
@@ -64,8 +67,7 @@ class VariantHooksTest extends MediaWikiUnitTestCase {
 			new HashConfig( [ 'GEHomepageDefaultVariant' => 'control' ] )
 		);
 		$this->assertArrayEquals( [
-			VariantHooks::VARIANTS,
-			'control'
+			'wgGEDefaultUserVariant' => 'control',
 		], $vars );
 	}
 
@@ -80,13 +82,20 @@ class VariantHooksTest extends MediaWikiUnitTestCase {
 	}
 
 	private function getVariantHooksMock(): VariantHooks {
+		$featureManager = $this->createMock( FeatureManager::class );
+		$featureManager->method( 'useTestKitchen' )->willReturn( false );
 		return new VariantHooks(
 			$this->createNoOpMock( UserOptionsManager::class ),
 			$this->createNoOpMock( CampaignConfig::class ),
 			$this->createNoOpMock( SpecialPageFactory::class ),
-			new HashConfig( [
-				'GEHomepageDefaultVariant' => 'control',
-			] )
+			new StaticExperimentManager( new ServiceOptions(
+				StaticExperimentManager::CONSTRUCTOR_OPTIONS,
+				new HashConfig( [
+					'GEHomepageDefaultVariant' => 'control',
+				] ),
+			) ),
+			$this->createNoOpMock( CampaignLoader::class ),
+			$featureManager,
 		);
 	}
 

@@ -1,0 +1,25 @@
+<?php
+
+namespace Miraheze\RequestCustomDomain\HookHandlers;
+
+use MediaWiki\Installer\Hook\LoadExtensionSchemaUpdatesHook;
+use Miraheze\RequestCustomDomain\Maintenance\MigrateLogParams;
+
+class Installer implements LoadExtensionSchemaUpdatesHook {
+
+	/** @inheritDoc */
+	public function onLoadExtensionSchemaUpdates( $updater ) {
+		$dbType = $updater->getDB()->getType();
+		$dir = __DIR__ . '/../../sql';
+
+		$updater->addExtensionUpdateOnVirtualDomain( [
+			'virtual-requestcustomdomain',
+			'addTable',
+			'customdomain_requests',
+			"$dir/$dbType/tables-generated.sql",
+			true,
+		] );
+
+		$updater->addPostDatabaseUpdateMaintenance( MigrateLogParams::class );
+	}
+}

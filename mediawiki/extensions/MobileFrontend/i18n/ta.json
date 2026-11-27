@@ -16,12 +16,11 @@
 			"Surya Prakash.S.A.",
 			"கௌசிக் பிரபு",
 			"தமிழ்க்குரிசில்",
-			"மதனாஹரன்"
+			"மதனாஹரன்",
+			"Sree1959"
 		]
 	},
 	"mobile-frontend-account-create-captcha-placeholder": "உறுதி செய்தற் குறியீட்டை உள்ளிடு",
-	"mobile-frontend-changeslist-nocomment": "தொகுப்பு சுருக்கம் இல்லை",
-	"mobile-frontend-clear-search": "அழி",
 	"mobile-frontend-copyright": "வேறுவகையாகக் குறிப்பிடப்பட்டிருந்தாலன்றி இவ்வுள்ளடக்கம் $1 இல் கீழ் கிடைக்கும்.",
 	"mobile-frontend-desc": "கைபேசி முகப்பு",
 	"mobile-frontend-editor-anon": "புகுபதியாமல் தொகு",
@@ -36,10 +35,9 @@
 	"mobile-frontend-missing-image": "படம்",
 	"mobile-frontend-privacy-link-text": "அந்தரங்கம்",
 	"mobile-frontend-save-settings": "சேமி",
-	"mobile-frontend-settings-beta": "பீட்டா",
 	"mobile-frontend-terms-text": "பயன்பாட்டு விதிகள்",
 	"mobile-frontend-view": "கைப்பேசிப் பார்வை",
-	"mobile-frontend-view-desktop": "கணினி",
+	"mobile-frontend-view-desktop": "மேசைக் கணினி காட்சி",
 	"mobile-frontend-watchlist-a-z-empty-howto-alt": "பக்கத்தில் தொடக்கத்தில் உள்ள நட்சத்திரத்தை சொடுக்கவும்",
 	"mobile-frontend-watchlist-cta-button-login": "புகுபதிகை",
 	"mobile-frontend-watchlist-cta-button-signup": "பதிவுசெய்",

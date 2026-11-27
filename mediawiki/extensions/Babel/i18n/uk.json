@@ -9,6 +9,7 @@
 			"DDPAT",
 			"Ice bulldog",
 			"Microcell",
+			"Movses",
 			"Olvin",
 			"Piramidion",
 			"Sodmy",
@@ -16,13 +17,13 @@
 			"Тест"
 		]
 	},
-	"babel": "Відомості про мови користувача (Вавилон)",
+	"babel": "Відомості про мови {{GENDER:$1|користувача|користувачки}} (Вавилон)",
 	"babel-desc": "Додає функцію парсера <code>#babel</code>, яка дозволяє автоматично створювати стовпець про володіння мовами з можливістю включення інших шаблонів",
 	"babel-url": "Project:Вавилон",
 	"babel-footer-url": ":Category:Користувачі за мовою",
 	"babel-autocreate-reason": "Автоматичне створення сторінки категорії [[$1|Вавилон]]",
-	"babel-autocreate-text-levels": "Користувачі із цієї категорії вказали рівень знань $1 для мови $2.",
-	"babel-autocreate-text-main": "Користувачі в цій категорії вказали знання мови $1.",
+	"babel-autocreate-text-levels": "Користувачі із цієї категорії вказали рівень знань $1 для мови $2.\n$4",
+	"babel-autocreate-text-main": "Користувачі в цій категорії вказали знання мови $1.\n$3",
 	"babel-autocreate-user": "Babel AutoCreate",
 	"babel-0": "{{GENDER:$4|Цей користувач|Ця користувачка}} [[$1|не володіє]] [[$2|$3]] (або розуміє її дуже погано).",
 	"babel-1": "{{GENDER:$4|Цей користувач|Ця користувачка}} володіє [[$2|$3]] на [[$1|початковому рівні]].",
@@ -58,7 +59,5 @@
 	"communityconfiguration-babel-babelmaincategory-help-text": "Приймає той самий формат, що й «Назви категорій для рівня мови» вище.",
 	"communityconfiguration-babel-babeluseuserlanguage-control-label": "Використовувати мову користувача",
 	"communityconfiguration-babel-babeluseuserlanguage-help-text": "Чи використовувати мову інтерфейсу користувача для повідомлення верхнього та нижнього колонтитулів. Якщо false (за замовчуванням), вони будуть мовою вмісту сторінки. Це пояснюється тим, що використання мови інтерфейсу користувача може фрагментувати кеш парсера.",
-	"communityconfiguration-babel-babelcategorizenamespaces-label": "Простори назв, у яких потрібно додати категорії Babel",
-	"communityconfiguration-babel-babelcategorizenamespaces-help-text": "Залиште порожнім для всіх просторів назв.",
 	"communityconfiguration-babel-babelautocreate-control-label": "Автоматично створювати категорії Babel"
 }

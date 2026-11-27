@@ -17,7 +17,7 @@ QUnit.test( 'should log impressions', function ( assert ) {
 		revisionId: 102,
 		tasktype: 'copyedit',
 		title: 'Some title',
-		token: '1234'
+		token: '1234',
 	};
 	logger.log( task, 100 );
 
@@ -33,9 +33,9 @@ QUnit.test( 'should log impressions', function ( assert ) {
 			page_id: 101,
 			page_title: 'Some title',
 			revision_id: 102,
-			task_type: 'copyedit'
+			task_type: 'copyedit',
 			/* eslint-enable camelcase */
-		}
+		},
 	] );
 } );
 
@@ -49,9 +49,6 @@ QUnit.test( 'should get log metadata', ( assert ) => {
 		title: 'Some title',
 		token: '1234',
 		pageviews: null,
-		topics: [
-			[ 'Art', 0.5 ]
-		]
 	};
 	const data = logger.getLogData( task, 100 );
 
@@ -65,8 +62,6 @@ QUnit.test( 'should get log metadata', ( assert ) => {
 		page_title: 'Some title',
 		revision_id: 102,
 		task_type: 'copyedit',
-		topic: 'Art',
-		match_score: 0.5
 		/* eslint-enable camelcase */
 	} );
 } );

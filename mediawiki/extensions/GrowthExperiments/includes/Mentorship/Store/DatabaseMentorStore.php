@@ -2,11 +2,13 @@
 
 namespace GrowthExperiments\Mentorship\Store;
 
-use JobQueueGroup;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityLookup;
 use MediaWiki\User\UserIdentityValue;
+use Psr\Log\LoggerInterface;
 use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\IDatabase;
 use Wikimedia\Rdbms\IDBAccessObject;
@@ -19,15 +21,8 @@ class DatabaseMentorStore extends MentorStore {
 	private JobQueueGroup $jobQueueGroup;
 	private ILoadBalancer $loadBalancer;
 
-	/**
-	 * @param WANObjectCache $wanCache
-	 * @param UserFactory $userFactory
-	 * @param UserIdentityLookup $userIdentityLookup
-	 * @param JobQueueGroup $jobQueueGroup
-	 * @param ILoadBalancer $loadBalancer
-	 * @param bool $wasPosted
-	 */
 	public function __construct(
+		LoggerInterface $logger,
 		WANObjectCache $wanCache,
 		UserFactory $userFactory,
 		UserIdentityLookup $userIdentityLookup,
@@ -35,7 +30,7 @@ class DatabaseMentorStore extends MentorStore {
 		ILoadBalancer $loadBalancer,
 		bool $wasPosted
 	) {
-		parent::__construct( $wanCache, $wasPosted );
+		parent::__construct( $logger, $wanCache, $wasPosted );
 
 		$this->userFactory = $userFactory;
 		$this->userIdentityLookup = $userIdentityLookup;
@@ -51,12 +46,8 @@ class DatabaseMentorStore extends MentorStore {
 		string $mentorRole,
 		$flags
 	): ?UserIdentity {
-		if ( ( $flags & IDBAccessObject::READ_LATEST ) == IDBAccessObject::READ_LATEST ) {
-			$db = $this->loadBalancer->getConnection( DB_PRIMARY );
-		} else {
-			$db = $this->loadBalancer->getConnection( DB_REPLICA );
-		}
-		$id = $db->newSelectQueryBuilder()
+		$id = $this->getDBByFlags( $flags )
+			->newSelectQueryBuilder()
 			->select( 'gemm_mentor_id' )
 			->from( 'growthexperiments_mentor_mentee' )
 			->where( [
@@ -137,13 +128,8 @@ class DatabaseMentorStore extends MentorStore {
 	public function hasAnyMentees(
 		UserIdentity $mentor,
 		string $mentorRole,
-		bool $includeHiddenUsers = true,
 		int $flags = 0
 	): bool {
-		if ( !$includeHiddenUsers ) {
-			wfDeprecated( __METHOD__ . ' called with $includeHiddenUsers = false', '1.43' );
-		}
-
 		return (bool)$this->getDBByFlags( $flags )
 			->newSelectQueryBuilder()
 			->select( 'gemm_mentee_id' )
@@ -210,7 +196,7 @@ class DatabaseMentorStore extends MentorStore {
 				$mentorRole
 			);
 		} else {
-			$this->jobQueueGroup->lazyPush( new SetUserMentorDatabaseJob( [
+			$this->jobQueueGroup->lazyPush( new JobSpecification( SetUserMentorDatabaseJob::JOB_NAME, [
 				'menteeId' => $mentee->getId(),
 				'mentorId' => $mentor ? $mentor->getId() : null,
 				'roleId' => $mentorRole,

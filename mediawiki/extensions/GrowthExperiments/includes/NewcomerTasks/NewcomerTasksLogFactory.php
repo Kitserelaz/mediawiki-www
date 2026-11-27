@@ -15,10 +15,6 @@ class NewcomerTasksLogFactory {
 	private IConnectionProvider $connectionProvider;
 	private UserOptionsLookup $userOptionsLookup;
 
-	/**
-	 * @param IConnectionProvider $connectionProvider
-	 * @param UserOptionsLookup $userOptionsLookup
-	 */
 	public function __construct( IConnectionProvider $connectionProvider, UserOptionsLookup $userOptionsLookup ) {
 		$this->connectionProvider = $connectionProvider;
 		$this->userOptionsLookup = $userOptionsLookup;
@@ -43,7 +39,7 @@ class NewcomerTasksLogFactory {
 				'log_type' => 'growthexperiments',
 				'log_action' => $logAction,
 				'actor_name' => $user->getName(),
-				$dbr->buildComparison( '>', [ 'log_timestamp' => $utcTimestamp ] )
+				$dbr->buildComparison( '>', [ 'log_timestamp' => $utcTimestamp ] ),
 			] )
 			->join( 'actor', null, 'log_actor=actor_id' );
 	}

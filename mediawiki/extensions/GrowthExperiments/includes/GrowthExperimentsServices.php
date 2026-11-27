@@ -2,11 +2,10 @@
 
 namespace GrowthExperiments;
 
-use GrowthExperiments\Config\Validation\ConfigValidatorFactory;
-use GrowthExperiments\Config\WikiPageConfig;
-use GrowthExperiments\Config\WikiPageConfigLoader;
-use GrowthExperiments\Config\WikiPageConfigWriterFactory;
+use GrowthExperiments\Campaigns\CampaignLoader;
+use GrowthExperiments\EventLogging\GrowthExperimentsInteractionLogger;
 use GrowthExperiments\EventLogging\PersonalizedPraiseLogger;
+use GrowthExperiments\EventLogging\ReviseToneExperimentInteractionLogger;
 use GrowthExperiments\HelpPanel\QuestionPoster\QuestionPosterFactory;
 use GrowthExperiments\HelpPanel\Tips\TipNodeRenderer;
 use GrowthExperiments\HelpPanel\Tips\TipsAssembler;
@@ -24,9 +23,11 @@ use GrowthExperiments\MentorDashboard\PersonalizedPraise\PersonalizedPraiseSetti
 use GrowthExperiments\MentorDashboard\PersonalizedPraise\PraiseworthyConditionsLookup;
 use GrowthExperiments\MentorDashboard\PersonalizedPraise\PraiseworthyMenteeSuggester;
 use GrowthExperiments\Mentorship\ChangeMentorFactory;
-use GrowthExperiments\Mentorship\MentorManager;
+use GrowthExperiments\Mentorship\IMentorManager;
+use GrowthExperiments\Mentorship\MenteeGraduation;
+use GrowthExperiments\Mentorship\MenteeGraduationProcessor;
 use GrowthExperiments\Mentorship\MentorRemover;
-use GrowthExperiments\Mentorship\Provider\AbstractStructuredMentorProvider;
+use GrowthExperiments\Mentorship\Provider\CommunityStructuredMentorProvider;
 use GrowthExperiments\Mentorship\Provider\IMentorWriter;
 use GrowthExperiments\Mentorship\Provider\MentorProvider;
 use GrowthExperiments\Mentorship\ReassignMenteesFactory;
@@ -56,15 +57,20 @@ use GrowthExperiments\NewcomerTasks\NewcomerTasksChangeTagsManager;
 use GrowthExperiments\NewcomerTasks\NewcomerTasksInfo;
 use GrowthExperiments\NewcomerTasks\NewcomerTasksUserOptionsLookup;
 use GrowthExperiments\NewcomerTasks\ProtectionFilter;
+use GrowthExperiments\NewcomerTasks\RecommendationProvider;
+use GrowthExperiments\NewcomerTasks\ReviseTone\ReviseToneWeightedTagManager;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\TaskSuggesterFactory;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeHandlerRegistry;
+use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeManager;
 use GrowthExperiments\NewcomerTasks\TemplateBasedTaskSubmissionHandler;
+use GrowthExperiments\NewcomerTasks\Topic\ITopicRegistry;
 use GrowthExperiments\PeriodicMetrics\MetricsFactory;
 use GrowthExperiments\UserImpact\UserImpactFormatter;
 use GrowthExperiments\UserImpact\UserImpactLookup;
 use GrowthExperiments\UserImpact\UserImpactStore;
 use MediaWiki\Config\Config;
 use MediaWiki\MediaWikiServices;
+use Psr\Log\LoggerInterface;
 use Wikimedia\Rdbms\ILoadBalancer;
 
 /**
@@ -73,12 +79,8 @@ use Wikimedia\Rdbms\ILoadBalancer;
  */
 class GrowthExperimentsServices {
 
-	/** @var MediaWikiServices */
-	private $coreServices;
+	private MediaWikiServices $coreServices;
 
-	/**
-	 * @param MediaWikiServices $coreServices
-	 */
 	public function __construct( MediaWikiServices $coreServices ) {
 		$this->coreServices = $coreServices;
 	}
@@ -103,21 +105,24 @@ class GrowthExperimentsServices {
 		return $this->coreServices->get( 'GrowthExperimentsConfig' );
 	}
 
+	public function getFeatureManager(): FeatureManager {
+		return $this->coreServices->get( 'GrowthExperimentsFeatureManager' );
+	}
+
 	public function getGrowthWikiConfig(): Config {
 		return $this->coreServices->get( 'GrowthExperimentsCommunityConfig' );
 	}
 
 	public function getLoadBalancer(): ILoadBalancer {
-		$databaseCluster = $this->getGrowthConfig()->get( 'GEDatabaseCluster' );
-		if ( $databaseCluster ) {
-			return $this->coreServices->getDBLoadBalancerFactory()->getExternalLB( $databaseCluster );
-		} else {
-			return $this->coreServices->getDBLoadBalancerFactory()->getMainLB();
-		}
+		return $this->coreServices->getDBLoadBalancerFactory()->getLoadBalancer( SchemaHooks::VIRTUAL_DOMAIN );
 	}
 
-	public function getExperimentUserManager(): ExperimentUserManager {
+	public function getExperimentUserManager(): IExperimentManager {
 		return $this->coreServices->get( 'GrowthExperimentsExperimentUserManager' );
+	}
+
+	public function getGrowthExperimentsInteractionLogger(): GrowthExperimentsInteractionLogger {
+		return $this->coreServices->get( 'GrowthExperimentsInteractionLogger' );
 	}
 
 	public function getHomepageModuleRegistry(): HomepageModuleRegistry {
@@ -152,6 +157,18 @@ class GrowthExperimentsServices {
 		return $this->coreServices->get( 'GrowthExperimentsLinkSubmissionRecorder' );
 	}
 
+	public function getTopicRegistry(): ITopicRegistry {
+		return $this->coreServices->get( 'GrowthExperimentsTopicRegistry' );
+	}
+
+	public function getMenteeGraduation(): MenteeGraduation {
+		return $this->coreServices->get( 'GrowthExperimentsMenteeGraduation' );
+	}
+
+	public function getMenteeGraduationProcessor(): MenteeGraduationProcessor {
+		return $this->coreServices->get( 'GrowthExperimentsMenteeGraduationProcessor' );
+	}
+
 	public function getMenteeOverviewDataProvider(): MenteeOverviewDataProvider {
 		return $this->getDatabaseMenteeOverviewDataProvider();
 	}
@@ -164,6 +181,10 @@ class GrowthExperimentsServices {
 		return $this->coreServices->get( 'GrowthExperimentsMenteeOverviewDataProviderUncached' );
 	}
 
+	public function getLogger(): LoggerInterface {
+		return $this->coreServices->get( 'GrowthExperimentsLogger' );
+	}
+
 	public function getMenteeOverviewDataUpdater(): MenteeOverviewDataUpdater {
 		return $this->coreServices->get( 'GrowthExperimentsMenteeOverviewDataUpdater' );
 	}
@@ -172,7 +193,7 @@ class GrowthExperimentsServices {
 		return $this->coreServices->get( 'GrowthExperimentsMentorDashboardModuleRegistry' );
 	}
 
-	public function getMentorManager(): MentorManager {
+	public function getMentorManager(): IMentorManager {
 		return $this->coreServices->get( 'GrowthExperimentsMentorManager' );
 	}
 
@@ -180,7 +201,7 @@ class GrowthExperimentsServices {
 		return $this->coreServices->get( 'GrowthExperimentsMentorProvider' );
 	}
 
-	public function getMentorProviderStructured(): AbstractStructuredMentorProvider {
+	public function getMentorProviderStructured(): CommunityStructuredMentorProvider {
 		return $this->coreServices->get( 'GrowthExperimentsMentorProviderStructured' );
 	}
 
@@ -288,22 +309,6 @@ class GrowthExperimentsServices {
 		return $this->coreServices->get( 'GrowthExperimentsWelcomeSurveyFactory' );
 	}
 
-	public function getWikiPageConfig(): WikiPageConfig {
-		return $this->coreServices->get( 'GrowthExperimentsWikiPageConfig' );
-	}
-
-	public function getWikiPageConfigLoader(): WikiPageConfigLoader {
-		return $this->coreServices->get( 'GrowthExperimentsWikiPageConfigLoader' );
-	}
-
-	public function getWikiPageConfigValidatorFactory(): ConfigValidatorFactory {
-		return $this->coreServices->get( 'GrowthExperimentsConfigValidatorFactory' );
-	}
-
-	public function getWikiPageConfigWriterFactory(): WikiPageConfigWriterFactory {
-		return $this->coreServices->get( 'GrowthExperimentsWikiPageConfigWriterFactory' );
-	}
-
 	public function getImageRecommendationMetadataService(): ImageRecommendationMetadataService {
 		return $this->coreServices->get( 'GrowthExperimentsImageRecommendationMetadataService' );
 	}
@@ -331,6 +336,10 @@ class GrowthExperimentsServices {
 
 	public function getGrowthExperimentsCampaignConfig(): CampaignConfig {
 		return $this->coreServices->get( 'GrowthExperimentsCampaignConfig' );
+	}
+
+	public function getGrowthExperimentsCampaignLoader(): CampaignLoader {
+		return $this->coreServices->get( 'GrowthExperimentsCampaignLoader' );
 	}
 
 	public function getTemplateBasedTaskSubmissionHandler(): TemplateBasedTaskSubmissionHandler {
@@ -365,7 +374,7 @@ class GrowthExperimentsServices {
 		return $this->coreServices->get( 'GrowthExperimentsUserDatabaseHelper' );
 	}
 
-	public function getEventGateImageSuggestionFeedbackUpdater(): EventGateImageSuggestionFeedbackUpdater {
+	public function getEventGateImageSuggestionFeedbackUpdater(): ?EventGateImageSuggestionFeedbackUpdater {
 		return $this->coreServices->get( 'GrowthExperimentsEventGateImageSuggestionFeedbackUpdater' );
 	}
 
@@ -375,6 +384,22 @@ class GrowthExperimentsServices {
 
 	public function getLevelingUpManager(): LevelingUpManager {
 		return $this->coreServices->get( 'GrowthExperimentsLevelingUpManager' );
+	}
+
+	public function getTaskTypeManager(): TaskTypeManager {
+		return $this->coreServices->get( 'GrowthExperimentsTaskTypeManager' );
+	}
+
+	public function getReviseToneRecommendationProvider(): RecommendationProvider {
+		return $this->coreServices->get( 'GrowthExperimentsReviseToneRecommendationProvider' );
+	}
+
+	public function getReviseToneExperimentInteractionLogger(): ReviseToneExperimentInteractionLogger {
+		return $this->coreServices->get( 'GrowthExperimentsReviseToneExperimentInteractionLogger' );
+	}
+
+	public function getReviseToneWeightedTagManager(): ReviseToneWeightedTagManager {
+		return $this->coreServices->get( 'GrowthExperimentsReviseToneWeightedTagManager' );
 	}
 
 }

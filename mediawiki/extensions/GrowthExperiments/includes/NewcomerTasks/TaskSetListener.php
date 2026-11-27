@@ -9,7 +9,7 @@ use GrowthExperiments\NewcomerTasks\TaskType\ImageRecommendationBaseTaskType;
 use MediaWiki\Deferred\DeferredUpdates;
 use MediaWiki\MediaWikiServices;
 use Wikimedia\ObjectCache\WANObjectCache;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * Called from CacheDecorator after a TaskSet is returned (either from cache or by calling the
@@ -22,16 +22,11 @@ class TaskSetListener {
 	/** @var WANObjectCache */
 	private $cache;
 
-	/** @var IBufferingStatsdDataFactory */
-	private $statsdDataFactory;
+	private StatsFactory $statsFactory;
 
-	/**
-	 * @param WANObjectCache $cache
-	 * @param IBufferingStatsdDataFactory $statsdDataFactory
-	 */
-	public function __construct( WANObjectCache $cache, IBufferingStatsdDataFactory $statsdDataFactory ) {
+	public function __construct( WANObjectCache $cache, StatsFactory $statsFactory ) {
 		$this->cache = $cache;
-		$this->statsdDataFactory = $statsdDataFactory;
+		$this->statsFactory = $statsFactory;
 	}
 
 	/**
@@ -40,8 +35,6 @@ class TaskSetListener {
 	 *
 	 * FIXME Find a better way to structure the actions that different task types can require when a TaskSet is
 	 * constructed.
-	 *
-	 * @param TaskSet $taskSet
 	 */
 	public function run( TaskSet $taskSet ): void {
 		$fname = __METHOD__;
@@ -55,7 +48,7 @@ class TaskSetListener {
 						$task->getTaskType(),
 						$task->getTitle(),
 						$fname,
-						$this->statsdDataFactory
+						$this->statsFactory
 					);
 				}
 			}

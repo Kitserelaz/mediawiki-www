@@ -5,7 +5,6 @@
  *
  * @author Alexander Mashin
  */
-
 class EDParserRegex extends EDParserBase {
 	/** @const string NAME The name of this format. */
 	public const NAME = 'TEXT';
@@ -18,7 +17,6 @@ class EDParserRegex extends EDParserBase {
 	 * @param array $params A named array of parameters passed from parser or Lua function.
 	 *
 	 * @throws EDParserException
-	 *
 	 */
 	public function __construct( array $params ) {
 		parent::__construct( $params );
@@ -30,11 +28,10 @@ class EDParserRegex extends EDParserBase {
 		}
 
 		// Validate regex.
-		self::suppressWarnings();
 		// Run regular expression against null and compare results with false.
 		// @see https://stackoverflow.com/a/12941133.
-		// @phan-suppress-next-line PhanTypeMismatchArgumentInternalReal, PhanTypeMismatchArgumentInternalProbablyReal
-		if ( preg_match( $regex, '' ) !== false ) {
+		// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+		if ( @preg_match( $regex, '' ) !== false ) {
 			// A valid regular expression.
 			$this->regex = $regex;
 		} else {
@@ -45,8 +42,6 @@ class EDParserRegex extends EDParserBase {
 				'PERL-compatible regular expression'
 			);
 		}
-		// Restore warnings.
-		self::restoreWarnings();
 	}
 
 	/**

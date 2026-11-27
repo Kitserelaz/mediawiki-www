@@ -21,9 +21,6 @@ class PersonalizedPraiseLogger {
 
 	private PersonalizedPraiseSettings $personalizedPraiseSettings;
 
-	/**
-	 * @param PersonalizedPraiseSettings $personalizedPraiseSettings
-	 */
 	public function __construct( PersonalizedPraiseSettings $personalizedPraiseSettings ) {
 		$this->personalizedPraiseSettings = $personalizedPraiseSettings;
 	}
@@ -65,11 +62,6 @@ class PersonalizedPraiseLogger {
 		EventLogging::submit( self::STREAM, $eventData );
 	}
 
-	/**
-	 * @param UserIdentity $mentor
-	 * @param UserIdentity $mentee
-	 * @param bool $wasNotified
-	 */
 	public function logSuggested(
 		UserIdentity $mentor, UserIdentity $mentee, bool $wasNotified
 	): void {
@@ -88,9 +80,6 @@ class PersonalizedPraiseLogger {
 		}
 	}
 
-	/**
-	 * @param UserIdentity $mentor
-	 */
 	public function logNotified( UserIdentity $mentor ): void {
 		if ( $this->isEventLoggingAvailable() ) {
 			$this->doLog(
@@ -100,16 +89,12 @@ class PersonalizedPraiseLogger {
 				[
 					'notification_policy' => $this->personalizedPraiseSettings->getNotificationsFrequency(
 						$mentor
-					)
+					),
 				]
 			);
 		}
 	}
 
-	/**
-	 * @param UserIdentity $mentor
-	 * @param UserIdentity $mentee
-	 */
 	public function logPraised( UserIdentity $mentor, UserIdentity $mentee ): void {
 		if ( $this->isEventLoggingAvailable() ) {
 			$this->doLog(
@@ -120,11 +105,6 @@ class PersonalizedPraiseLogger {
 		}
 	}
 
-	/**
-	 * @param UserIdentity $mentor
-	 * @param UserIdentity $mentee
-	 * @param string $skipReason
-	 */
 	public function logSkipped(
 		UserIdentity $mentor,
 		UserIdentity $mentee,
@@ -136,7 +116,7 @@ class PersonalizedPraiseLogger {
 				$mentor,
 				$mentee,
 				[
-					'skip_reason' => $skipReason
+					'skip_reason' => $skipReason,
 				]
 			);
 		}

@@ -25,6 +25,7 @@ class DatabaseUserImpactStoreTest extends MediaWikiIntegrationTestCase {
 		$userImpact = new UserImpact(
 			$user,
 			100,
+			50,
 			[ NS_MAIN => 10, NS_USER_TALK => 10 ],
 			[ '2020-01-01' => 10, '2020-01-02' => 20 ],
 			[ 'copyedit' => 10, 'link-recommendation' => 20 ],
@@ -32,6 +33,7 @@ class DatabaseUserImpactStoreTest extends MediaWikiIntegrationTestCase {
 			10,
 			wfTimestamp( TS_UNIX, '20200101000000' ),
 			new EditingStreak(),
+			0,
 			null
 		);
 		$store->setUserImpact( $userImpact );
@@ -41,6 +43,7 @@ class DatabaseUserImpactStoreTest extends MediaWikiIntegrationTestCase {
 		$userImpact2 = new UserImpact(
 			$user2,
 			200,
+			100,
 			[ NS_MAIN => 20, NS_USER_TALK => 20 ],
 			[ '2020-01-01' => 20, '2020-01-02' => 30 ],
 			[ 'copyedit' => 20, 'link-recommendation' => 30 ],
@@ -48,6 +51,7 @@ class DatabaseUserImpactStoreTest extends MediaWikiIntegrationTestCase {
 			20,
 			wfTimestamp( TS_UNIX, '20200102000000' ),
 			new EditingStreak(),
+			0,
 			null
 		);
 		$store->setUserImpact( $userImpact2 );
@@ -65,6 +69,7 @@ class DatabaseUserImpactStoreTest extends MediaWikiIntegrationTestCase {
 		$expensiveUserImpact = new ExpensiveUserImpact(
 			$user,
 			300,
+			150,
 			[ NS_MAIN => 30, NS_USER_TALK => 30 ],
 			[ '2020-01-01' => 30, '2020-01-02' => 40 ],
 			[ 'copyedit' => 30, 'link-recommendation' => 40 ],
@@ -72,8 +77,12 @@ class DatabaseUserImpactStoreTest extends MediaWikiIntegrationTestCase {
 			30,
 			wfTimestamp( TS_UNIX, '20200103000000' ),
 			[ '2020-01-01' => 1000, '2020-01-02' => 2000 ],
-			[ '2020-01-01' => [ 'Foo' => 500, 'Bar' => 500 ], '2020-01-02' => [ 'Foo' => 1000, 'Bar' => 1000 ] ],
+			[
+				'Foo' => [ 'views' => [ '2020-01-01' => 500, '2020-01-02' => 1000 ] ],
+				'Bar' => [ 'views' => [ '2020-01-01' => 500, '2020-01-02' => 1000 ] ],
+			],
 			new EditingStreak(),
+			0,
 			null
 		);
 		$store->setUserImpact( $expensiveUserImpact );
@@ -89,6 +98,7 @@ class DatabaseUserImpactStoreTest extends MediaWikiIntegrationTestCase {
 		$userImpact = new UserImpact(
 			$user,
 			100,
+			50,
 			[ NS_MAIN => 10, NS_USER_TALK => 10 ],
 			[ '2020-01-01' => 10, '2020-01-02' => 20 ],
 			[ 'copyedit' => 10, 'link-recommendation' => 20 ],
@@ -96,11 +106,13 @@ class DatabaseUserImpactStoreTest extends MediaWikiIntegrationTestCase {
 			10,
 			wfTimestamp( TS_UNIX, '20200101000000' ),
 			new EditingStreak(),
+			0,
 			null
 		);
 		$updatedUserImpact = new UserImpact(
 			$user,
 			150,
+			75,
 			[ NS_MAIN => 15, NS_USER_TALK => 15 ],
 			[ '2020-01-01' => 15, '2020-01-02' => 25 ],
 			[ 'copyedit' => 15, 'link-recommendation' => 25 ],
@@ -108,6 +120,7 @@ class DatabaseUserImpactStoreTest extends MediaWikiIntegrationTestCase {
 			15,
 			wfTimestamp( TS_UNIX, '20200101120000' ),
 			new EditingStreak(),
+			0,
 			null
 		);
 

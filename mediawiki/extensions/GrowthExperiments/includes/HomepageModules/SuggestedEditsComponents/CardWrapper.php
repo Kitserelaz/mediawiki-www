@@ -3,6 +3,7 @@
 namespace GrowthExperiments\HomepageModules\SuggestedEditsComponents;
 
 use GrowthExperiments\NewcomerTasks\Task\TaskSet;
+use MediaWiki\Language\MessageLocalizer;
 use OOUI\Tag;
 
 class CardWrapper {
@@ -10,7 +11,7 @@ class CardWrapper {
 	/** @var TaskSet|\StatusValue */
 	private $taskSet;
 
-	/** @var \MessageLocalizer */
+	/** @var MessageLocalizer */
 	private $messageLocalizer;
 
 	/** @var string */
@@ -27,7 +28,7 @@ class CardWrapper {
 	private $isDesktop;
 
 	/**
-	 * @param \MessageLocalizer $messageLocalizer
+	 * @param MessageLocalizer $messageLocalizer
 	 * @param bool $topicMatching
 	 * @param bool $topicMatchModeIsAND
 	 * @param string $dir
@@ -36,7 +37,7 @@ class CardWrapper {
 	 * @param bool $isDesktop
 	 */
 	public function __construct(
-		\MessageLocalizer $messageLocalizer, bool $topicMatching, bool $topicMatchModeIsAND, string $dir, $taskSet,
+		MessageLocalizer $messageLocalizer, bool $topicMatching, bool $topicMatchModeIsAND, string $dir, $taskSet,
 		NavigationWidgetFactory $navigationWidgetFactory, bool $isDesktop
 	) {
 		$this->taskSet = $taskSet;
@@ -48,11 +49,7 @@ class CardWrapper {
 		$this->isDesktop = $isDesktop;
 	}
 
-	/**
-	 * @return string
-	 * @throws \OOUI\Exception
-	 */
-	public function render() {
+	public function render(): string {
 		$card = CardWidgetFactory::newFromTaskSet(
 			$this->messageLocalizer,
 			$this->topicMatching,
@@ -68,14 +65,14 @@ class CardWrapper {
 			$contents = [
 				$this->navigationWidgetFactory->getPreviousNextButtonHtml( 'Previous' ),
 				$suggestedEditsClass,
-				$this->navigationWidgetFactory->getPreviousNextButtonHtml( 'Next' )
+				$this->navigationWidgetFactory->getPreviousNextButtonHtml( 'Next' ),
 			];
 		}
 		return ( new Tag( 'div' ) )->addClasses( [
 			'suggested-edits-card-wrapper',
-			$card instanceof EditCardWidget ? '' : 'pseudo-card'
+			$card instanceof EditCardWidget ? '' : 'pseudo-card',
 		] )->appendContent(
 			$contents
-		);
+		)->toString();
 	}
 }

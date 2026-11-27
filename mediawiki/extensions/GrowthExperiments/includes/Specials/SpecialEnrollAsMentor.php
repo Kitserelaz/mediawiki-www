@@ -7,12 +7,12 @@ use GrowthExperiments\Mentorship\Provider\IMentorWriter;
 use GrowthExperiments\Mentorship\Provider\MentorProvider;
 use LogicException;
 use MediaWiki\Config\Config;
+use MediaWiki\Exception\PermissionsError;
+use MediaWiki\Exception\UserBlockedError;
 use MediaWiki\HTMLForm\HTMLForm;
 use MediaWiki\SpecialPage\FormSpecialPage;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\Status\Status;
-use PermissionsError;
-use UserBlockedError;
 
 class SpecialEnrollAsMentor extends FormSpecialPage {
 
@@ -20,21 +20,26 @@ class SpecialEnrollAsMentor extends FormSpecialPage {
 	private MentorProvider $mentorProvider;
 	private IMentorWriter $mentorWriter;
 
-	/**
-	 * @param Config $wikiConfig
-	 * @param MentorProvider $mentorProvider
-	 * @param IMentorWriter $mentorWriter
-	 */
 	public function __construct(
 		Config $wikiConfig,
 		MentorProvider $mentorProvider,
 		IMentorWriter $mentorWriter
 	) {
-		parent::__construct( 'EnrollAsMentor', 'enrollasmentor', false );
+		parent::__construct( 'EnrollAsMentor' );
 
 		$this->wikiConfig = $wikiConfig;
 		$this->mentorProvider = $mentorProvider;
 		$this->mentorWriter = $mentorWriter;
+	}
+
+	/** @inheritDoc */
+	public function getRestriction(): string {
+		return 'enrollasmentor';
+	}
+
+	/** @inheritDoc */
+	public function isListed(): bool {
+		return false;
 	}
 
 	/** @inheritDoc */
@@ -71,7 +76,7 @@ class SpecialEnrollAsMentor extends FormSpecialPage {
 
 		if ( $this->mentorProvider->isMentor( $this->getUser() ) ) {
 			$this->getOutput()->redirect(
-				SpecialPage::getTitleFor( 'MentorDashboard' )->getLocalURL()
+				SpecialPage::getTitleFor( 'MentorDashboard' )->getFullURL()
 			);
 		}
 
@@ -126,9 +131,13 @@ class SpecialEnrollAsMentor extends FormSpecialPage {
 	 * @inheritDoc
 	 */
 	public function onSubmit( array $data ) {
+		$weight = (int)$data['weight'];
+		if ( !in_array( $weight, IMentorWeights::WEIGHTS, true ) ) {
+			$weight = IMentorWeights::WEIGHT_NORMAL;
+		}
 		$mentor = $this->mentorProvider->newMentorFromUserIdentity( $this->getUser() );
 		$mentor->setIntroText( $data['message'] !== '' ? $data['message'] : null );
-		$mentor->setWeight( (int)$data['weight'] );
+		$mentor->setWeight( $weight );
 
 		return Status::wrap( $this->mentorWriter->addMentor(
 			$mentor,
@@ -149,7 +158,7 @@ class SpecialEnrollAsMentor extends FormSpecialPage {
 			parent::displayRestrictionError();
 		}
 
-		throw new PermissionsError( $this->mRestriction, [ [
+		throw new PermissionsError( $this->getRestriction(), [ [
 			'growthexperiments-mentorship-enrollasmentor-error-not-autoeligible',
 			$this->wikiConfig->get( 'GEMentorshipMinimumEditcount' ),
 			$this->wikiConfig->get( 'GEMentorshipMinimumAge' ),

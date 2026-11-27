@@ -2,7 +2,8 @@
 
 namespace GrowthExperiments\LevelingUp;
 
-use GrowthExperiments\ExperimentUserManager;
+use GrowthExperiments\FeatureManager;
+use GrowthExperiments\NewcomerTasks\AddALinkMilestonePresentationModel;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
 use GrowthExperiments\VisualEditorHooks;
 use MediaWiki\Config\Config;
@@ -26,25 +27,19 @@ class LevelingUpHooks implements
 
 	private Config $config;
 	private ConfigurationLoader $configurationLoader;
-	private ExperimentUserManager $experimentUserManager;
 	private LevelingUpManager $levelingUpManager;
+	private FeatureManager $featureManager;
 
-	/**
-	 * @param Config $config
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param ExperimentUserManager $experimentUserManager
-	 * @param LevelingUpManager $levelingUpManager
-	 */
 	public function __construct(
 		Config $config,
 		ConfigurationLoader $configurationLoader,
-		ExperimentUserManager $experimentUserManager,
-		LevelingUpManager $levelingUpManager
+		LevelingUpManager $levelingUpManager,
+		FeatureManager $featureManager
 	) {
 		$this->config = $config;
 		$this->configurationLoader = $configurationLoader;
-		$this->experimentUserManager = $experimentUserManager;
 		$this->levelingUpManager = $levelingUpManager;
+		$this->featureManager = $featureManager;
 	}
 
 	/**
@@ -60,9 +55,12 @@ class LevelingUpHooks implements
 		array $saveResult,
 		array &$apiResponse
 	): void {
+		if ( !$this->featureManager->isNewcomerTasksAvailable() ) {
+			return;
+		}
 		$taskTypes = $this->configurationLoader->getTaskTypes();
 		$pluginFields = array_map(
-			fn ( $taskTypeId ) => VisualEditorHooks::PLUGIN_PREFIX . $taskTypeId,
+			static fn ( $taskTypeId ) => VisualEditorHooks::PLUGIN_PREFIX . $taskTypeId,
 			array_keys( $taskTypes )
 		);
 		$isSuggestedEdit = count( array_intersect( $pluginFields, array_keys( $pluginData ) ) ) > 0;
@@ -73,7 +71,7 @@ class LevelingUpHooks implements
 		// (shouldInviteUserAfterNormalEdit() would discard that case anyway).
 		if ( $page->getNamespace() !== NS_MAIN
 			|| $isSuggestedEdit
-			|| !LevelingUpManager::isEnabledForUser( $user, $this->config, $this->experimentUserManager )
+			|| !LevelingUpManager::isEnabledForUser( $user, $this->config )
 			|| !$this->levelingUpManager->shouldInviteUserAfterNormalEdit( $user )
 		) {
 			return;
@@ -90,6 +88,14 @@ class LevelingUpHooks implements
 	 * @inheritDoc
 	 */
 	public function onBeforePageDisplay( $out, $skin ): void {
+		$user = $out->getUser();
+		if (
+			$user->isRegistered()
+			&& LevelingUpManager::isEnabledForUser( $user, $this->config )
+			&& $this->config->get( 'GELevelingUpNotificationsTrackingEnabled' )
+		) {
+			$out->addModules( 'ext.growthExperiments.NotificationsTracking' );
+		}
 		// VE sets a query parameter, but there is no elegant way to detect post-edit reloads
 		// in the wikitext editor. Check the JS variable that it uses to configure the notice.
 		$isPostEditReload = $out->getRequest()->getCheck( 'venotify' )
@@ -101,8 +107,8 @@ class LevelingUpHooks implements
 			// an article, and the user just passed the threshold for the invite.
 			!$isPostEditReload
 			|| ( !$out->getTitle() || !$out->getTitle()->inNamespace( NS_MAIN ) )
-			|| !LevelingUpManager::isEnabledForUser( $out->getUser(), $this->config, $this->experimentUserManager )
-			|| !$this->levelingUpManager->shouldInviteUserAfterNormalEdit( $out->getUser() )
+			|| !LevelingUpManager::isEnabledForUser( $user, $this->config )
+			|| !$this->levelingUpManager->shouldInviteUserAfterNormalEdit( $user )
 		) {
 			return;
 		}
@@ -127,34 +133,44 @@ class LevelingUpHooks implements
 		$notificationCategories['ge-newcomer'] = [
 			'tooltip' => 'echo-pref-tooltip-ge-newcomer',
 		];
-		$notifications['keep-going'] = [
+		$growthNotificationDefaults = [
 			'category' => 'ge-newcomer',
 			'group' => 'positive',
 			'section' => 'message',
 			'canNotifyAgent' => true,
-			'presentation-model' => EchoKeepGoingPresentationModel::class,
-			AttributeManager::ATTR_LOCATORS => [
-				[ UserLocator::class . '::locateEventAgent' ]
-			]
+			AttributeManager::ATTR_LOCATORS => [ UserLocator::locateEventAgent( ... ) ],
 		];
+		// Keep keep-going to not modify copy of already sent notifications
+		$notifications['keep-going'] = array_merge( $growthNotificationDefaults, [
+			'presentation-model' => EchoKeepGoingBasePresentationModel::class,
+		] );
+		$notifications['keep-going-exploring'] = array_merge( $growthNotificationDefaults, [
+			'presentation-model' => EchoKeepGoingPresentationModel::class,
+		] );
+		// Keep get-started to not modify copy of already sent notifications
+		$notifications['get-started'] = array_merge( $growthNotificationDefaults, [
+			'presentation-model' => EchoGetStartedBasePresentationModel::class,
+		] );
+		$notifications['get-started-no-edits'] = array_merge( $notifications['get-started'], [
+			'presentation-model' => EchoGetStartedPresentationModel::class,
+		] );
+		$notifications['re-engage'] = array_merge( $growthNotificationDefaults, [
+			'presentation-model' => EchoReEngagePresentationModel::class,
+		] );
+		$notifications['newcomer-milestone-reached'] = array_merge( $growthNotificationDefaults, [
+			'presentation-model'  => AddALinkMilestonePresentationModel::class,
+		] );
 
 		$icons['growthexperiments-keep-going'] = [
-			'path' => 'GrowthExperiments/images/notifications-keep-going.svg'
-		];
-
-		$notifications['get-started'] = [
-			'category' => 'ge-newcomer',
-			'group' => 'positive',
-			'section' => 'message',
-			'canNotifyAgent' => true,
-			'presentation-model' => EchoGetStartedPresentationModel::class,
-			AttributeManager::ATTR_LOCATORS => [
-				[ UserLocator::class . '::locateEventAgent' ]
-			]
+			'path' => 'GrowthExperiments/images/notifications-keep-going.svg',
 		];
 
 		$icons['growthexperiments-get-started'] = [
-			'path' => 'GrowthExperiments/images/notifications-get-started.svg'
+			'path' => 'GrowthExperiments/images/notifications-get-started.svg',
+		];
+
+		$icons['growthexperiments-addalink-milestone'] = [
+			'path' => 'GrowthExperiments/images/addalink-milestone.svg',
 		];
 	}
 

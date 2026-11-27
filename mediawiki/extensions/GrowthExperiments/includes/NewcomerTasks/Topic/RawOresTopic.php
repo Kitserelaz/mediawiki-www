@@ -2,8 +2,6 @@
 
 namespace GrowthExperiments\NewcomerTasks\Topic;
 
-use MediaWiki\Json\JsonUnserializer;
-
 /**
  * Represents a single ORES topic (as opposed to OresBasedTopic which is a combination of ORES
  * topics). This is a special topic type that's not present in the topic list returned by
@@ -13,16 +11,12 @@ use MediaWiki\Json\JsonUnserializer;
  */
 class RawOresTopic extends OresBasedTopic {
 
-	/**
-	 * @param string $id
-	 * @param string $oresTopic
-	 */
 	public function __construct( string $id, string $oresTopic ) {
 		parent::__construct( $id, null, [ $oresTopic ] );
 	}
 
 	/** @inheritDoc */
-	protected function toJsonArray(): array {
+	public function toJsonArray(): array {
 		return [
 			'id' => $this->getId(),
 			'oresTopic' => $this->getOresTopics()[0],
@@ -30,8 +24,8 @@ class RawOresTopic extends OresBasedTopic {
 	}
 
 	/** @inheritDoc */
-	public static function newFromJsonArray( JsonUnserializer $unserializer, array $json ) {
-		return new self( $json['id'], $json['oresTopic'] );
+	public static function newFromJsonArray( array $json ): self {
+		return new static( $json['id'], $json['oresTopic'] );
 	}
 
 }

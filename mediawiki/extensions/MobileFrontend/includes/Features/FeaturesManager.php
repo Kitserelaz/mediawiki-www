@@ -2,7 +2,7 @@
 
 namespace MobileFrontend\Features;
 
-use MediaWiki\MediaWikiServices;
+use MediaWiki\HookContainer\HookContainer;
 use MobileFrontend\Hooks\HookRunner;
 
 /**
@@ -22,25 +22,19 @@ class FeaturesManager {
 	 *
 	 * @var array<IFeature>
 	 */
-	private $features = [];
+	private array $features = [];
 
-	/**
-	 * @var UserModes
-	 */
-	private $userModes;
-
-	/**
-	 * @param UserModes $userModes
-	 */
-	public function __construct( UserModes $userModes ) {
-		$this->userModes = $userModes;
+	public function __construct(
+		private readonly HookContainer $hookContainer,
+		private readonly UserModes $userModes,
+	) {
 	}
 
 	/**
 	 * Allow other extensions to register features
 	 */
 	public function useHookToRegisterExtensionOrSkinFeatures() {
-		$hookRunner = new HookRunner( MediaWikiServices::getInstance()->getHookContainer() );
+		$hookRunner = new HookRunner( $this->hookContainer );
 		$hookRunner->onMobileFrontendFeaturesRegistration( $this );
 	}
 

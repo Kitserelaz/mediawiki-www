@@ -10,15 +10,15 @@ use GrowthExperiments\NewcomerTasks\TaskSuggester\SearchStrategy\SearchStrategy;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeHandlerRegistry;
 use GrowthExperiments\NewcomerTasks\Topic\Topic;
-use ISearchResultSet;
 use MediaWiki\Api\ApiRawMessage;
-use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\Page\LinkBatchFactory;
+use MediaWiki\Search\ISearchResultSet;
+use MediaWiki\Search\SearchEngine;
+use MediaWiki\Search\SearchEngineFactory;
 use MediaWiki\SpecialPage\SpecialPage;
 use MediaWiki\User\UserIdentity;
-use SearchEngine;
-use SearchEngineFactory;
 use StatusValue;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * Suggest edits based on searching the wiki via SearchEngine.
@@ -28,8 +28,7 @@ class LocalSearchTaskSuggester extends SearchTaskSuggester {
 	/** @var SearchEngineFactory */
 	private $searchEngineFactory;
 
-	/** @var IBufferingStatsdDataFactory */
-	private $statsdDataFactory;
+	private StatsFactory $statsFactory;
 
 	/**
 	 * @param TaskTypeHandlerRegistry $taskTypeHandlerRegistry
@@ -39,7 +38,7 @@ class LocalSearchTaskSuggester extends SearchTaskSuggester {
 	 * @param LinkBatchFactory $linkBatchFactory
 	 * @param TaskType[] $taskTypes
 	 * @param Topic[] $topics
-	 * @param IBufferingStatsdDataFactory $statsdDataFactory
+	 * @param StatsFactory $statsFactory
 	 */
 	public function __construct(
 		TaskTypeHandlerRegistry $taskTypeHandlerRegistry,
@@ -49,12 +48,12 @@ class LocalSearchTaskSuggester extends SearchTaskSuggester {
 		LinkBatchFactory $linkBatchFactory,
 		array $taskTypes,
 		array $topics,
-		IBufferingStatsdDataFactory $statsdDataFactory
+		StatsFactory $statsFactory
 	) {
 		parent::__construct( $taskTypeHandlerRegistry, $searchStrategy, $newcomerTasksUserOptionsLookup,
 			$linkBatchFactory, $taskTypes, $topics );
 		$this->searchEngineFactory = $searchEngineFactory;
-		$this->statsdDataFactory = $statsdDataFactory;
+		$this->statsFactory = $statsFactory->withComponent( 'GrowthExperiments' );
 	}
 
 	/** @inheritDoc */
@@ -67,9 +66,12 @@ class LocalSearchTaskSuggester extends SearchTaskSuggester {
 	) {
 		$start = microtime( true );
 		$suggest = parent::suggest( $user, $taskSetFilters, $limit, $offset, $options );
-		$this->statsdDataFactory->timing(
-			'timing.growthExperiments.SearchTaskSuggester.suggest', microtime( true ) - $start
-		);
+		$suggestTimeInSeconds = microtime( true ) - $start;
+		$this->statsFactory->getTiming( 'search_task_suggester_seconds' )
+			->setLabel( 'task_suggester', 'local' )
+			->setLabel( 'action', 'suggest' )
+			->observeSeconds( $suggestTimeInSeconds );
+
 		return $suggest;
 	}
 
@@ -77,9 +79,12 @@ class LocalSearchTaskSuggester extends SearchTaskSuggester {
 	public function filter( UserIdentity $user, TaskSet $taskSet ) {
 		$start = microtime( true );
 		$filter = parent::filter( $user, $taskSet );
-		$this->statsdDataFactory->timing(
-			'timing.growthExperiments.SearchTaskSuggester.filter', microtime( true ) - $start
-		);
+		$filterTimeInSeconds = microtime( true ) - $start;
+		$this->statsFactory->getTiming( 'search_task_suggester_seconds' )
+			->setLabel( 'task_suggester', 'local' )
+			->setLabel( 'action', 'filter' )
+			->observeSeconds( $filterTimeInSeconds );
+
 		return $filter;
 	}
 
@@ -111,14 +116,9 @@ class LocalSearchTaskSuggester extends SearchTaskSuggester {
 				'Full text searches are unsupported or disabled',
 				'grothexperiments-no-fulltext-search'
 			) );
-		} elseif ( $matches instanceof StatusValue ) {
-			if ( $matches->isGood() ) {
-				$matches = $matches->getValue();
-				/** @var ISearchResultSet $matches */
-			} else {
-				// T302473 make sure the result is serializable
-				$matches->setResult( false, null );
-			}
+		} elseif ( $matches instanceof StatusValue && $matches->isGood() ) {
+			$matches = $matches->getValue();
+			/** @var ISearchResultSet $matches */
 		}
 
 		if ( $debug ) {
@@ -138,15 +138,18 @@ class LocalSearchTaskSuggester extends SearchTaskSuggester {
 			$query->setDebugUrl( SpecialPage::getTitleFor( 'Search' )
 				->getFullURL( $params, false, PROTO_CANONICAL ) );
 		}
-		$elapsed = microtime( true ) - $start;
+		$elapsedInSeconds = microtime( true ) - $start;
 		$this->logger->debug( 'LocalSearchTaskSuggester query', [
 			'query' => $query->getQueryString(),
 			'sort' => $query->getSort(),
 			'limit' => $limit,
 			'success' => $matches instanceof ISearchResultSet,
-			'elapsedTime' => $elapsed
+			'elapsedTime' => $elapsedInSeconds,
 		] );
-		$this->statsdDataFactory->timing( 'timing.growthExperiments.LocalSearchTaskSuggester.search', $elapsed );
+		$this->statsFactory->getTiming( 'search_task_suggester_seconds' )
+			->setLabel( 'task_suggester', 'local' )
+			->setLabel( 'action', 'search' )
+			->observeSeconds( $elapsedInSeconds );
 
 		return $matches;
 	}

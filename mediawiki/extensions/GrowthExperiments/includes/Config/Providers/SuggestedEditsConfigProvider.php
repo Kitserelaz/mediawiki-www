@@ -2,7 +2,12 @@
 
 namespace GrowthExperiments\Config\Providers;
 
+use GrowthExperiments\FeatureManager;
+use MediaWiki\Config\Config;
 use MediaWiki\Extension\CommunityConfiguration\Provider\DataProvider;
+use MediaWiki\Extension\CommunityConfiguration\Provider\ProviderServicesContainer;
+use MediaWiki\Extension\CommunityConfiguration\Store\IConfigurationStore;
+use MediaWiki\Extension\CommunityConfiguration\Validation\IValidator;
 use StatusValue;
 use stdClass;
 
@@ -17,6 +22,7 @@ class SuggestedEditsConfigProvider extends DataProvider {
 		'section_image_recommendation' => 'medium',
 		'image_recommendation' => 'medium',
 		'link_recommendation' => 'easy',
+		'revise_tone' => 'easy',
 	];
 	private const DEFAULT_GROUP = 'unknown';
 
@@ -24,21 +30,20 @@ class SuggestedEditsConfigProvider extends DataProvider {
 		'image_recommendation' => 'image-recommendation',
 		'section_image_recommendation' => 'section-image-recommendation',
 		'link_recommendation' => 'link-recommendation',
+		'revise_tone' => 'revise-tone',
 	];
 	private const DEFAULT_TASK_TYPE = 'template-based';
 
-	/**
-	 * @inheritDoc
-	 */
-	protected function addAutocomputedProperties( stdClass $config ): stdClass {
-		foreach ( $config as $taskId => $taskData ) {
-			if ( !$taskData instanceof stdClass ) {
-				continue;
-			}
-			$config->$taskId->group = self::MAP_TASKS_PER_GROUP[$taskId] ?? self::DEFAULT_GROUP;
-			$config->$taskId->type = self::MAP_TASK_TYPES[$taskId] ?? self::DEFAULT_TASK_TYPE;
-		}
-		return $config;
+	public function __construct(
+		ProviderServicesContainer $providerServicesContainer,
+		string $providerId,
+		array $options,
+		IConfigurationStore $store,
+		IValidator $validator,
+		private readonly Config $config,
+		private readonly FeatureManager $featureManager,
+	) {
+		parent::__construct( $providerServicesContainer, $providerId, $options, $store, $validator );
 	}
 
 	public function loadForNewcomerTasks(): StatusValue {
@@ -46,6 +51,23 @@ class SuggestedEditsConfigProvider extends DataProvider {
 		if ( $result->isOK() ) {
 			$data = $result->getValue();
 			unset( $data->GEInfoboxTemplates );
+
+			if ( $this->featureManager->isReviseToneTasksTypeEnabled() ) {
+				// TODO: move to community config for full production deployment T396162
+				$data->revise_tone = (object)[];
+				$data->revise_tone->excludedTemplates = $this->config->get( 'GEReviseToneExcludedTemplates' );
+				$data->revise_tone->excludedCategories = $this->config->get( 'GEReviseToneExcludedCategories' );
+			}
+
+			// Priorly 'group' and 'type' were added using IConfigurationProvider::addAutocomputedProperties
+			// but that results in these being written in config pages when running migrateConfig.php
+			foreach ( $data as $taskId => $taskData ) {
+				if ( !$taskData instanceof stdClass ) {
+					continue;
+				}
+				$data->$taskId->group = self::MAP_TASKS_PER_GROUP[$taskId] ?? self::DEFAULT_GROUP;
+				$data->$taskId->type = self::MAP_TASK_TYPES[$taskId] ?? self::DEFAULT_TASK_TYPE;
+			}
 
 			foreach ( $data as $key => $value ) {
 				if ( str_contains( $key, '_' ) ) {

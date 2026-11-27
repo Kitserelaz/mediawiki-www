@@ -18,7 +18,6 @@ class EDParserYAMLsimple extends EDParserJSONsimple {
 	 * @param array $params A named array of parameters passed from parser or Lua function.
 	 *
 	 * @throws EDParserException
-	 *
 	 */
 	public function __construct( array $params ) {
 		parent::__construct( $params );
@@ -59,6 +58,7 @@ class EDParserYAMLsimple extends EDParserJSONsimple {
 		} finally {
 			self::stopThrowingWarnings();
 		}
+		// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 		if ( $yaml_tree === null ) {
 			// It's probably invalid JSON.
 			throw new EDParserException( 'externaldata-invalid-format', self::NAME );

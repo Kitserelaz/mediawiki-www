@@ -15,10 +15,7 @@ use MobileContext;
  */
 class MobileContextShouldDisplayMobileViewIntegrationTest extends MediaWikiIntegrationTestCase {
 
-	/**
-	 * @var MobileContext
-	 */
-	private $context;
+	private MobileContext $context;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -51,7 +48,7 @@ class MobileContextShouldDisplayMobileViewIntegrationTest extends MediaWikiInteg
 		$this->overrideConfigValues( [
 			'MFAutodetectMobileView' => true,
 			'MFMobileHeader' => 'X-Subdomain',
-			'MobileUrlCallback' => fn ( $domain ) => "m.$domain",
+			'MobileUrlCallback' => static fn ( $domain ) => "m.$domain",
 		] );
 
 		$request = $this->context->getRequest();

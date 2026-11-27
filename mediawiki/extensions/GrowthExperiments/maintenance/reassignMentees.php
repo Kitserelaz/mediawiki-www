@@ -12,11 +12,13 @@ use MediaWiki\User\UserIdentity;
 use MediaWiki\User\UserIdentityLookup;
 use Wikimedia\Rdbms\IReadableDatabase;
 
+// @codeCoverageIgnoreStart
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
 require_once "$IP/maintenance/Maintenance.php";
+// @codeCoverageIgnoreEnd
 
 class ReassignMentees extends Maintenance {
 
@@ -48,6 +50,10 @@ class ReassignMentees extends Maintenance {
 			false,
 			true
 		);
+		$this->addOption(
+			'as-job',
+			'Schedule the work as MediaWiki jobs rather than directly execute it'
+		);
 	}
 
 	private function init() {
@@ -65,13 +71,9 @@ class ReassignMentees extends Maintenance {
 	 * @return UserIdentity[]
 	 */
 	private function getAllUnofficialMentors(): array {
-		$officialMentors = iterator_to_array( $this->userIdentityLookup->newSelectQueryBuilder()
-			->whereUserNames( $this->mentorProvider->getMentors() )
-			->caller( __METHOD__ )
-			->fetchUserIdentities() );
 		$officialMentorIds = array_map( static function ( UserIdentity $user ) {
 			return $user->getId();
-		}, $officialMentors );
+		}, $this->mentorProvider->getMentors() );
 
 		$unofficialMentorIds = $this->growthDbr->newSelectQueryBuilder()
 			->select( 'gemm_mentor_id' )
@@ -137,20 +139,31 @@ class ReassignMentees extends Maintenance {
 				continue;
 			}
 
-			$this->reassignMenteesFactory->newReassignMentees(
+			$reassignMentees = $this->reassignMenteesFactory->newReassignMentees(
 				$performer,
 				$mentor,
 				RequestContext::getMain()
-			)->doReassignMentees(
-				null,
-				'growthexperiments-quit-mentorship-reassign-mentees-log-message',
-				$mentor->getName()
 			);
+
+			$reassignMenteesParams = [
+				'growthexperiments-quit-mentorship-reassign-mentees-log-message',
+				$mentor->getName(),
+			];
+			if ( $this->hasOption( 'as-job' ) ) {
+				$reassignMentees->reassignMentees( ...$reassignMenteesParams );
+			} else {
+				$reassignMentees->doReassignMentees(
+					null,
+					...$reassignMenteesParams
+				);
+			}
 		}
 
 		$this->output( 'Done!' . PHP_EOL );
 	}
 }
 
+// @codeCoverageIgnoreStart
 $maintClass = ReassignMentees::class;
 require_once RUN_MAINTENANCE_IF_MAIN;
+// @codeCoverageIgnoreEnd

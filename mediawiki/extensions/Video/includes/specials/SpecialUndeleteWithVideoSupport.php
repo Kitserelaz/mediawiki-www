@@ -70,8 +70,8 @@ use MediaWiki\Storage\NameTableStore;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\User;
+use MediaWiki\User\UserFactory;
 use MediaWiki\Watchlist\WatchlistManager;
-use MediaWiki\Xml\Xml;
 use OOUI\ActionFieldLayout;
 use OOUI\ButtonInputWidget;
 use OOUI\CheckboxInputWidget;
@@ -154,72 +154,28 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 	 */
 	private $mSearchPrefix;
 
-	private PermissionManager $permissionManager;
-	private RevisionStore $revisionStore;
-	private RevisionRenderer $revisionRenderer;
-	private IContentHandlerFactory $contentHandlerFactory;
-	private NameTableStore $changeTagDefStore;
-	private LinkBatchFactory $linkBatchFactory;
-	private LocalRepo $localRepo;
-	private IConnectionProvider $dbProvider;
-	private UserOptionsLookup $userOptionsLookup;
-	private WikiPageFactory $wikiPageFactory;
-	private SearchEngineFactory $searchEngineFactory;
-	private UndeletePageFactory $undeletePageFactory;
-	private ArchivedRevisionLookup $archivedRevisionLookup;
-	private CommentFormatter $commentFormatter;
-	private WatchlistManager $watchlistManager;
+	private readonly LocalRepo $localRepo;
 
-	/**
-	 * @param PermissionManager $permissionManager
-	 * @param RevisionStore $revisionStore
-	 * @param RevisionRenderer $revisionRenderer
-	 * @param IContentHandlerFactory $contentHandlerFactory
-	 * @param NameTableStore $changeTagDefStore
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param RepoGroup $repoGroup
-	 * @param IConnectionProvider $dbProvider
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param WikiPageFactory $wikiPageFactory
-	 * @param SearchEngineFactory $searchEngineFactory
-	 * @param UndeletePageFactory $undeletePageFactory
-	 * @param ArchivedRevisionLookup $archivedRevisionLookup
-	 * @param CommentFormatter $commentFormatter
-	 * @param WatchlistManager $watchlistManager
-	 */
 	public function __construct(
-		PermissionManager $permissionManager,
-		RevisionStore $revisionStore,
-		RevisionRenderer $revisionRenderer,
-		IContentHandlerFactory $contentHandlerFactory,
-		NameTableStore $changeTagDefStore,
-		LinkBatchFactory $linkBatchFactory,
+		private readonly PermissionManager $permissionManager,
+		private readonly RevisionStore $revisionStore,
+		private readonly RevisionRenderer $revisionRenderer,
+		private readonly IContentHandlerFactory $contentHandlerFactory,
+		private readonly NameTableStore $changeTagDefStore,
+		private readonly LinkBatchFactory $linkBatchFactory,
 		RepoGroup $repoGroup,
-		IConnectionProvider $dbProvider,
-		UserOptionsLookup $userOptionsLookup,
-		WikiPageFactory $wikiPageFactory,
-		SearchEngineFactory $searchEngineFactory,
-		UndeletePageFactory $undeletePageFactory,
-		ArchivedRevisionLookup $archivedRevisionLookup,
-		CommentFormatter $commentFormatter,
-		WatchlistManager $watchlistManager
+		private readonly IConnectionProvider $dbProvider,
+		private readonly UserFactory $userFactory,
+		private readonly UserOptionsLookup $userOptionsLookup,
+		private readonly WikiPageFactory $wikiPageFactory,
+		private readonly SearchEngineFactory $searchEngineFactory,
+		private readonly UndeletePageFactory $undeletePageFactory,
+		private readonly ArchivedRevisionLookup $archivedRevisionLookup,
+		private readonly CommentFormatter $commentFormatter,
+		private readonly WatchlistManager $watchlistManager,
 	) {
 		parent::__construct( 'Undelete', 'deletedhistory' );
-		$this->permissionManager = $permissionManager;
-		$this->revisionStore = $revisionStore;
-		$this->revisionRenderer = $revisionRenderer;
-		$this->contentHandlerFactory = $contentHandlerFactory;
-		$this->changeTagDefStore = $changeTagDefStore;
-		$this->linkBatchFactory = $linkBatchFactory;
 		$this->localRepo = $repoGroup->getLocalRepo();
-		$this->dbProvider = $dbProvider;
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->wikiPageFactory = $wikiPageFactory;
-		$this->searchEngineFactory = $searchEngineFactory;
-		$this->undeletePageFactory = $undeletePageFactory;
-		$this->archivedRevisionLookup = $archivedRevisionLookup;
-		$this->commentFormatter = $commentFormatter;
-		$this->watchlistManager = $watchlistManager;
 	}
 
 	public function doesWrites() {
@@ -330,7 +286,7 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 
 	/** @inheritDoc */
 	public function userCanExecute( User $user ) {
-		return $this->isAllowed( $this->mRestriction, $user );
+		return $this->isAllowed( $this->getRestriction(), $user );
 	}
 
 	/**
@@ -523,7 +479,7 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 		);
 
 		$out->addHTML(
-			new PanelLayout( [
+			(string)new PanelLayout( [
 				'expanded' => false,
 				'padded' => true,
 				'framed' => true,
@@ -702,7 +658,7 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 				RevisionRecord::FOR_THIS_USER,
 				$user
 			);
-		} catch ( RevisionAccessException $e ) {
+		} catch ( RevisionAccessException ) {
 			$content = null;
 		}
 
@@ -769,7 +725,7 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 					// @phan-suppress-next-line PhanTypeMismatchArgumentProbablyReal No clue about this one...
 					'enableSectionEditLinks' => false,
 				] );
-			} catch ( RevisionAccessException $e ) {
+			} catch ( RevisionAccessException ) {
 			}
 		}
 
@@ -780,7 +736,7 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 			'@phan-var TextContent $content';
 			// TODO: MCR: make this work for multiple slots
 			// source view for textual content
-			$sourceView = Xml::element( 'textarea', [
+			$sourceView = Html::element( 'textarea', [
 				'readonly' => 'readonly',
 				'cols' => 80,
 				'rows' => 25
@@ -803,20 +759,20 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 
 		$out->addHTML(
 			$sourceView .
-				Xml::openElement( 'div', [
+				Html::openElement( 'div', [
 					'style' => 'clear: both' ] ) .
-				Xml::openElement( 'form', [
+				Html::openElement( 'form', [
 					'method' => 'post',
 					'action' => $this->getPageTitle()->getLocalURL( [ 'action' => 'submit' ] ) ] ) .
-				Xml::element( 'input', [
+				Html::element( 'input', [
 					'type' => 'hidden',
 					'name' => 'target',
 					'value' => $this->mTargetObj->getPrefixedDBkey() ] ) .
-				Xml::element( 'input', [
+				Html::element( 'input', [
 					'type' => 'hidden',
 					'name' => 'timestamp',
 					'value' => $timestamp ] ) .
-				Xml::element( 'input', [
+				Html::element( 'input', [
 					'type' => 'hidden',
 					'name' => 'wpEditToken',
 					'value' => $user->getEditToken() ] ) .
@@ -827,8 +783,8 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 						] )
 					] )
 				) .
-				Xml::closeElement( 'form' ) .
-				Xml::closeElement( 'div' )
+				Html::closeElement( 'form' ) .
+				Html::closeElement( 'div' )
 		);
 	}
 
@@ -907,7 +863,7 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 		foreach ( $tagIds as $tagId ) {
 			try {
 				$tags[] = $this->changeTagDefStore->getName( (int)$tagId );
-			} catch ( NameTableAccessException $exception ) {
+			} catch ( NameTableAccessException ) {
 				continue;
 			}
 		}
@@ -970,7 +926,7 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 						'token' => $user->getEditToken( $key ),
 					] ),
 				],
-				Xml::submitButton( $this->msg( 'undelete-show-file-submit' )->text() )
+				Html::submitButton( $this->msg( 'undelete-show-file-submit' )->text() )
 			)
 		);
 	}
@@ -1014,7 +970,7 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 			// CORE HACK for [[mw:Extension:Video]]
 			// Added the whole if() loop and kept original code inside the else portion
 			if ( isset( $row->ov_actor ) && $row->ov_actor ) {
-				$actor = MediaWiki\MediaWikiServices::getInstance()->getUserFactory()->newFromActorId( $row->ov_actor );
+				$actor = $this->userFactory->newFromActorId( $row->ov_actor );
 				$batch->add( NS_USER, $actor->getName() );
 				$batch->add( NS_USER_TALK, $actor->getName() );
 			} else {
@@ -1150,12 +1106,12 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 
 		# Show relevant lines from the deletion log:
 		$deleteLogPage = new LogPage( 'delete' );
-		$out->addHTML( Xml::element( 'h2', null, $deleteLogPage->getName()->text() ) . "\n" );
+		$out->addHTML( Html::element( 'h2', [], $deleteLogPage->getName()->text() ) . "\n" );
 		LogEventsList::showLogExtract( $out, 'delete', $this->mTargetObj );
 		# Show relevant lines from the suppression log:
 		$suppressLogPage = new LogPage( 'suppress' );
 		if ( $this->permissionManager->userHasRight( $this->getUser(), 'suppressionlog' ) ) {
-			$out->addHTML( Xml::element( 'h2', null, $suppressLogPage->getName()->text() ) . "\n" );
+			$out->addHTML( Html::element( 'h2', [], $suppressLogPage->getName()->text() ) . "\n" );
 			LogEventsList::showLogExtract( $out, 'suppress', $this->mTargetObj );
 		}
 
@@ -1173,11 +1129,11 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 				$dropdownComment .= "\n" . $this->msg( 'undelete-comment-dropdown-unsuppress' )
 					->page( $this->mTargetObj )->inContentLanguage()->text();
 			}
-			$options = Xml::listDropdownOptions(
+			$options = Html::listDropdownOptions(
 				$dropdownComment,
 				[ 'other' => $this->msg( 'undeletecommentotherlist' )->text() ]
 			);
-			$options = Xml::listDropdownOptionsOoui( $options );
+			$options = Html::listDropdownOptionsOoui( $options );
 
 			$fields[] = new FieldLayout(
 				new DropdownInputWidget( [
@@ -1327,7 +1283,7 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 		}
 
 		$history = '';
-		$history .= Xml::element( 'h2', null, $this->msg( 'history' )->text() ) . "\n";
+		$history .= Html::element( 'h2', [], $this->msg( 'history' )->text() ) . "\n";
 
 		if ( $haveRevisions ) {
 			# Show the page's stored (deleted) history
@@ -1362,7 +1318,7 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 		}
 
 		if ( $haveFiles ) {
-			$history .= Xml::element( 'h2', null, $this->msg( 'filehist' )->text() ) . "\n";
+			$history .= Html::element( 'h2', [], $this->msg( 'filehist' )->text() ) . "\n";
 			$history .= Html::openElement( 'ul', [ 'class' => 'mw-undelete-revlist' ] );
 			foreach ( $files as $row ) {
 				$history .= $this->formatFileRow( $row );
@@ -1405,15 +1361,7 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 		$ts = wfTimestamp( TS_MW, $row->ar_timestamp );
 		// Build checkboxen...
 		if ( $this->mAllowed ) {
-			if ( $this->mInvert ) {
-				if ( in_array( $ts, $this->mTargetTimestamp ) ) {
-					$checkBox = Xml::check( "ts$ts" );
-				} else {
-					$checkBox = Xml::check( "ts$ts", true );
-				}
-			} else {
-				$checkBox = Xml::check( "ts$ts" );
-			}
+			$checkBox = Html::check( "ts$ts", $this->mInvert && !in_array( $ts, $this->mTargetTimestamp ) );
 		} else {
 			$checkBox = '';
 		}
@@ -1486,7 +1434,7 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 			)
 			->escaped();
 
-		return Xml::tags( 'li', $attribs, $revisionRow ) . "\n";
+		return Html::rawElement( 'li', $attribs, $revisionRow ) . "\n";
 	}
 
 	/**
@@ -1502,7 +1450,7 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 			$checkBox = '';
 			if ( $this->mCanView ) { // && $row->fa_storage_key ) {
 				if ( $this->mAllowed ) {
-					$checkBox = Xml::check( 'fileid' ); // . $row->fa_id );
+					$checkBox = Html::check( 'fileid' ); // . $row->fa_id );
 				}
 				$key = rand();// urlencode( $row->fa_storage_key );
 				// @phan-suppress-next-line PhanTypeMismatchArgument
@@ -1524,7 +1472,7 @@ class SpecialUndeleteWithVideoSupport extends SpecialPage {
 		$checkBox = '';
 		if ( $this->mCanView && $row->fa_storage_key ) {
 			if ( $this->mAllowed ) {
-				$checkBox = Xml::check( 'fileid' . $row->fa_id );
+				$checkBox = Html::check( 'fileid' . $row->fa_id );
 			}
 			$key = urlencode( $row->fa_storage_key );
 			$pageLink = $this->getFileLink( $file, $this->getPageTitle(), $ts, $key );

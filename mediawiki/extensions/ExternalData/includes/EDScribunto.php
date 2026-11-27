@@ -1,7 +1,7 @@
 <?php
 
+use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 use MediaWiki\Title\Title;
-use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase as Scribunto_LuaLibraryBase;
 
 /**
  * Class for exposing the parser functions for External Data to Lua.
@@ -9,9 +9,10 @@ use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase as Scribunto_Lua
  *
  * @author Alexander Mashin.
  */
-class EDScribunto extends Scribunto_LuaLibraryBase {
+class EDScribunto extends LibraryBase {
 	/**
 	 * A function that registers the exported functions with Lua.
+	 * @inheritDoc
 	 */
 	public function register() {
 		// Data retrieval functions:
@@ -20,17 +21,14 @@ class EDScribunto extends Scribunto_LuaLibraryBase {
 		if ( $wgExternalDataAllowGetters ) {
 			foreach ( EDConnectorBase::getConnectors() as $parser_function => $lua_function ) {
 				$functions[$lua_function] = function ( array $arguments ) use ( $parser_function ) {
-					// @phan-suppress-next-line PhanUndeclaredMethod To make PHAN shut up.
 					return self::fetch( $parser_function, $arguments, $this->getTitle() );
 				};
 			}
 		} else {
 			$functions['getExternalData'] = function ( array $arguments ) {
-				// @phan-suppress-next-line PhanUndeclaredMethod To make PHAN shut up.
 				return self::fetch( 'get_external_data', $arguments, $this->getTitle() );
 			};
 		}
-		// @phan-suppress-next-line PhanUndeclaredMethod To make PHAN shut up.
 		return $this->getEngine()->registerInterface( __DIR__ . '/mw.ext.externalData.lua', $functions, [] );
 	}
 
@@ -44,6 +42,8 @@ class EDScribunto extends Scribunto_LuaLibraryBase {
 	 * @return array Depending on success, [ 'values' => [values]/null, 'errors' => null/[error messages] ].
 	 */
 	private static function fetch( $func, array $arguments, Title $title ): array {
+		// Unlike parser functions, parameter names are not trimmed automatically. Doing it now.
+		$arguments = array_combine( array_map( 'trim', array_keys( $arguments ) ), array_values( $arguments ) );
 		$connector = EDConnectorBase::getConnector( $func, $arguments, $title );
 
 		$values = null;

@@ -18,12 +18,6 @@ class SpecialImpact extends SpecialPage {
 	private UserNamePrefixSearch $userNamePrefixSearch;
 	private HomepageModuleRegistry $homepageModuleRegistry;
 
-	/**
-	 * @param UserFactory $userFactory
-	 * @param UserNameUtils $userNameUtils
-	 * @param UserNamePrefixSearch $userNamePrefixSearch
-	 * @param HomepageModuleRegistry $homepageModuleRegistry
-	 */
 	public function __construct(
 		UserFactory $userFactory,
 		UserNameUtils $userNameUtils,
@@ -111,13 +105,18 @@ class SpecialImpact extends SpecialPage {
 		if ( $this->including() ) {
 			$configVarName .= ':included';
 		}
-		$out->addJsConfigVars( $configVarName, [
+		$configVars = [
+			'wgGEDisableLogging' => true,
+		];
+		$configVars[$configVarName] = [
 			// Load the impact data from the client when the page is included and the user has edits, so we don't need
 			// to reduce the expiry of the page in the parser cache.
 			'impact' => $this->including() && $impactUser->getEditCount() ?
 				null :
-				$impact->getJsData( IDashboardModule::RENDER_DESKTOP )
-		] );
+				$impact->getJsData( IDashboardModule::RENDER_DESKTOP ),
+		];
+
+		$out->addJsConfigVars( $configVars );
 		$out->addHTML( $impact->render( IDashboardModule::RENDER_DESKTOP ) );
 	}
 

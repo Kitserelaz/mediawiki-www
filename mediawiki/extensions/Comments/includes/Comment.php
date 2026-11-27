@@ -1,7 +1,14 @@
 <?php
 
+use MediaWiki\Context\ContextSource;
+use MediaWiki\Context\RequestContext;
+use MediaWiki\Extension\Notifications\DiscussionParser;
+use MediaWiki\Extension\Notifications\Model\Event as EchoEvent;
 use MediaWiki\MediaWikiServices;
-use Wikimedia\AtEase\AtEase;
+use MediaWiki\Registration\ExtensionRegistry;
+use MediaWiki\SpecialPage\SpecialPage;
+use MediaWiki\Title\Title;
+use MediaWiki\User\User;
 
 /**
  * Comment class
@@ -11,7 +18,6 @@ use Wikimedia\AtEase\AtEase;
  * -displaying the form for adding a new comment
  * -getting all comments for a given page
  *
- * @file
  * @ingroup Extensions
  */
 class Comment extends ContextSource {
@@ -75,13 +81,6 @@ class Comment extends ContextSource {
 	public $username = '';
 
 	/**
-	 * IP of the comment poster
-	 *
-	 * @var string
-	 */
-	public $ip = '';
-
-	/**
 	 * Actor ID of the user who posted the comment
 	 *
 	 * @var int
@@ -129,10 +128,10 @@ class Comment extends ContextSource {
 
 		$this->actorID = (int)$data['Comment_actor'];
 
-		$this->user = $commenter = User::newFromActorId( $data['Comment_actor'] );
+		$userFactory = MediaWikiServices::getInstance()->getUserFactory();
+		$this->user = $commenter = $userFactory->newFromActorId( $data['Comment_actor'] );
 
 		$this->username = $commenter->getName();
-		$this->ip = $data['Comment_IP'];
 		$this->text = $data['Comment_Text'];
 		$this->date = $data['Comment_Date'];
 		$this->userPoints = $data['Comment_user_points'];
@@ -191,7 +190,7 @@ class Comment extends ContextSource {
 		// Defaults (for non-social wikis)
 		$tables[] = 'Comments';
 		$fields = [
-			'Comment_actor', 'Comment_IP', 'Comment_Text',
+			'Comment_actor', 'Comment_Text',
 			'Comment_Date', 'Comment_Date AS timestamp',
 			'CommentID', 'Comment_Parent_ID', 'Comment_Page_ID'
 		];
@@ -199,7 +198,7 @@ class Comment extends ContextSource {
 		// If SocialProfile is installed, query the user_stats table too.
 		if (
 			class_exists( 'UserProfile' ) &&
-			$dbr->tableExists( 'user_stats' )
+			$dbr->tableExists( 'user_stats', __METHOD__ )
 		) {
 			$tables[] = 'user_stats';
 			$fields[] = 'stats_total_points';
@@ -231,7 +230,6 @@ class Comment extends ContextSource {
 		}
 		$data = [
 			'Comment_actor' => $row->Comment_actor,
-			'Comment_IP' => $row->Comment_IP,
 			'Comment_Text' => $row->Comment_Text,
 			'Comment_Date' => $row->Comment_Date,
 			'Comment_user_points' => ( isset( $row->stats_total_points ) ? number_format( $row->stats_total_points ) : 0 ),
@@ -306,15 +304,14 @@ class Comment extends ContextSource {
 	 * @param User $user User commenting
 	 * @param int $parentID ID of parent comment, if this is a reply
 	 *
-	 * @return Comment|null the added comment
+	 * @return Comment the added comment
 	 */
-	public static function add( $text, CommentsPage $page, User $user, $parentID ) {
+	public static function add( $text, CommentsPage $page, User $user, $parentID ): self {
 		$dbw = self::getDBHandle( 'write' );
 		$context = RequestContext::getMain();
 
-		AtEase::suppressWarnings();
-		$commentDate = date( 'Y-m-d H:i:s' );
-		AtEase::restoreWarnings();
+		// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+		$commentDate = @date( 'Y-m-d H:i:s' );
 		$dbw->insert(
 			'Comments',
 			[
@@ -322,8 +319,7 @@ class Comment extends ContextSource {
 				'Comment_actor' => $user->getActorId(),
 				'Comment_Text' => $text,
 				'Comment_Date' => $dbw->timestamp( $commentDate ),
-				'Comment_Parent_ID' => $parentID,
-				'Comment_IP' => $_SERVER['REMOTE_ADDR']
+				'Comment_Parent_ID' => $parentID
 			],
 			__METHOD__
 		);
@@ -338,7 +334,7 @@ class Comment extends ContextSource {
 		$dbr = self::getDBHandle( 'read' );
 		if (
 			class_exists( 'UserProfile' ) &&
-			$dbr->tableExists( 'user_stats' )
+			$dbr->tableExists( 'user_stats', __METHOD__ )
 		) {
 			$res = $dbr->select( // need this data for seeding a Comment object
 				'user_stats',
@@ -364,7 +360,6 @@ class Comment extends ContextSource {
 		}
 		$data = [
 			'Comment_actor' => $user->getActorId(),
-			'Comment_IP' => $context->getRequest()->getIP(),
 			'Comment_Text' => $text,
 			'Comment_Date' => $commentDate,
 			'Comment_user_points' => $userPoints,
@@ -377,26 +372,7 @@ class Comment extends ContextSource {
 		$page = new CommentsPage( $page->id, $context );
 		$comment = new Comment( $page, $context, $data );
 
-		if ( ExtensionRegistry::getInstance()->isLoaded( 'Echo' ) ) {
-			global $wgEchoMentionOnChanges;
-			if ( !$wgEchoMentionOnChanges ) {
-				return null;
-			}
-			// Modified copypasta of EchoDiscussionParser#generateEventsForRevision with less Revision-ism!
-			// (Awful pun is awful, sorry about that.)
-			// EchoDiscussionParser#getChangeInterpretationForRevision is *way*, way too Revision-ist for
-			// our tastes. DO NOT WANT!
-			$title = Title::newFromId( $page->id );
-
-			// stolen from EchoDiscussionParser#generateEventsForRevision
-			$userLinks = EchoDiscussionParser::getUserLinks( $text, $title );
-			$header = $text;
-
-			self::generateMentionEvents(
-				$header, $userLinks, $text, $title, $user,
-				$comment, $commentId
-			);
-		}
+		$comment->doEchoNotifications( $user );
 
 		MediaWikiServices::getInstance()->getHookContainer()->run( 'Comment::add', [ $comment, $commentId, $comment->page->id ] );
 
@@ -404,26 +380,69 @@ class Comment extends ContextSource {
 	}
 
 	/**
-	 * It's like Article::prepareTextForEdit,
-	 *  but not for editing (old wikitext usually)
-	 * Stolen from AbuseFilterVariableHolder
+	 * Edit a comment's text as the supplied user.
 	 *
-	 * @param string $wikitext
-	 * @param Article $article
-	 *
-	 * @return ParserOutput
+	 * @param string $text New comment text
+	 * @param User $user User (object) performing the edit action
+	 * @return Comment The edited comment object for chaining
 	 */
-	private static function parseNonEditWikitext( $wikitext, Article $article ) {
-		static $cache = [];
-		$cacheKey = md5( $wikitext ) . ':' . $article->getTitle()->getPrefixedText();
-		if ( isset( $cache[$cacheKey] ) ) {
-			return $cache[$cacheKey];
+	public function edit( string $text, User $user ): self {
+		$dbw = self::getDBHandle( 'write' );
+		$oldText = $this->text;
+
+		$dbw->newUpdateQueryBuilder()
+			->update( 'Comments' )
+			->set( [ 'Comment_Text' => $text ] )
+			->where( [ 'CommentID' => $this->id ] )
+			->caller( __METHOD__ )->execute();
+
+		$this->page->clearCommentListCache();
+
+		// Add a log entry.
+		self::log( 'edit', $user, $this->page->id, $this->id, $text );
+
+		$this->text = $text;
+		$this->doEchoNotifications( $user, $oldText );
+
+		$hookContainer = MediaWikiServices::getInstance()->getHookContainer();
+		$hookContainer->run( 'Comment::edit', [ $this, $this->id, $this->page->id ] );
+
+		return $this;
+	}
+
+	/**
+	 * Send notifications if users are mentioned in the text.  If it's edited
+	 * text, only send if the user was added in the edit.
+	 */
+	public function doEchoNotifications( User $user, ?string $oldText = null ) {
+		if (
+			!ExtensionRegistry::getInstance()->isLoaded( 'Echo' )
+			|| !$this->getConfig()->get( 'EchoMentionOnChanges' )
+		) {
+			return;
 		}
-		$parser = MediaWikiServices::getInstance()->getParser();
-		$options = new ParserOptions( $article->getContext()->getUser() );
-		$output = $parser->parse( $wikitext, $article->getTitle(), $options );
-		$cache[$cacheKey] = $output;
-		return $output;
+
+		// Modified copypasta of Echo's DiscussionParser#generateEventsForRevision with less Revision-ism!
+		// (Awful pun is awful, sorry about that.)
+		// Echo's DiscussionParser#getChangeInterpretationForRevision is *way*, way too Revision-ist for
+		// our tastes. DO NOT WANT!
+		$title = Title::newFromId( $this->page->id );
+
+		// modified from DiscussionParser::generateEventsForRevision
+		if ( $oldText !== null ) {
+			$userLinks = array_diff_key(
+				DiscussionParser::getUserLinks( $this->text, $title ),
+				DiscussionParser::getUserLinks( $oldText, $title )
+			);
+		} else {
+			$userLinks = DiscussionParser::getUserLinks( $this->text, $title );
+		}
+		$header = $this->text;
+
+		self::generateMentionEvents(
+			$header, $userLinks, $this->text, $title, $user,
+			$this, $this->id
+		);
 	}
 
 	/**
@@ -435,8 +454,8 @@ class Comment extends ContextSource {
 	 * @param string $header The subject line for the discussion.
 	 * @param int[] $userLinks
 	 * @param string $content The content of the post, as a wikitext string.
-	 * @param Title $title
-	 * @param User $agent The user who made the comment.
+	 * @param MediaWiki\Title\Title $title
+	 * @param MediaWiki\User\User $agent The user who made the comment.
 	 * @param Comment $comment
 	 * @param int $commentId
 	 */
@@ -459,14 +478,14 @@ class Comment extends ContextSource {
 		$revId = $title->getLatestRevID();
 		// Comments are often short. These Echo-isms mutilate $content into an empty string.
 		// We don't want that to happen.
-		// $content = EchoDiscussionParser::stripHeader( $content );
-		// $content = EchoDiscussionParser::stripSignature( $content, $title );
+		// $content = DiscussionParser::stripHeader( $content );
+		// $content = DiscussionParser::stripSignature( $content, $title );
 		if ( !$userLinks ) {
 			return;
 		}
 
-		$userMentions = EchoDiscussionParser::getUserMentions( $title, $agent->getId(), $userLinks );
-		// $overallMentionsCount = EchoDiscussionParser::getOverallUserMentionsCount( $userMentions );
+		$userMentions = DiscussionParser::getUserMentions( $title, $agent->getId(), $userLinks );
+		// $overallMentionsCount = DiscussionParser::getOverallUserMentionsCount( $userMentions );
 		$overallMentionsCount = count( $userMentions, COUNT_RECURSIVE ) - count( $userMentions );
 		if ( $overallMentionsCount === 0 ) {
 			return;
@@ -509,12 +528,13 @@ class Comment extends ContextSource {
 
 		if ( $wgEchoMentionStatusNotifications ) {
 			// TODO batch?
+			$userFactory = MediaWikiServices::getInstance()->getUserFactory();
 			foreach ( $userMentions['validMentions'] as $mentionedUserId ) {
 				EchoEvent::create( [
 					'type' => 'mention-success',
 					'title' => $title,
 					'extra' => [
-						'subject-name' => User::newFromId( $mentionedUserId )->getName(),
+						'subject-name' => $userFactory->newFromId( $mentionedUserId )->getName(),
 						'section-title' => $header,
 						'revid' => $revId,
 						'comment-id' => $commentId, // added
@@ -601,9 +621,8 @@ class Comment extends ContextSource {
 			$value = 0;
 		}
 
-		AtEase::suppressWarnings();
-		$commentDate = date( 'Y-m-d H:i:s' );
-		AtEase::restoreWarnings();
+		// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+		$commentDate = @date( 'Y-m-d H:i:s' );
 
 		if ( $this->currentVote === false ) { // no vote, insert
 			$dbw->insert(
@@ -612,8 +631,7 @@ class Comment extends ContextSource {
 					'Comment_Vote_id' => $this->id,
 					'Comment_Vote_actor' => $this->getUser()->getActorId(),
 					'Comment_Vote_Score' => $value,
-					'Comment_Vote_Date' => $commentDate,
-					'Comment_Vote_IP' => $_SERVER['REMOTE_ADDR']
+					'Comment_Vote_Date' => $commentDate
 				],
 				__METHOD__
 			);
@@ -622,8 +640,7 @@ class Comment extends ContextSource {
 				'Comments_Vote',
 				[
 					'Comment_Vote_Score' => $value,
-					'Comment_Vote_Date' => $commentDate,
-					'Comment_Vote_IP' => $_SERVER['REMOTE_ADDR']
+					'Comment_Vote_Date' => $commentDate
 				],
 				[
 					'Comment_Vote_id' => $this->id,
@@ -710,10 +727,7 @@ class Comment extends ContextSource {
 		$user = $this->getUser();
 
 		// Blocked users cannot vote, obviously
-		if ( $user->getBlock() ||
-			$user->isBlockedGlobally() ||
-			!$user->isAllowed( 'comment' )
-		) {
+		if ( $user->getBlock() || !$user->isAllowed( 'comment' ) ) {
 			return '';
 		}
 
@@ -797,9 +811,9 @@ class Comment extends ContextSource {
 		$output .= wfMessage( 'comments-ignore-message' )->parse();
 		$output .= '<div class="c-ignored-links">' . "\n";
 		$output .= "<a href=\"javascript:void(0);\" data-comment-id=\"{$this->id}\">" .
-			$this->msg( 'comments-show-comment-link' )->plain() . '</a> | ';
+			$this->msg( 'comments-show-comment-link' )->escaped() . '</a> | ';
 		$output .= '<a href="' . htmlspecialchars( $blockListTitle->getFullURL() ) . '">' .
-			$this->msg( 'comments-manage-blocklist-link' )->plain() . '</a>';
+			$this->msg( 'comments-manage-blocklist-link' )->escaped() . '</a>';
 		$output .= '</div>' . "\n";
 		$output .= '</div>' . "\n";
 
@@ -836,7 +850,8 @@ class Comment extends ContextSource {
 				$commentPosterLevel = "{$user_level->getLevelName()}";
 			}
 
-			$user = User::newFromId( $this->user->getId() );
+			$userFactory = MediaWikiServices::getInstance()->getUserFactory();
+			$user = $userFactory->newFromId( $this->user->getId() );
 			$CommentReplyToGender = MediaWikiServices::getInstance()->getUserOptionsLookup()
 				->getOption( $user, 'gender', 'unknown' );
 		} else {
@@ -860,7 +875,7 @@ class Comment extends ContextSource {
 			$dlt = ' | <span class="c-delete">' .
 				'<a href="javascript:void(0);" rel="nofollow" class="comment-delete-link" data-comment-id="' .
 				$this->id . '">' .
-				$this->msg( 'comments-delete-link' )->plain() . '</a></span>';
+				$this->msg( 'comments-delete-link' )->escaped() . '</a></span>';
 		}
 
 		// Reply Link (does not appear on child comments)
@@ -873,8 +888,19 @@ class Comment extends ContextSource {
 				$replyRow .= " | <a href=\"#end\" rel=\"nofollow\" class=\"comments-reply-to\" data-comment-id=\"{$this->id}\" data-comments-safe-username=\"" .
 					htmlspecialchars( $CommentReplyTo, ENT_QUOTES ) . "\" data-comments-user-gender=\"" .
 					htmlspecialchars( $CommentReplyToGender ) . '">' .
-					wfMessage( 'comments-reply' )->plain() . '</a>';
+					wfMessage( 'comments-reply' )->escaped() . '</a>';
 			}
+		}
+
+		// Edit link for comment authors (if they are allowed to edit their comments) and
+		// for comment admins
+		$editRow = '';
+		if (
+			( $this->isOwner( $userObj ) && $userObj->isAllowed( 'comment-edit-own' ) )
+			|| $userObj->isAllowed( 'commentadmin' )
+		) {
+			$editRow .= "| <a href=\"\" rel=\"nofollow\" class=\"comments-edit\" data-comment-id=\"{$this->id}\">" .
+						wfMessage( 'comments-edit' )->escaped() . "</a>";
 		}
 
 		if ( $this->parentID == 0 ) {
@@ -914,13 +940,12 @@ class Comment extends ContextSource {
 		$output .= "{$commentPoster}";
 		$output .= "<span class=\"c-user-level\">{$commentPosterLevel}</span> {$blockLink}" . "\n";
 
-		AtEase::suppressWarnings(); // E_STRICT bitches about strtotime()
 		$output .= '<div class="c-time">' .
 			wfMessage(
 				'comments-time-ago',
-				CommentFunctions::getTimeAgo( strtotime( $this->date ) )
+				// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+				CommentFunctions::getTimeAgo( @strtotime( $this->date ) )
 			)->parse() . '</div>' . "\n";
-		AtEase::restoreWarnings();
 
 		$output .= '<div class="c-score">' . "\n";
 		$output .= $this->getScoreHTML();
@@ -930,10 +955,22 @@ class Comment extends ContextSource {
 		$output .= "<div class=\"c-comment {$comment_class}\">" . "\n";
 		$output .= $this->getText();
 		$output .= '</div>' . "\n";
+
+		$output .= '<div class="c-comment-edit-form">';
+		$output .= '<textarea>' . htmlspecialchars( $this->text ) . '</textarea>';
+		$output .= "<button class=\"c-comment-edit-form-save\" data-comment-id=\"{$this->id}\">" .
+				   wfMessage( 'comments-edit-save' )->escaped() . '</button> ';
+		$output .= '<button class="c-comment-edit-form-cancel">' .
+				   wfMessage( 'comments-edit-cancel' )->escaped() . '</button>';
+		$output .= '</div>';
+
 		$output .= '<div class="c-actions">' . "\n";
 		if ( $this->page->title ) { // for some reason doesn't always exist
 			$output .= '<a href="' . htmlspecialchars( $this->page->title->getFullURL() ) . "#comment-{$this->id}\" rel=\"nofollow\">" .
-			$this->msg( 'comments-permalink' )->plain() . '</a> ';
+			$this->msg( 'comments-permalink' )->escaped() . '</a> ';
+		}
+		if ( $editRow ) {
+			$output .= $editRow . "\n";
 		}
 		if ( $replyRow || $dlt ) {
 			$output .= "{$replyRow} {$dlt}" . "\n";

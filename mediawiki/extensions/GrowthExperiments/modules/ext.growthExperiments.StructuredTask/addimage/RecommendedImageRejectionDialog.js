@@ -1,4 +1,4 @@
-const SelectWithTextInputWidget = require( '../../ui-components/SelectWithTextInputWidget.js' );
+const AdaptiveSelectWidget = require( '../../ui-components/AdaptiveSelectWidget.js' );
 
 /**
  * Dialog with a list of reasons for rejecting a suggestions
@@ -26,13 +26,13 @@ RecommendedImageRejectionDialog.static.actions = [
 	{
 		flags: 'safe',
 		label: mw.message( 'growthexperiments-addimage-rejectiondialog-action-cancel' ).text(),
-		action: 'cancel'
+		action: 'cancel',
 	},
 	{
 		flags: [ 'primary', 'progressive' ],
 		label: mw.message( 'growthexperiments-addimage-rejectiondialog-action-done' ).text(),
-		action: 'done'
-	}
+		action: 'done',
+	},
 ];
 /**
  * List of valid reasons for rejecting an image. Keep in sync with
@@ -41,37 +41,28 @@ RecommendedImageRejectionDialog.static.actions = [
  * @type {string[]}
  */
 RecommendedImageRejectionDialog.static.rejectionReasons = [
-	'notrelevant', 'noinfo', 'offensive', 'lowquality', 'unfamiliar', 'foreignlanguage', 'other'
+	'notrelevant', 'noinfo', 'offensive', 'lowquality', 'unfamiliar', 'foreignlanguage', 'other',
 ];
 
 /** @inheritDoc **/
 RecommendedImageRejectionDialog.prototype.initialize = function () {
 	RecommendedImageRejectionDialog.super.prototype.initialize.call( this );
 	this.message.$element.addClass( 'oo-ui-inline-help' );
-	const selectOptions = this.constructor.static.rejectionReasons.map( ( reason ) => {
-		const optionData = {
-			data: reason,
-			// Messages used:
-			// * growthexperiments-addimage-rejectiondialog-reason-notrelevant
-			// * growthexperiments-addimage-rejectiondialog-reason-noinfo
-			// * growthexperiments-addimage-rejectiondialog-reason-offensive
-			// * growthexperiments-addimage-rejectiondialog-reason-lowquality
-			// * growthexperiments-addimage-rejectiondialog-reason-unfamiliar
-			// * growthexperiments-addimage-rejectiondialog-reason-foreignlanguage
-			// * growthexperiments-addimage-rejectiondialog-reason-other
-			label: mw.message( 'growthexperiments-addimage-rejectiondialog-reason-' + reason ).text()
-		};
-
-		if ( reason === 'other' ) {
-			optionData.hasTextInput = mw.config.get( 'wgGEStructuredTaskRejectionReasonTextInputEnabled' );
-			optionData.textInputPlaceholder = mw.message( 'growthexperiments-structuredtask-other-rejectionreason-placeholder' ).text();
-			optionData.textInputMaxLength = 100;
-		}
-		return optionData;
-	} );
-	this.reasonSelect = new SelectWithTextInputWidget( {
+	const selectOptions = this.constructor.static.rejectionReasons.map( ( reason ) => ( {
+		data: reason,
+		// Messages used:
+		// * growthexperiments-addimage-rejectiondialog-reason-notrelevant
+		// * growthexperiments-addimage-rejectiondialog-reason-noinfo
+		// * growthexperiments-addimage-rejectiondialog-reason-offensive
+		// * growthexperiments-addimage-rejectiondialog-reason-lowquality
+		// * growthexperiments-addimage-rejectiondialog-reason-unfamiliar
+		// * growthexperiments-addimage-rejectiondialog-reason-foreignlanguage
+		// * growthexperiments-addimage-rejectiondialog-reason-other
+		label: mw.message( 'growthexperiments-addimage-rejectiondialog-reason-' + reason ).text(),
+	} ) );
+	this.reasonSelect = new AdaptiveSelectWidget( {
 		options: selectOptions,
-		isMultiSelect: true
+		isMultiSelect: true,
 	} );
 	this.text.$element.append( this.reasonSelect.getElement() );
 };
@@ -96,7 +87,6 @@ RecommendedImageRejectionDialog.prototype.getActionProcess = function ( action )
 		this.close( {
 			action: action,
 			reasons: selectedItems,
-			otherRejectionReason: this.reasonSelect.getTextInputValueForData( 'other' )
 		} );
 	}, this );
 };

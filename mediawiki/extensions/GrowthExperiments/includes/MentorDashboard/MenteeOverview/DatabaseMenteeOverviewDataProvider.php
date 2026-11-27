@@ -6,7 +6,6 @@ use GrowthExperiments\Mentorship\Store\MentorStore;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\User\UserIdentity;
 use stdClass;
-use Wikimedia\LightweightObjectStore\ExpirationAwareness;
 use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\ILoadBalancer;
 
@@ -19,17 +18,12 @@ use Wikimedia\Rdbms\ILoadBalancer;
  * The table is populated with data from UncachedMenteeOverviewDataProvider, see
  * that class for details about generating the data.
  */
-class DatabaseMenteeOverviewDataProvider implements MenteeOverviewDataProvider, ExpirationAwareness {
+class DatabaseMenteeOverviewDataProvider implements MenteeOverviewDataProvider {
 
 	private MentorStore $mentorStore;
 	private ILoadBalancer $growthLB;
 	protected WANObjectCache $wanCache;
 
-	/**
-	 * @param WANObjectCache $wanCache
-	 * @param MentorStore $mentorStore
-	 * @param ILoadBalancer $growthLB
-	 */
 	public function __construct(
 		WANObjectCache $wanCache,
 		MentorStore $mentorStore,
@@ -40,23 +34,15 @@ class DatabaseMenteeOverviewDataProvider implements MenteeOverviewDataProvider, 
 		$this->growthLB = $growthLB;
 	}
 
-	/**
-	 * @param UserIdentity $mentor
-	 * @return string
-	 */
 	private function makeCacheKey( UserIdentity $mentor ): string {
 		return $this->wanCache->makeKey(
-			'GrowthExperiments',
-			'MenteeOverviewDataProvider',
-			__CLASS__,
-			'Mentor',
+			'growthexperiments-mentor-mentees',
 			$mentor->getId()
 		);
 	}
 
 	/**
 	 * Invalidate cache for given mentor
-	 * @param UserIdentity $mentor
 	 */
 	public function invalidateCacheForMentor( UserIdentity $mentor ): void {
 		$this->wanCache->delete( $this->makeCacheKey( $mentor ) );
@@ -82,17 +68,15 @@ class DatabaseMenteeOverviewDataProvider implements MenteeOverviewDataProvider, 
 		$method = __METHOD__;
 		return $this->wanCache->getWithSetCallback(
 			$this->makeCacheKey( $mentor ),
-			self::TTL_DAY,
+			WANObjectCache::TTL_DAY,
 			function ( $oldValue, &$ttl, &$setOpts ) use ( $mentor, $method ) {
 				$mentees = $this->mentorStore->getMenteesByMentor( $mentor, MentorStore::ROLE_PRIMARY );
 				if ( $mentees === [] ) {
-					$ttl = self::TTL_HOUR;
+					$ttl = WANObjectCache::TTL_HOUR;
 					return [];
 				}
 
-				$menteeIds = array_map( static function ( $mentee ) {
-					return $mentee->getId();
-				}, $mentees );
+				$menteeIds = array_map( static fn ( UserIdentity $user ) => $user->getId(), $mentees );
 
 				$res = $this->growthLB->getConnection( DB_REPLICA )->newSelectQueryBuilder()
 					->select( [ 'mentee_id', 'mentee_data' ] )
@@ -124,7 +108,7 @@ class DatabaseMenteeOverviewDataProvider implements MenteeOverviewDataProvider, 
 			->select( [ 'mentee_id', 'mentee_data' ] )
 			->from( 'growthexperiments_mentee_data' )
 			->conds( [
-				'mentee_id' => $mentee->getId()
+				'mentee_id' => $mentee->getId(),
 			] )
 			->caller( __METHOD__ )
 			->fetchRow();

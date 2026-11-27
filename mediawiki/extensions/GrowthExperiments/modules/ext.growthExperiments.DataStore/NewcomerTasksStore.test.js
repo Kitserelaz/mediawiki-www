@@ -3,27 +3,27 @@
 jest.mock(
 	'./AQSConfig.json',
 	() => ( require( '../../tests/qunit/__mocks__/AQSConfig.json' ) ),
-	{ virtual: true }
+	{ virtual: true },
 );
 jest.mock(
 	'./config.json',
 	() => ( () => ( require( '../../tests/qunit/__mocks__/config.json' ) ) ),
-	{ virtual: true }
+	{ virtual: true },
 );
 jest.mock(
 	'./TaskTypes.json',
 	() => ( require( '../../tests/qunit/__mocks__/TaskTypes.json' ) ),
-	{ virtual: true }
+	{ virtual: true },
 );
 jest.mock(
 	'./DefaultTaskTypes.json',
 	() => ( require( '../../tests/qunit/__mocks__/DefaultTaskTypes.json' ) ),
-	{ virtual: true }
+	{ virtual: true },
 );
 jest.mock(
 	'./Topics.json',
 	() => ( require( '../../tests/qunit/__mocks__/Topics.json' ) ),
-	{ virtual: true }
+	{ virtual: true },
 );
 
 /**
@@ -44,7 +44,7 @@ const getTaskData = ( title, tasktype, pageId, qualityGateConfig ) => ( {
 	qualityGateConfig: qualityGateConfig || {},
 	url: null,
 	token: 'token-' + title,
-	pageId: pageId || Math.floor( Math.random() * 100 )
+	pageId: pageId || Math.floor( Math.random() * 100 ),
 } );
 
 /**
@@ -71,6 +71,28 @@ const fetchTaskStub = ( results, ms = 0 ) => {
 
 // eslint-disable-next-line no-promise-executor-return
 const delay = ( ms ) => new Promise( ( resolve ) => setTimeout( resolve, ms ) );
+// HACK, TaskTypesAbFilter is wrapped in an IFFE which makes impossible to mock
+// mw.config.get calls from beforeEach hook because the script has already been imported and run
+global.mw.config.get = jest.fn();
+global.mw.config.get.mockImplementation( ( key ) => {
+	switch ( key ) {
+		case 'wgGEHomepageModuleActionData-suggested-edits':
+			return {
+				taskTypes: [
+					'copyedit',
+					'references',
+					'update',
+				],
+				unavailableTaskTypes: [
+					'link-recommendation',
+				],
+				taskCount: 54,
+				topics: [],
+			};
+		default:
+			return undefined;
+	}
+} );
 const FiltersStore = require( './FiltersStore.js' );
 const NewcomerTasksStore = require( './NewcomerTasksStore.js' );
 
@@ -80,7 +102,7 @@ describe( 'DataStore NewcomerTasksStore', () => {
 		const store = new NewcomerTasksStore( { filters } );
 		expect( store ).toBeDefined();
 	} );
-	// eslint-disable-next-line es-x/no-async-functions
+
 	it( 'unsets the loading state when requests fail', async () => {
 		const filters = new FiltersStore();
 		const store = new NewcomerTasksStore( { filters } );
@@ -88,8 +110,8 @@ describe( 'DataStore NewcomerTasksStore', () => {
 		store.api.fetchTasks = jest.fn()
 			.mockReturnValueOnce( fetchTaskStub( {
 				tasks: [
-					getTaskData( '1', 'copyedit' )
-				]
+					getTaskData( '1', 'copyedit' ),
+				],
 			}, 0 ) )
 			.mockRejectedValueOnce( 'Fail' );
 
@@ -97,7 +119,7 @@ describe( 'DataStore NewcomerTasksStore', () => {
 		await expect( () => store.fetchTasks( 'test2' ) ).rejects.toEqual( 'Fail' );
 		expect( store.isTaskQueueLoading() ).toBe( false );
 	} );
-	// eslint-disable-next-line es-x/no-async-functions
+
 	it( 'discards last-1 request', async () => {
 		const filters = new FiltersStore();
 		const store = new NewcomerTasksStore( { filters } );
@@ -105,22 +127,22 @@ describe( 'DataStore NewcomerTasksStore', () => {
 		store.api.fetchTasks = jest.fn()
 			.mockReturnValueOnce( fetchTaskStub( {
 				tasks: [
-					getTaskData( '1', 'copyedit' )
-				]
+					getTaskData( '1', 'copyedit' ),
+				],
 			}, 0 ) )
 			.mockReturnValueOnce( fetchTaskStub( {
 				tasks: [
 					getTaskData( '2', 'expand' ),
-					getTaskData( '3', 'links' )
-				]
+					getTaskData( '3', 'links' ),
+				],
 			}, 40 ) )
 			.mockReturnValueOnce( fetchTaskStub( {
 				tasks: [
 					getTaskData( '4', 'expand' ),
 					getTaskData( '5', 'links' ),
 					getTaskData( '6', 'expand' ),
-					getTaskData( '7', 'links' )
-				]
+					getTaskData( '7', 'links' ),
+				],
 			}, 0 ) );
 
 		store.fetchTasks( 'test1' );

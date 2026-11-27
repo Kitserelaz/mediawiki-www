@@ -2,11 +2,8 @@
 
 namespace GrowthExperiments\UserImpact;
 
-use GenericParameterJob;
-use GrowthExperiments\GrowthExperimentsServices;
-use Job;
+use MediaWiki\JobQueue\Job;
 use MediaWiki\Logger\LoggerFactory;
-use MediaWiki\MediaWikiServices;
 use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentityLookup;
 use MediaWiki\Utils\MWTimestamp;
@@ -19,8 +16,9 @@ use Wikimedia\LightweightObjectStore\ExpirationAwareness;
  * Job for computing and caching expensive user impact data. Can also be used to refresh the cache
  * with an already computed value.
  */
-class RefreshUserImpactJob extends Job implements GenericParameterJob {
+class RefreshUserImpactJob extends Job {
 
+	public const JOB_NAME = 'refreshUserImpactJob';
 	private UserImpactStore $userImpactStore;
 	private UserImpactLookup $userImpactLookup;
 	private UserFactory $userFactory;
@@ -30,9 +28,9 @@ class RefreshUserImpactJob extends Job implements GenericParameterJob {
 
 	/**
 	 * Map of user ID => impact data as JSON string, or null to generate in the job
-	 * @var (string|null)[]
+	 * @var array<int, ?string>|null
 	 */
-	private array $impactDataBatch;
+	private ?array $impactDataBatch;
 
 	/**
 	 * Cached objects generated before this UNIX timestamp are considered stale and recomputed.
@@ -49,21 +47,35 @@ class RefreshUserImpactJob extends Job implements GenericParameterJob {
 	 * - userId: user to refresh data for (deprecated, required if impactDataBatch not present)
 	 * - impactData: impact data for userId (deprecated)
 	 */
-	public function __construct( $params = null ) {
-		parent::__construct( 'refreshUserImpactJob', $params );
+	public function __construct(
+		array $params,
+		UserIdentityLookup $userIdentityLookup,
+		UserFactory $userFactory,
+		UserImpactStore $userImpactStore,
+		UserImpactLookup $userImpactLookup,
+		UserImpactFormatter $userImpactFormatter
+	) {
+		parent::__construct( self::JOB_NAME, $params );
 
-		$services = MediaWikiServices::getInstance();
-		$growthServices = GrowthExperimentsServices::wrap( $services );
-		$this->userImpactStore = $growthServices->getUserImpactStore();
-		$this->userImpactLookup = $growthServices->getUserImpactLookup();
-		$this->userImpactFormatter = $growthServices->getUserImpactFormatter();
-		$this->userIdentityLookup = $services->getUserIdentityLookup();
-		$this->userFactory = $services->getUserFactory();
+		$this->userIdentityLookup = $userIdentityLookup;
+		$this->userFactory = $userFactory;
+		$this->userImpactStore = $userImpactStore;
+		$this->userImpactLookup = $userImpactLookup;
+		$this->userImpactFormatter = $userImpactFormatter;
+
+		// TODO: this is not a service yet, but should be
 		$this->logger = LoggerFactory::getInstance( 'GrowthExperiments' );
 
-		$this->impactDataBatch = $params['impactDataBatch']
-			// @phan-suppress-next-line PhanTypeArraySuspiciousNullable
-			?? [ $params['userId'] => $params['impactData'] ?? null ];
+		if ( array_key_exists( 'impactDataBatch', $params ) ) {
+			$this->impactDataBatch = $params['impactDataBatch'];
+		} elseif ( array_key_exists( 'userId', $params ) ) {
+			$this->impactDataBatch = [ $params['userId'] => $params['impactData'] ?? null ];
+		} else {
+			// This shouldn't happen, but ExtensionJsonTest requires __construct to not require
+			// any params; handled in run().
+			$this->impactDataBatch = null;
+		}
+
 		$this->staleBefore = $params['staleBefore'] ?? MWTimestamp::time() - ExpirationAwareness::TTL_DAY;
 		// Prevent accidental use of TS_MW or some other non-TS_UNIX format but don't require int type
 		// as e.g. wfTimestamp( TS_UNIX ) returns a string.
@@ -73,6 +85,10 @@ class RefreshUserImpactJob extends Job implements GenericParameterJob {
 
 	/** @inheritDoc */
 	public function run() {
+		if ( $this->impactDataBatch === null ) {
+			throw new \LogicException( __CLASS__ . ' misses required parameters (impactDataBatch expected)' );
+		}
+
 		$preloadedUserImpacts = [];
 		if ( $this->userImpactStore instanceof DatabaseUserImpactStore ) {
 			$preloadedUserImpacts = $this->userImpactStore->batchGetUserImpact(
@@ -97,7 +113,7 @@ class RefreshUserImpactJob extends Job implements GenericParameterJob {
 					) {
 						continue;
 					}
-				} catch ( ParameterAssertionException $parameterAssertionException ) {
+				} catch ( ParameterAssertionException ) {
 					// Invalid cache format used, recalculate from scratch.
 				}
 			} elseif ( $preloadedUserImpact && $this->isFresh( $preloadedUserImpact ) ) {
@@ -130,10 +146,6 @@ class RefreshUserImpactJob extends Job implements GenericParameterJob {
 		return true;
 	}
 
-	/**
-	 * @param UserImpact $impact
-	 * @return bool
-	 */
 	private function isFresh( UserImpact $impact ): bool {
 		return $impact->getGeneratedAt() >= $this->staleBefore;
 	}

@@ -3,10 +3,10 @@
 		"authors": [
 			"Ankan",
 			"Georg101",
+			"Kotlis23",
 			"Martin Urbanec",
 			"Martin Urbanec (WMF)",
 			"Matěj Suchánek",
-			"Kotlis23",
 			"Mormegil"
 		]
 	},
@@ -115,6 +115,7 @@
 	"communityconfiguration-communityupdates-gehomepagecommunityupdatescalltoaction-label": "Výzva k akci",
 	"communityconfiguration-communityupdates-gehomepagecommunityupdatescalltoaction-pagetitle-label": "Cílová stránka",
 	"communityconfiguration-communityupdates-gehomepagecommunityupdatescalltoaction-buttontext-label": "Popisek",
+	"communityconfiguration-communityupdates-gehomepagecommunityupdatesthumbnailadddarkmodebackground-control-label": "K obrázku přidat v tmavém režimu bílé pozadí",
 	"communityconfiguration-helppanel-title": "Panel Potřebuji pomoci",
 	"communityconfiguration-helppanel-gehelppanelaskmentor-label": "Kam by měly být vkládány otázky položené pomocí panelu Potřebuji pomoc?",
 	"communityconfiguration-helppanel-gehelppanelaskmentor-option-mentor-talk-page-label": "Na diskusní stránky mentorů",
@@ -145,7 +146,7 @@
 	"communityconfiguration-mentorship-gepersonalizedpraiseminedits-help-text": "Mentoři si toto nastavení mohou pro sebe přizpůsobit prostřednictvím Nástěnky mentora.",
 	"communityconfiguration-growthhomepage-gehomepagesuggestededitsintrolinks-image-label": "Stránka popisující přidávání obrázků ve vizuálním editoru",
 	"communityconfiguration-growthhomepage-gelevelingupgetstartedmaxtotaledits-label": "Upozornění \"Vyzkoušejte editační tipy\"",
-	"communityconfiguration-growthhomepage-gelevelingupkeepgoingnotificationthresholds-label": "Upozornění \"Jen tak dál\"",
+	"communityconfiguration-growthhomepage-gelevelingupkeepgoingnotificationthresholdsmaximum-label": "Upozornění \"Jen tak dál\"",
 	"communityconfiguration-growthsuggestededits-title": "Editační tipy",
 	"communityconfiguration-growthsuggestededits-geinfoboxtemplates-label": "Šablony infoboxů",
 	"communityconfiguration-growthsuggestededits-copyedit-label": "Korektury",

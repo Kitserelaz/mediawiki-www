@@ -22,23 +22,19 @@ declare( strict_types = 1 );
 
 namespace MediaWiki\Babel;
 
-use ApiQuery;
-use ApiQueryBase;
-use ApiResult;
+use MediaWiki\Api\ApiQuery;
+use MediaWiki\Api\ApiQueryBase;
+use MediaWiki\Api\ApiResult;
 use MediaWiki\User\UserIdentityLookup;
 use Wikimedia\ParamValidator\ParamValidator;
 
 class ApiQueryBabel extends ApiQueryBase {
-	/** @var UserIdentityLookup */
-	private $userIdentityLookup;
-
 	public function __construct(
 		ApiQuery $queryModule,
 		string $moduleName,
-		UserIdentityLookup $userIdentityLookup
+		private readonly UserIdentityLookup $userIdentityLookup,
 	) {
 		parent::__construct( $queryModule, $moduleName, 'bab' );
-		$this->userIdentityLookup = $userIdentityLookup;
 	}
 
 	public function execute(): void {
@@ -60,7 +56,8 @@ class ApiQueryBabel extends ApiQueryBase {
 		);
 	}
 
-	public function getAllowedParams( /* $flags = 0 */ ): array {
+	/** @inheritDoc */
+	public function getAllowedParams(): array {
 		return [
 			'user' => [
 				ParamValidator::PARAM_REQUIRED => true,
@@ -69,9 +66,7 @@ class ApiQueryBabel extends ApiQueryBase {
 		];
 	}
 
-	/**
-	 * @inheritDoc
-	 */
+	/** @inheritDoc */
 	protected function getExamplesMessages(): array {
 		return [
 			'action=query&meta=babel&babuser=Example'

@@ -10,6 +10,7 @@
 	"growthexperiments-homepage-startediting-dialog-intro-back": "Nuligez",
 	"growthexperiments-homepage-startediting-dialog-difficulty-forward-noactivate": "Facita",
 	"growthexperiments-homepage-impact-empty-pageviews-tooltip-button": "Me komprenas",
+	"tag-newcomer_task_add_link": "Sugestitaː adjuntar ligili",
 	"growthexperiments-homepage-enable-preference": "To enable the newcomer homepage, visit your \"Newcomer homepage\" settings in [[Special:Preferences#mw-prefsection-personal-homepage|Preferences]].",
 	"growthexperiments-homepage-discovery-banner-header": "Bonveno a {{GENDER:$1|vua}} personala pagino!",
 	"growthexperiments-homepage-suggestededits-tasktype-label-image-recommendation": "Adjuntez imaji al artikli",
@@ -22,6 +23,7 @@
 	"growthexperiments-homepage-suggestededits-tasktype-name-update": "Aktualigar",
 	"growthexperiments-structuredtask-onboarding-dialog-title": "Prefaco",
 	"growthexperiments-structuredtask-onboarding-dialog-dismiss-checkbox": "Ne plus montrez to",
+	"grant-managementorship": "Administrar mentoro-stando",
 	"newcomertasksinfo": "Taski por nova uzeri",
 	"growthexperiments-structuredtask-editmode-confirmation-dialog-action-cancel": "Nuligar",
 	"growthexperiments-addimage-inspector-yes-button": "Yes",
@@ -52,5 +54,7 @@
 	"growthexperiments-addimage-daily-task-limit-exceeded": "{{GENDER:|Vu}} kompletigis omna imaji sugestita hodie. Adjustez {{GENDER:|vua}} niveli di habileso por vidar altra tipi di redakturi, o retrovenez morge por plusa sugesti pri imaji.",
 	"growthexperiments-addimage-daily-task-limit-exceeded-dialog-button": "Me komprenas",
 	"growthexperiments-addimage-caption-warning-tooshort": "Deskripto-texti mustas havar $1 {{PLURAL:$1|signo|signi}} od esar plu granda.",
-	"growthexperiments-homepage-mentorship-optout-cancel": "Anular"
+	"growthexperiments-addlink-daily-task-limit-exceeded-dialog-button": "Me komprenis",
+	"growthexperiments-homepage-mentorship-optout-cancel": "Anular",
+	"growthexperiments-homepage-mentorship-optout-confirmation-done": "Facita"
 }

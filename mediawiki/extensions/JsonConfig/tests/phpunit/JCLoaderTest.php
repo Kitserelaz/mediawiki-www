@@ -1,13 +1,11 @@
 <?php
 
-namespace JsonConfig\Tests;
+namespace MediaWiki\Extension\JsonConfig\Tests;
 
-use JsonConfig\JCSingleton;
+use MediaWiki\Extension\JsonConfig\JCSingleton;
 use MediaWikiIntegrationTestCase;
 
 /**
- * @package JsonConfigTests
- * @group JsonConfig
  * @covers \JsonConfig\JCSingleton
  */
 class JCLoaderTest extends MediaWikiIntegrationTestCase {

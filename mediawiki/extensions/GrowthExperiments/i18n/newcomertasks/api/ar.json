@@ -24,6 +24,9 @@
 	"apihelp-visualeditoredit-paramvalue-plugins-ge-task-link-recommendation": "استخدم عند حفظ تعديل منظم لـ GrowthExperiments \"[https://www.mediawiki.org/wiki/Growth/Personalized_first_day/Structured_tasks/Add_a_link Add a link]\".",
 	"apihelp-visualeditoredit-paramvalue-plugins-ge-task-image-recommendation": "استخدام عند حفظ التعديل المهيكل من GrowthExperiments «[https://www.mediawiki.org/wiki/Growth/Personalized_first_day/Structured_tasks/Add_an_image إضافة صورة]».",
 	"apihelp-visualeditoredit-paramvalue-plugins-ge-task-section-image-recommendation": "الاستخدام عند حفظ التعديل المهيكل من GrowthExperiments «[https://www.mediawiki.org/wiki/Growth/Personalized_first_day/Structured_tasks/Add_an_image#\"Add_an_image\"_to_a_Section إضافة صورة]».",
+	"apihelp-visualeditoredit-paramvalue-plugins-ge-task-revise-tone": "الاستخدام عند حفظ التعديل المهيكل من تجارِب النموّ،  «[[mw:Growth/Revise_Tone|مراجعة الأسلوب]]».",
+	"apihelp-visualeditoredit-append-data-plugin-ge-task-revise-tone": "<dl><dt>من أجل المكون الإضافي <var>ge-task-revise-tone</var></dt><dd>\n$1\n</dd></dl>",
+	"apihelp-growthexperiments-structured-task-submit-data-format-revise-tone": "لا ينبغي إدراج أي بيانات لهذا المكون.",
 	"apihelp-visualeditoredit-append-data-plugin-ge-task-link-recommendation": "<dl><dt>For the <var>ge-task-link-recommendation</var> plugin</dt><dd>\n$1\n</dd></dl>",
 	"apihelp-visualeditoredit-append-data-plugin-ge-task-image-recommendation": "<dl><dt>For the <var>ge-task-image-recommendation</var> plugin</dt><dd>\n$1\n</dd></dl>",
 	"apihelp-visualeditoredit-append-data-plugin-ge-task-section-image-recommendation": "<dl><dt>من أجل الإضافة <var>ge-task-image-recommendation</var> /dt><dd>\n$1\n</dd></dl>",
@@ -40,10 +43,12 @@
 	"apierror-growthexperiments-addsectionimage-handler-section-number-wrongtype": "يجب أن تكون معلمة 'رقم_قسم' عددًا صحيحًا في البيانات الخاصة بالإضافة إضافة صورة في قسم، هي $1",
 	"apierror-growthexperiments-addlink-handler-notfound": "سجل توصية الروابط غير موجود",
 	"apierror-growthexperiments-addlink-handler-wrongtargets": "أهداف توصية الروابط غير متوقعة: $1",
-	"growthexperiments-underlinked-rescore-profile": "الملف الشخصي لإعادة التقييم الداخلي المستخدم في GrowthExperiments يربط التوصيات لتحديد أولويات المقالات التي لا تحتوي حتى الآن على روابط كافية.",
+	"growthexperiments-underlinked-rescore-profile": "ملف تعريف إعادة التقييم الداخلي المستخدم في توصيات الروابط في GrowthExperiments لتحديد أولوية المقالات التي لا تحتوي على روابط كافية. هذا لا يعمل عند تعطيل توصيات الروابط.",
 	"growthexperiments-addimage-feedback-accepted-editrevid": "تكون المعلمة <var>editRevId</var> مطلوبة عند ضبط المعلمة <var>accepted</var> على <kbd>true</kbd>.",
 	"growthexperiments-addimage-feedback-rejected-editrevid": "لا يمكن استخدام المعلمة <var>editRevId</var> عند ضبط المعلمة <var>accepted</var> على <kbd>false</kbd>.",
 	"growthexperiments-addimage-feedback-accepted-caption": "معلمة <var>caption</var> مطلوبة عند تعيين المعلمة <var>accepted</var> على <kbd>true</kbd>.",
 	"growthexperiments-addimage-feedback-revid-nonexistent": "لم يتم العثور على المراجعة المحددة في <var>editRevId</var>.",
-	"growthexperiments-addimage-feedback-invalid-revid-wrong-page": "المراجعة المحددة في <var>editRevId</var> تنتمي إلى صفحة مختلفة."
+	"growthexperiments-addimage-feedback-invalid-revid-wrong-page": "المراجعة المحددة في <var>editRevId</var> تنتمي إلى صفحة مختلفة.",
+	"apihelp-growthinvalidaterevisetonerecommendation-summary": "ترك اقتراح 'مراجعة الأسلوب' لصفحة معينة.",
+	"apihelp-growthinvalidaterevisetonerecommendation-param-title": "عنوان الصفحة التي سيتم ترك الاقتراح فيها، دون النطاق."
 }

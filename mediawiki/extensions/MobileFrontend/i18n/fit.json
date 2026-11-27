@@ -5,7 +5,6 @@
 		]
 	},
 	"mobile-frontend-account-create-captcha-placeholder": "Kirjota varmistuskooti",
-	"mobile-frontend-changeslist-nocomment": "ei mookkausyhteenvetoa",
 	"mobile-frontend-desc": "Mupiilikäyttöliittymä",
 	"mobile-frontend-editor-anon": "Mookkaa lokkaamatta sisäle",
 	"mobile-frontend-editor-blocked-drawer-title": "Sinut oon estetty mookkaamasta {{GRAMMAR:partitive|{{SITENAME}}}}",
@@ -59,7 +58,6 @@
 	"mobile-frontend-media-load-fail-message": "Virhe kuvan lattaamisessa.",
 	"mobile-frontend-overlay-close": "Sulje",
 	"mobile-frontend-save-settings": "Säästä",
-	"mobile-frontend-settings-beta": "{{SITENAME}} Beeta",
 	"mobile-frontend-settings-save": "Inställninkit säästettiin.",
 	"mobile-frontend-view": "Mupiilinäkymä",
 	"mobile-frontend-view-desktop": "Työpöytä",
@@ -82,11 +80,7 @@
 	"tag-mobile_web_edit": "mupiilisivusto-mookkaus",
 	"tag-mobile_web_edit-description": "Mookkaus, joka oon tehty mupiiliverkkosivulta",
 	"mobile-frontend-loading-message": "Ladathaan...",
-	"mobile-frontend-mobile-option-MFEnableWikidataDescriptions": "Otsikon kuvvaukset",
 	"mobile-frontend-send-feedback": "Lähätä palautetta",
-	"mobile-frontend-mobile-option-MFLazyLoadImages-description": "Lattaa kuvat vain tarvittaessa.",
 	"mw-mf-amc-name": "Avanseerattu tila",
-	"mobile-frontend-amc-outreach-intro": "Esittelyssä avanseerattu tila",
-	"mobile-frontend-amc-outreach-enable": "Ota käythöön avanseerattu tila",
 	"prefs-mobile": "Mupiili-inställninkit"
 }

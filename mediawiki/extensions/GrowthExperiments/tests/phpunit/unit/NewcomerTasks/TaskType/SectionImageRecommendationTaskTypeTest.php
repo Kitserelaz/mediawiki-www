@@ -18,10 +18,10 @@ class SectionImageRecommendationTaskTypeTest extends MediaWikiUnitTestCase {
 			'some-id',
 			TaskType::DIFFICULTY_MEDIUM,
 			[
-				'some' => 'setting'
+				'some' => 'setting',
 			]
 		);
-		$taskType2 = $codec->unserialize( $codec->serialize( $taskType ) );
+		$taskType2 = $codec->deserialize( $codec->serialize( $taskType ) );
 		$this->assertEquals( $taskType, $taskType2 );
 	}
 

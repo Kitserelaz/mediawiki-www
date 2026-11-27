@@ -29,7 +29,7 @@ class MenteeOverviewDataFilter {
 
 	private const TIMESTAMP_SORTS = [
 		self::SORT_BY_TENURE,
-		self::SORT_BY_ACTIVITY
+		self::SORT_BY_ACTIVITY,
 	];
 
 	private const ALL_SORTS = [
@@ -39,7 +39,7 @@ class MenteeOverviewDataFilter {
 		self::SORT_BY_QUESTIONS,
 		self::SORT_BY_EDITCOUNT,
 		self::SORT_BY_TENURE,
-		self::SORT_BY_ACTIVITY
+		self::SORT_BY_ACTIVITY,
 	];
 
 	/** @var array */
@@ -243,8 +243,6 @@ class MenteeOverviewDataFilter {
 	 * This function uses $this->sortBy to decide what to filter by,
 	 * and calls doSortByTimestamp or doSortByNumber depending
 	 * on the data type of the field.
-	 *
-	 * @param array &$data
 	 */
 	private function doSort( array &$data ) {
 		if ( in_array( $this->sortBy, self::TIMESTAMP_SORTS ) ) {
@@ -259,8 +257,6 @@ class MenteeOverviewDataFilter {
 	 *
 	 * This ignores offset and limit, and is useful
 	 * for pagination purposes.
-	 *
-	 * @return int
 	 */
 	public function getTotalRows(): int {
 		if ( $this->totalRows !== null ) {
@@ -280,12 +276,11 @@ class MenteeOverviewDataFilter {
 	 */
 	private function filterInternal(): array {
 		// Filter the data
-		$prefixLen = strlen( $this->prefix );
-		$filteredData = array_filter( $this->data, function ( $menteeData ) use ( $prefixLen ) {
-			if ( $this->prefix !== '' ) {
-				if ( substr( $menteeData['username'], 0, $prefixLen ) !== $this->prefix ) {
-					return false;
-				}
+		$filteredData = array_filter( $this->data, function ( $menteeData ) {
+			if ( $this->prefix !== '' &&
+				!str_starts_with( $menteeData['username'], $this->prefix )
+			) {
+				return false;
 			}
 
 			if ( $this->onlyIds !== null && !in_array( $menteeData['user_id'], $this->onlyIds ) ) {

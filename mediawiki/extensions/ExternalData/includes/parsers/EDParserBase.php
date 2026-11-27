@@ -4,7 +4,6 @@
  * Includes a factory method that analyses parameters and instantiates needed descendant class.
  *
  * @author Alexander Mashin
- *
  */
 abstract class EDParserBase {
 	use EDParsesParams; // Needs paramToArray().
@@ -31,6 +30,14 @@ abstract class EDParserBase {
 	 * @throws EDParserException
 	 */
 	protected function __construct( array $params, array $headers = [] ) {
+		// Check for deprecation.
+		global $wgExternalDataDisabledClasses;
+		$class = static::class;
+		$reason = $wgExternalDataDisabledClasses[$class] ?? null;
+		if ( $reason ) {
+			throw new EDParserException( 'externaldata-disabled', $class, $reason );
+		}
+
 		// Data mappings.
 		if ( array_key_exists( 'data', $params ) ) {
 			// Data may be a string, or already be an array, if so passed from Lua.

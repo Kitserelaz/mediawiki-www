@@ -8,10 +8,9 @@ use MediaWiki\Extension\Notifications\Model\Event;
 use MediaWiki\SpecialPage\SpecialPageFactory;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\Utils\MWTimestamp;
-use Wikimedia\LightweightObjectStore\ExpirationAwareness;
 use Wikimedia\ObjectCache\BagOStuff;
 
-class PersonalizedPraiseNotificationsDispatcher implements ExpirationAwareness {
+class PersonalizedPraiseNotificationsDispatcher {
 
 	private Config $config;
 	private BagOStuff $cache;
@@ -19,13 +18,6 @@ class PersonalizedPraiseNotificationsDispatcher implements ExpirationAwareness {
 	private PersonalizedPraiseSettings $personalizedPraiseSettings;
 	private PersonalizedPraiseLogger $eventLogger;
 
-	/**
-	 * @param Config $config
-	 * @param BagOStuff $cache
-	 * @param SpecialPageFactory $specialPageFactory
-	 * @param PersonalizedPraiseSettings $personalizedPraiseSettings
-	 * @param PersonalizedPraiseLogger $personalizedPraiseLogger
-	 */
 	public function __construct(
 		Config $config,
 		BagOStuff $cache,
@@ -40,14 +32,10 @@ class PersonalizedPraiseNotificationsDispatcher implements ExpirationAwareness {
 		$this->eventLogger = $personalizedPraiseLogger;
 	}
 
-	/**
-	 * @param UserIdentity $mentor
-	 * @return string
-	 */
 	private function makeLastNotifiedKey( UserIdentity $mentor ): string {
 		return $this->cache->makeKey(
-			'GrowthExperiments', self::class,
-			'last-notified', $mentor->getId()
+			'growthexperiments-mentor-last-notified',
+			$mentor->getId()
 		);
 	}
 
@@ -76,18 +64,14 @@ class PersonalizedPraiseNotificationsDispatcher implements ExpirationAwareness {
 		$this->cache->set(
 			$this->makeLastNotifiedKey( $userIdentity ),
 			$lastNotified,
-			self::TTL_INDEFINITE
+			BagOStuff::TTL_INDEFINITE
 		);
 	}
 
-	/**
-	 * @param UserIdentity $mentor
-	 * @return string
-	 */
 	private function makePendingMenteesKey( UserIdentity $mentor ): string {
 		return $this->cache->makeKey(
-			'GrowthExperiments', self::class,
-			'pending-mentees', $mentor->getId()
+			'growthexperiments-mentor-pending-mentees',
+			$mentor->getId()
 		);
 	}
 
@@ -106,17 +90,11 @@ class PersonalizedPraiseNotificationsDispatcher implements ExpirationAwareness {
 	 * Purge the list of mentees the mentor was not yet notified about
 	 *
 	 * This should be called upon mentor getting a notification.
-	 *
-	 * @param UserIdentity $mentor
 	 */
 	private function purgePendingMenteesForMentor( UserIdentity $mentor ): void {
 		$this->cache->delete( $this->makePendingMenteesKey( $mentor ) );
 	}
 
-	/**
-	 * @param UserIdentity $mentor
-	 * @param UserIdentity $mentee
-	 */
 	private function markMenteeAsPendingForMentor(
 		UserIdentity $mentor, UserIdentity $mentee
 	): void {
@@ -134,8 +112,6 @@ class PersonalizedPraiseNotificationsDispatcher implements ExpirationAwareness {
 
 	/**
 	 * Notify a mentor about new praiseworthy mentees
-	 *
-	 * @param UserIdentity $mentor
 	 */
 	private function notifyMentor( UserIdentity $mentor ) {
 		if ( !$this->config->get( 'GEPersonalizedPraiseNotificationsEnabled' ) ) {
@@ -199,7 +175,7 @@ class PersonalizedPraiseNotificationsDispatcher implements ExpirationAwareness {
 
 		if (
 			$rawLastNotifiedTS === null ||
-			$notifiedSecondsAgo >= $hoursToWait * ExpirationAwareness::TTL_HOUR
+			$notifiedSecondsAgo >= $hoursToWait * BagOStuff::TTL_HOUR
 		) {
 			$this->notifyMentor( $mentor );
 			return true;

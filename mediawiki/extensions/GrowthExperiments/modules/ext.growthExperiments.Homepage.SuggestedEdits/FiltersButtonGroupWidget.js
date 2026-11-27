@@ -27,10 +27,12 @@ function FiltersButtonGroupWidget( config, logger, rootStore ) {
 
 	if ( this.topicMatching ) {
 		const shouldShowFunnelAddIcon = config.useTopicMatchMode && this.filtersStore.topicsMatchMode === TOPIC_MATCH_MODES.AND;
+		// Button label is set in #updateButtonLabelAndIcon
+		// eslint-disable-next-line mediawiki/no-unlabeled-buttonwidget
 		this.topicFilterButtonWidget = new OO.ui.ButtonWidget( {
 			icon: shouldShowFunnelAddIcon ? 'funnel-add' : 'funnel',
 			classes: [ 'topic-matching', 'topic-filter-button' ],
-			indicator: config.mode === 'desktop' ? null : 'down'
+			indicator: config.mode === 'desktop' ? null : 'down',
 		} );
 		buttonWidgets.push( this.topicFilterButtonWidget );
 		this.topicFiltersDialog = new TopicFiltersDialog( rootStore ).connect( this, {
@@ -49,32 +51,34 @@ function FiltersButtonGroupWidget( config, logger, rootStore ) {
 					// 'se-topicmatchmode-and'
 					'se-topicmatchmode-' + matchMode.toLowerCase(),
 					{
-						topicsMatchMode: matchMode
-					}
+						topicsMatchMode: matchMode,
+					},
 				);
 			},
 			selectAll: function ( groupId ) {
 				logger.log( 'suggested-edits', config.mode, 'se-topicfilter-select-all', {
 					isCta: false,
-					topicGroup: groupId
+					topicGroup: groupId,
 				} );
 			},
 			removeAll: function ( groupId ) {
 				logger.log( 'suggested-edits', config.mode, 'se-topicfilter-remove-all', {
 					isCta: false,
-					topicGroup: groupId
+					topicGroup: groupId,
 				} );
 			},
-			cancel: [ 'emit', 'cancel' ]
+			cancel: [ 'emit', 'cancel' ],
 		} );
 		this.topicFiltersDialog.$element.addClass( 'suggested-edits-topic-filters' );
 		windows.push( this.topicFiltersDialog );
 	}
 
+	// Button label is set in #updateButtonLabelAndIcon
+	// eslint-disable-next-line mediawiki/no-unlabeled-buttonwidget
 	this.difficultyFilterButtonWidget = new OO.ui.ButtonWidget( {
 		icon: 'difficulty-outline',
 		classes: this.topicMatching ? [ 'topic-matching', 'difficulty-filter-button' ] : [ '' ],
-		indicator: config.mode === 'desktop' ? null : 'down'
+		indicator: config.mode === 'desktop' ? null : 'down',
 	} );
 	buttonWidgets.push( this.difficultyFilterButtonWidget );
 
@@ -87,7 +91,7 @@ function FiltersButtonGroupWidget( config, logger, rootStore ) {
 		},
 		cancel: function () {
 			this.emit( 'cancel' );
-		}
+		},
 	} );
 	windows.push( this.taskTypeFiltersDialog );
 
@@ -103,7 +107,7 @@ function FiltersButtonGroupWidget( config, logger, rootStore ) {
 		const lifecycle = windowManager.openWindow( this.taskTypeFiltersDialog );
 		logger.log( 'suggested-edits', config.mode, 'se-taskfilter-open' );
 		this.emit( 'open' );
-		lifecycle.closing.done( ( data ) => {
+		lifecycle.closing.then( ( data ) => {
 			if ( data && data.action === 'done' ) {
 				logger.log( 'suggested-edits', config.mode, 'se-taskfilter-done',
 					{ taskTypes: this.taskTypeFiltersDialog.getEnabledFilters() } );
@@ -118,15 +122,15 @@ function FiltersButtonGroupWidget( config, logger, rootStore ) {
 		this.topicFilterButtonWidget.on( 'click', () => {
 			const lifecycle = windowManager.openWindow( this.topicFiltersDialog );
 			logger.log( 'suggested-edits', config.mode, 'se-topicfilter-open', {
-				topics: this.topicFiltersDialog.getEnabledFilters().getTopics()
+				topics: this.topicFiltersDialog.getEnabledFilters().getTopics(),
 			} );
 			if ( config.useTopicMatchMode ) {
 				logger.log( 'suggested-edits', config.mode, 'se-topicmatchmode-impression' );
 			}
 			this.emit( 'open' );
-			lifecycle.closing.done( ( data ) => {
+			lifecycle.closing.then( ( data ) => {
 				const closeExtraData = {
-					topics: this.topicFiltersDialog.getEnabledFilters().getTopics()
+					topics: this.topicFiltersDialog.getEnabledFilters().getTopics(),
 				};
 				if ( config.useTopicMatchMode ) {
 					closeExtraData.topicsMatchMode = this.topicFiltersDialog.getEnabledFilters()
@@ -142,12 +146,24 @@ function FiltersButtonGroupWidget( config, logger, rootStore ) {
 	}
 
 	FiltersButtonGroupWidget.super.call( this, Object.assign( {}, config, {
-		items: buttonWidgets
+		items: buttonWidgets,
 	} ) );
+
+	if (
+		mw.config.get( 'wgCanonicalSpecialPageName' ) === 'Homepage' &&
+		window.location.hash === '#/homepage/suggested-edits/openTaskTypeDialog' &&
+		mw.user.options.get( 'growthexperiments-homepage-suggestededits-activated' )
+	) {
+		setTimeout( () => {
+			this.difficultyFilterButtonWidget.emit( 'click' );
+		}, 0 );
+	}
 
 	this.filtersStore.on( CONSTANTS.EVENTS.FILTER_SELECTION_CHANGED, () => {
 		this.taskTypeFiltersDialog.taskTypeSelector.setSelected( this.filtersStore.getSelectedTaskTypes() );
-		this.topicFiltersDialog.topicSelector.setFilters( this.filtersStore.getTopicsQuery() );
+		if ( this.topicFiltersDialog ) {
+			this.topicFiltersDialog.topicSelector.setFilters( this.filtersStore.getTopicsQuery() );
+		}
 	} );
 
 	rootStore.newcomerTasks.on( CONSTANTS.EVENTS.TASK_QUEUE_LOADING, ( isLoading ) => {
@@ -198,7 +214,7 @@ FiltersButtonGroupWidget.prototype.updateLoadingState = function ( state ) {
  * of topics to search for and match mode
  */
 FiltersButtonGroupWidget.prototype.updateButtonLabelAndIcon = function (
-	taskTypeSearch, topicSearch
+	taskTypeSearch, topicSearch,
 ) {
 	const levels = {},
 		topicMessages = [],
@@ -211,12 +227,12 @@ FiltersButtonGroupWidget.prototype.updateButtonLabelAndIcon = function (
 	if ( this.topicFilterButtonWidget ) {
 		if ( !topicSearch.hasFilters() ) {
 			this.topicFilterButtonWidget.setLabel(
-				mw.message( 'growthexperiments-homepage-suggestededits-topic-filter-select-interests' ).text()
+				mw.message( 'growthexperiments-homepage-suggestededits-topic-filter-select-interests' ).text(),
 			);
 			// topicPresets will be a TopicFilters object if the user had saved topics
 			// in the past, or null if they have never saved topics
 			this.topicFilterButtonWidget.setFlags( {
-				progressive: !this.filtersStore.preferences.topicFilters
+				progressive: !this.filtersStore.preferences.topicFilters,
 			} );
 		} else {
 			topicSearch.getTopics().forEach( ( topic ) => {
@@ -234,7 +250,7 @@ FiltersButtonGroupWidget.prototype.updateButtonLabelAndIcon = function (
 				topicLabel = topicMessages.join( separator );
 			} else {
 				topicLabel = mw.message(
-					'growthexperiments-homepage-suggestededits-topics-button-topic-count'
+					'growthexperiments-homepage-suggestededits-topics-button-topic-count',
 				).params( [ mw.language.convertNumber( topicMessages.length ) ] )
 					.text();
 			}
@@ -246,7 +262,7 @@ FiltersButtonGroupWidget.prototype.updateButtonLabelAndIcon = function (
 	if ( !taskTypeSearch.length ) {
 		// User has deselected all filters, set generic outline and message in button label.
 		this.difficultyFilterButtonWidget.setLabel(
-			mw.message( 'growthexperiments-homepage-suggestededits-difficulty-filters-title' ).text()
+			mw.message( 'growthexperiments-homepage-suggestededits-difficulty-filters-title' ).text(),
 		);
 		this.difficultyFilterButtonWidget.setIcon( 'difficulty-outline' );
 		return;
@@ -276,10 +292,10 @@ FiltersButtonGroupWidget.prototype.updateButtonLabelAndIcon = function (
 	this.difficultyFilterButtonWidget.setLabel(
 		mw.message( this.mode === 'desktop' ?
 			'growthexperiments-homepage-suggestededits-difficulty-filter-label' :
-			'growthexperiments-homepage-suggestededits-difficulty-filter-label-mobile'
+			'growthexperiments-homepage-suggestededits-difficulty-filter-label-mobile',
 		)
 			.params( [ messages.join( mw.msg( 'comma-separator' ) ) ] )
-			.text()
+			.text(),
 	);
 };
 

@@ -180,7 +180,7 @@ QUnit.module( 'MobileFrontend mobile.languages.structured/util.test.js', {
 			]
 		};
 
-		sandbox = sinon.sandbox.create();
+		sandbox = sinon.createSandbox();
 		dom.setUp( sandbox, global );
 		jQuery.setUp( sandbox, global );
 		mediaWiki.setUp( sandbox, global );
@@ -241,10 +241,10 @@ QUnit.test( '#getStructuredLanguages variants', function ( assert ) {
 	const suggestedLanguages = util.getStructuredLanguages(
 		this.apiLanguages, this.apiVariants, {}, true, this.deviceLanguage
 	).suggested;
-	this.apiVariants.forEach( function ( variant ) {
+	this.apiVariants.forEach( ( variant ) => {
 		variantsMap[ variant.lang ] = variant;
 	} );
-	suggestedLanguages.forEach( function ( suggestedLanguage ) {
+	suggestedLanguages.forEach( ( suggestedLanguage ) => {
 		assert.true(
 			Object.prototype.hasOwnProperty.call( variantsMap, suggestedLanguage.lang ),
 			'Variant "' + suggestedLanguage.lang + '" is in the list of suggested languages.'

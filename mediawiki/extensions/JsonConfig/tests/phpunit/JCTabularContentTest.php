@@ -1,19 +1,22 @@
 <?php
 
-namespace JsonConfig\Tests;
+namespace MediaWiki\Extension\JsonConfig\Tests;
 
-use JsonConfig\JCLuaLibrary;
-use JsonConfig\JCTabularContent;
+use MediaWiki\Extension\JsonConfig\JCLuaLibrary;
+use MediaWiki\Extension\JsonConfig\JCTabularContent;
 use MediaWiki\Extension\Scribunto\Engines\LuaCommon\LibraryBase;
 use MediaWiki\Json\FormatJson;
 use MediaWikiIntegrationTestCase;
 
 /**
- * @package JsonConfigTests
- * @group JsonConfig
  * @covers \JsonConfig\JCTabularContent
  */
 class JCTabularContentTest extends MediaWikiIntegrationTestCase {
+
+	protected function setUp(): void {
+		parent::setUp();
+		$this->markTestSkippedIfExtensionNotLoaded( 'Scribunto' );
+	}
 
 	public function getAnnotations(): array {
 		// HACK phpunit can't handle @covers annotations referring to classes which cannot be loaded
@@ -51,9 +54,9 @@ class JCTabularContentTest extends MediaWikiIntegrationTestCase {
 			$this->assertTrue( true );
 			$languageFactory = $this->getServiceContainer()->getLanguageFactory();
 			foreach ( $content as $langCode => $expected ) {
-				if ( $langCode == 'raw' ) {
+				if ( $langCode === 'raw' ) {
 					continue;
-				} elseif ( $langCode == '_' ) {
+				} elseif ( $langCode === '_' ) {
 					$actual = $c->getData();
 				} else {
 					$actual = $c->getLocalizedData( $languageFactory->getLanguage( $langCode ) );
@@ -89,7 +92,7 @@ class JCTabularContentTest extends MediaWikiIntegrationTestCase {
 	}
 
 	public static function provideBadTestCases() {
-		foreach ( glob( __DIR__ . "/tabular-bad/*.json" ) as $file ) {
+		foreach ( glob( __DIR__ . "/tabular-bad/bad-c*.json" ) as $file ) {
 			yield [ $file ];
 		}
 	}
@@ -102,10 +105,6 @@ class JCTabularContentTest extends MediaWikiIntegrationTestCase {
 	 * @param array $expected
 	 */
 	public function testLuaTabDataReindexing( int $fieldCount, array $data, array $expected ) {
-		if ( !class_exists( LibraryBase::class ) ) {
-			$this->markTestSkipped( "Scribunto is required for this integration test" );
-		}
-
 		$value = (object)[
 			'schema' => (object)[
 				'fields' => array_fill( 0, $fieldCount, (object)[] ),

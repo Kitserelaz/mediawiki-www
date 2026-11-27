@@ -3,149 +3,73 @@
 namespace GrowthExperiments\HelpPanel\QuestionPoster;
 
 use Flow\Container;
+use Flow\Model\UUID;
 use GrowthExperiments\HelpPanel\QuestionRecord;
 use GrowthExperiments\HelpPanel\QuestionStoreFactory;
 use GrowthExperiments\Hooks\HookRunner;
-use Liuggio\StatsdClient\Factory\StatsdDataFactoryInterface;
 use MediaWiki\CommentStore\CommentStoreComment;
-use MediaWiki\Config\Config;
 use MediaWiki\Content\Content;
 use MediaWiki\Content\WikitextContent;
 use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Exception\UserNotLoggedIn;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Page\WikiPageFactory;
 use MediaWiki\Permissions\PermissionManager;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Status\Status;
 use MediaWiki\Storage\PageUpdater;
 use MediaWiki\Title\Title;
 use MediaWiki\Title\TitleFactory;
-use RecentChange;
+use MediaWiki\WikiMap\WikiMap;
 use RuntimeException;
-use UserNotLoggedIn;
-use Wikimedia\Stats\PrefixingStatsdDataFactoryProxy;
+use StatusValue;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * Base class for sending messages containing user questions to some target page.
  */
 abstract class QuestionPoster {
 
-	/**
-	 * @var WikiPageFactory
-	 */
-	private $wikiPageFactory;
+	private WikiPageFactory $wikiPageFactory;
+	private TitleFactory $titleFactory;
+	private PermissionManager $permissionManager;
+	private bool $postOnTop = false;
+	private IContextSource $context;
+	private bool $isFirstEdit;
+	private ?Title $targetTitle = null;
+	private string $resultUrl;
+	private ?PageUpdater $pageUpdater = null;
 
-	/**
-	 * @var TitleFactory
-	 */
-	private $titleFactory;
+	/** Either a revision id or the UUID of a Flow topic */
+	private int|string $revisionId;
 
-	/**
-	 * @var PermissionManager
-	 */
-	private $permissionManager;
+	private string $relevantTitleRaw;
+	private ?Title $relevantTitle = null;
 
-	/**
-	 * @var bool
-	 */
-	private $postOnTop = false;
+	private string $postedOnTimestamp;
 
-	/**
-	 * @var IContextSource
-	 */
-	private $context;
+	/** @var QuestionRecord[] */
+	private array $existingQuestionsByUser;
 
-	/**
-	 * @var bool
-	 */
-	private $isFirstEdit;
-
-	/**
-	 * @var Config
-	 */
-	private $config;
-
-	/**
-	 * @var Title
-	 */
-	private $targetTitle;
-
-	/**
-	 * @var string
-	 */
-	private $resultUrl;
-
-	/**
-	 * @var PageUpdater
-	 */
-	protected $pageUpdater;
-
-	/**
-	 * @var mixed
-	 */
-	private $revisionId;
-
-	/**
-	 * @var string
-	 */
-	private $relevantTitleRaw;
-
-	/**
-	 * @var Title|null
-	 */
-	private $relevantTitle;
-
-	/**
-	 * @var string
-	 */
-	private $postedOnTimestamp;
-
-	/**
-	 * @var QuestionRecord[]
-	 */
-	private $existingQuestionsByUser;
-
-	/**
-	 * @var string
-	 */
-	private $body;
-
-	/**
-	 * @var string
-	 */
-	private $sectionHeader;
-
-	/**
-	 * @var PrefixingStatsdDataFactoryProxy
-	 */
-	private $perDbNameStatsdDataFactory;
+	private string $body;
+	private string $sectionHeader;
+	private StatsFactory $statsFactory;
 
 	private bool $confirmEditInstalled = false;
 	private bool $flowInstalled = false;
 
-	/**
-	 * @param WikiPageFactory $wikiPageFactory
-	 * @param TitleFactory $titleFactory
-	 * @param PermissionManager $permissionManager
-	 * @param StatsdDataFactoryInterface $perDbNameStatsdDataFactory
-	 * @param bool $confirmEditInstalled
-	 * @param bool $flowInstalled
-	 * @param IContextSource $context
-	 * @param string $body
-	 * @param string $relevantTitleRaw
-	 * @throws UserNotLoggedIn
-	 */
 	public function __construct(
 		WikiPageFactory $wikiPageFactory,
 		TitleFactory $titleFactory,
 		PermissionManager $permissionManager,
-		StatsdDataFactoryInterface $perDbNameStatsdDataFactory,
+		StatsFactory $statsFactory,
 		bool $confirmEditInstalled,
 		bool $flowInstalled,
 		IContextSource $context,
-		$body,
-		$relevantTitleRaw = ''
+		string $body,
+		string $relevantTitleRaw = ''
 	) {
 		$this->wikiPageFactory = $wikiPageFactory;
 		$this->titleFactory = $titleFactory;
@@ -155,13 +79,9 @@ abstract class QuestionPoster {
 		if ( !$this->getContext()->getUser()->isNamed() ) {
 			throw new UserNotLoggedIn();
 		}
-		$this->config = $this->getContext()->getConfig();
 		$this->isFirstEdit = ( $this->getContext()->getUser()->getEditCount() === 0 );
-		$this->targetTitle = $this->getTargetTitle();
-		$page = $wikiPageFactory->newFromTitle( $this->targetTitle );
-		$this->pageUpdater = $page->newPageUpdater( $this->getContext()->getUser() );
 		$this->body = trim( $body );
-		$this->perDbNameStatsdDataFactory = $perDbNameStatsdDataFactory;
+		$this->statsFactory = $statsFactory;
 		$this->confirmEditInstalled = $confirmEditInstalled;
 		$this->flowInstalled = $flowInstalled;
 	}
@@ -169,7 +89,6 @@ abstract class QuestionPoster {
 	/**
 	 * Whether to post on top of the help desk (as opposed to the bottom). Defaults to false.
 	 * Only affects wikitext pages.
-	 * @param bool $postOnTop
 	 */
 	public function setPostOnTop( bool $postOnTop ): void {
 		$this->postOnTop = $postOnTop;
@@ -195,10 +114,8 @@ abstract class QuestionPoster {
 	/**
 	 * Return wikitext link target suitable for usage in [[internal linking]]
 	 *
-	 * This returns [[$title->getPrefixedText()]] for most pages, and
-	 * [[:$title->getPrefixedText()]] for files and categories.
-	 *
-	 * @return string
+	 * This returns the prefixed text for all pages. The message template
+	 * handles adding the colon for files and categories in the wikitext link format.
 	 */
 	public function getWikitextLinkTarget(): string {
 		$title = $this->getRelevantTitle();
@@ -206,11 +123,7 @@ abstract class QuestionPoster {
 			return '';
 		}
 
-		if ( in_array( $title->getNamespace(), [ NS_FILE, NS_CATEGORY ], true ) ) {
-			return ':' . $title->getPrefixedText();
-		} else {
-			return $title->getPrefixedText();
-		}
+		return $title->getPrefixedText();
 	}
 
 	/**
@@ -224,10 +137,7 @@ abstract class QuestionPoster {
 		$this->existingQuestionsByUser = $questionStore->loadQuestions();
 	}
 
-	/**
-	 * @return Status
-	 */
-	public function submit() {
+	public function submit(): StatusValue {
 		$this->loadExistingQuestions();
 
 		// Do not let captcha to stop us
@@ -260,14 +170,11 @@ abstract class QuestionPoster {
 	/**
 	 * @return string Content model of the target page. One of the CONTENT_MODEL_* constants.
 	 */
-	protected function getTargetContentModel() {
-		return $this->targetTitle->getContentModel();
+	protected function getTargetContentModel(): string {
+		return $this->getTargetTitle()->getContentModel();
 	}
 
-	/**
-	 * @return Status
-	 */
-	private function submitWikitext() {
+	private function submitWikitext(): StatusValue {
 		$content = $this->makeWikitextContent();
 
 		$contentStatus = $this->checkContent( $content );
@@ -282,7 +189,8 @@ abstract class QuestionPoster {
 		$tag = $this->getTag();
 		$this->getPageUpdater()->addTag( $tag );
 		$this->getPageUpdater()->setContent( SlotRecord::MAIN, $content );
-		if ( $this->getContext()->getAuthority()->authorizeWrite( 'autopatrol', $this->targetTitle ) ) {
+		if ( $this->getContext()->getAuthority()->authorizeWrite( 'autopatrol',
+			$this->getTargetTitle() ) ) {
 			$this->getPageUpdater()->setRcPatrolStatus( RecentChange::PRC_AUTOPATROLLED );
 		}
 		$newRev = $this->getPageUpdater()->saveRevision(
@@ -295,6 +203,7 @@ abstract class QuestionPoster {
 					->create()
 					->stripSectionName( $this->getSectionHeader() )
 				)
+				->inContentLanguage()
 				->text()
 			)
 		);
@@ -310,24 +219,26 @@ abstract class QuestionPoster {
 		// NOTE: Don't call setFragment() on the original Title, that may corrupt the internal
 		//       cache of Title objects.
 		$target = Title::makeTitle(
-			$this->targetTitle->getNamespace(),
-			$this->targetTitle->getDBkey(),
+			$this->getTargetTitle()->getNamespace(),
+			$this->getTargetTitle()->getDBkey(),
 			$fragment
 		);
 		$this->setResultUrl( $target->getLinkURL() );
 		$tagId = str_replace( ' ', '_', $tag );
-		$this->perDbNameStatsdDataFactory->increment( 'GrowthExperiments.QuestionPoster.' . $tagId );
+		$wiki = WikiMap::getCurrentWikiId();
+		$this->statsFactory->withComponent( 'GrowthExperiments' )
+			->getCounter( 'question_poster_edits_total' )
+			->setLabel( 'tag', $tagId )
+			->setLabel( 'wiki', $wiki )
+			->increment();
 
-		return Status::newGood();
+		return StatusValue::newGood();
 	}
 
-	/**
-	 * @return Status
-	 */
-	private function submitStructuredDiscussions() {
+	private function submitStructuredDiscussions(): StatusValue {
 		$workflowLoaderFactory = Container::get( 'factory.loader.workflow' );
 		// TODO: Add statsd instrumentation after T297709 is done.
-		$loader = $workflowLoaderFactory->createWorkflowLoader( $this->targetTitle );
+		$loader = $workflowLoaderFactory->createWorkflowLoader( $this->getTargetTitle() );
 		$blocksToCommit = $loader->handleSubmit(
 			$this->getContext(),
 			'new-topic',
@@ -340,7 +251,7 @@ abstract class QuestionPoster {
 			]
 		);
 
-		$status = Status::newGood();
+		$status = StatusValue::newGood();
 		foreach ( $loader->getBlocks() as $block ) {
 			if ( $block->hasErrors() ) {
 				$errors = $block->getErrors();
@@ -357,16 +268,16 @@ abstract class QuestionPoster {
 
 		$topicTitle = Title::newFromText( $commitMetadata['topiclist']['topic-page'] );
 		$this->setResultUrl( $topicTitle->getLinkURL() );
-		$this->revisionId = $commitMetadata['topiclist']['topic-id']->getAlphadecimal();
+		/** @var UUID $topicId */
+		$topicId = $commitMetadata['topiclist']['topic-id'];
+		$this->revisionId = $topicId->getAlphadecimal();
 
-		return Status::newGood();
+		return StatusValue::newGood();
 	}
 
-	private function getNumberedSectionHeaderIfDuplicatesExist( $sectionHeader ) {
+	private function getNumberedSectionHeaderIfDuplicatesExist( string $sectionHeader ): string {
 		$sectionHeaders = array_map(
-			static function ( QuestionRecord $questionRecord ) {
-				return $questionRecord->getSectionHeader();
-			},
+			static fn ( QuestionRecord $record ) => $record->getSectionHeader(),
 			$this->existingQuestionsByUser
 		);
 		$counter = 1;
@@ -377,11 +288,7 @@ abstract class QuestionPoster {
 		return $counter === 1 ? $sectionHeader : $sectionHeader . ' (' . $counter . ')';
 	}
 
-	/**
-	 * @param Content $content
-	 * @return Status
-	 */
-	protected function checkPermissions( $content ) {
+	protected function checkPermissions( Content $content ): StatusValue {
 		$userPermissionStatus = $this->checkUserPermissions();
 		if ( !$userPermissionStatus->isGood() ) {
 			return $userPermissionStatus;
@@ -393,7 +300,7 @@ abstract class QuestionPoster {
 		if ( !$editFilterMergedContentHookStatus->isGood() ) {
 			return $editFilterMergedContentHookStatus;
 		}
-		return Status::newGood();
+		return StatusValue::newGood();
 	}
 
 	/**
@@ -408,7 +315,7 @@ abstract class QuestionPoster {
 	 */
 	protected function makeWikitextContent() {
 		$wikitextContent = new WikitextContent(
-			$this->addSignature( $this->getBody() )
+			$this->prependContent( $this->addSignature( $this->getBody() ) )
 		);
 		$header = $this->getSectionHeader();
 		$parent = $this->getPageUpdater()->grabParentRevision();
@@ -436,54 +343,37 @@ abstract class QuestionPoster {
 		);
 	}
 
-	/**
-	 * @return PageUpdater
-	 */
-	protected function getPageUpdater() {
+	protected function getPageUpdater(): PageUpdater {
+		if ( $this->pageUpdater === null ) {
+			$page = $this->wikiPageFactory->newFromTitle( $this->getTargetTitle() );
+			$this->pageUpdater = $page->newPageUpdater( $this->getContext()->getUser() );
+		}
 		return $this->pageUpdater;
 	}
 
 	/**
 	 * Add signature unless already set.
-	 *
-	 * @param string $body
-	 * @return string
 	 */
-	private function addSignature( $body ) {
-		if ( strpos( $body, '~~~~' ) === false ) {
-			$body .= " --~~~~";
-		}
-		return $body;
+	private function addSignature( string $body ): string {
+		return str_contains( $body, '~~~~' ) ? $body : $body . ' --~~~~';
 	}
 
-	/**
-	 * @return Status
-	 */
-	public function validateRelevantTitle() {
+	public function validateRelevantTitle(): StatusValue {
 		$title = $this->getRelevantTitle();
 		return $title && $title->isValid() ?
-			Status::newGood() :
-			Status::newFatal( 'growthexperiments-help-panel-questionposter-invalid-title' );
+			StatusValue::newGood() :
+			StatusValue::newFatal( 'growthexperiments-help-panel-questionposter-invalid-title' );
 	}
 
-	/**
-	 * @return string
-	 */
-	public function getResultUrl() {
+	public function getResultUrl(): string {
 		return $this->resultUrl;
 	}
 
-	/**
-	 * @return int
-	 */
-	public function getRevisionId() {
+	public function getRevisionId(): int|string {
 		return $this->revisionId;
 	}
 
-	/**
-	 * @return bool
-	 */
-	public function isFirstEdit() {
+	public function isFirstEdit(): bool {
 		return $this->isFirstEdit;
 	}
 
@@ -499,10 +389,8 @@ abstract class QuestionPoster {
 
 	/**
 	 * Set the result URL to go directly to the newly created question.
-	 *
-	 * @param string $resultUrl
 	 */
-	private function setResultUrl( $resultUrl ) {
+	private function setResultUrl( string $resultUrl ): void {
 		$this->resultUrl = $resultUrl;
 	}
 
@@ -513,7 +401,7 @@ abstract class QuestionPoster {
 	 * only if duplicate headers exist, which can happen when questions
 	 * are posted within the same minute.
 	 */
-	protected function setSectionHeader() {
+	protected function setSectionHeader(): void {
 		$this->sectionHeader = $this->getSectionHeaderTemplate();
 		// If wikitext, override the section header to include the timestamp.
 		if ( $this->getTargetContentModel() === CONTENT_MODEL_WIKITEXT ) {
@@ -528,17 +416,11 @@ abstract class QuestionPoster {
 		);
 	}
 
-	/**
-	 * @return string
-	 */
-	private function getSectionHeader() {
+	private function getSectionHeader(): string {
 		return $this->sectionHeader;
 	}
 
-	/**
-	 * @return string
-	 */
-	private function getPostedOnTimestamp() {
+	private function getPostedOnTimestamp(): string {
 		return $this->postedOnTimestamp;
 	}
 
@@ -555,12 +437,16 @@ abstract class QuestionPoster {
 	 * @return Title The page where the question should be posted.
 	 */
 	protected function getTargetTitle(): Title {
-		$title = $this->getDirectTargetTitle();
-		if ( $title->isRedirect() ) {
-			$page = $this->wikiPageFactory->newFromTitle( $title );
-			return $page->getRedirectTarget();
+		if ( $this->targetTitle === null ) {
+			$title = $this->getDirectTargetTitle();
+			if ( $title->isRedirect() ) {
+				$page = $this->wikiPageFactory->newFromTitle( $title );
+				$this->targetTitle = $page->getRedirectTarget();
+				return $this->targetTitle;
+			}
+			$this->targetTitle = $title;
 		}
-		return $title;
+		return $this->targetTitle;
 	}
 
 	/**
@@ -568,10 +454,7 @@ abstract class QuestionPoster {
 	 */
 	abstract protected function getDirectTargetTitle();
 
-	/**
-	 * @return IContextSource
-	 */
-	final protected function getContext() {
+	final protected function getContext(): IContextSource {
 		return $this->context;
 	}
 
@@ -583,36 +466,22 @@ abstract class QuestionPoster {
 	abstract protected function getQuestionStoragePref();
 
 	/**
-	 * @return Status
+	 * @return StatusValue
 	 * @throws \Exception
 	 */
-	protected function checkUserPermissions() {
-		$errors = $this->permissionManager->getPermissionErrors(
+	protected function checkUserPermissions(): StatusValue {
+		return $this->permissionManager->getPermissionStatus(
 			'edit',
 			$this->getContext()->getUser(),
-			$this->targetTitle
+			$this->getTargetTitle()
 		);
-
-		if ( count( $errors ) ) {
-			$key = array_shift( $errors[0] );
-			$message = $this->getContext()->msg( $key )
-				->params( $errors[0] )
-				->parse();
-			return Status::newFatal( $message );
-		}
-		return Status::newGood();
 	}
 
-	/**
-	 * @param Content $content
-	 * @param string $summary
-	 * @return Status
-	 */
-	protected function runEditFilterMergedContentHook( Content $content, $summary ) {
+	protected function runEditFilterMergedContentHook( Content $content, string $summary ): Status {
 		$derivativeContext = new DerivativeContext( $this->getContext() );
 		$services = MediaWikiServices::getInstance();
 		$derivativeContext->setConfig( $services->getMainConfig() );
-		$derivativeContext->setTitle( $this->targetTitle );
+		$derivativeContext->setTitle( $this->getTargetTitle() );
 		$status = new Status();
 		$hookRunner = new HookRunner( $services->getHookContainer() );
 		if ( !$hookRunner->onEditFilterMergedContent(
@@ -631,20 +500,17 @@ abstract class QuestionPoster {
 		return $status;
 	}
 
-	private function getBody() {
+	private function getBody(): string {
 		return $this->body;
 	}
 
 	/**
 	 * Validate that $content is an instance of Content
-	 *
-	 * @param Content|null $content
-	 * @return Status
 	 */
-	protected function checkContent( $content ) {
+	protected function checkContent( ?Content $content ): StatusValue {
 		return $content instanceof Content ?
-			Status::newGood() :
-			Status::newFatal(
+			StatusValue::newGood() :
+			StatusValue::newFatal(
 				'apierror-missingcontent-revid',
 				$this->getPageUpdater()->grabParentRevision()->getId()
 			);
@@ -663,6 +529,13 @@ abstract class QuestionPoster {
 			$this->getContext(),
 			$this->getQuestionStoragePref()
 		)->add( $question );
+	}
+
+	/**
+	 * Prepend wikitext to the question message body
+	 */
+	protected function prependContent( string $body ): string {
+		return $body;
 	}
 
 }

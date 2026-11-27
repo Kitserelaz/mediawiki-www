@@ -1,5 +1,5 @@
 <?php
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use Kartographer\SimpleStyleParser;
 use MediaWiki\Json\FormatJson;
@@ -8,9 +8,6 @@ use MediaWiki\MediaWikiServices;
 use MediaWiki\Parser\ParserOptions;
 use MediaWiki\User\User;
 
-/**
- * @package JsonConfig
- */
 class JCMapDataContent extends JCDataContent {
 
 	public function validateContent() {
@@ -44,12 +41,16 @@ class JCMapDataContent extends JCDataContent {
 
 		$data = parent::getSafeData( $data );
 
-		$ssp = SimpleStyleParser::newFromParser( $parser );
+		$config = MediaWikiServices::getInstance()->getMainConfig();
+		$ssp = SimpleStyleParser::newFromParser( $parser, $config );
 		$ssp->normalizeAndSanitize( $data->data );
 
 		return $data;
 	}
 
+	/**
+	 * @return callable
+	 */
 	private static function isValidData() {
 		return static function ( JCValue $v, array $path ) {
 			$value = $v->getValue();
@@ -78,7 +79,7 @@ class JCMapDataContent extends JCDataContent {
 	 * with the single string corresponding to the $lang language, or if $lang is not set,
 	 * validates those values and returns true/false if valid
 	 * @param \stdClass|array &$json
-	 * @param bool|Language $lang
+	 * @param Language|false $lang
 	 * @return bool
 	 */
 	public static function recursiveWalk( &$json, $lang = false ) {
@@ -89,14 +90,14 @@ class JCMapDataContent extends JCDataContent {
 				}
 			}
 		} elseif ( is_object( $json ) ) {
-			foreach ( array_keys( get_object_vars( $json ) ) as $prop ) {
-				if ( $prop === 'properties' && is_object( $json->properties ) ) {
-					if ( !self::isValidStringOrLocalized( $json->properties, 'title', $lang ) ||
-						!self::isValidStringOrLocalized( $json->properties, 'description', $lang )
+			foreach ( get_object_vars( $json ) as $key => $value ) {
+				if ( $key === 'properties' && is_object( $value ) ) {
+					if ( !self::isValidStringOrLocalized( $value, 'title', $lang ) ||
+						!self::isValidStringOrLocalized( $value, 'description', $lang )
 					) {
 						return false;
 					}
-				} elseif ( !self::recursiveWalk( $json->$prop, $lang ) ) {
+				} elseif ( !self::recursiveWalk( $value, $lang ) ) {
 					return false;
 				}
 			}
@@ -104,6 +105,13 @@ class JCMapDataContent extends JCDataContent {
 		return true;
 	}
 
+	/**
+	 * @param \stdClass $obj
+	 * @param string $property
+	 * @param Language|false $lang
+	 * @param int $maxlength
+	 * @return bool
+	 */
 	private static function isValidStringOrLocalized( $obj, $property, $lang, $maxlength = 400 ) {
 		if ( property_exists( $obj, $property ) ) {
 			$value = $obj->$property;
@@ -117,6 +125,7 @@ class JCMapDataContent extends JCDataContent {
 		return true;
 	}
 
+	/** @inheritDoc */
 	protected function localizeData( $result, Language $lang ) {
 		parent::localizeData( $result, $lang );
 
@@ -138,7 +147,11 @@ class JCMapDataContent extends JCDataContent {
 		$result->data = $geojson;
 	}
 
+	/** @inheritDoc */
 	protected function createDefaultView() {
 		return new JCMapDataContentView();
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCMapDataContent::class, 'JsonConfig\\JCMapDataContent' );

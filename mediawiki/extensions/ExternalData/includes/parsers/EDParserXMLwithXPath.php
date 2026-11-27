@@ -5,7 +5,6 @@
  * @author Yaron Koren
  * @author Alexander Mashin
  */
-
 class EDParserXMLwithXPath extends EDParserXML {
 	/** @var bool $keepExternalVarsCase Whether external variables' names are case-sensitive for this format. */
 	public $keepExternalVarsCase = true;
@@ -40,10 +39,10 @@ class EDParserXMLwithXPath extends EDParserXML {
 	 * @throws EDParserException
 	 */
 	public function __invoke( $text, $path = null ): array {
-		self::suppressWarnings();
 		try {
 			$internalErrors = libxml_use_internal_errors( true ); // -- remember.
-			$xml = new SimpleXMLElement( $text, LIBXML_BIGLINES | LIBXML_COMPACT );
+			// phpcs:ignore Generic.PHP.NoSilencedErrors.Discouraged
+			$xml = @new SimpleXMLElement( $text, LIBXML_BIGLINES | LIBXML_COMPACT );
 			$errors = $this->xmlParseErrors( libxml_get_errors(), $text );
 			libxml_clear_errors();
 			libxml_use_internal_errors( $internalErrors ); // -- restore.
@@ -52,8 +51,6 @@ class EDParserXMLwithXPath extends EDParserXML {
 			}
 		} catch ( Exception $e ) {
 			throw new EDParserException( 'externaldata-invalid-format', self::NAME, $e->getMessage() );
-		} finally {
-			self::restoreWarnings();
 		}
 
 		$values = parent::__invoke( $text );
@@ -97,6 +94,7 @@ class EDParserXMLwithXPath extends EDParserXML {
 			} finally {
 				self::stopThrowingWarnings();
 			}
+			// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 			if ( $nodes === false || $nodes === null ) {
 				// Perhaps, this code is never reached.
 				throw new EDParserException( 'externaldata-invalid-format-explicit', $xpath, 'XPath' );
@@ -144,8 +142,8 @@ class EDParserXMLwithXPath extends EDParserXML {
 	 * @return array Filtered nodes,
 	 */
 	private static function filterEmptyNodes( array $nodes ): array {
-		return array_filter( $nodes, static function ( $node ) {
-			return trim( $node[0] ) !== '' || count( $node->attributes() ) > 0;
+		return array_filter( $nodes, static function ( SimpleXMLElement $node ): bool {
+			return trim( $node[0] ) !== '' || count( $node->attributes() ?? [] ) > 0;
 		} );
 	}
 

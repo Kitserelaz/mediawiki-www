@@ -2,10 +2,10 @@
 	"@metadata": {
 		"authors": [
 			"Eulalio",
+			"IZapico (WMF)",
 			"LORDZRAWN",
 			"Reverse88",
-			"Zapipedia (WMF)",
-			"IZapico (WMF)"
+			"Zapipedia (WMF)"
 		]
 	},
 	"apihelp-query+growthtasks-summary": "Consigue recomendaciones de tareas adaptadas a recién llegados.",

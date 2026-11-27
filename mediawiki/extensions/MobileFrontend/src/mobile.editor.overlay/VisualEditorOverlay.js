@@ -1,194 +1,208 @@
 /* global ve, $ */
-const EditorOverlayBase = require( './EditorOverlayBase' ),
-	EditorGateway = require( './EditorGateway' ),
-	fakeToolbar = require( '../mobile.init/fakeToolbar' ),
-	mfExtend = require( '../mobile.startup/mfExtend' ),
-	router = __non_webpack_require__( 'mediawiki.router' ),
-	identifyLeadParagraph = require( './identifyLeadParagraph' ),
-	setPreferredEditor = require( './setPreferredEditor' ),
-	util = require( '../mobile.startup/util' ),
-	OverlayManager = require( '../mobile.startup/OverlayManager' ),
-	overlayManager = OverlayManager.getSingleton(),
-	currentPage = require( '../mobile.startup/currentPage' );
+const mobile = require( 'mobile.startup' ),
+	EditorOverlayBase = require( './EditorOverlayBase.js' ),
+	EditorGateway = require( './EditorGateway.js' ),
+	identifyLeadParagraph = require( './identifyLeadParagraph.js' ),
+	setPreferredEditor = require( './setPreferredEditor.js' ),
+	util = mobile.util,
+	overlayManager = mobile.getOverlayManager(),
+	currentPageFn = mobile.currentPage;
 
 /**
  * Overlay for VisualEditor view
  *
- * @class VisualEditorOverlay
- * @extends EditorOverlayBase
  * @private
- *
- * @param {Object} options Configuration options
- * @param {SourceEditorOverlay} options.SourceEditorOverlay Class to use for standard
- *  Wikitext editor. It must be passed in explicitly to avoid a cyclic
- *  dependency between VisualEditorOverlay and SourceEditorOverlay
  */
-function VisualEditorOverlay( options ) {
-	const surfaceReady = util.Deferred();
+class VisualEditorOverlay extends EditorOverlayBase {
+	/**
+	 * @param {Object} options Configuration options
+	 * @param {SourceEditorOverlay} options.SourceEditorOverlay Class to use for standard
+	 *  Wikitext editor. It must be passed in explicitly to avoid a cyclic
+	 *  dependency between VisualEditorOverlay and SourceEditorOverlay
+	 */
+	constructor( options ) {
+		const surfaceReady = util.Deferred();
 
-	EditorOverlayBase.call( this,
-		util.extend( {
-			editSwitcher: false,
-			hasToolbar: true,
-			onBeforeExit: this.onBeforeExit.bind( this ),
-			isBorderBox: false,
-			className: 'overlay editor-overlay editor-overlay-ve'
-		}, options )
-	);
-	this.SourceEditorOverlay = options.SourceEditorOverlay;
-	this.isNewPage = options.isNewPage;
-	this.fromModified = options.dataPromise && options.switched;
+		super(
+			util.extend( {
+				editSwitcher: false,
+				hasToolbar: true,
+				onBeforeExit: ( exit, cancel ) => {
+					this.onBeforeExit( exit, cancel );
+				},
+				isBorderBox: false,
+				className: 'overlay editor-overlay editor-overlay-ve'
+			}, options )
+		);
+		// VE surfaces must be attached to the DOM while initializing, and measurable
+		this.$el.addClass( 'editor-overlay-ve-initializing' );
+		overlayManager.container.appendChild( this.$el[ 0 ] );
+		this.SourceEditorOverlay = options.SourceEditorOverlay;
+		this.isNewPage = options.isNewPage;
+		this.fromModified = options.dataPromise && options.switched;
 
-	// VE surfaces must be attached to the DOM while initializing, and measurable
-	this.$el.addClass( 'editor-overlay-ve-initializing' );
-	overlayManager.container.appendChild( this.$el[ 0 ] );
+		// Gateway present for a few utility purposes; the VE articletarget
+		// handles the actual API calls separately
+		this.gateway = new EditorGateway( {
+			api: options.api,
+			title: options.title,
+			sectionId: options.sectionId,
+			oldId: options.oldId
+		} );
 
-	// Gateway present for a few utility purposes; the VE articletarget
-	// handles the actual API calls separately
-	this.gateway = new EditorGateway( {
-		api: options.api,
-		title: options.title,
-		sectionId: options.sectionId,
-		oldId: options.oldId
-	} );
+		const origDataPromise = options.dataPromise || mw.libs.ve.targetLoader.requestPageData(
+			'visual',
+			options.titleObj.getPrefixedDb(),
+			{
+				sessionStore: true,
+				section: options.sectionId || null,
+				oldId: options.oldId || undefined,
+				targetName: ve.init.mw.MobileArticleTarget.static.trackingName,
+				preload: options.preload,
+				preloadparams: options.preloadparams,
+				editintro: options.editintro
+			}
+		);
 
-	this.origDataPromise = this.options.dataPromise || mw.libs.ve.targetLoader.requestPageData(
-		'visual',
-		options.titleObj.getPrefixedDb(),
-		{
-			sessionStore: true,
-			section: options.sectionId || null,
-			oldId: options.oldId || undefined,
-			targetName: ve.init.mw.MobileArticleTarget.static.trackingName,
-			preload: options.preload,
-			preloadparams: options.preloadparams,
-			editintro: options.editintro
+		const modes = [];
+		const currentPage = currentPageFn();
+		if ( currentPage.isVEVisualAvailable() ) {
+			modes.push( 'visual' );
 		}
-	);
-
-	const modes = [];
-	this.currentPage = currentPage();
-	if ( this.currentPage.isVEVisualAvailable() ) {
-		modes.push( 'visual' );
-	}
-	if ( this.currentPage.isVESourceAvailable() ) {
-		modes.push( 'source' );
-	}
-
-	this.target = ve.init.mw.targetFactory.create( 'article', this, {
-		$element: this.$el,
-		// string or null, but not undefined
-		section: this.options.sectionId || null,
-		modes: modes,
-		// If source is passed in without being in modes, it'll just fall back to visual
-		defaultMode: this.options.mode === 'source' ? 'source' : 'visual'
-	} );
-	this.target.once( 'surfaceReady', function () {
-		surfaceReady.resolve();
-
-		this.target.getSurface().getModel().getDocument().once( 'transact', function () {
-			this.log( { action: 'firstChange' } );
-		}.bind( this ) );
-	}.bind( this ) );
-	let firstLoad = true;
-	this.target.on( 'surfaceReady', function () {
-		setPreferredEditor( this.target.getDefaultMode() === 'source' ? 'SourceEditor' : 'VisualEditor' );
-		// On first surfaceReady we wait for any dialogs to be closed before running targetInit.
-		// On subsequent surfaceReady's (i.e. edit mode switch) we can initialize immediately.
-		if ( !firstLoad ) {
-			this.targetInit();
+		if ( currentPage.isVESourceAvailable() ) {
+			modes.push( 'source' );
 		}
-		firstLoad = false;
-	}.bind( this ) );
 
-	this.target.load( this.origDataPromise );
+		this.target = ve.init.mw.targetFactory.create( 'article', this, {
+			$element: this.$el,
+			// string or null, but not undefined
+			section: this.options.sectionId || null,
+			modes,
+			// If source is passed in without being in modes, it'll just fall back to visual
+			defaultMode: this.options.mode === 'source' ? 'source' : 'visual'
+		} );
+		this.target.once( 'surfaceReady', () => {
+			surfaceReady.resolve();
 
-	// Overlay is only shown after this is resolved. It must be resolved
-	// with the API response regardless of what we are waiting for.
-	this.dataPromise = this.origDataPromise.then( function ( data ) {
-		this.gateway.wouldautocreate =
-			data && data.visualeditor && data.visualeditor.wouldautocreate;
+			this.target.getSurface().getModel().getDocument().once( 'transact', () => {
+				this.log( { action: 'firstChange' } );
+			} );
+		} );
+		let firstLoad = true;
+		this.target.on( 'surfaceReady', () => {
+			setPreferredEditor( this.target.getDefaultMode() === 'source' ? 'SourceEditor' : 'VisualEditor' );
+			// On first surfaceReady we wait for any dialogs to be closed before running targetInit.
+			// On subsequent surfaceReady's (i.e. edit mode switch) we can initialize immediately.
+			if ( !firstLoad ) {
+				this.targetInit();
+			}
+			firstLoad = false;
+		} );
 
-		return surfaceReady.then( function () {
-			this.$el.removeClass( 'editor-overlay-ve-initializing' );
-			return data && data.visualeditor;
-		}.bind( this ) );
-	}.bind( this ) );
-}
+		this.target.load( origDataPromise );
 
-mfExtend( VisualEditorOverlay, EditorOverlayBase, {
+		// Overlay is only shown after this is resolved. It must be resolved
+		// with the API response regardless of what we are waiting for.
+		this.dataPromise = origDataPromise.then( ( data ) => {
+			this.gateway.wouldautocreate =
+				data && data.visualeditor && data.visualeditor.wouldautocreate;
+
+			return surfaceReady.then( () => {
+				this.$el.removeClass( 'editor-overlay-ve-initializing' );
+				return data && data.visualeditor;
+			} );
+		} );
+	}
+
 	/**
 	 * @inheritdoc
-	 * @memberof VisualEditorOverlay
-	 * @instance
 	 */
-	templatePartials: util.extend( {}, EditorOverlayBase.prototype.templatePartials, {
-		editHeader: util.template( `
-<div class="overlay-header header initial-header hideable hidden">
-	<div class="toolbar"></div>
-</div>
-		` ),
-		content: util.template( `
-<div class="surface" lang="{{contentLang}}" dir="{{contentDir}}">
-</div>
-		` )
-	} ),
+	get templatePartials() {
+		return util.extend( {}, super.templatePartials, {
+			editHeader: util.template( `
+	<div class="overlay-header header initial-header hideable hidden">
+		<div class="toolbar"></div>
+	</div>
+			` ),
+			content: util.template( `
+	<div class="surface" lang="{{contentLang}}" dir="{{contentDir}}">
+	</div>
+			` )
+		} );
+	}
+
 	/**
-	 * @memberof VisualEditorOverlay
-	 * @instance
+	 * @inheritdoc
 	 */
-	editor: 'visualeditor',
+	get editor() {
+		return 'visualeditor';
+	}
+
 	/**
 	 * Destroy the existing VisualEditor target.
 	 *
-	 * @memberof VisualEditorOverlay
-	 * @instance
 	 */
-	destroyTarget: function () {
+	destroyTarget() {
 		if ( this.target ) {
 			this.target.destroy();
 			this.target = null;
 		}
-	},
+	}
+
 	/**
 	 * @inheritdoc
-	 * @memberof VisualEditorOverlay
-	 * @instance
 	 */
-	show: function () {
+	show() {
 		const
 			options = this.options,
 			showAnonWarning = options.isAnon && !options.switched;
 
-		EditorOverlayBase.prototype.show.apply( this, arguments );
+		super.show();
 
 		// log edit attempt
 		this.log( { action: 'ready' } );
 		this.log( { action: 'loaded' } );
-
-		if ( !showAnonWarning ) {
-			this.targetInit();
-		} else {
-			this.$anonWarning = this.createAnonWarning( this.options );
+		// FIXME extracted function to support success/error callbacks, remove
+		//  after T408484 experiment concludes
+		const renderWarnings = () => {
 			this.$anonTalkWarning = this.createAnonTalkWarning();
 			this.$el.append( [ this.$anonTalkWarning, this.$anonWarning ] );
 			this.$el.find( '.overlay-content' ).hide();
-		}
+			// De-select the surface so most tools are disabled (T336437)
+			this.target.getSurface().getModel().setNullSelection();
+		};
 
-		this.emit( 'editor-loaded' );
-	},
+		if ( !showAnonWarning ) {
+			this.targetInit();
+			this.emit( 'editor-loaded' );
+		} else {
+			mw.loader.using( 'ext.testKitchen' ).then( () => {
+				const experiment = mw.testKitchen.compat.getExperiment( 'growthexperiments-editattempt-anonwarning' );
+				if ( experiment.isAssignedGroup( 'treatment' ) ) {
+					this.$anonWarning = this.createAnonWarningSoft( this.options );
+				} else {
+					this.$anonWarning = this.createAnonWarning( this.options );
+				}
+				renderWarnings();
+			}, () => {
+				this.$anonWarning = this.createAnonWarning( this.options );
+				renderWarnings();
+			} ).then( () => this.emit( 'editor-loaded' ) );
+		}
+	}
+
 	/**
 	 * Initialize the target after it has been made visible
-	 * @memberof VisualEditorOverlay
 	 */
-	targetInit: function () {
+	targetInit() {
 		// Note this.target will not be set if an error occurred and/or destroyTarget was called.
 		if ( this.target ) {
 			this.target.afterSurfaceReady();
 			this.scrollToLeadParagraph();
 			this.showEditNotices();
 		}
-	},
+	}
+
 	/**
 	 * Scroll so that the lead paragraph in edit mode shows at the same place on the screen
 	 * as the lead paragraph in read mode.
@@ -196,16 +210,16 @@ mfExtend( VisualEditorOverlay, EditorOverlayBase, {
 	 * Their normal position is different because of (most importantly) the lead paragraph
 	 * transformation to move it before the infobox, and also invisible templates and slugs
 	 * caused by the presence of hatnote templates (both only shown in edit mode).
-	 * @memberof VisualEditorOverlay
 	 */
-	scrollToLeadParagraph: function () {
+	scrollToLeadParagraph() {
 		let editLead, editLeadView, readLead, offset, initialCursorOffset;
 
 		const
 			currentPageHTMLParser = this.options.currentPageHTMLParser,
 			fakeScroll = this.options.fakeScroll,
 			$window = $( window ),
-			section = this.target.section,
+			section = this.target.section !== null ?
+				this.target.section : this.target.visibleSection,
 			surface = this.target.getSurface(),
 			mode = surface.getMode();
 
@@ -231,61 +245,53 @@ mfExtend( VisualEditorOverlay, EditorOverlayBase, {
 				$window.scrollTop( offset );
 			}
 		}
-	},
+	}
+
 	/**
 	 * @inheritdoc
-	 * @memberof VisualEditorOverlay
-	 * @instance
 	 */
-	onBeforeExit: function ( exit, cancel ) {
-		const overlay = this;
-		EditorOverlayBase.prototype.onBeforeExit.call( this, function () {
+	onBeforeExit( exit, cancel ) {
+		super.onBeforeExit( () => {
 			// If this function is called, the parent method has decided that we should exit
 			exit();
 			// VE-specific cleanup
-			overlay.destroyTarget();
+			this.destroyTarget();
 		}, cancel );
-	},
+	}
+
 	/**
 	 * @inheritdoc
-	 * @memberof VisualEditorOverlay
-	 * @instance
 	 */
-	onClickBack: function () {
-		EditorOverlayBase.prototype.onClickBack.apply( this, arguments );
+	onClickBack() {
+		super.onClickBack();
 		this.switchToEditor();
-	},
+	}
+
 	/**
 	 * @inheritdoc
-	 * @memberof VisualEditorOverlay
-	 * @instance
 	 */
-	onClickAnonymous: function () {
-		const self = this;
+	onClickAnonymous() {
 		this.$anonWarning.hide();
 		this.$anonTalkWarning.hide();
-		self.$el.find( '.overlay-content' ).show();
+		this.$el.find( '.overlay-content' ).show();
 		this.targetInit();
-	},
+	}
+
 	/**
 	 * Reveal the editing interface.
 	 *
-	 * @memberof VisualEditorOverlay
-	 * @instance
 	 */
-	switchToEditor: function () {
+	switchToEditor() {
 		this.showHidden( '.initial-header' );
-	},
+	}
+
 	/**
 	 * Loads an {SourceEditorOverlay} and replaces the existing {VisualEditorOverlay}
 	 *
-	 * @memberof VisualEditorOverlay
-	 * @instance
 	 * @param {jQuery.Promise} [dataPromise] Optional promise for loading content
 	 */
-	switchToSourceEditor: function ( dataPromise ) {
-		const self = this,
-			SourceEditorOverlay = this.SourceEditorOverlay,
+	switchToSourceEditor( dataPromise ) {
+		const SourceEditorOverlay = this.SourceEditorOverlay,
 			options = this.getOptionsForSwitch();
 		this.log( {
 			action: 'abort',
@@ -302,31 +308,27 @@ mfExtend( VisualEditorOverlay, EditorOverlayBase, {
 
 		this.$el.addClass( 'switching' );
 		this.$el.find( '.overlay-header-container' ).hide();
-		this.$el.append( fakeToolbar() );
+		this.$el.append( this.fakeToolbar() );
 		this.target.getSurface().setReadOnly( true );
 
 		if ( dataPromise ) {
 			// If switching with edits we can't stay in section editing, as a VE edit
 			// can always affect the whole document (e.g. references)
 			options.sectionId = null;
-			router.navigateTo( document.title, {
-				path: '#/editor/all',
-				useReplaceState: true
-			} );
+			history.replaceState( null, document.title, '#/editor/all' );
 		}
 		const newOverlay = new SourceEditorOverlay( options, dataPromise );
-		newOverlay.getLoadingPromise().then( function () {
-			self.switching = true;
-			self.overlayManager.replaceCurrent( newOverlay );
-			self.switching = false;
+		newOverlay.getLoadingPromise().then( () => {
+			this.switching = true;
+			this.overlayManager.replaceCurrent( newOverlay );
+			this.switching = false;
 		} );
-	},
+	}
+
 	/**
 	 * @inheritdoc
-	 * @memberof VisualEditorOverlay
-	 * @instance
 	 */
-	hasChanged: function () {
+	hasChanged() {
 		if ( this.saved ) {
 			// If we just saved, there's not really any changes, and the
 			// target is going to be destroyed in one tick
@@ -338,6 +340,6 @@ mfExtend( VisualEditorOverlay, EditorOverlayBase, {
 			this.target.getSurface().getModel().hasBeenModified()
 		);
 	}
-} );
+}
 
 module.exports = VisualEditorOverlay;

@@ -4,8 +4,8 @@
 			"Yaron Koren"
 		]
 	},
-	"getdata": "Get data",
 	"externaldata-desc": "Allows for retrieving structured data from external URLs, databases and other sources",
+	"externaldata-disabled": "The class <code>$1</code> is disabled: $2. To enable it, a wiki administrator will have to remove this class from the <code>$wgExternalDataDisabledClasses</code> configuration setting.",
 	"externaldata-no-param-specified": "Error: No \"$1\" parameter specified.",
 	"externaldata-param-type-error": "Error: Parameter $1 must be of the type $2.",
 	"externaldata-processing-exception": "An exception was thrown while running preprocessor or postprocessor: $1",
@@ -43,7 +43,7 @@
 	"externaldata-url-hooks-aborted": "The '$1' hook aborted, returning errors: $2",
 	"externaldata-url-not-fetched": "Error while fetching data from URL $1: $2.",
 	"externaldata-url-unknown-error": "Unknown error while fetching data from URL $1.",
-	"externaldata-url-not-allowed": "URL $1 is not allowed on this wiki.",
+	"externaldata-url-not-allowed": "URL $1 is not allowed on this wiki; you must add it, or its domain, to <code>$wgExternalDataAllowedSources</code>.",
 	"externaldata-caught-exception-soap": "Caught exception $1 while creating SOAP client.",
 	"externaldata-parsing-html-failed": "Could not parse HTML:\n $1",
 	"externaldata-caught-exception-parsing-html": "Caught exception parsing HTML. The error message is &quot;$1&quot;.",
@@ -65,6 +65,5 @@
 	"external-data-archive-could-not-extract": "Error: could not extract file <code>$2</code> from $1 archive ($3)",
 	"externaldata-no-local-variable": "Error: no local variable \"$1\" has been set.",
 	"externaldata-no-template": "Error: no template specified.",
-	"externaldata-no-loop-body": "Error: no loop body set as the first or the second parameter.",
-	"externaldata-getdata-badurl": "You must specify a page name in the URL. The URL should look like \"{{#Special:GetData}}/Page_name\"."
+	"externaldata-no-loop-body": "Error: no loop body set as the first or the second parameter."
 }

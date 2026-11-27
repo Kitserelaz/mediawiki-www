@@ -1,5 +1,7 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace GrowthExperiments\NewcomerTasks\AddLink;
 
 use GrowthExperiments\NewcomerTasks\TaskType\LinkRecommendationTaskType;
@@ -12,7 +14,6 @@ use MediaWiki\Revision\RevisionLookup;
 use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\TitleFactory;
 use MediaWiki\Utils\MWTimestamp;
-use StatusValue;
 use Wikimedia\Assert\Assert;
 
 /**
@@ -21,29 +22,22 @@ use Wikimedia\Assert\Assert;
  */
 class ServiceLinkRecommendationProvider implements LinkRecommendationProvider {
 
-	/** @var TitleFactory */
-	private $titleFactory;
+	private TitleFactory $titleFactory;
 
-	/** @var RevisionLookup */
-	private $revisionLookup;
+	private RevisionLookup $revisionLookup;
 
-	/** @var HttpRequestFactory */
-	private $httpRequestFactory;
+	private HttpRequestFactory $httpRequestFactory;
 
-	/** @var string */
-	private $url;
+	private string $url;
 
-	/** @var string */
-	private $wikiId;
+	private string $wikiId;
 
-	/** @var string */
-	private $languageCode;
+	private string $languageCode;
 
-	/** @var string|null */
-	private $accessToken;
+	private ?string $accessToken;
 
 	/** @var int|null Service request timeout in seconds. */
-	private $requestTimeout;
+	private ?int $requestTimeout;
 
 	/**
 	 * @param TitleFactory $titleFactory
@@ -79,21 +73,30 @@ class ServiceLinkRecommendationProvider implements LinkRecommendationProvider {
 
 	/** @inheritDoc */
 	public function get( LinkTarget $title, TaskType $taskType ) {
+		$status = $this->getDetailed( $title, $taskType );
+		if ( $status->isGood() ) {
+			return $status->getValue();
+		}
+		return $status;
+	}
+
+	public function getDetailed( LinkTarget $title, TaskType $taskType ): LinkRecommendationEvalStatus {
 		Assert::parameterType( LinkRecommendationTaskType::class, $taskType, '$taskType' );
-		/** @var LinkRecommendationTaskType $taskType */'@phan-var LinkRecommendationTaskType $taskType';
+		/** @var LinkRecommendationTaskType $taskType */
+		'@phan-var LinkRecommendationTaskType $taskType';
 		$title = $this->titleFactory->newFromLinkTarget( $title );
 		$pageId = $title->getArticleID();
 		$titleText = $title->getPrefixedDBkey();
 		$revId = $title->getLatestRevID();
 
 		if ( !$revId ) {
-			return StatusValue::newFatal( 'growthexperiments-addlink-pagenotfound', $titleText );
+			return LinkRecommendationEvalStatus::newFatal( 'growthexperiments-addlink-pagenotfound', $titleText );
 		}
 		$content = $this->revisionLookup->getRevisionById( $revId )->getContent( SlotRecord::MAIN );
 		if ( !$content ) {
-			return StatusValue::newFatal( 'growthexperiments-addlink-revdeleted', $revId, $titleText );
+			return LinkRecommendationEvalStatus::newFatal( 'growthexperiments-addlink-revdeleted', $revId, $titleText );
 		} elseif ( !( $content instanceof WikitextContent ) ) {
-			return StatusValue::newFatal( 'growthexperiments-addlink-wrongmodel', $revId, $titleText );
+			return LinkRecommendationEvalStatus::newFatal( 'growthexperiments-addlink-wrongmodel', $revId, $titleText );
 		}
 		$wikitext = $content->getText();
 
@@ -135,20 +138,20 @@ class ServiceLinkRecommendationProvider implements LinkRecommendationProvider {
 
 		$status = $request->execute();
 		if ( !$status->isOK() ) {
-			return $status;
+			return LinkRecommendationEvalStatus::newGood()->merge( $status );
 		}
 		$response = $request->getContent();
 
 		$data = json_decode( $response, true );
 		if ( $data === null ) {
-			return StatusValue::newFatal( 'growthexperiments-addlink-invalidjson', $titleText );
+			return LinkRecommendationEvalStatus::newFatal( 'growthexperiments-addlink-invalidjson', $titleText );
 		}
 		if ( array_key_exists( 'error', $data ) ) {
-			return StatusValue::newFatal( 'growthexperiments-addlink-serviceerror',
+			return LinkRecommendationEvalStatus::newFatal( 'growthexperiments-addlink-serviceerror',
 				$titleText, $data['error'] );
 		}
 		// TODO validate/process data; compare $data['page_id'] and $data['revid']
-		return new LinkRecommendation(
+		return LinkRecommendationEvalStatus::newGood( new LinkRecommendation(
 			$title,
 			$pageId,
 			$revId,
@@ -156,7 +159,7 @@ class ServiceLinkRecommendationProvider implements LinkRecommendationProvider {
 			LinkRecommendation::getMetadataFromArray( $data['meta'] + [
 				'task_timestamp' => MWTimestamp::time(),
 			] )
-		);
+		) );
 	}
 
 }

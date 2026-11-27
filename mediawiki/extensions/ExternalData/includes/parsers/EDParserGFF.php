@@ -5,7 +5,6 @@
  * @author Yaron Koren
  * @author Alexander Mashin
  */
-
 class EDParserGFF extends EDParserBase {
 	/** @const string NAME The name of this format. */
 	public const NAME = 'GFF';
@@ -26,14 +25,14 @@ class EDParserGFF extends EDParserBase {
 	 * @throws EDParserException
 	 */
 	public function __invoke( $text, $path = null ): array {
+		/** @throws EDParserException */
 		$table = array_map( static function ( $line ) {
 			$cells = str_getcsv( $line, "\t" );
 			// Require at least eight columns.
 			if ( count( $cells ) < 8 ) {
 				throw new EDParserException( 'externaldata-invalid-format', self::NAME, 'At least 8 columns required' );
 			}
-			if ( isset( $cells[8] ) ) {
-				// @phan-suppress-next-line PhanTypeMismatchArgumentNullableInternal
+			if ( !empty( $cells[8] ) ) {
 				$attributes = $cells[8] ? explode( ';', $cells[8] ) : [];
 				foreach ( $attributes as $attribute ) {
 					if ( strpos( $attribute, '=' ) !== false ) {

@@ -2,47 +2,36 @@
 
 namespace GrowthExperiments\Homepage;
 
-use GrowthExperiments\ExperimentUserManager;
 use GrowthExperiments\HomepageHooks;
 use GrowthExperiments\Util;
-use JobQueueGroup;
+use MediaWiki\Config\Config;
 use MediaWiki\Html\Html;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Output\OutputPage;
+use MediaWiki\Skin\Skin;
 use MediaWiki\User\Options\UserOptionsLookup;
+use MediaWiki\User\Options\UserOptionsUpdateJob;
 use MediaWiki\User\UserIdentity;
 use OOUI\IconWidget;
-use UserOptionsUpdateJob;
 
 class SiteNoticeGenerator {
-
-	private ExperimentUserManager $experimentUserManager;
-	private UserOptionsLookup $userOptionsLookup;
-	private JobQueueGroup $jobQueueGroup;
 	private ?bool $homepageDiscoveryNoticeSeen = null;
 
-	/**
-	 * @param ExperimentUserManager $experimentUserManager
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param JobQueueGroup $jobQueueGroup
-	 */
 	public function __construct(
-		ExperimentUserManager $experimentUserManager,
-		UserOptionsLookup $userOptionsLookup,
-		JobQueueGroup $jobQueueGroup
+		private readonly UserOptionsLookup $userOptionsLookup,
+		private readonly JobQueueGroup $jobQueueGroup,
+		private readonly Config $mainConfig,
 	) {
-		$this->experimentUserManager = $experimentUserManager;
-		$this->userOptionsLookup = $userOptionsLookup;
-		$this->jobQueueGroup = $jobQueueGroup;
 	}
 
 	/**
 	 * @param string $name
 	 * @param string &$siteNotice
-	 * @param \Skin $skin
+	 * @param Skin $skin
 	 * @param bool &$minervaEnableSiteNotice Reference to $wgMinervaEnableSiteNotice
 	 * @return bool|void Hook return value (ie. false to prevent other notices from displaying)
 	 */
-	public function setNotice( $name, &$siteNotice, \Skin $skin, &$minervaEnableSiteNotice ) {
+	public function setNotice( $name, &$siteNotice, Skin $skin, &$minervaEnableSiteNotice ) {
 		if ( $skin->getTitle()->isSpecial( 'WelcomeSurvey' ) ) {
 			// Don't show any notices on the welcome survey.
 			return;
@@ -71,8 +60,14 @@ class SiteNoticeGenerator {
 		}
 	}
 
+	/**
+	 * @param string &$siteNotice
+	 * @param Skin $skin
+	 * @param bool &$minervaEnableSiteNotice
+	 * @return bool|void Hook return value (ie. false to prevent other notices from displaying)
+	 */
 	private function maybeShowIfUserAbandonedWelcomeSurvey(
-		&$siteNotice, \Skin $skin, &$minervaEnableSiteNotice
+		&$siteNotice, Skin $skin, &$minervaEnableSiteNotice
 	) {
 		if ( $this->isWelcomeSurveyInReferer( $skin )
 			|| ( Util::isMobile( $skin ) && !$this->checkAndMarkMobileDiscoveryNoticeSeen( $skin ) )
@@ -88,9 +83,10 @@ class SiteNoticeGenerator {
 		}
 	}
 
-	private function isWelcomeSurveyInReferer( \Skin $skin ) {
+	private function isWelcomeSurveyInReferer( Skin $skin ): bool {
+		$referer = $skin->getRequest()->getHeader( 'REFERER' );
 		foreach ( $skin->getLanguage()->getSpecialPageAliases()['WelcomeSurvey'] as $alias ) {
-			if ( strpos( $skin->getRequest()->getHeader( 'REFERER' ), $alias ) !== false ) {
+			if ( str_contains( $referer, $alias ) ) {
 				return true;
 			}
 		}
@@ -99,16 +95,15 @@ class SiteNoticeGenerator {
 
 	/**
 	 * @param string &$siteNotice
-	 * @param \Skin $skin
+	 * @param Skin $skin
 	 * @param bool &$minervaEnableSiteNotice
 	 * @return bool|void Hook return value (ie. false to prevent other notices from displaying)
 	 */
 	private function setConfirmEmailSiteNotice(
-		&$siteNotice, \Skin $skin, &$minervaEnableSiteNotice
+		&$siteNotice, Skin $skin, &$minervaEnableSiteNotice
 	) {
 		$output = $skin->getOutput();
 		$output->addJsConfigVars( 'shouldShowConfirmEmailNotice', true );
-		$output->addModuleStyles( 'ext.growthExperiments.cssCustomProperties' );
 		$output->addModuleStyles( 'ext.growthExperiments.Homepage.styles' );
 		$baseCssClassName = 'mw-ge-homepage-confirmemail-nojs';
 		$cssClasses = [
@@ -116,7 +111,7 @@ class SiteNoticeGenerator {
 			// The following classes are generated here:
 			// * mw-ge-homepage-confirmemail-nojs-mobile
 			// * mw-ge-homepage-confirmemail-nojs-desktop
-			Util::isMobile( $skin ) ? $baseCssClassName . '-mobile' : $baseCssClassName . '-desktop'
+			Util::isMobile( $skin ) ? $baseCssClassName . '-mobile' : $baseCssClassName . '-desktop',
 		];
 		$siteNotice = Html::rawElement( 'div', [ 'class' => $cssClasses ],
 			new IconWidget( [ 'icon' => 'check', 'flags' => 'success' ] ) . ' ' .
@@ -131,13 +126,13 @@ class SiteNoticeGenerator {
 
 	/**
 	 * @param string &$siteNotice
-	 * @param \Skin $skin
+	 * @param Skin $skin
 	 * @param string $contextName
 	 * @param bool &$minervaEnableSiteNotice
 	 * @return bool|void Hook return value (ie. false to prevent other notices from displaying)
 	 */
 	private function setDiscoverySiteNotice(
-		&$siteNotice, \Skin $skin, $contextName, &$minervaEnableSiteNotice
+		&$siteNotice, Skin $skin, $contextName, &$minervaEnableSiteNotice
 	) {
 		if ( Util::isMobile( $skin ) ) {
 			$this->setMobileDiscoverySiteNotice( $siteNotice, $skin, $contextName,
@@ -154,10 +149,10 @@ class SiteNoticeGenerator {
 	/**
 	 * Check and set seen flag for the mobile homapage discovery sitenotice.
 	 * (Desktop uses a different mechanism based on guided tours, which has its own seen logic.)
-	 * @param \Skin $skin
+	 * @param Skin $skin
 	 * @return bool True if the user has seen the notice already.
 	 */
-	private function checkAndMarkMobileDiscoveryNoticeSeen( \Skin $skin ) {
+	private function checkAndMarkMobileDiscoveryNoticeSeen( Skin $skin ) {
 		// Make multiple calls to this method within the same request a no-op.
 		// Note this would be necessary even if we only called it once, because
 		// Minerva calls sitenotice hooks multiple times.
@@ -181,11 +176,11 @@ class SiteNoticeGenerator {
 
 	/**
 	 * @param string &$siteNotice
-	 * @param \Skin $skin
+	 * @param Skin $skin
 	 * @param string $contextName
 	 */
 	private function setDesktopDiscoverySiteNotice(
-		&$siteNotice, \Skin $skin, $contextName
+		&$siteNotice, Skin $skin, $contextName
 	) {
 		// No-JS banner (hidden from CSS when there's JS support). The JS version is in
 		// tours/homepageDiscovery.js.
@@ -194,7 +189,7 @@ class SiteNoticeGenerator {
 		$output->enableOOUI();
 		$output->addModuleStyles( [
 			'oojs-ui.styles.icons-user',
-			'ext.growthExperiments.HomepageDiscovery.styles'
+			'ext.growthExperiments.HomepageDiscovery.styles',
 		] );
 
 		$username = $skin->getUser()->getName();
@@ -209,7 +204,7 @@ class SiteNoticeGenerator {
 			Html::element( 'span', [ 'class' => 'mw-ge-homepage-discovery-house' ] ) .
 			Html::rawElement( 'span', [ 'class' => 'mw-ge-homepage-discovery-text-content' ],
 				Html::element( 'h2', [ 'class' => 'mw-ge-homepage-discovery-nojs-message' ],
-					$output->msg( $msgHeaderKey )->params( $username )->text() ) .
+					$output->msg( $msgHeaderKey, $username )->text() ) .
 				$this->getDiscoveryTextWithAvatarIcon(
 					$output,
 					$skin->getUser(),
@@ -222,18 +217,18 @@ class SiteNoticeGenerator {
 
 	/**
 	 * @param string &$siteNotice
-	 * @param \Skin $skin
+	 * @param Skin $skin
 	 * @param string $contextName
 	 * @param bool &$minervaEnableSiteNotice
 	 */
 	private function setMobileDiscoverySiteNotice(
-		&$siteNotice, \Skin $skin, $contextName, &$minervaEnableSiteNotice
+		&$siteNotice, Skin $skin, $contextName, &$minervaEnableSiteNotice
 	) {
 		$output = $skin->getOutput();
 		$output->enableOOUI();
 		$output->addModuleStyles( [
 			'oojs-ui.styles.icons-user',
-			'ext.growthExperiments.HomepageDiscovery.styles'
+			'ext.growthExperiments.HomepageDiscovery.styles',
 		] );
 		$output->addModules( 'ext.growthExperiments.HomepageDiscovery' );
 
@@ -242,16 +237,33 @@ class SiteNoticeGenerator {
 		$msgHeaderKey = "growthexperiments-homepage-discovery-mobile-$location-banner-header";
 		$msgBodyKey = "growthexperiments-homepage-discovery-mobile-$location-banner-text";
 
-		$siteNotice = Html::rawElement( 'div', [ 'class' => 'mw-ge-homepage-discovery-banner-mobile' ],
-			Html::element( 'div', [ 'class' => 'mw-ge-homepage-discovery-arrow ' .
-				'mw-ge-homepage-discovery-arrow-user-variant-' .
-				$this->experimentUserManager->getVariant( $user ) ] ) .
-			Html::rawElement( 'div', [ 'class' => 'mw-ge-homepage-discovery-message' ],
-				$this->getHeader( $output, $user, $msgHeaderKey, $location ) .
-				$this->getDiscoveryTextWithAvatarIcon( $output, $user, $msgBodyKey )
-			) . new IconWidget( [ 'icon' => 'close',
-				'classes' => [ 'mw-ge-homepage-discovery-banner-close' ] ] )
+		$closeButton = new IconWidget( [ 'icon' => 'close',
+			'classes' => [ 'mw-ge-homepage-discovery-banner-close' ] ] );
+		$arrowToMenu = Html::element( 'div', [ 'class' => 'mw-ge-homepage-discovery-arrow' ] );
+		$message = Html::rawElement( 'div', [ 'class' => 'mw-ge-homepage-discovery-message' ],
+			$this->getHeader( $output, $user, $msgHeaderKey, $location ) .
+			$this->getDiscoveryTextWithAvatarIcon( $output, $user, $msgBodyKey )
 		);
+
+		if (
+			$this->mainConfig->has( 'MinervaPersonalMenu' ) &&
+			isset( $this->mainConfig->get( 'MinervaPersonalMenu' )['loggedin'] ) &&
+			$this->mainConfig->get( 'MinervaPersonalMenu' )['loggedin']
+		) {
+			$siteNotice = Html::rawElement(
+				'div',
+				[ 'class' =>
+					'mw-ge-homepage-discovery-banner-mobile mw-ge-homepage-discovery-banner-mobile__with-personal-menu',
+				],
+				$message . $closeButton . $arrowToMenu
+			);
+		} else {
+			$siteNotice = Html::rawElement(
+				'div',
+				[ 'class' => 'mw-ge-homepage-discovery-banner-mobile' ],
+				$arrowToMenu . $message . $closeButton
+			);
+		}
 
 		$minervaEnableSiteNotice = true;
 	}
@@ -277,19 +289,12 @@ class SiteNoticeGenerator {
 			return '';
 		}
 		return Html::element( 'h2', [],
-			$output->msg( $msgHeaderKey )->params( $user->getName() )->text()
+			$output->msg( $msgHeaderKey, $user->getName() )->text()
 		);
 	}
 
-	/**
-	 * @param OutputPage $output
-	 * @param UserIdentity $user
-	 * @param string $msgBodyKey
-	 * @param string $class
-	 * @return string
-	 */
 	private function getDiscoveryTextWithAvatarIcon(
-		OutputPage $output, UserIdentity $user, string $msgBodyKey, $class = ''
+		OutputPage $output, UserIdentity $user, string $msgBodyKey, string $class = ''
 	): string {
 		return Html::rawElement( 'p', [ 'class' => $class ],
 			$output->msg( $msgBodyKey )

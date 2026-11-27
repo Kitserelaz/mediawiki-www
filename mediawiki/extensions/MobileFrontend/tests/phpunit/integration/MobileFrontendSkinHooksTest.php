@@ -1,5 +1,6 @@
 <?php
 
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Message\Message;
 
 /**
@@ -7,6 +8,12 @@ use MediaWiki\Message\Message;
  * @coversDefaultClass \MobileFrontendSkinHooks
  */
 class MobileFrontendSkinHooksTest extends MediaWikiLangTestCase {
+	private function getInstance(): MobileFrontendSkinHooks {
+		return new MobileFrontendSkinHooks(
+			$this->getServiceContainer()->getUrlUtils()
+		);
+	}
+
 	/**
 	 * @covers ::getTermsLink
 	 * @dataProvider provideGetTermsLinkData
@@ -26,7 +33,7 @@ class MobileFrontendSkinHooksTest extends MediaWikiLangTestCase {
 		$messageLocalizerMock->method( 'msg' )
 			->willReturn( $messageMock );
 
-		$actual = MobileFrontendSkinHooks::getTermsLink( $messageLocalizerMock );
+		$actual = $this->getInstance()->getTermsLink( $messageLocalizerMock );
 		$this->assertSame( $expected, $actual );
 	}
 

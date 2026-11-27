@@ -1,11 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
-			"Rail"
+			"Rail",
+			"PanWor"
 		]
 	},
 	"share": "Udostępnij",
-	"share-desc": "Dodaje z boku strony sekcję umożiwiającą użytkownikom proste udostępnianie artykułów z wiki w mediach społecznościowych",
+	"share-desc": "Dodaje z boku strony sekcję umożiwiającą proste udostępnianie artykułów z wiki w mediach społecznościowych",
 	"share-header": "Udostępnij artykuł",
 	"share-email": "Udostępnij przez e-mail",
 	"share-facebook": "Udostępnij na Facebooku",

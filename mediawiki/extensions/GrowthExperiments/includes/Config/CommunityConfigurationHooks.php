@@ -3,7 +3,7 @@
 namespace GrowthExperiments\Config;
 
 use GrowthExperiments\Config\Schemas\CommunityUpdatesSchema;
-use GrowthExperiments\LevelingUp\LevelingUpManager;
+use GrowthExperiments\HomepageModules\SuggestedEdits;
 use MediaWiki\Config\Config;
 use MediaWiki\Extension\CommunityConfiguration\Hooks\CommunityConfigurationProvider_initListHook;
 use MediaWiki\Extension\CommunityConfiguration\Hooks\CommunityConfigurationSchemaBeforeEditorHook;
@@ -54,10 +54,10 @@ class CommunityConfigurationHooks implements
 				}
 				break;
 			case 'GrowthHomepage':
-				if ( !LevelingUpManager::isEnabledForAnyone( $this->config ) ) {
+				if ( !SuggestedEdits::isEnabledForAnyone( $this->config ) ) {
 					unset(
 						$rootSchema['properties']['GELevelingUpGetStartedMaxTotalEdits'],
-						$rootSchema['properties']['GELevelingUpKeepGoingNotificationThresholds'],
+						$rootSchema['properties']['GELevelingUpKeepGoingNotificationThresholdsMaximum'],
 					);
 				}
 				break;
@@ -70,23 +70,20 @@ class CommunityConfigurationHooks implements
 				"store" => [
 					"type" => "wikipage",
 					"args" => [
-						"MediaWiki:GrowthExperimentsCommunityUpdates.json"
-					]
+						"MediaWiki:GrowthExperimentsCommunityUpdates.json",
+					],
 				],
 				"validator" => [
 					"type" => "jsonschema",
 					"args" => [
-						CommunityUpdatesSchema::class
-					]
+						CommunityUpdatesSchema::class,
+					],
 				],
-				"type" => "data"
+				"type" => "data",
 			];
 		}
 		if ( !$this->config->get( 'GEHomepageSuggestedEditsEnabled' ) ) {
 			unset( $providers['GrowthSuggestedEdits'] );
-		}
-		if ( !$this->config->get( 'GEHelpPanelEnabled' ) ) {
-			unset( $providers['HelpPanel'] );
 		}
 	}
 }

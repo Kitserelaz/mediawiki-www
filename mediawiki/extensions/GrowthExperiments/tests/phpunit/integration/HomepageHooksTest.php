@@ -2,37 +2,36 @@
 
 namespace GrowthExperiments\Tests\Integration;
 
-use CirrusSearch\WeightedTagsUpdater;
+use CirrusSearch\HashSearchConfig;
+use CirrusSearch\Search\SearchContext;
+use GrowthExperiments\ErrorException;
 use GrowthExperiments\GrowthExperimentsServices;
+use GrowthExperiments\HelpPanel;
 use GrowthExperiments\HomepageHooks;
 use GrowthExperiments\HomepageModules\SuggestedEdits;
-use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendation;
-use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationHelper;
-use GrowthExperiments\NewcomerTasks\AddLink\LinkRecommendationStore;
+use GrowthExperiments\Mentorship\IMentorManager;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
+use GrowthExperiments\NewcomerTasks\TaskSuggester\UnderlinkedFunctionScoreBuilder;
+use GrowthExperiments\NewcomerTasks\TaskType\LinkRecommendationTaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\LinkRecommendationTaskTypeHandler;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
-use MediaWiki\Config\HashConfig;
+use GrowthExperiments\Tests\Helpers\HomepageHooksHelpers;
 use MediaWiki\Context\RequestContext;
-use MediaWiki\Linker\LinkTarget;
-use MediaWiki\Page\ProperPageIdentity;
+use MediaWiki\HookContainer\HookRunner;
+use MediaWiki\RecentChanges\RecentChange;
 use MediaWiki\Request\FauxRequest;
 use MediaWiki\ResourceLoader as RL;
-use MediaWiki\Revision\RevisionRecord;
-use MediaWiki\Title\Title;
 use MediaWikiIntegrationTestCase;
-use RecentChange;
 use StatusValue;
 use stdClass;
-use Wikimedia\Rdbms\IDBAccessObject;
 use Wikimedia\TestingAccessWrapper;
-use WikiPage;
 
 /**
  * @covers \GrowthExperiments\HomepageHooks
  * @group Database
  */
 class HomepageHooksTest extends MediaWikiIntegrationTestCase {
+	use HomepageHooksHelpers;
 
 	public function testGetTaskTypesJson() {
 		$configurationLoader = $this->getMockBuilder( ConfigurationLoader::class )
@@ -48,6 +47,34 @@ class HomepageHooksTest extends MediaWikiIntegrationTestCase {
 			RequestContext::getMain()->getRequest() );
 		$configData = HomepageHooks::getTaskTypesJson( $context );
 		$this->assertSame( [ 'tt1', 'tt2' ], array_keys( $configData ) );
+	}
+
+	/**
+	 * @throws ErrorException
+	 */
+	public function testGetTaskTypesJsonParsesNonbreakingSpaceCorrectly() {
+		$configurationLoader = $this->getMockBuilder( ConfigurationLoader::class )
+			->onlyMethods( [ 'loadTaskTypes' ] )
+			->getMockForAbstractClass();
+		$configurationLoader->method( 'loadTaskTypes' )
+		->willReturn( [
+			new LinkRecommendationTaskType( 'tt1', TaskType::DIFFICULTY_EASY,
+				[ 'maximumEditsTaskIsAvailable' => '5' ] ),
+			new LinkRecommendationTaskType( 'tt2', TaskType::DIFFICULTY_EASY,
+				[ 'maximumEditsTaskIsAvailable' => '5' ] ),
+		] );
+		$this->setService( 'GrowthExperimentsNewcomerTasksConfigurationLoader',
+			$configurationLoader );
+
+		$request = new FauxRequest();
+		$request->setVal( 'lang', 'fr' );
+		$rlContext = new RL\Context(
+			$this->getServiceContainer()->getResourceLoader(),
+			$request,
+		);
+
+		$configData = HomepageHooks::getTaskTypesJson( $rlContext );
+		$this->assertStringNotContainsString( '&#160', $configData["tt1"]["extraMessages"]["unavailable"] );
 	}
 
 	public function testGetTaskTypesJson_error() {
@@ -69,173 +96,17 @@ class HomepageHooksTest extends MediaWikiIntegrationTestCase {
 		$this->assertObjectHasProperty( 'project', $config );
 	}
 
-	/**
-	 * @dataProvider provideOnSearchDataForIndex
-	 */
-	public function testOnSearchDataForIndex(
-		int $pageRevId,
-		?int $linkRecommendationRevId,
-		?int $linkRecommendationPrimaryRevId,
-		bool $expectPrimaryRead,
-		bool $expectDeleted
-	) {
-		$homepageHooks = $this->getHomepageHooks();
-		$fields = [];
-		$page = $this->createNoOpMock( WikiPage::class, [ 'getRevisionRecord', 'getTitle' ] );
-		TestingAccessWrapper::newFromObject( $homepageHooks )->canAccessPrimary = true;
-		TestingAccessWrapper::newFromObject( $homepageHooks )->config = new HashConfig( [
-			'GENewcomerTasksLinkRecommendationsEnabled' => true,
-			'GETempLinkRecommendationSwitchTagClearHook' => false,
-		] );
-		$linkRecommendationStore = $this->createNoOpMock( LinkRecommendationStore::class,
-			[ 'getByLinkTarget', 'getRevisionId' ] );
-		TestingAccessWrapper::newFromObject( $homepageHooks )->linkRecommendationStore = $linkRecommendationStore;
-		$linkRecommendationHelper = $this->createNoOpMock( LinkRecommendationHelper::class,
-			[ 'deleteLinkRecommendation' ] );
-		TestingAccessWrapper::newFromObject( $homepageHooks )->linkRecommendationHelper = $linkRecommendationHelper;
-		$page->method( 'getTitle' )->willReturn(
-			$this->createConfiguredMock( Title::class, [
-				'toPageIdentity' => $this->createNoOpMock( ProperPageIdentity::class ),
-			] )
-		);
-
-		$page->method( 'getRevisionRecord' )->willReturn(
-			$this->createConfiguredMock( RevisionRecord::class, [ 'getId' => $pageRevId ] )
-		);
-		if ( $linkRecommendationRevId ) {
-			$linkRecommendation = $this->createNoOpMock( LinkRecommendation::class, [ 'getRevisionId' ] );
-			$linkRecommendation->method( 'getRevisionId' )->willReturn( $linkRecommendationRevId );
-		} else {
-			$linkRecommendation = null;
-		}
-		if ( $linkRecommendationPrimaryRevId ) {
-			$linkRecommendationPrimary = $this->createNoOpMock( LinkRecommendation::class, [ 'getRevisionId' ] );
-			$linkRecommendationPrimary->method( 'getRevisionId' )->willReturn( $linkRecommendationPrimaryRevId );
-		} else {
-			$linkRecommendationPrimary = null;
-		}
-		$linkRecommendationStore->expects( $expectPrimaryRead ? $this->exactly( 2 ) : $this->once() )
-			->method( 'getByLinkTarget' )->willReturnCallback(
-				static function (
-					LinkTarget $title, int $flags
-				) use ( $linkRecommendation, $linkRecommendationPrimary ) {
-					return $flags ? $linkRecommendationPrimary : $linkRecommendation;
-				}
-			);
-
-		$homepageHooks->doSearchDataForIndex(
-			$fields,
-			$page,
-			$page->getRevisionRecord()
-		);
-		if ( $expectDeleted ) {
-			$this->assertArrayHasKey( 'weighted_tags', $fields );
-			$this->assertSame( [ 'recommendation.link/__DELETE_GROUPING__' ], $fields['weighted_tags'] );
-		} else {
-			$this->assertArrayNotHasKey( 'weighted_tags', $fields );
-		}
-	}
-
-	public static function provideOnSearchDataForIndex() {
-		return [
-			// page revid, recommendation revid on replica read, on primary read, expect primary read, expect delete
-			'page has no recommendation' => [ 100, null, null, false, false ],
-			'page has current recommendation (purge)' => [ 100, 100, null, false, false ],
-			'page has old recommendation (edit)' => [ 100, 90, 90, true, true ],
-			'page has current recommendation + replag (purge after edit + generate)' => [ 100, 90, 100, true, false ],
-			'recommendation was deleted recently (purge after edit)' => [ 100, 90, null, true, false ],
-		];
-	}
-
-	public function testNoOnSearchDataForIndexIfSwitchFlagIsTrue(): void {
-		$homepageHooks = $this->getHomepageHooks();
-		TestingAccessWrapper::newFromObject( $homepageHooks )->config = new HashConfig( [
-			'GENewcomerTasksLinkRecommendationsEnabled' => true,
-			'GETempLinkRecommendationSwitchTagClearHook' => true,
-		] );
-		$linkRecommendationStore = $this->createNoOpMock( LinkRecommendationStore::class );
-		$linkRecommendationStore->expects( $this->never() )->method( 'getByLinkTarget' );
-		TestingAccessWrapper::newFromObject( $homepageHooks )->linkRecommendationStore = $linkRecommendationStore;
-		$fields = [];
-
-		$homepageHooks->doSearchDataForIndex(
-			$fields,
-			$this->createNoOpMock( WikiPage::class ),
-			$this->createNoOpMock( RevisionRecord::class ),
-		);
-	}
-
-	public function testClearLinkRecommendationOnPageSaveComplete(): void {
-		$this->markTestSkippedIfExtensionNotLoaded( 'CirrusSearch' );
-
-		$wikiPage = $this->getExistingTestPage();
-		$expectedPageIdentity = $wikiPage->getTitle()->toPageIdentity();
-		$weightedTagsUpdaterMock = $this->createMock( WeightedTagsUpdater::class );
-		$weightedTagsUpdaterMock->expects( $this->once() )
-			->method( 'resetWeightedTags' )
-			->with( $expectedPageIdentity, [ LinkRecommendationTaskTypeHandler::WEIGHTED_TAG_PREFIX ] );
-		$this->setService( WeightedTagsUpdater::SERVICE, $weightedTagsUpdaterMock );
-		$this->overrideConfigValues( [
-			'GENewcomerTasksLinkRecommendationsEnabled' => true,
-			'GETempLinkRecommendationSwitchTagClearHook' => true,
-		] );
-		$linkRecommendation = new LinkRecommendation(
-			$wikiPage->getTitle(),
-			$wikiPage->getId(),
-			0,
-			[],
-			LinkRecommendation::getMetadataFromArray( [] )
-		);
-		$linkRecommendationStore = $this->getServiceContainer()->get( 'GrowthExperimentsLinkRecommendationStore' );
-		$linkRecommendationStore->insert( $linkRecommendation );
-
-		$this->editPage( $wikiPage, 'new content' );
-
-		$fromPageId = 0;
-		$this->assertCount( 0, $linkRecommendationStore->getAllRecommendations( 100, $fromPageId ) );
-	}
-
-	public function testClearLinkRecommendationNoPrimaryWriteWithoutReplicaMatch(): void {
-		$this->markTestSkippedIfExtensionNotLoaded( 'CirrusSearch' );
-
-		$wikiPage = $this->getExistingTestPage();
-		$expectedPageIdentity = $wikiPage->getTitle()->toPageIdentity();
-		$weightedTagsUpdaterMock = $this->createMock( WeightedTagsUpdater::class );
-		$weightedTagsUpdaterMock->expects( $this->once() )
-			->method( 'resetWeightedTags' )
-			->with( $expectedPageIdentity, [ LinkRecommendationTaskTypeHandler::WEIGHTED_TAG_PREFIX ] );
-		$this->setService( WeightedTagsUpdater::SERVICE, $weightedTagsUpdaterMock );
-		$this->overrideConfigValues( [
-			'GENewcomerTasksLinkRecommendationsEnabled' => true,
-			'GETempLinkRecommendationSwitchTagClearHook' => true,
-		] );
-		$mockLinkRecommendationStore = $this->createMock( LinkRecommendationStore::class );
-		$mockLinkRecommendationStore->expects( $this->once() )
-			->method( 'getByPageId' )
-			->with( $wikiPage->getId(), IDBAccessObject::READ_NORMAL )
-			->willReturn( null );
-		$mockLinkRecommendationStore->expects( $this->never() )
-			->method( 'deleteByPageIds' );
-		$this->setService( 'GrowthExperimentsLinkRecommendationStore', $mockLinkRecommendationStore );
-
-		$this->editPage( $wikiPage, 'new content' );
-	}
-
-	/**
-	 * @return HomepageHooks
-	 */
 	private function getHomepageHooks(): HomepageHooks {
 		$services = $this->getServiceContainer();
 		$growthServices = GrowthExperimentsServices::wrap( $services );
 		return new HomepageHooks(
 			$services->getMainConfig(),
-			$services->getDBLoadBalancer(),
 			$services->getUserOptionsManager(),
 			$services->getUserOptionsLookup(),
 			$services->getUserIdentityUtils(),
 			$services->getNamespaceInfo(),
 			$services->getTitleFactory(),
-			$services->getPerDbNameStatsdDataFactory(),
+			$services->getStatsFactory(),
 			$services->getJobQueueGroup(),
 			$growthServices->getNewcomerTasksConfigurationLoader(),
 			$growthServices->getGrowthExperimentsCampaignConfig(),
@@ -243,13 +114,14 @@ class HomepageHooksTest extends MediaWikiIntegrationTestCase {
 			$growthServices->getTaskTypeHandlerRegistry(),
 			$growthServices->getTaskSuggesterFactory(),
 			$growthServices->getNewcomerTasksUserOptionsLookup(),
-			$growthServices->getLinkRecommendationStore(),
-			$growthServices->getLinkRecommendationHelper(),
 			$services->getSpecialPageFactory(),
 			$growthServices->getNewcomerTasksChangeTagsManager(),
-			$growthServices->getSuggestionsInfo(),
 			$growthServices->getUserImpactLookup(),
-			$growthServices->getUserImpactStore()
+			$growthServices->getUserImpactStore(),
+			$growthServices->getGrowthExperimentsInteractionLogger(),
+			$growthServices->getTaskTypeManager(),
+			$growthServices->getLevelingUpManager(),
+			$growthServices->getFeatureManager()
 		);
 	}
 
@@ -272,13 +144,13 @@ class HomepageHooksTest extends MediaWikiIntegrationTestCase {
 		$recentChange->setAttribs( [
 			'tags' => [ 'foo' ],
 			'rc_user' => 0,
-			'rc_user_text' => 'Anonymous'
+			'rc_user_text' => 'Anonymous',
 		] );
 		$homepageHooks->onRecentChange_save( $recentChange );
 		$this->assertArrayEquals( [ 'foo' ], $recentChange->getAttribute( 'tags' ) );
 
 		// Auth user tests with users who have activated Suggested Edits.
-		$user = $this->getMutableTestUser()->getUser();
+		$user = $this->getMutableTestUser()->getUserIdentity();
 		$services->getUserOptionsManager()->setOption( $user, SuggestedEdits::ACTIVATED_PREF, 1 );
 		$services->getUserOptionsManager()->saveOptions( $user );
 
@@ -286,10 +158,110 @@ class HomepageHooksTest extends MediaWikiIntegrationTestCase {
 		$recentChange = new RecentChange();
 		$recentChange->setAttribs( [
 			'tags' => [ 'foo' ],
-			'rc_user' => $user->getId()
+			'rc_user' => $user->getId(),
 		] );
 		$homepageHooks->onRecentChange_save( $recentChange );
 		$this->assertArrayEquals( [ 'foo' ], $recentChange->getAttribute( 'tags' ) );
+	}
+
+	public static function provideTestNewUserProperties() {
+		return [
+			[ true, true, IMentorManager::MENTORSHIP_ENABLED, [
+				'GEMentorshipNewAccountEnablePercentage' => 100,
+			] ],
+			[ true, true, IMentorManager::MENTORSHIP_DISABLED, [
+				'GEMentorshipNewAccountEnablePercentage' => 0,
+			] ],
+		];
+	}
+
+	/**
+	 * @dataProvider provideTestNewUserProperties
+	 */
+	public function testNewUserProperties(
+		bool $expectedHomepage, bool $expectedHelpPanel, int $expectedMentorshipStateForUser,
+		array $configOverrides
+	) {
+		$this->overrideConfigValues( $configOverrides );
+
+		$user = $this->getMutableTestUser()->getUser();
+		// TODO: Remove the hook runner once the logic does not involve setting options on
+		// registration (T383700).
+		$runner = new HookRunner( $this->getServiceContainer()->getHookContainer() );
+		$runner->onLocalUserCreated( $user, false );
+
+		$this->assertSame( $expectedHomepage, HomepageHooks::isHomepageEnabled( $user ) );
+		$this->assertSame( $expectedHelpPanel, HelpPanel::shouldShowHelpPanelToUser( $user ) );
+		$this->assertSame(
+			$expectedMentorshipStateForUser,
+			GrowthExperimentsServices::wrap( $this->getServiceContainer() )
+				->getMentorManager()
+				->getMentorshipStateForUser( $user )
+		);
+	}
+
+	public function testOnCirrusSearchScoreBuilder() {
+		$this->markTestSkippedIfExtensionNotLoaded( 'CirrusSearch' );
+
+		$taskTypeMock = $this->createMock( LinkRecommendationTaskType::class );
+		$taskTypeMock->method( 'getUnderlinkedWeight' )->willReturn( 1.0 );
+		$taskTypeMock->method( 'getUnderlinkedMinLength' )->willReturn( 2 );
+		$taskTypes = [
+			LinkRecommendationTaskTypeHandler::TASK_TYPE_ID => $taskTypeMock,
+		];
+
+		$configurationLoaderMock = $this->createMock( ConfigurationLoader::class );
+		$configurationLoaderMock->method( 'getTaskTypes' )->willReturn( $taskTypes );
+		$homepageHooks = $this->getHomepageHooksMock(
+			null, null, null, null,
+			$configurationLoaderMock
+		);
+
+		$searchContextMock = $this->createNoOpMock( SearchContext::class );
+		$function = [ 'type' => UnderlinkedFunctionScoreBuilder::TYPE ];
+
+		$builder = null;
+		$retval = $homepageHooks->onCirrusSearchScoreBuilder( $function, $searchContextMock, $builder );
+
+		$this->assertFalse( $retval );
+		$this->assertInstanceOf( UnderlinkedFunctionScoreBuilder::class, $builder );
+	}
+
+	public function testOnCirrusSearchScoreBuilderDisabled() {
+		$this->markTestSkippedIfExtensionNotLoaded( 'CirrusSearch' );
+
+		$configurationLoaderMock = $this->createMock( ConfigurationLoader::class );
+		$configurationLoaderMock->method( 'getTaskTypes' )->willReturn( [] );
+		$homepageHooks = $this->getHomepageHooksMock(
+			null, null, null, null,
+			$configurationLoaderMock
+		);
+
+		$searchContextMock = $this->createNoOpMock( SearchContext::class );
+		$function = [ 'type' => UnderlinkedFunctionScoreBuilder::TYPE ];
+
+		$builder = null;
+		$retval = $homepageHooks->onCirrusSearchScoreBuilder( $function, $searchContextMock, $builder );
+
+		$this->assertFalse( $retval );
+		$this->assertNotNull( $builder );
+	}
+
+	/**
+	 * When Suggested Edits is disabled, onCirrusSearchAddQueryFeatures
+	 * must NOT call ConfigurationLoader::getTaskTypes().
+	 */
+	public function testOnCirrusSearchAddQueryFeaturesFeatureDisabled() {
+		$this->markTestSkippedIfExtensionNotLoaded( 'CirrusSearch' );
+		$this->overrideConfigValue( 'GEHomepageSuggestedEditsEnabled', false );
+		$configurationLoaderMock = $this->createMock( ConfigurationLoader::class );
+		$configurationLoaderMock->expects( $this->never() )
+			->method( 'getTaskTypes' );
+		$this->setService( 'GrowthExperimentsNewcomerTasksConfigurationLoader', $configurationLoaderMock );
+		$searchConfig = new HashSearchConfig( [] );
+		$extraFeatures = [];
+		HomepageHooks::onCirrusSearchAddQueryFeatures( $searchConfig, $extraFeatures );
+		$this->assertSame( [], $extraFeatures );
 	}
 
 }

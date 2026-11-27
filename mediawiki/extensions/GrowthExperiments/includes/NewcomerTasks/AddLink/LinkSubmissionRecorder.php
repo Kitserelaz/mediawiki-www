@@ -2,8 +2,8 @@
 
 namespace GrowthExperiments\NewcomerTasks\AddLink;
 
-use ManualLogEntry;
-use MediaWiki\Cache\LinkBatchFactory;
+use MediaWiki\Logging\ManualLogEntry;
+use MediaWiki\Page\LinkBatchFactory;
 use MediaWiki\Title\TitleParser;
 use MediaWiki\User\UserIdentity;
 use StatusValue;
@@ -24,11 +24,6 @@ class LinkSubmissionRecorder {
 	/** @var LinkRecommendationStore */
 	private $linkRecommendationStore;
 
-	/**
-	 * @param TitleParser $titleParser
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param LinkRecommendationStore $linkRecommendationStore
-	 */
 	public function __construct(
 		TitleParser $titleParser,
 		LinkBatchFactory $linkBatchFactory,

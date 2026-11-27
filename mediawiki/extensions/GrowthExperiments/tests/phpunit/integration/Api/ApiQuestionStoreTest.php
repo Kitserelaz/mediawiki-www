@@ -49,7 +49,7 @@ class ApiQuestionStoreTest extends ApiTestCase {
 			], null, $this->getMutableTestUser()->getUser() );
 			$this->assertArrayEquals( [
 				'html' => '<div class="recent-questions-' . $storage . '"></div>',
-				'questions' => []
+				'questions' => [],
 			], $response[0]['homepagequestionstore'] );
 		}
 	}
@@ -58,7 +58,8 @@ class ApiQuestionStoreTest extends ApiTestCase {
 		$user = $this->getMutableTestUser()->getUser();
 		$mentor = $this->getTestSysop()->getUser();
 		$services = $this->getServiceContainer();
-		GrowthExperimentsServices::wrap( $services )->getMentorStore()
+		$geServices = GrowthExperimentsServices::wrap( $services );
+		$geServices->getMentorStore()
 			->setMentorForUser(
 				$user,
 				$mentor,
@@ -75,8 +76,9 @@ class ApiQuestionStoreTest extends ApiTestCase {
 			new StaticMentorManager( [
 				$user->getName() => new Mentor( $mentor, '', '', IMentorWeights::WEIGHT_NORMAL ),
 			] ),
+			$geServices->getMentorStatusManager(),
 			$services->getPermissionManager(),
-			$services->getPerDbNameStatsdDataFactory(),
+			$services->getStatsFactory(),
 			ExtensionRegistry::getInstance()->isLoaded( 'ConfirmEdit' ),
 			ExtensionRegistry::getInstance()->isLoaded( 'Flow' ),
 			$context,
@@ -87,11 +89,11 @@ class ApiQuestionStoreTest extends ApiTestCase {
 		$response = $this->doApiRequest(
 			[
 				'action' => 'homepagequestionstore',
-				'storage' => Mentorship::QUESTION_PREF
+				'storage' => Mentorship::QUESTION_PREF,
 			],
 			null,
 			null,
-			$user->getInstanceForUpdate()
+			$user
 		);
 		$this->assertNotEquals( '', $response[0]['homepagequestionstore']['html'] );
 		$question = $response[0]['homepagequestionstore']['questions'][0];

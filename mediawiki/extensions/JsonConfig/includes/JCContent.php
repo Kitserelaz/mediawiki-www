@@ -1,6 +1,6 @@
 <?php
 
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use MediaWiki\Content\TextContent;
 use MediaWiki\Json\FormatJson;
@@ -11,7 +11,7 @@ use stdClass;
 
 /**
  * Represents the content of a JSON Json Config article.
- * @file
+ *
  * @ingroup Extensions
  * @ingroup JsonConfig
  *
@@ -23,12 +23,8 @@ class JCContent extends TextContent {
 	private $rawData = null;
 	/** @var stdClass */
 	protected $data = null;
-	/** @var Status */
-	private $status;
-	/** @var bool */
-	private $thorough;
-	/** @var bool */
-	private $stripComments;
+	private Status $status;
+	private readonly bool $stripComments;
 	/** @var JCContentView|null contains an instance of the view class */
 	private $view = null;
 
@@ -37,11 +33,14 @@ class JCContent extends TextContent {
 	 * @param string $modelId
 	 * @param bool $thorough True if extra validation should be performed
 	 */
-	public function __construct( $text, $modelId, $thorough ) {
+	public function __construct(
+		$text,
+		$modelId,
+		private readonly bool $thorough,
+	) {
 		$this->stripComments = $text !== null;
 		$text ??= $this->getView( $modelId )->getDefault( $modelId );
 		parent::__construct( $text, $modelId );
-		$this->thorough = $thorough;
 		$this->status = new Status();
 		$this->parse();
 	}
@@ -88,8 +87,9 @@ class JCContent extends TextContent {
 		return $this->status->isGood();
 	}
 
+	/** @inheritDoc */
 	public function isEmpty() {
-		$text = trim( $this->getNativeData() );
+		$text = trim( $this->getText() );
 		return $text === '' || $text === '{}';
 	}
 
@@ -132,7 +132,7 @@ class JCContent extends TextContent {
 	 * Perform initial json parsing and validation
 	 */
 	private function parse() {
-		$rawText = $this->getNativeData();
+		$rawText = $this->getText();
 		$parseOpts = FormatJson::TRY_FIXING;
 		if ( $this->stripComments ) {
 			$parseOpts += FormatJson::STRIP_COMMENTS;
@@ -178,3 +178,6 @@ class JCContent extends TextContent {
 		return new JCDefaultContentView();
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCContent::class, 'JsonConfig\\JCContent' );

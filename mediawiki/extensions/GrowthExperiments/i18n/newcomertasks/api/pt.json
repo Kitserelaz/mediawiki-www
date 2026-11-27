@@ -2,7 +2,8 @@
 	"@metadata": {
 		"authors": [
 			"GoEThe",
-			"Hamilton Abreu"
+			"Hamilton Abreu",
+			"Trizek (WMF)"
 		]
 	},
 	"apihelp-query+growthtasks-summary": "Obter recomendações de tarefas adequadas para principiantes.",

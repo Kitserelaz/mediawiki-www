@@ -10,10 +10,10 @@
 			</div>
 		</div>
 		<div class="ext-growthExperiments-StreakGraph__legend">
-			<c-text size="sm" color="placeholder">
+			<c-text size="sm" color="subtle">
 				{{ startLabel }}
 			</c-text>
-			<c-text size="sm" color="placeholder">
+			<c-text size="sm" color="subtle">
 				{{ endLabel }}
 			</c-text>
 		</div>
@@ -24,7 +24,6 @@
 const CText = require( '../../vue-components/CText.vue' );
 // @vue/component
 module.exports = exports = {
-	compatConfig: { MODE: 3 },
 	compilerOptions: { whitespace: 'condense' },
 	components: {
 		CText

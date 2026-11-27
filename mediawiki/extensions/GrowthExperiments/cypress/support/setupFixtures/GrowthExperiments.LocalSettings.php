@@ -1,0 +1,165 @@
+<?php
+
+use GrowthExperiments\FeatureManager;
+use GrowthExperiments\GrowthExperimentsServices;
+use GrowthExperiments\HomepageModules\SuggestedEdits;
+use GrowthExperiments\IExperimentManager;
+use GrowthExperiments\NewcomerTasks\AddImage\SubpageImageRecommendationProvider;
+use GrowthExperiments\NewcomerTasks\ReviseTone\SubpageReviseToneRecommendationProvider;
+use GrowthExperiments\NewcomerTasks\Task\Task;
+use GrowthExperiments\NewcomerTasks\TaskSuggester\DecoratingTaskSuggesterFactory;
+use GrowthExperiments\NewcomerTasks\TaskSuggester\QualityGateDecorator;
+use GrowthExperiments\NewcomerTasks\TaskSuggester\StaticTaskSuggesterFactory;
+use GrowthExperiments\NewcomerTasks\TaskSuggester\TaskSuggesterFactory;
+use GrowthExperiments\NewcomerTasks\TaskType\ImageRecommendationTaskType;
+use GrowthExperiments\NewcomerTasks\TaskType\LinkRecommendationTaskType;
+use GrowthExperiments\NewcomerTasks\TaskType\ReviseToneTaskType;
+use GrowthExperiments\NewcomerTasks\TaskType\TemplateBasedTaskType;
+use GrowthExperiments\StaticExperimentManager;
+use MediaWiki\Config\ServiceOptions;
+use MediaWiki\MediaWikiServices;
+use MediaWiki\Title\TitleValue;
+
+$wgGENewcomerTasksLinkRecommendationsEnabled = true;
+$wgGELinkRecommendationsFrontendEnabled = true;
+
+// FIXME: Used on patch-demo
+$wgGEReviseToneSuggestedEditEnabled = true;
+$wgGEReviseToneRecommendationProvider = 'subpage';
+
+/** EDIT CHECK START */
+$wgVisualEditorEditCheck = true;
+/** EDIT CHECK END */
+
+$wgMaxArticleSize = 100;
+$wgParsoidSettings['wt2htmlLimits']['wikitextSize'] = 100 * 1024;
+$wgParsoidSettings['html2wtLimits']['htmlSize'] = 500 * 1024;
+$wgGEDeveloperSetup = true;
+
+$wgHooks['MediaWikiServices'][] = static function ( MediaWikiServices $services ) {
+	$copyEditTaskType = new TemplateBasedTaskType(
+		'copyedit',
+		GrowthExperiments\NewcomerTasks\TaskType\TaskType::DIFFICULTY_EASY,
+		[],
+		[ new TitleValue( NS_MAIN, 'Awkward' ) ]
+	);
+	$imageRecommendationTaskType = new ImageRecommendationTaskType(
+		'image-recommendation', GrowthExperiments\NewcomerTasks\TaskType\TaskType::DIFFICULTY_MEDIUM, []
+	);
+	$linkRecommendationTaskType = new LinkRecommendationTaskType(
+		'link-recommendation', GrowthExperiments\NewcomerTasks\TaskType\TaskType::DIFFICULTY_EASY, []
+	);
+
+	$reviseToneTaskType = new ReviseToneTaskType(
+		'revise-tone',
+		GrowthExperiments\NewcomerTasks\TaskType\TaskType::DIFFICULTY_EASY,
+	);
+
+	# Mock the task suggester to specify what article(s) will be suggested.
+	$services->redefineService(
+		'GrowthExperimentsTaskSuggesterFactory',
+		static function () use (
+			$copyEditTaskType,
+			$imageRecommendationTaskType,
+			$linkRecommendationTaskType,
+			$reviseToneTaskType,
+			$services
+		): TaskSuggesterFactory {
+			$staticSuggesterFactory = new StaticTaskSuggesterFactory( [
+				new Task( $linkRecommendationTaskType, new TitleValue( NS_MAIN, 'Douglas Adams' ) ),
+				new Task(
+					$linkRecommendationTaskType, new TitleValue( NS_MAIN, "The_Hitchhiker's_Guide_to_the_Galaxy" )
+				),
+				new Task(
+					$linkRecommendationTaskType, new TitleValue( NS_MAIN, "JR-430 Mountaineer" )
+				),
+				new Task( $copyEditTaskType, new TitleValue( NS_MAIN, 'Classical kemençe' ) ),
+				new Task( $copyEditTaskType, new TitleValue( NS_MAIN, 'Cretan lyra' ) ),
+				new Task( $reviseToneTaskType, new TitleValue( NS_MAIN, "Kristallsee" ) ),
+				new Task( $reviseToneTaskType, new TitleValue( NS_MAIN, "Eldfjall" ) ),
+				new Task( $imageRecommendationTaskType, new TitleValue( NS_MAIN, "Ma'amoul" ) ),
+			], $services->getTitleFactory() );
+
+			$growthServices = GrowthExperimentsServices::wrap( $services );
+			$taskSuggesterFactory = new DecoratingTaskSuggesterFactory(
+				$staticSuggesterFactory,
+				$services->getObjectFactory(),
+				[
+					[
+						'class' => QualityGateDecorator::class,
+						'args' => [
+							$growthServices->getNewcomerTasksConfigurationLoader(),
+							$growthServices->getImageRecommendationSubmissionLogFactory(),
+							$growthServices->getSectionImageRecommendationSubmissionLogFactory(),
+							$growthServices->getLinkRecommendationSubmissionLogFactory(),
+							$growthServices->getGrowthExperimentsCampaignConfig()
+						]
+					],
+				]
+			);
+
+			return $taskSuggesterFactory;
+		}
+	);
+
+
+	# Mock the task suggester to specify what article(s) will be suggested.
+	$services->redefineService(
+		'GrowthExperimentsFeatureManager',
+		static function () use (
+			$services
+		): FeatureManager {
+			$config = $services->getMainConfig();
+			$manager = new FeatureManager(
+				$services->getExtensionRegistry(),
+				$config,
+			);
+			$defaultVariantSpec = $config->get( 'GEHomepageDefaultVariant' );
+			$ctx = RequestContext::getMain();
+			$variantOverride = $ctx->getRequest()->getVal( 'mpo' );
+			if ( $variantOverride ) {
+				[ $experimentName, $variant ] = explode(':', $variantOverride );
+			}
+
+			if ( is_string( $defaultVariantSpec ) ) {
+				$defaultVariantSpec = array_reduce(
+					IExperimentManager::EXPERIMENTS,
+					fn ( $carry, $expName ) => $carry + [ $expName => $defaultVariantSpec ],
+					[]
+				);
+			}
+
+			$variant = $variantOverride ? array_merge( $defaultVariantSpec, [
+				$experimentName => $variant,
+			] ) : $defaultVariantSpec;
+
+			$manager->setExperimentManager( new StaticExperimentManager( new ServiceOptions( [ 'GEHomepageDefaultVariant' ], [
+				'GEHomepageDefaultVariant' => $variant
+			] ) ) );
+			return $manager;
+		} );
+};
+
+$wgGEImageRecommendationApiHandler = 'mvp';
+// Set up SubpageImageRecommendationProvider, which will take the suggestion from the article's /addimage.json subpage
+$wgHooks['MediaWikiServices'][] = [ SubpageImageRecommendationProvider::class, 'onMediaWikiServices' ];
+$wgHooks['ContentHandlerDefaultModelFor'][] =
+	[ SubpageImageRecommendationProvider::class, 'onContentHandlerDefaultModelFor' ];
+$wgHooks['ContentHandlerDefaultModelFor'][] =
+	[ SubpageReviseToneRecommendationProvider::class, 'onContentHandlerDefaultModelFor' ];
+// Use Commons as a foreign file repository.
+$wgUseInstantCommons = true;
+
+/*
+ * Set up service URL for links.
+ * It is not actually used, but GrowthExperimentsLinkRecommendationProviderUncached does check for it.
+ */
+$wgGELinkRecommendationServiceUrl = 'https://example.com/service/linkrecommendation';
+
+// Activate suggested edits for new users, complete various tours.
+$wgHooks['UserGetDefaultOptions'][] = static function ( &$defaultOptions ) {
+	$defaultOptions[SuggestedEdits::ACTIVATED_PREF] = true;
+};
+
+// as in Wikimedia production (related to T415659)
+$wgHiddenPrefs[] = 'realname';

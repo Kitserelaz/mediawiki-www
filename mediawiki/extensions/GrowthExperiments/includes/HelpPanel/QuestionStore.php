@@ -3,9 +3,9 @@
 namespace GrowthExperiments\HelpPanel;
 
 use Flow\Container;
-use JobQueueGroup;
 use MediaWiki\Content\TextContent;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\JobQueue\JobQueueGroup;
 use MediaWiki\Json\FormatJson;
 use MediaWiki\Language\Language;
 use MediaWiki\Logger\LoggerFactory;
@@ -15,8 +15,8 @@ use MediaWiki\Revision\SlotRecord;
 use MediaWiki\Title\Title;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\Options\UserOptionsManager;
+use MediaWiki\User\Options\UserOptionsUpdateJob;
 use MediaWiki\User\User;
-use UserOptionsUpdateJob;
 use Wikimedia\Rdbms\IDBAccessObject;
 
 class QuestionStore {
@@ -25,58 +25,24 @@ class QuestionStore {
 	private const QUESTION_CHAR_LIMIT = 60;
 	private const MAX_QUESTIONS = 3;
 
-	/**
-	 * @var User
-	 */
-	private $user;
-	/**
-	 * @var string
-	 */
-	private $preference;
-	/**
-	 * @var RevisionStore
-	 */
-	private $revisionStore;
-	/**
-	 * @var Language
-	 */
-	private $language;
-	/**
-	 * @var UserOptionsManager
-	 */
-	private $userOptionsManager;
-	/**
-	 * @var UserOptionsLookup
-	 */
-	private $userOptionsLookup;
-	/**
-	 * @var JobQueueGroup
-	 */
-	private $jobQueueGroup;
-	/**
-	 * @var bool
-	 */
-	private $wasPosted;
+	private User $user;
+	private string $preference;
+	private RevisionStore $revisionStore;
+	private Language $language;
+	private UserOptionsManager $userOptionsManager;
+	private UserOptionsLookup $userOptionsLookup;
+	private JobQueueGroup $jobQueueGroup;
+	private bool $wasPosted;
 
-	/**
-	 * @param User $user
-	 * @param string $preference
-	 * @param RevisionStore $revisionStore
-	 * @param Language $language
-	 * @param UserOptionsManager $userOptionsManager
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param JobQueueGroup $jobQueueGroup
-	 * @param bool $wasPosted
-	 */
 	public function __construct(
-		$user,
-		$preference,
+		User $user,
+		string $preference,
 		RevisionStore $revisionStore,
 		Language $language,
 		UserOptionsManager $userOptionsManager,
 		UserOptionsLookup $userOptionsLookup,
 		JobQueueGroup $jobQueueGroup,
-		$wasPosted
+		bool $wasPosted
 	) {
 		$this->user = $user;
 		$this->preference = $preference;
@@ -90,7 +56,6 @@ class QuestionStore {
 
 	/**
 	 * Add the content to the user preference.
-	 * @param QuestionRecord $question
 	 */
 	public function add( QuestionRecord $question ) {
 		$question = $this->assignArchiveUrl( $question );
@@ -195,18 +160,16 @@ class QuestionStore {
 		}
 
 		$oldUrl = explode( '#', $questionRecord->getResultUrl() )[0];
-		$newUrl = Title::newFromLinkTarget( $revision->getPageAsLinkTarget() )->getLinkURL();
+		$newUrl = Title::newFromPageIdentity( $revision->getPage() )->getLinkURL();
 		if ( $oldUrl !== $newUrl ) {
 			return false;
 		}
 
-		$latestPageRevision = $this->revisionStore->getRevisionByTitle(
-			$revision->getPageAsLinkTarget()
-		);
+		$latestPageRevision = $this->revisionStore->getRevisionByTitle( $revision->getPage() );
 		/** @var TextContent|null $content */
 		$content = $latestPageRevision->getContent( SlotRecord::MAIN );
 		return $content instanceof TextContent
-			&& strpos( $content->getText(), $questionRecord->getSectionHeader() ) !== false;
+			&& str_contains( $content->getText(), $questionRecord->getSectionHeader() );
 	}
 
 	/**
@@ -221,7 +184,7 @@ class QuestionStore {
 					[
 						'userId' => $this->user->getId(),
 						'storage' => $storage,
-						'length' => strlen( $formattedQuestions )
+						'length' => strlen( $formattedQuestions ),
 					] );
 			return;
 		}
@@ -232,37 +195,36 @@ class QuestionStore {
 		}
 	}
 
-	private function saveToUserSettings( $storage, $formattedQuestions ) {
-		$updateUser = $this->user->getInstanceForUpdate();
-		$this->userOptionsManager->setOption( $updateUser, $storage, $formattedQuestions );
-		$updateUser->saveSettings();
+	private function saveToUserSettings( string $storage, string $formattedQuestions ) {
+		$this->userOptionsManager->setOption( $this->user, $storage, $formattedQuestions );
+		$this->userOptionsManager->saveOptions( $this->user );
 	}
 
-	private function saveToUserSettingsWithJob( $storage, $formattedQuestions ) {
+	private function saveToUserSettingsWithJob( string $storage, string $formattedQuestions ) {
 		$job = new UserOptionsUpdateJob( [
 			'userId' => $this->user->getId(),
-			'options' => [ $storage => $formattedQuestions ]
+			'options' => [ $storage => $formattedQuestions ],
 		] );
 		$this->jobQueueGroup->lazyPush( $job );
 	}
 
-	private function encodeQuestionsToJson( array $questionRecords ) {
+	private function encodeQuestionsToJson( array $questionRecords ): string {
 		return FormatJson::encode( $questionRecords, false, FormatJson::ALL_OK );
 	}
 
-	private function prependQuestion( QuestionRecord $questionRecord ) {
+	private function prependQuestion( QuestionRecord $questionRecord ): array {
 		$questions = $this->loadQuestions();
 		array_unshift( $questions, $questionRecord );
 		return array_slice( $questions, 0, self::MAX_QUESTIONS );
 	}
 
-	private function assignArchiveUrl( QuestionRecord $questionRecord ) {
+	private function assignArchiveUrl( QuestionRecord $questionRecord ): QuestionRecord {
 		$revision = $this->revisionStore->getRevisionById( $questionRecord->getRevId(),
 			$this->wasPosted ? IDBAccessObject::READ_LATEST : IDBAccessObject::READ_NORMAL );
 		if ( !$revision ) {
 			return $questionRecord;
 		}
-		$title = Title::newFromLinkTarget( $revision->getPageAsLinkTarget() );
+		$title = Title::newFromPageIdentity( $revision->getPage() );
 		// Hack: Extract fragment from result URL, so we can use it for archive URL.
 		$fragment = substr(
 			$questionRecord->getResultUrl(),
@@ -275,11 +237,7 @@ class QuestionStore {
 		return $questionRecord;
 	}
 
-	/**
-	 * @param QuestionRecord $question
-	 * @return QuestionRecord
-	 */
-	private function trimQuestion( QuestionRecord $question ) {
+	private function trimQuestion( QuestionRecord $question ): QuestionRecord {
 		$trimmedQuestionText = $this->language->truncateForVisual(
 			$question->getQuestionText(),
 			self::QUESTION_CHAR_LIMIT
@@ -288,7 +246,7 @@ class QuestionStore {
 		return $question;
 	}
 
-	private function isRevisionVisible( QuestionRecord $questionRecord ) {
+	private function isRevisionVisible( QuestionRecord $questionRecord ): bool {
 		$revision = $this->revisionStore->getRevisionById( $questionRecord->getRevId() );
 		return $revision && $revision->getVisibility() === 0;
 	}

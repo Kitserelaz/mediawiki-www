@@ -10,32 +10,32 @@ QUnit.test( 'should fetch tasks', function ( assert ) {
 	const api = new GrowthTasksApi( {
 		taskTypes: {
 			copyedit: {
-				id: 'copyedit'
-			}
+				id: 'copyedit',
+			},
 		},
 		suggestedEditsConfig: {
 			GENewcomerTasksTopicFiltersPref: 'preference-name',
-			GESearchTaskSuggesterDefaultLimit: 20
-		}
+			GESearchTaskSuggesterDefaultLimit: 20,
+		},
 	} );
 	const topicFilters = new TopicFilters( {
 		topics: [ 'art', 'music' ],
-		topicsMatchMode: TOPIC_MATCH_MODES.AND
+		topicsMatchMode: TOPIC_MATCH_MODES.AND,
 	} );
 
 	const responseMock = {
 		batchcomplete: true,
 		query: {
-			pages: Array( 23 ).fill( 1 ).map( ( _, i ) => ( { pageid: i + 1 } ) )
+			pages: Array( 23 ).fill( 1 ).map( ( _, i ) => ( { pageid: i + 1 } ) ),
 		},
 		growthtasks: {
-			totalCount: 24
-		}
+			totalCount: 24,
+		},
 	};
 	this.sandbox.stub( mw.Api.prototype, 'get' ).returns(
 		$.Deferred().resolve( responseMock ).promise( {
-			abort: function () {}
-		} )
+			abort: function () {},
+		} ),
 	);
 	const expectedParams = {
 		action: 'query',
@@ -49,7 +49,7 @@ QUnit.test( 'should fetch tasks', function ( assert ) {
 		rvprop: 'ids',
 		uselang: 'qqx',
 		ggttopics: [ 'art', 'music' ],
-		ggttopicsmode: 'AND'
+		ggttopicsmode: 'AND',
 	};
 	api.fetchTasks( [ 'copyedit' ], topicFilters ).then( ( response ) => {
 		assert.strictEqual( mw.Api.prototype.get.calledOnce, true );
@@ -62,69 +62,71 @@ QUnit.test( 'should fetch tasks', function ( assert ) {
 	} );
 } );
 
-QUnit.test( 'should send topic match mode even if topics are empty', function ( assert ) {
-	const done = assert.async();
-	const api = new GrowthTasksApi( {
-		taskTypes: {
-			copyedit: {
-				id: 'copyedit'
-			}
-		},
-		suggestedEditsConfig: {
-			GENewcomerTasksTopicFiltersPref: 'preference-name',
-			GESearchTaskSuggesterDefaultLimit: 20
-		}
-	} );
-	const topicFilters = new TopicFilters( {
-		topics: [],
-		topicsMatchMode: TOPIC_MATCH_MODES.AND
-	} );
+QUnit.test( 'should send topic match mode even if topics are empty and use configured lookahead size',
+	function ( assert ) {
+		const done = assert.async();
+		const api = new GrowthTasksApi( {
+			taskTypes: {
+				copyedit: {
+					id: 'copyedit',
+				},
+			},
+			suggestedEditsConfig: {
+				GENewcomerTasksTopicFiltersPref: 'preference-name',
+				GESearchTaskSuggesterDefaultLimit: 20,
+				GEApiQueryGrowthTasksLookaheadSize: 10,
+			},
+		} );
+		const topicFilters = new TopicFilters( {
+			topics: [],
+			topicsMatchMode: TOPIC_MATCH_MODES.AND,
+		} );
 
-	const response = {
-		batchcomplete: true,
-		query: {
-			pages: []
-		},
-		growthtasks: {
-			totalCount: 3
-		}
-	};
-	this.sandbox.stub( mw.Api.prototype, 'get' ).returns(
-		$.Deferred().resolve( response ).promise( {
-			abort: function () {}
-		} )
-	);
-	const expectedParams = {
-		action: 'query',
-		formatversion: 2,
-		generator: 'growthtasks',
-		ggtlimit: 25,
-		ggttasktypes: [ 'copyedit' ],
-		piprop: 'name|original|thumbnail',
-		pithumbsize: 332,
-		prop: 'info|revisions|pageimages',
-		rvprop: 'ids',
-		uselang: 'qqx',
-		ggttopicsmode: 'AND'
-	};
-	api.fetchTasks( [ 'copyedit' ], topicFilters ).then( () => {
-		assert.strictEqual( mw.Api.prototype.get.calledOnce, true );
-		assert.deepEqual( mw.Api.prototype.get.getCall( 0 ).args[ 0 ], expectedParams );
-		// TODO add assertions for response post processing
-		done();
+		const response = {
+			batchcomplete: true,
+			query: {
+				pages: [],
+			},
+			growthtasks: {
+				totalCount: 3,
+			},
+		};
+		this.sandbox.stub( mw.Api.prototype, 'get' ).returns(
+			$.Deferred().resolve( response ).promise( {
+				abort: function () {},
+			} ),
+		);
+		const expectedParams = {
+			action: 'query',
+			formatversion: 2,
+			generator: 'growthtasks',
+			ggtlimit: 30,
+			ggttasktypes: [ 'copyedit' ],
+			piprop: 'name|original|thumbnail',
+			pithumbsize: 332,
+			prop: 'info|revisions|pageimages',
+			rvprop: 'ids',
+			uselang: 'qqx',
+			ggttopicsmode: 'AND',
+		};
+		api.fetchTasks( [ 'copyedit' ], topicFilters ).then( () => {
+			assert.strictEqual( mw.Api.prototype.get.calledOnce, true );
+			assert.deepEqual( mw.Api.prototype.get.getCall( 0 ).args[ 0 ], expectedParams );
+			// TODO add assertions for response post processing
+			done();
+		} );
 	} );
-} );
 
 QUnit.test( 'should read topic filters and topics match mode preferences', function ( assert ) {
 	const api = new GrowthTasksApi( {
 		taskTypes: {
 			copyedit: {
-				id: 'copyedit'
-			}
+				id: 'copyedit',
+			},
 		},
 		suggestedEditsConfig: {
-			GENewcomerTasksTopicFiltersPref: 'preference-name'
-		}
+			GENewcomerTasksTopicFiltersPref: 'preference-name',
+		},
 	} );
 	const getOptionsStub = this.sandbox.stub( mw.user.options, 'get' );
 	getOptionsStub.withArgs( 'growthexperiments-homepage-se-filters' ).returns( '["copyedit"]' );
@@ -135,8 +137,8 @@ QUnit.test( 'should read topic filters and topics match mode preferences', funct
 		taskTypes: [ 'copyedit' ],
 		topicFilters: new TopicFilters( {
 			topics: [ 'art', 'music' ],
-			topicsMatchMode: null
-		} )
+			topicsMatchMode: null,
+		} ),
 	};
 	const actual1 = api.getPreferences();
 	assert.deepEqual( actual1, expectedPreferences1 );
@@ -146,8 +148,8 @@ QUnit.test( 'should read topic filters and topics match mode preferences', funct
 		taskTypes: [ 'copyedit' ],
 		topicFilters: new TopicFilters( {
 			topics: [ 'art', 'music' ],
-			topicsMatchMode: TOPIC_MATCH_MODES.AND
-		} )
+			topicsMatchMode: TOPIC_MATCH_MODES.AND,
+		} ),
 	};
 	const actual2 = api.getPreferences();
 	assert.deepEqual( actual2, expectedPreferences2 );
@@ -156,7 +158,7 @@ QUnit.test( 'should read topic filters and topics match mode preferences', funct
 	getOptionsStub.withArgs( 'preference-name' ).returns( null );
 	const expectedPreferences3 = {
 		taskTypes: [ 'copyedit' ],
-		topicFilters: null
+		topicFilters: null,
 	};
 	const actual3 = api.getPreferences();
 	assert.deepEqual( actual3, expectedPreferences3 );
@@ -166,34 +168,34 @@ QUnit.test( 'should handle undefined values in config correctly', function ( ass
 	const done = assert.async();
 	const api = new GrowthTasksApi( {
 		taskTypes: {
-			copyedit: { id: 'copyedit' }
+			copyedit: { id: 'copyedit' },
 		},
 		suggestedEditsConfig: {
 			GENewcomerTasksTopicFiltersPref: 'preference-name',
-			GESearchTaskSuggesterDefaultLimit: 20
-		}
+			GESearchTaskSuggesterDefaultLimit: 20,
+		},
 	} );
 
 	const topicFilters = new TopicFilters( {
 		topics: [ 'art', 'music' ],
-		topicsMatchMode: TOPIC_MATCH_MODES.AND
+		topicsMatchMode: TOPIC_MATCH_MODES.AND,
 	} );
 
 	const responseMock = {
 		batchcomplete: true,
 		query: { pages: [] },
-		growthtasks: { totalCount: 0 }
+		growthtasks: { totalCount: 0 },
 	};
 
 	this.sandbox.stub( mw.Api.prototype, 'get' ).returns(
-		$.Deferred().resolve( responseMock ).promise( { abort: function () {} } )
+		$.Deferred().resolve( responseMock ).promise( { abort: function () {} } ),
 	);
 
 	// Config with undefined value
 	const testConfig = {
 		getDescription: undefined,
 		size: 10,
-		thumbnailWidth: undefined
+		thumbnailWidth: undefined,
 	};
 
 	api.fetchTasks( [ 'copyedit' ], topicFilters, testConfig ).then( () => {

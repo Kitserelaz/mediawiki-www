@@ -14,9 +14,10 @@
 			"Zabe"
 		]
 	},
+	"growthexperiments-exception-not-mentored": "Der Nutzer wird nicht betreut",
+	"growthexperiments-exception-no-mentored-text": "Der Nutzer hat keinen Lotsen, was bedeutet, dass er seinem Lotsen keine Frage stellen kann.",
 	"growthexperiments-mentor-dashboard-title": "Lotsen-Dashboard",
 	"growthexperiments-mentor-dashboard-pt-link": "Lotsen-Dashboard",
-	"growthexperiments-mentor-dashboard-disabled": "Die Lotsen-Verwaltungsseite ist in diesem Wiki nicht aktiviert.",
 	"growthexperiments-mentor-dashboard-must-be-mentor": "Um die Lotsen-Verwaltungsseite zu aktivieren, musst du dich zunächst [[$1|als {{Gender:|Lotse|Lotsin}} eintragen]].",
 	"growthexperiments-mentor-dashboard-misconfigured-missing-list": "Bevor die Lotsen-Verwaltungsseite benutzt werden kann, muss die Growth-Erweiterung konfiguriert werden. Ein Administrator kann [[Special:EditGrowthConfig]] dafür verwenden.",
 	"growthexperiments-mentor-dashboard-mentee-overview-headline": "Deine Neulinge",
@@ -33,6 +34,7 @@
 	"growthexperiments-mentor-dashboard-mentee-overview-info-legend-questions": "Anzahl Fragen an {{GENDER:|den Lotsen|die Lotsin}}",
 	"growthexperiments-mentor-dashboard-mentee-overview-info-legend-editcount": "Bearbeitungszähler",
 	"growthexperiments-mentor-dashboard-mentee-overview-info-legend-registration": "Registrierungsdatum",
+	"growthexperiments-mentor-dashboard-mentee-overview-info-updated": "Zuletzt aktualisiert vor $1",
 	"growthexperiments-mentor-dashboard-mentee-overview-add-filter": "Filter",
 	"growthexperiments-mentor-dashboard-mentee-overview-add-filter-submit": "Aktualisieren",
 	"growthexperiments-mentor-dashboard-mentee-overview-add-filter-total-edits-headline": "Bearbeitungszähler",
@@ -88,7 +90,7 @@
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-text": "Wenn du für einen bestimmten Zeitraum (mehr als 1 Woche) nicht als Lotse zur Verfügung stehst, kannst du dich als abwesend eintragen. Während dieser Zeit wird ein anderer Lotse die Fragen deiner Neulinge entgegennehmen.",
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-away-for": "Du bist abwesend für:",
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-away-for-label": "Tage",
-	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-toohigh": "Eingabe für „{{GENDER:|Du}} bist abwesend für:“ ist zu hoch. Die maximale Anzahl der Tage, die ein Lotse abwesend sein kann, beträgt $1 (ein Jahr).",
+	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-toohigh": "Die maximale Anzahl der Tage, die ein Lotse abwesend sein kann, beträgt $1 (ein Jahr).",
 	"growthexperiments-mentor-dashboard-mentor-tools-away-dialog-error-unknown": "Ein unbekannter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.",
 	"growthexperiments-mentor-dashboard-mentor-tools-mentor-changed-to-active": "Dein Status wurde auf \"Aktiv\" geändert.",
 	"growthexperiments-mentor-dashboard-mentor-tools-mentor-changed-to-away": "Dein Status wurde auf \"Abwesend\" geändert.",
@@ -181,7 +183,9 @@
 	"growthexperiments-mentor-dashboard-personalized-praise-settings-success": "Deine persönlichen Lobeinstellungen wurden gespeichert.",
 	"growthexperiments-mentor-list-missing-key": "Der Schlüssel <code>$1</code> fehlt",
 	"growthexperiments-mentor-list-datatype-mismatch": "Als <code>$1</code> wurde <code>$2</code> erwartet, es ist jedoch <code>$3</code>",
+	"growthexperiments-mentor-list-datatype-mismatch-not-convertible-timestamp": "<code>$1</code> muss ein gültiger konvertierbarer Zeitstempel sein, Benutzer-ID: <code>$2</code>",
 	"growthexperiments-mentor-list-unexpected-key-mentor": "Die Lotsen-Definition enthält einen unerwarteten Schlüssel <code>$1</code>.",
+	"growthexperiments-mentor-list-invalid-weight": "Für <code>$1</code> wird erwartet, dass es einer der folgenden Werte ist: <code>$2</code>, es ist aber <code>$3</code>",
 	"growthexperiments-mentor-writer-error-already-added": "Lotse $1 wurde bereits zur Lotsenliste hinzugefügt",
 	"growthexperiments-mentor-writer-error-not-in-the-list": "Lotse $1 steht nicht auf der Lotsenliste",
 	"growthexperiments-mentor-writer-error-anonymous-user": "Lotse $1 ist kein registrierter Benutzer",
@@ -245,7 +249,7 @@
 	"growthexperiments-mentorship-enrollasmentor-success": "{{GENDER:|Du}} bist nun als Lotse angemeldet. {{GENDER:|Du}} kannst jetzt zur [[Special:MentorDashboard|Lotsen-Verwaltungsseite]] gehen.",
 	"growthexperiments-mentorship-enrollasmentor-summary": "Mich selbst als Lotsen hinzufügen",
 	"growthexperiments-mentorship-enrollasmentor-error-not-autoeligible": "Nur Benutzer mit mindestens $1 {{PLURAL:$1|Bearbeitung|Bearbeitungen}} und $2 {{PLURAL:$2|Anwesenheitstag|Anwesenheitstagen}} können sich als Lotsen anmelden.",
-	"tag-mentor list change": "Änderung der Lotsenliste",
-	"tag-mentor list change-description": "Tag angewendet auf Änderungen, die über GrowthExperiments an der strukturierten Lotsenliste vorgenommen wurden",
+	"tag-mentor_list_change": "Änderung der Lotsenliste",
+	"tag-mentor_list_change-description": "Tag angewendet auf Änderungen, die über GrowthExperiments an der strukturierten Lotsenliste vorgenommen wurden",
 	"growthexperiments-mentor-dashboard-mentorship-disabled-with-link": "Lotsenschaft ist derzeit deaktiviert. Administratoren können die Lotsenschaft über [[$1]] aktivieren."
 }

@@ -1,0 +1,12 @@
+{
+	"extends": [
+		"plugin:cypress/recommended",
+		"plugin:chai-friendly/recommended"
+	],
+	"parserOptions": {
+		"sourceType": "module"
+	},
+	"rules": {
+		"n/no-missing-import": "off"
+	}
+}

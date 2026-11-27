@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eduardoaddad"
+		]
+	},
+	"share": "Compartilhar",
+	"share-desc": "Adiciona um ''portlet'' de barra lateral que permite que os usuários compartilhem facilmente artigos wiki em plataformas de redes sociais",
+	"share-header": "Compartilhar isso",
+	"share-email": "Compartilhar por e-mail",
+	"share-facebook": "Compartilhar no Facebook",
+	"share-linkedin": "Compartilhar no LinkedIn",
+	"share-pinterest": "Compartilhar no Pinterest",
+	"share-reddit": "Compartilhar no Reddit",
+	"share-telegram": "Compartilhar no Telegram",
+	"share-tumblr": "Compartilhar no Tumblr",
+	"share-twitter": "Compartilhar no Twitter",
+	"share-vk": "Compartilhar no VK",
+	"share-weibo": "Compartilhar no Weibo",
+	"share-whatsapp": "Compartilhar no WhatsApp",
+	"share-preftoggle": "Desativar a apresentação de links de compartilhamento na barra lateral?",
+	"right-viewsharelinks": "Ver portlet de compartilhamento na barra lateral",
+	"action-viewsharelinks": "Ver portlet na barra lateral de compartilhamento"
+}

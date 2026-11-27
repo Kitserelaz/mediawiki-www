@@ -4,12 +4,16 @@
  * - HomepageHooks::getSuggestedEditsConfigJson() as ./config.json
  * - HomepageHooks::getTaskTypesJson() as ./TaskTypes.json
  * - HomepageHooks::getDefaultTaskTypesJson() as ./DefaultTaskTypes.json
+ * - ../utils/Utils.js
  */
 ( function () {
-	const OLD_LINK_TASK_TYPE = 'links',
+	const Utils = require( '../utils/Utils.js' ),
+		OLD_LINK_TASK_TYPE = 'links',
+		OLD_COPYEDIT_TASK_TYPE = 'copyedit',
 		LINK_RECOMMENDATION_TASK_TYPE = 'link-recommendation',
 		IMAGE_RECOMMENDATION_TASK_TYPE = 'image-recommendation',
-		SECTION_IMAGE_RECOMMENDATION_TASK_TYPE = 'section-image-recommendation';
+		SECTION_IMAGE_RECOMMENDATION_TASK_TYPE = 'section-image-recommendation',
+		REVISE_TONE_TASK_TYPE = 'revise-tone';
 
 	/**
 	 * Returns the given task type if it's available, or false if it is not.
@@ -67,6 +71,24 @@
 	}
 
 	/**
+	 * Check whether revise tone recommendations are enabled for the current user.
+	 *
+	 * This is the equivalent of NewcomerTasksUserOptionsLookup::areReviseToneRecommendationsEnabled().
+	 *
+	 * @return {boolean}
+	 */
+	function areReviseToneRecommendationsEnabled() {
+		const config = require( './config.json' ),
+			taskTypes = require( './TaskTypes.json' ),
+			isReviseToneEnabled = config.GEReviseToneSuggestedEditEnabled &&
+				REVISE_TONE_TASK_TYPE in taskTypes;
+
+		// TODO: remove after experiment is concluded, T407802
+		const assignedGroup = Utils.getUserVariant( 'growthexperiments-revise-tone' );
+		return assignedGroup === 'treatment' && isReviseToneEnabled;
+	}
+
+	/**
 	 * Get all task types, removing the ones the current user should not see.
 	 *
 	 * @return {Object} The same task type data, without the task types the user shouldn't see.
@@ -85,8 +107,19 @@
 			if ( !( taskTypeId in conversionMap ) ) {
 				taskTypes[ taskTypeId ] = defaultTaskTypes[ taskTypeId ];
 			}
+			if ( taskTypes[ taskTypeId ] && isTaskTypeUnavailable( taskTypeId ) ) {
+				taskTypes[ taskTypeId ].disabled = true;
+				taskTypes[ taskTypeId ].unavailable = true;
+			}
 		} );
+
 		return taskTypes;
+	}
+
+	function isTaskTypeUnavailable( taskTypeId ) {
+		const suggestedEditsTaskTypesData = getSuggestedEditsData();
+		return suggestedEditsTaskTypesData &&
+			suggestedEditsTaskTypesData.unavailableTaskTypes.includes( taskTypeId );
 	}
 
 	/**
@@ -103,6 +136,11 @@
 			map[ OLD_LINK_TASK_TYPE ] = LINK_RECOMMENDATION_TASK_TYPE;
 		} else {
 			map[ LINK_RECOMMENDATION_TASK_TYPE ] = taskTypeOrFalse( OLD_LINK_TASK_TYPE );
+		}
+		if ( areReviseToneRecommendationsEnabled() ) {
+			map[ OLD_COPYEDIT_TASK_TYPE ] = REVISE_TONE_TASK_TYPE;
+		} else {
+			map[ REVISE_TONE_TASK_TYPE ] = taskTypeOrFalse( OLD_COPYEDIT_TASK_TYPE );
 		}
 		if ( !areImageRecommendationsEnabled() ) {
 			map[ IMAGE_RECOMMENDATION_TASK_TYPE ] = false;
@@ -124,10 +162,31 @@
 	 */
 	function convertTaskTypes( taskTypeIds ) {
 		const map = getConversionMap();
-		return taskTypeIds.map( ( taskTypeId ) => ( taskTypeId in map ) ? map[ taskTypeId ] : taskTypeId ).filter(
+		const enabledAndAvailableTaskTypeIds = taskTypeIds.map( ( taskTypeId ) => ( taskTypeId in map ) ? map[ taskTypeId ] : taskTypeId ).filter(
 			// filter duplicates and false
-			( element, index, self ) => element !== false && index === self.indexOf( element )
+			( element, index, self ) => element !== false &&
+					index === self.indexOf( element ) &&
+					!isTaskTypeUnavailable( element ),
 		);
+
+		if ( !enabledAndAvailableTaskTypeIds.length ) {
+			const suggestedEditsTaskTypesData = getSuggestedEditsData();
+			if ( suggestedEditsTaskTypesData && suggestedEditsTaskTypesData.taskTypes.length ) {
+				// If the suggested edits module informs tasktypes with no enabled and available
+				// types for the user, assume the first one is a suggestion and add it to the types filter
+				const nextSuggestedTaskTypeId = suggestedEditsTaskTypesData.taskTypes[ 0 ];
+				enabledAndAvailableTaskTypeIds.push( nextSuggestedTaskTypeId );
+			}
+		}
+
+		return enabledAndAvailableTaskTypeIds;
+	}
+
+	function getSuggestedEditsData() {
+		// Retrieved from when in Special:Homepage and from wgGESuggestedEditsTaskTypes during
+		// suggested edits sessions.
+		return mw.config.get( 'wgGEHomepageModuleActionData-suggested-edits' ) ||
+			mw.config.get( 'wgGESuggestedEditsTaskTypes' );
 	}
 
 	/**
@@ -142,6 +201,6 @@
 	module.exports = {
 		getTaskTypes: getTaskTypes,
 		convertTaskTypes: convertTaskTypes,
-		getDefaultTaskTypes: getDefaultTaskTypes
+		getDefaultTaskTypes: getDefaultTaskTypes,
 	};
 }() );

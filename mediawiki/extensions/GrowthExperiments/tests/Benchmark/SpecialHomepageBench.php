@@ -4,9 +4,9 @@ namespace GrowthExperiments\Tests\Benchmark;
 
 use GrowthExperiments\GrowthExperimentsServices;
 use GrowthExperiments\Specials\SpecialHomepage;
-use MediaWiki\Config\GlobalVarConfig;
 use MediaWiki\Context\DerivativeContext;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\Extension\CommunityConfiguration\CommunityConfigurationServices;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\SpecialPage\SpecialPage;
 
@@ -29,17 +29,15 @@ class SpecialHomepageBench extends GrowthExperimentsBench {
 		$services = MediaWikiServices::getInstance();
 		$growthExperimentsServices = GrowthExperimentsServices::wrap( $services );
 		$userOptionManager = $services->getUserOptionsManager();
+		$communityConfigServices = CommunityConfigurationServices::wrap( MediaWikiServices::getInstance() );
 		$this->homepage = new SpecialHomepage(
 			$growthExperimentsServices->getHomepageModuleRegistry(),
-			$services->getStatsdDataFactory(),
-			$services->getPerDbNameStatsdDataFactory(),
-			$growthExperimentsServices->getExperimentUserManager(),
+			$services->getStatsFactory(),
 			$growthExperimentsServices->getMentorManager(),
-			// This would normally be wiki-powered config, but
-			// there is no need to test this
-			GlobalVarConfig::newInstance(),
+			$communityConfigServices->getMediaWikiConfigRouter(),
 			$userOptionManager,
-			$services->getTitleFactory()
+			$services->getTitleFactory(),
+			$growthExperimentsServices->getReviseToneExperimentInteractionLogger(),
 		);
 		$context = new DerivativeContext( RequestContext::getMain() );
 		$testUser = $services->getUserFactory()->newFromId( 1 );
@@ -62,5 +60,4 @@ class SpecialHomepageBench extends GrowthExperimentsBench {
 		$this->homepage->execute();
 	}
 
-	// phpcs:enable MediaWiki.Commenting.FunctionAnnotations.UnrecognizedAnnotation
 }

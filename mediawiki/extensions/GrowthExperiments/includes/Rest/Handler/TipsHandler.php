@@ -2,6 +2,7 @@
 
 namespace GrowthExperiments\Rest\Handler;
 
+use GrowthExperiments\FeatureManager;
 use GrowthExperiments\GrowthExperimentsServices;
 use GrowthExperiments\HelpPanel\Tips\TipsAssembler;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
@@ -21,35 +22,14 @@ class TipsHandler extends SimpleHandler {
 
 	private const MAX_CACHE_AGE_SECONDS = 3600;
 
-	/**
-	 * @var TipsAssembler
-	 */
-	private $tipsAssembler;
-	/**
-	 * @var ConfigurationLoader
-	 */
-	private $configurationLoader;
-
-	/**
-	 * @param TipsAssembler $tipsAssembler
-	 * @param ConfigurationLoader $configurationLoader
-	 */
 	public function __construct(
-		TipsAssembler $tipsAssembler, ConfigurationLoader $configurationLoader
+		private readonly TipsAssembler $tipsAssembler,
+		private readonly ConfigurationLoader $configurationLoader,
+		private readonly FeatureManager $featureManager,
 	) {
-		$this->tipsAssembler = $tipsAssembler;
-		$this->configurationLoader = $configurationLoader;
 	}
 
-	/**
-	 * @param string $skin
-	 * @param string $editor
-	 * @param string $tasktypeid
-	 * @param string $uselang
-	 * @return Response
-	 */
-	public function run( string $skin, string $editor, string $tasktypeid, string $uselang
-	) {
+	public function run( string $skin, string $editor, string $tasktypeid, string $uselang ): Response {
 		$context = new DerivativeContext( RequestContext::getMain() );
 		if ( $uselang ) {
 			$context->setLanguage( $uselang );
@@ -58,7 +38,7 @@ class TipsHandler extends SimpleHandler {
 		$this->tipsAssembler->setMessageLocalizer( $context );
 		GrowthExperimentsServices::wrap( MediaWikiServices::getInstance() )
 			->getNewcomerTasksConfigurationValidator()->setMessageLocalizer( $context );
-		$taskTypes = $this->configurationLoader->getTaskTypes();
+		$taskTypes = $this->getTaskTypes();
 		$response = $this->getResponseFactory()->createJson(
 			$this->tipsAssembler->getTips(
 				$skin,
@@ -72,6 +52,15 @@ class TipsHandler extends SimpleHandler {
 		return $response;
 	}
 
+	private function getTaskTypes(): array {
+		// Prevent calls to suggested edits config when feature is disabled, (T369312)
+		if ( !$this->featureManager->isNewcomerTasksAvailable() ) {
+			return [];
+		}
+		return $this->configurationLoader->getTaskTypes();
+	}
+
+	/** @inheritDoc */
 	public function needsWriteAccess() {
 		return false;
 	}
@@ -92,14 +81,12 @@ class TipsHandler extends SimpleHandler {
 			'tasktypeid' => [
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_REQUIRED => true,
-				ParamValidator::PARAM_TYPE => array_keys(
-					$this->configurationLoader->getTaskTypes()
-				)
+				ParamValidator::PARAM_TYPE => array_keys( $this->getTaskTypes() ),
 			],
 			'uselang' => [
 				self::PARAM_SOURCE => 'path',
 				ParamValidator::PARAM_REQUIRED => true,
-			]
+			],
 		];
 	}
 }

@@ -16,7 +16,7 @@ const
 
 QUnit.module( 'MobileFrontend languageOverlay.js', {
 	beforeEach: function () {
-		sandbox = sinon.sandbox.create();
+		sandbox = sinon.createSandbox();
 		dom.setUp( sandbox, global );
 		jQuery.setUp( sandbox, global );
 		oo.setUp( sandbox, global );
@@ -26,15 +26,11 @@ QUnit.module( 'MobileFrontend languageOverlay.js', {
 		LanguageSearcher = require( '../../../../src/mobile.languages.structured/LanguageSearcher' );
 		languageOverlay = require( '../../../../src/mobile.startup/languageOverlay/languageOverlay' );
 
-		sandbox.stub( mw, 'msg' )
-			.withArgs( 'mobile-frontend-language-heading' ).returns( '' )
-			.withArgs( 'mobile-frontend-loading-message' ).returns( '⌛' )
-			.withArgs( 'mobile-frontend-languages-structured-overlay-all-languages-header' ).returns( '' )
-			.withArgs( 'mobile-frontend-languages-structured-overlay-suggested-languages-header' ).returns( '' );
 		sandbox.stub( mw.loader, 'using' ).withArgs( 'mobile.languages.structured' ).returns( util.Deferred().resolve() );
 
 		// languageOverlay uses a global navigator so we need to stub it for headless tests
 		if ( headless ) {
+			// eslint-disable-next-line n/no-unsupported-features/node-builtins
 			global.navigator = global.navigator || undefined;
 			sandbox.stub( global, 'navigator' ).callsFake( () => {} );
 		}
@@ -48,7 +44,7 @@ QUnit.module( 'MobileFrontend languageOverlay.js', {
 	}
 } );
 
-QUnit.test( '#constructor', function ( assert ) {
+QUnit.test( '#constructor', ( assert ) => {
 	const
 		gatewayDeferred = util.Deferred().resolve( {
 			languages: [],
@@ -61,9 +57,9 @@ QUnit.test( '#constructor', function ( assert ) {
 		},
 		overlay = languageOverlay( gateway );
 
-	assert.strictEqual( overlay.$el.find( '.overlay-content > .promised-view' ).text().trim(), '⌛', 'loading view rendered in .overlay-content' );
+	assert.strictEqual( overlay.$el.find( '.overlay-content > .promised-view' ).text().trim(), 'mobile-frontend-loading-message', 'loading view rendered in .overlay-content' );
 
-	return languageOverlay.test.loadLanguageSearcher( gateway ).then( function () {
+	return languageOverlay.test.loadLanguageSearcher( gateway ).then( () => {
 		assert.strictEqual( overlay.$el.find( '.overlay-content > .promised-view' ).length, 0, 'promisedView has fulfilled its promise' );
 		assert.strictEqual( overlay.$el.find( '.overlay-content > .language-searcher' ).length, 1, 'loaded view rendered in .overlay-content' );
 		sinon.assert.calledWith( spy.withArgs( 'mobileFrontend.languageSearcher.onOpen' ) );

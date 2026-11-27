@@ -1,24 +1,58 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace GrowthExperiments;
 
 use MediaWiki\Auth\AuthManager;
+use MediaWiki\Auth\Hook\LocalUserCreatedHook;
+use MediaWiki\Config\Config;
 use MediaWiki\Context\RequestContext;
-use MediaWiki\Extension\ConfirmEdit\FancyCaptcha\HTMLFancyCaptchaField;
+use MediaWiki\Extension\TestKitchen\Sdk\OverriddenExperiment;
 use MediaWiki\Html\Html;
+use MediaWiki\MainConfigNames;
 use MediaWiki\MediaWikiServices;
-use MediaWiki\Message\Message;
+use MediaWiki\Skin\Skin;
 use MediaWiki\SpecialPage\Hook\AuthChangeFormFieldsHook;
-use MediaWiki\User\Hook\UserSendConfirmationMailHook;
+use MediaWiki\SpecialPage\Hook\CreateAccountShouldShowUsernamePolicyPopoverHook;
+use MediaWiki\SpecialPage\LoginSignupSpecialPage;
+use MediaWiki\Title\TitleFactory;
 use MediaWiki\User\User;
+use Wikimedia\Stats\StatsFactory;
 
-class ConfirmEmailHooks implements AuthChangeFormFieldsHook, UserSendConfirmationMailHook {
+class ConfirmEmailHooks implements
+	AuthChangeFormFieldsHook,
+	LocalUserCreatedHook,
+	CreateAccountShouldShowUsernamePolicyPopoverHook
+{
+
+	private const EXPERIMENT_GROUP_FORM_FIELD_NAME = 'we18-experiment-group';
+
+	public function __construct(
+		private readonly TitleFactory $titleFactory,
+		private readonly FeatureManager $featureManager,
+		private readonly Config $mainConfig,
+		private readonly IExperimentManager $experimentManager,
+		private readonly StatsFactory $statsFactory,
+	) {
+	}
 
 	/**
-	 * @return bool Whether the email confirmation improvements are enabled
+	 * Opt in to the core Minerva username policy popover ("Choose carefully" opens a
+	 * popover) for the account-creation form experiment v2.
+	 *
+	 * @param LoginSignupSpecialPage $specialPage
+	 * @param bool &$show
 	 */
-	public static function isConfirmEmailEnabled() {
-		return MediaWikiServices::getInstance()->getMainConfig()->get( 'GEConfirmEmailEnabled' );
+	public function onCreateAccountShouldShowUsernamePolicyPopover(
+		LoginSignupSpecialPage $specialPage,
+		bool &$show
+	): void {
+		if ( $this->experimentManager->getAssignedGroup(
+			IExperimentManager::ACCOUNT_CREATION_FORM_EXPERIMENT_V2
+		) === IExperimentManager::VARIANT_TREATMENT ) {
+			$show = true;
+		}
 	}
 
 	/**
@@ -31,12 +65,9 @@ class ConfirmEmailHooks implements AuthChangeFormFieldsHook, UserSendConfirmatio
 	public function onAuthChangeFormFields(
 		$requests, $fieldInfo, &$formDescriptor, $action
 	) {
-		if ( !self::isConfirmEmailEnabled() ) {
-			return;
-		}
 		if ( !in_array( $action, [
 			AuthManager::ACTION_CREATE,
-			AuthManager::ACTION_CREATE_CONTINUE
+			AuthManager::ACTION_CREATE_CONTINUE,
 		] ) ) {
 			return;
 		}
@@ -47,79 +78,148 @@ class ConfirmEmailHooks implements AuthChangeFormFieldsHook, UserSendConfirmatio
 		// Load JS that displays a message informing the user that a verification email is coming
 		$context->getOutput()->addModules( 'ext.growthExperiments.Account' );
 		$context->getOutput()->addJsConfigVars( 'confirmemail', true );
+		$context->getOutput()->addModuleStyles( 'ext.growthExperiments.Account.styles' );
 
-		// If email field exists on the form, change email label from "(optional)" to "
-		// (recommended)", but only if email is optional
-		if ( isset( $formDescriptor['email'] ) && !$config->get( 'EmailConfirmToEdit' ) ) {
+		$this->recordBaseline( $context->getUser(), $context->getSkin() );
+		$this->recordExperimentGroup( $context->getUser(), $context->getSkin(), $formDescriptor );
+		if ( $this->featureManager->shouldShowCreateAccountV1(
+			$context->getUser(),
+			$context->getSkin(),
+		) ) {
+			$context->getOutput()->addBodyClasses( 'wiki-' . $config->get( 'DBname' ) );
+			$context->getOutput()->addJsConfigVars( 'GECreateAccountExperimentV1', true );
+			if ( isset( $formDescriptor['email'] ) ) {
+				$formDescriptor['email']['description-message'] = 'growthexperiments-confirmemail-emaildescription';
+				$formDescriptor['email']['show-optional-flag'] = true;
+				$formDescriptor['email']['optional-message'] = 'growthexperiments-confirmemail-email-recommended-flag';
+				$formDescriptor['email']['label-message'] = 'growthexperiments-confirmemail-email-optional';
+			}
+			$formDescriptor['createaccount']['size'] = 'large';
+
+			$formDescriptor['username']['label-message'] = 'userlogin-yourname';
+			$formDescriptor['username']['description-message'] =
+				'growthexperiments-createacct-username-description';
+			$formDescriptor['username']['help-message'] = null;
+			if ( !$context->msg( 'createacct-helpusername-url' )->isDisabled() ) {
+				$learnMoreLinkText = $context->msg(
+					'growthexperiments-createacct-username-learn-more',
+				)->parse();
+				$learnMoreTitleText = $context->msg( 'createacct-helpusername-url' )->parse();
+				$learnMoreTitle = $this->titleFactory->newFromDBkey( $learnMoreTitleText );
+				if ( $learnMoreTitle->isKnown() ) {
+					$learnMoreUrl = $learnMoreTitle->getCanonicalURL();
+					$linkHtml = Html::rawElement(
+						'a',
+						[ 'href' => $learnMoreUrl, 'target' => '_blank', 'class' => 'username-learn-more-link' ],
+						$learnMoreLinkText,
+					);
+					$description = $context->msg( 'growthexperiments-createacct-username-description' )->parse();
+					$mergedHtml = implode( $context->msg( 'word-separator' )->escaped(), [ $description, $linkHtml ] );
+
+					unset( $formDescriptor['username']['description-message'] );
+					$formDescriptor['username']['description-raw'] = $mergedHtml;
+				}
+			}
+		} elseif ( isset( $formDescriptor['email'] ) && !$config->get( MainConfigNames::EmailConfirmToEdit ) ) {
+			// If email field exists on the form, change email label from "(optional)" to "
+			// (recommended)", but only if email is optional
+			if ( $this->experimentManager->getAssignedGroup(
+					IExperimentManager::ACCOUNT_CREATION_FORM_EXPERIMENT_V2
+				) === IExperimentManager::VARIANT_TREATMENT ) {
+				return;
+			}
+
 			$formDescriptor['email']['label-message'] = 'growthexperiments-confirmemail-emailrecommended';
 			$formDescriptor['email']['help-message'] = 'growthexperiments-confirmemail-emailhelp';
-			// helpInline doesn't work because this form hasn't been converted to OOUI yet (T85853)
-			$formDescriptor['email']['helpInline'] = true;
+		}
+	}
+
+	private function recordBaseline( ?User $user, Skin $skin ): void {
+		if ( $user === null || $user->isAnon() ) {
+			$userType = 'anon';
+		} elseif ( $user->isTemp() ) {
+			$userType = 'temp';
+		} else {
+			$userType = 'named';
+		}
+		$wikiName = $this->mainConfig->get( 'DBname' );
+		$isMobile = Util::isMobile( $skin );
+
+		$this->statsFactory->withComponent( 'GrowthExperiments' )
+			->getCounter( 'baseline_account_creation_forms_opened_total' )
+			->setLabel( 'wiki', $wikiName )
+			->setLabel( 'platform', $isMobile ? 'mobile' : 'desktop' )
+			->setLabel( 'usertype', $userType )
+			->increment();
+	}
+
+	private function recordExperimentGroup( ?User $user, Skin $skin, array &$formDescriptor ): void {
+		$isAnon = $user === null || $user->isAnon();
+		$isMobile = Util::isMobile( $skin );
+		$wikiName = $this->mainConfig->get( 'DBname' );
+		$isEnWiki = $wikiName === 'enwiki';
+
+		$isEligible = $isAnon && $isMobile && $isEnWiki;
+		if ( !$isEligible ) {
+			return;
 		}
 
-		if ( ( $formDescriptor['captchaWord']['class'] ?? null ) === HTMLFancyCaptchaField::class ) {
-			// Remove long-winded CAPTCHA explanation message
-			unset( $formDescriptor['captchaWord']['label-message'] );
-
-			// HACK: add "what's this" link by duplicating the entire label, then hiding
-			// the original label with CSS. Unfortunately HTMLFancyCaptchaField doesn't let us change
-			// the built-in label message or append to it, instead it prepends it in a <p>.
-			$formDescriptor['captchaWord']['label-raw'] = Html::rawElement(
-				'label',
-				[ 'for' => 'mw-input-captchaWord' ],
-				$context->msg( 'captcha-label' )->escaped() . ' ' .
-					$context->msg( 'fancycaptcha-captcha' )->escaped() . ' ' .
-					$context->msg( 'growthexperiments-confirmemail-captcha-help' )->parse()
+		if ( $this->experimentManager instanceof ExperimentTestKitchenManager ) {
+			$experiment = $this->experimentManager->getExperiment(
+				IExperimentManager::ACCOUNT_CREATION_FORM_EXPERIMENT_V1
 			);
-			$formDescriptor['captchaWord']['cssclass'] =
-				( $formDescriptor['capthaWord']['cssclass'] ?? '' ) . ' mw-ge-confirmemail-captcha';
+			if ( $experiment instanceof OverriddenExperiment ) {
+				return;
+			}
+		}
 
-			$context->getOutput()->addModuleStyles(
-				'ext.growthExperiments.Account.styles'
-			);
+		$experimentGroup = $this->experimentManager->getAssignedGroup(
+			IExperimentManager::ACCOUNT_CREATION_FORM_EXPERIMENT_V1
+		);
+		$this->statsFactory->withComponent( 'GrowthExperiments' )
+			->getCounter( 'experiment_account_creation_forms_opened_total' )
+			->setLabel( 'wiki', $wikiName )
+			->setLabel( 'experiment', IExperimentManager::ACCOUNT_CREATION_FORM_EXPERIMENT_V1 )
+			->setLabel( 'group', $experimentGroup ?? 'unsampled' )
+			->increment();
+
+		if ( $experimentGroup === IExperimentManager::VARIANT_TREATMENT ) {
+			$formDescriptor[self::EXPERIMENT_GROUP_FORM_FIELD_NAME] = [
+				'type' => 'hidden',
+				'name' => self::EXPERIMENT_GROUP_FORM_FIELD_NAME,
+				'default' => 'treatment',
+			];
+		} elseif ( $experimentGroup === IExperimentManager::VARIANT_CONTROL ) {
+			$formDescriptor[self::EXPERIMENT_GROUP_FORM_FIELD_NAME] = [
+				'type' => 'hidden',
+				'name' => self::EXPERIMENT_GROUP_FORM_FIELD_NAME,
+				'default' => 'control',
+			];
 		}
 	}
 
 	/**
-	 * Override confirmation email
-	 * @param User $user
-	 * @param array &$mail
-	 * @param array $info
+	 * @inheritDoc
 	 */
-	public function onUserSendConfirmationMail( $user, &$mail, $info ) {
-		if ( !self::isConfirmEmailEnabled() ) {
+	public function onLocalUserCreated( $user, $autocreated ): void {
+		$experimentGroup = RequestContext::getMain()->getRequest()
+			->getVal( self::EXPERIMENT_GROUP_FORM_FIELD_NAME, '' );
+		if ( !$experimentGroup ) {
 			return;
 		}
-		$lang = RequestContext::getMain()->getLanguage();
-		$config = MediaWikiServices::getInstance()->getMainConfig();
 
-		// TODO different messages for different $info['type'] values?
-		$textParams = [
-			$info['ip'],
-			$user->getName(),
-			$info['confirmURL'],
-			$lang->userTimeAndDate( $info['expiration'], $user ),
-			$info['invalidateURL']
-		];
-		$htmlParams = $textParams;
-		$htmlParams[2] = Message::rawParam( Html::element( 'a',
-			[
-				'href' => $info['confirmURL'],
-				'style' => 'background: #36C; color: white; padding: 0.45em 0.6em; font-weight: bold; ' .
-					'text-align: center; text-decoration: none;'
-			],
-			wfMessage( 'growthexperiments-confirmemail-confirm-button' )->text()
-		) );
-		$logoImage = Html::rawElement( 'p', [],
-			Html::element( 'img', [ 'src' => wfExpandUrl( $config->get( 'Logo' ), PROTO_CANONICAL ) ] )
-		);
+		if ( $autocreated || $user->isTemp() ) {
+			return;
+		}
 
-		$mail['subject'] = wfMessage( 'growthexperiments-confirmemail-confirm-subject' )->text();
-		$mail['body'] = [
-			'text' => wfMessage( 'growthexperiments-confirmemail-confirm-body-plaintext' )
-				->params( $textParams )->text(),
-			'html' => $logoImage . wfMessage( 'growthexperiments-confirmemail-confirm-body-html' )
-				->params( $htmlParams )->parse()
-		];
+		$hasEmail = RequestContext::getMain()->getRequest()
+			->getVal( 'email', '' ) !== '';
+		$this->statsFactory->withComponent( 'GrowthExperiments' )
+			->getCounter( 'experiment_account_creations_total' )
+			->setLabel( 'wiki', $this->mainConfig->get( 'DBname' ) )
+			->setLabel( 'experiment', IExperimentManager::ACCOUNT_CREATION_FORM_EXPERIMENT_V1 )
+			->setLabel( 'group', $experimentGroup )
+			->setLabel( 'hasEmail', $hasEmail ? 'Yes' : 'No' )
+			->increment();
 	}
 }

@@ -7,7 +7,6 @@ use MediaWiki\Title\Title;
  *
  * @author Yaron Koren
  * @author Alexander Mashin
- *
  */
 class EDConnectorLdap extends EDConnectorBase {
 	/** @const string ID_PARAM What the specific parameter identifying the connection is called. */
@@ -66,12 +65,8 @@ class EDConnectorLdap extends EDConnectorBase {
 			$this->error( 'externaldata-ldap-domain-not-defined', $this->domain );
 		}
 
-		$this->user = isset( $args['user file'] ) && file_exists( $args['user file'] )
-			? trim( file_get_contents( $args['user file'] ) )
-			: $args['user' ] ?? null;
-		$this->password = isset( $args['password file'] ) && file_exists( $args['password file'] )
-			? trim( file_get_contents( $args['password file'] ) )
-			: $args['password' ] ?? null;
+		$this->user = $args['user' ] ?? null;
+		$this->password = $args['password' ] ?? null;
 
 		$this->baseDn = $args['base dn'] ?? null;
 		if ( !$this->baseDn ) {
@@ -169,11 +164,12 @@ class EDConnectorLdap extends EDConnectorBase {
 		self::throwWarnings();
 		try {
 			$sr = ldap_search( $this->connection, $this->baseDn, $this->filter, array_values( $this->mappings() ) );
-		} catch ( MWException $e ) {
+		} catch ( Exception $e ) {
 			return $e->getMessage();
 		} finally {
 			self::stopThrowingWarnings();
 		}
+		// @phan-suppress-next-line PhanPossiblyUndeclaredVariable
 		$results = ldap_get_entries( $this->connection, $sr );
 		return $results;
 	}

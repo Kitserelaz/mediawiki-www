@@ -6,7 +6,7 @@
 		"Max Semenik",
 		"Jon Robson",
 		"Arthur Richards",
-		"Brion Vibber",
+		"Brooke Vibber",
 		"Juliusz Gonera",
 		"Ryan Kaldari",
 		"Florian Schmidt",
@@ -18,10 +18,10 @@
 	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"requires": {
-		"MediaWiki": ">= 1.43"
+		"MediaWiki": ">= 1.46"
 	},
 	"ConfigRegistry": {
-		"mobilefrontend": "GlobalVarConfig::newInstance"
+		"mobilefrontend": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"SpecialPages": {
 		"MobileDiff": {
@@ -44,7 +44,14 @@
 		"Uploads": "SpecialUploads"
 	},
 	"APIModules": {
-		"webapp-manifest": "MobileFrontend\\Api\\ApiWebappManifest"
+		"webapp-manifest": {
+			"class": "MobileFrontend\\Api\\ApiWebappManifest",
+			"services": [
+				"ContentLanguage",
+				"HttpRequestFactory",
+				"UrlUtils"
+			]
+		}
 	},
 	"MessagesDirs": {
 		"MobileFrontend": [
@@ -56,10 +63,6 @@
 		"MobileFrontendAlias": "MobileFrontend.alias.php"
 	},
 	"RawHtmlMessages": [
-		"mobile-frontend-categories-add-heading",
-		"mobile-frontend-categories-add-wait",
-		"mobile-frontend-categories-heading",
-		"mobile-frontend-changeslist-nocomment",
 		"mobile-frontend-editor-editing-page",
 		"mobile-frontend-editor-previewing-page",
 		"mobile-frontend-editor-summary",
@@ -87,16 +90,6 @@
 		"MobileFrontend\\Tests\\": "tests/phpunit/"
 	},
 	"ResourceModules": {
-		"mobile.pagelist.styles": {
-			"styles": [
-				"resources/mobile.pagelist.styles/pagelist.less"
-			]
-		},
-		"mobile.pagesummary.styles": {
-			"styles": [
-				"resources/mobile.pagesummary.styles/pagesummary.less"
-			]
-		},
 		"mobile.userpage.styles": {
 			"styles": [
 				"resources/mobile.userpage.styles/userpage.less"
@@ -105,7 +98,8 @@
 		"mobile.init.styles": {
 			"class": "MediaWiki\\ResourceLoader\\LessVarFileModule",
 			"styles": [
-				"resources/mobile.init.styles/main.less"
+				"resources/mobile.init.styles/main.less",
+				"resources/mobile.init.styles/editor.less"
 			]
 		},
 		"mobile.init": {
@@ -132,8 +126,7 @@
 			],
 			"skinStyles": {
 				"minerva": [
-					"resources/mobile.init.styles/fakeToolbar.less",
-					"resources/mobile.init.styles/editor.less"
+					"resources/mobile.init/fakeToolbar.less"
 				]
 			},
 			"scripts": [
@@ -146,6 +139,7 @@
 			"codexComponents": [
 				"CdxButton",
 				"CdxIcon",
+				"CdxMessage",
 				"CdxTextInput"
 			]
 		},
@@ -156,8 +150,6 @@
 				"mediawiki.template.mustache",
 				"mobile.init.styles",
 				"mediawiki.Title",
-				"mobile.pagelist.styles",
-				"mobile.pagesummary.styles",
 				"mediawiki.language",
 				"mediawiki.jqueryMsg",
 				"mediawiki.user",
@@ -173,12 +165,11 @@
 				"mobile-frontend-drawer-arrow-label",
 				"mobile-frontend-languages-structured-overlay-error",
 				"mobile-frontend-license-links",
-				"echo-mark-all-as-read",
-				"echo-overlay-link",
 				"toc",
 				"mobile-frontend-references-citation-error",
 				"mobile-frontend-references-citation",
 				"mobile-frontend-watchlist-cta-button-signup",
+				"mobile-frontend-watchlist-cta-button-createaccount",
 				"mobile-frontend-watchlist-cta-button-login",
 				"mobile-frontend-editor-publish",
 				"mobile-frontend-editor-save",
@@ -203,37 +194,20 @@
 				"mobile-frontend-editor-terms-link",
 				"watch",
 				"unwatch",
-				"mobile-frontend-clear-search",
-				"mobile-frontend-search-content",
-				"mobile-frontend-search-no-results",
-				"mobile-frontend-search-content-no-results",
-				"mobile-frontend-search-feedback-prompt",
-				"mobile-frontend-search-feedback-link-text",
-				"mobile-frontend-language-heading",
-				"mobile-frontend-amc-outreach-intro",
-				"mobile-frontend-amc-outreach-description",
-				"mobile-frontend-amc-outreach-enable",
-				"mobile-frontend-amc-outreach-no-thanks",
-				"mobile-frontend-amc-outreach-enabled-message",
-				"mobile-frontend-amc-outreach-dismissed-message"
+				"mobile-frontend-language-heading"
 			],
 			"styles": [
-				"resources/mobile.startup/mobile.startup.less",
-				"resources/mobile.startup/amcOutreach/amcOutreachDrawer.less"
+				"resources/mobile.startup/mobile.startup.less"
 			],
-			"skinStyles": {
-				"vector": "skinStyles/mobile.startup/vector.less",
-				"vector-2022": "skinStyles/mobile.startup/vector.less"
-			},
 			"scripts": [
 				{
-					"name": "mobile.config.js",
+					"name": "resources/dist/mobile.config.js",
 					"callback": "MobileFrontend\\ResourceLoaderModules\\MobileConfig::makeScript"
 				},
 				"resources/dist/mobile.startup.runtime.js",
 				"resources/dist/mobile.common.js",
 				"resources/dist/mobile.startup.js",
-				"resources/mobile.startup.exports.js"
+				"resources/mobile.startup/exports.js"
 			]
 		},
 		"mobile.editor.overlay": {
@@ -252,9 +226,21 @@
 				"mediawiki.widgets.AbandonEditDialog"
 			],
 			"packageFiles": [
-				"resources/dist/mobile.editor.overlay.js",
+				"src/mobile.editor.overlay/mobile.editor.overlay.js",
+				"src/mobile.editor.overlay/BlockMessageDetails.js",
+				"src/mobile.editor.overlay/blockMessageDrawer.js",
+				"src/mobile.editor.overlay/EditorGateway.js",
+				"src/mobile.editor.overlay/EditorOverlayBase.js",
+				"src/mobile.editor.overlay/identifyLeadParagraph.js",
+				"src/mobile.editor.overlay/parseBlockInfo.js",
+				"src/mobile.editor.overlay/saveFailureMessage.js",
+				"src/mobile.editor.overlay/setPreferredEditor.js",
+				"src/mobile.editor.overlay/SourceEditorOverlay.js",
+				"src/mobile.editor.overlay/SourceEditorSaveEventHookPayload.js",
+				"src/mobile.editor.overlay/VisualEditorOverlay.js",
+				"src/mobile.editor.overlay/abandonSurvey.js",
 				{
-					"name": "resources/dist/contLangMessages.json",
+					"name": "src/mobile.editor.overlay/contLangMessages.json",
 					"callback": "MobileFrontendEditorHooks::getContentLanguageMessages",
 					"callbackParam": [
 						"tempuser-helppage"
@@ -286,6 +272,9 @@
 				"mobile-frontend-editor-switch-editor",
 				"mobile-frontend-editor-switch-visual-editor",
 				"mobile-frontend-editor-anonwarning",
+				"mobile-frontend-editor-anonwarning-soft-description",
+				"mobile-frontend-editor-anonwarning-soft-separator",
+				"mobile-frontend-editor-autocreatewarning-soft-publish-description",
 				"mobile-frontend-editor-autocreatewarning",
 				"mobile-frontend-editor-editing",
 				"mobile-frontend-editor-blocked-drawer-action-login",
@@ -421,13 +410,18 @@
 		"remoteExtPath": "MobileFrontend"
 	},
 	"Hooks": {
-		"APIGetAllowedParams": "ApiParse",
+		"APIGetAllowedParams": [
+			"ApiEditPageExtender",
+			"ApiParse"
+		],
 		"APIQuerySiteInfoGeneralInfo": "MobileFrontendHooks",
+		"ApiBeforeMain": "MobileFrontendHooks",
 		"AuthChangeFormFields": "MobileFrontendHooks",
 		"RequestContextCreateSkin": "MobileFrontendHooks",
 		"BeforeDisplayNoArticleText": "MobileFrontendHooks",
 		"OutputPageBeforeHTML": "MobileFrontendHooks",
 		"OutputPageBodyAttributes": "MobileFrontendHooks",
+		"ResourceLoaderBeforeResponse": "MobileFrontendHooks",
 		"ResourceLoaderSiteStylesModulePages": "MobileFrontendHooks",
 		"ResourceLoaderSiteModulePages": "MobileFrontendHooks",
 		"SkinAfterBottomScripts": "MobileFrontendHooks",
@@ -486,6 +480,7 @@
 				"HookContainer",
 				"MobileFrontend.Config",
 				"SkinFactory",
+				"UrlUtils",
 				"UserOptionsLookup",
 				"WatchlistManager",
 				"MobileFrontend.Context",
@@ -504,6 +499,9 @@
 				"UserFactory"
 			]
 		},
+		"ApiEditPageExtender": {
+			"class": "MobileFrontend\\Api\\ApiEditPageExtender"
+		},
 		"ApiParse": {
 			"class": "MobileFrontend\\Api\\ApiParseExtender"
 		}
@@ -514,8 +512,7 @@
 		},
 		"MFEnableFontChanger": {
 			"value": {
-				"base": true,
-				"beta": true
+				"base": true
 			}
 		},
 		"MFEnableMobilePreferences": {
@@ -524,12 +521,11 @@
 		"MFUseDesktopSpecialEditWatchlistPage": {
 			"value": {
 				"base": false,
-				"beta": false,
 				"amc": true
 			}
 		},
 		"MFScriptPath": {
-			"description": "Reroute search queries to a different host",
+			"description": "Reroute search queries to a different host. Only applies to Special:EditWatchlist.",
 			"value": ""
 		},
 		"MFEnableXAnalyticsLogging": {
@@ -545,6 +541,10 @@
 		},
 		"MFEnableVEWikitextEditor": {
 			"description": "Enable VisualEditor's wikitext editor as a replacement for MobileFrontend's source editor.",
+			"value": false
+		},
+		"MFEnableAbandonSurvey": {
+			"description": "Enable the editor-abandon survey.",
 			"value": false
 		},
 		"MFEnableJSConsoleRecruitment": {
@@ -569,12 +569,11 @@
 			}
 		},
 		"MFMobileHeader": {
-			"value": "X-Subdomain"
+			"value": null
 		},
 		"MFRemovableClasses": {
 			"description": "Selectors for elements to be removed from the HTML in content namespaces (defined in wgContentNamespaces) to save bandwidth.",
 			"value": {
-				"beta": [],
 				"base": [
 					".navbox",
 					".vertical-navbox",
@@ -584,8 +583,7 @@
 		},
 		"MFShowFirstParagraphBeforeInfobox": {
 			"value": {
-				"base": true,
-				"beta": true
+				"base": true
 			}
 		},
 		"MFNamespacesWithLeadParagraphs": {
@@ -596,8 +594,7 @@
 		},
 		"MFLazyLoadImages": {
 			"value": {
-				"base": true,
-				"beta": true
+				"base": true
 			}
 		},
 		"MFLazyLoadSkipSmallImages": {
@@ -607,23 +604,16 @@
 			"value": []
 		},
 		"MFSearchAPIParams": {
+			"description": "Configuration flag for Special:EditWatchlist.",
 			"value": {
 				"ppprop": "displaytitle"
 			}
 		},
 		"MFQueryPropModules": {
+			"description": "Configuration flag for Special:EditWatchlist.",
 			"value": [
 				"pageprops"
 			]
-		},
-		"MFSearchGenerator": {
-			"value": {
-				"name": "prefixsearch",
-				"prefix": "ps"
-			}
-		},
-		"MFMinCachedPageSize": {
-			"value": 65536
 		},
 		"MFAutodetectMobileView": {
 			"value": true
@@ -646,12 +636,6 @@
 		"MFStopRedirectCookieHost": {
 			"value": null
 		},
-		"MFEnableBeta": {
-			"value": false
-		},
-		"MFBetaFeedbackLink": {
-			"value": false
-		},
 		"DefaultMobileSkin": {
 			"value": "minerva"
 		},
@@ -663,16 +647,12 @@
 				-2
 			]
 		},
-		"MFCollapseSectionsByDefault": {
-			"value": true
-		},
 		"MFUseWikibase": {
 			"value": false
 		},
 		"MFEnableWikidataDescriptions": {
 			"value": {
-				"base": false,
-				"beta": true
+				"base": false
 			}
 		},
 		"MFDisplayWikibaseDescriptions": {
@@ -681,12 +661,6 @@
 				"watchlist": false,
 				"tagline": false
 			}
-		},
-		"MFRSSFeedLink": {
-			"value": false
-		},
-		"MFEnableManifest": {
-			"value": true
 		},
 		"MFManifestThemeColor": {
 			"value": "#eaecf0"
@@ -702,12 +676,6 @@
 		},
 		"MFAdvancedMobileContributions": {
 			"value": true
-		},
-		"MFAmcOutreach": {
-			"value": false
-		},
-		"MFAmcOutreachMinEditCount": {
-			"value": 100
 		},
 		"MFTrackBlockNotices": {
 			"value": false

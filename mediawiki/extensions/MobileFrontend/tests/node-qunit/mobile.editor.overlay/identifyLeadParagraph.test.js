@@ -9,7 +9,7 @@ let
 
 QUnit.module( 'MobileFrontend mobile.editor.overlay/identifyLeadParagraph', {
 	beforeEach: function () {
-		sandbox = sinon.sandbox.create();
+		sandbox = sinon.createSandbox();
 		dom.setUp( sandbox, global );
 		jQuery.setUp( sandbox, global );
 		identifyLeadParagraph = require( '../../../src/mobile.editor.overlay/identifyLeadParagraph' );
@@ -122,7 +122,7 @@ function provideCases() {
 	];
 }
 
-QUnit.test( 'identifyLeadParagraph', function ( assert ) {
+QUnit.test( 'identifyLeadParagraph', ( assert ) => {
 	const cases = provideCases();
 
 	for ( let i = 0; i < cases.length; i++ ) {

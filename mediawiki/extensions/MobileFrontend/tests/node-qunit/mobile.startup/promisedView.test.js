@@ -11,7 +11,7 @@ const
 
 QUnit.module( 'MobileFrontend promisedView.js', {
 	beforeEach: function () {
-		sandbox = sinon.sandbox.create();
+		sandbox = sinon.createSandbox();
 		dom.setUp( sandbox, global );
 		jQuery.setUp( sandbox, global );
 		oo.setUp( sandbox, global );
@@ -24,7 +24,6 @@ QUnit.module( 'MobileFrontend promisedView.js', {
 			className: 'test'
 		} );
 		happyView.append( '😃' );
-		sandbox.stub( mw, 'msg' ).withArgs( 'mobile-frontend-loading-message' ).returns( '⌛' );
 	},
 	afterEach: function () {
 		jQuery.tearDown();
@@ -32,33 +31,33 @@ QUnit.module( 'MobileFrontend promisedView.js', {
 	}
 } );
 
-QUnit.test( '#constructor happyView', function ( assert ) {
+QUnit.test( '#constructor happyView', ( assert ) => {
 	const promise = util.Deferred(),
 		viewSuccess = promisedView( promise );
 
-	assert.strictEqual( viewSuccess.$el.text().trim(), '⌛', 'the view is waiting to resolve' );
+	assert.strictEqual( viewSuccess.$el.text().trim(), 'mobile-frontend-loading-message', 'the view is waiting to resolve' );
 	assert.true( viewSuccess.$el.hasClass( 'promised-view' ), 'parent element has loading class when loading' );
 	promise.resolve( happyView );
-	return promise.then( function () {
+	return promise.then( () => {
 		assert.strictEqual( viewSuccess.$el.attr( 'class' ), 'test', 'fully replaces its parent element with happyView\'s parent element' );
 		assert.strictEqual( viewSuccess.$el.text(), '😃', 'the view resolved correctly' );
 	} );
 } );
 
-QUnit.test( '#constructor when promise rejects but not to a sadView', function ( assert ) {
+QUnit.test( '#constructor when promise rejects but not to a sadView', ( assert ) => {
 	const
 		promise = util.Deferred().reject( new Error( 'fake test error' ) ),
 		viewFailure = promisedView( promise );
 
-	assert.strictEqual( viewFailure.$el.text().trim(), '⌛', 'the view is waiting to resolve' );
+	assert.strictEqual( viewFailure.$el.text().trim(), 'mobile-frontend-loading-message', 'the view is waiting to resolve' );
 	assert.true( viewFailure.$el.hasClass( 'promised-view' ), 'parent element has loading class when loading' );
 
-	return promise.catch( function () {
-		assert.strictEqual( viewFailure.$el.text().trim(), '⌛', 'the view still shows the loading icon' );
+	return promise.catch( () => {
+		assert.strictEqual( viewFailure.$el.text().trim(), 'mobile-frontend-loading-message', 'the view still shows the loading icon' );
 	} );
 } );
 
-QUnit.test( '#constructor when promise rejects to a sadView', function ( assert ) {
+QUnit.test( '#constructor when promise rejects to a sadView', ( assert ) => {
 	const
 		sadView = new View( {
 			isBorderBox: false,
@@ -69,10 +68,10 @@ QUnit.test( '#constructor when promise rejects to a sadView', function ( assert 
 
 	sadView.append( '😭' );
 
-	assert.strictEqual( viewFailure.$el.text().trim(), '⌛', 'the view is waiting to resolve' );
+	assert.strictEqual( viewFailure.$el.text().trim(), 'mobile-frontend-loading-message', 'the view is waiting to resolve' );
 	assert.true( viewFailure.$el.hasClass( 'promised-view' ), 'parent element has loading class when loading' );
 
-	return promise.catch( function () {
+	return promise.catch( () => {
 		assert.strictEqual( viewFailure.$el.attr( 'class' ), 'error', 'fully replaces its parent element with sadView\'s parent element' );
 		assert.strictEqual( viewFailure.$el.text(), '😭', 'the view resolved correctly' );
 	} );

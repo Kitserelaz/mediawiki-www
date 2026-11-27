@@ -9,7 +9,6 @@
 	},
 	"growthexperiments-mentor-dashboard-title": "پیشخوان مربی",
 	"growthexperiments-mentor-dashboard-pt-link": "پیشخوان مربی",
-	"growthexperiments-mentor-dashboard-disabled": "پیش‌خوان مربی در این ویکی فعال نشده است.",
 	"growthexperiments-mentor-dashboard-must-be-mentor": "برای فعال‌سازی پیش‌خوان مربی، {{GENDER:|شما}} باید ابتدا [[$1|به‌عنوان مربی ثبت‌نام کنید]].",
 	"growthexperiments-mentor-dashboard-misconfigured-missing-list": "پیش از آنکه استفاده از داشبورد مربی امکان‌پذیر باشد، ابتدا لازم است که پیکربندی فهرست مربی‌ها انجام شود. هر مدیری می‌تواند از [[Special:EditGrowthConfig|ویژه:ویرایش پیکربندی رشد]] به این منظور استفاده کند.",
 	"growthexperiments-mentor-dashboard-mentee-overview-headline": "کارآموزهای {{GENDER:|شما}}",
@@ -26,6 +25,7 @@
 	"growthexperiments-mentor-dashboard-mentee-overview-info-legend-questions": "پرسش‌های پرسیده‌شده از {{GENDER:|مربی}}",
 	"growthexperiments-mentor-dashboard-mentee-overview-info-legend-editcount": "شمار ویرایش‌ها",
 	"growthexperiments-mentor-dashboard-mentee-overview-info-legend-registration": "تاریخ ثبت نام",
+	"growthexperiments-mentor-dashboard-mentee-overview-info-updated": "آخرین بار $1 پیش به‌روزرسانی شده است",
 	"growthexperiments-mentor-dashboard-mentee-overview-add-filter": "پالایه‌ها",
 	"growthexperiments-mentor-dashboard-mentee-overview-add-filter-submit": "به‌روزرسانی",
 	"growthexperiments-mentor-dashboard-mentee-overview-add-filter-total-edits-headline": "شمار ویرایش‌ها",
@@ -187,6 +187,6 @@
 	"growthexperiments-mentorship-enrollasmentor-success": "{{GENDER:|شما}} به‌عنوان یک مربی نام‌نویسی کردید. اکنون می‌توانید به [[Special:MentorDashboard|پیش‌خوان مربی]] بروید.",
 	"growthexperiments-mentorship-enrollasmentor-summary": "افزودن خودم به‌عنوان مربی",
 	"growthexperiments-mentorship-enrollasmentor-error-not-autoeligible": "تنها کاربرانی که دست کم $1 {{PLURAL:$1|ویرایش}} انجام داده‌اند و عمر حساب آن‌ها دست کم $2 {{PLURAL:$2|روز}} باشد قادر به ثبت نام به‌عنوان مربی هستند.",
-	"tag-mentor list change": "تغییر فهرست مربی‌ها",
-	"tag-mentor list change-description": "برچسبی که از طریق آزمون‌های رشد به ویرایش‌های انجام‌شده در فهرست ساختارمند مربی‌ها افزوده می‌شود"
+	"tag-mentor_list_change": "تغییر فهرست مربی‌ها",
+	"tag-mentor_list_change-description": "برچسبی که از طریق آزمون‌های رشد به ویرایش‌های انجام‌شده در فهرست ساختارمند مربی‌ها افزوده می‌شود"
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare( strict_types = 1 );
+
 // phpcs:disable Generic.NamingConventions.UpperCaseConstantName.ClassConstantNotUpperCase
 namespace Miraheze\ImportDump;
 
@@ -9,15 +11,49 @@ namespace Miraheze\ImportDump;
  */
 class ConfigNames {
 
-	public const EnableAutomatedJob = 'ImportDumpEnableAutomatedJob';
+	public const string ChunkedUploadThreshold = 'RequestImportChunkedUploadThreshold';
 
-	public const HelpUrl = 'ImportDumpHelpUrl';
+	public const string DumpCommand = 'RequestImportDumpCommand';
 
-	public const InterwikiMap = 'ImportDumpInterwikiMap';
+	public const string EnableAutomatedJob = 'RequestImportEnableAutomatedJob';
 
-	public const ScriptCommand = 'ImportDumpScriptCommand';
+	public const string EnableChunkedUploads = 'RequestImportEnableChunkedUploads';
 
-	public const UsersNotifiedOnAllRequests = 'ImportDumpUsersNotifiedOnAllRequests';
+	public const string EnableHistoryDetection = 'RequestImportEnableHistoryDetection';
 
-	public const UsersNotifiedOnFailedImports = 'ImportDumpUsersNotifiedOnFailedImports';
+	public const string EnableImageImports = 'RequestImportEnableImageImports';
+
+	public const string ExtensionRequirements = 'RequestImportExtensionRequirements';
+
+	public const string ExternalBinaries = 'RequestImportExternalBinaries';
+
+	public const string FileExpiryDays = 'RequestImportFileExpiryDays';
+
+	public const string HelpUrl = 'RequestImportHelpUrl';
+
+	public const string ImagesChunkSize = 'RequestImportImagesChunkSize';
+
+	public const string ImagesCommand = 'RequestImportImagesCommand';
+
+	public const string InterwikiMap = 'RequestImportInterwikiMap';
+
+	public const string MaintenanceCommand = 'RequestImportMaintenanceCommand';
+
+	public const string MaxArchiveEntries = 'RequestImportMaxArchiveEntries';
+
+	public const string MaxExtractedSize = 'RequestImportMaxExtractedSize';
+
+	public const string MaxSkippedImages = 'RequestImportMaxSkippedImages';
+
+	public const string MaxUploadSize = 'RequestImportMaxUploadSize';
+
+	public const string RequiredRights = 'RequestImportRequiredRights';
+
+	public const string StalledImportHours = 'RequestImportStalledImportHours';
+
+	public const string TempDirectory = 'RequestImportTempDirectory';
+
+	public const string UsersNotifiedOnAllRequests = 'RequestImportUsersNotifiedOnAllRequests';
+
+	public const string UsersNotifiedOnFailedImports = 'RequestImportUsersNotifiedOnFailedImports';
 }

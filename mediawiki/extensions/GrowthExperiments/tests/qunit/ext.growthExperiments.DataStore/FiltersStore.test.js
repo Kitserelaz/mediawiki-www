@@ -8,10 +8,10 @@ const groupedTopics = require( '../__mocks__/GroupedTopics.json' );
 const setupOptionsStub = ( sandbox, { taskTypes, topics, topicsMatchMode } ) => {
 	const getOptionsStub = sandbox.stub( mw.user.options, 'get' );
 	getOptionsStub.withArgs( 'growthexperiments-homepage-se-filters' ).returns(
-		JSON.stringify( taskTypes )
+		JSON.stringify( taskTypes ),
 	);
-	getOptionsStub.withArgs( 'growthexperiments-homepage-se-topic-filters' ).returns(
-		JSON.stringify( topics )
+	getOptionsStub.withArgs( 'growthexperiments-homepage-se-ores-topic-filters' ).returns(
+		JSON.stringify( topics ),
 	);
 	if ( topicsMatchMode ) {
 		getOptionsStub.withArgs( 'growthexperiments-homepage-se-topic-filters-mode' ).returns( topicsMatchMode );
@@ -35,7 +35,7 @@ QUnit.test( 'should set initial states based on configuration values and user pr
 	setupOptionsStub( this.sandbox, {
 		taskTypes: selectedTaskTypes,
 		topics: selectedTopics,
-		topicsMatchMode: 'OR'
+		topicsMatchMode: 'OR',
 	} );
 	setupConfigStub( this.sandbox, { topicsEnabled, shouldUseTopicMatchMode } );
 
@@ -53,11 +53,11 @@ QUnit.test( 'should return TopicFilters for getTopicsQuery if topics are enabled
 	setupOptionsStub( this.sandbox, {
 		taskTypes: selectedTaskTypes,
 		topics: selectedTopics,
-		topicsMatchMode
+		topicsMatchMode,
 	} );
 	setupConfigStub( this.sandbox, {
 		topicsEnabled: false,
-		shouldUseTopicMatchMode: true
+		shouldUseTopicMatchMode: true,
 	} );
 
 	const filtersStore = new FiltersStore();
@@ -73,7 +73,7 @@ QUnit.test( 'should return an array of selected task types for getTaskTypesQuery
 	const selectedTaskTypes = [ 'copyedit', 'references' ];
 	setupOptionsStub( this.sandbox, {
 		taskTypes: selectedTaskTypes,
-		topics: []
+		topics: [],
 	} );
 	const filtersStore = new FiltersStore();
 	assert.deepEqual( filtersStore.getTaskTypesQuery(), selectedTaskTypes );
@@ -82,7 +82,7 @@ QUnit.test( 'should return an array of selected task types for getTaskTypesQuery
 QUnit.test( 'should return topics organized by groups', function ( assert ) {
 	setupOptionsStub( this.sandbox, {
 		taskTypes: [ 'copyedit' ],
-		topics: []
+		topics: [],
 	} );
 	const filtersStore = new FiltersStore();
 	assert.deepEqual( filtersStore.formatTopicGroups( topicData ), groupedTopics );
@@ -95,7 +95,7 @@ QUnit.test( 'should update the selected topics and topics match mode for updateS
 	setupOptionsStub( this.sandbox, {
 		taskTypes: [ 'copyedit' ],
 		topics: initialTopics,
-		topicsMatchMode: initialTopicsMatchMode
+		topicsMatchMode: initialTopicsMatchMode,
 	} );
 	const filtersStore = new FiltersStore();
 	const topics = [ 'art', 'architecture' ];
@@ -114,21 +114,23 @@ QUnit.test( 'should update the selected topics and topics match mode for updateS
 } );
 
 QUnit.test( 'should save the selected filters to preferences and set the mw.user.options object with savePreferences', function ( assert ) {
-	const saveOptionsSpy = this.sandbox.spy( mw.Api.prototype, 'saveOptions' );
+	const saveOptionsStub = this.sandbox.stub( mw.Api.prototype, 'saveOptions' ).returns(
+		$.Deferred().resolve( {} ).promise(),
+	);
 	const setOptionsSpy = this.sandbox.spy( mw.user.options, 'set' );
 	const selectedTaskTypes = [ 'copyedit' ];
 	const selectedTopics = [ 'architecture' ];
 	setupOptionsStub( this.sandbox, {
 		taskTypes: selectedTaskTypes,
-		topics: selectedTopics
+		topics: selectedTopics,
 	} );
 
 	const filtersStore = new FiltersStore();
 	filtersStore.savePreferences();
 	const updatedPreferences = {};
 	updatedPreferences[ 'growthexperiments-homepage-se-filters' ] = JSON.stringify( selectedTaskTypes );
-	updatedPreferences[ 'growthexperiments-homepage-se-topic-filters' ] = JSON.stringify( selectedTopics );
-	assert.deepEqual( saveOptionsSpy.firstCall.args[ 0 ], updatedPreferences );
+	updatedPreferences[ 'growthexperiments-homepage-se-ores-topic-filters' ] = JSON.stringify( selectedTopics );
+	assert.deepEqual( saveOptionsStub.firstCall.args[ 0 ], updatedPreferences );
 	assert.deepEqual( setOptionsSpy.firstCall.args[ 0 ], updatedPreferences );
 } );
 
@@ -139,7 +141,7 @@ QUnit.test( 'should store the selected filters in backup with backupState', func
 	setupOptionsStub( this.sandbox, {
 		taskTypes,
 		topics,
-		topicsMatchMode
+		topicsMatchMode,
 	} );
 
 	const filtersStore = new FiltersStore();
@@ -148,7 +150,7 @@ QUnit.test( 'should store the selected filters in backup with backupState', func
 	assert.deepEqual( filtersStore.backup, {
 		topics,
 		taskTypes,
-		topicsMatchMode
+		topicsMatchMode,
 	} );
 } );
 
@@ -159,7 +161,7 @@ QUnit.test( 'should set the selected filters to backed up state with restoreStat
 	setupOptionsStub( this.sandbox, {
 		taskTypes,
 		topics,
-		topicsMatchMode
+		topicsMatchMode,
 	} );
 
 	const filtersStore = new FiltersStore();

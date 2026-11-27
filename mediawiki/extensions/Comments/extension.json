@@ -1,6 +1,6 @@
 {
 	"name": "Comments",
-	"version": "5.0",
+	"version": "5.1",
 	"author": [
 		"David Pean",
 		"Misza",
@@ -13,7 +13,7 @@
 	"descriptionmsg": "comments-desc",
 	"type": "parserhook",
 	"requires": {
-		"MediaWiki": ">= 1.35.3"
+		"MediaWiki": ">= 1.43.0"
 	},
 	"callback": "CommentsHooks::registerExtension",
 	"GroupPermissions": {
@@ -31,14 +31,20 @@
 		"comment",
 		"commentadmin",
 		"commentlinks",
-		"comment-delete-own"
+		"comment-delete-own",
+		"comment-edit-own"
 	],
 	"DefaultUserOptions": {
 		"echo-subscriptions-web-mention-comment": true,
 		"echo-subscriptions-email-mention-comment": true
 	},
 	"SpecialPages": {
-		"CommentIgnoreList": "CommentIgnoreList"
+		"CommentIgnoreList": {
+			"class": "CommentIgnoreList",
+			"services": [
+				"UserFactory"
+			]
+		}
 	},
 	"LogTypes": [
 		"comments"
@@ -48,11 +54,18 @@
 	},
 	"LogActionsHandlers": {
 		"comments/add": "CommentsLogFormatter",
-		"comments/delete": "LogFormatter"
+		"comments/delete": "LogFormatter",
+		"comments/edit": "CommentsLogFormatter"
 	},
 	"APIModules": {
-		"commentblock": "CommentBlockAPI",
+		"commentblock": {
+			"class": "CommentBlockAPI",
+			"services": [
+				"UserFactory"
+			]
+		},
 		"commentdelete": "CommentDeleteAPI",
+		"commentedit": "CommentEditAPI",
 		"commentlatestid": "CommentLatestIdAPI",
 		"commentlist": {
 			"class": "CommentListAPI",
@@ -90,6 +103,8 @@
 		"CommentLatestIdAPI": "includes/api/CommentLatestIdAPI.php",
 		"CommentListAPI": "includes/api/CommentListAPI.php",
 		"CommentSubmitAPI": "includes/api/CommentSubmitAPI.php",
+		"CommentSubmitBase": "includes/api/CommentSubmitBase.php",
+		"CommentEditAPI": "includes/api/CommentEditAPI.php",
 		"CommentVoteAPI": "includes/api/CommentVoteAPI.php",
 		"EchoMentionCommentPresentationModel": "includes/notifications/EchoMentionCommentPresentationModel.php"
 	},
@@ -142,7 +157,7 @@
 		"BeforeCreateEchoEvent": "CommentsHooks::onBeforeCreateEchoEvent",
 		"ParserFirstCallInit": "CommentsHooks::onParserFirstCallInit",
 		"LoadExtensionSchemaUpdates": "CommentsHooks::onLoadExtensionSchemaUpdates",
-		"MagicWordwgVariableIDs": "NumberOfComments::onMagicWordwgVariableIDs",
+		"GetMagicVariableIDs": "NumberOfComments::onGetMagicVariableIDs",
 		"ParserGetVariableValueSwitch": "NumberOfComments::onParserGetVariableValueSwitch",
 		"ArticlePurge": "CommentsHooks::onArticlePurge"
 	},

@@ -2,69 +2,31 @@
 
 namespace GrowthExperiments\Mentorship;
 
-use GrowthExperiments\Mentorship\Provider\MentorProvider;
 use GrowthExperiments\Mentorship\Store\MentorStore;
-use GrowthExperiments\WikiConfigException;
-use JobSpecification;
 use MediaWiki\JobQueue\JobQueueGroupFactory;
-use MediaWiki\Status\StatusFormatter;
+use MediaWiki\JobQueue\JobSpecification;
+use MediaWiki\Language\MessageLocalizer;
+use MediaWiki\User\UserFactory;
 use MediaWiki\User\UserIdentity;
 use MediaWiki\WikiMap\WikiMap;
-use MessageLocalizer;
-use Psr\Log\LoggerAwareTrait;
-use Psr\Log\NullLogger;
+use Psr\Log\LoggerInterface;
 use Wikimedia\LightweightObjectStore\ExpirationAwareness;
 use Wikimedia\Rdbms\IDatabase;
 
 class ReassignMentees {
-	use LoggerAwareTrait;
 
-	private IDatabase $dbw;
-	private MentorManager $mentorManager;
-	private MentorProvider $mentorProvider;
-	private MentorStore $mentorStore;
-	private ChangeMentorFactory $changeMentorFactory;
-	private JobQueueGroupFactory $jobQueueGroupFactory;
-	private StatusFormatter $statusFormatter;
-	private UserIdentity $performer;
-	private UserIdentity $mentor;
-	private MessageLocalizer $messageLocalizer;
-
-	/**
-	 * @param IDatabase $dbw
-	 * @param MentorManager $mentorManager
-	 * @param MentorProvider $mentorProvider
-	 * @param MentorStore $mentorStore
-	 * @param ChangeMentorFactory $changeMentorFactory
-	 * @param JobQueueGroupFactory $jobQueueGroupFactory
-	 * @param StatusFormatter $statusFormatter
-	 * @param UserIdentity $performer
-	 * @param UserIdentity $mentor
-	 * @param MessageLocalizer $messageLocalizer
-	 */
 	public function __construct(
-		IDatabase $dbw,
-		MentorManager $mentorManager,
-		MentorProvider $mentorProvider,
-		MentorStore $mentorStore,
-		ChangeMentorFactory $changeMentorFactory,
-		JobQueueGroupFactory $jobQueueGroupFactory,
-		StatusFormatter $statusFormatter,
-		UserIdentity $performer,
-		UserIdentity $mentor,
-		MessageLocalizer $messageLocalizer
+		private LoggerInterface $logger,
+		private IDatabase $dbw,
+		private IMentorManager $mentorManager,
+		private MentorStore $mentorStore,
+		private ChangeMentorFactory $changeMentorFactory,
+		private JobQueueGroupFactory $jobQueueGroupFactory,
+		private UserFactory $userFactory,
+		private UserIdentity $performer,
+		private UserIdentity $mentor,
+		private MessageLocalizer $messageLocalizer
 	) {
-		$this->dbw = $dbw;
-		$this->mentorManager = $mentorManager;
-		$this->mentorProvider = $mentorProvider;
-		$this->mentorStore = $mentorStore;
-		$this->changeMentorFactory = $changeMentorFactory;
-		$this->jobQueueGroupFactory = $jobQueueGroupFactory;
-		$this->statusFormatter = $statusFormatter;
-		$this->performer = $performer;
-		$this->mentor = $mentor;
-		$this->messageLocalizer = $messageLocalizer;
-		$this->logger = new NullLogger();
 	}
 
 	/**
@@ -155,38 +117,68 @@ class ReassignMentees {
 		}
 
 		// only process primary mentors (T309984). Backup mentors will be automatically ignored by
-		// MentorPageMentorManager::getMentorForUser and replaced with a valid mentor if needed
-		$mentees = $this->mentorStore->getMenteesByMentor( $this->mentor, MentorStore::ROLE_PRIMARY );
-		$this->logger->info( __METHOD__ . ' processing {mentees} mentees', [
-			'mentees' => count( $mentees ),
-		] );
+		// MentorManager::getMentorForUser and replaced with a valid mentor if needed
+		$mentees = $this->mentorStore->getMenteesByMentor(
+			$this->mentor,
+			MentorStore::ROLE_PRIMARY,
+			// include hidden users (important to avoid T418222)
+			true
+		);
+		$this->logger->info(
+			__METHOD__ . ' processing {mentees} mentees for {mentor} with limit of {limit}',
+			[
+				'mentees' => count( $mentees ),
+				'mentor' => $this->mentor->getName(),
+				'limit' => $limit,
+			]
+		);
 		$numberOfProcessedMentees = 0;
 		foreach ( $mentees as $mentee ) {
-			$this->logger->debug( __METHOD__ . ' processing {mentor}', [
-				'mentor' => $mentee->getName(),
+			if ( $limit && $numberOfProcessedMentees >= $limit ) {
+				$this->logger->info( 'ReassignMentees processed the maximum number of mentees', [
+					'limit' => $limit,
+					'mentor' => $this->mentor->getName(),
+				] );
+				break;
+			}
+
+			$this->logger->debug( __METHOD__ . ' processing {mentee} for {mentor}', [
+				'mentee' => $mentee->getName(),
+				'mentor' => $this->mentor->getName(),
 			] );
+			$numberOfProcessedMentees += 1;
+
+			$menteeUser = $this->userFactory->newFromUserIdentity( $mentee );
+			if ( $menteeUser->isHidden() ) {
+				$this->logger->info( __METHOD__ . ' dropping relationship for {mentee}, user is hidden', [
+					'mentee' => $mentee->getName(),
+				] );
+				$this->mentorStore->dropMenteeRelationship( $mentee );
+				continue;
+			}
+
+			// T418992: Use same eligibility rules as MentorManager (T351234, onBlockIpComplete)
+			if ( $this->mentorManager->isUserIneligibleForMentorship( $mentee ) ) {
+				$this->logger->info(
+					__METHOD__ . ' dropping relationship for {mentee}, user ineligible for mentorship', [
+						'mentee' => $mentee->getName(),
+						] );
+				$this->mentorStore->dropMenteeRelationship( $mentee );
+				continue;
+			}
+
 			$changeMentor = $this->changeMentorFactory->newChangeMentor(
 				$mentee,
 				$this->performer
 			);
 
-			try {
-				$newMentor = $this->mentorManager->getRandomAutoAssignedMentor( $mentee );
-			} catch ( WikiConfigException $e ) {
-				$this->logger->warning(
-					'ReassignMentees failed to reassign mentees for {mentor}; mentor list is invalid',
-					[
-						'mentor' => $this->mentor->getName(),
-					]
-				);
-				return false;
-			}
-
+			$newMentor = $this->mentorManager->getRandomAutoAssignedMentor( $mentee );
 			if ( !$newMentor ) {
 				$this->logger->warning(
-					'ReassignMentees failed to reassign mentees for {mentor}; no mentor is available',
+					'ReassignMentees failed to reassign mentees for {mentor}; no mentor is available for {mentee}',
 					[
 						'mentor' => $this->mentor->getName(),
+						'mentee' => $mentee->getName(),
 						'impact' => 'Mentor-mentee relationship dropped',
 					]
 				);
@@ -194,7 +186,8 @@ class ReassignMentees {
 				continue;
 			}
 
-			$status = $changeMentor->execute(
+			// ChangeMentor takes care of appropriately logging the outcome
+			$changeMentor->execute(
 				$newMentor,
 				$this->messageLocalizer->msg(
 					$reassignMessageKey,
@@ -203,25 +196,6 @@ class ReassignMentees {
 				)->text(),
 				true
 			);
-			if ( !$status->isOK() ) {
-				$this->logger->warning(
-					'ReassignMentees failed to assign {mentor} as {user}\'s mentor for {reason}',
-					[
-						'mentor' => $newMentor->getName(),
-						'user' => $mentee->getName(),
-						'reason' => $this->statusFormatter->getWikiText( $status, [ 'lang' => 'en' ] ),
-					]
-				);
-			}
-
-			$numberOfProcessedMentees += 1;
-			if ( $limit && $numberOfProcessedMentees >= $limit ) {
-				$this->logger->info( 'ReassignMentees processed the maximum number of mentees', [
-					'limit' => $limit,
-					'mentor' => $this->mentor->getName(),
-				] );
-				break;
-			}
 		}
 
 		if ( !$this->dbw->unlock( $lockName, __METHOD__ ) ) {

@@ -5,8 +5,6 @@
 			"Joao Xavier"
 		]
 	},
-	"mobile-frontend-changeslist-nocomment": "sen rezumo pri redakturo",
-	"mobile-frontend-clear-search": "Efacar",
 	"mobile-frontend-copyright": "La kontenajo esas disponebla sub $1, ecepte kande kontree mencionata.",
 	"mobile-frontend-editor-anon": "Redaktar sen enrejistar su",
 	"mobile-frontend-editor-anonwarning": "<strong>Averto:</strong> Vu ne eniris. Vua IP-adreso esos videbla publike se vu redaktos. Se vu <strong>facos log in</strong> o <strong>kreos konto</strong>, vua redakturi atribuesos a vua uzeronomo, inter altra avantaji.",
@@ -51,11 +49,10 @@
 	"mobile-frontend-privacy-link-text": "Privateso",
 	"mobile-frontend-references-citation-error": "Eventis eroro, e ne esis posibla montrar ca citajo.",
 	"mobile-frontend-save-settings": "Konservez",
-	"mobile-frontend-search-content": "Serchez en pagini",
 	"mobile-frontend-settings-tagline": "Preferaji pri lektado",
 	"mobile-frontend-terms-text": "Kondicioni por uzado",
 	"mobile-frontend-view": "Vidado por portebla aparati",
-	"mobile-frontend-view-desktop": "Desktop",
+	"mobile-frontend-view-desktop": "Versiono por ''desktop''",
 	"mobile-frontend-watchlist-cta-button-login": "Enirar",
 	"mobile-frontend-watchlist-cta-button-signup": "Registragez",
 	"mobile-frontend-watchlist-feed-empty": "Nula pagini modifikesis recente.",
@@ -71,10 +68,5 @@
 	"tag-advanced_mobile_edit": "Avancata redakto per posh-telefonilo",
 	"tag-mobile_web_edit": "Redaktita per informatikoprogramo \"app\"",
 	"tag-mobile_web_edit-description": "Redakturo kreita de mobila retopagino",
-	"mobile-frontend-loading-message": "Karganta...",
-	"mobile-frontend-mobile-option-MFEnableWikidataDescriptions-description": "Savez pri la temo di la pagino, lektanta kurta deskriptado infre la titulo",
-	"mobile-frontend-amc-outreach-intro": "Prizentado di avancita modo",
-	"mobile-frontend-amc-outreach-description": "L`avancita modo provizas plusa resursi pri kronologio en la pagini, listo di pagini vigilata, recenta modifikuri, ed altra utensili por smartfoni*.",
-	"mobile-frontend-amc-outreach-enable": "Permisez avancata funcioni",
-	"mobile-frontend-amc-outreach-enabled-message": "Avancita modo nun esas uzebla. Vu povas nekapabligar ol en vua ajusti."
+	"mobile-frontend-loading-message": "Karganta..."
 }

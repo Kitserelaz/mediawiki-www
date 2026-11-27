@@ -16,12 +16,12 @@
   "extensions": {
     "CreateWiki": {
       "repository": "https://github.com/miraheze/CreateWiki",
-      "commit": "85b031594eb9465483f47c3b6521781c3827c2c0",
+      "commit": "5bb6f24087705ca86bfba2ac2b87454b6bc31fc3",
       "test_patch_report": "docs/upgrade-upstream-test-ports.json"
     },
     "ManageWiki": {
       "repository": "https://github.com/miraheze/ManageWiki",
-      "commit": "76da3dbc969673c27e8529f5c0ea25287e9f836f"
+      "commit": "d5fa14c51a0d770ee5de9e396f94d652d39e195d"
     },
     "EventLogging": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-EventLogging",
@@ -35,44 +35,44 @@
     "CheckUser": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-CheckUser",
       "branch": "REL1_46",
-      "commit": "360229201c78d3a2883d1d806aa8b2b448ff34a6",
+      "commit": "3a35b98e2c4ec91471c644c1c12469a59557d942",
       "source_port_report": "docs/upgrade-checkuser-source.json"
     },
     "OAuth": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-OAuth",
       "branch": "REL1_46",
-      "commit": "80b5f7b4297f0a9db5865c59d8d9b1bd22dc00d1",
+      "commit": "2943b449881b3504e74796da452ec724398072ab",
       "source_port_report": "docs/upgrade-oauth-source.json"
     },
     "CentralAuth": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-CentralAuth",
       "branch": "REL1_46",
-      "commit": "50d8594f7ea0f62654ca1e335c8f0a8cf4d1767b",
+      "commit": "63b0137c9131d5172546969f5cdffc83cf571599",
       "source_port_report": "docs/upgrade-centralauth-source.json"
     },
     "OATHAuth": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-OATHAuth",
       "branch": "REL1_46",
-      "commit": "5443fe89e833330f31e80dbea5f9c25f74cd2ce6",
+      "commit": "3f0b03d91c5a58f867970d87cb38303ded356799",
       "source_port_report": "docs/upgrade-oathauth-source.json"
     },
     "FlaggedRevs": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-FlaggedRevs",
       "branch": "REL1_46",
-      "commit": "49e5261349d8b5318bbb95635701f4aec59da48b",
+      "commit": "baa959db092d0baeb83387af2841f94cc99f7aba",
       "source_port_report": "docs/upgrade-flaggedrevs-source.json"
     },
     "Flow": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-Flow",
       "branch": "REL1_46",
-      "commit": "5c6663c1704801211fd7bbacb3f607f07a5a30a9",
+      "commit": "0ef79e0fcfee176397934167aa94cdb0a8da5457",
       "source_port_report": "docs/upgrade-flow-source.json",
       "batch_port_report": "docs/upgrade-batch-1-ports.json"
     },
     "GlobalBlocking": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-GlobalBlocking",
       "branch": "REL1_46",
-      "commit": "5d3c49eac2c9e06e589e1eb4a322318650fcd21f",
+      "commit": "d735182577a4777ccfe31438586dbf64ab911f0d",
       "source_port_report": "docs/upgrade-globalblocking-source.json"
     },
     "WebAuthn": {
@@ -103,7 +103,7 @@
     "Elastica": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-Elastica",
       "branch": "REL1_46",
-      "commit": "a3326af107aafd75f6958e8b4ae8e3d00f22b65f",
+      "commit": "95f908d2f9f80939d4e0546023405305b436379b",
       "source_port_report": "docs/upgrade-elastica-source.json"
     },
     "QuickInstantCommons": {
@@ -115,7 +115,7 @@
     "GlobalUsage": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-GlobalUsage",
       "branch": "REL1_46",
-      "commit": "2c9186e1f853c3aa242641a637a7e005eecebe71",
+      "commit": "62e40b25ab59b67016d238cb9da1b4443279d1ec",
       "source_port_report": "docs/upgrade-globalusage-source.json",
       "batch_port_report": "docs/upgrade-batch-1-ports.json"
     },
@@ -156,7 +156,7 @@
     "Kartographer": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-Kartographer",
       "branch": "REL1_46",
-      "commit": "43ca0d9df58ccbf3d9d3ec722629dbd9f0ba00f6",
+      "commit": "7ac856ee9ba8e2bd45a9b2b541e3331c07162f22",
       "source_port_report": "docs/upgrade-kartographer-source.json",
       "batch_port_report": "docs/upgrade-batch-1-ports.json"
     },
@@ -169,14 +169,14 @@
     "ProofreadPage": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-ProofreadPage",
       "branch": "REL1_46",
-      "commit": "99d15bff3e796688de6638742f4d63172f55e9d1",
+      "commit": "7025b56503bc8ad4484be58cf912e2b3344077cc",
       "source_port_report": "docs/upgrade-proofreadpage-source.json",
       "batch_port_report": "docs/upgrade-batch-1-ports.json"
     },
     "UploadWizard": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-UploadWizard",
       "branch": "REL1_46",
-      "commit": "17b916aa285efe174fd66cef0ddc627beca18071",
+      "commit": "44e330ef8900a650abb409d6f9c0380e0dad4a81",
       "source_port_report": "docs/upgrade-uploadwizard-source.json",
       "batch_port_report": "docs/upgrade-batch-1-ports.json"
     },
@@ -190,19 +190,19 @@
     "CategoryTree": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-CategoryTree",
       "branch": "REL1_46",
-      "commit": "db8d93abd581fdbb989b0ea0e0a98dd763501333",
+      "commit": "98336f09ce102a2cd109da7afb9aa9b3406dcb0a",
       "source_port_report": "docs/upgrade-categorytree-source.json"
     },
     "AbuseFilter": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-AbuseFilter.git",
       "branch": "REL1_46",
-      "commit": "7e4b0301acd53e8b10a3231f90b778c8b98e4de2",
+      "commit": "b7fab7ce1ca24a87337ac4fc7ac7bf7e8bfa29ff",
       "source_port_report": "docs/upgrade-abusefilter-source.json"
     },
     "Gadgets": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-Gadgets.git",
       "branch": "REL1_46",
-      "commit": "c9ce16bb2fb05f0e9e87db226ef3a6d6b56d66d0",
+      "commit": "213f5e31cbfce9952501e246af4e0ca34c34c738",
       "source_port_report": "docs/upgrade-gadgets-source.json"
     },
     "ImageMap": {
@@ -214,25 +214,25 @@
     "InputBox": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-InputBox.git",
       "branch": "REL1_46",
-      "commit": "67accce1e7bc967cce680a03601968885154d4ce",
+      "commit": "2fa6de47f05e93df5294f16a49e454a8acafcc54",
       "source_port_report": "docs/upgrade-inputbox-source.json"
     },
     "Linter": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-Linter.git",
       "branch": "REL1_46",
-      "commit": "c81136c17baf3df3c012654427140717d3df56a3",
+      "commit": "b4b197b09cf4aa5b62027757e6319a22e4588c19",
       "source_port_report": "docs/upgrade-linter-source.json"
     },
     "LoginNotify": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-LoginNotify.git",
       "branch": "REL1_46",
-      "commit": "a76c48f9e0cb00ec855c5184834bcb8459c8c355",
+      "commit": "9cf2801fc2f80d108af72d9fa35fcee65eabcc98",
       "source_port_report": "docs/upgrade-loginnotify-source.json"
     },
     "Math": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-Math.git",
       "branch": "REL1_46",
-      "commit": "325611d6eb8f59dbc7f914f57184db06504979dd",
+      "commit": "e462487c9a584ffc88f30a0c43adfb2796ea12f4",
       "source_port_report": "docs/upgrade-math-source.json"
     },
     "Nuke": {
@@ -244,13 +244,13 @@
     "PageImages": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-PageImages.git",
       "branch": "REL1_46",
-      "commit": "05592fd957b730d8c3109842dcf73be4335571ea",
+      "commit": "6689fea8b054e3eebc97da7f624ab94cc94759f4",
       "source_port_report": "docs/upgrade-pageimages-source.json"
     },
     "ParserFunctions": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-ParserFunctions.git",
       "branch": "REL1_46",
-      "commit": "261a217e242fe176d6090a1102611a1a43c1d2d9",
+      "commit": "cda7c542ecbc8b1f6b8b884bdbb16e9c430a643e",
       "source_port_report": "docs/upgrade-parserfunctions-source.json"
     },
     "PdfHandler": {
@@ -274,7 +274,7 @@
     "SecureLinkFixer": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-SecureLinkFixer.git",
       "branch": "REL1_46",
-      "commit": "dc632b01fb4158cdf3c290e2dced0fbe9b2eebff",
+      "commit": "c98ae321d09f6271faf3f8b2e5af399d5baf3f4e",
       "source_port_report": "docs/upgrade-securelinkfixer-source.json"
     },
     "SyntaxHighlight_GeSHi": {
@@ -286,7 +286,7 @@
     "TemplateData": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-TemplateData.git",
       "branch": "REL1_46",
-      "commit": "6f8439d025fe3d1a05e312be1d421460d763fde4",
+      "commit": "1b527beb93031e275b16372f910df503648de202",
       "source_port_report": "docs/upgrade-templatedata-source.json"
     },
     "TemplateStyles": {
@@ -304,7 +304,7 @@
     "Thanks": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-Thanks.git",
       "branch": "REL1_46",
-      "commit": "8903fc48a58a100c7555c0a4ed67644b0f27cf3a",
+      "commit": "40026630fc47c23383462d637f3b46d7b31ccd2b",
       "source_port_report": "docs/upgrade-thanks-source.json"
     },
     "TitleBlacklist": {
@@ -316,7 +316,7 @@
     "VisualEditor": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-VisualEditor.git",
       "branch": "REL1_46",
-      "commit": "ffe588b1c7e583db4337468ef3b51dfada6c87c9",
+      "commit": "e04b7b28e9d77c31be09626375b15f5ac495e5cf",
       "source_port_report": "docs/upgrade-visualeditor-source.json"
     },
     "WikiEditor": {
@@ -328,13 +328,13 @@
     "CiteThisPage": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-CiteThisPage.git",
       "branch": "REL1_46",
-      "commit": "f4cc497b50a8d641beef9d3076aa0a584b27e427",
+      "commit": "841fa3e65e5a5209d9198c43d0ee02ee78337200",
       "source_port_report": "docs/upgrade-citethispage-source.json"
     },
     "ConfirmEdit": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-ConfirmEdit.git",
       "branch": "REL1_46",
-      "commit": "9beabf1f6bc57dcf5c3f24bcbd1161dbe52b46b5",
+      "commit": "c88af96a356a655eb0e2aeb37ac5ba05c33ec464",
       "source_port_report": "docs/upgrade-confirmedit-source.json"
     },
     "Scribunto": {
@@ -346,13 +346,13 @@
     "Cite": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-Cite.git",
       "branch": "REL1_46",
-      "commit": "e4d8d44e59391d2759af91670621dea4e96fcc4c",
+      "commit": "725128cb8a895aca6e1b0bcbb877b8f3fb3591dc",
       "source_port_report": "docs/upgrade-cite-source.json"
     },
     "DiscussionTools": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-DiscussionTools.git",
       "branch": "REL1_46",
-      "commit": "b3110c270f35b9fd3d5c66dc37e2ec6deb459f26",
+      "commit": "dd2589d7611328e3dd4da6a5f431513d618bf168",
       "source_port_report": "docs/upgrade-discussiontools-source.json"
     },
     "CodeEditor": {
@@ -364,13 +364,13 @@
     "MultimediaViewer": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-MultimediaViewer.git",
       "branch": "REL1_46",
-      "commit": "463cf1a46b59b6f3c3ac5c82e26387e1d4181efa",
+      "commit": "82a625a70ef4623c559b366b091b79e2bbaa0815",
       "source_port_report": "docs/upgrade-multimediaviewer-source.json"
     },
     "Echo": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-Echo",
       "branch": "REL1_46",
-      "commit": "1e7c7b940d111d95fb946942dbf2d95f1e91f68c",
+      "commit": "6ae2951da482bc4601d06eb13c62faba32df3d45",
       "source_port_report": "docs/upgrade-echo-source.json"
     },
     "CodeMirror": {
@@ -394,13 +394,13 @@
     "Wikibase": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-Wikibase",
       "branch": "REL1_46",
-      "commit": "c8050c025decb4fc8729ea77bc8bbe5688509a0b",
+      "commit": "16ea701573d61f91ecd8cd8db654570d21e0c1c5",
       "source_port_report": "docs/upgrade-wikibase-source.json"
     },
     "WikibaseLexeme": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-WikibaseLexeme",
       "branch": "REL1_46",
-      "commit": "224dc576f36b3407bb54f6e7271227e3996cc4c9",
+      "commit": "67702cb9b27264fc90b73ae216d20d549a1632fb",
       "source_port_report": "docs/upgrade-wikibaselexeme-source.json"
     },
     "Arrays": {
@@ -634,7 +634,7 @@
     },
     "ContactPage": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-ContactPage",
-      "commit": "1fe4ddecea4605cfc5d89c5883176c0fd98fd6b7",
+      "commit": "d590c2fe1621be7bbae3dfff7a2b05d639147d24",
       "branch": "REL1_46",
       "batch_port_report": "docs/upgrade-batch-2-ports.json"
     },
@@ -669,7 +669,7 @@
     },
     "Disambiguator": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-Disambiguator",
-      "commit": "f1171e65d3a0a5abc923f3a0950daf3618066520",
+      "commit": "93f56d049431263f1b5b62f3abc126f0090afcb7",
       "branch": "REL1_46",
       "batch_port_report": "docs/upgrade-batch-2-ports.json"
     },
@@ -714,7 +714,7 @@
     },
     "GlobalNewFiles": {
       "repository": "https://github.com/miraheze/GlobalNewFiles",
-      "commit": "86f7eb2484ed19c725852ec09f2c9ab1ab11e928",
+      "commit": "f0ccd2105b406928a717d1cb8961e83677bfaa0f",
       "batch_port_report": "docs/upgrade-batch-2-ports.json"
     },
     "GoogleDocs4MW": {
@@ -725,7 +725,7 @@
     },
     "GuidedTour": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-GuidedTour",
-      "commit": "b84a4f8cc41407d2cd7313e4aa627d81f510b71c",
+      "commit": "6bc20749d542a12f701b7e7d615bbe0e81eba342",
       "branch": "REL1_46",
       "batch_port_report": "docs/upgrade-batch-2-ports.json"
     },
@@ -821,13 +821,13 @@
     },
     "Newsletter": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-Newsletter",
-      "commit": "d97189e4d4ed6e2bbae0e4dbb06b430ab1a0ce88",
+      "commit": "06484dd8d2eb18f54c574e21774567d4cc0ea82c",
       "branch": "REL1_46",
       "batch_port_report": "docs/upgrade-batch-2-ports.json"
     },
     "PageAssessments": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-PageAssessments",
-      "commit": "3de2591cf694b573084b0e6e0f2eeb65e98da19f",
+      "commit": "42a3811521aed0e6fc6c8ec5b20983af77ee4f40",
       "branch": "REL1_46",
       "batch_port_report": "docs/upgrade-batch-2-ports.json"
     },
@@ -839,7 +839,7 @@
     },
     "PollNY": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-PollNY",
-      "commit": "68820ef882b543e1ce923265b1e621b226519eaa",
+      "commit": "a9bf781bdc78e66a66afd74a777187d52a8d4413",
       "branch": "REL1_46",
       "batch_port_report": "docs/upgrade-batch-2-ports.json"
     },
@@ -970,7 +970,7 @@
     },
     "WikiLove": {
       "repository": "https://github.com/wikimedia/mediawiki-extensions-WikiLove",
-      "commit": "b3b9eb3e5699d504d345b0c2f12abf64ad9d0a5e",
+      "commit": "15697904c68f3b53be205b6dc3235a36eb67c71d",
       "branch": "REL1_46",
       "batch_port_report": "docs/upgrade-batch-2-ports.json"
     },

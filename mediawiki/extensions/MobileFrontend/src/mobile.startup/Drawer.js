@@ -1,56 +1,59 @@
 const
-	mfExtend = require( './mfExtend' ),
 	View = require( './View' ),
 	util = require( './util' ),
 	IconButton = require( './IconButton' );
 
 /**
- * @classdesc A {@link View} that pops up from the bottom of the screen.
- * @class module:mobile.startup/Drawer
- * @extends module:mobile.startup/View
+ * A {@link View} that pops up from the bottom of the screen.
+ *
  * @final
- * @param {Object} props
- * @param {string} [props.className] Additional CSS classes to add
- * @param {jQuery.Element[]} [props.children] An array of elements to append to
- * @param {Function} [props.onShow] Callback called before showing the drawer.
- *  It receives a promise given the show process is asynchronous.
- * @param {Function} [props.onBeforeHide] Callback called before hiding the drawer
  */
-function Drawer( props ) {
-	this.drawerClassName = props.className || '';
-	this.collapseIcon = new IconButton( {
-		icon: 'expand',
-		additionalClassNames: 'cancel',
-		label: mw.msg( 'mobile-frontend-drawer-arrow-label' )
-	} );
-	View.call( this,
-		util.extend(
-			{
-				onBeforeHide: () => {},
-				showCollapseIcon: true
-			},
-			props,
-			{
-				className: 'drawer-container'
-			},
-			{ events: util.extend( {
-				'click .drawer-container__mask': function () {
-					this.hide();
-				}.bind( this ),
-				'click .cancel': function ( ev ) {
-					ev.preventDefault();
-					this.hide();
-				}.bind( this ),
-				click( ev ) {
-					ev.stopPropagation();
-				}
-			}, props.events ) }
-		)
-	);
-}
+class Drawer extends View {
+	/**
+	 * @param {Object} props
+	 * @param {string} [props.className] Additional CSS classes to add
+	 * @param {jQuery.Element[]} [props.children] An array of elements to append to
+	 * @param {Function} [props.onShow] Callback called before showing the drawer.
+	 *  It receives a promise given the show process is asynchronous. This is used in
+	 *  production by GrowthExperiments.
+	 * @param {Function} [props.onBeforeHide] Callback called before hiding the drawer
+	 */
+	constructor( props ) {
+		super(
+			util.extend(
+				{
+					onBeforeHide: () => {},
+					showCollapseIcon: true
+				},
+				props,
+				{ events: util.extend( {
+					'click .drawer-container__mask': () => {
+						this.hide();
+					},
+					'click .cancel': ( ev ) => {
+						ev.preventDefault();
+						this.hide();
+					},
+					click( ev ) {
+						ev.stopPropagation();
+					}
+				}, props.events ) }
+			)
+		);
+	}
 
-mfExtend( Drawer, View, {
-	$mask: null,
+	initialize( props ) {
+		this.drawerClassName = props.className || '';
+		props.className = 'drawer-container';
+		this.collapseIcon = new IconButton( {
+			icon: 'expand',
+			additionalClassNames: 'cancel',
+			label: mw.msg( 'mobile-frontend-drawer-arrow-label' )
+		} );
+		// in milliseconds
+		this.minHideDelay = 100;
+		super.initialize( props );
+	}
 
 	/**
 	 * Shows panel after a slight delay
@@ -58,7 +61,7 @@ mfExtend( Drawer, View, {
 	 * @memberof module:mobile.startup/Drawer
 	 * @instance
 	 * @method
-	 * @return {jQuery.Promise}
+	 * @return {jQuery.Promise} Resolves after onShow is called. Used in tests / GrowthExperiments.
 	 */
 	show() {
 		const d = util.Deferred();
@@ -80,33 +83,36 @@ mfExtend( Drawer, View, {
 			d.resolve();
 		}
 		return d.promise();
-	},
+	}
 
 	/**
 	 * Hides panel
 	 *
 	 * @memberof module:mobile.startup/Drawer
 	 * @instance
+	 * @method
+	 * @return {jQuery.Promise} Resolves after finished hiding. Used in tests.
 	 */
 	hide() {
+		const d = util.Deferred();
 		const $drawer = this.$el.find( '.drawer' );
 		$drawer.removeClass( 'visible' );
 		this.$mask.removeClass( 'drawer-container__mask--visible' );
-		// Should really use 'transitionend' event here, but as the
-		// parent $drawer element is often detatched as well, this
-		// might not fire until the next show animation.
-		setTimeout( () => {
-			this.$mask.detach();
-		}, 100 );
 		requestAnimationFrame( () => {
 			this.options.onBeforeHide( this );
+			// Should really use 'transitionend' event here, but as the
+			// parent $drawer element is often detatched as well, this
+			// might not fire until the next show animation.
+			setTimeout( () => {
+				this.$mask.detach();
+				d.resolve();
+			}, 100 );
 		} );
-	},
+		return d.promise();
+	}
 
 	/**
 	 * @inheritdoc
-	 * @memberof module:mobile.startup/Drawer
-	 * @instance
 	 */
 	postRender() {
 		this.$mask = util.parseHTML( '<div>' ).addClass( 'drawer-container__mask' );
@@ -126,6 +132,6 @@ mfExtend( Drawer, View, {
 		}
 		this.$el.append( $drawer );
 	}
-} );
+}
 
 module.exports = Drawer;

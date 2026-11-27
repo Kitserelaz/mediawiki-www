@@ -5,8 +5,10 @@ namespace GrowthExperiments\NewcomerTasks\TaskSuggester;
 use GrowthExperiments\NewcomerTasks\Task\TaskSet;
 use GrowthExperiments\NewcomerTasks\Task\TaskSetFilters;
 use GrowthExperiments\NewcomerTasks\TaskSetListener;
-use JobQueueGroup;
 use LogicException;
+use MediaWiki\JobQueue\Exceptions\JobQueueError;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\Json\JsonCodec;
 use MediaWiki\User\UserIdentity;
 use Psr\Log\LoggerAwareInterface;
@@ -22,7 +24,7 @@ class CacheDecorator implements TaskSuggester, LoggerAwareInterface {
 
 	use LoggerAwareTrait;
 
-	private const CACHE_VERSION = 4;
+	private const CACHE_VERSION = 5;
 
 	/** @var TaskSuggester */
 	private $taskSuggester;
@@ -39,13 +41,6 @@ class CacheDecorator implements TaskSuggester, LoggerAwareInterface {
 	/** @var JsonCodec */
 	private $jsonCodec;
 
-	/**
-	 * @param TaskSuggester $taskSuggester
-	 * @param JobQueueGroup $jobQueueGroup
-	 * @param WANObjectCache $cache
-	 * @param TaskSetListener $taskSetListener
-	 * @param JsonCodec $jsonCodec
-	 */
 	public function __construct(
 		TaskSuggester $taskSuggester,
 		JobQueueGroup $jobQueueGroup,
@@ -93,8 +88,8 @@ class CacheDecorator implements TaskSuggester, LoggerAwareInterface {
 				// because we need to examine the contents of the cache (if any) before
 				// deciding whether to return those contents or if they need to be regenerated.
 
-				if ( $oldValue !== false ) {
-					$oldValue = $this->unserialize( $oldValue );
+				if ( is_string( $oldValue ) ) {
+					$oldValue = $this->deserialize( $oldValue );
 				}
 
 				if ( $useCache
@@ -153,15 +148,24 @@ class CacheDecorator implements TaskSuggester, LoggerAwareInterface {
 						// Schedule a job to refresh the taskset before the cache
 						// expires.
 						try {
+							if ( !$user->isRegistered() ) {
+								$this->logger->error(
+									'Scheduling NewcomerTasksCacheRefreshJob for non-registered user',
+									[
+										'userId' => $user->getId(),
+										'exception' => new \RuntimeException( 'T419172' ),
+									]
+								);
+							}
 							$this->jobQueueGroup->lazyPush(
-								new NewcomerTasksCacheRefreshJob( [
+								new JobSpecification( NewcomerTasksCacheRefreshJob::JOB_NAME, [
 									'userId' => $user->getId(),
 									'jobReleaseTimestamp' => (int)wfTimestamp() +
 										// Process the job the day before the cache expires.
 										( $this->cache::TTL_WEEK - $this->cache::TTL_DAY ),
 								] )
 							);
-						} catch ( \JobQueueError $jobQueueError ) {
+						} catch ( JobQueueError ) {
 							// Ignore jobqueue errors.
 						}
 					}
@@ -185,7 +189,7 @@ class CacheDecorator implements TaskSuggester, LoggerAwareInterface {
 			// callback comment for more on why.
 			[ 'minAsOf' => INF, 'version' => self::CACHE_VERSION ]
 		);
-		$result = $this->unserialize( $json );
+		$result = $this->deserialize( $json );
 
 		// Discard extra items when the method was called with $limit < DEFAULT_LIMIT,
 		// and run listeners.
@@ -202,7 +206,6 @@ class CacheDecorator implements TaskSuggester, LoggerAwareInterface {
 	}
 
 	/**
-	 *
 	 * @param TaskSet|StatusValue $taskSet
 	 */
 	private function runTaskSetListener( $taskSet ) {
@@ -229,16 +232,16 @@ class CacheDecorator implements TaskSuggester, LoggerAwareInterface {
 	}
 
 	/**
-	 * Unserialize a cached value. StatusValue is handled by PHP serialization so we just pass
+	 * Deserialize a cached value. StatusValue is handled by PHP serialization so we just pass
 	 * it through here.
 	 * @param string|StatusValue $value
 	 * @return TaskSet|StatusValue
 	 */
-	private function unserialize( $value ) {
+	private function deserialize( $value ) {
 		if ( $value instanceof StatusValue ) {
 			return $value;
 		} else {
-			return $this->jsonCodec->unserialize( $value, TaskSet::class );
+			return $this->jsonCodec->deserialize( $value, TaskSet::class );
 		}
 	}
 

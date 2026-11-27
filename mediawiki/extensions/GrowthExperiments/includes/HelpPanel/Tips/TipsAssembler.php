@@ -2,44 +2,21 @@
 
 namespace GrowthExperiments\HelpPanel\Tips;
 
-use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
-use MediaWiki\Context\IContextSource;
-use MessageLocalizer;
+use MediaWiki\Language\MessageLocalizer;
 
 /**
  * Assemble tips in HTML for display in suggested edits panel.
  */
 class TipsAssembler {
 
-	/**
-	 * @var IContextSource
-	 */
-	private $messageLocalizer;
-	/**
-	 * @var ConfigurationLoader
-	 */
-	private $configurationLoader;
+	private MessageLocalizer $messageLocalizer;
+	private TipNodeRenderer $tipNodeRenderer;
 
-	/**
-	 * @var TipNodeRenderer
-	 */
-	private $tipNodeRenderer;
-
-	/**
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param TipNodeRenderer $tipNodeRenderer
-	 */
-	public function __construct(
-		ConfigurationLoader $configurationLoader, TipNodeRenderer $tipNodeRenderer
-	) {
-		$this->configurationLoader = $configurationLoader;
+	public function __construct( TipNodeRenderer $tipNodeRenderer ) {
 		$this->tipNodeRenderer = $tipNodeRenderer;
 	}
 
-	/**
-	 * @param MessageLocalizer $messageLocalizer
-	 */
 	public function setMessageLocalizer(
 		MessageLocalizer $messageLocalizer
 	): void {
@@ -66,7 +43,7 @@ class TipsAssembler {
 	public function getTips(
 		string $skinName, string $editor, array $taskTypes, string $taskTypeId, string $dir
 	): array {
-		$tipLoader = new TipLoader( $this->configurationLoader, $this->messageLocalizer );
+		$tipLoader = new TipLoader( $this->messageLocalizer );
 		return array_values( array_map( function ( $tipNodes ) use ( $skinName, $dir ) {
 			return $this->tipNodeRenderer->render( $tipNodes, $skinName, $dir );
 		}, $tipLoader->loadTipNodes( $skinName, $editor, $taskTypes, $taskTypeId ) ) );

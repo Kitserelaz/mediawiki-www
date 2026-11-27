@@ -2,8 +2,7 @@
 
 namespace GrowthExperiments\Api;
 
-use GrowthExperiments\Mentorship\MentorManager;
-use GrowthExperiments\Mentorship\Store\MentorStore;
+use GrowthExperiments\Mentorship\IMentorManager;
 use LogicException;
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiMain;
@@ -12,34 +11,19 @@ use Wikimedia\ParamValidator\ParamValidator;
 
 class ApiSetMenteeStatus extends ApiBase {
 
-	/** @var Config */
-	private $wikiConfig;
+	private Config $wikiConfig;
+	private IMentorManager $mentorManager;
 
-	/** @var MentorManager */
-	private $mentorManager;
-
-	/** @var MentorStore */
-	private $mentorStore;
-
-	/**
-	 * @param ApiMain $mainModule
-	 * @param string $moduleName
-	 * @param Config $wikiConfig
-	 * @param MentorManager $mentorManager
-	 * @param MentorStore $mentorStore
-	 */
 	public function __construct(
 		ApiMain $mainModule,
-		$moduleName,
+		string $moduleName,
 		Config $wikiConfig,
-		MentorManager $mentorManager,
-		MentorStore $mentorStore
+		IMentorManager $mentorManager
 	) {
 		parent::__construct( $mainModule, $moduleName );
 
 		$this->wikiConfig = $wikiConfig;
 		$this->mentorManager = $mentorManager;
-		$this->mentorStore = $mentorStore;
 	}
 
 	/**
@@ -58,13 +42,13 @@ class ApiSetMenteeStatus extends ApiBase {
 
 		switch ( $params['state'] ) {
 			case 'enabled':
-				$newState = MentorManager::MENTORSHIP_ENABLED;
+				$newState = IMentorManager::MENTORSHIP_ENABLED;
 				break;
 			case 'disabled':
-				$newState = MentorManager::MENTORSHIP_DISABLED;
+				$newState = IMentorManager::MENTORSHIP_DISABLED;
 				break;
 			case 'optout':
-				$newState = MentorManager::MENTORSHIP_OPTED_OUT;
+				$newState = IMentorManager::MENTORSHIP_OPTED_OUT;
 				break;
 			default:
 				$newState = null;
@@ -79,7 +63,7 @@ class ApiSetMenteeStatus extends ApiBase {
 		$currentState = $this->mentorManager->getMentorshipStateForUser( $user );
 		if ( $currentState === $newState ) {
 			$this->dieWithError( [
-				'apierror-growthexperiments-setmenteestatus-no-change'
+				'apierror-growthexperiments-setmenteestatus-no-change',
 			] );
 		}
 
@@ -124,14 +108,14 @@ class ApiSetMenteeStatus extends ApiBase {
 				ParamValidator::PARAM_TYPE => [
 					'enabled',
 					'disabled',
-					'optout'
+					'optout',
 				],
 				ApiBase::PARAM_HELP_MSG_PER_VALUE => [
 					'enabled' => 'apihelp-growthsetmenteestatus-param-state-enabled',
 					'disabled' => 'apihelp-growthsetmenteestatus-param-state-disabled',
 					'optout' => 'apihelp-growthsetmenteestatus-param-state-optout',
-				]
-			]
+				],
+			],
 		];
 	}
 }

@@ -19,7 +19,7 @@
 		bottom: 0;
 		left: 0;
 		right: 0;
-		z-index: 1;
+		z-index: @z-index-overlay;
 		background-color: @background-color-growth-apparent;
 		transition: background-color 300ms ease-out;
 		pointer-events: none;
@@ -43,8 +43,10 @@
 		left: 0;
 		right: 0;
 		padding: 8px;
-		color: @color-inverted;
-		background: rgba( 0, 0, 0, 0.5 );
+		color: @color-inverted-fixed;
+		// FIXME: should use a Codex token, with opacity, similar to
+		// background-color-backdrop-dark but fixed, T367986
+		background: rgba( 0, 0, 0, 0.65 );
 		display: flex;
 		align-items: center;
 		justify-content: flex-end;

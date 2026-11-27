@@ -2,7 +2,7 @@
 
 namespace GrowthExperiments\NewcomerTasks\TaskType;
 
-use MessageLocalizer;
+use MediaWiki\Language\MessageLocalizer;
 
 abstract class ImageRecommendationBaseTaskType extends TaskType {
 
@@ -15,15 +15,15 @@ abstract class ImageRecommendationBaseTaskType extends TaskType {
 
 	public const VALID_MEDIA_TYPES = [
 		MEDIATYPE_BITMAP,
-		MEDIATYPE_DRAWING
+		MEDIATYPE_DRAWING,
 	];
 
 	public const DEFAULT_SETTINGS = [
 		self::FIELD_MAX_TASKS_PER_DAY => 25,
 		self::FIELD_MINIMUM_CAPTION_CHARACTER_LENGTH => 5,
 		self::FIELD_MINIMUM_IMAGE_SIZE => [
-			'width' => 100
-		]
+			'width' => 100,
+		],
 	];
 
 	/** @inheritDoc */
@@ -65,14 +65,12 @@ abstract class ImageRecommendationBaseTaskType extends TaskType {
 	public function getSuggestionFilters(): array {
 		return [
 			'minimumSize' => $this->minimumImageSize,
-			'validMediaTypes' => self::VALID_MEDIA_TYPES
+			'validMediaTypes' => self::VALID_MEDIA_TYPES,
 		];
 	}
 
 	/**
 	 * The maximum number of image recommendation tasks that a user can perform each calendar day.
-	 *
-	 * @return int
 	 */
 	public function getMaxTasksPerDay(): int {
 		return $this->maxTasksPerDay;
@@ -80,8 +78,6 @@ abstract class ImageRecommendationBaseTaskType extends TaskType {
 
 	/**
 	 * The minimum number of characters needed for a caption to be submittable.
-	 *
-	 * @return int
 	 */
 	public function getMinimumCaptionCharacterLength(): int {
 		return $this->minimumCaptionCharacterLength;
@@ -112,7 +108,7 @@ abstract class ImageRecommendationBaseTaskType extends TaskType {
 	}
 
 	/** @inheritDoc */
-	protected function toJsonArray(): array {
+	public function toJsonArray(): array {
 		return parent::toJsonArray() + [
 				'settings' => [
 					'maxTasksPerDay' => $this->maxTasksPerDay,

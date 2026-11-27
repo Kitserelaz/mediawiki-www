@@ -2,11 +2,11 @@
 
 namespace MobileFrontend\Transforms;
 
-use DOMDocument;
-use DOMElement;
 use MobileFrontend\Transforms\Utils\HtmlClassUtils;
 use MobileFrontend\Transforms\Utils\HtmlStyleUtils;
-use Wikimedia\Parsoid\Utils\DOMCompat;
+use Wikimedia\Parsoid\Core\DOMCompat;
+use Wikimedia\Parsoid\DOM\Document;
+use Wikimedia\Parsoid\DOM\Element;
 
 class LazyImageTransform implements IMobileTransform {
 
@@ -21,66 +21,48 @@ class LazyImageTransform implements IMobileTransform {
 	private const SMALL_IMAGE_DIMENSION_THRESHOLD_IN_EX = 10;
 
 	/**
-	 * Whether to skip the loading of small images
-	 * @var bool
+	 * @param bool $skipSmall whether small images should be excluded from lazy loading
 	 */
-	protected $skipSmall;
-
-	/**
-	 * @param bool $skipSmallImages whether small images should be excluded from lazy loading
-	 */
-	public function __construct( $skipSmallImages = false ) {
-		$this->skipSmall = $skipSmallImages;
+	public function __construct(
+		protected readonly bool $skipSmall = false,
+	) {
 	}
 
 	/**
-	 * Insert a table of content placeholder into the element
-	 * which will be progressively enhanced via JS
+	 * Insert a image placeholder into the element
+	 * which will be lazy loaded via JS.
+	 * Assumes Legacy parser, not compatible with Parsoid.
 	 *
-	 * @param DOMElement $node to be transformed
+	 * @param Element $node to be transformed
 	 */
-	public function apply( DOMElement $node ) {
-		// Parsoid can have nested sections, so ideally we'd use a child combinator
-		// here to avoid multiple applications of the lazy image transform to the
-		// nested sections.  For example, `.mw-parser-output > section`
-		$query = 'section';
-
-		// Until section collapsing in MFE is made to work with Parsoid output,
-		// all of Parsoid's sections are nested in the first mf section.
-		$parserOutput = DOMCompat::querySelector( $node, '.mw-parser-output' );
-		$isParsoid = $parserOutput && $parserOutput->hasAttribute( 'data-mw-parsoid-version' );
-		if ( $isParsoid ) {
-			$query = '#mf-section-0 > section';
-		}
-
-		$sections = DOMCompat::querySelectorAll( $node, $query );
-		$sectionNumber = 0;
+	public function apply( Element $node ) {
+		$sections = DOMCompat::querySelectorAll( $node, 'section' );
 		foreach ( $sections as $sectionNumber => $section ) {
 			if ( $sectionNumber > 0 ) {
 				$this->doRewriteImagesForLazyLoading( $section, $section->ownerDocument );
 			}
-			$sectionNumber++;
 		}
 	}
 
 	/**
 	 * @see MobileFormatter#getImageDimensions
 	 *
-	 * @param DOMElement $img
+	 * @param Element $img
 	 * @param string $dimension Either "width" or "height"
 	 * @return string|null
 	 */
-	private function getImageDimension( DOMElement $img, $dimension ) {
-		$style = $img->getAttribute( 'style' );
+	private function getImageDimension( Element $img, $dimension ) {
+		$style = DOMCompat::getAttribute( $img, 'style' ) ?? '';
 		$numMatches = preg_match( "/.*?{$dimension} *\: *([^;]*)/", $style, $matches );
+		$dimValue = DOMCompat::getAttribute( $img, $dimension );
 
-		if ( !$numMatches && !$img->hasAttribute( $dimension ) ) {
+		if ( !$numMatches && $dimValue === null ) {
 			return null;
 		}
 
 		return $numMatches
 			? trim( $matches[1] )
-			: $img->getAttribute( $dimension ) . 'px';
+			: $dimValue . 'px';
 	}
 
 	/**
@@ -91,10 +73,10 @@ class LazyImageTransform implements IMobileTransform {
 	 * attributes. If the image has no `style`, `width` or `height` attributes, then the image is
 	 * dimensionless.
 	 *
-	 * @param DOMElement $img <img> element
+	 * @param Element $img <img> element
 	 * @return array with width and height parameters if dimensions are found
 	 */
-	public function getImageDimensions( DOMElement $img ) {
+	public function getImageDimensions( Element $img ) {
 		$result = [];
 
 		foreach ( [ 'width', 'height' ] as $dimensionName ) {
@@ -154,10 +136,10 @@ class LazyImageTransform implements IMobileTransform {
 	/**
 	 * Enables images to be loaded asynchronously
 	 *
-	 * @param DOMElement|DOMDocument $el Element or document to rewrite images in.
-	 * @param ?DOMDocument $doc Document to create elements in
+	 * @param Element|Document $el Element or document to rewrite images in.
+	 * @param ?Document $doc Document to create elements in
 	 */
-	private function doRewriteImagesForLazyLoading( $el, ?DOMDocument $doc ) {
+	private function doRewriteImagesForLazyLoading( $el, ?Document $doc ) {
 		if ( $doc === null ) {
 			return;
 		}
@@ -208,9 +190,10 @@ class LazyImageTransform implements IMobileTransform {
 				]
 			);
 			foreach ( [ 'src', 'alt', 'width', 'height', 'srcset', 'class', 'usemap' ] as $attr ) {
-				if ( $img->hasAttribute( $attr ) ) {
+				$attrValue = DOMCompat::getAttribute( $img, $attr );
+				if ( $attrValue !== null ) {
 					$prefix = ( $attr === 'src' || $attr === 'srcset' ) ? 'data-mw-' : 'data-';
-					$imgPlaceholder->setAttribute( $prefix . $attr, $img->getAttribute( $attr ) );
+					$imgPlaceholder->setAttribute( $prefix . $attr, $attrValue );
 				}
 			}
 			// Assume data saving and remove srcset attribute from the non-js experience
@@ -218,12 +201,13 @@ class LazyImageTransform implements IMobileTransform {
 
 			// T145222: Add a non-breaking space inside placeholders to ensure that they do not report
 			// themselves as invisible when inline.
-			$imgPlaceholder->appendChild( $doc->createEntityReference( 'nbsp' ) );
+			$imgPlaceholder->appendChild( $doc->createTextNode( "\u{00A0}" ) );
 
 			// Set the placeholder where the original image was
 			$parent->replaceChild( $imgPlaceholder, $img );
 			// Add the original image to the HTML only markup
-			$noscript->appendChild( $img );
+			// Document treats <noscript> as a scripting context, so we can't append Elements.
+			DOMCompat::setInnerHTML( $noscript, DOMCompat::getOuterHTML( $img ) );
 			// Insert the HTML only markup before the placeholder
 			$parent->insertBefore( $noscript, $imgPlaceholder );
 		}
@@ -233,15 +217,15 @@ class LazyImageTransform implements IMobileTransform {
 	 * Copy allowed styles from one HTMLElement to another, filtering them and
 	 * unconditionally adding several in front of list
 	 *
-	 * @param DOMElement|DOMDocument $from html element styles to be copied from
-	 * @param DOMElement|DOMDocument $to html element styles to be copied to
+	 * @param Element|Document $from html element styles to be copied from
+	 * @param Element|Document $to html element styles to be copied to
 	 * @param string[] $enabled list of enabled styles to be copied
 	 * @param array $additional key-value array of styles to be added/overriden unconditionally
 	 *   at the beginning of string
-	 *
 	 */
 	private function copyStyles( $from, $to, array $enabled, array $additional ) {
 		$styles = HtmlStyleUtils::parseStyleString(
+			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable Okay with hasAttribute
 			$from->hasAttribute( 'style' ) ? $from->getAttribute( 'style' ) : ''
 		);
 
@@ -251,14 +235,15 @@ class LazyImageTransform implements IMobileTransform {
 
 	/**
 	 * Copy allowed classes from one HTMLElement to another
-	 * @param DOMElement|DOMDocument $from html element classes to be copied from
-	 * @param DOMElement|DOMDocument $to html element classes to be copied to
+	 * @param Element|Document $from html element classes to be copied from
+	 * @param Element|Document $to html element classes to be copied to
 	 * @param string[] $enabled array of enabled classes to be copied
 	 * @param string[] $additional array of classes to be added/overriden unconditionally
 	 *   to the beginning
 	 */
 	private function copyClasses( $from, $to, array $enabled, array $additional ) {
 		$styles = HtmlClassUtils::parseClassString(
+			// @phan-suppress-next-line PhanTypeMismatchArgumentNullable Okay with hasAttribute
 			$from->hasAttribute( 'class' ) ? $from->getAttribute( 'class' ) : ''
 		);
 

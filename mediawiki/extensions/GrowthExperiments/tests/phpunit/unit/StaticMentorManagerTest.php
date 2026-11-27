@@ -5,58 +5,48 @@ namespace GrowthExperiments\Tests\Unit;
 use GrowthExperiments\MentorDashboard\MentorTools\IMentorWeights;
 use GrowthExperiments\Mentorship\Mentor;
 use GrowthExperiments\Mentorship\StaticMentorManager;
-use GrowthExperiments\WikiConfigException;
 use MediaWiki\User\UserIdentityValue;
 use MediaWikiUnitTestCase;
 
 /**
- * @coversDefaultClass \GrowthExperiments\Mentorship\StaticMentorManager
+ * @covers \GrowthExperiments\Mentorship\StaticMentorManager
  */
 class StaticMentorManagerTest extends MediaWikiUnitTestCase {
 
 	/**
-	 * @covers ::getMentorForUser
+	 * @var ?Mentor
 	 */
-	public function testGetMentorForUser() {
-		$mentor1 = new Mentor(
-			new UserIdentityValue( 12, 'FooMentor' ),
-			'text 1',
-			'',
-			IMentorWeights::WEIGHT_NORMAL
-		);
-		$mentor2 = new Mentor(
-			new UserIdentityValue( 13, 'BarMentor' ),
-			'text 2',
-			'',
-			IMentorWeights::WEIGHT_NORMAL
-		);
-		$mentorManager = new StaticMentorManager( [ 'Foo' => $mentor1, 'Bar' => $mentor2 ] );
-		$this->assertSame( $mentor1, $mentorManager->getMentorForUser( new UserIdentityValue( 21, 'Foo' ) ) );
-		$this->assertSame( $mentor2, $mentorManager->getMentorForUser( new UserIdentityValue( 22, 'Bar' ) ) );
-		$this->expectException( WikiConfigException::class );
-		$this->assertSame( null, $mentorManager->getMentorForUser( new UserIdentityValue( 23, 'Baz' ) ) );
-	}
+	protected ?Mentor $mentor1 = null;
 
 	/**
-	 * @covers ::getMentorForUserSafe
+	 * @var ?Mentor
 	 */
-	public function testGetMentorForUserSafe() {
-		$mentor1 = new Mentor(
+	protected ?Mentor $mentor2 = null;
+
+	protected function setUp(): void {
+		$this->mentor1 = new Mentor(
 			new UserIdentityValue( 12, 'FooMentor' ),
 			'text 1',
 			'',
 			IMentorWeights::WEIGHT_NORMAL
 		);
-		$mentor2 = new Mentor(
+		$this->mentor2 = new Mentor(
 			new UserIdentityValue( 13, 'BarMentor' ),
 			'text 2',
 			'',
 			IMentorWeights::WEIGHT_NORMAL
 		);
-		$mentorManager = new StaticMentorManager( [ 'Foo' => $mentor1, 'Bar' => $mentor2 ] );
-		$this->assertSame( $mentor1, $mentorManager->getMentorForUserSafe( new UserIdentityValue( 21, 'Foo' ) ) );
-		$this->assertSame( $mentor2, $mentorManager->getMentorForUserSafe( new UserIdentityValue( 22, 'Bar' ) ) );
-		$this->assertSame( null, $mentorManager->getMentorForUserSafe( new UserIdentityValue( 23, 'Baz' ) ) );
 	}
 
+	public function testGetMentorForUserSafe() {
+		$mentorManager = new StaticMentorManager( [ 'Foo' => $this->mentor1, 'Bar' => $this->
+		mentor2,
+		] );
+		$this->assertSame( $this->mentor1,
+			$mentorManager->getMentorForUserSafe( new UserIdentityValue( 21, 'Foo' ) ) );
+		$this->assertSame( $this->mentor2,
+			$mentorManager->getMentorForUserSafe( new UserIdentityValue( 22, 'Bar' ) ) );
+		$this->assertSame( null,
+			$mentorManager->getMentorForUserSafe( new UserIdentityValue( 23, 'Baz' ) ) );
+	}
 }

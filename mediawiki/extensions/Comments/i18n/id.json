@@ -5,8 +5,10 @@
 			"Daud I.F. Argana",
 			"Farras",
 			"Jack Phoenix",
+			"Penyuwangi",
 			"William Surya Permana",
-			"පසිඳු කාවින්ද"
+			"පසිඳු කාවින්ද",
+			"Bayahiu"
 		]
 	},
 	"apihelp-commentblock-summary": "API commentblock memungkinkan memblokir seorang pengguna yang mengirimkan suatu komentar setelah mengisi parameter berikut: CommentID.",
@@ -34,7 +36,7 @@
 	"comments-db-locked": "<h3>Menambahkan komentar</h3>Basis data saat ini terkunci untuk pemeliharaan database rutin, setelahnya akan kembali ke normal. Silakan periksa kembali nanti!",
 	"comments-voted-label": "Dipilih",
 	"comments-loading": "Memuat...",
-	"comments-auto-refresher-enable": "Aktifkan pemuatan ulang komentar otomatis",
+	"comments-auto-refresher-enable": "Nyalakan pembaharuan otomatis komentar",
 	"comments-auto-refresher-pause": "Jedakan pemuatan ulang komentar otomatis",
 	"comments-reply-to": "Balas ke {{GENDER:$2|$1}}",
 	"comments-cancel-reply": "Batal",
@@ -73,7 +75,7 @@
 	"log-description-comments": "Ini adalah log komentar.",
 	"logentry-comments-add": "$1 mengirimkan komentar baru pada $3",
 	"logentry-comments-delete": "$1 menghapus komentar #$4 pada $3",
-	"comments-time-ago": "$1 yang lalu",
+	"comments-time-ago": "$1 lalu",
 	"comments-time-months": "{{PLURAL:$1|sebulan|$1 bulan}}",
 	"comments-time-days": "{{PLURAL:$1|sehari|$1 hari}}",
 	"comments-time-hours": "{{PLURAL:$1|sejam|$1 jam}}",

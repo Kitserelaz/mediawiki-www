@@ -9,8 +9,8 @@ use GrowthExperiments\Util;
 use GrowthExperiments\WikiConfigException;
 use MediaWiki\Context\RequestContext;
 use MediaWiki\Http\HttpRequestFactory;
+use MediaWiki\Http\MWHttpRequest;
 use MediaWiki\Title\Title;
-use MWHttpRequest;
 use StatusValue;
 use Wikimedia\UUID\GlobalIdGenerator;
 
@@ -118,7 +118,7 @@ class ProductionImageRecommendationApiHandler implements ImageRecommendationApiH
 			'image_suggestions',
 			'suggestions',
 			$this->wikiId,
-			$articleId
+			$articleId,
 		] );
 	}
 
@@ -159,7 +159,7 @@ class ProductionImageRecommendationApiHandler implements ImageRecommendationApiH
 				] );
 			}
 			if ( $knownKinds ) {
-				$knownSources = array_map( fn ( $kind ) => self::KIND_TO_SOURCE[$kind], $knownKinds );
+				$knownSources = array_map( static fn ( $kind ) => self::KIND_TO_SOURCE[$kind], $knownKinds );
 				$intersectionSources = [
 					ImageRecommendationImage::SOURCE_WIKIDATA_SECTION_TOPICS,
 					ImageRecommendationImage::SOURCE_WIKIDATA_SECTION_ALIGNMENT,
@@ -171,12 +171,12 @@ class ProductionImageRecommendationApiHandler implements ImageRecommendationApiH
 				}
 			} else {
 				// FIXME we should probably ignore unknown types of suggestions once the API is more stable
-				$source = [
+				$source = match ( $taskType->getId() ) {
 					ImageRecommendationTaskTypeHandler::TASK_TYPE_ID
 						=> ImageRecommendationImage::SOURCE_WIKIDATA,
 					SectionImageRecommendationTaskTypeHandler::TASK_TYPE_ID
 						=> ImageRecommendationImage::SOURCE_WIKIDATA_SECTION_TOPICS,
-				][ $taskType->getId()];
+				};
 			}
 
 			$imageData[] = new ImageRecommendationData(
@@ -206,7 +206,7 @@ class ProductionImageRecommendationApiHandler implements ImageRecommendationApiH
 			'image_suggestions',
 			'title_cache',
 			$this->wikiId,
-			$titleText
+			$titleText,
 		] );
 		$status = $request->execute();
 		if ( !$status->isOK() ) {

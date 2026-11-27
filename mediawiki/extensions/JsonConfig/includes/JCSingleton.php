@@ -1,26 +1,21 @@
 <?php
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use InvalidArgumentException;
-use MapCacheLRU;
-use MediaWiki\Cache\GenderCache;
-use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Linker\LinkTarget;
 use MediaWiki\MainConfigNames;
-use MediaWiki\MainConfigSchema;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Parser\ParserOutput;
+use MediaWiki\Parser\Sanitizer;
 use MediaWiki\Registration\ExtensionRegistry;
-use MediaWiki\Title\MalformedTitleException;
-use MediaWiki\Title\MediaWikiTitleCodec;
 use MediaWiki\Title\Title;
-use MediaWiki\Title\TitleParser;
 use MediaWiki\Title\TitleValue;
 use stdClass;
+use Wikimedia\ObjectCache\MapCacheLRU;
 
 /**
  * Static utility methods and configuration page hook handlers for JsonConfig extension.
  *
- * @file
  * @ingroup Extensions
  * @ingroup JsonConfig
  * @author Yuri Astrakhan
@@ -28,36 +23,32 @@ use stdClass;
  * @license GPL-2.0-or-later
  */
 class JCSingleton {
+
 	/**
-	 * @var array describes how a title should be handled by JsonConfig extension.
+	 * @var array<int,stdClass[]> describes how a title should be handled by JsonConfig extension.
 	 * The structure is an array of array of ...:
 	 * { int_namespace => { name => { allows-sub-namespaces => configuration_array } } }
 	 */
 	public static $titleMap = [];
 
 	/**
-	 * @var string[]|false[] containing all the namespaces handled by JsonConfig
+	 * @var array<int,string|false> containing all the namespaces handled by JsonConfig
 	 * Maps namespace id (int) => namespace name (string).
 	 * If false, presumes the namespace has been registered by core or another extension
 	 */
 	public static $namespaces = [];
 
 	/**
-	 * @var MapCacheLRU[] contains a cache of recently resolved JCTitle's
+	 * @var array<int,MapCacheLRU> contains a cache of recently resolved JCTitle's
 	 *   as namespace => MapCacheLRU
 	 */
 	public static $titleMapCacheLru = [];
 
 	/**
-	 * @var MapCacheLRU[] contains a cache of recently requested content objects
+	 * @var array<int,MapCacheLRU> contains a cache of recently requested content objects
 	 *   as namespace => MapCacheLRU
 	 */
 	public static $mapCacheLru = [];
-
-	/**
-	 * @var TitleParser cached invariant title parser
-	 */
-	public static $titleParser;
 
 	/**
 	 * Initializes singleton state by parsing $wgJsonConfig* values
@@ -87,12 +78,12 @@ class JCSingleton {
 	}
 
 	/**
-	 * @param array $namespaceContentModels $wgNamespaceContentModels
-	 * @param array $contentHandlers $wgContentHandlers
-	 * @param array $configs $wgJsonConfigs
-	 * @param array $models $wgJsonConfigModels
+	 * @param array<int,string> $namespaceContentModels $wgNamespaceContentModels
+	 * @param array<string,mixed> $contentHandlers $wgContentHandlers
+	 * @param array<string,stdClass> $configs $wgJsonConfigs
+	 * @param array<string,mixed> $models $wgJsonConfigModels
 	 * @param bool $warn if true, calls wfLogWarning() for all errors
-	 * @return array [ $titleMap, $namespaces ]
+	 * @return array{0:array<int,stdClass[]>, 1:array<int,string|false>} [ $titleMap, $namespaces ]
 	 */
 	public static function parseConfiguration(
 		array $namespaceContentModels, array $contentHandlers,
@@ -231,7 +222,7 @@ class JCSingleton {
 						}
 					} elseif ( $ns === NS_CONFIG ) {
 						$warnFunc( "JsonConfig: Parameter 'nsName' in \$wgJsonConfigs['$confId'] " .
-							"is not supported for namespace == NS_CONFIG ($ns)" );
+							"is not supported for namespace $ns (NS_CONFIG)" );
 					} else {
 						$nsName = $conf->nsName;
 						$nsTalk = $conf->nsTalk ?? $nsName . '_talk';
@@ -388,6 +379,27 @@ class JCSingleton {
 	}
 
 	/**
+	 * Start up a JCContentLoader pipeline for the given title.
+	 *
+	 * Additional parameters (currently just the transform options) may be passed
+	 * to the loader, and it will return a JCContentWrapper or a fatal error in a Status.
+	 *
+	 * This allows access to the transforms, and reports back any modified expiry time
+	 * and dependency information that might need to be recorded with a more complex
+	 * request than getContent() allows.
+	 *
+	 * Extensions that make use of Data: page fetches in their rendering pipelines and
+	 * need to support global dependency tracking or Lua transforms should use this method.
+	 *
+	 * @param TitleValue $titleValue the Data: page to load, may be remote
+	 * @return JCContentLoader for additional loading options and metadata
+	 */
+	public static function getContentLoader( TitleValue $titleValue ): JCContentLoader {
+		$jct = self::parseTitle( $titleValue );
+		return MediaWikiServices::getInstance()->getService( 'JsonConfig.ContentLoaderFactory' )->get( $jct );
+	}
+
+	/**
 	 * Parse json text into a content object for the given title.
 	 * Namespace ID does not need to be defined in the current wiki,
 	 * as long as it is defined in $wgJsonConfigs.
@@ -408,7 +420,7 @@ class JCSingleton {
 
 	/**
 	 * Mostly for debugging purposes, this function returns initialized internal JsonConfig settings
-	 * @return array[] map of namespaceIDs to list of configurations
+	 * @return array<int,stdClass[]> map of namespaceIDs to list of configurations
 	 */
 	public static function getTitleMap() {
 		self::init();
@@ -466,9 +478,7 @@ class JCSingleton {
 
 		// figure out the namespace ID (int) - we don't need to parse the string if ns is unknown
 		if ( $value instanceof LinkTarget ) {
-			if ( $namespace === null ) {
-				$namespace = $value->getNamespace();
-			}
+			$namespace ??= $value->getNamespace();
 		} elseif ( is_string( $value ) ) {
 			if ( $namespace === null ) {
 				throw new InvalidArgumentException( '$namespace parameter is missing for string $value' );
@@ -491,52 +501,10 @@ class JCSingleton {
 			// Parse string if needed
 			// TODO: should the string parsing also be cached?
 			if ( is_string( $value ) ) {
-				$language = MediaWikiServices::getInstance()->getLanguageFactory()->getLanguage( 'en' );
-				if ( !self::$titleParser ) {
-					// XXX Direct instantiation of MediaWikiTitleCodec isn't allowed. If core
-					// doesn't support our use-case, core needs to be fixed to allow this.
-					$oldArgStyle =
-						( new \ReflectionMethod( MediaWikiTitleCodec::class, '__construct' ) )
-						->getParameters()[2]->getName() === 'localInterwikis';
-					self::$titleParser = new MediaWikiTitleCodec(
-						$language,
-						new GenderCache(),
-						$oldArgStyle ? []
-							// @phan-suppress-next-line PhanUndeclaredConstantOfClass Not merged yet
-							: new ServiceOptions( MediaWikiTitleCodec::CONSTRUCTOR_OPTIONS, [
-								MainConfigNames::LegalTitleChars =>
-									MainConfigSchema::LegalTitleChars['default'],
-								MainConfigNames::LocalInterwikis => [],
-							] ),
-						new FauxInterwikiLookup(),
-						MediaWikiServices::getInstance()->getNamespaceInfo()
-					);
-				}
-				// Interwiki prefixes are a special case for title parsing:
-				// first letter is not capitalized, namespaces are not resolved, etc.
-				// So we prepend an interwiki prefix to fool title codec, and later remove it.
-				try {
-					$value = FauxInterwikiLookup::INTERWIKI_PREFIX . ':' . $value;
-					$title = self::$titleParser->parseTitle( $value );
-
-					// Defensive coding - ensure the parsing has proceeded as expected
-					if ( $title->getDBkey() === '' || $title->getNamespace() !== NS_MAIN ||
-						$title->hasFragment() ||
-						$title->getInterwiki() !== FauxInterwikiLookup::INTERWIKI_PREFIX
-					) {
-						return null;
-					}
-				} catch ( MalformedTitleException $e ) {
+				$dbKey = self::normalizeTitleString( $value );
+				if ( $dbKey === null ) {
 					return null;
 				}
-
-				// At this point, only support wiki namespaces that capitalize title's first char,
-				// but do not enable sub-pages.
-				// This way data can already be stored on MediaWiki namespace everywhere, or
-				// places like commons and zerowiki.
-				// Another implicit limitation: there might be an issue if data is stored on a wiki
-				// with the non-default ucfirst(), e.g. az, kaa, kk, tr -- they convert "i" to "İ"
-				$dbKey = $language->ucfirst( $title->getDBkey() );
 			} else {
 				$dbKey = $value->getDBkey();
 			}
@@ -570,6 +538,71 @@ class JCSingleton {
 	}
 
 	/**
+	 * Normalize a title string in a way that is similar to
+	 * MediaWikiTitleCodec::splitTitleString(), but does not depend on local wiki config.
+	 *
+	 * @param string $text
+	 * @return string|null
+	 */
+	private static function normalizeTitleString( string $text ) {
+		// Decode character references (why??)
+		$dbkey = Sanitizer::decodeCharReferencesAndNormalize( $text );
+
+		// Collapse and normalize whitespace
+		$dbkey = preg_replace(
+			'/[ _\xA0\x{1680}\x{180E}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}]+/u',
+			'_',
+			$dbkey
+		);
+		$dbkey = trim( $dbkey, '_' );
+
+		// Strip initial colon
+		if ( str_starts_with( $dbkey, ':' ) ) {
+			$dbkey = substr( $dbkey, 1 );
+			$dbkey = trim( $dbkey, '_' );
+		}
+
+		// Size must be between 1 and 255 bytes
+		if ( $dbkey === '' || strlen( $dbkey ) > 255 ) {
+			return null;
+		}
+
+		// Find illegal characters and sequences
+		$rxTc = <<<REGEX
+			<
+			# Any character not allowed is forbidden
+			[^%!"$&'()*,\-./0-9:;=?@A-Z\\\\^_`a-z~+\x{0080}-\x{10FFFF}]
+			# URL percent encoding sequences are not allowed
+			| %[0-9A-Fa-f]{2}
+			# XML/HTML character references are not allowed
+			| &[A-Za-z0-9\x{0080}-\x{10FFFF}]+;
+			# Bidi and replacement characters are not allowed
+			| [\x{200E}\x{200F}\x{202A}-\x{202E}\x{FFFD}]
+			# Relative path components
+			| (/ | ^) \.{1,2} (/ | $)
+			# Signature-like sequences
+			| ~~~
+			# Initial colons
+			| ^:
+			>ux
+			REGEX;
+		// Reject matching titles or those that cause preg_match() failure
+		if ( preg_match( $rxTc, $dbkey ) !== 0 ) {
+			return null;
+		}
+
+		// At this point, only support wiki namespaces that capitalize title's first char,
+		// but do not enable sub-pages.
+		// This way data can already be stored on MediaWiki namespace everywhere, or
+		// places like commons and zerowiki.
+		// Another implicit limitation: there might be an issue if data is stored on a wiki
+		// with the non-default ucfirst(), e.g. az, kaa, kk, tr -- they convert "i" to "İ"
+		return MediaWikiServices::getInstance()->getLanguageFactory()
+			->getLanguage( 'en' )
+			->ucfirst( $dbkey );
+	}
+
+	/**
 	 * Returns an array with settings if the $titleValue object is handled by the JsonConfig
 	 * extension, false if unrecognized namespace,
 	 * and null if namespace is handled but not this title
@@ -582,4 +615,46 @@ class JCSingleton {
 		return $jct ? $jct->getConfig() : $jct;
 	}
 
+	/**
+	 * Record a JsonConfig data usage link for the given parser output;
+	 * in a config with multiple wikis this will save into a shared
+	 * globaljsonlinks table for propagation of cache updates and
+	 * backlinks.
+	 *
+	 * Note: when using a JCContentWrapper, call its addToParserOutput()
+	 * method rather than using this directly.
+	 */
+	public static function recordJsonLink( ParserOutput $parserOutput, TitleValue $title ) {
+		// Note that remote namespaces may not exist locally!
+		// These always refer to pages on the JsonConfig store wiki,
+		// round-tripping TitleValues into strings.
+		$pair = $title->getNamespace() . '|' . $title->getDBkey();
+		$parserOutput->appendExtensionData( GlobalJsonLinks::KEY_JSONLINKS, $pair );
+	}
+
+	/**
+	 * Extract the recorded list of target pages for cache invalidations via
+	 * data-load logic. Pages may  be on a remote wiki, so be careful with
+	 * namespaces.
+	 *
+	 * @return TitleValue[]
+	 */
+	public static function getJsonLinks( ParserOutput $parserOutput ): array {
+		$links = array_keys( $parserOutput->getExtensionData( GlobalJsonLinks::KEY_JSONLINKS ) ?? [] );
+		return array_map( static function ( $str ) {
+			$bits = explode( '|', $str );
+			if ( count( $bits ) > 1 ) {
+				$namespace = intval( $bits[0] );
+				$title = $bits[1];
+			} else {
+				// Old parser cache entries may have only supported NS_DATA deps.
+				$namespace = NS_DATA;
+				$title = $bits[0];
+			}
+			return new TitleValue( $namespace, $title );
+		}, $links );
+	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCSingleton::class, 'JsonConfig\\JCSingleton' );

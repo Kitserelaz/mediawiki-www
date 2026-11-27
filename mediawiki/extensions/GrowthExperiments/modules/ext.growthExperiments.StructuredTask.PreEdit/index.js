@@ -5,6 +5,7 @@ module.exports = ( function () {
 		addLinkOnboardingPrefName = 'growthexperiments-addlink-onboarding',
 		addImageOnboardingPrefName = 'growthexperiments-addimage-onboarding',
 		addSectionImageOnboardingPrefName = 'growthexperiments-addsectionimage-onboarding',
+		reviseToneOnboardingPrefName = 'growthexperiments-revisetone-onboarding',
 		suggestedEditSession = require( 'ext.growthExperiments.SuggestedEditSession' ).getInstance(),
 		CONSTANTS = require( 'ext.growthExperiments.DataStore' ).CONSTANTS,
 		TASK_TYPES = CONSTANTS.ALL_TASK_TYPES,
@@ -12,6 +13,7 @@ module.exports = ( function () {
 		isAddLink = taskType === 'link-recommendation' && taskType in TASK_TYPES,
 		isAddImage = taskType === 'image-recommendation' && taskType in TASK_TYPES,
 		isAddSectionImage = taskType === 'section-image-recommendation' && taskType in TASK_TYPES,
+		isReviseTone = taskType === 'revise-tone' && taskType in TASK_TYPES,
 		windows = {};
 	let dialogName,
 		logger,
@@ -19,7 +21,20 @@ module.exports = ( function () {
 		StructuredTaskOnboardingDialog,
 		LinkSuggestionInteractionLogger,
 		ImageSuggestionInteractionLogger,
+		useNewOnboarding = false,
 		windowManager;
+
+	/**
+	 * Setup common configs and helpers for all StructuredTask.PreEdit apps.
+	 *
+	 * @return {Object} A Vue app instance
+	 */
+	function createApp() {
+		const ReviseToneQuizLauncher = require( './revisetone/ReviseToneQuizLauncher.js' );
+		return ReviseToneQuizLauncher.launchReviseToneQuiz( {
+			setSeenPreference: true,
+		} );
+	}
 
 	/**
 	 * Show onboarding dialog and update onboardingNeedsToBeShown in suggestedEditSession
@@ -29,7 +44,11 @@ module.exports = ( function () {
 	function showDialogForSession() {
 		suggestedEditSession.onboardingNeedsToBeShown = false;
 		suggestedEditSession.save();
-		windowManager.openWindow( dialogName );
+		if ( useNewOnboarding ) {
+			createApp();
+		} else {
+			windowManager.openWindow( dialogName );
+		}
 	}
 
 	/**
@@ -58,17 +77,13 @@ module.exports = ( function () {
 	function setupOnboarding( config ) {
 		// In case onboarding is invoked from a different module (add link on desktop)
 		mw.hook( 'growthExperiments.structuredTask.showOnboardingIfNeeded' ).add(
-			showOnboardingIfEligible
+			showOnboardingIfEligible,
 		);
 		if ( !shouldShowOnboarding ) {
 			return;
 		}
-		const uri = new mw.Uri();
-		if ( uri.query[ 'new-onboarding' ] === '1' ) {
-			/**
-			 * TODO use the Vue version of the dialog
-			 * https://phabricator.wikimedia.org/T331986
-			 */
+		if ( useNewOnboarding ) {
+			// Mount point will be created by launchReviseToneQuiz if needed
 		} else {
 			// Only append window manager & construct dialog if onboarding should be shown
 			StructuredTaskOnboardingDialog = require( './StructuredTaskOnboardingDialog.js' );
@@ -78,9 +93,9 @@ module.exports = ( function () {
 			windows[ dialogName ] = new StructuredTaskOnboardingDialog(
 				{
 					hasSlideTransition: true,
-					logger: logger
+					logger: logger,
 				},
-				config
+				config,
 			);
 			windowManager.addWindows( windows );
 		}
@@ -105,14 +120,22 @@ module.exports = ( function () {
 		// eslint-disable-next-line camelcase
 		logger.log( 'impression', '', { active_interface: 'nosuggestions_dialog' } );
 		mw.track( 'counter.growthExperiments.StructuredTask.noSuggestionsDialog.' + taskType );
+		mw.track(
+			'stats.mediawiki_GrowthExperiments_structuredtask_nosuggestionsdialog_total',
+			1,
+			{
+				// eslint-disable-next-line camelcase
+				task_type: Utils.normalizeLabelForStats( taskType ),
+			},
+		);
 
 		OO.ui.alert( mw.message( 'growthexperiments-structuredtask-no-suggestions-found-dialog-message' ).text(), {
 			actions: [ {
 				action: 'accept',
 				label: mw.message( 'growthexperiments-structuredtask-no-suggestions-found-dialog-button' ).text(),
-				flags: 'primary'
-			} ]
-		} ).done( () => {
+				flags: 'primary',
+			} ],
+		} ).then( () => {
 			// Allow redirecting user even if the document
 			// has unsaved changes, which we don't care about in this context.
 			$( window ).off( 'beforeunload' );
@@ -130,9 +153,9 @@ module.exports = ( function () {
 	 * @param {string|number} section Zero-based index of the section to edit or "all"
 	 */
 	function updateEditLinkSection( $editLink, section ) {
-		const editUri = new mw.Uri( $editLink.attr( 'href' ) );
-		editUri.query.section = section;
-		$editLink.attr( 'href', editUri.toString() );
+		const editUrl = new URL( $editLink.attr( 'href' ), window.location.origin );
+		editUrl.searchParams.set( 'section', section );
+		$editLink.attr( 'href', editUrl.toString() );
 	}
 
 	/**
@@ -163,7 +186,7 @@ module.exports = ( function () {
 		if ( suggestedEditSession.taskState !== 'started' ) {
 			return false;
 		}
-		return isAddImage || isAddSectionImage ||
+		return isReviseTone || isAddImage || isAddSectionImage ||
 			( isAddLink && mw.config.get( 'wgGELinkRecommendationsFrontendEnabled' ) );
 	}
 
@@ -175,58 +198,58 @@ module.exports = ( function () {
 	 *   "should be logged" flag if there isn't.
 	 */
 	function checkTaskData() {
-		const promise = $.Deferred();
+		const deferred = $.Deferred();
 		if ( !suggestedEditSession.taskData ) {
-			promise.reject( 'Missing task data', true );
+			deferred.reject( 'Missing task data', true );
 		} else if ( suggestedEditSession.taskData.error ) {
 			// The error field was set in the BeforePageDisplay handler, which also
 			// logged the error; don't log it again.
-			promise.reject( suggestedEditSession.taskData.error, false );
+			deferred.reject( suggestedEditSession.taskData.error, false );
 		} else {
-			promise.resolve();
+			deferred.resolve();
 		}
-		return promise;
+		return deferred.promise();
 	}
 
 	if ( isAddLink ) {
 		dialogName = 'addLinkOnboardingDialog';
 		LinkSuggestionInteractionLogger = require(
-			'../ext.growthExperiments.StructuredTask/addlink/LinkSuggestionInteractionLogger.js'
+			'../ext.growthExperiments.StructuredTask/addlink/LinkSuggestionInteractionLogger.js',
 		);
 		logger = new LinkSuggestionInteractionLogger( {
 			// eslint-disable-next-line camelcase
-			is_mobile: OO.ui.isMobile()
+			is_mobile: OO.ui.isMobile(),
 		} );
 		shouldShowOnboarding = !mw.user.options.get( addLinkOnboardingPrefName );
 		setupOnboarding( {
 			prefName: addLinkOnboardingPrefName,
 			panels: require( './addlink/AddLinkOnboardingContent.js' ).getPanels( {
-				includeImage: true
-			} )
+				includeImage: true,
+			} ),
 		} );
 	} else if ( isAddImage ) {
 		ImageSuggestionInteractionLogger = require(
-			'../ext.growthExperiments.StructuredTask/addimage/ImageSuggestionInteractionLogger.js'
+			'../ext.growthExperiments.StructuredTask/addimage/ImageSuggestionInteractionLogger.js',
 		);
 		logger = new ImageSuggestionInteractionLogger( {
 			// eslint-disable-next-line camelcase
-			is_mobile: OO.ui.isMobile()
+			is_mobile: OO.ui.isMobile(),
 		} );
 		dialogName = 'addImageOnboardingDialog';
 		shouldShowOnboarding = !mw.user.options.get( addImageOnboardingPrefName );
 		setupOnboarding( {
 			prefName: addImageOnboardingPrefName,
 			panels: require( './addimage/AddImageOnboardingContent.js' ).getPanels( {
-				includeImage: true
-			} )
+				includeImage: true,
+			} ),
 		} );
 	} else if ( isAddSectionImage ) {
 		ImageSuggestionInteractionLogger = require(
-			'../ext.growthExperiments.StructuredTask/addimage/ImageSuggestionInteractionLogger.js'
+			'../ext.growthExperiments.StructuredTask/addimage/ImageSuggestionInteractionLogger.js',
 		);
 		logger = new ImageSuggestionInteractionLogger( {
 			// eslint-disable-next-line camelcase
-			is_mobile: OO.ui.isMobile()
+			is_mobile: OO.ui.isMobile(),
 		} );
 		dialogName = 'addSectionImageOnboardingDialog';
 
@@ -234,9 +257,26 @@ module.exports = ( function () {
 		setupOnboarding( {
 			prefName: addSectionImageOnboardingPrefName,
 			panels: require( './addsectionimage/AddSectionImageOnboardingContent.js' ).getPanels( {
-				includeImage: true
-			} )
+				includeImage: true,
+			} ),
 		} );
+	} else if ( isReviseTone ) {
+		useNewOnboarding = true;
+		shouldShowOnboarding = !mw.user.options.get( reviseToneOnboardingPrefName );
+		const ReviseToneInteractionLogger = require(
+			'../ext.growthExperiments.StructuredTask/revisetone/ReviseToneInteractionLogger.js',
+		);
+		logger = new ReviseToneInteractionLogger();
+		setupOnboarding();
+		// Set up hook for Help Panel to launch the quiz
+		mw.hook( 'growthExperiments.reviseTone.showOnboardingFromHelpPanel' ).add(
+			() => {
+				const ReviseToneQuizLauncher = require( './revisetone/ReviseToneQuizLauncher.js' );
+				ReviseToneQuizLauncher.launchReviseToneQuiz( {
+					setSeenPreference: false, // Don't set seen preference when launched from Help Panel
+				} );
+			},
+		);
 	}
 
 	return {
@@ -245,7 +285,7 @@ module.exports = ( function () {
 		updateEditLinkSection: updateEditLinkSection,
 		loadEditModule: loadEditModule,
 		shouldInitializeStructuredTask: shouldInitializeStructuredTask,
-		checkTaskData: checkTaskData
+		checkTaskData: checkTaskData,
 	};
 
 }() );

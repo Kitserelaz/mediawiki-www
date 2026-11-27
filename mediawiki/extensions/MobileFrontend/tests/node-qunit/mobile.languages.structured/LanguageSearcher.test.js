@@ -88,7 +88,7 @@ function enterText( searcher, text ) {
 
 QUnit.module( 'MobileFrontend LanguageSearcher.js', {
 	beforeEach: function () {
-		sandbox = sinon.sandbox.create();
+		sandbox = sinon.createSandbox();
 		dom.setUp( sandbox, global );
 		jQuery.setUp( sandbox, global );
 		oo.setUp( sandbox, global );
@@ -141,7 +141,7 @@ QUnit.test( 'saves the language count when link is clicked', function ( assert )
 	);
 } );
 
-QUnit.test( 'without variants, input event filters languages', function ( assert ) {
+QUnit.test( 'without variants, input event filters languages', ( assert ) => {
 	const languageSearcher = new LanguageSearcher( {
 		languages: apiLanguages,
 		variants: false,

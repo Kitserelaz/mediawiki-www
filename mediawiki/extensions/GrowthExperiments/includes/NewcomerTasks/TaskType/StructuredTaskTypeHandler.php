@@ -1,10 +1,12 @@
 <?php
 
+declare( strict_types = 1 );
+
 namespace GrowthExperiments\NewcomerTasks\TaskType;
 
 use GrowthExperiments\NewcomerTasks\RecommendationProvider;
 use GrowthExperiments\NewcomerTasks\SubmissionHandler;
-use MessageLocalizer;
+use MediaWiki\Language\MessageLocalizer;
 use Wikimedia\Message\MessageSpecifier;
 
 /**

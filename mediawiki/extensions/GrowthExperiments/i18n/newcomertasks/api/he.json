@@ -24,6 +24,9 @@
 	"apihelp-visualeditoredit-paramvalue-plugins-ge-task-link-recommendation": "לשימוש בעת שמירת העריכה המובנית \"[https://www.mediawiki.org/wiki/Growth/Personalized_first_day/Structured_tasks/Add_a_link הוספת קישור]\" של GrowthExperiments.",
 	"apihelp-visualeditoredit-paramvalue-plugins-ge-task-image-recommendation": "לשימוש בעת שמירת העריכה המובנית \"[https://www.mediawiki.org/wiki/Growth/Personalized_first_day/Structured_tasks/Add_an_image הוספת תמונה]\" של GrowthExperiments.",
 	"apihelp-visualeditoredit-paramvalue-plugins-ge-task-section-image-recommendation": "יש להשתמש בזה בעת שמירת עריכה מובנית מסוג \"[https://www.mediawiki.org/wiki/Growth/Personalized_first_day/Structured_tasks/Add_an_image#\"Add_an_image\"_to_a_Section הוספת תמונה לפרק]\" של GrowthExperiments.",
+	"apihelp-visualeditoredit-paramvalue-plugins-ge-task-revise-tone": "יש להשתמש בזה בעת שמירת עריכה מבנית מסוג \"[[mw:Growth/Revise_Tone|שכתוב נימה]]\".",
+	"apihelp-visualeditoredit-append-data-plugin-ge-task-revise-tone": "<dl><dt>בשביל תוסף <var>ge-task-revise-tone</var></dt><dd>\n$1\n</dd></dl>",
+	"apihelp-growthexperiments-structured-task-submit-data-format-revise-tone": "אין לכלול נתונים עבור התוסף הזה.",
 	"apihelp-visualeditoredit-append-data-plugin-ge-task-link-recommendation": "<dl><dt>בשביל תוסף <var>ge-task-link-recommendation</var></dt><dd>\n$1\n</dd></dl>",
 	"apihelp-visualeditoredit-append-data-plugin-ge-task-image-recommendation": "<dl><dt>בשביל תוסף <var>ge-task-image-recommendation</var></dt><dd>\n$1\n</dd></dl>",
 	"apihelp-visualeditoredit-append-data-plugin-ge-task-section-image-recommendation": "<dl><dt>בשביל תוסף <var>ge-task-section-image-recommendation</var></dt><dd>\n$1\n</dd></dl>",
@@ -40,10 +43,12 @@
 	"apierror-growthexperiments-addsectionimage-handler-section-number-wrongtype": "הפרמטר \"sectionNumber\" חייב להיות מספר שלם בנתוני תוסף Add Section Image, כעת הוא $1",
 	"apierror-growthexperiments-addlink-handler-notfound": "רישום המלצות קישורים לא נמצא",
 	"apierror-growthexperiments-addlink-handler-wrongtargets": "יעדי המלצות קישור בלתי־צפויים: $1",
-	"growthexperiments-underlinked-rescore-profile": "פרופיל ניקוד חוזר פנימי המשמש בהמלצות קישורים של GrowthExperiments לתעדוף ערכים שעדיין אין בהם מספיק קישורים.",
+	"growthexperiments-underlinked-rescore-profile": "פרופיל ניקוד חוזר פנימי המשמש בהמלצות קישורים של GrowthExperiments לתעדוף ערכים שעדיין אין בהם מספיק קישורים. זה לא עושה שום דבר כשתכונת הקישורים המוצעים (Link Recommendations) כבויה.",
 	"growthexperiments-addimage-feedback-accepted-editrevid": "הפרמטר <var>editRevId</var> נדרש כאשר הפרמטר <var>accepted</var> מוגדר כ־<kbd>true</kbd>.",
 	"growthexperiments-addimage-feedback-rejected-editrevid": "לא ניתן להשתמש בפרמטר <var>editRevId</var> כאשר הפרמטר <var>accepted</var> מוגדר כ־<kbd>false</kbd>.",
 	"growthexperiments-addimage-feedback-accepted-caption": "הפרמטר <var>caption</var> נדרש כאשר הפרמטר <var>accepted</var> מוגדר כ־<kbd>true</kbd>.",
 	"growthexperiments-addimage-feedback-revid-nonexistent": "הגרסה שצוינה ב־<var>editRevId</var> לא נמצאה.",
-	"growthexperiments-addimage-feedback-invalid-revid-wrong-page": "הגרסה המצוינת ב־<var>editRevId</var> שייכת לדף אחר."
+	"growthexperiments-addimage-feedback-invalid-revid-wrong-page": "הגרסה המצוינת ב־<var>editRevId</var> שייכת לדף אחר.",
+	"apihelp-growthinvalidaterevisetonerecommendation-summary": "ביטול הצעת \"שכתוב נימה\" עבור דף נתון.",
+	"apihelp-growthinvalidaterevisetonerecommendation-param-title": "כותרת הדף שצריך לבטל את הצעה עליו, ללא מרחב שם."
 }

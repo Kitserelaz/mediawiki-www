@@ -14,14 +14,8 @@ use Wikimedia\ParamValidator\ParamValidator;
  */
 class NewcomerTaskCompleteHandler extends SimpleHandler {
 
-	/**
-	 * @var NewcomerTasksChangeTagsManager
-	 */
-	private $newcomerTasksChangeTagsManager;
+	private NewcomerTasksChangeTagsManager $newcomerTasksChangeTagsManager;
 
-	/**
-	 * @param NewcomerTasksChangeTagsManager $newcomerTasksChangeTagsManager
-	 */
 	public function __construct( NewcomerTasksChangeTagsManager $newcomerTasksChangeTagsManager ) {
 		$this->newcomerTasksChangeTagsManager = $newcomerTasksChangeTagsManager;
 	}
@@ -61,10 +55,6 @@ class NewcomerTaskCompleteHandler extends SimpleHandler {
 		];
 	}
 
-	/**
-	 * @param string $message
-	 * @return int
-	 */
 	private function getErrorCodeForMessage( string $message ): int {
 		if ( strpos( $message, 'Invalid task type ID' ) !== false ) {
 			return 400;

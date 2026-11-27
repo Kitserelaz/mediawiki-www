@@ -4,78 +4,63 @@ namespace GrowthExperiments\Mentorship\Store;
 
 use InvalidArgumentException;
 use MediaWiki\User\UserIdentity;
-use Psr\Log\LoggerAwareInterface;
-use Psr\Log\LoggerAwareTrait;
-use Psr\Log\NullLogger;
-use Wikimedia\LightweightObjectStore\ExpirationAwareness;
+use Psr\Log\LoggerInterface;
 use Wikimedia\ObjectCache\WANObjectCache;
 use Wikimedia\Rdbms\DBAccessObjectUtils;
 use Wikimedia\Rdbms\IDBAccessObject;
 
-abstract class MentorStore implements ExpirationAwareness, LoggerAwareInterface {
-	use LoggerAwareTrait;
+abstract class MentorStore {
 
-	/** @var string */
 	public const ROLE_PRIMARY = 'primary';
-
-	/** @var string */
 	public const ROLE_BACKUP = 'backup';
 
-	/** @var string[] */
 	public const ROLES = [
 		self::ROLE_PRIMARY,
-		self::ROLE_BACKUP
+		self::ROLE_BACKUP,
 	];
 
-	/** @var WANObjectCache */
 	protected WANObjectCache $wanCache;
-	/** @var array Cache key =>¨value; custom in-process cache */
+
+	/** @var array Cache key => value; custom in-process cache */
 	protected array $inProcessCache = [];
-	/** @var bool */
 	protected bool $wasPosted;
 
-	/**
-	 * @param WANObjectCache $wanCache
-	 * @param bool $wasPosted
-	 */
 	public function __construct(
+		LoggerInterface $logger,
 		WANObjectCache $wanCache,
 		bool $wasPosted
 	) {
 		$this->wanCache = $wanCache;
 		$this->wasPosted = $wasPosted;
-
-		$this->setLogger( new NullLogger() );
 	}
 
 	/**
-	 * Helper to generate cache key for a mentee
-	 * @param UserIdentity $user Mentee's username
+	 * Cache key for loadMentorUser()
+	 *
+	 * @param UserIdentity $mentee Mentee's username
 	 * @param string $mentorRole
 	 * @return string Cache key
 	 */
 	protected function makeLoadMentorCacheKey(
-		UserIdentity $user,
+		UserIdentity $mentee,
 		string $mentorRole
 	): string {
 		return $this->wanCache->makeKey(
-			'GrowthExperiments',
-			'MentorStore', __CLASS__,
-			'Mentee', $user->getId(),
-			'Mentor', $mentorRole
+			'growthexperiments-mentee-mentor',
+			$mentee->getId(),
+			$mentorRole
 		);
 	}
 
 	/**
-	 * Invalidates mentor cache for loadMentorUser
-	 * @param UserIdentity $user Who will have their cache invalidated
+	 * Invalidates cache for loadMentorUser()
+	 *
+	 * @param UserIdentity $mentee Who will have their cache invalidated
 	 * @param string $mentorRole
 	 */
-	protected function invalidateMentorCache( UserIdentity $user, string $mentorRole ): void {
-		$key = $this->makeLoadMentorCacheKey( $user, $mentorRole );
-		$this->wanCache->delete(
-			$key
-		);
+	protected function invalidateMentorCache( UserIdentity $mentee, string $mentorRole ): void {
+		$key = $this->makeLoadMentorCacheKey( $mentee, $mentorRole );
+		$this->wanCache->delete( $key );
 		unset( $this->inProcessCache[$key] );
 	}
 
@@ -116,7 +101,7 @@ abstract class MentorStore implements ExpirationAwareness, LoggerAwareInterface 
 
 		$res = $this->wanCache->getWithSetCallback(
 			$cacheKey,
-			self::TTL_DAY,
+			WANObjectCache::TTL_DAY,
 			function () use ( $mentee, $mentorRole, $flags ) {
 				return $this->loadMentorUserUncached( $mentee, $mentorRole, $flags );
 			}
@@ -162,14 +147,12 @@ abstract class MentorStore implements ExpirationAwareness, LoggerAwareInterface 
 	 *
 	 * @param UserIdentity $mentor
 	 * @param string $mentorRole
-	 * @param bool $includeHiddenUsers Deprecated (and ignored) since 1.43
 	 * @param int $flags
 	 * @return bool
 	 */
 	abstract public function hasAnyMentees(
 		UserIdentity $mentor,
 		string $mentorRole,
-		bool $includeHiddenUsers = true,
 		int $flags = 0
 	): bool;
 
@@ -247,27 +230,23 @@ abstract class MentorStore implements ExpirationAwareness, LoggerAwareInterface 
 	}
 
 	/**
-	 * Make cache key for isMenteeActive()
+	 * Cache key for isMenteeActive()
 	 *
-	 * @param UserIdentity $user
+	 * @param UserIdentity $mentee
 	 * @return string
 	 */
-	private function makeIsMenteeActiveCacheKey( UserIdentity $user ): string {
+	private function makeIsMenteeActiveCacheKey( UserIdentity $mentee ): string {
 		return $this->wanCache->makeKey(
-			'GrowthExperiments',
-			'MentorStore', __CLASS__,
-			'Mentee', $user->getId(),
-			'IsActive'
+			'growthexperiments-mentee-active',
+			$mentee->getId()
 		);
 	}
 
 	/**
 	 * Invalidates cache for isMenteeActive()
-	 *
-	 * @param UserIdentity $user
 	 */
-	protected function invalidateIsMenteeActive( UserIdentity $user ): void {
-		$this->wanCache->delete( $this->makeIsMenteeActiveCacheKey( $user ) );
+	protected function invalidateIsMenteeActive( UserIdentity $mentee ): void {
+		$this->wanCache->delete( $this->makeIsMenteeActiveCacheKey( $mentee ) );
 	}
 
 	/**
@@ -285,7 +264,7 @@ abstract class MentorStore implements ExpirationAwareness, LoggerAwareInterface 
 	public function isMenteeActive( UserIdentity $mentee ): ?bool {
 		return $this->wanCache->getWithSetCallback(
 			$this->makeIsMenteeActiveCacheKey( $mentee ),
-			self::TTL_DAY,
+			WANObjectCache::TTL_DAY,
 			function () use ( $mentee ) {
 				return $this->isMenteeActiveUncached( $mentee );
 			}
@@ -314,8 +293,6 @@ abstract class MentorStore implements ExpirationAwareness, LoggerAwareInterface 
 	 *
 	 * Method should only make a write query if the mentee is not
 	 * already marked as active.
-	 *
-	 * @param UserIdentity $mentee
 	 */
 	abstract public function markMenteeAsActive( UserIdentity $mentee ): void;
 
@@ -330,8 +307,6 @@ abstract class MentorStore implements ExpirationAwareness, LoggerAwareInterface 
 	 *
 	 * Method should only make a write query if the mentee is not
 	 * already marked as inactive.
-	 *
-	 * @param UserIdentity $mentee
 	 */
 	abstract public function markMenteeAsInactive( UserIdentity $mentee ): void;
 }

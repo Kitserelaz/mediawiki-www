@@ -3,7 +3,6 @@
 namespace GrowthExperiments\HomepageModules;
 
 use GrowthExperiments\DashboardModule\DashboardModule;
-use GrowthExperiments\ExperimentUserManager;
 use MediaWiki\Config\Config;
 use MediaWiki\Context\IContextSource;
 use MediaWiki\Html\Html;
@@ -21,13 +20,7 @@ abstract class BaseModule extends DashboardModule {
 	protected const MODULE_STATE_UNACTIVATED = 'unactivated';
 	protected const MODULE_STATE_NOEMAIL = 'noemail';
 	protected const MODULE_STATE_UNCONFIRMED = 'unconfirmed';
-	protected const MODULE_STATE_CONFIRMED = 'confirmed';
 	protected const MODULE_STATE_NOTRENDERED = 'notrendered';
-
-	/**
-	 * @var ExperimentUserManager
-	 */
-	private $experimentUserManager;
 
 	/** @var Config */
 	private $wikiConfig;
@@ -46,27 +39,23 @@ abstract class BaseModule extends DashboardModule {
 	 * @param string $name Name of the module
 	 * @param IContextSource $ctx
 	 * @param Config $wikiConfig
-	 * @param ExperimentUserManager $experimentUserManager
 	 * @param bool $shouldWrapModuleWithLink
 	 */
 	public function __construct(
-		$name,
+		string $name,
 		IContextSource $ctx,
 		Config $wikiConfig,
-		ExperimentUserManager $experimentUserManager,
 		bool $shouldWrapModuleWithLink = true
 	) {
 		parent::__construct( $name, $ctx );
 
 		$this->wikiConfig = $wikiConfig;
-		$this->experimentUserManager = $experimentUserManager;
 		$this->shouldWrapModuleWithLink = $shouldWrapModuleWithLink;
 	}
 
 	/**
 	 * Sets the page base URL where the module is being rendered.
 	 * Can be later used for generating links from inside the module.
-	 * @param string $url
 	 */
 	public function setPageURL( string $url ): void {
 		$this->pageURL = $url;
@@ -83,7 +72,6 @@ abstract class BaseModule extends DashboardModule {
 	/**
 	 * Gets whether the module will be wrapped in a link to its
 	 * full screen view or not
-	 * @return bool
 	 */
 	public function shouldWrapModuleWithLink(): bool {
 		return $this->shouldWrapModuleWithLink;
@@ -135,9 +123,6 @@ abstract class BaseModule extends DashboardModule {
 		);
 	}
 
-	/**
-	 * @return Config
-	 */
 	final protected function getGrowthWikiConfig(): Config {
 		return $this->wikiConfig;
 	}
@@ -172,21 +157,8 @@ abstract class BaseModule extends DashboardModule {
 	/**
 	 * @inheritDoc
 	 */
-	protected function buildModuleWrapper( ...$sections ) {
-		$moduleContent = Html::rawElement(
-			'div',
-			[
-				'class' => array_merge( [
-					self::BASE_CSS_CLASS,
-					self::BASE_CSS_CLASS . '-' . $this->name,
-					self::BASE_CSS_CLASS . '-' . $this->getMode(),
-					self::BASE_CSS_CLASS . '-user-variant-' . $this->getUserVariant()
-				], $this->getCssClasses() ),
-				'data-module-name' => $this->name,
-				'data-mode' => $this->getMode(),
-			],
-			implode( "\n", $sections )
-		);
+	protected function buildModuleWrapper( string ...$sections ): string {
+		$moduleContent = parent::buildModuleWrapper( ...$sections );
 
 		if (
 			$this->getMode() === self::RENDER_MOBILE_SUMMARY &&
@@ -195,7 +167,7 @@ abstract class BaseModule extends DashboardModule {
 		) {
 			return Html::rawElement( 'a', [
 				'href' => $this->getPageURL() . '/' . $this->getName(),
-				'data-overlay-route' => $this->getModuleRoute()
+				'data-overlay-route' => $this->getModuleRoute(),
 			], $moduleContent );
 		}
 
@@ -208,7 +180,7 @@ abstract class BaseModule extends DashboardModule {
 		$out = $this->getContext()->getOutput();
 		$out->addModuleStyles( [
 			'ext.growthExperiments.Homepage.styles',
-			'ext.growthExperiments.icons'
+			'ext.growthExperiments.icons',
 		] );
 		$out->addJsConfigVars( [
 			'wgGEHomepageModuleState-' . $this->getName() => $this->getState(),
@@ -219,18 +191,9 @@ abstract class BaseModule extends DashboardModule {
 	/**
 	 * The component for mw.router to use when routing clicks from mobile
 	 * summary HTML. If this is an empty string, no routing occurs.
-	 *
-	 * @return string
 	 */
 	protected function getModuleRoute(): string {
 		return '#/homepage/' . $this->name;
-	}
-
-	/**
-	 * @return string
-	 */
-	private function getUserVariant(): string {
-		return $this->experimentUserManager->getVariant( $this->getContext()->getUser() );
 	}
 
 }

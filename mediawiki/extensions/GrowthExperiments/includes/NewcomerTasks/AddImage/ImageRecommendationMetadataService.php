@@ -2,12 +2,12 @@
 
 namespace GrowthExperiments\NewcomerTasks\AddImage;
 
-use FormatMetadata;
 use GrowthExperiments\Util;
-use MediaTransformError;
+use MediaWiki\FileRepo\RepoGroup;
 use MediaWiki\Http\HttpRequestFactory;
 use MediaWiki\Language\RawMessage;
-use RepoGroup;
+use MediaWiki\Media\FormatMetadata;
+use MediaWiki\Media\MediaTransformError;
 use StatusValue;
 
 /**
@@ -15,20 +15,13 @@ use StatusValue;
  */
 class ImageRecommendationMetadataService {
 
-	/** @var int */
 	private const THUMB_WIDTH = 120;
-
-	/** @var HttpRequestFactory */
-	private $httpRequestFactory;
-
-	/** @var RepoGroup */
-	private $repoGroup;
+	private HttpRequestFactory $httpRequestFactory;
+	private RepoGroup $repoGroup;
 
 	/** @var string[] */
-	private $mediaInfoRepos;
-
-	/** @var string */
-	private $contentLanguage;
+	private array $mediaInfoRepos;
+	private string $contentLanguage;
 
 	/**
 	 * @param HttpRequestFactory $httpRequestFactory
@@ -90,7 +83,7 @@ class ImageRecommendationMetadataService {
 			'originalHeight' => $file->getHeight(),
 			'mustRender' => $file->mustRender(),
 			'isVectorized' => $file->isVectorized(),
-			'mediaType' => $file->getMediaType()
+			'mediaType' => $file->getMediaType(),
 		];
 	}
 

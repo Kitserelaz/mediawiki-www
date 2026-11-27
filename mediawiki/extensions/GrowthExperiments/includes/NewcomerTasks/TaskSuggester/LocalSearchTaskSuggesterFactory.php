@@ -3,13 +3,15 @@
 namespace GrowthExperiments\NewcomerTasks\TaskSuggester;
 
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
+use GrowthExperiments\NewcomerTasks\ConfigurationLoader\TopicDecorator;
 use GrowthExperiments\NewcomerTasks\NewcomerTasksUserOptionsLookup;
 use GrowthExperiments\NewcomerTasks\TaskSuggester\SearchStrategy\SearchStrategy;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeHandlerRegistry;
-use MediaWiki\Cache\LinkBatchFactory;
-use SearchEngineFactory;
+use GrowthExperiments\NewcomerTasks\Topic\ITopicRegistry;
+use MediaWiki\Page\LinkBatchFactory;
+use MediaWiki\Search\SearchEngineFactory;
 use StatusValue;
-use Wikimedia\Stats\IBufferingStatsdDataFactory;
+use Wikimedia\Stats\StatsFactory;
 
 /**
  * Factory for LocalSearchTaskSuggester.
@@ -19,18 +21,9 @@ class LocalSearchTaskSuggesterFactory extends SearchTaskSuggesterFactory {
 	/** @var SearchEngineFactory */
 	private $searchEngineFactory;
 
-	/** @var IBufferingStatsdDataFactory */
-	private $statsdDataFactory;
+	private StatsFactory $statsFactory;
+	private ITopicRegistry $topicRegistry;
 
-	/**
-	 * @param TaskTypeHandlerRegistry $taskTypeHandlerRegistry
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param SearchStrategy $searchStrategy
-	 * @param NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup
-	 * @param SearchEngineFactory $searchEngineFactory
-	 * @param LinkBatchFactory $linkBatchFactory
-	 * @param IBufferingStatsdDataFactory $statsdDataFactory
-	 */
 	public function __construct(
 		TaskTypeHandlerRegistry $taskTypeHandlerRegistry,
 		ConfigurationLoader $configurationLoader,
@@ -38,7 +31,8 @@ class LocalSearchTaskSuggesterFactory extends SearchTaskSuggesterFactory {
 		NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup,
 		SearchEngineFactory $searchEngineFactory,
 		LinkBatchFactory $linkBatchFactory,
-		IBufferingStatsdDataFactory $statsdDataFactory
+		StatsFactory $statsFactory,
+		ITopicRegistry $topicRegistry
 	) {
 		parent::__construct(
 			$taskTypeHandlerRegistry,
@@ -48,7 +42,8 @@ class LocalSearchTaskSuggesterFactory extends SearchTaskSuggesterFactory {
 			$linkBatchFactory
 		);
 		$this->searchEngineFactory = $searchEngineFactory;
-		$this->statsdDataFactory = $statsdDataFactory;
+		$this->statsFactory = $statsFactory;
+		$this->topicRegistry = $topicRegistry;
 	}
 
 	/**
@@ -61,9 +56,10 @@ class LocalSearchTaskSuggesterFactory extends SearchTaskSuggesterFactory {
 		if ( $taskTypes instanceof StatusValue ) {
 			return $this->createError( $taskTypes );
 		}
-		$topics = $configurationLoader->loadTopics();
-		if ( $topics instanceof StatusValue ) {
-			return $this->createError( $topics );
+		if ( $configurationLoader instanceof TopicDecorator ) {
+			$topics = $configurationLoader->getTopics();
+		} else {
+			$topics = $this->topicRegistry->getTopics();
 		}
 		$suggester = new LocalSearchTaskSuggester(
 			$this->taskTypeHandlerRegistry,
@@ -73,7 +69,7 @@ class LocalSearchTaskSuggesterFactory extends SearchTaskSuggesterFactory {
 			$this->linkBatchFactory,
 			$taskTypes,
 			$topics,
-			$this->statsdDataFactory
+			$this->statsFactory
 		);
 		$suggester->setLogger( $this->logger );
 		return $suggester;

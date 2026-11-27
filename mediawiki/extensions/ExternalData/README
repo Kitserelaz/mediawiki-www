@@ -1,6 +1,6 @@
 External Data extension
 
-        Version 3.4-alpha
+        Version 3.7.2
         Yaron Koren, Alexander Mashin and (many) others
 
 This is free software licensed under the GNU General Public License. Please
@@ -15,6 +15,16 @@ server (all in CSV, GFF, JSON, XML, HTML or INI formats), plus database tables,
 LDAP servers and program output.
 
 The extension defines the following parser functions:
+* `#external_value` - displays the value of any retrieved variable, or the first
+  value if it's an array
+* `#for_external_table` - applies processing onto multiple rows retrieved by any
+  of the `#get_*_data` functions
+* `#display_external_table` - like `#for_external_table`, but passes the values
+  of each row to a template, which handles the formatting
+* `#format_external_table` - like `#for_external_table`, but passes all the data
+  to a Cargo display format, if the Cargo extension is installed
+
+The following parser functions are also defined, but deprecated:
 * `#get_web_data` - retrieves the data from a URL that holds CSV, GFF, JSON, XML,
    INI or YAML and assigns it to local variables or arrays
 * `#get_soap_data` - retrieves data from a URL via SOAP
@@ -29,17 +39,14 @@ The extension defines the following parser functions:
 * `#get_inline_data` - parses the passed text without connecting to any external
   services
 * `#get_external_data` - can do all of the above
-* `#external_value` - displays the value of any retrieved variable, or the first
-  value if it's an array
-* `#for_external_table` - applies processing onto multiple rows retrieved by any
-  of the `#get_*_data` functions
-* `#display_external_table` - like `#for_external_table`, but passes the values
-  of each row to a template, which handles the formatting
 * `#clear_external_data` - erases some or all of the current set of retrieved data
 
 External Data also defines the following Lua functions, each of which act
 similarly to the corresponding parser functions, and return 2D (or deeper, if the
 external variables `__json` or `__xml` are used) row-based tables of values:
+* `mw.ext.externalData.getExternalData`
+
+The following Lua functions are also defined, but deprecated:
 * `mw.ext.externalData.getWebData`
 * `mw.ext.externalData.getFileData`
 * `mw.ext.externalData.getDbData`
@@ -47,22 +54,17 @@ external variables `__json` or `__xml` are used) row-based tables of values:
 * `mw.ext.externalData.getLdapData`
 * `mw.ext.externalData.getProgramData`
 * `mw.ext.externalData.getInlineData`
-* `mw.ext.externalData.getExternalData`
 
 Additionally, the extension allows wiki admins to define their own tags for
 programs set up to run in tag  emulation mode, which handle both the
 retrieval and display of data.
-
-The extension defines a new special page, 'GetData', which exports selected
-rows from a wiki page that holds CSV data, in a format that is readable by
-#get_web_data.
 
 For more information, see the extension homepage at:
 https://www.mediawiki.org/wiki/Extension:External_Data
 
 == Requirements ==
 
-This version of the External Data extension requires MediaWiki 1.39.4 or
+This version of the External Data extension requires MediaWiki 1.42 or
 higher.
 
 == Installation ==
@@ -113,6 +115,3 @@ Most comments, questions, suggestions and bug reports should be sent to
 the main MediaWiki mailing list:
 
      https://lists.wikimedia.org/mailman/listinfo/mediawiki-l
-
-If possible, please add "[ED]" at the beginning of the subject line, to
-clarify the subject matter.

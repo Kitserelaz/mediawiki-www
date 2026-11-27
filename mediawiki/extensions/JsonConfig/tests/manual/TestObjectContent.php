@@ -3,12 +3,12 @@ if ( !defined( 'MEDIAWIKI' ) ) {
 	die( -1 );
 }
 
-use JsonConfig\JCObjContent;
+use MediaWiki\Extension\JsonConfig\JCObjContent;
 
 class TestObjectContent extends JCObjContent {
+	/** @inheritDoc */
 	public function __construct( $text, $modelId, $thorough ) {
-		if ( $text === null ) {
-			$text = <<<END
+		$text ??= <<<END
 {
     "dict": {
         "string": "value",
@@ -22,7 +22,6 @@ class TestObjectContent extends JCObjContent {
     "emptydict": {}
 }
 END;
-		}
 		parent::__construct( $text, $modelId, $thorough );
 	}
 

@@ -1,21 +1,17 @@
 <?php
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use MediaWiki\Content\Content;
 use MediaWiki\Context\IContextSource;
+use MediaWiki\Diff\SlotDiffRenderer;
+use MediaWiki\Diff\TextSlotDiffRenderer;
 use MediaWiki\Output\OutputPage;
 use MediaWiki\Title\Title;
-use SlotDiffRenderer;
-use TextSlotDiffRenderer;
 
 class JCSlotDiffRenderer extends SlotDiffRenderer {
-	/** @var TextSlotDiffRenderer */
-	private $textSlotDiffRenderer;
-
 	public function __construct(
-		TextSlotDiffRenderer $textSlotDiffRenderer
+		private readonly TextSlotDiffRenderer $textSlotDiffRenderer,
 	) {
-		$this->textSlotDiffRenderer = $textSlotDiffRenderer;
 	}
 
 	public function getTablePrefix( IContextSource $context, Title $newTitle ): array {
@@ -26,10 +22,12 @@ class JCSlotDiffRenderer extends SlotDiffRenderer {
 		$this->textSlotDiffRenderer->addModules( $output );
 	}
 
+	/** @inheritDoc */
 	public function getExtraCacheKeys() {
 		return $this->textSlotDiffRenderer->getExtraCacheKeys();
 	}
 
+	/** @inheritDoc */
 	public function getDiff( ?Content $oldContent = null, ?Content $newContent = null ) {
 		$this->normalizeContents( $oldContent, $newContent, [ JCContent::class ] );
 		$format = JCContentHandler::CONTENT_FORMAT_JSON_PRETTY;
@@ -40,3 +38,6 @@ class JCSlotDiffRenderer extends SlotDiffRenderer {
 		return $this->textSlotDiffRenderer->getTextDiff( $oldText, $newText );
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCSlotDiffRenderer::class, 'JsonConfig\\JCSlotDiffRenderer' );

@@ -2,7 +2,6 @@
 
 namespace GrowthExperiments\LevelingUp;
 
-use GrowthExperiments\ExperimentUserManager;
 use GrowthExperiments\HomepageHooks;
 use GrowthExperiments\HomepageModules\SuggestedEdits;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
@@ -13,10 +12,11 @@ use GrowthExperiments\NewcomerTasks\TaskSuggester\TaskSuggesterFactory;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskType;
 use GrowthExperiments\NewcomerTasks\TaskType\TaskTypeHandler;
 use GrowthExperiments\UserImpact\UserImpactLookup;
-use GrowthExperiments\VariantHooks;
 use MediaWiki\Config\Config;
 use MediaWiki\Config\ServiceOptions;
 use MediaWiki\Context\RequestContext;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\Storage\NameTableStore;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\UserEditTracker;
@@ -44,6 +44,8 @@ class LevelingUpManager {
 		'GELevelingUpManagerTaskTypeCountThresholdMultiple',
 		'GELevelingUpManagerInvitationThresholds',
 		'GENewcomerTasksLinkRecommendationsEnabled',
+		'GELevelingUpKeepGoingNotificationSendAfterSeconds',
+		'GELevelingUpGetStartedNotificationSendAfterSeconds',
 	];
 
 	private ServiceOptions $options;
@@ -52,26 +54,15 @@ class LevelingUpManager {
 	private UserOptionsLookup $userOptionsLookup;
 	private UserFactory $userFactory;
 	private UserEditTracker $userEditTracker;
+	private JobQueueGroup $jobQueueGroup;
 	private ConfigurationLoader $configurationLoader;
 	private UserImpactLookup $userImpactLookup;
 	private TaskSuggesterFactory $taskSuggesterFactory;
 	private NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup;
 	private LoggerInterface $logger;
 	private Config $growthConfig;
+	private const KEEP_GOING_NOTIFICATION_THRESHOLD_MINIMUM = 1;
 
-	/**
-	 * @param ServiceOptions $options
-	 * @param IConnectionProvider $connectionProvider
-	 * @param NameTableStore $changeTagDefStore
-	 * @param UserOptionsLookup $userOptionsLookup
-	 * @param UserFactory $userFactory
-	 * @param UserEditTracker $userEditTracker
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param UserImpactLookup $userImpactLookup
-	 * @param TaskSuggesterFactory $taskSuggesterFactory
-	 * @param NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup
-	 * @param LoggerInterface $logger
-	 */
 	public function __construct(
 		ServiceOptions $options,
 		IConnectionProvider $connectionProvider,
@@ -79,6 +70,7 @@ class LevelingUpManager {
 		UserOptionsLookup $userOptionsLookup,
 		UserFactory $userFactory,
 		UserEditTracker $userEditTracker,
+		JobQueueGroup $jobQueueGroup,
 		ConfigurationLoader $configurationLoader,
 		UserImpactLookup $userImpactLookup,
 		TaskSuggesterFactory $taskSuggesterFactory,
@@ -93,6 +85,7 @@ class LevelingUpManager {
 		$this->userOptionsLookup = $userOptionsLookup;
 		$this->userFactory = $userFactory;
 		$this->userEditTracker = $userEditTracker;
+		$this->jobQueueGroup = $jobQueueGroup;
 		$this->configurationLoader = $configurationLoader;
 		$this->userImpactLookup = $userImpactLookup;
 		$this->taskSuggesterFactory = $taskSuggesterFactory;
@@ -102,39 +95,23 @@ class LevelingUpManager {
 	}
 
 	/**
-	 * Are Levelling up features enabled for anyone?
-	 *
-	 * @param Config $config
-	 * @return bool
-	 */
-	public static function isEnabledForAnyone( Config $config ): bool {
-		return SuggestedEdits::isEnabledForAnyone( $config )
-			&& $config->get( 'GELevelingUpFeaturesEnabled' );
-	}
-
-	/**
 	 * Whether leveling up features are available. This does not include any checks based on
-	 * the user's contribution history, just site configuration and A/B test cohorts.
+	 * the user's contribution history, just site configuration.
 	 * @param UserIdentity $user
 	 * @param Config $config Site configuration.
-	 * @param ExperimentUserManager $experimentUserManager
 	 * @return bool
 	 */
 	public static function isEnabledForUser(
 		UserIdentity $user,
-		Config $config,
-		ExperimentUserManager $experimentUserManager
+		Config $config
 	): bool {
 		// Leveling up should only be shown if
-		// 1) suggested edits are available on this wiki, as we'll direct the user there
-		// 2) the user's homepage is enabled, which maybe SuggestedEdits::isEnabled should
-		//    check, but it doesn't (this also excludes autocreated potentially-experienced
-		//    users who probably shouldn't get invites)
-		// 3) (for now) the wiki is a pilot wiki and the user is in the experiment group
-		return self::isEnabledForAnyone( $config )
-			&& SuggestedEdits::isEnabled( $config )
-			&& HomepageHooks::isHomepageEnabled( $user )
-			&& $experimentUserManager->isUserInVariant( $user, VariantHooks::VARIANT_CONTROL );
+		// 1) leveling-up (suggested-edits) features are enabled on this wiki
+		//    (via SuggestedEdits::isEnabledForAnyone)
+		// 2) the user's homepage is enabled
+		//    (via HomepageHooks::isHomepageEnabled)
+		return SuggestedEdits::isEnabledForAnyone( $config )
+			&& HomepageHooks::isHomepageEnabled( $user );
 	}
 
 	/**
@@ -144,23 +121,14 @@ class LevelingUpManager {
 	 * rely on the order in which they are returned by getTaskTypes(), because that is affected by the
 	 * structure of the JSON on MediaWiki:NewcomerTasks.json
 	 *
+	 * @param string[] $taskTypesToGroup
 	 * @return array<string,string[]>
 	 */
-	public function getTaskTypesGroupedByDifficulty(): array {
+	public function getTaskTypesGroupedByDifficulty( array $taskTypesToGroup ): array {
 		$taskTypes = $this->configurationLoader->getTaskTypes();
-		// HACK: "links" and "link-recommendation" are not loaded together. If link recommendation is enabled,
-		// remove "links" if it exists, and vice versa.
-		if ( $this->options->get( 'GENewcomerTasksLinkRecommendationsEnabled' ) ) {
-			if ( isset( $taskTypes['links'] ) ) {
-				unset( $taskTypes['links'] );
-			}
-		} else {
-			if ( isset( $taskTypes['link-recommendation'] ) ) {
-				unset( $taskTypes['link-recommendation'] );
-			}
-		}
 		$taskTypesGroupedByDifficulty = [];
-		foreach ( $taskTypes as $taskType ) {
+		foreach ( $taskTypesToGroup as $taskTypeId ) {
+			$taskType = $taskTypes[$taskTypeId];
 			$taskTypesGroupedByDifficulty[$taskType->getDifficulty()][] = $taskType->getId();
 		}
 		$difficultyNumeric = array_flip( TaskType::DIFFICULTY_NUMERIC );
@@ -174,12 +142,13 @@ class LevelingUpManager {
 	 * Get the list of enabled task types, in order from least difficult to most difficult ("easy" tasks
 	 * first, then "medium", then "difficult")
 	 *
+	 * @param string[] $taskTypesToOrder
 	 * @return string[]
 	 */
-	public function getTaskTypesOrderedByDifficultyLevel(): array {
+	public function getTaskTypesOrderedByDifficultyLevel( array $taskTypesToOrder ): array {
 		// Flatten the task types grouped by difficulty. They'll be ordered by easiest to most difficult.
 		$taskTypes = [];
-		foreach ( $this->getTaskTypesGroupedByDifficulty() as $taskTypeIds ) {
+		foreach ( $this->getTaskTypesGroupedByDifficulty( $taskTypesToOrder ) as $taskTypeIds ) {
 			$taskTypes = array_merge( $taskTypes, array_values( $taskTypeIds ) );
 		}
 		return $taskTypes;
@@ -209,10 +178,15 @@ class LevelingUpManager {
 	 *    is no page reload, call this function with "copyedit" as the active task type ID. One could do this via an
 	 *    API call from ext.growthExperiments.suggestedEditSession in a post-edit hook on the client-side.
 	 * @param bool $readLatest If user impact lookup should read from the primary database.
+	 * @param string[]|null $availableTaskTypes
 	 * @return string|null
 	 */
 	public function suggestNewTaskTypeForUser(
-		UserIdentity $userIdentity, string $activeTaskTypeId, bool $readLatest = false
+		UserIdentity $userIdentity,
+		string $activeTaskTypeId,
+		bool $readLatest = false,
+		?array $availableTaskTypes = null,
+		bool $skipThresholdMultiple = false
 	): ?string {
 		$flags = $readLatest ? IDBAccessObject::READ_LATEST : IDBAccessObject::READ_NORMAL;
 		$userImpact = $this->userImpactLookup->getUserImpact( $userIdentity, $flags );
@@ -240,14 +214,14 @@ class LevelingUpManager {
 			return null;
 		}
 		$levelingUpThreshold = $this->options->get( 'GELevelingUpManagerTaskTypeCountThresholdMultiple' );
-		if ( ( $editCountByTaskType[$activeTaskTypeId] + 1 ) % $levelingUpThreshold !== 0 ) {
+		if ( !$skipThresholdMultiple && ( $editCountByTaskType[$activeTaskTypeId] + 1 ) % $levelingUpThreshold !== 0 ) {
 			// Only trigger this on every 5th edit of the task type.
 			return null;
 		}
 
-		$taskTypes = $this->getTaskTypesOrderedByDifficultyLevel();
+		$taskTypes = $this->getTaskTypesOrderedByDifficultyLevel( $availableTaskTypes );
 		// Remove the active task type from the candidates.
-		$taskTypes = array_filter( $taskTypes, fn ( $item ) => $item !== $activeTaskTypeId );
+		$taskTypes = array_diff( $taskTypes, [ $activeTaskTypeId ] );
 		// Find any task type that has fewer than GELevelingUpManagerTaskTypeCountThresholdMultiple completed
 		// tasks, and offer it as the next task type.
 		$taskSuggester = $this->taskSuggesterFactory->create();
@@ -325,8 +299,8 @@ class LevelingUpManager {
 		}
 		$articleEdits = (int)$editCounts->article_edits;
 		if ( !$wasPosted && $editCounts->last_edit_timestamp < $db->timestamp( time() - 3 ) ) {
-			// If the last edit was more than 5 seconds ago, we are probably not seeing the actual
-			// last edit due to replication lag. 5 is chosen arbitrarily to be large enough to
+			// If the last edit was more than 3 seconds ago, we are probably not seeing the actual
+			// last edit due to replication lag. 3 is chosen arbitrarily to be large enough to
 			// account for slow saves and the VE reload, but small enough to account for the user
 			// making edits in quick succession.
 			$articleEdits++;
@@ -366,8 +340,8 @@ class LevelingUpManager {
 	 */
 	public function shouldSendKeepGoingNotification( UserIdentity $userIdentity ): bool {
 		$suggestedEditCount = $this->getSuggestedEditsCount( $userIdentity );
-		$thresholds = $this->growthConfig->get( 'GELevelingUpKeepGoingNotificationThresholds' );
-		return $suggestedEditCount >= $thresholds[0] && $suggestedEditCount <= $thresholds[1];
+		return $suggestedEditCount >= self::KEEP_GOING_NOTIFICATION_THRESHOLD_MINIMUM
+			&& $suggestedEditCount <= $this->growthConfig->get( 'GELevelingUpKeepGoingNotificationThresholdsMaximum' );
 	}
 
 	/**
@@ -377,10 +351,120 @@ class LevelingUpManager {
 	 * @return bool
 	 */
 	public function shouldSendGetStartedNotification( UserIdentity $userIdentity ): bool {
+		return $this->userEditTracker->getUserEditCount( $userIdentity ) === 0;
+	}
+
+	/**
+	 * Whether to send the get started re-engage to a user.
+	 *
+	 * @param UserIdentity $userIdentity
+	 * @return bool
+	 */
+	public function shouldSendReEngageNotification( UserIdentity $userIdentity ): bool {
 		$maxEdits = (int)$this->growthConfig->get( 'GELevelingUpGetStartedMaxTotalEdits' );
 
 		return $this->getSuggestedEditsCount( $userIdentity ) === 0 &&
-			$this->userEditTracker->getUserEditCount( $userIdentity ) < $maxEdits;
+			$this->userEditTracker->getUserEditCount( $userIdentity ) > 0 &&
+			$this->userEditTracker->getUserEditCount( $userIdentity ) <= $maxEdits;
+	}
+
+	/**
+	 * @param string $jobName Job name; use NotificationKeepGoingJob::JOB_NAME or
+	 * NotificationGetStartedJob::JOB_NAME respectively
+	 * @param UserIdentity $recepientUser
+	 * @param ?int $delay After how many seconds should the notification be sent? Null to disable
+	 * the notification altogether.
+	 * @param array<string,mixed> $jobParams Array of additional params to pass to the job
+	 * @return bool Was the notification scheduled?
+	 */
+	public function scheduleNotificationJob(
+		string $jobName,
+		UserIdentity $recepientUser,
+		?int $delay,
+		array $jobParams = []
+	) {
+		if ( $delay === null ) {
+			$this->logger->debug(
+				__METHOD__ . ' avoided sending {jobName} notification, feature is disabled',
+				[ 'exception' => new \RuntimeException, 'jobName' => $jobName ],
+			);
+			return false;
+		}
+
+		$jobQueue = $this->jobQueueGroup->get( $jobName );
+		if ( !$jobQueue->delayedJobsEnabled() ) {
+			$this->logger->error(
+				'Failed to schedule {jobName} with a delay, delayed jobs are not supported',
+				[ 'exception' => new \RuntimeException, 'jobName' => $jobName ],
+			);
+			return false;
+		}
+
+		$this->jobQueueGroup->lazyPush(
+			new JobSpecification( $jobName, [
+				'userId' => $recepientUser->getId(),
+				// Process the job X seconds after account creation
+				'jobReleaseTimestamp' => (int)wfTimestamp() + $delay,
+				...$jobParams,
+			] )
+		);
+		return true;
+	}
+
+	/**
+	 * Schedule the keep going notification
+	 *
+	 * The caller is expected to check LevellingUpManager::isEnabledForUser, as appropriate.
+	 *
+	 * @param UserIdentity $user
+	 * @return bool
+	 */
+	public function scheduleKeepGoingNotification( UserIdentity $user ): bool {
+		return $this->scheduleNotificationJob(
+			NotificationKeepGoingJob::JOB_NAME,
+			$user,
+			$this->options->get( 'GELevelingUpKeepGoingNotificationSendAfterSeconds' ),
+			[
+				'eventType' => 'keep-going',
+			]
+		);
+	}
+
+	/**
+	 * Schedule the getting started notification
+	 *
+	 * The caller is expected to check LevellingUpManager::isEnabledForUser, as appropriate.
+	 *
+	 * @param UserIdentity $user
+	 * @return bool
+	 */
+	public function scheduleGettingStartedNotification( UserIdentity $user ): bool {
+		return $this->scheduleNotificationJob(
+			NotificationGetStartedJob::JOB_NAME,
+			$user,
+			$this->options->get( 'GELevelingUpGetStartedNotificationSendAfterSeconds' ),
+			[
+				'eventType' => 'get-started-no-edits',
+			]
+		);
+	}
+
+	/**
+	 * Schedule the re-engage notification.
+	 *
+	 * The caller is expected to check LevellingUpManager::isEnabledForUser, as appropriate.
+	 *
+	 * Uses same delay as the get started notification.
+	 *
+	 * @param UserIdentity $user
+	 * @return bool
+	 */
+	public function scheduleReEngageNotification( UserIdentity $user ): bool {
+			return $this->scheduleNotificationJob(
+				NotificationReEngageJob::JOB_NAME,
+				$user,
+				$this->options->get( 'GELevelingUpGetStartedNotificationSendAfterSeconds' ),
+			);
 	}
 
 }

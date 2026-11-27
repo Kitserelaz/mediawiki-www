@@ -1,5 +1,5 @@
 {
-	"name": "RequestSSL",
+	"name": "RequestCustomDomain",
 	"author": [
 		"Universal Omega",
 		"Agent Isai",
@@ -7,67 +7,64 @@
 		"Alex",
 		"MacFan4000"
 	],
-	"url": "https://github.com/miraheze/RequestSSL",
-	"descriptionmsg": "requestssl-desc",
-	"namemsg": "requestssl-extensionname",
+	"url": "https://github.com/miraheze/RequestCustomDomain",
+	"descriptionmsg": "requestcustomdomain-desc",
+	"namemsg": "requestcustomdomain-extensionname",
 	"license-name": "GPL-3.0-or-later",
 	"type": "specialpage",
 	"requires": {
-		"MediaWiki": ">= 1.43.0"
+		"MediaWiki": ">= 1.46.0"
 	},
 	"MessagesDirs": {
-		"RequestSSL": [
+		"RequestCustomDomain": [
 			"i18n"
 		]
 	},
 	"ExtensionMessagesFiles": {
-		"RequestSSLAliases": "RequestSSLAliases.php"
+		"RequestCustomDomainAliases": "RequestCustomDomainAliases.php"
 	},
 	"AutoloadNamespaces": {
-		"Miraheze\\RequestSSL\\": "includes/"
+		"Miraheze\\RequestCustomDomain\\": "includes/",
+		"Miraheze\\RequestCustomDomain\\Maintenance\\": "maintenance/"
 	},
 	"TestAutoloadNamespaces": {
-		"Miraheze\\RequestSSL\\Tests\\": "tests/phpunit/"
+		"Miraheze\\RequestCustomDomain\\Tests\\": "tests/phpunit/"
 	},
 	"GroupPermissions": {
 		"user": {
-			"request-ssl": true
+			"request-custom-domain": true
 		}
 	},
 	"AvailableRights": [
-		"handle-ssl-requests",
-		"request-ssl",
-		"view-private-ssl-requests"
+		"handle-custom-domain-requests",
+		"request-custom-domain"
 	],
+	"JobClasses": {
+		"RequestCustomDomainCFAddJob": {
+			"class": "Miraheze\\RequestCustomDomain\\Jobs\\RequestCustomDomainCFAddJob",
+			"services": [
+				"HttpRequestFactory",
+				"RequestCustomDomainConfig",
+				"RequestCustomDomainLogger",
+				"RequestCustomDomainManager"
+			],
+			"needsPage": false
+		}
+	},
 	"LogActionsHandlers": {
-		"requestssl/*": "LogFormatter",
-		"requestsslprivate/*": "LogFormatter"
+		"requestcustomdomain/*": "Miraheze\\RequestCustomDomain\\Logging\\RequestCustomDomainLogFormatter"
 	},
 	"LogHeaders": {
-		"requestssl": "requestssl-log-header",
-		"requestsslprivate": "requestsslprivate-log-header"
+		"requestcustomdomain": "requestcustomdomain-log-header"
 	},
 	"LogNames": {
-		"requestssl": "requestssl-log-name",
-		"requestsslprivate": "requestsslprivate-log-name"
+		"requestcustomdomain": "requestcustomdomain-log-name"
 	},
 	"LogTypes": [
-		"requestssl",
-		"requestsslprivate"
+		"requestcustomdomain"
 	],
-	"LogRestrictions": {
-		"requestsslprivate": "view-private-ssl-requests"
-	},
 	"ActionFilteredLogs": {
-		"requestssl": {
-			"request": [
-				"request"
-			],
-			"statusupdate": [
-				"statusupdate"
-			]
-		},
-		"requestsslprivate": {
+		"requestcustomdomain": {
 			"request": [
 				"request"
 			],
@@ -77,22 +74,22 @@
 		}
 	},
 	"SpecialPages": {
-		"RequestSSL": {
-			"class": "Miraheze\\RequestSSL\\Specials\\SpecialRequestSSL",
+		"RequestCustomDomain": {
+			"class": "Miraheze\\RequestCustomDomain\\Specials\\SpecialRequestCustomDomain",
 			"services": [
 				"ConnectionProvider",
 				"MimeAnalyzer",
-				"RemoteWikiFactory",
 				"RepoGroup",
+				"RequestCustomDomainManager",
 				"UserFactory"
 			]
 		},
-		"RequestSSLQueue": {
-			"class": "Miraheze\\RequestSSL\\Specials\\SpecialRequestSSLQueue",
+		"RequestCustomDomainQueue": {
+			"class": "Miraheze\\RequestCustomDomain\\Specials\\SpecialRequestCustomDomainQueue",
 			"services": [
 				"ConnectionProvider",
-				"RequestSSLManager",
 				"PermissionManager",
+				"RequestCustomDomainManager",
 				"UserFactory"
 			]
 		}
@@ -113,65 +110,77 @@
 	},
 	"HookHandlers": {
 		"Installer": {
-			"class": "Miraheze\\RequestSSL\\Hooks\\Handlers\\Installer"
+			"class": "Miraheze\\RequestCustomDomain\\HookHandlers\\Installer"
 		},
 		"Main": {
-			"class": "Miraheze\\RequestSSL\\Hooks\\Handlers\\Main",
+			"class": "Miraheze\\RequestCustomDomain\\HookHandlers\\Main",
 			"services": [
 				"ConnectionProvider"
 			]
 		}
 	},
 	"ResourceModules": {
-		"ext.requestssl.oouiform": {
-			"scripts": "ext.requestssl.oouiform.ooui.js",
+		"ext.requestcustomdomain.oouiform": {
+			"scripts": "ext.requestcustomdomain.oouiform.ooui.js",
 			"dependencies": [
 				"mediawiki.storage",
 				"oojs-ui-widgets"
 			]
 		},
-		"ext.requestssl.oouiform.styles": {
-			"styles": "ext.requestssl.oouiform.ooui.less"
+		"ext.requestcustomdomain.oouiform.styles": {
+			"styles": "ext.requestcustomdomain.oouiform.ooui.less"
 		}
 	},
 	"ResourceFileModulePaths": {
 		"localBasePath": "modules",
-		"remoteExtPath": "RequestSSL/modules"
+		"remoteExtPath": "RequestCustomDomain/modules"
 	},
 	"config": {
-		"RequestSSLHelpUrl": {
-			"value": "",
-			"description": "Full URL. If set, adds a help URL to Special:RequestSSL."
+		"RequestCustomDomainCloudflareConfig": {
+			"description": "Array. Cloudflare configuration array, including API Key and Zone ID.",
+			"value": {
+				"apikey": null,
+				"tlsversion": "1.3",
+				"zoneid": null
+			}
 		},
-		"RequestSSLUsersNotifiedOnAllRequests": {
-			"value": [],
-			"description": "Array of usernames to send email notifications to for all requests. Users listed here must have a verified email address on their account. This doesn't do anything if the Echo extension is not installed."
+		"RequestCustomDomainDatabaseSuffix": {
+			"description": "String. Database suffix.",
+			"value": "wiki"
+		},
+		"RequestCustomDomainDisallowedDomains": {
+			"description": "Array. Domains that are not allowed to be requested via RequestCustomDomain.",
+			"value": []
+		},
+		"RequestCustomDomainHelpUrl": {
+			"description": "Full URL. If set, adds a help URL to Special:RequestCustomDomain.",
+			"value": ""
+		},
+		"RequestCustomDomainSubdomain": {
+			"description": "String. The main part of default subdomains, e.g. wiki.example.org, example.org is the main part. Only necessary if used on a wiki farm. Only used to improve UI by adding a subdomain.tld inline form field hint.",
+			"value": ""
+		},
+		"RequestCustomDomainUsersNotifiedOnAllRequests": {
+			"description": "Array of usernames to send email notifications to for all requests. Users listed here must have a verified email address on their account. This doesn't do anything if the Echo extension is not installed.",
+			"value": []
 		}
 	},
 	"ConfigRegistry": {
-		"RequestSSL": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
+		"RequestCustomDomain": "MediaWiki\\Config\\GlobalVarConfig::newInstance"
 	},
 	"DefaultUserOptions": {
-		"echo-subscriptions-email-requestssl-new-request": true,
-		"echo-subscriptions-email-requestssl-request-comment": true,
-		"echo-subscriptions-email-requestssl-request-status-update": true,
-		"echo-subscriptions-web-requestssl-new-request": false,
-		"echo-subscriptions-web-requestssl-request-comment": true,
-		"echo-subscriptions-web-requestssl-request-status-update": true
-	},
-	"RateLimits": {
-		"request-ssl": {
-			"user": [
-				5,
-				60
-			]
-		}
+		"echo-subscriptions-email-requestcustomdomain-new-request": true,
+		"echo-subscriptions-email-requestcustomdomain-request-comment": true,
+		"echo-subscriptions-email-requestcustomdomain-request-status-update": true,
+		"echo-subscriptions-web-requestcustomdomain-new-request": false,
+		"echo-subscriptions-web-requestcustomdomain-request-comment": true,
+		"echo-subscriptions-web-requestcustomdomain-request-status-update": true
 	},
 	"ServiceWiringFiles": [
 		"includes/ServiceWiring.php"
 	],
 	"DatabaseVirtualDomains": [
-		"virtual-requestssl"
+		"virtual-requestcustomdomain"
 	],
 	"manifest_version": 2
 }

@@ -20,8 +20,15 @@ function StructuredTaskMobileArticleTarget() {
 OO.inheritClass( StructuredTaskMobileArticleTarget, ve.init.mw.MobileArticleTarget );
 OO.mixinClass( StructuredTaskMobileArticleTarget, StructuredTaskArticleTarget );
 
-StructuredTaskMobileArticleTarget.static.toolbarGroups =
-	MachineSuggestionsMode.getMobileTools( StructuredTaskMobileArticleTarget.static.toolbarGroups );
+StructuredTaskMobileArticleTarget.static.toolbarGroups = [
+	ve.init.mw.MobileArticleTarget.static.toolbarGroups.find( ( group ) => group.name === 'back' ),
+	{
+		name: 'machineSuggestionsPlaceholder',
+		include: [ 'machineSuggestionsPlaceholder' ],
+	},
+	MachineSuggestionsMode.getEditModeToolGroup(),
+	ve.init.mw.MobileArticleTarget.static.toolbarGroups.find( ( group ) => group.name === 'save' ),
+];
 
 /**
  * @inheritdoc
@@ -41,14 +48,14 @@ StructuredTaskMobileArticleTarget.prototype.setupToolbar = function () {
 			placeholderTool.$element = $newElement;
 		}
 		this.toolbar.$group.find( '.ve-ui-toolbar-group-machineSuggestionsPlaceholder' ).html(
-			$newElement
+			$newElement,
 		);
 	}
 	MachineSuggestionsMode.trackEditModeClick( this.toolbar.$group );
 };
 
 /**
- * Update history as if the user were to navigate to edit mode from read mode
+ * Update history as if the user had navigated from read mode to edit mode
  *
  * This allows the close button to take the user to the article's read mode
  * instead of Special:Homepage and for OO.RouteReferenceMapper to show abandonededit dialog
@@ -57,11 +64,10 @@ StructuredTaskMobileArticleTarget.prototype.setupToolbar = function () {
  * @override
  */
 StructuredTaskMobileArticleTarget.prototype.updateHistory = function () {
-	router.navigateTo( 'read', { path: location.pathname + location.search, useReplaceState: true } );
-	router.navigateTo( 'edit', {
-		path: location.pathname + location.search + '#/editor/all',
-		useReplaceState: false
-	} );
+	// We don't use router to navigate here to avoid firing events
+	history.replaceState( null, document.title, location.pathname + location.search );
+	history.pushState( null, document.title, location.pathname + location.search + '#/editor/all' );
+	// Update oldHash state in router as we bypassed router
 	router.oldHash = '/editor/all';
 	this.maybeUpdateMobileEditorPreference();
 };
@@ -80,7 +86,7 @@ StructuredTaskMobileArticleTarget.prototype.maybeUpdateMobileEditorPreference = 
 StructuredTaskMobileArticleTarget.prototype.teardownWithoutPrompt = function ( trackMechanism ) {
 	// Close the editor overlay
 	return this.constructor.super.super.prototype.tryTeardown.call(
-		this, true, trackMechanism
+		this, true, trackMechanism,
 	);
 };
 

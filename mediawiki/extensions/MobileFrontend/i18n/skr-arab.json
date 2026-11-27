@@ -3,13 +3,13 @@
 		"authors": [
 			"Engr.ismailbhutta",
 			"Kaleem Bhatti",
-			"Saraiki"
+			"Saraiki",
+			"Tauqeerkhansurani"
 		]
 	},
 	"abusefilter-edit-builder-vars-user-mobile": "بھانویں ورتݨ آلا موبائل انٹرفیس دے ذریعے ترمیم کرے یا نہ کرے",
 	"mobile-frontend-account-create-captcha-placeholder": "تصدیقی کوڈ لکھو",
-	"mobile-frontend-changeslist-nocomment": "تبدیلیاں دا کوئی خلاصہ کائنی",
-	"mobile-frontend-clear-search": "صاف",
+	"mobile-frontend-copyright": "مواد $1 دے تحت دستیاب ہے، جے تائیں ٻیا کجھ نہ آکھیا ڳیا ہووے۔",
 	"mobile-frontend-editor-blocked-drawer-action-login": "لاگ ان تھیوو",
 	"mobile-frontend-drawer-arrow-label": "بند کرو",
 	"mobile-frontend-editor-blocked-drawer-action-ok": "ٹھیک ہے",
@@ -54,13 +54,11 @@
 	"mobile-frontend-references-citation": "حوالہ",
 	"mobile-frontend-requires-title": "ورقہ کائنی",
 	"mobile-frontend-save-settings": "بچاؤ",
-	"mobile-frontend-search-no-results": "ایں عنوان نال کوئی ورقہ کائنی۔",
 	"mobile-frontend-settings-tagline": "پڑھݨ ترجیحاں",
-	"mobile-frontend-settings-beta": "{{SITENAME}} بیٹا",
 	"mobile-frontend-settings-save": "ترتیباں محفوظ تھیاں۔",
 	"mobile-frontend-terms-text": "ورتݨ شرطاں",
 	"mobile-frontend-view": "موبائل سائٹ",
-	"mobile-frontend-view-desktop": "ڈیسک ٹاپ",
+	"mobile-frontend-view-desktop": "ڈیسک ٹاپ نظارہ",
 	"mobile-frontend-watchlist-cta-button-login": "لاگ ان تھیوو",
 	"mobile-frontend-watchlist-cta-button-signup": "کھاتہ بناؤ",
 	"mobile-frontend-watchlist-filter-all": "یکے",
@@ -73,12 +71,9 @@
 	"tag-mobile_edit": "موبائیل توں لکھائی",
 	"tag-mobile_web_edit": "موبائل ویب سائٹ توں تبدیلی",
 	"mobile-frontend-loading-message": "لوڈ تھین٘دا پئے۔۔۔",
-	"mobile-frontend-mobile-option-MFEnableWikidataDescriptions": "عنوان دی تفصیل",
 	"mobile-frontend-send-feedback": "رائے بھیڄو",
-	"mobile-frontend-mobile-option-MFEnableFontChanger": "فونٹ سائز",
 	"mobile-frontend-mobile-option-amc-learn-more": "ٻیا سِکھو",
 	"mobile-frontend-mobile-option-amc-send-feedback": "رائے بھیڄو",
 	"mobile-frontend-user-pref-link": "ترجیحاں کھولو",
-	"mobile-frontend-amc-outreach-no-thanks": "کو، شکریہ",
 	"prefs-mobile": "موبائل ترجیحاں."
 }

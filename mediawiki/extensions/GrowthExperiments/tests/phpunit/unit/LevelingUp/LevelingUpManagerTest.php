@@ -3,6 +3,8 @@
 namespace GrowthExperiments\Tests\Unit;
 
 use GrowthExperiments\LevelingUp\LevelingUpManager;
+use GrowthExperiments\LevelingUp\NotificationGetStartedJob;
+use GrowthExperiments\LevelingUp\NotificationKeepGoingJob;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\StaticConfigurationLoader;
 use GrowthExperiments\NewcomerTasks\NewcomerTasksUserOptionsLookup;
@@ -15,6 +17,9 @@ use GrowthExperiments\UserImpact\UserImpactLookup;
 use MediaWiki\Config\Config;
 use MediaWiki\Config\HashConfig;
 use MediaWiki\Config\ServiceOptions;
+use MediaWiki\JobQueue\JobQueue;
+use MediaWiki\JobQueue\JobQueueGroup;
+use MediaWiki\JobQueue\JobSpecification;
 use MediaWiki\Storage\NameTableStore;
 use MediaWiki\User\Options\UserOptionsLookup;
 use MediaWiki\User\UserEditTracker;
@@ -23,6 +28,8 @@ use MediaWiki\User\UserIdentityValue;
 use MediaWikiUnitTestCase;
 use Psr\Log\NullLogger;
 use Wikimedia\Rdbms\IConnectionProvider;
+use Wikimedia\TestingAccessWrapper;
+use Wikimedia\Timestamp\ConvertibleTimestamp;
 
 /**
  * @covers \GrowthExperiments\LevelingUp\LevelingUpManager
@@ -38,9 +45,15 @@ class LevelingUpManagerTest extends MediaWikiUnitTestCase {
 			[
 				'easy' => [ 'link-recommendation', 'copyedit' ],
 				'medium' => [ 'update' ],
-				'hard' => [ 'cx', 'newarticle' ]
+				'hard' => [ 'cx', 'newarticle' ],
 			],
-			$this->getLevelingUpManager()->getTaskTypesGroupedByDifficulty()
+			$this->getLevelingUpManager()->getTaskTypesGroupedByDifficulty( [
+				'link-recommendation',
+				'copyedit',
+				'update',
+				'cx',
+				'newarticle',
+			] )
 		);
 	}
 
@@ -50,16 +63,17 @@ class LevelingUpManagerTest extends MediaWikiUnitTestCase {
 			new HashConfig( [
 				'GELevelingUpManagerTaskTypeCountThresholdMultiple' => 5,
 				'GELevelingUpManagerInvitationThresholds' => [ 3, 7 ],
-				'GELevelingUpKeepGoingNotificationThresholds' => [ 1, 4 ],
 				'GENewcomerTasksLinkRecommendationsEnabled' => false,
 				'GELevelingUpGetStartedMaxTotalEdits' => 10,
+				'GELevelingUpKeepGoingNotificationSendAfterSeconds' => 172800,
+				'GELevelingUpGetStartedNotificationSendAfterSeconds' => 172800,
 			] )
 		);
 		$this->assertEquals(
 			[
 				'easy' => [ 'copyedit', 'links' ],
 				'medium' => [ 'update' ],
-				'hard' => [ 'cx', 'newarticle' ]
+				'hard' => [ 'cx', 'newarticle' ],
 			],
 			$this->getLevelingUpManager(
 				null,
@@ -67,8 +81,15 @@ class LevelingUpManagerTest extends MediaWikiUnitTestCase {
 				null,
 				null,
 				null,
+				null,
 				$serviceOptions
-			)->getTaskTypesGroupedByDifficulty()
+			)->getTaskTypesGroupedByDifficulty( [
+				'copyedit',
+				'links',
+				'update',
+				'cx',
+				'newarticle',
+			] )
 		);
 	}
 
@@ -95,11 +116,17 @@ class LevelingUpManagerTest extends MediaWikiUnitTestCase {
 		$this->assertEquals( 'link-recommendation', $this->getLevelingUpManager(
 			null,
 			null,
+			null,
 			$userImpactLookup,
 			$taskSuggesterFactory
 		)->suggestNewTaskTypeForUser(
 			new UserIdentityValue( 1, 'Test' ),
-			'copyedit'
+			'copyedit',
+			false,
+			[
+				'copyedit',
+				'link-recommendation',
+			]
 		) );
 	}
 
@@ -123,6 +150,7 @@ class LevelingUpManagerTest extends MediaWikiUnitTestCase {
 		$this->assertSame( null, $this->getLevelingUpManager(
 			$userOptionsLookup,
 			null,
+			null,
 			$userImpactLookup
 		)->suggestNewTaskTypeForUser(
 			$userIdentity,
@@ -136,6 +164,7 @@ class LevelingUpManagerTest extends MediaWikiUnitTestCase {
 			->method( 'getUserImpact' )
 			->willReturn( null );
 		$this->assertSame( null, $this->getLevelingUpManager(
+			null,
 			null,
 			null,
 			$userImpactLookup
@@ -167,11 +196,17 @@ class LevelingUpManagerTest extends MediaWikiUnitTestCase {
 		$this->assertSame( 'link-recommendation', $this->getLevelingUpManager(
 			null,
 			null,
+			null,
 			$userImpactLookup,
 			$taskSuggesterFactory
 		)->suggestNewTaskTypeForUser(
 			new UserIdentityValue( 1, 'Test' ),
-			'copyedit'
+			'copyedit',
+			false,
+			[
+				'copyedit',
+				'link-recommendation',
+			]
 		) );
 	}
 
@@ -188,6 +223,7 @@ class LevelingUpManagerTest extends MediaWikiUnitTestCase {
 			->method( 'getUserImpact' )
 			->willReturn( $userImpact );
 		$this->assertSame( null, $this->getLevelingUpManager(
+			null,
 			null,
 			null,
 			$userImpactLookup
@@ -221,80 +257,68 @@ class LevelingUpManagerTest extends MediaWikiUnitTestCase {
 		$taskSuggesterFactory = $this->getTaskSuggesterFactory( $taskSuggester );
 		$this->assertSame( null, $this->getLevelingUpManager(
 			null,
+			null,
 			$this->getConfigurationLoader(),
 			$userImpactLookup,
 			$taskSuggesterFactory
 		)->suggestNewTaskTypeForUser(
 			new UserIdentityValue( 1, 'Test' ),
-			'copyedit'
+			'copyedit',
+			false,
+			[
+				'copyedit',
+				'link-recommendation',
+				'update',
+				'cx',
+				'newarticle',
+			]
 		) );
-	}
-
-	public static function provideIsEnabledForAnyone() {
-		return [
-			'no Suggested edits' => [ false, [
-				'GELevelingUpFeaturesEnabled' => true,
-				'GEHomepageSuggestedEditsEnabled' => false,
-			] ],
-			'no Levelling up' => [ false, [
-				'GELevelingUpFeaturesEnabled' => false,
-				'GEHomepageSuggestedEditsEnabled' => true,
-			] ],
-			'all OK' => [ true, [
-				'GELevelingUpFeaturesEnabled' => true,
-				'GEHomepageSuggestedEditsEnabled' => true,
-			] ],
-		];
-	}
-
-	/**
-	 * @dataProvider provideIsEnabledForAnyone
-	 */
-	public function testIsEnabledForAnyone( bool $expected, array $config ) {
-		$this->assertEquals(
-			$expected,
-			LevelingUpManager::isEnabledForAnyone( new HashConfig( $config ) )
-		);
 	}
 
 	private function getDefaultConfigValues(): array {
 		return [
 			'GELevelingUpManagerTaskTypeCountThresholdMultiple' => 5,
 			'GELevelingUpManagerInvitationThresholds' => [ 3, 7 ],
-			'GELevelingUpKeepGoingNotificationThresholds' => [ 1, 4 ],
 			'GELevelingUpGetStartedMaxTotalEdits' => 10,
 			'GENewcomerTasksLinkRecommendationsEnabled' => true,
+			'GELevelingUpKeepGoingNotificationSendAfterSeconds' => 172800,
+			'GELevelingUpGetStartedNotificationSendAfterSeconds' => 172800,
 		];
 	}
 
 	private function getLevelingUpManager(
 		?UserOptionsLookup $userOptionsLookup = null,
+		?JobQueueGroup $jobQueueGroup = null,
 		?ConfigurationLoader $configurationLoader = null,
 		?UserImpactLookup $userImpactLookup = null,
 		?TaskSuggesterFactory $taskSuggesterFactory = null,
 		?NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup = null,
 		?ServiceOptions $serviceOptions = null,
-		?Config $config = null
+		?Config $growthConfig = null,
+		?UserEditTracker $userEditTracker = null,
 	): LevelingUpManager {
 		$defaultConfigValues = $this->getDefaultConfigValues();
-		$config = $config ?? new HashConfig( $defaultConfigValues );
-		$serviceOptions = $serviceOptions ?? new ServiceOptions(
+		$serviceOptions ??= new ServiceOptions(
 			LevelingUpManager::CONSTRUCTOR_OPTIONS,
 			new HashConfig( $defaultConfigValues )
 		);
+
+		$growthConfig ??= new HashConfig( $defaultConfigValues );
+
 		return new LevelingUpManager(
 			$serviceOptions,
 			$this->createNoOpAbstractMock( IConnectionProvider::class ),
 			$this->createNoOpAbstractMock( NameTableStore::class ),
 			$userOptionsLookup ?? $this->getUserOptionsLookup(),
 			$this->createNoOpAbstractMock( UserFactory::class ),
-			$this->createNoOpAbstractMock( UserEditTracker::class ),
+			$userEditTracker ?? $this->createNoOpAbstractMock( UserEditTracker::class ),
+			$jobQueueGroup ?? $this->createNoOpMock( JobQueueGroup::class ),
 			$configurationLoader ?? $this->getConfigurationLoader(),
 			$userImpactLookup ?? $this->getUserImpactLookup(),
 			$taskSuggesterFactory ?? $this->getTaskSuggesterFactory(),
 			$newcomerTasksUserOptionsLookup ?? $this->getNewcomerTasksUserOptionsLookup(),
 			new NullLogger(),
-			$config,
+			$growthConfig
 		);
 	}
 
@@ -314,7 +338,7 @@ class LevelingUpManagerTest extends MediaWikiUnitTestCase {
 		$taskType5 = new TaskType( 'newarticle', TaskType::DIFFICULTY_HARD );
 		$taskType6 = new TaskType( 'links', TaskType::DIFFICULTY_EASY );
 		return new StaticConfigurationLoader( [
-			$taskType2, $taskType4, $taskType5, $taskType1, $taskType3, $taskType6
+			$taskType2, $taskType4, $taskType5, $taskType1, $taskType3, $taskType6,
 		] );
 	}
 
@@ -332,6 +356,316 @@ class LevelingUpManagerTest extends MediaWikiUnitTestCase {
 
 	private function getNewcomerTasksUserOptionsLookup(): NewcomerTasksUserOptionsLookup {
 		return $this->createMock( NewcomerTasksUserOptionsLookup::class );
+	}
+
+	/**
+	 * @dataProvider provideShouldSendKeepGoingNotification
+	 */
+	public function testShouldSendKeepGoingNotification(
+		int $editCount,
+		int $maxThreshold,
+		bool $expected
+	) {
+		$minThreshold = TestingAccessWrapper::constant(
+			LevelingUpManager::class,
+			'KEEP_GOING_NOTIFICATION_THRESHOLD_MINIMUM'
+		);
+
+		$userIdentity = new UserIdentityValue( 1, 'TestUser' );
+
+		$userImpact = $this->createMock( UserImpact::class );
+		$userImpact->method( 'getNewcomerTaskEditCount' )
+			->willReturn( $editCount );
+
+		$userImpactLookup = $this->createMock( UserImpactLookup::class );
+		$userImpactLookup->method( 'getUserImpact' )
+			->with( $userIdentity )
+			->willReturn( $userImpact );
+
+		$growthConfig = new HashConfig( [
+			'GELevelingUpKeepGoingNotificationThresholdsMaximum' => $maxThreshold,
+		] );
+
+		$levelingUpManager = $this->getLevelingUpManager(
+			null,
+			null,
+			null,
+			$userImpactLookup,
+			null,
+			null,
+			null,
+			$growthConfig
+		);
+
+		$this->assertSame(
+			$expected,
+			$levelingUpManager->shouldSendKeepGoingNotification( $userIdentity ),
+			"Expected shouldSendKeepGoingNotification to return " .
+			( $expected ? 'true' : 'false' ) .
+			" when edit count is $editCount and thresholds are min=$minThreshold, max=$maxThreshold"
+		);
+	}
+
+	/**
+	 * Data provider for testShouldSendKeepGoingNotification
+	 *
+	 * Structure: [ editCount, maxThreshold, expectedResult ]
+	 *
+	 * @return array
+	 */
+	public static function provideShouldSendKeepGoingNotification() {
+		return [
+			'Below minimum threshold' => [ 0, 5, false ],
+			'At minimum threshold' => [ 1, 5, true ],
+			'Between min and max' => [ 3, 5, true ],
+			'At maximum threshold' => [ 5, 5, true ],
+			'Above maximum threshold' => [ 6, 5, false ],
+			'At maximum threshold when max=3' => [ 3, 3, true ],
+			'Above maximum threshold when max=3' => [ 4, 3, false ],
+		];
+	}
+
+	/**
+	 * @dataProvider provideShouldSendGetStartedNotification
+	 */
+	public function testShouldSendGetStartedNotification( int $editCount, bool $expected ) {
+		$userIdentity = new UserIdentityValue( 1, 'TestUser' );
+		$userEditTracker = $this->createMock( UserEditTracker::class );
+		$userEditTracker->method( 'getUserEditCount' )
+			->willReturn( $editCount );
+
+		$levelingUpManager = $this->getLevelingUpManager(
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			$userEditTracker
+		);
+
+		$this->assertSame(
+			$expected,
+			$levelingUpManager->shouldSendGetStartedNotification( $userIdentity ),
+			"Expected shouldSendGetStarted to return " .
+			( $expected ? 'true' : 'false' ) .
+			" when edit count is $editCount"
+		);
+	}
+
+	/**
+	 * Data provider for testShouldSendGetStartedNotification
+	 *
+	 * Structure: [ editCount, expectedResult ]
+	 *
+	 * @return array
+	 */
+	public static function provideShouldSendGetStartedNotification() {
+		return [
+			'No edits' => [ 0, true ],
+			'Edits' => [ 1, false ],
+		];
+	}
+
+	/**
+	 * @dataProvider provideShouldSendReEngageNotification
+	 */
+	public function testShouldSendReEngageNotification(
+		int $suggestedEditCount,
+		int $editCount,
+		int $maxThreshold,
+		bool $expected
+	) {
+		$minThreshold = TestingAccessWrapper::constant(
+			LevelingUpManager::class,
+			'KEEP_GOING_NOTIFICATION_THRESHOLD_MINIMUM'
+		);
+
+		$userIdentity = new UserIdentityValue( 1, 'TestUser' );
+
+		$userImpact = $this->createMock( UserImpact::class );
+		$userImpact->method( 'getNewcomerTaskEditCount' )
+			->willReturn( $suggestedEditCount );
+		$userEditTracker = $this->createMock( UserEditTracker::class );
+		$userEditTracker->method( 'getUserEditCount' )
+			->willReturn( $editCount );
+
+		$userImpactLookup = $this->createMock( UserImpactLookup::class );
+		$userImpactLookup->method( 'getUserImpact' )
+			->with( $userIdentity )
+			->willReturn( $userImpact );
+
+		$growthConfig = new HashConfig( [
+			'GELevelingUpGetStartedMaxTotalEdits' => $maxThreshold,
+		] );
+
+		$levelingUpManager = $this->getLevelingUpManager(
+			null,
+			null,
+			null,
+			$userImpactLookup,
+			null,
+			null,
+			null,
+			$growthConfig,
+			$userEditTracker
+		);
+
+		$this->assertSame(
+			$expected,
+			$levelingUpManager->shouldSendReEngageNotification( $userIdentity ),
+			"Expected shouldSendReEngageNotification to return " .
+			( $expected ? 'true' : 'false' ) .
+			" when edit count is $editCount and thresholds are min=$minThreshold, max=$maxThreshold"
+		);
+	}
+
+	/**
+	 * Data provider for testShouldSendKeepGoingNotification
+	 *
+	 * Structure: [ suggestedEditCount, editCount, maxThreshold, expectedResult ]
+	 *
+	 * @return array
+	 */
+	public static function provideShouldSendReEngageNotification() {
+		return [
+			'No edits' => [ 0, 0, 5, false ],
+			'Has suggested edits' => [ 1, 1, 5, false ],
+			'Has edits and no suggested edits below max' => [ 0, 1, 5, true ],
+			'At maximum threshold' => [ 0, 5, 5, true ],
+			'Above maximum threshold' => [ 0, 6, 5, false ],
+		];
+	}
+
+	public static function provideNotificationJobs() {
+		return [
+			'keep-going' => [
+				NotificationKeepGoingJob::JOB_NAME,
+				'scheduleKeepGoingNotification',
+				'GELevelingUpKeepGoingNotificationSendAfterSeconds',
+			],
+			'getting-started' => [
+				NotificationGetStartedJob::JOB_NAME,
+				'scheduleGettingStartedNotification',
+				'GELevelingUpGetStartedNotificationSendAfterSeconds',
+			],
+		];
+	}
+
+	/**
+	 * @dataProvider provideNotificationJobs
+	 */
+	public function testScheduleNotificationNullDelay( string $jobName, string $methodName, string $configOption ) {
+		$levelingUpManager = $this->getLevelingUpManager(
+			null,
+			null,
+			null,
+			null,
+			null,
+			null,
+			new ServiceOptions( LevelingUpManager::CONSTRUCTOR_OPTIONS, new HashConfig(
+				[
+					$configOption => null,
+				] + $this->getDefaultConfigValues()
+			) ),
+		);
+
+		$recipient = new UserIdentityValue( 1, 'Admin' );
+		$this->assertFalse( $levelingUpManager->$methodName( $recipient ) );
+	}
+
+	/**
+	 * @dataProvider provideNotificationJobs
+	 */
+	public function testScheduleNotificationNoDelayedJobs(
+		string $jobName, string $methodName,
+		string $configOption
+	) {
+		$recipientUser = new UserIdentityValue( 1, 'Admin' );
+		$jobQueue = $this->getMockBuilder( JobQueue::class )
+			->disableOriginalConstructor()
+			->onlyMethods( [ 'supportsDelayedJobs' ] )
+			->getMockForAbstractClass();
+		$jobQueue->expects( $this->once() )
+			->method( 'supportsDelayedJobs' )
+			->willReturn( false );
+		$jobQueueGroup = $this->createNoOpMock( JobQueueGroup::class, [ 'get' ] );
+		$jobQueueGroup->expects( $this->once() )
+			->method( 'get' )
+			->with( $jobName )
+			->willReturn( $jobQueue );
+		$levelingUpManager = $this->getLevelingUpManager(
+			null,
+			$jobQueueGroup,
+			null,
+			null,
+			null,
+			null,
+			new ServiceOptions( LevelingUpManager::CONSTRUCTOR_OPTIONS, new HashConfig(
+				[
+					$configOption => 100,
+				] + $this->getDefaultConfigValues()
+			) ),
+		);
+
+		$this->assertFalse( $levelingUpManager->$methodName( $recipientUser ) );
+	}
+
+	private function getJobQueueGroup( int $expectedTimestamp, string $jobName ) {
+		$jobQueue = $this->getMockBuilder( JobQueue::class )
+			->disableOriginalConstructor()
+			->onlyMethods( [ 'supportsDelayedJobs' ] )
+			->getMockForAbstractClass();
+		$jobQueue->expects( $this->once() )
+			->method( 'supportsDelayedJobs' )
+			->willReturn( true );
+		$jobQueueGroup = $this->createNoOpMock( JobQueueGroup::class, [ 'get', 'lazyPush' ] );
+		$jobQueueGroup->expects( $this->once() )
+			->method( 'get' )
+			->with( $jobName )
+			->willReturn( $jobQueue );
+		$jobQueueGroup->expects( $this->once() )
+			->method( 'lazyPush' )
+			->with( self::callback(
+				static function ( JobSpecification $jobSpecification ) use ( $jobName, $expectedTimestamp ) {
+					$jobParams = $jobSpecification->getParams();
+					return $jobSpecification->getType() === $jobName
+						&& $jobParams['userId'] === 1
+						&& $jobParams['jobReleaseTimestamp'] === $expectedTimestamp;
+				}
+			) );
+		return $jobQueueGroup;
+	}
+
+	/**
+	 * @dataProvider provideNotificationJobs
+	 */
+	public function testScheduleNotificationOK(
+		string $jobName, string $methodName,
+		string $configOption
+	) {
+		ConvertibleTimestamp::setFakeTime( 100 );
+
+		$recipientUser = new UserIdentityValue( 1, 'Admin' );
+
+		$jobQueueGroup = $this->getJobQueueGroup( 200, $jobName );
+		$levelingUpManager = $this->getLevelingUpManager(
+			null,
+			$jobQueueGroup,
+			null,
+			null,
+			null,
+			null,
+			new ServiceOptions( LevelingUpManager::CONSTRUCTOR_OPTIONS, new HashConfig(
+				[
+					$configOption => 100,
+				] + $this->getDefaultConfigValues()
+			) ),
+		);
+
+		$this->assertTrue( $levelingUpManager->$methodName( $recipientUser ) );
 	}
 
 }

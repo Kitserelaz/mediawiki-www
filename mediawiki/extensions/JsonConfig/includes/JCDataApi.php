@@ -1,5 +1,5 @@
 <?php
-namespace JsonConfig;
+namespace MediaWiki\Extension\JsonConfig;
 
 use MediaWiki\Api\ApiBase;
 use MediaWiki\Api\ApiResult;
@@ -30,7 +30,7 @@ class JCDataApi extends ApiBase {
 			$data = $data->getData();
 		} else {
 			/** @var JCDataContent $data */
-			// @phan-suppress-next-line PhanUndeclaredMethod
+			'@phan-var JCDataContent $data';
 			$data = $data->getSafeData( $data->getLocalizedData( $this->getLanguage() ) );
 		}
 
@@ -43,6 +43,7 @@ class JCDataApi extends ApiBase {
 		$this->getMain()->setCacheMode( 'public' );
 	}
 
+	/** @inheritDoc */
 	public function getAllowedParams() {
 		return [
 			'title' => [
@@ -52,6 +53,7 @@ class JCDataApi extends ApiBase {
 		];
 	}
 
+	/** @inheritDoc */
 	protected function getExamplesMessages() {
 		return [
 			'action=jsondata&formatversion=2&format=jsonfm&title=Sample.tab'
@@ -61,7 +63,11 @@ class JCDataApi extends ApiBase {
 		];
 	}
 
+	/** @inheritDoc */
 	public function isInternal() {
 		return true;
 	}
 }
+
+/** @deprecated Temporary backwards-compatible class alias */
+class_alias( JCDataApi::class, 'JsonConfig\\JCDataApi' );

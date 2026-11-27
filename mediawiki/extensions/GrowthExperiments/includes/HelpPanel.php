@@ -4,10 +4,10 @@ namespace GrowthExperiments;
 
 use GrowthExperiments\Config\GrowthConfigLoaderStaticTrait;
 use GrowthExperiments\HelpPanel\HelpPanelButton;
-use GrowthExperiments\HomepageModules\SuggestedEdits;
 use MediaWiki\Config\Config;
 use MediaWiki\Config\ConfigException;
 use MediaWiki\Html\Html;
+use MediaWiki\Language\MessageLocalizer;
 use MediaWiki\Language\RawMessage;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Output\OutputPage;
@@ -15,7 +15,6 @@ use MediaWiki\Request\WebRequest;
 use MediaWiki\Title\Title;
 use MediaWiki\User\User;
 use MediaWiki\User\UserIdentity;
-use MessageLocalizer;
 use OOUI\Tag;
 
 class HelpPanel {
@@ -27,9 +26,9 @@ class HelpPanel {
 	 * @return Tag
 	 * @throws ConfigException
 	 */
-	public static function getHelpPanelCtaButton() {
+	public static function getHelpPanelCtaButton( Config $wikiConfig ) {
 		$helpdeskTitle = self::getHelpDeskTitle(
-			GrowthExperimentsServices::wrap( MediaWikiServices::getInstance() )->getGrowthWikiConfig()
+			$wikiConfig
 		);
 		$btnWidgetArr = [
 			'label' => wfMessage( 'growthexperiments-help-panel-cta-button-text' )->text(),
@@ -51,10 +50,6 @@ class HelpPanel {
 		MessageLocalizer $ml,
 		Config $wikiConfig
 	) {
-		if ( !self::isHelpPanelEnabled() ) {
-			return [];
-		}
-
 		$linkRenderer = MediaWikiServices::getInstance()->getLinkRenderer();
 
 		$helpPanelLinks = Html::openElement( 'ul', [ 'class' => 'mw-ge-help-panel-links' ] );
@@ -95,7 +90,7 @@ class HelpPanel {
 		return [
 			'helpPanelLinks' => $helpPanelLinks,
 			'helpDeskLink' => $helpDeskLink,
-			'viewMoreLink' => $viewMoreLink
+			'viewMoreLink' => $viewMoreLink,
 		];
 	}
 
@@ -106,10 +101,6 @@ class HelpPanel {
 	 * @return bool
 	 */
 	public static function shouldShowHelpPanelToUser( UserIdentity $user ) {
-		if ( !self::isHelpPanelEnabled() ) {
-			return false;
-		}
-
 		$userOptionsLookup = MediaWikiServices::getInstance()->getUserOptionsLookup();
 		return (bool)$userOptionsLookup->getOption( $user, HelpPanelHooks::HELP_PANEL_PREFERENCES_TOGGLE );
 	}
@@ -117,50 +108,51 @@ class HelpPanel {
 	/**
 	 * Check if we should show help panel to user.
 	 *
-	 * @param OutputPage $out
-	 * @param bool $checkAction
 	 * @return bool
 	 * @throws ConfigException
 	 */
-	public static function shouldShowHelpPanel( OutputPage $out, $checkAction = true ): bool {
-		if ( !self::isHelpPanelEnabled() ) {
-			return false;
-		}
+	public static function shouldShowHelpPanel(
+		OutputPage $out, bool $checkAction = true, ?Config $wikiConfig = null
+	): bool {
+		$wikiConfig ??= self::getGrowthWikiConfig();
 
 		if ( !$out->getUser()->isNamed() ) {
 			return false;
 		}
 
-		if ( in_array( $out->getTitle()->getNamespace(),
-			self::getGrowthWikiConfig()->get( 'GEHelpPanelExcludedNamespaces' ) ) ) {
-			return false;
-		}
 		if ( $checkAction ) {
 			$action = $out->getRequest()->getVal( 'action', 'view' );
 			if ( !in_array( $action, [ 'edit', 'submit' ] ) &&
-				 !self::shouldShowForReadingMode( $out, $action ) ) {
+				!self::shouldShowForReadingMode( $out, $action, $wikiConfig ) ) {
 				return false;
 			}
 		}
+
 		if ( self::isSuggestedEditRequest( $out->getRequest() ) ) {
 			return true;
 		}
+
+		if ( in_array( $out->getTitle()->getNamespace(),
+			$wikiConfig->get( 'GEHelpPanelExcludedNamespaces' ) ) ) {
+			return false;
+		}
+
 		return self::shouldShowHelpPanelToUser( $out->getUser() );
 	}
 
 	/**
 	 * If action=view, check if we are in allowed namespace.
 	 *
-	 * Note that views to talk titles will perform a look up for the subject title namespace,
+	 * Note that views to talk titles will perform a look-up for the subject title namespace,
 	 * so specifying 4 (NS_PROJECT) as a namespace for which to enable help panel reading mode
 	 * will also result in enabling 5 (NS_PROJECT_TALK) as an additional namespace.
 	 *
-	 * @param OutputPage $out
-	 * @param string $action
-	 * @return bool
 	 * @throws ConfigException
 	 */
-	public static function shouldShowForReadingMode( OutputPage $out, $action ) {
+	public static function shouldShowForReadingMode(
+		OutputPage $out, string $action,
+		Config $wikiConfig
+	): bool {
 		if ( $action !== 'view' ) {
 			return false;
 		}
@@ -173,19 +165,11 @@ class HelpPanel {
 			return false;
 		}
 		if ( $title->inNamespaces( NS_MAIN, NS_TALK ) &&
-			SuggestedEdits::isGuidanceEnabled( $out->getContext() ) &&
 			HomepageHooks::getClickId( $out->getContext() ) ) {
 			return true;
 		}
 		return in_array( $title->getSubjectPage()->getNamespace(),
-				   self::getGrowthWikiConfig()->get( 'GEHelpPanelReadingModeNamespaces' ) );
-	}
-
-	/**
-	 * @return bool
-	 */
-	public static function isHelpPanelEnabled() {
-		return MediaWikiServices::getInstance()->getMainConfig()->get( 'GEHelpPanelEnabled' );
+				   $wikiConfig->get( 'GEHelpPanelReadingModeNamespaces' ) );
 	}
 
 	/**

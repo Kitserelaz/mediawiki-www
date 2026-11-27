@@ -12,13 +12,13 @@
 			 * @param {string} route
 			 * @param {OO.ui.WindowManager} windowManager
 			 * @param {QuestionPosterDialog} dialog
-			 * @param {Help.HelpPanelLogger} logger
+			 * @param {mw.libs.ge.HelpPanelLogger} logger
 			 */
 			registerDialogRoute = function ( router, route, windowManager, dialog, logger ) {
 				router.addRoute( route, () => {
 					const lifecycle = windowManager.openWindow( dialog, { panel: 'ask-help' } );
 					logger.log( 'ask-help' );
-					lifecycle.closing.done( () => {
+					lifecycle.closing.then( () => {
 						if ( router.getPath() === route ) {
 							// The user clicked the "close" button on the dialog, go back to
 							// previous route.
@@ -56,11 +56,10 @@
 		const Help = require( 'ext.growthExperiments.Help' );
 		const QuestionPosterDialog = Help.HelpPanelProcessDialog;
 		const loggerInstance = new Help.HelpPanelLogger(
-			mw.config.get( 'wgGEHomepageLoggingEnabled' ),
 			{
 				context: config.context,
-				sessionId: mw.config.get( 'wgGEHomepagePageviewToken' )
-			}
+				sessionId: mw.config.get( 'wgGEHomepagePageviewToken' ),
+			},
 		);
 		const windowManagerInstance = new OO.ui.WindowManager( { modal: true } );
 		suggestedEditSession.helpPanelShouldBeLocked = true;
@@ -72,7 +71,7 @@
 			suggestedEditSession: suggestedEditSession,
 			showCogMenu: false,
 			askSource: 'mentor-homepage',
-			isQuestionPoster: true
+			isQuestionPoster: true,
 		}, config.dialog ) );
 		const ctaButton = OO.ui.ButtonWidget.static.infuse( $container.find( config.buttonSelector ) );
 
@@ -82,13 +81,13 @@
 			questionRoute,
 			windowManagerInstance,
 			dialogInstance,
-			loggerInstance
+			loggerInstance,
 		);
 		closeWindowOnHashChange(
 			routerInstance,
 			questionRoute,
 			windowManagerInstance,
-			dialogInstance
+			dialogInstance,
 		);
 		ctaButton.on( 'click', () => {
 			routerInstance.navigate( '#' + questionRoute );

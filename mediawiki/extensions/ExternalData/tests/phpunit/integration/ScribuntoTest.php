@@ -1,0 +1,98 @@
+<?php
+
+namespace MediaWiki\Extension\ExternalData\Tests\Integration;
+
+use EDScribunto;
+use MediaWikiIntegrationTestCase;
+use ReflectionClass;
+use ReflectionException;
+
+/**
+ * Test for the class EDScribunto.
+ *
+ * @covers \EDScribunto
+ *
+ * @author Alexander Mashin
+ * @author Claire
+ */
+class ScribuntoTest extends MediaWikiIntegrationTestCase {
+	/** @var class-string<EDScribunto> $class Name of the tested class. */
+	protected static $class = EDScribunto::class;
+
+	/**
+	 * @stable for overriding
+	 */
+	protected function setUp(): void {
+		parent::setUp();
+		$this->markTestSkippedIfExtensionNotLoaded( 'Scribunto' );
+	}
+
+	/**
+	 * @param string $name Method name.
+	 * @param mixed $expected Expected return.
+	 * @param mixed ...$args Method arguments.
+	 * @return void
+	 * @throws ReflectionException
+	 */
+	private function testPrivateMethod( string $name, $expected, ...$args ) {
+		$class = new ReflectionClass( static::$class );
+
+		// Invoke the tested method.
+		$private = $class->getMethod( $name );
+		$actual = $private->invoke( null, ...$args );
+		$this->assertEquals( $expected, $actual );
+	}
+
+	/**
+	 * Data provider to test EDScribunto::flip().
+	 * @return array
+	 */
+	public static function provideFlip(): array {
+		$args = [];
+		$expecteds = [];
+
+		$args[] = [
+			'id' => [ 0, 1 ],
+			'url' => [ 'https://example.com/0', 'https://example.com/1' ],
+		];
+		$expecteds[] = [
+			[ 'id' => 0, 'url' => 'https://example.com/0' ],
+			[ 'id' => 1, 'url' => 'https://example.com/1' ],
+		];
+
+		$args[] = [
+			'id' => [ 42 ],
+			'url' => [ 'https://example.com/42' ],
+		];
+		$expecteds[] = [
+			[ 'id' => 42, 'url' => 'https://example.com/42' ],
+			'id' => 42,
+			'url' => 'https://example.com/42',
+		];
+
+		// T375469
+		$args[] = [
+			0 => [ ':3' ],
+			'emoticon' => [ ':3' ],
+		];
+		$expecteds[] = [
+			[ 0 => ':3', 'emoticon' => ':3' ],
+			'emoticon' => ':3',
+		];
+
+		return array_map( static function ( $arg, $expected ) {
+			return [ $arg, $expected ];
+		}, $args, $expecteds );
+	}
+
+	/**
+	 * Test EDScribunto::flip().
+	 * @dataProvider provideFlip
+	 * @param array $arg
+	 * @param array $expected
+	 * @throws ReflectionException
+	 */
+	public function testFlip( array $arg, array $expected ) {
+		$this->testPrivateMethod( 'flip', $expected, $arg );
+	}
+}

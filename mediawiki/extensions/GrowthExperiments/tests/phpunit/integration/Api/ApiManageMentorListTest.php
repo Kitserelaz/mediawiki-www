@@ -6,7 +6,7 @@ use GrowthExperiments\GrowthExperimentsServices;
 use GrowthExperiments\MentorDashboard\MentorTools\IMentorWeights;
 use GrowthExperiments\MentorDashboard\MentorTools\MentorStatusManager;
 use GrowthExperiments\Mentorship\Mentor;
-use MediaWiki\Api\ApiUsageException;
+use MediaWiki\Extension\CommunityConfiguration\Tests\CommunityConfigurationTestHelpers;
 use MediaWiki\MainConfigNames;
 use MediaWiki\Tests\Api\ApiTestCase;
 use MediaWiki\User\User;
@@ -19,6 +19,7 @@ use Wikimedia\Timestamp\ConvertibleTimestamp;
  * @coversDefaultClass \GrowthExperiments\Api\ApiManageMentorList
  */
 class ApiManageMentorListTest extends ApiTestCase {
+	use CommunityConfigurationTestHelpers;
 
 	protected function setUp(): void {
 		parent::setUp();
@@ -59,18 +60,19 @@ class ApiManageMentorListTest extends ApiTestCase {
 	public function testNoPermissions() {
 		$this->overrideConfigValues( [
 			MainConfigNames::RevokePermissions => [ '*' => [ 'enrollasmentor' => true ] ],
-			'GEMentorshipAutomaticEligibility' => false,
 		] );
+		$this->overrideProviderConfig( [
+			'GEMentorshipAutomaticEligibility' => false,
+		], 'Mentorship' );
 		$user = $this->getMutableTestUser()->getUser();
 
-		$this->expectException( ApiUsageException::class );
-		$this->expectExceptionMessage( 'You don\'t have permission to enroll as a mentor.' );
+		$this->expectApiErrorCode( 'permissiondenied' );
 		$this->doApiRequestWithToken(
 			[
 				'action' => 'growthmanagementorlist',
 				'geaction' => 'add',
 				'message' => 'intro',
-				'weight' => IMentorWeights::WEIGHT_NORMAL
+				'weight' => IMentorWeights::WEIGHT_NORMAL,
 			],
 			null,
 			$user
@@ -81,14 +83,13 @@ class ApiManageMentorListTest extends ApiTestCase {
 	 * @covers ::execute
 	 */
 	public function testNoPermissionsChange() {
-		$this->overrideConfigValues( [
+		$this->overrideProviderConfig( [
 			'GEMentorshipMinimumAge' => 0,
 			'GEMentorshipMinimumEditcount' => 0,
-		] );
+		], 'Mentorship' );
 		$user = $this->getMutableTestUser()->getUser();
 
-		$this->expectException( ApiUsageException::class );
-		$this->expectExceptionMessage( 'You don\'t have permission to manage the list of mentors.' );
+		$this->expectApiErrorCode( 'permissiondenied' );
 		$this->doApiRequestWithToken(
 			[
 				'action' => 'growthmanagementorlist',
@@ -106,8 +107,7 @@ class ApiManageMentorListTest extends ApiTestCase {
 	 * @covers ::execute
 	 */
 	public function testNonsenseGeAction() {
-		$this->expectException( ApiUsageException::class );
-		$this->expectExceptionMessage( 'Unrecognized value for parameter "geaction": foobar.' );
+		$this->expectApiErrorCode( 'badvalue' );
 		$this->doApiRequestWithToken(
 			[
 				'action' => 'growthmanagementorlist',
@@ -133,11 +133,11 @@ class ApiManageMentorListTest extends ApiTestCase {
 				'action' => 'growthmanagementorlist',
 				'geaction' => 'add',
 				'message' => 'intro',
-				'weight' => IMentorWeights::WEIGHT_NORMAL
+				'weight' => IMentorWeights::WEIGHT_NORMAL,
 			],
 			[
 				'message' => 'intro',
-				'weight' => IMentorWeights::WEIGHT_NORMAL
+				'weight' => IMentorWeights::WEIGHT_NORMAL,
 			],
 			$this->getMutableTestUser( 'mentors' )->getUser()
 		);
@@ -145,7 +145,7 @@ class ApiManageMentorListTest extends ApiTestCase {
 
 	public static function provideAddPermissions() {
 		return [
-			'only enrollasmentor' => [ [ 'enrollasmentor' => true, 'managementors' => false, ] ],
+			'only enrollasmentor' => [ [ 'enrollasmentor' => true, 'managementors' => false ] ],
 			'only managementors' => [ [ 'enrollasmentor' => false, 'managementors' => true ] ],
 			'both rights' => [ [ 'enrollasmentor' => true, 'managementors' => true ] ],
 		];
@@ -160,7 +160,7 @@ class ApiManageMentorListTest extends ApiTestCase {
 		$this->checkSuccessfulApiCall(
 			$params + [
 				'action' => 'growthmanagementorlist',
-				'geaction' => 'add'
+				'geaction' => 'add',
 			],
 			$params + [
 				'message' => null,
@@ -180,8 +180,13 @@ class ApiManageMentorListTest extends ApiTestCase {
 
 	/**
 	 * @covers ::execute
+	 * @dataProvider provideTestMentorStatus
 	 */
-	public function testMentorStatus() {
+	public function testMentorStatus(
+		string $expectedStatus,
+		?string $expectedTimestamp,
+		array $params,
+	) {
 		ConvertibleTimestamp::setFakeTime( strtotime( '2011-04-01T00:00Z' ) );
 
 		$mentorStatusManager = GrowthExperimentsServices::wrap( $this->getServiceContainer() )
@@ -191,23 +196,34 @@ class ApiManageMentorListTest extends ApiTestCase {
 		$this->doApiRequestWithToken(
 			[
 				'action' => 'growthmanagementorlist',
-				'geaction' => 'add',
 				'message' => 'intro',
 				'weight' => IMentorWeights::WEIGHT_NORMAL,
 				'username' => $mentorUser->getName(),
-				'isaway' => true,
-				'awaytimestamp' => '2011-04-25T18:47:38.000Z',
+				...$params,
 			],
 			null,
 			$this->getTestSysop()->getUser()
 		);
 		$this->assertSame(
-			MentorStatusManager::STATUS_AWAY,
+			$expectedStatus,
 			$mentorStatusManager->getMentorStatus( $mentorUser )
 		);
 		$this->assertSame(
-			'20110425184738',
+			$expectedTimestamp,
 			$mentorStatusManager->getMentorBackTimestamp( $mentorUser )
 		);
+	}
+
+	public static function provideTestMentorStatus() {
+		return [
+			[ MentorStatusManager::STATUS_AWAY, '20110425184738', [
+				'geaction' => 'add',
+				'isaway' => true,
+				'awaytimestamp' => '2011-04-25T18:47:38.000Z',
+			] ],
+			[ MentorStatusManager::STATUS_ACTIVE, null, [
+				'geaction' => 'add',
+			] ],
+		];
 	}
 }

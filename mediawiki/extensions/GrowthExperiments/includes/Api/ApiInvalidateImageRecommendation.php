@@ -2,6 +2,7 @@
 
 namespace GrowthExperiments\Api;
 
+use GrowthExperiments\FeatureManager;
 use GrowthExperiments\NewcomerTasks\AddImage\AddImageSubmissionHandler;
 use GrowthExperiments\NewcomerTasks\ConfigurationLoader\ConfigurationLoader;
 use GrowthExperiments\NewcomerTasks\NewcomerTasksUserOptionsLookup;
@@ -33,16 +34,8 @@ class ApiInvalidateImageRecommendation extends ApiBase {
 	private NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup;
 	private TitleFactory $titleFactory;
 	private ConfigurationLoader $configurationLoader;
+	private FeatureManager $featureManager;
 
-	/**
-	 * @param ApiMain $mainModule
-	 * @param string $moduleName
-	 * @param ConfigurationLoader $configurationLoader
-	 * @param AddImageSubmissionHandler $imageSubmissionHandler
-	 * @param TaskSuggesterFactory $taskSuggesterFactory
-	 * @param NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup
-	 * @param TitleFactory $titleFactory
-	 */
 	public function __construct(
 		ApiMain $mainModule,
 		string $moduleName,
@@ -50,7 +43,8 @@ class ApiInvalidateImageRecommendation extends ApiBase {
 		AddImageSubmissionHandler $imageSubmissionHandler,
 		TaskSuggesterFactory $taskSuggesterFactory,
 		NewcomerTasksUserOptionsLookup $newcomerTasksUserOptionsLookup,
-		TitleFactory $titleFactory
+		TitleFactory $titleFactory,
+		FeatureManager $featureManager
 	) {
 		parent::__construct( $mainModule, $moduleName );
 		$this->configurationLoader = $configurationLoader;
@@ -58,6 +52,7 @@ class ApiInvalidateImageRecommendation extends ApiBase {
 		$this->taskSuggesterFactory = $taskSuggesterFactory;
 		$this->newcomerTasksUserOptionsLookup = $newcomerTasksUserOptionsLookup;
 		$this->titleFactory = $titleFactory;
+		$this->featureManager = $featureManager;
 
 		$this->setLogger( LoggerFactory::getInstance( 'GrowthExperiments' ) );
 	}
@@ -67,7 +62,15 @@ class ApiInvalidateImageRecommendation extends ApiBase {
 	 * @throws ApiUsageException
 	 */
 	public function execute() {
+		if ( !$this->getUser()->isNamed() ) {
+			$this->dieWithError( [ 'apierror-mustbeloggedin-generic' ] );
+		}
+
 		$params = $this->extractRequestParams();
+		// Provide more useful response when SE are disabled
+		if ( !$this->featureManager->isNewcomerTasksAvailable() ) {
+			$this->dieWithError( [ 'apierror-moduledisabled', 'Suggested edits' ] );
+		}
 		// This API is used by external clients for their own structured task workflows so
 		// include disabled task types.
 		$allTaskTypes = $this->configurationLoader->getTaskTypes()
@@ -75,10 +78,9 @@ class ApiInvalidateImageRecommendation extends ApiBase {
 		$taskType = $allTaskTypes[$params['tasktype']] ?? null;
 		if ( $taskType === null ) {
 			$this->logger->warning(
-				'Task type {tasktype} was not found in {configpage}',
+				'Task type {tasktype} was not found in configuration',
 				[
 					'tasktype' => $params['tasktype'],
-					'configpage' => $this->getConfig()->get( 'GENewcomerTasksConfigTitle' ),
 				]
 			);
 			$this->dieWithError(
@@ -88,7 +90,8 @@ class ApiInvalidateImageRecommendation extends ApiBase {
 		}
 
 		Assert::parameterType( ImageRecommendationBaseTaskType::class, $taskType, '$taskType' );
-		'@phan-var ImageRecommendationBaseTaskType $taskType';/** @var ImageRecommendationBaseTaskType $taskType */
+		'@phan-var ImageRecommendationBaseTaskType $taskType';
+		/** @var ImageRecommendationBaseTaskType $taskType */
 		$titleValue = $params['title'];
 
 		$page = $this->titleFactory->newFromLinkTarget( $titleValue )->toPageIdentity();
@@ -103,7 +106,7 @@ class ApiInvalidateImageRecommendation extends ApiBase {
 				$params['sectionnumber'],
 			);
 			$this->getResult()->addValue( null, $this->getModuleName(), [
-				'status' => 'ok'
+				'status' => 'ok',
 			] );
 		} else {
 			$this->dieWithError( [ 'apierror-invalidtitle', $titleValue->getDBkey() ] );
@@ -155,7 +158,7 @@ class ApiInvalidateImageRecommendation extends ApiBase {
 			'sectionnumber' => [
 				ParamValidator::PARAM_REQUIRED => false,
 				ParamValidator::PARAM_TYPE => 'integer',
-			]
+			],
 		];
 	}
 

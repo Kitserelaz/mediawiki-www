@@ -9,13 +9,13 @@
 			"Ymar"
 		]
 	},
-	"babel": "Wieża Babel użytkownika",
+	"babel": "Wieża Babel {{GENDER:$1|użytkownika|użytkowniczki}}",
 	"babel-desc": "Dodaje funkcję parsera <code>#babel</code> ułatwiającą tworzenie ramki informującej o językowych lub innych umiejętnościach użytkownika",
 	"babel-url": "Project:Wieża Babel",
 	"babel-footer-url": ":Category:Babel",
 	"babel-autocreate-reason": "Strona automatycznie utworzonej kategorii [[$1|wieży Babel]]",
-	"babel-autocreate-text-levels": "Użytkownicy znajdujący się w tej kategorii deklarują znajomość języka $2 na poziomie $1.",
-	"babel-autocreate-text-main": "Użytkownicy znajdujący się w tej kategorii deklarują znajomość języka $1.",
+	"babel-autocreate-text-levels": "Użytkownicy znajdujący się w tej kategorii deklarują znajomość języka $2 na poziomie $1.\n$4",
+	"babel-autocreate-text-main": "Użytkownicy znajdujący się w tej kategorii deklarują znajomość języka $1.\n$3",
 	"babel-0": "{{GENDER:$4|Ten użytkownik|Ta użytkowniczka}} [[$1|nie rozumie]] języka [[$2|$3]] (albo ma z nim olbrzymie trudności).",
 	"babel-1": "{{GENDER:$4|Ten użytkownik|Ta użytkowniczka}} posługuje się [[$2|językiem $3]] na poziomie [[$1|podstawowym]].",
 	"babel-2": "{{GENDER:$4|Ten użytkownik|Ta użytkowniczka}} posługuje się [[$2|językiem $3]] na poziomie [[$1|średnio zaawansowanym]].",
@@ -49,7 +49,5 @@
 	"communityconfiguration-babel-babelmaincategory-help-text": "Akceptuje ten sam format, co „Nazwy kategorii według poziomu języka” powyżej.",
 	"communityconfiguration-babel-babeluseuserlanguage-control-label": "Użyj języka użytkownika",
 	"communityconfiguration-babel-babeluseuserlanguage-help-text": "Czy używać języka interfejsu, ustawionego przez użytkownika dla nagłówka i stopki komunikatu. Jeśli fałsz (domyślnie), będzie to język zawartości strony. Wynika to z faktu, że używanie języka użytkownika może fragmentować pamięć podręczną parsera.",
-	"communityconfiguration-babel-babelcategorizenamespaces-label": "Przestrzenie nazw, do których należy dodać kategorie Babel",
-	"communityconfiguration-babel-babelcategorizenamespaces-help-text": "Pozostaw puste, aby zastosować do wszystkich przestrzeni nazw.",
 	"communityconfiguration-babel-babelautocreate-control-label": "Automatycznie twórz kategorie Babel"
 }

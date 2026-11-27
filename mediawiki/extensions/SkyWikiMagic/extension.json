@@ -185,6 +185,9 @@
 		},
 		"ManageWikiCoreAddFormFields": {
 			"handler": "ManageWikiCategoryLabels"
+		},
+		"ArticleRevisionViewCustom": {
+			"handler": "PageLatestRepair"
 		}
 	},
 	"HookHandlers": {
@@ -215,6 +218,14 @@
 		},
 		"ManageWikiCategoryLabels": {
 			"class": "WikiOasis\\WikiOasisMagic\\HookHandlers\\ManageWikiCategoryLabels"
+		},
+		"PageLatestRepair": {
+			"class": "WikiOasis\\WikiOasisMagic\\HookHandlers\\PageLatestRepair",
+			"services": [
+				"DBLoadBalancerFactory",
+				"ReadOnlyMode",
+				"ObjectCacheFactory"
+			]
 		}
 	},
 	"config": {
